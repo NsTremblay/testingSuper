@@ -7,6 +7,12 @@ use Bio::SeqIO;
 
 #A simple Perl script to download files from Genbank and store it in the local directory.
 
+#TODO: Allow users to query GenBank with different identifiers.
+#TODO: Allow for batch downloads:
+#	users can provide a text file with a list of sequences to be donloaded all at once.
+#TODO: Convert .gbk or .fasta files directly to .gff automatically
+#TODO: Upload batches of .gff files to Chado db.
+
 my $file_name;
 
 print "Enter the Accession number of the GenBank file to download:";
