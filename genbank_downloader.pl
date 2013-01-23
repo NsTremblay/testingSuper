@@ -24,18 +24,21 @@ $file_type = <>;
 chomp($file_type);
 $file_type = lc($file_type);
 if ($file_type eq 'fasta') {
-	my $gb = Bio::DB::GenBank->new();
-	my $seq = $gb->get_Seq_by_acc($file_name);
-	my $output = Bio::SeqIO->new(-file=> '>' . $file_name . '.' . $file_type , -format=>$file_type);
-	$output->write_seq($seq);
+	get_file($file_type);
 }
 elsif ($file_type eq 'genbank') {
-	my $gb = Bio::DB::GenBank->new();
-	my $seq = $gb->get_Seq_by_acc($file_name);
-	my $output = Bio::SeqIO->new(-file=> '>' . $file_name . '.' .  $file_type , -format=>$file_type);
-	$output->write_seq($seq);
+	get_file($file_type);
 }
 else {
 	print "You have entered an invalid file type. \n";
 	0;
+}
+
+sub get_file {
+	my $file_format;
+	$file_format = $file_type;
+	my $gb = Bio::DB::GenBank->new();
+	my $seq = $gb->get_Seq_by_acc($file_name);
+	my $output = Bio::SeqIO->new(-file=> '>' . $file_name . '.' . $file_type , -format=>$file_type);
+	$output->write_seq($seq);
 }
