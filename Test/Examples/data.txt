@@ -1,0 +1,18 @@
+Perl Beginners' Site
+Learn Perl Now!
+
+And get a job doing Perl.
+
+Programming the Way You Would Love
+
+Perl is a flexible, feature-rich and powerful dynamic programming language. Perl code is very succinct and can be written very quickly, while still performing well in most cases. One can often achieve in one line of Perl what requires 100s of lines in C and other languages. Read more…
+
+The Right Tool for the Job
+
+There are many cases in which Perl is the right tool for the job:
+
+
+System Administration - Perl is available on almost every Unix system, and is easily installable on Microsoft Windows. It is more robust and more portable for many tasks than writing Unix shell scripts, to say nothing of Win32's cmd.exe. Read more…
+Web automation - some CPAN modules allow interacting with web sites easily and affordably. This is useful to automate such web sites, and to test web sites you created.
+Writing web applications - Perl was the first popular solution for writing CGI scripts and even large scale web applications, and is still very popular. It is extensively used by such large, highly scalable sites such as Amazon.com or Live Journal, and by countless of smaller sites. Read more….
+Software Testing and Quality Assurance - Perl has an extensive set of tools for automated or semi-automated software testing. These tools can often be used to test applications written in other languages, and certainly network servers. Read more…
