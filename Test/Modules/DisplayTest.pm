@@ -7,7 +7,11 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use Database::Chado::TestSchema; #This is an error with the linter not a pathing issue
-use base 'CGI::Application';
+use parent 'CGI::Application';
+use CGI::Application::Plugin::Config::Simple;
+use CGI::Application::Plugin::Redirect;
+use CGI::Application::Plugin::Session;
+use HTML::Template;
 use Log::Log4perl qw(:easy);
 use Carp;
 use Role::Tiny::With;
@@ -19,40 +23,40 @@ Log::Log4perl->easy_init($DEBUG);
 
 # #Object creation.
 
-sub new {
-	#public method
-	my ($class) = shift;
-	my $self = {};
-	bless ( $self, $class);
-	self->_initialize(@_);
-	return $self;
-}
+# sub new {
+# 	#public method
+# 	my ($class) = shift;
+# 	my $self = {};
+# 	bless ( $self, $class);
+# 	self->_initialize(@_);
+# 	return $self;
+# }
 
-sub _initialize {
-	#private method
-	my ($self) = shift;
+# sub _initialize {
+# 	#private method
+# 	my ($self) = shift;
 
-	#Inititalize the logger
-	$self->logger(Log::Log4Perl->get_logger());
-	$self->logger->info("Logger has been initialized in Modules::Assays");
+# 	#Inititalize the logger
+# 	$self->logger(Log::Log4Perl->get_logger());
+# 	$self->logger->info("Logger has been initialized in Modules::Assays");
 
-	#########################
-	#Initialize object fields
-	#########################
+# 	#########################
+# 	#Initialize object fields
+# 	#########################
 
-	my %params = @_;
+# 	my %params = @_;
 
-	#set all parameters on object construction
-	foreach my $key(keys %params){
-		if($self->can($key)) {
-			$self->$key($params{$key});
-		}
-		else {
-			#logconfess calls the confess of Carp package, as well as logging to Log4Perl
-			$self->logger->logconfess("$key is not a valid parameter in Module::Assays");
-		}
-	}
-}
+# 	#set all parameters on object construction
+# 	foreach my $key(keys %params){
+# 		if($self->can($key)) {
+# 			$self->$key($params{$key});
+# 		}
+# 		else {
+# 			#logconfess calls the confess of Carp package, as well as logging to Log4Perl
+# 			$self->logger->logconfess("$key is not a valid parameter in Module::Assays");
+# 		}
+# 	}
+# }
 
 #Get/Set for logger. Passes in a new logger from Log4perl and either sets it or returns the existing logger
 sub logger {
