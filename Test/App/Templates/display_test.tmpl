@@ -1,28 +1,93 @@
+<!DOCTYPE html>
 <html>
 
-	<head> <title> A test template for the DisplayTest module</title></head>
+	<head>
+		<title> A test template for the DisplayTest module</title>
+		<!-- Bootstrap -->
+		<link rel="stylesheet" type="text/css" href="/Templates/bootstrap/css/bootstrap.css" media="screen">
+		<link rel="stylesheet" type="text/css" href="/Templates/bootstrap/css/bootstrap-responsive.css" media="screen">
+	</head>
 
 	<body>
+		<div class="navbar navbar-inverse navbar-fixed-top">
+			<div class="navbar-inner">
+				<div class="container">
+				<ul class="nav">
+					<li class="active"><a href="#">Home</a></li>
+					<li><a href="#">Link 1</a></li>
+					<li><a href="#">Link 2</a></li>
+					<li><a href="#">Link 3</a></li>
+				</ul>
+				<center><p class="navbar-text">This is a fixed navbar. It will always be displayed to make navigation simple.</p></center>
+				</div>
+			</div>
+		</div>
 
-	A test template for the DisplayTest module...
+		<div class="container">
+			<div class="span12">
+				<table class="table table-condensed table-striped">
+					<tbody>
+					<tr>
+						<th>Feature ID</th>
+						<th>Unique Name</th>
+						<!--th>DNA Sequence</th-->
+					</tr>
+					<TMPL_LOOP NAME=FEATURES>
+					<tr>
+						<td><TMPL_VAR NAME=FEATUREID></td>
+						<td><TMPL_VAR NAME=UNIQUENAME></td>
+						<!--td><TMPL_VAR NAME=RESIDUES></td-->
+					</tr>
+					</TMPL_LOOP>
+					</tbody>
+				</table>
 
-	<div>
-		<table>
-			<tr>
-				<th>Feature ID</th>
-				<th>Unique Name</th>
-				<!--th align="left" width="50">DNA Sequence</th-->
-			</tr>
-			<TMPL_LOOP NAME=FEATURES>
-			<tr>
-				<td><TMPL_VAR NAME=FEATUREID></td>
-				<td><TMPL_VAR NAME=UNIQUENAME></td>
-				<!--td><TMPL_VAR NAME=RESIDUES></td-->
-			</tr>
-			</TMPL_LOOP>
-		</table>
+		<div class="row-fluid">
+			<div class="span4">
+				<p>Single Strain content and operations go here.</p>
+				<ul>
+					<li>Where does it fit on a phylogeny?</li>
+					<li>Virulence/AMR +/-</li>
+					<li>Closely related strains</li>
+					<li>1 page summary</li>
+				</ul>
+			</div>
 
+			<div class="span4">
+				<p>Multistrain content and operations go here.</p>
+				<ul>
+					<li>Group comparisons</li>
+					<li>Selecting
+						<ul>
+							<li>map</li>
+							<li>phylogenetis</li>
+							<li>lists</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+			
+			<div class="span4">
+				<p>Static information will go over here. This should remain available at all times.</p>
+				<br>
+				<ul class="nav nav-list">
+					<li class="nav-header">Static Information</li>
+					<li class="divider"></li>
+					<li><a href="#">Link 1</a></li>
+					<li><a href="#">Link 2</a></li>
+					<li><a href="#">Link 3</a></li>
+				</ul>
+				<br>
+				<ul>
+					<li>Strains</li>
+					<li>Virulence Factors</li>
+					<li>Statistics</li>
+					<li>Recently Added</li>
+				</ul>
+			</div>
+		</div>
 	</div>
+</div>
 
 	</body>
 
