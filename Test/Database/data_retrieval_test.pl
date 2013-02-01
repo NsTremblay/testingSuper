@@ -19,7 +19,7 @@ my $schema = Database::Chado::TestSchema->connect('dbi:Pg:dbname=chado_db_test;h
 my $feature_rs = $schema->resultset('Feature')->search(
 	undef,
 		{
-			columns=>[qw/feature_id organism_id uniquename/],
+			columns=>[qw/feature_id uniquename/],
 		}
 	);
 

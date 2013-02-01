@@ -25,10 +25,10 @@ sub dispatch_args {
                 TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                # ''      =>      {app=>'DisplayTest',rm=>'display'},
-                # '/'     =>      {app=>'DisplayTest',rm=>'display'},
-                # '/test' =>      {app=>'DisplayTest',rm=>'display'},
-                # '/hello' =>     {app=>'DisplayTest' , rm=>'hello'},
+                '' =>           {app=>'DisplayTest' ,rm=>'display'},
+                '/' =>          {app=>'DisplayTest',rm=>'display'},
+                '/test' =>      {app=>'DisplayTest',rm=>'display'},
+                '/hello' =>     {app=>'DisplayTest' , rm=>'hello'},
                 '/home' =>      {app=>'Home', rm=>'display'}
         ],
     };

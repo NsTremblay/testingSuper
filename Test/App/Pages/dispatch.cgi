@@ -7,3 +7,5 @@ use lib "$FindBin::Bin/../../";
 use Modules::Dispatch;
 
 Modules::Dispatch->dispatch();
+
+1;

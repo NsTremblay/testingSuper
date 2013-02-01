@@ -1,5 +1,29 @@
 <html>
 
-	<head> <title> A test template for the DisplayTest module</title<\></head>
+	<head> <title> A test template for the DisplayTest module</title></head>
+
+	<body>
+
+	A test template for the DisplayTest module...
+
+	<div>
+		<table>
+			<tr>
+				<th>Feature ID</th>
+				<th>Unique Name</th>
+				<!--th align="left" width="50">DNA Sequence</th-->
+			</tr>
+			<TMPL_LOOP NAME=FEATURES>
+			<tr>
+				<td><TMPL_VAR NAME=FEATUREID></td>
+				<td><TMPL_VAR NAME=UNIQUENAME></td>
+				<!--td><TMPL_VAR NAME=RESIDUES></td-->
+			</tr>
+			</TMPL_LOOP>
+		</table>
+
+	</div>
+
+	</body>
 
 </html>
