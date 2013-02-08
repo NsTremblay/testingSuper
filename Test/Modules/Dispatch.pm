@@ -29,7 +29,10 @@ sub dispatch_args {
                 '/' =>          {app=>'DisplayTest',rm=>'display'},
                 '/test' =>      {app=>'DisplayTest',rm=>'display'},
                 '/hello' =>     {app=>'DisplayTest' , rm=>'hello'},
-                '/home' =>      {app=>'Home', rm=>'display'}
+                '/home' =>      {app=>'Home', rm=>'display'},
+                '/single_strain' => {app=>'DisplayTest', rm=>'single_strain'},
+                '/multi_strain' => {app=>'DisplayTest', rm=>'multi_strain'},
+                '/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo'}
         ],
     };
 }

@@ -229,15 +229,16 @@ body {
   color: #333333;
   background-color: #ffffff;
   padding-top: 40px;
+  padding-bottom: 40px;
 }
 
 a {
-  color: #0088cc;
+  color: #796e6c;
   text-decoration: none;
 }
 
 a:hover {
-  color: #005580;
+  color: #d41616;
   text-decoration: underline;
 }
 
@@ -289,11 +290,13 @@ a:hover {
 .navbar-static-top .container,
 .navbar-fixed-top .container,
 .navbar-fixed-bottom .container {
-  width: 940px;
+  width: 960px;
 }
 
 .span12 {
-  width: 940px;
+  width: 960px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .span11 {
@@ -325,7 +328,9 @@ a:hover {
 }
 
 .span4 {
-  width: 300px;
+  width: 320px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .span3 {
@@ -875,9 +880,9 @@ dd {
 }
 
 hr {
-  margin: 20px 0;
-  border: 0;
-  border-top: 1px solid #eeeeee;
+  margin: 20px 0px 10px 0px;
+  border: 1px;
+  border-top: 1px solid #D3D3D3;
   border-bottom: 1px solid #ffffff;
 }
 
@@ -2020,6 +2025,7 @@ table {
 .table-condensed th,
 .table-condensed td {
   padding: 4px 5px;
+  max-width: 200px;
 }
 
 .table-bordered {
@@ -2102,7 +2108,7 @@ table {
 
 .table-bordered caption + thead tr:first-child th:last-child,
 .table-bordered caption + tbody tr:first-child td:last-child,
-.table-bordered colgroup + thead tr:first-child th:last-child,
+.table-bordered tabletablecolgroup + thead tr:first-child th:last-child,
 .table-bordered colgroup + tbody tr:first-child td:last-child {
   -webkit-border-top-right-radius: 4px;
           border-top-right-radius: 4px;
@@ -2116,7 +2122,7 @@ table {
 
 .table-hover tbody tr:hover td,
 .table-hover tbody tr:hover th {
-  background-color: #f5f5f5;
+  background-color: #ddd;
 }
 
 table td[class*="span"],
@@ -3926,7 +3932,7 @@ input[type="submit"].btn.btn-mini {
 
 .nav li + .nav-header {
   margin-top: 9px;
-}
+}nav-tabs
 
 .nav-list {
   padding-right: 15px;
@@ -4086,6 +4092,7 @@ input[type="submit"].btn.btn-mini {
 .nav-tabs.nav-stacked > li > a:hover {
   z-index: 2;
   border-color: #ddd;
+  background-color: #ddd;
 }
 
 .nav-pills.nav-stacked > li > a {
@@ -5871,7 +5878,7 @@ a.badge:hover {
 
 .carousel {
   position: relative;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
   line-height: 1;
 }
 
@@ -5971,7 +5978,7 @@ a.badge:hover {
   right: 0;
   bottom: 0;
   left: 0;
-  padding: 15px;
+  padding: 30px;
   background: #333333;
   background: rgba(0, 0, 0, 0.75);
 }
@@ -5980,6 +5987,7 @@ a.badge:hover {
 .carousel-caption p {
   line-height: 20px;
   color: #ffffff;
+  text-align: left;
 }
 
 .carousel-caption h4 {

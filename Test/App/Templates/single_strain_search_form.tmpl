@@ -1,0 +1,33 @@
+<div class="span4">
+	<form class="form" style="padding:5px 70px 5px 20px">
+		<fieldset>
+			<span class="help-block">Search for an existing strain in the database or select a strain from the list below</span>
+			<input class="span12" type="text">
+			<div>
+				<button type="submit" class="btn btn-small btn-success" name="search_strain" value="Search Strain"><i class="icon-search icon-white"></i> Search</button>
+				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+			</div>
+			<hr>
+			<div style="margin-top:10px">
+				<span class="help-block">Select a strain to see more information</span>
+				<select class="span12">
+					<option></option>
+					<option></option>
+					<option></option>
+				</select>
+				<div style="margin-bottom:10px">
+					<button type="submit" class="btn btn-small btn-primary" name="strain_info" value="Strain Info"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+					<!--button type="remove" class="btn btn-small btn-danger" name="remove_strain" value="Remove Strain">Remove Strain</button-->
+				</div>
+				<hr>
+				<span class="help-block">Attach a strain file and submit it for analysis</span>
+				<input type="text" class="span12" readonly></input>
+				<div>
+					<button type="submit" class="btn btn-small btn-primary" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button>
+					<button type="submit" class="btn btn-small btn-success" name="submit_strain" value="Submit"><i class="icon-ok icon-white"></i> Submit</button>
+					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+				</div>
+			</div>
+		</fieldset>
+	</form>
+</div>

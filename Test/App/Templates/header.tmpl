@@ -1,0 +1,24 @@
+<head>
+	<title> A test template for the DisplayTest module</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- Bootstrap -->
+	<link rel="stylesheet" type="text/css" href="/Templates/bootstrap/css/bootstrap.css" media="screen">
+	<link rel="stylesheet" type="text/css" href="/Templates/bootstrap/css/bootstrap-responsive.css" media="screen">
+
+	<script type="text/javascript"
+	src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=false">
+	</script>
+
+	<script type="text/javascript">
+	function initialize() {
+		var mapOptions = {
+			center: new google.maps.LatLng(49.134890, -122.901435),
+			zoom: 15,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		var map = new google.maps.Map(document.getElementById("map_canvas"),
+			mapOptions);
+	}
+	</script>
+
+</head>
