@@ -1,0 +1,8 @@
+organism	Escherichia coli
+mol_type	genomic_dna
+mol_type	  
+mol_type	;mol_type2
+mol_type	genomic_dna2;
+mol_type	;;
+mol_type	; ;
+mol_type	genomic_dna3; mol_type
