@@ -1,4 +1,3 @@
 organism	Escherichia coli
-mol_type	genomic_dna 
-mol_type3	genomic_dna2
-mol_type6	genomic_dna3; mol_type; asda; mol;
+mol_type	genomic_dna
+...
