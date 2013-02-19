@@ -9,6 +9,7 @@ use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use parent 'CGI::Application';
 use Role::Tiny::With;
+#use Phylogeny::PhyloTreeBuilder;
 with 'Roles::DatabaseConnector'; 
 
 sub setup{
@@ -38,7 +39,16 @@ $self->connectDatabase(
 #This will display the home page. Need to set the parameters for the templates so that they get loaded into browser properly
 sub displayTest {
 	my $self = shift;
-	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );	
+
+	#Returns an object with column data
+	my $features = $self->_getAllData();
+
+	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
+	#Returns a reference to an array with references to each row of data in the hash table
+	my $featureRef = $self->_hashData($features);
+
+	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
+	$template->param(FEATURES=>$featureRef);	
 	return $template->output();
 }
 
@@ -83,8 +93,18 @@ sub hello {
 
 sub singleStrain {
 	my $self = shift;
+
+	#Returns an object with column data
+	my $features = $self->_getAllData();
+
+	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
+	#Returns a reference to an array with references to each row of data in the hash table
+	my $featureRef = $self->_hashData($features);
+
 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
+	$template->param(FEATURES=>$featureRef);
 	return $template->output();
+	#Phylogeny::PhyloTreeBuilder->new('NewickTrees/example_tree' , 'NewickTrees/tree');
 }
 
 sub multiStrain {

@@ -9,6 +9,7 @@
 	<div class="row-fluid">
 		<div class="container" style="background-color:#FFFFFF">
 
+		
 			<TMPL_INCLUDE NAME="single_strain_search_form.tmpl">
 
 			<div class="span8">
@@ -16,25 +17,26 @@
 				<div>
 					<h1>Single-strain Page</h1>
 					<p>So here we want to have a separate module to view where the organism fits in the phylogeny
-					then a table populated to show its related strains and all of its virluence factors.</p>
+						then a table populated to show its related strains and all of its virluence factors.</p>
+					</div>
+
+					<div><p>Here is where the phylogenetic tree will go.</p></div>
+
+					<div id="svgCanvas" style="border-width:1px;border-style:solid;border-color:#d3d3d3">
+						<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
+					</div>
+
+					<div>
+						<p>Output a table with the strain name, its related members, and all the virluece factors it has.</p>
+					</div>
+
 				</div>
 
-				<div>
-					<p>Here is where the phylogenetic tree will go.
-					(Check out Newick utils)</p>
-				</div>
-
-				<div>
-					<p>Output a table with the strain name, its related members, and all the virluece factors it has.</p>
-				</div>
-				
 			</div>
-
 		</div>
-	</div>
 
-</body>
+	</body>
 
-<TMPL_INCLUDE NAME="footer.tmpl">
+	<TMPL_INCLUDE NAME="footer.tmpl">
 
-</html>
+	</html>

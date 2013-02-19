@@ -11,53 +11,55 @@
 
 		<div class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
 			<div class="row-fluid">
-				<div class="span6" style="padding:10px"></p>Phylogeny Comparisons go here</p></div>
-				<div class="span6" id="map_canvas" style="height:500px;padding:10px"></div>
+				<div id="svgCanvas" class="span6" style="padding:10px">
+				<p>Phylogeny Comparisons go here</p>
+				<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
 			</div>
+			<div class="span6" id="map_canvas" style="height:500px"></div>
 		</div>
+	</div>
 
-		<!-->The following div works better for the fluid/responsive layout than the table commented out below<-->
+	<!--The following div works better for the fluid/responsive layout than the table commented out below-->
 
-		<div style="padding:10px">
-			<div class="container row-fluid">
-				<div class="span2"><strong>Feature ID</strong></div>
-				<div class="span2"><strong>Unique Name</strong></div>
-				<div class="span8"><strong>DNA Sequence</strong></div>
-			</div>
-			<TMPL_LOOP NAME=FEATURES>
-			<ul class ="nav nav-list">
-				<li class="divider"></li>
-			</ul>
-			<div class="container row-fluid hover">
-				<div class="span2"><TMPL_VAR NAME=FEATUREID></div>
-				<div class="span2"><TMPL_VAR NAME=UNIQUENAME></div>
-				<div class="span8" style="word-wrap:break-word"><TMPL_VAR NAME=RESIDUES></div>
-			</div>
-			</TMPL_LOOP>
+	<div style="padding:10px">
+		<div class="container row-fluid">
+			<div class="span2"><strong>Feature ID</strong></div>
+			<div class="span2"><strong>Unique Name</strong></div>
+			<div class="span8"><strong>DNA Sequence</strong></div>
 		</div>
+		<TMPL_LOOP NAME=FEATURES>
+		<ul class ="nav nav-list">
+			<li class="divider"></li>
+		</ul>
+		<div class="container row-fluid hover">
+			<div class="span2"><TMPL_VAR NAME=FEATUREID></div>
+			<div class="span2"><TMPL_VAR NAME=UNIQUENAME></div>
+			<div class="span8" style="word-wrap:break-word"><TMPL_VAR NAME=RESIDUES></div>
+		</div>
+		</TMPL_LOOP>
+	</div>
+		<!--table class="table table-condensed table-hover container" style="cellpadding:10px">
+			<thead>
+				<tr>
+					<th class="span2">Feature ID</th>
+					<th class="span2">Unique Name</th>
+					<th class="span8">DNA Sequence</th>
+				</tr>
+			</thead>
+			<tbody>
+				<TMPL_LOOP NAME=FEATURES>
+				<tr>
+					<td class="span2"><TMPL_VAR NAME=FEATUREID></td>
+					<td class="span2"><TMPL_VAR NAME=UNIQUENAME></td>
+					<td class="span8" style="word-wrap:break-word"><TMPL_VAR NAME=RESIDUES></td>
+				</tr>
+				</TMPL_LOOP>
+			</tbody>
+		</table-->
+	</div>
 
+</body>
 
-			<!--table class="table table-condensed table-hover container" style="cellpadding:10px">
-				<thead>
-					<tr>
-						<th class="span2">Feature ID</th>
-						<th class="span2">Unique Name</th>
-						<th class="span8">DNA Sequence</th>
-					</tr>
-				</thead>
-				<tbody>
-					<TMPL_LOOP NAME=FEATURES>
-					<tr>
-						<td class="span2"><TMPL_VAR NAME=FEATUREID></td>
-						<td class="span2"><TMPL_VAR NAME=UNIQUENAME></td>
-						<td class="span8" style="word-wrap:break-word"><TMPL_VAR NAME=RESIDUES></td>
-					</tr>
-					</TMPL_LOOP>
-				</tbody>
-			</table-->
+<TMPL_INCLUDE NAME="footer.tmpl">
 
-		</body>
-
-		<TMPL_INCLUDE NAME="footer.tmpl">
-
-		</html>
+</html>
