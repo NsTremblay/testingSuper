@@ -9,19 +9,41 @@
 	<div class="container" style="background-color:#FFFFFF">
 		<h1>Multi-strain Page</h1>
 
+		<div class="row-fluid">
+			<div class="span3" style="padding:10px">
+				<form >
+					<fieldset>
+						<select multiple="multiple" size="5" class="span12">
+							<TMPL_LOOP NAME=FEATURES>
+							<option><TMPL_VAR NAME=UNIQUENAME></option>
+							</TMPL_LOOP>
+						</select>
+						<div>
+							<button class="btn btn-primary" type="button"><i class="icon-ok icon-white"></i> Add Strain</button>
+							<button class="btn btn-primary" type="button"><i class="icon-refresh icon-white"></i> Refresh</button>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+
+			<div class="span9" style="padding:10px">
+				<p> Seq data should show up here when a selection is made in the menu</p>
+			</div>
+		</div>
+
 		<div class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
 			<div class="row-fluid">
-				<div id="svgCanvas" class="span6" style="padding:10px">
-				<p>Phylogeny Comparisons go here</p>
-				<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+				<div id="svgCanvas" class="span6" style="padding:5px">
+					<p>Phylogeny Comparisons go here</p>
+					<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+				</div>
+				<div class="span6" id="map_canvas" style="height:500px;padding:5px"></div>
 			</div>
-			<div class="span6" id="map_canvas" style="height:500px"></div>
 		</div>
-	</div>
 
-	<!--The following div works better for the fluid/responsive layout than the table commented out below-->
+		<!--The following div works better for the fluid/responsive layout than the table commented out below-->
 
-	<div style="padding:10px">
+	<!--div style="padding:10px">
 		<div class="container row-fluid">
 			<div class="span2"><strong>Feature ID</strong></div>
 			<div class="span2"><strong>Unique Name</strong></div>
@@ -37,7 +59,7 @@
 			<div class="span8" style="word-wrap:break-word"><TMPL_VAR NAME=RESIDUES></div>
 		</div>
 		</TMPL_LOOP>
-	</div>
+	</div-->
 		<!--table class="table table-condensed table-hover container" style="cellpadding:10px">
 			<thead>
 				<tr>

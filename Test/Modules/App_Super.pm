@@ -1,10 +1,11 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 package Modules::App_Super;
 
 use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
+use lib "/usr/local/share/perl/5.10.1/";
 use File::Basename;
 
 use parent 'CGI::Application';
