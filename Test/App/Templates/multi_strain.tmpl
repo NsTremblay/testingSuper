@@ -10,25 +10,29 @@
 		<h1>Multi-strain Page</h1>
 
 		<div class="row-fluid">
-			<div class="span3" style="padding:10px">
-				<form >
+			<div class="span4" style="padding:10px">
+				<form style="border:solid;border-width:1px">
 					<fieldset>
-						<select multiple="multiple" size="5" class="span12">
+						<h4 style="margin:10px 0px 0px 10px"><small>Select on one or strains to view metadata</small></h4>
+						<div data-toggle="tooltip" title="Select a strain to view more options" style="margin:5px;height:150px;overflow:auto">
 							<TMPL_LOOP NAME=FEATURES>
-							<option><TMPL_VAR NAME=UNIQUENAME></option>
+							<label class="checkbox">
+							<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+							</label>
 							</TMPL_LOOP>
-						</select>
-						<div>
-							<button class="btn btn-primary" type="button"><i class="icon-ok icon-white"></i> Add Strain</button>
-							<button class="btn btn-primary" type="button"><i class="icon-refresh icon-white"></i> Refresh</button>
+						</div>
+						<div style="padding:0px 0px 10px 10px">
+							<button class="btn btn-primary btn-small" type="button"><i class="icon-ok icon-white"></i> Compare Strains</button>
+							<button class="btn btn-primary btn-small" type="reset"><i class="icon-refresh icon-white"></i> Refresh</button>
 						</div>
 					</fieldset>
 				</form>
 			</div>
 
-			<div class="span9" style="padding:10px">
-				<p> Seq data should show up here when a selection is made in the menu</p>
+			<div id="suprise" class="span8" style="padding:10px">
+				<p>Seq data should show up here when a selection is made in the menu</p>
 			</div>
+
 		</div>
 
 		<div class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
