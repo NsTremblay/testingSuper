@@ -2,7 +2,18 @@
 	<form class="form" style="padding:5px 70px 5px 20px" method="post">
 		<fieldset>
 			<span class="help-block">Search for an existing strain in the database or select a strain from the list below</span>
-			<input class="span12" type="text">
+			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+			<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+			<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+			<script>
+			$(function() {
+				var availableTags = [<TMPL_LOOP NAME=FEATURES>"<TMPL_VAR NAME=UNIQUENAME>",</TMPL_LOOP>];
+				$( "#autoComp" ).autocomplete({
+					source: availableTags
+				});
+			});
+			</script>
+			<input id="autoComp" class="span12" type="text"></input>
 			<div>
 				<button type="submit" class="btn btn-small btn-success" name="search_strain" value="Search Strain"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
