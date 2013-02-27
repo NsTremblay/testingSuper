@@ -1,0 +1,18 @@
+<div class="span4">
+<form class="form" class="form" style="padding:10px 70px 5px 20px">
+	<fieldset>
+		<h6 style="margin:0px 0px 0px 10px">Select multiple strains to compare them and view metadata</h6>
+		<div style="margin:5px;height:330px;overflow:auto;border-style:solid;border-width:1px;border-color:#d3d3d3" class="row-fluid">
+			<TMPL_LOOP NAME=FEATURES>
+			<label class="checkbox">
+				<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+			</label>
+			</TMPL_LOOP>
+		</div>
+		<div style="padding:5px 0px 10px 10px" class="row-fluid">
+			<button class="btn btn-primary btn-small" type="button"><i class="icon-ok icon-white"></i> Compare Strains</button>
+			<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+		</div>
+	</fieldset>
+</form>
+</div>

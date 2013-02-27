@@ -1,7 +1,7 @@
 <div class="span4">
-	<form class="form" style="padding:5px 70px 5px 20px" method="post">
+	<form class="form" style="padding:0px 70px 5px 20px" method="post">
 		<fieldset>
-			<span class="help-block">Search for an existing strain in the database or select a strain from the list below</span>
+			<h6>View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</h6>
 			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 			<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 			<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
@@ -13,25 +13,28 @@
 				});
 			});
 			</script>
-			<input id="autoComp" class="span12" type="text" autocomplete="off" autofocus></input>
+			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain"></input>
 			<div>
 				<button type="submit" class="btn btn-small btn-success" name="search_strain" value="Search Strain"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<hr>
-			<div style="margin-top:10px">
-				<span class="help-block">Select a strain to see more information</span>
-				<select class="span12">
-					<option>--</option>
+			<div style="margin:10px 0px 0px 0px">
+				<select class="span12" style="margin:10px 0px 0px 0px" required>
+					<option disabled>Select a strain from the list</option>
 					<TMPL_LOOP NAME=FEATURES>
 					<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
 				</select>
-				<div style="margin-bottom:10px">
+				<div style="margin:10px 0px 10px 0px">
 					<button type="submit" class="btn btn-small btn-primary" name="strain_info" value="Strain Info"><i class="icon-info-sign icon-white"></i> Strain Info</button>
-					<!--button type="remove" class="btn btn-small btn-danger" name="remove_strain" value="Remove Strain">Remove Strain</button-->
+					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
 				<hr>
+			</fieldset>
+		</form>
+		<form>
+			<fieldset>
 				<span class="help-block">Attach a strain file and submit it for analysis</span>
 				<input type="text" class="span12" readonly placeholder="This feature is currently disabled"></input>
 				<div>
