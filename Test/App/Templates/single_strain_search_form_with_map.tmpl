@@ -1,5 +1,6 @@
-<div class="span4">
+<div class="span4" class="row-fluid">
 	<form class="form" style="padding:10px 70px 5px 20px" method="post">
+		<fieldset>
 			<span class="help-block">View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</span>
 			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 			<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
@@ -17,10 +18,13 @@
 				<button type="submit" class="btn btn-small btn-success" name="search_strain" value="Search Strain"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
-			<hr>
-			<div style="margin:10px 0px 0px 0px">
+			<!--hr-->
+		</fieldset>
+	</form>
+	<form class="form" style="padding:0px 70px 5px 20px" method="post">
+		<fieldset>
 				<select class="span12" style="margin:10px 0px 0px 0px" required>
-					<option disabled>Select a strain from the list</option>
+					<option>Select a strain from the list</option>
 					<TMPL_LOOP NAME=FEATURES>
 					<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
@@ -29,9 +33,10 @@
 					<button type="submit" class="btn btn-small btn-primary" name="strain_info" value="Strain Info"><i class="icon-info-sign icon-white"></i> Strain Info</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
-				<hr>
-		</form class="form" style="padding:0px 70px 5px 20px" method="post">
-		<form>
+				<!--hr-->
+			</fieldset>
+		</form>
+		<form class="form" style="padding:0px 70px 5px 20px" method="post">
 			<fieldset>
 				<span class="help-block">Attach a strain file and submit it for analysis</span>
 				<input type="text" class="span12" readonly placeholder="This feature is currently disabled"></input>
@@ -40,8 +45,7 @@
 					<button type="submit" class="btn btn-small btn-success disabled" name="submit_strain" value="Submit"><i class="icon-ok icon-white"></i> Submit</button>
 					<button type="reset" class="btn btn-small btn-danger disabled" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
-			</div>
-		</fieldset>
-	</form>
-	<div class="span10" id="map_canvas" style="height:300px;padding:5px"></div>
-</div>
+			</fieldset>
+		</form>
+		<div class="span10" id="map_canvas" style="height:300px;padding:5px"></div>
+	</div>
