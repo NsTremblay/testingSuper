@@ -14,8 +14,18 @@
 				<TMPL_INCLUDE NAME="multi_strain_selection_form.tmpl">
 			</div>
 
-			<div class="span8" style="padding:10px">
-				<p>Seq data should show up here when a selection is made in the menu</p>
+			<div id="multiOption" class="span8" style="display:none;padding:10px">
+			<form style="border:solid;border-width:1px;padding:10px">
+				<span class="help-block">Download multi-strain comparison info: </span>
+				<fieldset>
+				<div style="padding:0px 0px 95px 0px">
+				<label class="checkbox"><input type="checkbox">Sequences</input></label>
+				<label class="checkbox"><input type="checkbox">SVG tree</input></label>
+				<label class="checkbox"><input type="checkbox">Strain meta-info</input></label>
+				</div>
+				<button class="btn btn-primary btn-small" type="button"><i class="icon-download-alt icon-white"></i> Download</button>
+				</fieldset>
+			</form>
 			</div>
 
 		</div>
