@@ -7,7 +7,6 @@
 
 <body onload="initialize()" style="background-color:#796e6c">
 	<div class="row-fluid">
-
 		<div class="container" style="background-color:#FFFFFF">
 
 			<TMPL_INCLUDE NAME="single_strain_search_form_with_map.tmpl">
@@ -22,13 +21,15 @@
 
 					<div><p>Here is where the phylogenetic tree will go.</p></div>
 
-					<div id="svgCanvas" style="border-width:1px;border-style:solid;border-color:#d3d3d3">
+					<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3">
 						<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
 					</div>
 
 					<div>
 						<p>Output a table with the strain name, its related members, and all the virluece factors it has.</p>
 					</div>
+
+					<div id="seq"></div>
 
 				</div>
 

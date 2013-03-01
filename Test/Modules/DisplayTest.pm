@@ -20,21 +20,24 @@ sub setup{
 		'display'=>'displayTest', 
 		'single_strain'=>'singleStrain',
 		'multi_strain'=>'multiStrain',
-		'bioinfo'=>'bioinfo');
+		'bioinfo'=>'bioinfo',
+		'process_single_strain_form'=>'singleStrainForm');
 
 #connect to the local database
 
-$self->connectDatabase(
-{
+$self->connectDatabase({
 	'dbi'=>'Pg',
 	'dbName'=>'chado_db_test',
 	'dbHost'=>'localhost',
 	'dbPort'=>'5432',
 	'dbUser'=>'postgres',
 	'dbPass'=>'postgres'
+});
 }
-);
-}
+
+###############
+###Run Modes###
+###############
 
 #This will display the home page. Need to set the parameters for the templates so that they get loaded into browser properly
 sub displayTest {
@@ -50,38 +53,6 @@ sub displayTest {
 	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
 	$template->param(FEATURES=>$featureRef);	
 	return $template->output();
-}
-
-sub _getAllData {
-	my $self = shift;
-	my $_features = $self->dbixSchema->resultset('Feature')->search(
-		undef,
-		{
-			columns=>[ qw/feature_id uniquename residues/ ]
-		}
-		);
-	return $_features;
-}
-
-#Inputs all column data into a hash table and returns a reference to the hash table.
-sub _hashData {
-	my $self=shift;
-	my $features=shift;
-	
-	#Initialize an array to hold the loop
-	my @featureData;
-	
-	while (my $featureRow = $features->next){
-		#Initialize a hash structure to store column data in.
-		my %featureRowData;
-		$featureRowData{'FEATUREID'}=$featureRow->feature_id;
-		$featureRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		$featureRowData{'RESIDUES'}=$featureRow->residues;
-		#push a reference to each row into the loop
-		push(@featureData, \%featureRowData);
-	}
-	#return a reference to the loop array
-	return \@featureData;
 }
 
 # if a run mode is not indicated the program will croak(), so we set the default/start mode to this.
@@ -126,6 +97,52 @@ sub bioinfo {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'bioinfo.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
+}
+
+###############################
+###Form Processing Run Modes###
+###############################
+
+sub singleStrainForm {
+	my $self = shift;
+	##TODO: This needs to query the db and return information to be displayed in the browser
+}
+
+
+#######################
+###Helper Functions ###
+#######################
+
+sub _getAllData {
+	my $self = shift;
+	my $_features = $self->dbixSchema->resultset('Feature')->search(
+		undef,
+		{
+			columns=>[ qw/feature_id uniquename residues/ ]
+		}
+		);
+	return $_features;
+}
+
+#Inputs all column data into a hash table and returns a reference to the hash table.
+sub _hashData {
+	my $self=shift;
+	my $features=shift;
+	
+	#Initialize an array to hold the loop
+	my @featureData;
+	
+	while (my $featureRow = $features->next){
+		#Initialize a hash structure to store column data in.
+		my %featureRowData;
+		$featureRowData{'FEATUREID'}=$featureRow->feature_id;
+		$featureRowData{'UNIQUENAME'}=$featureRow->uniquename;
+		$featureRowData{'RESIDUES'}=$featureRow->residues;
+		#push a reference to each row into the loop
+		push(@featureData, \%featureRowData);
+	}
+	#return a reference to the loop array
+	return \@featureData;
 }
 
 1;

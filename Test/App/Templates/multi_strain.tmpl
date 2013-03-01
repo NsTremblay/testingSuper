@@ -5,7 +5,7 @@
 
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body onload="initialize()" style="background-color:#796e6c">
+<body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF">
 		<h1>Multi-strain Page</h1>
 
@@ -14,19 +14,19 @@
 				<TMPL_INCLUDE NAME="multi_strain_selection_form.tmpl">
 			</div>
 
-			<div id="suprise" class="span8" style="padding:10px">
+			<div class="span8" style="padding:10px">
 				<p>Seq data should show up here when a selection is made in the menu</p>
 			</div>
 
 		</div>
 
-		<div class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
+		<div id="multiStrain" class="container" style="display:none;background-color:#FFFFFF;min-height:560px;margin-top:5px">
 			<div class="row-fluid">
-				<div id="svgCanvas" class="span6" style="padding:5px">
+				<div id="svgCanvas" class="span6" style="display:none;padding:5px">
 					<p>Phylogeny Comparisons go here</p>
 					<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
 				</div>
-				<div class="span6" id="map_canvas" style="height:500px;padding:5px"></div>
+				<div class="span6" id="map_canvas" style="display:none;height:500px;padding:5px"></div>
 			</div>
 		</div>
 

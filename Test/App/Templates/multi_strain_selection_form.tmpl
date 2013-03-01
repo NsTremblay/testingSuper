@@ -1,16 +1,44 @@
-<form style="border:solid;border-width:1px">
+<div>
 	<fieldset>
-		<span class="help-block" style="margin:10px 0px 0px 10px">Select on one or strains to compare them and view metadata</span>
-		<div style="margin:5px;height:150px;overflow:auto">
-			<TMPL_LOOP NAME=FEATURES>
-			<label class="checkbox">
-				<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrains"><TMPL_VAR NAME=UNIQUENAME></input>
-			</label>
-			</TMPL_LOOP>
-		</div>
-		<div style="padding:0px 0px 10px 10px">
-			<button class="btn btn-primary btn-small" type="button"><i class="icon-ok icon-white"></i> Compare Strains</button>
-			<button class="btn btn-primary btn-small" type="reset"><i class="icon-refresh icon-white"></i> Refresh</button>
-		</div>
-	</fieldset>
-</form>
+		<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+		<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+		<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+		<form style="border:solid;border-width:1px">
+			<span class="help-block" style="margin:10px 0px 0px 10px">Select on one or strains to compare them and view metadata</span>
+			<div style="margin:5px;height:150px;overflow:auto">
+				<TMPL_LOOP NAME=FEATURES>
+				<label class="checkbox">
+					<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+				</label>
+				</TMPL_LOOP>
+			</div>
+			<div style="padding:0px 0px 10px 10px">
+				<button class="btn btn-primary btn-small" type="button"><i class="icon-ok icon-white"></i> Compare Strains</button>
+				<button class="btn btn-primary btn-small" type="reset"><i class="icon-refresh icon-white"></i> Refresh</button>
+				<button id="showMulti" type="button" class="btn btn-small btn-primary" onclick="displayMap()">Demo</button>
+			</div>
+		</fieldset>
+	</form>
+	<script type="text/javascript">
+	function initialize() {
+		var mapOptions = {
+			center: new google.maps.LatLng(49.134890, -122.901435),
+			zoom: 15,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		var map = new google.maps.Map(document.getElementById("map_canvas"),
+			mapOptions);
+	}
+	function displayMap() {
+		document.getElementById('multiStrain').style.display="block";
+		document.getElementById('map_canvas').style.display="block";
+		//document.getElementById('svgCanvas').style.display="block";
+		initialize();
+	}
+	</script>
+	<script>
+	$('#showMulti').click(function(){
+	$('#svgCanvas').show("slow");
+	});
+	</script>
+</div>
