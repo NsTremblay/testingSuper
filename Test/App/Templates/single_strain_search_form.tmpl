@@ -1,36 +1,37 @@
 <div class="span4" class="row-fluid">
-	<form class="form" style="padding:0px 70px 5px 20px" method="post">
+	<form id="searchForm" class="form" style="padding:10px 70px 0px 20px" action="/home/dispatch.cgi/single_strain/" method="post" enctype="application/x-www-form-urlencoded">
 		<fieldset>
-			<h5>View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</h5>
+			<span class="help-block">View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</span>
 			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 			<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 			<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 			<script>
 			$(function() {
-				var availableTags = [<TMPL_LOOP NAME=FEATURES>"<TMPL_VAR NAME=UNIQUENAME>",</TMPL_LOOP>];
+				var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATUREID>" } , </TMPL_LOOP> ]
+				//var availableTags = [<TMPL_LOOP NAME=FEATURES>"<TMPL_VAR NAME=UNIQUENAME>",</TMPL_LOOP>];
 				$("#autoComp").autocomplete({
 					source: availableTags
 				});
 			});
 			</script>
-			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain"></input>
+			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=FEATUREID>'></input>
 			<div>
-				<button type="submit" class="btn btn-small btn-success" name="search_strain" value="Search Strain"><i class="icon-search icon-white"></i> Search</button>
+				<button type="submit" class="btn btn-small btn-success" value="Submit" onclick="checkFields(this.form)"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<!--hr-->
 		</fieldset>
 	</form>
-	<form class="form" style="padding:0px 70px 5px 20px" method="post">
+	<form class="form" style="padding:0px 70px 0px 20px" action="/home/dispatch.cgi/single_strain/" method="post" enctype="application/x-www-form-urlencoded">
 		<fieldset>
-			<select class="span12" style="margin:10px 0px 0px 0px" required>
-				<option>Select a strain from the list</option>
+			<span style="color:#796e6c">Select a strain from the list:</span>
+			<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainName">
 				<TMPL_LOOP NAME=FEATURES>
-				<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+				<option name="singleStrainName" value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 				</TMPL_LOOP>
 			</select>
 			<div style="margin:10px 0px 0px 0px">
-				<button type="submit" class="btn btn-small btn-primary" name="strain_info" value="Strain Info"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+				<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit" onclick="displayMap()"><i class="icon-info-sign icon-white"></i> Strain Info</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<!--hr-->
@@ -46,5 +47,16 @@
 				<button type="reset" class="btn btn-small btn-danger disabled" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 		</fieldset>
-	</form>
+	</form>	
+	<script type="text/javascript">
+	function checkFields(searchForm) {
+		if (searchForm.singleStrainName.value == "") {
+			alert("You must enter a valid search term.");
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+	</script>
 </div>

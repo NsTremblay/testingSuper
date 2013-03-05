@@ -44,7 +44,7 @@ sub displayTest {
 	my $self = shift;
 
 	#Returns an object with column data
-	my $features = $self->_getAllData();
+	my $features = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
@@ -63,17 +63,30 @@ sub hello {
 }
 
 sub singleStrain {
+	#TODO: Need to reload either the home page or single_strain depending on which page the user is on.
+
 	my $self = shift;
 
 	#Returns an object with column data
-	my $features = $self->_getAllData();
+	my $features = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
 	my $featureRef = $self->_hashData($features);
-
 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
+	
+	my $q = $self->query();
+	my $strainFeatureId = $q->param("singleStrainName");
+
+	if(!defined $strainFeatureId ||$strainFeatureId == ""){
 	$template->param(FEATURES=>$featureRef);
+	}
+	else {
+	my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
+	my $_sSSeq = $_sSFeatures->residues;
+	$template->param(FEATURES=>$featureRef);
+	$template->param(sSRESIDUEs => $_sSSeq);
+	}
 	return $template->output();
 	#Phylogeny::PhyloTreeBuilder->new('NewickTrees/example_tree' , 'NewickTrees/tree');
 }
@@ -82,12 +95,11 @@ sub multiStrain {
 	my $self = shift;
 
 	#Returns an object with column data
-	my $features = $self->_getAllData();
+	my $features = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
 	my $featureRef = $self->_hashData($features);
-
 	my $template = $self->load_tmpl ( 'multi_strain.tmpl' , die_on_bad_params=>0 );
 	$template->param(FEATURES=>$featureRef);
 	return $template->output();
@@ -103,25 +115,40 @@ sub bioinfo {
 ###Form Processing Run Modes###
 ###############################
 
-sub singleStrainForm {
-	my $self = shift;
-	##TODO: This needs to query the db and return information to be displayed in the browser
-}
-
+# sub singleStrainForm {
+# 	my $self = shift;
+# 	my $features = $self->_getFormData();
+# 	my $featureRef = $self->_hashData($features);
+# 	#gets form input data
+# 	my $q = $self->query();
+# 	my $strainFeatureId = $q->param("singleStrainName");
+# 	my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
+# 	my $_sSSeq = $_sSFeatures->residues;
+# 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
+# 	$template->param(FEATURES => $featureRef);
+# 	$template->param(sSRESIDUEs => $_sSSeq);
+# 	return $template->output();
+# }
 
 #######################
 ###Helper Functions ###
 #######################
 
-sub _getAllData {
+#Returns unique names and their feature ids to fill search and selection forms
+sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Feature')->search(
 		undef,
 		{
-			columns=>[ qw/feature_id uniquename residues/ ]
+			columns=>[ qw/feature_id uniquename/ ]
 		}
 		);
 	return $_features;
+}
+
+
+sub _getAssayData {
+	my $self = shift;
 }
 
 #Inputs all column data into a hash table and returns a reference to the hash table.
@@ -137,7 +164,7 @@ sub _hashData {
 		my %featureRowData;
 		$featureRowData{'FEATUREID'}=$featureRow->feature_id;
 		$featureRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		$featureRowData{'RESIDUES'}=$featureRow->residues;
+		#$featureRowData{'RESIDUES'}=$featureRow->residues;
 		#push a reference to each row into the loop
 		push(@featureData, \%featureRowData);
 	}
