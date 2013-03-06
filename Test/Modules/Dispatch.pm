@@ -33,7 +33,8 @@ sub dispatch_args {
                 '/single_strain' => {app=>'DisplayTest', rm=>'single_strain'},
                 '/multi_strain' => {app=>'DisplayTest', rm=>'multi_strain'},
                 '/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo'},
-                '/single_strain/ss' => {app=>'DisplayTest', rm=>'process_single_strain_form'}
+                '/single_strain/ss' => {app=>'DisplayTest', rm=>'process_single_strain_form'},
+                '/multi_strain/ms' => {app=>'DisplayTest', rm=>'process_multi_strain_form'}
         ],
     };
 }
