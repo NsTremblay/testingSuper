@@ -31,7 +31,7 @@
 				</TMPL_LOOP>
 			</select>
 			<div style="margin:10px 0px 0px 0px">
-				<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit" onclick="displayMap()"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+				<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<!--hr-->
@@ -50,7 +50,6 @@
 	</form>
 	<div class="span10" id="map_canvas" style="display:none;height:300px;padding:5px"></div>	
 	<script type="text/javascript">
-
 	function initialize() {
 		var mapOptions = {
 			center: new google.maps.LatLng(49.134890, -122.901435),
@@ -60,31 +59,29 @@
 		var map = new google.maps.Map(document.getElementById("map_canvas"),
 			mapOptions);
 	}
-
 	function displayMap() {
 		document.getElementById('map_canvas').style.display="block";
-		//document.getElementById('svgCanvas').style.display="block";
 		initialize();
 	}
-
-	function returnToPreviousPage() {
-		window.history.back();
-	}
-
 	function checkFields(searchForm) {
 		if (searchForm.singleStrainName.value == "") {
 			alert("You must enter a valid search term.");
-			returnToPreviousPage();
 			return false;
 		}
 		else {
 			return true;
 		}
 	}
-	</script>
-	<script>
-	$('#showSSInfo').click(function(){
-	$('#svgCanvas').show("slow");
-	});
+	function checkSingleSeq() {
+		if ($('#seq').is(':empty')) {
+		}
+		else {
+		$('#svgCanvas').show("slow", displayMap(), $('#sSeqDiv').show("slow"));
+		}
+	}
+	function onLoadCheck() {
+		initialize();
+		checkSingleSeq();
+	}
 	</script>
 </div>

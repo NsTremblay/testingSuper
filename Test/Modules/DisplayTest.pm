@@ -78,7 +78,7 @@ sub singleStrain {
 	my $q = $self->query();
 	my $strainFeatureId = $q->param("singleStrainName");
 
-	if(!defined $strainFeatureId ||$strainFeatureId == ""){
+	if(!defined $strainFeatureId || $strainFeatureId == ""){
 	$template->param(FEATURES=>$featureRef);
 	}
 	else {
@@ -115,20 +115,6 @@ sub bioinfo {
 ###Form Processing Run Modes###
 ###############################
 
-# sub singleStrainForm {
-# 	my $self = shift;
-# 	my $features = $self->_getFormData();
-# 	my $featureRef = $self->_hashData($features);
-# 	#gets form input data
-# 	my $q = $self->query();
-# 	my $strainFeatureId = $q->param("singleStrainName");
-# 	my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
-# 	my $_sSSeq = $_sSFeatures->residues;
-# 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
-# 	$template->param(FEATURES => $featureRef);
-# 	$template->param(sSRESIDUEs => $_sSSeq);
-# 	return $template->output();
-# }
 
 #######################
 ###Helper Functions ###
@@ -165,6 +151,7 @@ sub _hashData {
 		$featureRowData{'FEATUREID'}=$featureRow->feature_id;
 		$featureRowData{'UNIQUENAME'}=$featureRow->uniquename;
 		#$featureRowData{'RESIDUES'}=$featureRow->residues;
+		
 		#push a reference to each row into the loop
 		push(@featureData, \%featureRowData);
 	}
