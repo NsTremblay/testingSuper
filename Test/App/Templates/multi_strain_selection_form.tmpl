@@ -2,7 +2,7 @@
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
-	<form style="border:solid;border-width:1px" action="/home/dispatch.cgi/multi_strain/ms" method="post" enctype="application/x-www-form-urlencoded">
+	<form id="mSSearchForm" class="form" style="border:solid;border-width:1px" action="/home/dispatch.cgi/multi_strain/ms" method="post" enctype="application/x-www-form-urlencoded">
 		<fieldset>
 			<span class="help-block" style="margin:10px 0px 0px 10px">Select on one or strains to compare them and view metadata</span>
 			<div style="margin:5px;height:150px;overflow:auto">
@@ -13,12 +13,12 @@
 				</TMPL_LOOP>
 			</div>
 			<div style="padding:0px 0px 10px 10px">
-				<button class="btn btn-primary btn-small" type="submit"><i class="icon-ok icon-white"></i> Compare Strains</button>
+				<button class="btn btn-primary btn-small" type="submit" value="Submit" onclick="checkMSFields(this.form)"><i class="icon-ok icon-white"></i> Compare Strains</button>
 				<button class="btn btn-primary btn-small" type="reset"><i class="icon-refresh icon-white"></i> Refresh</button>
-				<button id="showMulti" type="button" class="btn btn-small btn-primary" onclick="displayMap()">Demo</button>
 			</div>
 		</fieldset>
 	</form>
+
 	<script type="text/javascript">
 	function initialize() {
 		var mapOptions = {
@@ -32,14 +32,35 @@
 	function displayMap() {
 		document.getElementById('multiStrain').style.display="block";
 		document.getElementById('map_canvas').style.display="block";
-		//document.getElementById('svgCanvas').style.display="block";
 		initialize();
 	}
-	</script>
-	<script>
-	$('#showMulti').click(function(){
-		$('#svgCanvas').show("slow");
-		$('#multiOption').show("slow");
-	});
+	function checkMSFields(mSSearchForm) {
+		alert("Checking form");
+		//TODO: This is a work in progress
+		//if (mSSearchForm.multiStrainNames[0].checked) {
+		//	alert(mSSearchForm.multiStrainNames[1] + " has been selected");
+		//}
+		//else{
+		//	alert(mSSearchForm.multiStrainNames[1] + " has not been selected");
+		//}
+		return true;
+	}
+	function checkMultiSeq() {
+		//TODO:: This is a work in progress
+		//if (<TMPL_LOOP NAME=mSFEATURES><TMPL_VAR NAME=mSFEATUREID></TMPL_LOOP> == "") {
+		//}
+		//if ($('#mSeq').is(':empty')) {
+		//}
+		//if (document.getElementById('#mSeq').innerHTML=="") {
+		//}
+		//else {
+			$('#svgCanvas').show("slow", displayMap(), $('#mSeqDiv').show("slow"));
+			$('#multiOption').show("slow");
+		//}
+	}
+	function onLoadCheck() {
+		initialize();
+		checkMultiSeq();
+	}
 	</script>
 </div>

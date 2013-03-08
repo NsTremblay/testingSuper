@@ -22,7 +22,7 @@ sub setup{
 		'multi_strain'=>'multiStrain',
 		'bioinfo'=>'bioinfo',
 		'process_single_strain_form'=>'singleStrain',
-		'process_multi_strain_form'=>'multiStrainForm');
+		'process_multi_strain_form'=>'multiStrain');
 
 #connect to the local database
 
@@ -33,7 +33,7 @@ $self->connectDatabase({
 	'dbPort'=>'5432',
 	'dbUser'=>'postgres',
 	'dbPass'=>'postgres'
-});
+	});
 }
 
 ###############
@@ -49,7 +49,7 @@ sub displayTest {
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
-	my $formFeatureRef = $self->_hashData($features);
+	my $formFeatureRef = $self->_hashFormData($features);
 
 	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
 	$template->param(FEATURES=>$formFeatureRef);	
@@ -61,6 +61,12 @@ sub hello {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
+
+	my $common=App::Template::Common->new();
+	my $template = pageTop();
+	$template .= $common->navBar();
+
+	return $template;
 }
 
 ###############################
@@ -77,20 +83,22 @@ sub singleStrain {
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
-	my $formFeatureRef = $self->_hashData($features);
+	my $formFeatureRef = $self->_hashFormData($features);
 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
 	my $strainFeatureId = $q->param("singleStrainName");
 
 	if(!defined $strainFeatureId || $strainFeatureId == ""){
-	$template->param(FEATURES=>$formFeatureRef);
+		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
-	my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
-	my $_sSSeq = $_sSFeatures->residues;
-	$template->param(FEATURES=>$formFeatureRef);
-	$template->param(sSRESIDUEs =>$_sSSeq);
+		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
+		$template->param(FEATURES=>$formFeatureRef);
+		$template->param(sSUNIQUENAME=>$_sSFeatures->uniquename);
+		$template->param(sSRESIDUE=>$_sSFeatures->residues);
+		$template->param(sSFEATUREID=>$_sSFeatures->feature_id);
+		$template->param(sSEQLENGTH=>$_sSFeatures->seqlen);
 	}
 	return $template->output();
 	#Phylogeny::PhyloTreeBuilder->new('NewickTrees/example_tree' , 'NewickTrees/tree');
@@ -98,15 +106,22 @@ sub singleStrain {
 
 sub multiStrain {
 	my $self = shift;
-
-	#Returns an object with column data
 	my $features = $self->_getFormData();
-
-	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
-	#Returns a reference to an array with references to each row of data in the hash table
-	my $formFeatureRef = $self->_hashData($features);
+	my $formFeatureRef = $self->_hashFormData($features);
 	my $template = $self->load_tmpl ( 'multi_strain.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$formFeatureRef);
+
+	my $q = $self->query();
+	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
+	my @strainFeatureIds = $q->param("multiStrainNames"); #This is causing errors.
+
+	if(!(@strainFeatureIds)) {
+		$template->param(FEATURES=>$formFeatureRef);
+	}
+	else {
+		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeatureTable);
+		$template->param(FEATURES=>$formFeatureRef);
+		$template->param(mSFEATURES=>$multiStrainDataRef);
+	}
 	return $template->output();
 }
 
@@ -114,14 +129,6 @@ sub bioinfo {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'bioinfo.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
-}
-
-sub multiStrainForm {
-	my $self = shift;
-	my $q = $self->query();
-	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
-	my $strainFeatureIdsRef = $self->_getMultiStrainIds($q);
-
 }
 
 #######################
@@ -141,7 +148,7 @@ sub _getFormData {
 }
 
 #Inputs all column data into a hash table and returns a reference to the hash table.
-sub _hashData {
+sub _hashFormData {
 	my $self=shift;
 	my $features=shift;
 	
@@ -153,7 +160,6 @@ sub _hashData {
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
 		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		#$formRowData{'RESIDUES'}=$featureRow->residues;
 		
 		#push a reference to each row into the loop
 		push(@formData, \%formRowData);
@@ -162,19 +168,27 @@ sub _hashData {
 	return \@formData;
 }
 
-sub _getMultiStrainIds {
+sub _getMultiStrainData {
 	my $self = shift;
-	my $q = shift;
+	my $strainFeatureIds = shift;
+	my $strainFeatureTable = shift;
+	my @multiStrainData;
+	my %multiRowData;
+	my @multiNestedRowLoop;
 
-	my @strainFeatureIds;
-	foreach my $_strainFeatureId($q->param("multiStrainNames")){
-		push @strainFeatureIds, $_strainFeatureId;
+	foreach my $multiStrainId (@{$strainFeatureIds}) {
+
+		my $_mSFeatures = $strainFeatureTable->find({feature_id => "$multiStrainId"});
+		
+		#Create a hash table and push these keys onto it
+		my %multiNestedRow;
+		$multiNestedRow{'mSFEATUREID'}=$_mSFeatures->feature_id;
+		$multiNestedRow{'mSRESIDUES'}=$_mSFeatures->residues;
+		$multiNestedRow{'mSSEQLENGTH'}=$_mSFeatures->seqlen;
+		$multiNestedRow{'mSUNIQUENAME'}=$_mSFeatures->uniquename;
+		push(@multiNestedRowLoop, \%multiNestedRow);
 	}
-	return \@strainFeatureIds;
-}
-
-sub _getMultiStrainTables {
-
+	return \@multiNestedRowLoop;
 }
 
 1;

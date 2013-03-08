@@ -1,5 +1,5 @@
 <div class="span4" class="row-fluid">
-	<form id="searchForm" class="form" style="padding:10px 70px 0px 20px" action="/home/dispatch.cgi/single_strain/" method="post" enctype="application/x-www-form-urlencoded">
+	<form id="sSSearchForm" class="form" style="padding:10px 70px 0px 20px" action="/home/dispatch.cgi/single_strain/" method="post" enctype="application/x-www-form-urlencoded">
 		<fieldset>
 			<span class="help-block">View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</span>
 			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
@@ -16,7 +16,7 @@
 			</script>
 			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=FEATUREID>'></input>
 			<div>
-				<button type="submit" class="btn btn-small btn-success" value="Submit" onclick="checkFields(this.form)"><i class="icon-search icon-white"></i> Search</button>
+				<button type="submit" class="btn btn-small btn-success" value="Submit" onclick="checkSSFields(this.form)"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<!--hr-->
@@ -63,8 +63,8 @@
 		document.getElementById('map_canvas').style.display="block";
 		initialize();
 	}
-	function checkFields(searchForm) {
-		if (searchForm.singleStrainName.value == "") {
+	function checkSSFields(sSSearchForm) {
+		if (sSSearchForm.singleStrainName.value == "") {
 			alert("You must enter a valid search term.");
 			return false;
 		}
@@ -73,7 +73,7 @@
 		}
 	}
 	function checkSingleSeq() {
-		if ($('#seq').is(':empty')) {
+		if ($('#sSeq').is(':empty')) {
 		}
 		else {
 		$('#svgCanvas').show("slow", displayMap(), $('#sSeqDiv').show("slow"));
