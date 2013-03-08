@@ -1,31 +1,40 @@
 <div class="span4">
-<form id="mSSearchForm" class="form" style="padding:10px 70px 5px 20px" action="/home/dispatch.cgi/multi_strain/ms" method="post" enctype="application/x-www-form-urlencoded">
-	<fieldset>
-		<h5 style="margin:0px 0px 0px 10px">Select multiple strains to compare them and view metadata</h5>
-		<div style="margin:5px;height:340px;overflow:auto;border-style:solid;border-width:1px;border-color:#d3d3d3" class="row-fluid">
-			<TMPL_LOOP NAME=FEATURES>
-			<label class="checkbox">
-				<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
-			</label>
-			</TMPL_LOOP>
-		</div>
-		<div style="padding:5px 0px 10px 10px" class="row-fluid">
-			<button type="submit" class="btn btn-primary btn-small" value="Submit" onclick="checkMSFields(this.form)"><i class="icon-ok icon-white"></i> Compare Strains</button>
-			<button type="reset" class="btn btn-small btn-danger" name="Cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-		</div>
-	</fieldset>
-</form>
-<script type="text/javascript">
+	<form id="mSSearchForm" class="form" style="padding:10px 70px 5px 20px" action="/home/dispatch.cgi/multi_strain/ms" method="post" enctype="application/x-www-form-urlencoded">
+		<fieldset>
+			<h5 style="margin:0px 0px 0px 10px">Select multiple strains to compare them and view metadata</h5>
+			<div style="margin:5px;height:340px;overflow:auto;border-style:solid;border-width:1px;border-color:#d3d3d3" class="row-fluid">
+				<TMPL_LOOP NAME=FEATURES>
+				<label class="checkbox">
+					<input type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+				</label>
+				</TMPL_LOOP>
+			</div>
+			<div style="padding:5px 0px 10px 10px" class="row-fluid">
+				<button type="submit" class="btn btn-primary btn-small" value="Submit" onclick="checkMSFields(this.form)"><i class="icon-ok icon-white"></i> Compare Strains</button>
+				<button type="reset" class="btn btn-small btn-danger" name="Cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+			</div>
+		</fieldset>
+	</form>
+	<script type="text/javascript">
 	function checkMSFields(mSSearchForm) {
-		alert("Checking form");
-		//TODO: This is a work in progress
-		//if (mSSearchForm.multiStrainNames[0].checked) {
-		//	alert(mSSearchForm.multiStrainNames[1] + " has been selected");
-		//}
-		//else{
-		//	alert(mSSearchForm.multiStrainNames[1] + " has not been selected");
-		//}
-		return true;
+		var selected = 0;
+		var i = 0;
+		while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+				selected++;
+				i++;
+			}
+			else {
+				i++;
+			}
+		}
+		if (selected == 0) {
+			alert("You must make a valid selection");
+			return false;
+		}
+		else {
+			return true;
+		}
 	}
-</script>
+	</script>
 </div>

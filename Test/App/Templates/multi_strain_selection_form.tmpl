@@ -35,15 +35,24 @@
 		initialize();
 	}
 	function checkMSFields(mSSearchForm) {
-		alert("Checking form");
-		//TODO: This is a work in progress
-		//if (mSSearchForm.multiStrainNames[0].checked) {
-		//	alert(mSSearchForm.multiStrainNames[1] + " has been selected");
-		//}
-		//else{
-		//	alert(mSSearchForm.multiStrainNames[1] + " has not been selected");
-		//}
-		return true;
+		var selected = 0;
+		var i = 0;
+		 while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+				selected++;
+				i++;
+			}
+			else {
+				i++;
+			}
+		}
+		if (selected == 0) {
+			alert("You must make a valid selection");
+			return false;
+		}
+		else {
+			return true;
+		}
 	}
 	function checkMultiSeq() {
 		//TODO:: This is a work in progress
