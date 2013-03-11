@@ -37,7 +37,7 @@
 	function checkMSFields(mSSearchForm) {
 		var selected = 0;
 		var i = 0;
-		 while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+		while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
 			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
 				selected++;
 				i++;
@@ -55,17 +55,12 @@
 		}
 	}
 	function checkMultiSeq() {
-		//TODO:: This is a work in progress
-		//if (<TMPL_LOOP NAME=mSFEATURES><TMPL_VAR NAME=mSFEATUREID></TMPL_LOOP> == "") {
-		//}
-		//if ($('#mSeq').is(':empty')) {
-		//}
-		//if (document.getElementById('#mSeq').innerHTML=="") {
-		//}
-		//else {
+		if ($('#validator').is(':empty')) {
+		}
+		else {
 			$('#svgCanvas').show("slow", displayMap(), $('#mSeqDiv').show("slow"));
 			$('#multiOption').show("slow");
-		//}
+		}
 	}
 	function onLoadCheck() {
 		initialize();

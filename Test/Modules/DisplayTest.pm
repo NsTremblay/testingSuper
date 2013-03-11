@@ -121,6 +121,8 @@ sub multiStrain {
 		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeatureTable);
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(mSFEATURES=>$multiStrainDataRef);
+		my $validator = "Return Success";
+		$template->param(mSVALIDATOR=>$validator);
 	}
 	return $template->output();
 }
