@@ -61,12 +61,6 @@ sub hello {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
-
-	my $common=App::Template::Common->new();
-	my $template = pageTop();
-	$template .= $common->navBar();
-
-	return $template;
 }
 
 ###############################
