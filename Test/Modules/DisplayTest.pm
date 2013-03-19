@@ -93,6 +93,8 @@ sub singleStrain {
 		$template->param(sSRESIDUE=>$_sSFeatures->residues);
 		$template->param(sSFEATUREID=>$_sSFeatures->feature_id);
 		$template->param(sSEQLENGTH=>$_sSFeatures->seqlen);
+		my $ssvalidator = "Return Success";
+		$template->param(sSVALIDATOR=>$ssvalidator);
 	}
 	return $template->output();
 	#Phylogeny::PhyloTreeBuilder->new('NewickTrees/example_tree' , 'NewickTrees/tree');
@@ -115,8 +117,8 @@ sub multiStrain {
 		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeatureTable);
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(mSFEATURES=>$multiStrainDataRef);
-		my $validator = "Return Success";
-		$template->param(mSVALIDATOR=>$validator);
+		my $msvalidator = "Return Success";
+		$template->param(mSVALIDATOR=>$msvalidator);
 	}
 	return $template->output();
 }

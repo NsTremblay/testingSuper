@@ -38,6 +38,6 @@ sub _readInAttributes {
 sub _appendAttributes {
         my $line = shift;
         if ($line =~ /(^[\w]+)\t(([\w]+;?[^\n]+))/s) {
-                $attributes = "$attributes"."$1=$2";
+                $attributes = "$attributes". "$1=$2" . ";" ;
         }
 }
