@@ -5,6 +5,16 @@
 			<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 			<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 			<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+			<style>
+			.ui-autocomplete {
+				max-height: 200px;
+				overflow-y: auto;
+				overflow-x: hidden;
+			}
+			* html .ui-autocomplete {
+				height: 100px;
+			}
+			</style>
 			<script>
 			$(function() {
 				var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATUREID>" } , </TMPL_LOOP> ]

@@ -125,7 +125,16 @@ sub multiStrain {
 
 sub bioinfo {
 	my $self = shift;
-	my $template = $self->load_tmpl ( 'bioinfo.tmpl' , die_on_bad_params=>0 );
+
+	#Returns an object with column data
+	my $features = $self->_getFormData();
+
+	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
+	#Returns a reference to an array with references to each row of data in the hash table
+	my $formFeatureRef = $self->_hashFormData($features);
+
+	my $template = $self->load_tmpl( 'bioinfo.tmpl' , die_on_bad_params=>0 );
+	$template->param(FEATURES=>$formFeatureRef);	
 	return $template->output();
 }
 
@@ -139,9 +148,16 @@ sub _getFormData {
 	my $_features = $self->dbixSchema->resultset('Feature')->search(
 		undef,
 		{
-			columns=>[ qw/feature_id uniquename/ ]
+			#join		=> ['featureprops', 'type'],
+			#select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/],
+			#as 			=> ['feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name'],
+			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
+			#having 		=> [ 'featureprops.value' =>'eae'],
+			#order_by 	=> { -asc => ['uniquename']},
+			columns		=> [ qw/feature_id uniquename/ ]
 		}
 		);
+	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 	return $_features;
 }
 
@@ -158,7 +174,8 @@ sub _hashFormData {
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
 		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		
+		#$formRowData{'TERMNAME'}=$featureRow->type->name;
+		#$formRowData{'TERMVALUE'}=$featureRow->featureprops;
 		#push a reference to each row into the loop
 		push(@formData, \%formRowData);
 	}

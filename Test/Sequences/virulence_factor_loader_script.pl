@@ -21,7 +21,7 @@ use Bio::SeqIO;
 	# organism: Escherichia coli
 	# strain: 536
 	# Keywords: Virulence Factor
-	# comment: UPEC
+	# comment: UPEC <- commented out for now since we cannot upload comments into chado
 	# mol_type: plasmid <- this may or may not be there so we should just default to mol_type : dna
 
 	my $virulenceFactorFile = 'ecoli_virulence_factors_full';
@@ -98,9 +98,9 @@ use Bio::SeqIO;
 		my $args = "gmod_fasta2gff3.pl" . " $fileName" .  " --attributes " . "\"$attributes\"";
 		system($args) == 0 or die "System with $args failed: $? \n";
 		printf "System executed $args with value %d\n", $? >> 8;
-		#my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
-		#system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
-		#printf "System executed $args with value %d\n", $? >> 8;
+		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
+		system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
+		printf "System executed $args with value %d\n", $? >> 8;
 		unlink "fasta/$fileName";
 		unlink "fasta/directory.index";
 		unlink "out.gff";

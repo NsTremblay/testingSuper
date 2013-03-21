@@ -26,6 +26,17 @@
 				</p>
 			</div>
 
+			<div class="span6"><h4>Sequence Retrieved for:</h4>
+				<TMPL_LOOP NAME=FEATURES>
+				<ul>
+					<li>Name: <TMPL_VAR NAME=UNIQUENAME></li>
+					<li>Feature ID: <TMPL_VAR NAME=FEATUREID></li>
+					<li><TMPL_VAR NAME=TERMNAME></li>
+					<li><TMPL_VAR NAME=TERMVALUE></li>
+				</ul>
+				</TMPL_LOOP>
+			</div>
+
 		</div>
 	</div>
 </body>
