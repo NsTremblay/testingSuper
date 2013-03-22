@@ -17,24 +17,23 @@
 					virluence factors in the database. This is mostly to provide general
 					biological information about each strain and each virulence factor.
 				</p>
-				<p> Need to create a a table with a list of strains (embedded as links) and their serotypes. 
+				<p> Page will display a table with a list of strains (embedded as links) and their serotypes. 
 					When the user hovers over each one a popup will show its information and
-					a link to it sequence.
+					a link to it sequence and other meta info.
 				</p>
 				<p> Virlence factors will also be a list of links. When the user hovers over
 					each one a list of strains that contain the factors will be displayed.
 				</p>
-			</div>
-
-			<div class="span6"><h4>Sequence Retrieved for:</h4>
+				
+				<table class="table">
+				<thead><h4>List of Current Virulence Factors:</h4></thead>	
 				<TMPL_LOOP NAME=FEATURES>
-				<ul>
-					<li>Name: <TMPL_VAR NAME=UNIQUENAME></li>
-					<li>Feature ID: <TMPL_VAR NAME=FEATUREID></li>
-					<li><TMPL_VAR NAME=TERMNAME></li>
-					<li><TMPL_VAR NAME=TERMVALUE></li>
-				</ul>
+				<tr>
+					<td>VF ID: <TMPL_VAR NAME=UNIQUENAME></td>
+					<td>Feature ID: <TMPL_VAR NAME=FEATUREID></td>
+				</tr>
 				</TMPL_LOOP>
+				</table>
 			</div>
 
 		</div>

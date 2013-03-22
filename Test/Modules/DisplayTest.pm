@@ -153,8 +153,8 @@ sub _getFormData {
 			#as 			=> ['feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name'],
 			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
 			#having 		=> [ 'featureprops.value' =>'eae'],
-			#order_by 	=> { -asc => ['uniquename']},
-			columns		=> [ qw/feature_id uniquename/ ]
+			columns		=> [ qw/feature_id uniquename/ ],
+			order_by 	=> { -asc => ['uniquename']}
 		}
 		);
 	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
