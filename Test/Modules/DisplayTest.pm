@@ -10,7 +10,9 @@ use parent 'Modules::App_Super';
 use parent 'CGI::Application';
 use Role::Tiny::With;
 #use Phylogeny::PhyloTreeBuilder;
-with 'Roles::DatabaseConnector'; 
+with 'Roles::DatabaseConnector';
+
+my $fullTable;
 
 sub setup{
 	my $self = shift;
@@ -46,6 +48,7 @@ sub displayTest {
 
 	#Returns an object with column data
 	my $features = $self->_getFormData();
+	$fullTable = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
@@ -124,6 +127,8 @@ sub multiStrain {
 }
 
 sub bioinfo {
+
+	#For now just testing to see if we can display joined data on the website
 	my $self = shift;
 
 	#Returns an object with column data
@@ -143,42 +148,38 @@ sub bioinfo {
 #######################
 
 #Returns unique names and their feature ids to fill search and selection forms
-sub _getFormData {
-	my $self = shift;
-	my $_features = $self->dbixSchema->resultset('Feature')->search(
-		undef,
-		{
-			join		=> [ qw/featureprops type/ ],
-			select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
-			as 			=> [ 'feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name' ],
-			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
-			#having 		=> [ 'featureprops.value' =>'eae'],
-			#columns		=> [ qw/feature_id uniquename/ ],
-			order_by 	=> { -asc => ['uniquename'] }
-		}
-		);
-	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
-	return $_features;
-}
-
 # sub _getFormData {
 # 	my $self = shift;
-# 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
+# 	my $_features = $self->dbixSchema->resultset('Feature')->search(
 # 		undef,
 # 		{
-# 			join		=> 'type',
-# 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/],
-# 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name'],
-# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
-# 			#having 		=> [ 'me.value' =>'eae'],
-# 			#columns		=> [ qw/feature_id uniquename/ ],
-# 			order_by 	=> { -asc => ['feature_id']},
-# 			prefetch 	=> 'type'
+# 			join		=> [ qw/featureprops type/ ],
+# 			select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
+# 			as 			=> [ 'feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name' ],
+# 			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
+# 			order_by 	=> { -asc => ['uniquename'] },
 # 		}
 # 		);
-# 	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
+# 	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 # 	return $_features;
-#}
+# }
+
+sub _getFormData {
+	my $self = shift;
+	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
+		{},
+		{
+			join		=> ['type', 'feature'],
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			#group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			#having 		=> [ 'me.value' =>'eae'],
+			order_by 	=> { -asc => ['uniquename']},
+		}
+		);
+	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
+	return $_features;
+}
 
 #Inputs all column data into a hash table and returns a reference to the hash table.
 sub _hashFormData {
@@ -192,18 +193,40 @@ sub _hashFormData {
 		#Initialize a hash structure to store column data in.
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
-		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
+		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
 		$formRowData{'TERMNAME'}=$featureRow->type->name;
 		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
 		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
 		#	i.e. Fasta files must have attributes tagged to them before uploading.
-		$formRowData{'TERMVALUE'}=$featureRow->featureprops;
+		$formRowData{'TERMVALUE'}=$featureRow->value;
 		#push a reference to each row into the loop
 		push(@formData, \%formRowData);
 	}
 	#return a reference to the loop array
 	return \@formData;
 }
+
+### This is a temporary hashing function to exclude VFs from form data until we resolve the grouping issues in postgres. ###
+
+# sub _hashFormData {
+# 	my $self = shift;
+# 	my $features = shift;
+# 	my @formData;
+
+# 	#Initialize an array to hold the loop
+# 	my $featureID = $features->first->feature_id;
+
+# 	while (my $featureRow = $features->next) {
+# 		#Initialize a hash structure to store the column data in.
+# 		my %formRowData;
+# 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
+#  		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
+#  		$formRowData{'TERMNAME'}=$featureRow->type->name;
+#  		$formRowData{'TERMVALUE'}=$featureRow->value;
+#  		push(@formData, \%formRowData);
+# 	}
+# 	return \@formData;
+# }
 
 sub _getMultiStrainData {
 	my $self = shift;
