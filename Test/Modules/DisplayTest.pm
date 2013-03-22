@@ -148,18 +148,37 @@ sub _getFormData {
 	my $_features = $self->dbixSchema->resultset('Feature')->search(
 		undef,
 		{
-			#join		=> ['featureprops', 'type'],
-			#select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/],
-			#as 			=> ['feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name'],
+			join		=> [ qw/featureprops type/ ],
+			select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
+			as 			=> [ 'feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name' ],
 			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
 			#having 		=> [ 'featureprops.value' =>'eae'],
-			columns		=> [ qw/feature_id uniquename/ ],
-			order_by 	=> { -asc => ['uniquename']}
+			#columns		=> [ qw/feature_id uniquename/ ],
+			order_by 	=> { -asc => ['uniquename'] }
 		}
 		);
 	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 	return $_features;
 }
+
+# sub _getFormData {
+# 	my $self = shift;
+# 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
+# 		undef,
+# 		{
+# 			join		=> 'type',
+# 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/],
+# 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name'],
+# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+# 			#having 		=> [ 'me.value' =>'eae'],
+# 			#columns		=> [ qw/feature_id uniquename/ ],
+# 			order_by 	=> { -asc => ['feature_id']},
+# 			prefetch 	=> 'type'
+# 		}
+# 		);
+# 	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
+# 	return $_features;
+#}
 
 #Inputs all column data into a hash table and returns a reference to the hash table.
 sub _hashFormData {
@@ -174,8 +193,11 @@ sub _hashFormData {
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
 		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		#$formRowData{'TERMNAME'}=$featureRow->type->name;
-		#$formRowData{'TERMVALUE'}=$featureRow->featureprops;
+		$formRowData{'TERMNAME'}=$featureRow->type->name;
+		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+		#	i.e. Fasta files must have attributes tagged to them before uploading.
+		$formRowData{'TERMVALUE'}=$featureRow->featureprops;
 		#push a reference to each row into the loop
 		push(@formData, \%formRowData);
 	}
