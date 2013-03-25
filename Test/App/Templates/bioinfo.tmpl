@@ -5,7 +5,7 @@
 
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body onload="initialize()" style="background-color:#796e6c">
+<body onload="showVirulenceFactors()" style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF">
 		<div class="row-fluid">
 			
@@ -17,31 +17,38 @@
 					virluence factors in the database. This is mostly to provide general
 					biological information about each strain and each virulence factor.
 				</p>
-				<p> Page will display a table with a list of strains (embedded as links) and their serotypes. 
-					When the user hovers over each one a popup will show its information and
-					a link to it sequence and other meta info.
+				<p> Click on the links to the left to display differenct tables of information.
 				</p>
-				<p> Virlence factors will also be a list of links. When the user hovers over
-					each one a list of strains that contain the factors will be displayed.
-				</p>
+
+				<div id="strain_list"><h5>This div will show a list of strains</h5></div> 
 				
-				<table class="table">
-				<thead><h4>List of Current Virulence Factors:</h4></thead>	
-				<TMPL_LOOP NAME=FEATURES>
-				<tr>
-					<td>VF ID: <TMPL_VAR NAME=UNIQUENAME></td>
-					<td>Feature ID: <TMPL_VAR NAME=FEATUREID></td>
-					<td>Cvterm: <TMPL_VAR NAME=TERMNAME></td>
-					<td>Featureprop Value: <TMPL_VAR NAME=TERMVALUE></td>
-				</tr>
-				</TMPL_LOOP>
-				</table>
+				<div id="virulence_factors">
+					<table class="table">
+						<thead><h4>List of Current Virulence Factors:</h4></thead>	
+						<TMPL_LOOP NAME=FEATURES>
+						<tr>
+							<td>Unique Name: <TMPL_VAR NAME=UNIQUENAME></td>
+							<td>Feature ID: <TMPL_VAR NAME=FEATUREID></td>
+							<td><TMPL_VAR NAME=TERMNAME>: <TMPL_VAR NAME=TERMVALUE></td>
+						</tr>
+						</TMPL_LOOP>
+					</table>
+				</div>
 			</div>
 
 		</div>
 	</div>
+	<script type="text/javascript">
+	function showVirulenceFactors() {
+		document.getElementById('virulence_factors').style.display="block";
+		document.getElementById('strain_list').style.display="none";
+	}
+	function showStrainList() {
+		document.getElementById('virulence_factors').style.display="none";
+		document.getElementById('strain_list').style.display="block";
+	}
+	</script>
 </body>
-
 <TMPL_INCLUDE NAME="footer.tmpl">
 
 </html>

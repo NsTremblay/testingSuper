@@ -12,8 +12,6 @@ use Role::Tiny::With;
 #use Phylogeny::PhyloTreeBuilder;
 with 'Roles::DatabaseConnector';
 
-my $fullTable;
-
 sub setup{
 	my $self = shift;
 	$self->start_mode('hello');
@@ -48,7 +46,6 @@ sub displayTest {
 
 	#Returns an object with column data
 	my $features = $self->_getFormData();
-	$fullTable = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
@@ -132,7 +129,7 @@ sub bioinfo {
 	my $self = shift;
 
 	#Returns an object with column data
-	my $features = $self->_getFormData();
+	my $features = $self->_getVFData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
 	#Returns a reference to an array with references to each row of data in the hash table
@@ -160,24 +157,22 @@ sub bioinfo {
 # 			order_by 	=> { -asc => ['uniquename'] },
 # 		}
 # 		);
-# 	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 # 	return $_features;
 # }
 
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-		{},
+		{value => 'Test Sequences'},
 		{
 			join		=> ['type', 'feature'],
 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			#group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
 			#having 		=> [ 'me.value' =>'eae'],
 			order_by 	=> { -asc => ['uniquename']},
 		}
 		);
-	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 	return $_features;
 }
 
@@ -206,28 +201,6 @@ sub _hashFormData {
 	return \@formData;
 }
 
-### This is a temporary hashing function to exclude VFs from form data until we resolve the grouping issues in postgres. ###
-
-# sub _hashFormData {
-# 	my $self = shift;
-# 	my $features = shift;
-# 	my @formData;
-
-# 	#Initialize an array to hold the loop
-# 	my $featureID = $features->first->feature_id;
-
-# 	while (my $featureRow = $features->next) {
-# 		#Initialize a hash structure to store the column data in.
-# 		my %formRowData;
-# 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
-#  		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
-#  		$formRowData{'TERMNAME'}=$featureRow->type->name;
-#  		$formRowData{'TERMVALUE'}=$featureRow->value;
-#  		push(@formData, \%formRowData);
-# 	}
-# 	return \@formData;
-# }
-
 sub _getMultiStrainData {
 	my $self = shift;
 	my $strainFeatureIds = shift;
@@ -249,6 +222,22 @@ sub _getMultiStrainData {
 		push(@multiNestedRowLoop, \%multiNestedRow);
 	}
 	return \@multiNestedRowLoop;
+}
+
+sub _getVFData {
+	my $self = shift;
+	my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{value => 'Virulence Factor'},
+		{
+			join		=> ['type', 'feature'],
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			#having 		=> [ 'me.value' =>'eae'],
+			order_by 	=> { -asc => ['uniquename']},
+		}
+		);
+	return $_virulenceFactorProperties;
 }
 
 1;
