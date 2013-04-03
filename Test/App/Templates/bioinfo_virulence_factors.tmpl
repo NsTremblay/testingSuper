@@ -5,7 +5,10 @@
 
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body style="background-color:#796e6c">
+<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+
+<body onload="checkVFValidator()" style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF">
 		<div class="row-fluid">
 			
@@ -20,45 +23,43 @@
 				<p> Click on the links to the left to display differenct tables of information.
 				</p>
 
-				<!--> Until we have ajax up and running well have to implement calls using HTML::Template in Perl
-				<table class="table">
-					<thead><h4>List of Current Strains:</h4></thead>
-					<TMPL_LOOP NAME=vFACTORS>
-					<tr><td>
-						<div class="dropdown">
-							<a class="dropdown-toggle" data-toggle="dropdown" href="#"><TMPL_VAR NAME=UNIQUENAME><span class="caret"></span></a>
-							<ul class="dropdown-menu" role="menu">
-								<li><TMPL_VAR NAME=FEATUREID></li>
-							</ul>
-						</div>
-					</td></tr>
-					</TMPL_LOOP>
-					<script>$('.dropdown-toggle').dropdown()</script>
-				</table>
-				<-->
-
 				<div class="row-fluid">
 					<form class="form span5" action="/home/dispatch.cgi/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
 						<fieldset>
-							<h5 style="margin:0px 0px 0px 10px">Select a virulence factor from the list:</h5>
-							<select class="span12" style="margin:10px 0px 0px 0px" name="virluenceFactorName">
+							<h5>Select a VF from the list:</h5>
+							<select class="span12" name="VFName">
 								<TMPL_LOOP NAME=vFACTORS>
-								<option name="virulenceFactorName" value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+								<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 								</TMPL_LOOP>
 							</select>
 							<div style="margin:10px 0px 0px 0px">
-								<button id="showVFInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Info</button>
+								<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
 								<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 							</div>
 						</fieldset>
 					</form>
 
-					<div class="span6">Information will pop up here. Similar to the way the single and multi strain pages load.</div>
+					<div class="span6" id="VFMetaInfo" style="padding:0px 0px 10px 0px;display:none">
+						<h5>Virulence Factor Meta Info</h5>
+						<TMPL_LOOP NAME=vFMETAINFO>
+						<strong><TMPL_VAR NAME=vFTERMNAME></strong> : <TMPL_VAR NAME=vFTERMVALUE> <br>
+						</TMPL_LOOP>
+					</div>
+
+					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vFVALIDATOR></div>
+
+					<script type="text/javascript">
+					function checkVFValidator() {
+						if ($('#vfvalidator').is(':empty')) {
+						}
+						else {
+							$('#VFMetaInfo').show("slow");;
+						}
+					}
+					</script>
 
 				</div>
-
 			</div>
-
 		</div>
 	</div>
 </body>

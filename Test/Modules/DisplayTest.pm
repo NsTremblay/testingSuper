@@ -85,12 +85,14 @@ sub singleStrain {
 	
 	my $q = $self->query();
 	my $strainFeatureId = $q->param("singleStrainName");
+	print STDERR $strainFeatureId;
 
-	if(!defined $strainFeatureId || $strainFeatureId == ""){
+	if(!defined $strainFeatureId || $strainFeatureId eq ""){
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
 		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
+		print STDERR $strainFeatureId;
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(sSUNIQUENAME=>$_sSFeatures->uniquename);
 		$template->param(sSRESIDUE=>$_sSFeatures->residues);
@@ -142,17 +144,24 @@ sub bioinfoStrainList {
 }
 
 sub bioinfoVirulenceFactors {
-
-	#For now just testing to see if we can display joined data on the website
 	my $self = shift;
-	#Returns an object with column data
 	my $vFactors = $self->_getVFData();
-	my $features = $self->_getFormData();
 	my $vFRef = $self->_hashVFData($vFactors);
-	my $formFeatureRef = $self->_hashFormData($features);
+	
+	my $q = $self->query();
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
-	$template->param(vFACTORS=>$vFRef);
-	$template->param(FEATURES=>$formFeatureRef);
+	my $vfFeatureId = $q->param("VFName");
+
+	if (!defined $vfFeatureId || $vfFeatureId eq ""){
+		$template->param(vFACTORS=>$vFRef);
+	}
+	else {
+		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
+		$template->param(vFACTORS=>$vFRef);
+		my $vfvalidator = "Return Success";
+		$template->param(vFVALIDATOR=>$vfvalidator);
+		$template->param(vFMETAINFO=>$vFMetaInfoRef);
+	}
 	return $template->output();
 }
 
@@ -242,7 +251,7 @@ sub _getVFData {
 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by 	=> { -asc => ['uniquename']}
+			order_by 	=> { -asc => ['uniquename'] }
 		}
 		);
 	return $_virulenceFactorProperties;
@@ -261,16 +270,70 @@ sub _hashVFData {
 		my %vFRowData;
 		$vFRowData{'FEATUREID'}=$vFRow->feature_id;
 		$vFRowData{'UNIQUENAME'}=$vFRow->feature->uniquename;
-		$vFRowData{'TERMNAME'}=$vFRow->type->name;
+		#$vFRowData{'TERMNAME'}=$vFRow->type->name;
 		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
 		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
 		#	i.e. Fasta files must have attributes tagged to them before uploading.
-		$vFRowData{'TERMVALUE'}=$vFRow->value;
+		#$vFRowData{'TERMVALUE'}=$vFRow->value;
 		#push a reference to each row into the loop
 		push(@vFData, \%vFRowData);
 	}
 	#return a reference to the loop array
 	return \@vFData;
+}
+
+sub _getVFMetaInfo {
+	my $self = shift;
+	my $_vFFeatureId = shift;
+
+	my @vFMetaData;
+
+	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{feature_id => $_vFFeatureId},
+		{
+			join 		=> 'type',
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+			as 			=> ['feature_id', 'type_id', 'value', 'cvterm_id', 'term_name'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+			order_by	=> { -asc => ['type.name'] }
+		}
+		);
+
+	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
+		#Initialize a hash structure to store column data
+		my %vFMetaRowData;
+		$vFMetaRowData{'vFFEATUREID'}=$vFMetaRow->feature_id;
+		$vFMetaRowData{'vFTERMVALUE'}=$vFMetaRow->value;
+		if ($vFMetaRow->type->name eq "description") {
+			$vFMetaRowData{'vFTERMNAME'}="Description";
+		}
+		elsif ($vFMetaRow->type->name eq "keywords"){
+			$vFMetaRowData{'vFTERMNAME'}="Keyword";
+		}
+		elsif ($vFMetaRow->type->name eq "mol_type"){
+			$vFMetaRowData{'vFTERMNAME'}="Molecular Type";
+		}
+		elsif ($vFMetaRow->type->name eq "name"){
+			$vFMetaRowData{'vFTERMNAME'}="Factor Name";
+		}
+		elsif ($vFMetaRow->type->name eq "organism"){
+			$vFMetaRowData{'vFTERMNAME'}="Organism";
+		}
+		elsif ($vFMetaRow->type->name eq "plasmid"){
+			$vFMetaRowData{'vFTERMNAME'}="Plasmid name";
+		}
+		elsif ($vFMetaRow->type->name eq "strain"){
+			$vFMetaRowData{'vFTERMNAME'}="Strain";
+		}
+		elsif ($vFMetaRow->type->name eq "uniquename"){
+		$vFMetaRowData{'vFTERMNAME'}="Unique Name";
+	}
+		else {
+		$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
+	}
+		push(@vFMetaData, \%vFMetaRowData);
+	}
+	return \@vFMetaData;
 }
 
 1;
