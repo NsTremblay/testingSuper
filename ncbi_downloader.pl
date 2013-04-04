@@ -150,7 +150,7 @@ sub _downloadGenomes{
     my $host = 'ftp.ncbi.nlm.nih.gov';
 
     #constructs the connection
-    my $ftp = Net::FTP->new($host, Debug => 1,Passive => 0) or die "Cannot connect to genbank: $@";
+    my $ftp = Net::FTP->new($host, Debug => 1,Passive => 1) or die "Cannot connect to genbank: $@";
     #log in as anonymous, use email as password
     $ftp->login("anonymous",'chadlaing@gmail.com') or die "Cannot login ", $ftp->message; 
     $ftp->cwd($directory) or die "Cannot change working directory ", $ftp->message;
@@ -218,7 +218,7 @@ sub _downloadClosedGenomes{
     my $host = 'ftp.ncbi.nlm.nih.gov';
 
     #constructs the connection
-    my $ftp = Net::FTP->new($host, Debug => 0) or die "Cannot connect to genbank: $@";
+    my $ftp = Net::FTP->new($host, Debug => 0, Passive => 1) or die "Cannot connect to genbank: $@";
     $ftp->binary();
 
     #log in as anonymous, use email as password
