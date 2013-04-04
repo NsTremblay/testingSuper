@@ -40,8 +40,9 @@
 					</form>
 
 					<div class="span6" id="VFMetaInfo" style="padding:0px 0px 10px 0px;display:none">
-						<h5>Virulence Factor Meta Info</h5>
+						<h5><u>Virulence Factor Meta Info</u></h5>
 						<TMPL_LOOP NAME=vFMETAINFO>
+						<TMPL_VAR NAME=vFUNIQUENAME>
 						<strong><TMPL_VAR NAME=vFTERMNAME></strong> : <TMPL_VAR NAME=vFTERMVALUE> <br>
 						</TMPL_LOOP>
 					</div>

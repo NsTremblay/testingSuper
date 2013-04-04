@@ -184,6 +184,7 @@ sub bioinfoStatistics {
 ###Helper Functions ###
 #######################
 
+
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
@@ -258,6 +259,9 @@ sub _getVFData {
 }
 
 #Inputs all column data into a hash table April 29tand returns a reference to the hash table.
+#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+#	i.e. Fasta files must have attributes tagged to them before uploading.
 sub _hashVFData {
 	my $self=shift;
 	my $_vFactors=shift;
@@ -270,12 +274,6 @@ sub _hashVFData {
 		my %vFRowData;
 		$vFRowData{'FEATUREID'}=$vFRow->feature_id;
 		$vFRowData{'UNIQUENAME'}=$vFRow->feature->uniquename;
-		#$vFRowData{'TERMNAME'}=$vFRow->type->name;
-		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
-		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
-		#	i.e. Fasta files must have attributes tagged to them before uploading.
-		#$vFRowData{'TERMVALUE'}=$vFRow->value;
-		#push a reference to each row into the loop
 		push(@vFData, \%vFRowData);
 	}
 	#return a reference to the loop array
@@ -289,12 +287,12 @@ sub _getVFMetaInfo {
 	my @vFMetaData;
 
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{feature_id => $_vFFeatureId},
+		{'me.feature_id' => $_vFFeatureId},
 		{
-			join 		=> 'type',
-			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
-			as 			=> ['feature_id', 'type_id', 'value', 'cvterm_id', 'term_name'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+			join		=> ['type' , 'feature'],
+			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
 			order_by	=> { -asc => ['type.name'] }
 		}
 		);
@@ -303,6 +301,7 @@ sub _getVFMetaInfo {
 		#Initialize a hash structure to store column data
 		my %vFMetaRowData;
 		$vFMetaRowData{'vFFEATUREID'}=$vFMetaRow->feature_id;
+		$vFMetaRowData{'vFUNIQUENAME'}=$vFMetaRow->feature->uniquename;
 		$vFMetaRowData{'vFTERMVALUE'}=$vFMetaRow->value;
 		if ($vFMetaRow->type->name eq "description") {
 			$vFMetaRowData{'vFTERMNAME'}="Description";
@@ -326,11 +325,11 @@ sub _getVFMetaInfo {
 			$vFMetaRowData{'vFTERMNAME'}="Strain";
 		}
 		elsif ($vFMetaRow->type->name eq "uniquename"){
-		$vFMetaRowData{'vFTERMNAME'}="Unique Name";
-	}
+			$vFMetaRowData{'vFTERMNAME'}="Unique Name";
+		}
 		else {
-		$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
-	}
+			$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
+		}
 		push(@vFMetaData, \%vFMetaRowData);
 	}
 	return \@vFMetaData;
