@@ -1,3 +1,0 @@
-organism	Escherichia coli
-mol_type	genomic_dna
-...
