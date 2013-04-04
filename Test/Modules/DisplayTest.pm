@@ -10,7 +10,7 @@ use parent 'Modules::App_Super';
 use parent 'CGI::Application';
 use Role::Tiny::With;
 #use Phylogeny::PhyloTreeBuilder;
-with 'Roles::DatabaseConnector'; 
+with 'Roles::DatabaseConnector';
 
 sub setup{
 	my $self = shift;
@@ -20,7 +20,10 @@ sub setup{
 		'display'=>'displayTest', 
 		'single_strain'=>'singleStrain',
 		'multi_strain'=>'multiStrain',
-		'bioinfo'=>'bioinfo',
+		#'bioinfo'=>'bioinfo',
+		'bioinfo_strain_list'=>'bioinfoStrainList',
+		'bioinfo_virulence_factors'=>'bioinfoVirulenceFactors',
+		'bioinfo_statistics'=>'bioinfoStatistics',
 		'process_single_strain_form'=>'singleStrain',
 		'process_multi_strain_form'=>'multiStrain');
 
@@ -82,12 +85,14 @@ sub singleStrain {
 	
 	my $q = $self->query();
 	my $strainFeatureId = $q->param("singleStrainName");
+	print STDERR $strainFeatureId;
 
-	if(!defined $strainFeatureId || $strainFeatureId == ""){
+	if(!defined $strainFeatureId || $strainFeatureId eq ""){
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
 		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
+		print STDERR $strainFeatureId;
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(sSUNIQUENAME=>$_sSFeatures->uniquename);
 		$template->param(sSRESIDUE=>$_sSFeatures->residues);
@@ -108,7 +113,7 @@ sub multiStrain {
 
 	my $q = $self->query();
 	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
-	my @strainFeatureIds = $q->param("multiStrainNames"); #This is causing errors.
+	my @strainFeatureIds = $q->param("multiStrainNames");
 
 	if(!(@strainFeatureIds)) {
 		$template->param(FEATURES=>$formFeatureRef);
@@ -123,18 +128,55 @@ sub multiStrain {
 	return $template->output();
 }
 
-sub bioinfo {
+sub bioinfoStrainList {
+
+	#For now just testing to see if we can display joined data on the website
 	my $self = shift;
-
 	#Returns an object with column data
+	my $vFactors = $self->_getVFData();
 	my $features = $self->_getFormData();
-
-	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
-	#Returns a reference to an array with references to each row of data in the hash table
+	my $vFRef = $self->_hashVFData($vFactors);
 	my $formFeatureRef = $self->_hashFormData($features);
+	my $template = $self->load_tmpl( 'bioinfo_strain_list.tmpl' , die_on_bad_params=>0 );
+	$template->param(vFACTORS=>$vFRef);
+	$template->param(FEATURES=>$formFeatureRef);
+	return $template->output();
+}
 
-	my $template = $self->load_tmpl( 'bioinfo.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$formFeatureRef);	
+sub bioinfoVirulenceFactors {
+	my $self = shift;
+	my $vFactors = $self->_getVFData();
+	my $vFRef = $self->_hashVFData($vFactors);
+	
+	my $q = $self->query();
+	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
+	my $vfFeatureId = $q->param("VFName");
+
+	if (!defined $vfFeatureId || $vfFeatureId eq ""){
+		$template->param(vFACTORS=>$vFRef);
+	}
+	else {
+		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
+		$template->param(vFACTORS=>$vFRef);
+		my $vfvalidator = "Return Success";
+		$template->param(vFVALIDATOR=>$vfvalidator);
+		$template->param(vFMETAINFO=>$vFMetaInfoRef);
+	}
+	return $template->output();
+}
+
+sub bioinfoStatistics {
+
+	#For now just testing to see if we can display joined data on the website
+	my $self = shift;
+	#Returns an object with column data
+	my $vFactors = $self->_getVFData();
+	my $features = $self->_getFormData();
+	my $vFRef = $self->_hashVFData($vFactors);
+	my $formFeatureRef = $self->_hashFormData($features);
+	my $template = $self->load_tmpl( 'bioinfo_statistics.tmpl' , die_on_bad_params=>0 );
+	$template->param(vFACTORS=>$vFRef);
+	$template->param(FEATURES=>$formFeatureRef);
 	return $template->output();
 }
 
@@ -142,21 +184,19 @@ sub bioinfo {
 ###Helper Functions ###
 #######################
 
-#Returns unique names and their feature ids to fill search and selection forms
 sub _getFormData {
 	my $self = shift;
-	my $_features = $self->dbixSchema->resultset('Feature')->search(
-		undef,
+	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
+		{value => 'Test Sequences'},
 		{
-			join		=> [ qw/featureprops type/ ],
-			select		=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
-			as 			=> [ 'feature_id', 'uniquename' , 'type_id' , 'value' , 'cvterm_id', 'term_name' ],
-			#group_by 	=> [ qw/me.feature_id me.uniquename featureprops.type_id featureprops.value type.cvterm_id type.name/ ],
-			#having 		=> [ 'featureprops.value' =>'eae'],
-			#columns		=> [ qw/feature_id uniquename/ ],
-			order_by 	=> { -asc => ['uniquename'] }
+			join		=> ['type', 'feature'],
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by 	=> { -asc => ['uniquename']}
 		}
 		);
+<<<<<<< HEAD
 	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 	return $_features;
 }
@@ -180,6 +220,11 @@ sub _getFormData {
 # 	return $_features;
 #}
 
+=======
+	return $_features;
+}
+
+>>>>>>> 7828820b6794e5622cca7da78431b08b6108fe61
 #Inputs all column data into a hash table and returns a reference to the hash table.
 sub _hashFormData {
 	my $self=shift;
@@ -192,12 +237,16 @@ sub _hashFormData {
 		#Initialize a hash structure to store column data in.
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
+<<<<<<< HEAD
 		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
 		#$formRowData{'TERMNAME'}=$featureRow->type->name;
 		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
 		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
 		#	i.e. Fasta files must have attributes tagged to them before uploading.
 		$formRowData{'TERMVALUE'}=$featureRow->featureprops;
+=======
+		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
+>>>>>>> 7828820b6794e5622cca7da78431b08b6108fe61
 		#push a reference to each row into the loop
 		push(@formData, \%formRowData);
 	}
@@ -228,4 +277,102 @@ sub _getMultiStrainData {
 	return \@multiNestedRowLoop;
 }
 
+<<<<<<< HEAD
 1;
+=======
+sub _getVFData {
+	my $self = shift;
+	my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{value => 'Virulence Factor'},
+		{
+			join		=> ['type', 'feature'],
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by 	=> { -asc => ['uniquename'] }
+		}
+		);
+	return $_virulenceFactorProperties;
+}
+
+#Inputs all column data into a hash table April 29tand returns a reference to the hash table.
+sub _hashVFData {
+	my $self=shift;
+	my $_vFactors=shift;
+	
+	#Initialize an array to hold the loop
+	my @vFData;
+	
+	while (my $vFRow = $_vFactors->next){
+		#Initialize a hash structure to store column data in.
+		my %vFRowData;
+		$vFRowData{'FEATUREID'}=$vFRow->feature_id;
+		$vFRowData{'UNIQUENAME'}=$vFRow->feature->uniquename;
+		#$vFRowData{'TERMNAME'}=$vFRow->type->name;
+		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+		#	i.e. Fasta files must have attributes tagged to them before uploading.
+		#$vFRowData{'TERMVALUE'}=$vFRow->value;
+		#push a reference to each row into the loop
+		push(@vFData, \%vFRowData);
+	}
+	#return a reference to the loop array
+	return \@vFData;
+}
+
+sub _getVFMetaInfo {
+	my $self = shift;
+	my $_vFFeatureId = shift;
+
+	my @vFMetaData;
+
+	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{feature_id => $_vFFeatureId},
+		{
+			join 		=> 'type',
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+			as 			=> ['feature_id', 'type_id', 'value', 'cvterm_id', 'term_name'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name/ ],
+			order_by	=> { -asc => ['type.name'] }
+		}
+		);
+
+	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
+		#Initialize a hash structure to store column data
+		my %vFMetaRowData;
+		$vFMetaRowData{'vFFEATUREID'}=$vFMetaRow->feature_id;
+		$vFMetaRowData{'vFTERMVALUE'}=$vFMetaRow->value;
+		if ($vFMetaRow->type->name eq "description") {
+			$vFMetaRowData{'vFTERMNAME'}="Description";
+		}
+		elsif ($vFMetaRow->type->name eq "keywords"){
+			$vFMetaRowData{'vFTERMNAME'}="Keyword";
+		}
+		elsif ($vFMetaRow->type->name eq "mol_type"){
+			$vFMetaRowData{'vFTERMNAME'}="Molecular Type";
+		}
+		elsif ($vFMetaRow->type->name eq "name"){
+			$vFMetaRowData{'vFTERMNAME'}="Factor Name";
+		}
+		elsif ($vFMetaRow->type->name eq "organism"){
+			$vFMetaRowData{'vFTERMNAME'}="Organism";
+		}
+		elsif ($vFMetaRow->type->name eq "plasmid"){
+			$vFMetaRowData{'vFTERMNAME'}="Plasmid name";
+		}
+		elsif ($vFMetaRow->type->name eq "strain"){
+			$vFMetaRowData{'vFTERMNAME'}="Strain";
+		}
+		elsif ($vFMetaRow->type->name eq "uniquename"){
+		$vFMetaRowData{'vFTERMNAME'}="Unique Name";
+	}
+		else {
+		$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
+	}
+		push(@vFMetaData, \%vFMetaRowData);
+	}
+	return \@vFMetaData;
+}
+
+1;
+>>>>>>> 7828820b6794e5622cca7da78431b08b6108fe61
