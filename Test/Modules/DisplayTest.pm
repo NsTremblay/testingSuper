@@ -157,7 +157,7 @@ sub _getFormData {
 			order_by 	=> { -asc => ['uniquename'] }
 		}
 		);
-	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
+	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 	return $_features;
 }
 
@@ -176,7 +176,7 @@ sub _getFormData {
 # 			prefetch 	=> 'type'
 # 		}
 # 		);
-# 	#TODO: This nee	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
+# 	#TODO: This needs to be changed to pull only sequence data and not virulence factors.
 # 	return $_features;
 #}
 
@@ -193,7 +193,7 @@ sub _hashFormData {
 		my %formRowData;
 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
 		$formRowData{'UNIQUENAME'}=$featureRow->uniquename;
-		$formRowData{'TERMNAME'}=$featureRow->type->name;
+		#$formRowData{'TERMNAME'}=$featureRow->type->name;
 		#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
 		#	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
 		#	i.e. Fasta files must have attributes tagged to them before uploading.
