@@ -47,7 +47,9 @@ use Bio::SeqIO;
 			my $seqHeader = $seq->desc;
 			parseHeader($seqHeader);
 		}
-		unlink "fasta/";
+		my $rmdirArgs = "rm -r fasta";
+		system($rmdirArgs) == 0 or die "System with $rmdirArgs failed: $? \n";
+		printf "System executed $rmdirArgs with value %d\n", $? >> 8;
 		print $fileNumber . " files have been parsed and uploaded into the database \n";
 	}
 
