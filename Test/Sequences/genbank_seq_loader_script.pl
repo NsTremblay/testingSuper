@@ -25,6 +25,7 @@ use Bio::SeqIO;
 	# organism: Escherichia coli
 	# keywords: Genome Sequence
 	# member_of: <genome number>
+	# mol_type: dna
 
 	my $directoryName = $ARGV[0];
 	my $fileNumber = 0;
@@ -40,45 +41,72 @@ use Bio::SeqIO;
 			}
 			else {
 				$fileNumber++;
-				moveToFastaFolder($file);
+				mkNewFastaFolder();
+				copyFastaFile($file);
 				readInHeaders($file);
-				#print "$fileNumber\n";
-				#print "$genomeNumber\n";
+				uploadGenomeToDb();
+				unlink $file;
+				unlinkFastaFolder();
 			}
 		}
 		closedir '';
 	}
 
-	sub moveToFastaFolder {
+	sub mkNewFastaFolder {
+		my $mkDirArgs = "mkdir fasta";
+		system($mkDirArgs) == 0 or die "System with $mkDirArgs failed: $? \n";
+		printf "System executed $mkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub unlinkFastaFolder {
+		my $unlinkDirArgs = "rm -r fasta";
+		system($unlinkDirArgs) == 0 or die "System with $unlinkDirArgs failed: $? \n";
+		printf "System executed $unlinkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub copyFastaFile {
 		my $file = shift;
 		if ($file eq "." || $file eq ".."){
 		}
 		else {
-			my $mvArgs = "cp " . "$directoryName/" . "$file" . " fasta/";
-			system($mvArgs) == 0 or die "System with $mvArgs failed: $? \n";
-			printf "System executed $mvArgs with value %d\n" , $? >> 8;
+			my $cpArgs = "cp " . "$directoryName" . "$file" . " .";
+			system($cpArgs) == 0 or die "System with $cpArgs failed: $? \n";
+			printf "System executed $cpArgs with value %d\n" , $? >> 8;
 		}
 	}
 
 	sub readInHeaders {
 		my $file = shift;
-		#my $in = Bio::SeqIO->new(-file => "fasta/" . $file, -format => 'fasta');
-		my $in = Bio::SeqIO->new(-file => "$directoryName/" . $file, -format => 'fasta'); 
+		my $in = Bio::SeqIO->new(-file => "$file" , -format => 'fasta');
+		#my $in = Bio::SeqIO->new(-file => "$directoryName/" . $file, -format => 'fasta'); 
 
 		while(my $seq = $in->next_seq()) {
-			#print "ID: " . $seq->id . "\n";
-			#print "Description: " . $seq->desc . "\n";
-			appendAtrributes($seq);
+			my $singleFileName = $seq->id;
+			my $description = $seq->desc();
+			my $singleFastaHeader = Bio::SeqIO->new(-file => '>'."fasta/$singleFileName" . ".fasta" , -format => 'fasta') or die "$!\n";
+			$singleFastaHeader->write_seq($seq) or die "$!\n";
+			appendAtrributes($seq , $singleFileName , $description);
 		}
 	}
 
 	sub  appendAtrributes {
 		my $seq = shift;
-		my $description = $seq->desc();
+		my $singleFileName = shift;
+		my $description = shift;
+		print $singleFileName;
 		my $keywords = "keywords";
 		$genomeNumber  = $fileNumber;
-		#print "Description: " . $description . "\n";
-		#print "Genome Number: " . $genomeNumber . "\n";
+		my $attributes = "organism=Escherichia coli" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
+		my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"";
+		system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
+		printf "System executed $appendArgs with value %d\n" , $? >> 8;
+	}
+
+	sub uploadGenomeToDb {
+		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
+		system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
+		printf "System executed $dbArgs with value %d\n", $? >> 8;
+		unlink "out.gff";
 	}
 
 #Parser used for Panseq. 

@@ -188,7 +188,7 @@ sub bioinfoStatistics {
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-		{value => 'Test Sequences'},
+		{value => 'Genome Sequence'},
 		{
 			join		=> ['type', 'feature'],
 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],

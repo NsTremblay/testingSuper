@@ -100,7 +100,7 @@ use Bio::SeqIO;
 		printf "System executed $args with value %d\n", $? >> 8;
 		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
 		system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
-		printf "System executed $args with value %d\n", $? >> 8;
+		printf "System executed $dbArgs with value %d\n", $? >> 8;
 		unlink "fasta/$fileName";
 		unlink "fasta/directory.index";
 		unlink "out.gff";
