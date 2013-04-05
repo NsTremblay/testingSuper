@@ -44,9 +44,10 @@ use Bio::SeqIO;
 				mkNewFastaFolder();
 				copyFastaFile($file);
 				readInHeaders($file);
-				uploadGenomeToDb();
+				#uploadGenomeToDb();
 				unlink $file;
 				unlinkFastaFolder();
+				unlink "out.gff";
 			}
 		}
 		closedir '';
@@ -69,7 +70,7 @@ use Bio::SeqIO;
 		if ($file eq "." || $file eq ".."){
 		}
 		else {
-			my $cpArgs = "cp " . "$directoryName" . "$file" . " .";
+			my $cpArgs = "cp " . "$directoryName/" . "$file" . " .";
 			system($cpArgs) == 0 or die "System with $cpArgs failed: $? \n";
 			printf "System executed $cpArgs with value %d\n" , $? >> 8;
 		}
@@ -94,6 +95,7 @@ use Bio::SeqIO;
 		my $singleFileName = shift;
 		my $description = shift;
 		print $singleFileName;
+		_getName($seq);
 		my $keywords = "keywords";
 		$genomeNumber  = $fileNumber;
 		my $attributes = "organism=Escherichia coli" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
@@ -102,39 +104,40 @@ use Bio::SeqIO;
 		printf "System executed $appendArgs with value %d\n" , $? >> 8;
 	}
 
+	#Some sequence files may be empty and as a result wont produce an out.gff file. If an out.gff file is not present, the db uploader will throw up. So we specify to skip the file.
 	sub uploadGenomeToDb {
-		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
-		system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
-		printf "System executed $dbArgs with value %d\n", $? >> 8;
-		unlink "out.gff";
+		my $outFileHandle = IO::File->new();
+		if ($outFileHandle->open("< out.gff")) {
+			my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
+			system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
+			printf "System executed $dbArgs with value %d\n", $? >> 8;
+		}
+		else{
+		}
 	}
 
-#Parser used for Panseq. 
-# sub _getName{
-# 	my $self =shift;
-# 	my $originalName=shift;
-
-# 	my $newName;
-# 	if($originalName =~ m/name=\|(\w+)\|/){
-# 		$newName = $1;
-# 	}
-# 	elsif($originalName =~ m/lcl\|([\w-]*)\|/){
-# 		$newName = $1;
-# 	}
-# 	elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
-# 		$newName = $1;
-# 	}
-# 	elsif($originalName =~ m/(gi\|\d+)\|/){
-# 		$newName = $1;
-# 	}
-# 	elsif($originalName =~ m/^(.+)\|Segment=/){
-# 		$newName = $1;
-# 	}
-# 	elsif($originalName =~ m/^(.+)\|Length=/){
-# 		$newName = $1;
-# 	}
-# 	else{
-# 		$newName = $originalName;
-# 	}
-# 	print $newName;
-# }
+	#Parser used for Panseq. 
+	sub _getName {
+		my $seq = shift;
+		my $newName;
+		my $originalName = $seq->desc;
+		#if ($originalName =~ /complete/){
+			print "$originalName\n";
+		#} 
+		#elsif($originalName =~ m/name=\|(\w+)\|/){
+		#	$newName = $1;
+		#}
+		#elsif($originalName =~ m/lcl\|([\w-]*)\|/){
+		#	$newName = $1;
+		#}
+		#elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
+		#	$newName = $1;
+		#}
+		#elsif($originalName =~ m/(gi\|\d+)\|/){
+		#	$newName = $1;
+		#}
+		#else{
+		#	$newName = $originalName;
+		#}
+		#print "Name = $newName\n";
+	}
