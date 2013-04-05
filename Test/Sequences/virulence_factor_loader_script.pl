@@ -33,6 +33,9 @@ use Bio::SeqIO;
 	readInHeaders();
 
 	sub readInHeaders {
+		my $mkdirArgs = "mkdir fasta";
+		system($mkdirArgs) == 0 or die "System with $mkdirArgs failed: $? \n";
+		printf "System executed $mkdirArgs with value %d\n", $? >> 8;
 		my $in = Bio::SeqIO->new(-file => $virulenceFactorFile,
 								 -format => 'fasta'); #or die "$!\n";
 
@@ -44,6 +47,7 @@ use Bio::SeqIO;
 			my $seqHeader = $seq->desc;
 			parseHeader($seqHeader);
 		}
+		unlink "fasta/";
 		print $fileNumber . " files have been parsed and uploaded into the database \n";
 	}
 
