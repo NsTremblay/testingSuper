@@ -185,38 +185,66 @@ sub bioinfoStatistics {
 #######################
 
 
+# sub _getFormData {
+# 	my $self = shift;
+# 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
+# 		{value => 'Genome Sequence'},
+# 		{
+# 			join		=> ['type', 'feature'],
+# 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+# 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+# 			order_by 	=> { -asc => ['uniquename']}
+# 		}
+# 		);
+# 	return $_features;
+# }
+
+# #Inputs all column data into a hash table and returns a reference to the hash table.
+# sub _hashFormData {
+# 	my $self=shift;
+# 	my $features=shift;
+
+# 	#Initialize an array to hold the loop
+# 	my @formData;
+
+# 	while (my $featureRow = $features->next){
+# 		#Initialize a hash structure to store column data in.
+# 		my %formRowData;
+# 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
+# 		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
+# 		#push a reference to each row into the loop
+# 		push(@formData, \%formRowData);
+# 	}
+# 	#return a reference to the loop array
+# 	return \@formData;
+# }
+
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-		{value => 'Genome Sequence'},
-		{
-			join		=> ['type', 'feature'],
-			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by 	=> { -asc => ['uniquename']}
+		{#value => 'Genome Sequence', 
+		name => 'name'
+		},
+		{	join => ['type'],
+			select => [qw/me.value type.name/],
+			group_by => [qw/me.value type.name/],
+			order_by 	=> { -asc => ['me.value']}
 		}
 		);
 	return $_features;
 }
 
-#Inputs all column data into a hash table and returns a reference to the hash table.
 sub _hashFormData {
 	my $self=shift;
 	my $features=shift;
-	
-	#Initialize an array to hold the loop
 	my @formData;
-	
 	while (my $featureRow = $features->next){
-		#Initialize a hash structure to store column data in.
 		my %formRowData;
-		$formRowData{'FEATUREID'}=$featureRow->feature_id;
-		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
-		#push a reference to each row into the loop
+		#$formRowData{'FEATUREID'}=$featureRow->feature_id;
+		$formRowData{'UNIQUENAME'}=$featureRow->value;
 		push(@formData, \%formRowData);
 	}
-	#return a reference to the loop array
 	return \@formData;
 }
 

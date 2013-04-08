@@ -21,6 +21,7 @@ use Bio::SeqIO;
 	#Uniquename: gi|190904743|gb|AAJT02000001.1|-<feature_id>
 
 #Along with the following atrtributes in the featureprop table:
+	# name: Escherichia coli B7A
 	# description: Escherichia coli B7A gcontig_1112495748542, whole genome shotgun sequence
 	# organism: Escherichia coli
 	# keywords: Genome Sequence
@@ -44,7 +45,7 @@ use Bio::SeqIO;
 				mkNewFastaFolder();
 				copyFastaFile($file);
 				readInHeaders($file);
-				#uploadGenomeToDb();
+				uploadGenomeToDb();
 				unlink $file;
 				unlinkFastaFolder();
 				unlink "out.gff";
@@ -95,13 +96,18 @@ use Bio::SeqIO;
 		my $singleFileName = shift;
 		my $description = shift;
 		print $singleFileName;
-		_getName($seq);
-		my $keywords = "keywords";
-		$genomeNumber  = $fileNumber;
-		my $attributes = "organism=Escherichia coli" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
-		my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"";
-		system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
-		printf "System executed $appendArgs with value %d\n" , $? >> 8;
+		my $nameAttribute = _getName($seq, $singleFileName);
+		if ($nameAttribute eq "") {
+			die "Errorparsing $singleFileName $!\n";
+		}
+		else{
+			my $keywords = "keywords";
+			$genomeNumber  = $fileNumber;
+			my $attributes = "organism=Escherichia coli" . ";" . "name=$nameAttribute" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
+			my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"";
+			system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
+			printf "System executed $appendArgs with value %d\n" , $? >> 8;
+		}
 	}
 
 	#Some sequence files may be empty and as a result wont produce an out.gff file. If an out.gff file is not present, the db uploader will throw up. So we specify to skip the file.
@@ -116,28 +122,43 @@ use Bio::SeqIO;
 		}
 	}
 
-	#Parser used for Panseq. 
+	#The first two lines should take care of the complete genome seqences. These will be individually added to the db.
 	sub _getName {
 		my $seq = shift;
+		my $singleFileName = shift;
+		my $tagName;
+		if ($singleFileName =~ /(|gb|)([A-Z][A-Z][A-Z][A-Z])/){
+			$tagName = $2;
+		}
+		else{
+			$tagName = "";
+		}
+		print "My tag name: $tagName\n";
 		my $newName;
 		my $originalName = $seq->desc;
-		#if ($originalName =~ /complete/){
-			print "$originalName\n";
-		#} 
-		#elsif($originalName =~ m/name=\|(\w+)\|/){
-		#	$newName = $1;
-		#}
-		#elsif($originalName =~ m/lcl\|([\w-]*)\|/){
-		#	$newName = $1;
-		#}
-		#elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
-		#	$newName = $1;
-		#}
-		#elsif($originalName =~ m/(gi\|\d+)\|/){
-		#	$newName = $1;
-		#}
-		#else{
-		#	$newName = $originalName;
-		#}
-		#print "Name = $newName\n";
+		if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
+			$newName = $2;
+			print "Name : $newName\n";
+		}
+		elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
+			$newName = "$tagName -$2";
+			print "Name : $newName\n"
+		}
+		elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
+			$newName = $2;
+			if ($newName eq "") {
+				$newName = "$tagName -$3";
+				print "Name : $newName\n"
+			}
+			else {
+				$newName = "$tagName -$2";
+				print "Name : $newName\n"
+			}
+		}
+		else{
+			$newName = $originalName;
+			print "Name : $newName\n"
+		}
+		return $newName;
 	}
+
