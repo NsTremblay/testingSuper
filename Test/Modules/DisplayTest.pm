@@ -75,7 +75,6 @@ sub singleStrain {
 
 	my $self = shift;
 
-	#Returns an object with column data
 	my $features = $self->_getFormData();
 
 	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
@@ -84,25 +83,29 @@ sub singleStrain {
 	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
-	my $strainFeatureId = $q->param("singleStrainName");
-	print STDERR $strainFeatureId;
+	my $strainName = $q->param("singleStrainName");
 
-	if(!defined $strainFeatureId || $strainFeatureId eq ""){
+	if(!defined $strainName || $strainName eq ""){
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
-		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => "$strainFeatureId"});
-		print STDERR $strainFeatureId;
 		$template->param(FEATURES=>$formFeatureRef);
+		
+		my $_sSFeatureprop = $self->dbixSchema->resultset('Featureprop')->find({value => "$strainName"});
+		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => $_sSFeatureprop->feature_id});
+		#my $sSMetaInfo = _getSSMetaInfo($strainName);
+		#my $sSRef = _hashSSMetaInfo($sSMetaInfo);
+		
+		#$template->param(sSMETAINFO=>$sSRef);
+		#$template->param(sSRESIDUE=>$_sSFeatures->residues);
+		$template->param(sSFEATUREID=>$_sSFeatureprop->feature_id);
+		$template->param(sSVALUE=>$_sSFeatureprop->value);
 		$template->param(sSUNIQUENAME=>$_sSFeatures->uniquename);
-		$template->param(sSRESIDUE=>$_sSFeatures->residues);
-		$template->param(sSFEATUREID=>$_sSFeatures->feature_id);
 		$template->param(sSEQLENGTH=>$_sSFeatures->seqlen);
 		my $ssvalidator = "Return Success";
 		$template->param(sSVALIDATOR=>$ssvalidator);
 	}
 	return $template->output();
-	#Phylogeny::PhyloTreeBuilder->new('NewickTrees/example_tree' , 'NewickTrees/tree');
 }
 
 sub multiStrain {
@@ -166,10 +169,7 @@ sub bioinfoVirulenceFactors {
 }
 
 sub bioinfoStatistics {
-
-	#For now just testing to see if we can display joined data on the website
 	my $self = shift;
-	#Returns an object with column data
 	my $vFactors = $self->_getVFData();
 	my $features = $self->_getFormData();
 	my $vFRef = $self->_hashVFData($vFactors);
@@ -183,7 +183,6 @@ sub bioinfoStatistics {
 #######################
 ###Helper Functions ###
 #######################
-
 
 # sub _getFormData {
 # 	my $self = shift;
@@ -248,6 +247,34 @@ sub _hashFormData {
 	return \@formData;
 }
 
+#TODO: This needs to be tweaked a bit
+# sub _getSSMetaInfo {
+# 	my $self = shift;
+# 	my $_strainName = shift;
+# 	my $_sSMetaInfoTable = $self->dbixSchema->resultset('Featureprop');
+
+# 	my $_sSMetaInfo = $_sSMetaInfoTable->search(
+# 	{},
+# 	#{value => $_strainName},
+# 	{
+# 		column	=> [ qw/me.feature_id/]
+# 	}
+# 	);
+# 	return $_sSMetaInfo;
+#}
+
+# sub _hashSSMetaInfo {
+# 	my $self = shift;
+# 	my $_sSData = shift;
+# 	my @sSMetaInfo;
+# 	while (my $sSMetaInfoRow = $_sSData->next){
+# 		my %sSMetaRowData;
+# 		$sSMetaRowData{'sSFEATUREID'}=$sSMetaInfoRow->feature_id;
+# 		push(@sSMetaInfo, \%sSMetaRowData);
+# 	}
+# 	return \@sSMetaInfo;
+# }
+
 sub _getMultiStrainData {
 	my $self = shift;
 	my $strainFeatureIds = shift;
@@ -263,7 +290,7 @@ sub _getMultiStrainData {
 		#Create a hash table and push these keys onto it
 		my %multiNestedRow;
 		$multiNestedRow{'mSFEATUREID'}=$_mSFeatures->feature_id;
-		$multiNestedRow{'mSRESIDUES'}=$_mSFeatures->residues;
+		#$multiNestedRow{'mSRESIDUES'}=$_mSFeatures->residues;
 		$multiNestedRow{'mSSEQLENGTH'}=$_mSFeatures->seqlen;
 		$multiNestedRow{'mSUNIQUENAME'}=$_mSFeatures->uniquename;
 		push(@multiNestedRowLoop, \%multiNestedRow);

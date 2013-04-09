@@ -17,14 +17,14 @@
 			</style>
 			<script>
 			$(function() {
-				var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATUREID>" } , </TMPL_LOOP> ]
+				var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=UNIQUENAME>" } , </TMPL_LOOP> ]
 				//var availableTags = [<TMPL_LOOP NAME=FEATURES>"<TMPL_VAR NAME=UNIQUENAME>",</TMPL_LOOP>];
 				$("#autoComp").autocomplete({
 					source: availableTags
 				});
 			});
 			</script>
-			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=FEATUREID>'></input>
+			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=UNIQUENAME>'></input>
 			<div>
 				<button type="submit" class="btn btn-small btn-success" value="Submit" onclick="checkSSFields(this.form)"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
@@ -37,7 +37,7 @@
 			<span style="color:#796e6c">Select a strain from the list:</span>
 			<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainName">
 				<TMPL_LOOP NAME=FEATURES>
-				<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+				<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
 				</TMPL_LOOP>
 			</select>
 			<div style="margin:10px 0px 0px 0px">
