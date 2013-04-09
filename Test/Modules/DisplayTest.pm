@@ -115,6 +115,7 @@ sub multiStrain {
 	my $template = $self->load_tmpl ( 'multi_strain.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
+	my $strainFeaturepropTable = $self->dbixSchema->resultset('Featureprop');
 	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
 	my @strainFeatureIds = $q->param("multiStrainNames");
 
@@ -122,7 +123,7 @@ sub multiStrain {
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
-		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeatureTable);
+		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(mSFEATURES=>$multiStrainDataRef);
 		my $msvalidator = "Return Success";
@@ -222,7 +223,7 @@ sub bioinfoStatistics {
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-		{#value => 'Genome Sequence', 
+		{
 		name => 'genome_of'
 		},
 		{	join => ['type'],
@@ -277,19 +278,22 @@ sub _hashFormData {
 
 sub _getMultiStrainData {
 	my $self = shift;
-	my $strainFeatureIds = shift;
+	my $strainFeatureNames = shift;
+	my $strainFeaturepropTable = shift;
 	my $strainFeatureTable = shift;
 	my @multiStrainData;
 	my %multiRowData;
 	my @multiNestedRowLoop;
 
-	foreach my $multiStrainId (@{$strainFeatureIds}) {
+	foreach my $multiStrainName (@{$strainFeatureNames}) {
 
-		my $_mSFeatures = $strainFeatureTable->find({feature_id => "$multiStrainId"});
+		my $_mSFeatureprops = $strainFeaturepropTable->find({value => "$multiStrainName"});
+		my $_mSFeatures = $strainFeatureTable->find({feature_id => $_mSFeatureprops->feature_id});
 		
 		#Create a hash table and push these keys onto it
 		my %multiNestedRow;
-		$multiNestedRow{'mSFEATUREID'}=$_mSFeatures->feature_id;
+		$multiNestedRow{'mSFEATUREID'}=$_mSFeatureprops->feature_id;
+		$multiNestedRow{'mSVALUE'}=$_mSFeatureprops->value;
 		#$multiNestedRow{'mSRESIDUES'}=$_mSFeatures->residues;
 		$multiNestedRow{'mSSEQLENGTH'}=$_mSFeatures->seqlen;
 		$multiNestedRow{'mSUNIQUENAME'}=$_mSFeatures->uniquename;

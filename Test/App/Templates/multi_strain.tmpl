@@ -14,7 +14,7 @@
 				<TMPL_INCLUDE NAME="multi_strain_selection_form.tmpl">
 			</div>
 
-			<div id="multiOption" class="span8" style="display:none;padding:10px">
+			<!--div id="multiOption" class="span8" style="display:none;padding:10px">
 				<form style="border:solid;border-width:1px;padding:10px">
 					<span class="help-block">Download multi-strain comparison info: </span>
 					<fieldset>
@@ -25,6 +25,22 @@
 
 						</div>
 						<button class="btn btn-primary btn-small" type="button"><i class="icon-download-alt icon-white"></i> Download</button>
+					</fieldset>
+				</form>
+			</div-->
+
+			<div id="group1" class="span4" style="padding:10px">
+				<form style="border:solid;border-width:1px;padding:10px">
+					<span class="help-block">Group 1: </span>
+					<fieldset>
+					</fieldset>
+				</form>
+			</div>
+
+			<div id="group2" class="span4" style="padding:10px">
+				<form style="border:solid;border-width:1px;padding:10px">
+					<span class="help-block">Group 2: </span>
+					<fieldset>
 					</fieldset>
 				</form>
 			</div>
@@ -44,8 +60,9 @@
 		<div class="row-fluid" id="mSeqDiv" style="diplay:none;margin:10px 0px 10px 0px">
 			<div class="span4">
 				<ul>
-					<li>Name: <TMPL_VAR NAME=mSUNIQUENAME></li>
+					<li>Name: <TMPL_VAR NAME=mSVALUE></li>
 					<li>Feature ID: <TMPL_VAR NAME=mSFEATUREID></li>
+					<li>Uniquename: <TMPL_VAR NAME=mSUNIQUENAME></li>
 					<li>Sequence Length: <TMPL_VAR NAME=mSSEQLENGTH> bp</li>
 				</ul>
 			</div>
