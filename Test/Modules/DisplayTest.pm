@@ -224,7 +224,7 @@ sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
 		{#value => 'Genome Sequence', 
-		name => 'name'
+		name => 'genome_of'
 		},
 		{	join => ['type'],
 			select => [qw/me.value type.name/],
