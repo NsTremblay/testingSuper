@@ -2,25 +2,50 @@
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
-	<form id="mSSearchForm" class="form" style="border:solid;border-width:1px" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
-		<fieldset>
-			<span class="help-block" style="margin:10px 0px 0px 10px">Select on one or strains to compare them and view metadata</span>
-			<div style="margin:5px;height:150px;overflow:auto">
-				<TMPL_LOOP NAME=FEATURES>
-				<label class="checkbox">
-					<input type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
-				</label>
-				</TMPL_LOOP>
+	
+	<form id="mSSearchForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
+
+		<div  class="span4" style="border:solid;border-width:1px;padding:10px;max-height:400px;overflow:auto">
+			<fieldset>
+				<span class="help-block" style="margin:10px 0px 10px 10px">Select on one or strains to compare them and view metadata</span>
+				<ul id="mSSelection" style="padding:0px;margin:0px">
+					<TMPL_LOOP NAME=FEATURES>
+					<li style="list-style:none;">
+						<label class="checkbox">
+							<input id="checkboxName" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+						</label>
+					</li>
+					</TMPL_LOOP>
+				</ul>
+			</fieldset>
+		</div>
+
+		<div class="span2 btn-group btn-group-vertical" style="margin-top:100px">
+			<button id="buttonGroup1" class="btn btn-primary btn-small span12" type="button" onclick="checkGroup1Fields()"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+			<button id="buttonGroup2" class="btn btn-primary btn-small span12" type="button" onclick="checkGroup2Fields()"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
+			<button class="btn btn-primary btn-small span12" type="submit" value="Submit" onclick="checkMSFields(this.form)"><i class="icon-th-list icon-white"></i> Compare Strains</button>
+			<button class="btn btn-primary btn-small span12" type="button" value="Submit"><i class="icon-list icon-white"></i> Compare All Strains</button>
+			<button class="btn btn-primary btn-small span12" type="reset" onclick="reload()"><i class="icon-refresh icon-white"></i> Refresh</button>
+		</div>
+
+		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+			<div id="group1" style="max-height:350px;overflow:auto">
+				<fieldset>
+					<span class="help-block">Group 1: </span>
+				</fieldset>
 			</div>
-			<div style="padding:0px 0px 0px 10px">
-				<button class="btn btn-primary btn-small"><i class="icon-plus-sign icon-white"></i> Add to Group 1</button>
-				<button class="btn btn-primary btn-small"><i class="icon-plus-sign icon-white"></i> Add to Group 2</button>
-				<button class="btn btn-primary btn-small" type="reset"><i class="icon-refresh icon-white"></i> Refresh</button>
-				<div style="margin:10px 10px 10px 0px">
-					<button class="btn btn-primary span12" type="submit" value="Submit" onclick="checkMSFields(this.form)"><i class="icon-ok icon-white"></i> Compare Strains</button>
-				</div>
+			<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 5px 0px" onclick="removeGroup1()"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
+		</div>
+
+		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+			<div id="group2" style="max-height:350px;overflow:auto">
+				<fieldset>
+					<span class="help-block">Group 2: </span>
+				</fieldset>
 			</div>
-		</fieldset>
+			<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 5px 0px" onclick="removeGroup2()"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
+		</div>
+
 	</form>
 
 	<script type="text/javascript">
@@ -40,6 +65,7 @@
 	}
 	function checkMSFields(mSSearchForm) {
 		var selected = 0;
+
 		var i = 0;
 		while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
 			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
@@ -69,6 +95,59 @@
 	function onLoadCheck() {
 		initialize();
 		checkMultiSeq();
+	}
+	function reload() {
+		location.reload();
+	}
+	function checkGroup1Fields() {
+		var selected = 0;
+		var i = 0;
+		while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+				selected++;
+				i++;
+			}
+			else {
+				i++;
+			}
+		}
+		if (selected == 0) {
+			alert("Nothing to add to Group 1");
+			return false;
+		}
+		else {
+			$('#mSSelection li :checked').closest('li').appendTo('#group1');
+			$('#buttonRemoveGroup1').show();
+			return true;
+		}
+	}
+	function checkGroup2Fields() {
+		var selected = 0;
+		var i = 0;
+		while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+			if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+				selected++;Select
+				i++;
+			}
+			else {
+				i++;
+			}
+		}
+		if (selected == 0) {
+			alert("Nothing to add to Group 2");
+			return false;
+		}
+		else {
+			$('#mSSelection li :checked').closest('li').appendTo('#group2');
+			$('#buttonRemoveGroup2').show();
+			return true;
+		}
+	}
+	function removeGroup1() {
+		$('#group1 li :checked').closest('li').appendTo('#mSSelection');
+	}
+	function removeGroup2() {
+		$('#group2 li :checked').closest('li').appendTo('#mSSelection');
 	}
 	</script>
 </div>
