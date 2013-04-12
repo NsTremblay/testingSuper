@@ -12,7 +12,7 @@
 						<TMPL_LOOP NAME=FEATURES>
 						<li style="list-style:none">
 							<label class="checkbox">
-								<input id="checkboxName" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
 							</label>
 						</li>
 						</TMPL_LOOP>
@@ -127,7 +127,11 @@ function checkGroup1Fields() {
 		return false;
 	}
 	else {
-		$('#mSSelection li :checked').closest('li').appendTo('#group1');
+		var checkedOneOption = $('#mSSelection li :checked').closest('li');
+		checkedOneOption.clone().appendTo('#group1');
+		checkedOneOption.remove();
+		unCheckAllBoxes();
+		changeGroupName1();
 		$('#buttonRemoveGroup1').show();
 		return true;
 	}
@@ -149,25 +153,78 @@ function checkGroup2Fields() {
 		return false;
 	}
 	else {
-		$('#mSSelection li :checked').closest('li').appendTo('#group2');
+		var checkedTwoOption = $('#mSSelection li :checked').closest('li');
+		checkedTwoOption.clone().appendTo('#group2');
+		checkedTwoOption.remove();
 		$('#buttonRemoveGroup2').show();
+		unCheckAllBoxes();
 		return true;
 	}
 }
 function removeGroup1() {
-	$('#group1 li :checked').closest('li').appendTo('#mSSelection');
-	if ($('#group1 li').length == 0) {
-		$('#buttonRemoveGroup1').hide();
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group1').getElementsByTagName('input').length){
+		if (document.getElementById('group1').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
 	}
-	else{
+	if (selected == 0) {
+		alert("Nothing to remove from Group 1");
+		return false;
+	}
+	else {
+		$('#group1 li :checked').closest('li').appendTo('#mSSelection');
+		unCheckAllBoxes();
+		if ($('#group1 li').length == 0) {
+			$('#buttonRemoveGroup1').hide();
+		}
+		else{
+		}
+		return true;
 	}
 }
 function removeGroup2() {
-	$('#group2 li :checked').closest('li').appendTo('#mSSelection');
-	if ($('#group2 li').length == 0) {
-		$('#buttonRemoveGroup2').hide();
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group2').getElementsByTagName('input').length){
+		if (document.getElementById('group2').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
 	}
-	else{
+	if (selected == 0) {
+		alert("Nothing to remove from Group 2");
+		return false;
 	}
+	else {
+		$('#group2 li :checked').closest('li').appendTo('#mSSelection');
+		unCheckAllBoxes();
+		if ($('#group2 li').length == 0) {
+			$('#buttonRemoveGroup2').hide();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function unCheckAllBoxes() {
+	$('input[type=checkbox]').each(function() 
+	{ 
+		this.checked = false; 
+	}); 
+}
+function changeGroupName1() {
+	$('#group1 li checkbox').each(function()
+	{
+		this.attr("name") = "mSGroupOne";
+	});
 }
 </script>
