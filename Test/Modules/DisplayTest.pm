@@ -117,15 +117,18 @@ sub multiStrain {
 	my $q = $self->query();
 	my $strainFeaturepropTable = $self->dbixSchema->resultset('Featureprop');
 	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
-	my @strainFeatureIds = $q->param("multiStrainNames");
+	my @groupOneStrainFeatureIds = $q->param("group1");
+	my @groupTwoStrainFeatureIds = $q->param("group2");
 
-	if(!(@strainFeatureIds)) {
+	if(!(@groupOneStrainFeatureIds) && !(@groupTwoStrainFeatureIds)) {
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
-		my $multiStrainDataRef = $self->_getMultiStrainData(\@strainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
+		my $groupOneDataRef = $self->_getMultiStrainData(\@groupOneStrainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
+		my $groupTwoDataRef = $self->_getMultiStrainData(\@groupTwoStrainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
 		$template->param(FEATURES=>$formFeatureRef);
-		$template->param(mSFEATURES=>$multiStrainDataRef);
+		$template->param(mSGPONEFEATURES=>$groupOneDataRef);
+		$template->param(mSGPTWOFEATURES=>$groupTwoDataRef);
 		my $msvalidator = "Return Success";
 		$template->param(mSVALIDATOR=>$msvalidator);
 	}

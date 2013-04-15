@@ -43,7 +43,7 @@
 		</ul>
 	</form-->
 
-	<form class="form">
+	<form id="mSGroupedForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
 		<ul class="nav nav-tabs">
 			<li class="span6"><a href="#mSModalGroup1" data-toggle="modal">Group 1</a></li>
 			<li class="span6"><a href="#mSModalGroup2" data-toggle="modal">Group 2</a></li>
@@ -71,6 +71,11 @@
 			<div id="group2" class="modal-body" style="padding:5px;max-height:350px;overflow:auto">
 				<div id="modalWarning2" class="alert alert-error">
 					You haven't added any strains yet.
+				</div>
+				<div class="alert alert-block">
+					<button type="button" class="close" data-dismiss="alert">x</button>
+					<h4>Warning!</h4>
+					Best check yo self, you're not...
 				</div>
 				<fieldset></fieldset>
 			</div>
@@ -107,8 +112,8 @@
 				<li><a tabindex="-1" onclick="checkGroup1Fields()"><i class="icon-plus-sign"></i> Add to Group 1</a></li>
 				<li><a tabindex="-1" onclick="checkGroup2Fields()"><i class="icon-plus-sign"></i> Add to Group 2</a></li>
 				<li class="divider"></li>
-				<li><a tabindex="-1"><i class="icon-th"></i> Compare Grouped Strains</a></li>
-				<li><a id="compareUngrouped" tabindex="-1"><i class="icon-th-list"></i> Compare Ungrouped Strains</a></li>
+				<li><a id="compareGrouped" tabindex="-1"><i class="icon-th"></i> Compare Grouped Strains</a></li>
+				<!--li><a id="compareUngrouped" tabindex="-1"><i class="icon-th-list"></i> Compare Ungrouped Strains</a></li-->
 				<li class="divider"></li>
 				<li><a tabindex="-1" onclick="reload()"><i class="icon-refresh"></i> Refresh</a></li>
 			</ul>
@@ -125,6 +130,9 @@ $('.dropdown-toggle').dropdown()
 <script>
 $("#compareUngrouped").click( function() {
 	checkMSFields(mSSearchForm);
+});
+$("#compareGrouped").click( function() {
+	checkGroupedFields(mSGroupedForm);
 });
 </script>
 <script type="text/javascript">
@@ -174,7 +182,7 @@ function checkGroup1Fields() {
 		checkedOneOption.clone().appendTo('#group1');
 		checkedOneOption.remove();
 		unCheckAllBoxes();
-		changeGroupName1();
+		changeGroupName();
 		$('#buttonRemoveGroup1').show();
 		$('#modalWarning1').hide();
 		return true;
@@ -200,9 +208,10 @@ function checkGroup2Fields() {
 		var checkedTwoOption = $('#mSSelection li :checked').closest('li');
 		checkedTwoOption.clone().appendTo('#group2');
 		checkedTwoOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
 		$('#buttonRemoveGroup2').show();
 		$('#modalWarning2').hide();
-		unCheckAllBoxes();
 		return true;
 	}
 }
@@ -263,15 +272,29 @@ function removeGroup2() {
 	}
 }
 function unCheckAllBoxes() {
-	$('input[type=checkbox]').each(function() 
+	$('input[type=checkbox]').each(function()
 	{ 
 		this.checked = false; 
 	}); 
 }
-function changeGroupName1() {
-	$('#group1 li checkbox').each(function()
-	{
-		this.attr("name") = "mSGroupOne";
-	});
+function changeGroupName() {
+	$('#group1 input[type=checkbox]').attr("name", "group1");
+	$('#group2 input[type=checkbox]').attr("name", "group2");
+}
+function checkGroupedFields(mSGroupedForm) {
+	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+		alert('No groups to be compared');
+	}
+	else {
+		$('#group1 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#group2 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#mSGroupedForm').submit();
+	}
 }
 </script>
