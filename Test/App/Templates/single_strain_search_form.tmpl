@@ -26,7 +26,7 @@
 			</script>
 			<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=UNIQUENAME>'></input>
 			<div>
-				<button type="submit" class="btn btn-small btn-success" value="Submit" onclick="checkSSFields(this.form)"><i class="icon-search icon-white"></i> Search</button>
+				<button id="sSSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
 				<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 			<!--hr-->
@@ -57,7 +57,12 @@
 				<button type="reset" class="btn btn-small btn-danger disabled" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 			</div>
 		</fieldset>
-	</form>	
+	</form>
+	<script>
+		$('#sSSearchButton').click(function(){
+			checkSSFields(sSSearchForm);
+		});
+	</script>	
 	<script type="text/javascript">
 	function checkSSFields(sSSearchForm) {
 		if (sSSearchForm.singleStrainName.value == "") {
@@ -65,6 +70,7 @@
 			return false;
 		}
 		else {
+			$('#sSSearchForm').submit();
 			return true;
 		}
 	}
