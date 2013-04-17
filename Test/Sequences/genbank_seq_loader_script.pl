@@ -105,6 +105,7 @@ use Bio::SeqIO;
 			$genomeNumber  = $fileNumber;
 			my $attributes = "organism=Escherichia coli" . ";" . "genome_of=$nameAttribute" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
 			my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"";
+			unlink "fasta/directory.index";
 			system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
 			printf "System executed $appendArgs with value %d\n" , $? >> 8;
 		}
@@ -167,4 +168,3 @@ use Bio::SeqIO;
 		}
 		return $newName;
 	}
-

@@ -71,17 +71,12 @@ sub hello {
 ###############################
 
 sub singleStrain {
-	#TODO: Need to reload either the home page or single_strain depending on which page the user is on.
-
+	#Ready form data and load template
 	my $self = shift;
-
 	my $features = $self->_getFormData();
-
-	#Each row of column data is stored into a hash table. A reference to each hash table row is stored in an array.
-	#Returns a reference to an array with references to each row of data in the hash table
 	my $formFeatureRef = $self->_hashFormData($features);
-	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0 );
-	
+	my $template = $self->load_tmpl ( 'single_strain.tmpl' , die_on_bad_params=>0);
+
 	my $q = $self->query();
 	my $strainName = $q->param("singleStrainName");
 
@@ -89,21 +84,14 @@ sub singleStrain {
 		$template->param(FEATURES=>$formFeatureRef);
 	}
 	else {
+		my $strainFeaturepropTable = $self->dbixSchema->resultset('Featureprop');
+		my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
+		my $sSDataRef = $self->_getSingleStrainData($strainName , $strainFeaturepropTable , $strainFeatureTable);
+
 		$template->param(FEATURES=>$formFeatureRef);
-		
-		my $_sSFeatureprop = $self->dbixSchema->resultset('Featureprop')->find({value => "$strainName"});
-		my $_sSFeatures = $self->dbixSchema->resultset('Feature')->find({feature_id => $_sSFeatureprop->feature_id});
-		#my $sSMetaInfo = _getSSMetaInfo($strainName);
-		#my $sSRef = _hashSSMetaInfo($sSMetaInfo);
-		
-		#$template->param(sSMETAINFO=>$sSRef);
-		#$template->param(sSRESIDUE=>$_sSFeatures->residues);
-		$template->param(sSFEATUREID=>$_sSFeatureprop->feature_id);
-		$template->param(sSVALUE=>$_sSFeatureprop->value);
-		$template->param(sSUNIQUENAME=>$_sSFeatures->uniquename);
-		$template->param(sSEQLENGTH=>$_sSFeatures->seqlen);
+		$template->param(sSMETADATA=>$sSDataRef);
 		my $ssvalidator = "Return Success";
-		$template->param(sSVALIDATOR=>$ssvalidator);
+ 		$template->param(sSVALIDATOR=>$ssvalidator);
 	}
 	return $template->output();
 }
@@ -188,53 +176,18 @@ sub bioinfoStatistics {
 ###Helper Functions ###
 #######################
 
-# sub _getFormData {
-# 	my $self = shift;
-# 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-# 		{value => 'Genome Sequence'},
-# 		{
-# 			join		=> ['type', 'feature'],
-# 			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-# 			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-# 			order_by 	=> { -asc => ['uniquename']}
-# 		}
-# 		);
-# 	return $_features;
-# }
-
-# #Inputs all column data into a hash table and returns a reference to the hash table.
-# sub _hashFormData {
-# 	my $self=shift;
-# 	my $features=shift;
-
-# 	#Initialize an array to hold the loop
-# 	my @formData;
-
-# 	while (my $featureRow = $features->next){
-# 		#Initialize a hash structure to store column data in.
-# 		my %formRowData;
-# 		$formRowData{'FEATUREID'}=$featureRow->feature_id;
-# 		$formRowData{'UNIQUENAME'}=$featureRow->feature->uniquename;
-# 		#push a reference to each row into the loop
-# 		push(@formData, \%formRowData);
-# 	}
-# 	#return a reference to the loop array
-# 	return \@formData;
-# }
-
 sub _getFormData {
 	my $self = shift;
 	my $_features = $self->dbixSchema->resultset('Featureprop')->search(
-		{
+	{
 		name => 'genome_of'
 		},
 		{	join => ['type'],
-			select => [qw/me.value type.name/],
-			group_by => [qw/me.value type.name/],
-			order_by 	=> { -asc => ['me.value']}
-		}
-		);
+		select => [qw/me.value type.name/],
+		group_by => [qw/me.value type.name/],
+		order_by 	=> { -asc => ['me.value']}
+	}
+	);
 	return $_features;
 }
 
@@ -251,41 +204,37 @@ sub _hashFormData {
 	return \@formData;
 }
 
-#TODO: This needs to be tweaked a bit
-# sub _getSSMetaInfo {
-# 	my $self = shift;
-# 	my $_strainName = shift;
-# 	my $_sSMetaInfoTable = $self->dbixSchema->resultset('Featureprop');
+sub _getSingleStrainData {
+	my $self = shift;
+	my $singleStrainName = shift;
+	my $strainFeaturepropTable = shift;
+	my $strainFeatureTable = shift;
+	my @singleStrainData;
 
-# 	my $_sSMetaInfo = $_sSMetaInfoTable->search(
-# 	{},
-# 	#{value => $_strainName},
-# 	{
-# 		column	=> [ qw/me.feature_id/]
-# 	}
-# 	);
-# 	return $_sSMetaInfo;
-#}
+	my $_featureProps = $strainFeaturepropTable->search(
+		{value => "$singleStrainName"},
+		{
+			column => [qw/me.feature_id/],
+			order_by => {-asc => ['me.feature_id']}
+		}
+		);
 
-# sub _hashSSMetaInfo {
-# 	my $self = shift;
-# 	my $_sSData = shift;
-# 	my @sSMetaInfo;
-# 	while (my $sSMetaInfoRow = $_sSData->next){
-# 		my %sSMetaRowData;
-# 		$sSMetaRowData{'sSFEATUREID'}=$sSMetaInfoRow->feature_id;
-# 		push(@sSMetaInfo, \%sSMetaRowData);
-# 	}
-# 	return \@sSMetaInfo;
-# }
+	while (my $_featurepropsRow = $_featureProps->next) {
+			my %singleRowData;
+			$singleRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+			push(@singleStrainData, \%singleRowData);
+		#get all the meta info for that particular feature id and hash it
+	}
+	return \@singleStrainData;
+}
 
 sub _getMultiStrainData {
 	my $self = shift;
 	my $strainFeatureNames = shift;
 	my $strainFeaturepropTable = shift;
 	my $strainFeatureTable = shift;
-	my @multiStrainData;
-	my %multiRowData;
+	#my @multiStrainData;
+	#my %multiRowData;
 	my @multiNestedRowLoop;
 
 	foreach my $multiStrainName (@{$strainFeatureNames}) {
@@ -293,14 +242,22 @@ sub _getMultiStrainData {
 		my $_mSFeatureprops = $strainFeaturepropTable->find({value => "$multiStrainName"});
 		my $_mSFeatures = $strainFeatureTable->find({feature_id => $_mSFeatureprops->feature_id});
 		
-		#Create a hash table and push these keys onto it
-		my %multiNestedRow;
-		$multiNestedRow{'mSFEATUREID'}=$_mSFeatureprops->feature_id;
-		$multiNestedRow{'mSVALUE'}=$_mSFeatureprops->value;
-		#$multiNestedRow{'mSRESIDUES'}=$_mSFeatures->residues;
-		$multiNestedRow{'mSSEQLENGTH'}=$_mSFeatures->seqlen;
-		$multiNestedRow{'mSUNIQUENAME'}=$_mSFeatures->uniquename;
-		push(@multiNestedRowLoop, \%multiNestedRow);
+		my $_featureProps = $strainFeaturepropTable->search(
+			{value => "$multiStrainName"},
+			{
+				column => [qw/me.feature_id/],
+				order_by => {-asc => ['me.feature_id']}
+			}
+			);
+
+		while (my $_featurepropsRow = $_featureProps->next){
+			my %multiRowData;
+			my $_rowFeaturedId = $_featurepropsRow->feature_id;
+			my $_rowFeatures = $strainFeatureTable->find({feature_id => $_rowFeaturedId});
+			$multiRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+			$multiRowData{'UNIQUENAME'}=$_rowFeatures->uniquename;
+			push (@multiNestedRowLoop, \%multiRowData);
+		}
 	}
 	return \@multiNestedRowLoop;
 }
@@ -320,8 +277,8 @@ sub _getVFData {
 	return $_virulenceFactorProperties;
 }
 
-#Inputs all column data into a hash table April 29tand returns a reference to the hash table.
-#Note: the Cvterms must be defined when up loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+#Inputs all column data into a hash table and returns a reference to the hash table.
+#Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
 #	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
 #	i.e. Fasta files must have attributes tagged to them before uploading.
 sub _hashVFData {

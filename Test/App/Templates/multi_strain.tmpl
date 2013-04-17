@@ -28,13 +28,9 @@
 			<div class="span4">
 				<h2>Group 1:</h2>
 				<TMPL_LOOP NAME=mSGPONEFEATURES>
-				<ul>
-					<li>Name: <TMPL_VAR NAME=mSVALUE></li>
-					<li>Feature ID: <TMPL_VAR NAME=mSFEATUREID></li>
-					<li>Uniquename: <TMPL_VAR NAME=mSUNIQUENAME></li>
-					<li>Sequence Length: <TMPL_VAR NAME=mSSEQLENGTH> bp</li>
-				</ul>
+				<TMPL_VAR NAME=UNIQUENAME>
 				</TMPL_LOOP>
+				<hr>
 			</div>
 			
 			<!--div id="mSeq" class="span8" style="overflow:auto;word-wrap:break-word;max-height:100px"><TMPL_VAR NAME=mSRESIDUES></div-->
@@ -42,13 +38,9 @@
 			<div class="span4">
 				<h2>Group 2:</h2>
 				<TMPL_LOOP NAME=mSGPTWOFEATURES>
-				<ul>
-					<li>Name: <TMPL_VAR NAME=mSVALUE></li>
-					<li>Feature ID: <TMPL_VAR NAME=mSFEATUREID></li>
-					<li>Uniquename: <TMPL_VAR NAME=mSUNIQUENAME></li>
-					<li>Sequence Length: <TMPL_VAR NAME=mSSEQLENGTH> bp</li>
-				</ul>
+				<TMPL_VAR NAME=UNIQUENAME>
 				</TMPL_LOOP>
+				<hr>
 			</div>
 			
 			<!--div id="mSeq" class="span8" style="overflow:auto;word-wrap:break-word;max-height:100px"><TMPL_VAR NAME=mSRESIDUES></div-->

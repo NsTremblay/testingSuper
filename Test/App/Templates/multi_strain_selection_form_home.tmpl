@@ -5,43 +5,6 @@
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 
 	<h5>Select multiple strains to compare them and view metadata</h5>
-	<!--form class="form">
-		<ul class="nav nav-pills">
-			<li class="dropup span6">
-				<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-					Group 1
-					<b class="caret"></b>
-				</a>
-				<ul class="dropdown-menu pull-left" role="menu">
-					<div id="group1" style="padding:5px;max-height:350px;overflow:auto">
-						<fieldset>
-							<span class="help-block">Group 1: </span>
-						</fieldset>
-					</div>
-					<li id="removeGroup1Divider" class="divider" style="display:none"></li>
-					<li><a id="buttonRemoveGroup1" onclick="removeGroup1()" style="display:none"><i class="icon-remove-sign"></i> Remove from Group 1</a>
-					</li>
-				</ul>
-			</li>
-
-			<li class="dropup span6">
-				<a class="dropdown-toggle" data-toggle="dropdown" href="#">
-					Group 2
-					<b class="caret"></b>
-				</a>
-				<ul class="dropdown-menu pull-right" role="menu">
-					<div id="group2" style="padding:5px;max-height:350px;overflow:auto">
-						<fieldset>
-							<span class="help-block">Group 2: </span>
-						</fieldset>
-					</div>
-					<li id="removeGroup2Divider" class="divider" style="display:none"></li>
-					<li><a id="buttonRemoveGroup2" onclick="removeGroup2()" style="display:none"><i class="icon-remove-sign"></i> Remove from Group 2</a>
-					</li>
-				</ul>
-			</li>
-		</ul>
-	</form-->
 
 	<form id="mSGroupedForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
 		<ul class="nav nav-tabs">
@@ -66,6 +29,7 @@
 
 		<div id="mSModalGroup2" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
 				<h3 id="myModalLabel">Group 2</h3>
 			</div>
 			<div id="group2" class="modal-body" style="padding:5px;max-height:350px;overflow:auto">

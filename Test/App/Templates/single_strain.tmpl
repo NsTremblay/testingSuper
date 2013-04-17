@@ -27,6 +27,10 @@
 						<li>Feature ID: <TMPL_VAR NAME=sSFEATUREID></li>
 						<li>Sequence Length: <TMPL_VAR NAME=sSEQLENGTH> bp</li>
 						<ul>
+						<hr>
+						<TMPL_LOOP NAME=sSMETADATA>
+						<TMPL_VAR NAME=FEATUREID>
+						</TMPL_LOOP>
 					</div>
 					<div class="span6" id="sSeq" style="overflow:auto;word-wrap:break-word;max-height:100px"><TMPL_VAR NAME=sSRESIDUE></div>
 				</div>
