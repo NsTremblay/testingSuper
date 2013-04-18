@@ -44,13 +44,18 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use Log::Log4perl;
 use Carp;
+use Bio::SeqIO;
+use IO::File;
+use IO::Dir;
+use Role::Tiny::With;
+with 'Roles::DatabaseConnector';
 
 #object creation
 sub new {
 	my ($class) = shift;
 	my $self = {};
 	bless( $self, $class );
-	$self->initialize(@_);
+	$self->_initialize(@_);
 	return $self;
 }
 
@@ -62,14 +67,24 @@ Assigns all values to class variables.
 =cut
 
 sub _initialize {
-my ($self) = shift;
+	my ($self) = shift;
 
-#logging
-$self->logger(Log::Log4perl->get_logger());
-$self->logger->info("Logger initialized in Modules::FastaFileWrite");
+	#logging
+	$self->logger(Log::Log4perl->get_logger());
+	$self->logger->info("Logger initialized in Modules::FastaFileWrite");
 
-my %params = @_;
+	my %params = @_;
 
+	#object construction set all parameters
+	foreach my $key(keys %params){
+		if($self->can($key)){
+			$self->key($params{$key});
+		}
+		else {
+		#logconfess calls the confess of Carp package, as well as logging to Log4perl
+		$self->logger ->logconfess("$key is not a valid parameter in Modules::FastaFileWrite");
+	}
+}
 }
 
 =head2 logger 
@@ -80,7 +95,69 @@ Stores a logger object for the module.
 
 sub logger {
 	my $self = shift;
-	$self->{'_logger'} = shift // return $self->{'_logger'}
+	$self->{'_logger'} = shift // return $self->{'_logger'};
 }
 
+=head2 writeStrainsToFile
+
+Method which takes in a list of contigs for a single genome and writes it out to a fasta file.
+
+=cut
+
+
+sub writeStrainsToFile {
+	my $self = shift;
+	my $strainNames = shift;
+
+	#The contig will have three keys name, residues and description which will be accessed as:
+	#contigHash{name}, contigHash{residues}, contigHash{description}
+
+	#We want to append the accessed fields to a file such as:
+
+	#>> "\> . contig{name} . contig{description}. \n"
+	#>> "contig{residues} . \n"
+
+	#	Need to store an array of %contig into @contigs where each %contig consists of:
+	#	%contig = ('name' => '' , 'residues' => '' , 'description' => '') 
+
+	foreach my $strainName (@{$strainNames}) {
+		my %genome;
+		my @contigs;
+
+		my $featureProperties = $self->dbixSchema->resultset('Featureprop')->search(
+			{value => "$strainName"},
+			{
+				column => [qw/me.feature_id/]
+			}
+			);
+
+		while (my $featureRow = $featureProperties->next) {
+			my %contig;
+
+			my $contigRowId = $featureRow->feature_id;
+
+			my $contigRow = $self->dbixSchema->resultset('Feature')->find({feature_id => $contigRowId});
+
+			$contig{'name'} = $contigRow->name;
+			$contig{'residues'} = $contigRow->residues;
+
+			# my $_contigDescription = $self->dbixSchema->resultset('Featureprop')->search(
+			# 	{name => 'description'},
+			# 	{
+			# 		join => ['type'],
+			# 		column => [qw/me.value/]
+			# 	}
+			# 	);
+			# $contig{'description'} = $_contigDescription;
+			push(@contigs , \%contig);
+		}
+
+		$genome{'genome_name'} = $strainName;
+		$genome{'contigs'} = @contigs;
+
+		print STDERR "Genome: " . $genome{'genome_name'} . "\n";
+	}
+}
+
+#The file writeout needs to be able to take in a series of fasta headers and write them out to a fasta file
 1;

@@ -8,9 +8,10 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use parent 'CGI::Application';
-use Role::Tiny::With;
+#use Role::Tiny::With;
 #use Phylogeny::PhyloTreeBuilder;
-with 'Roles::DatabaseConnector';
+use Modules::FastaFileWrite;
+#with 'Roles::DatabaseConnector';
 
 sub setup{
 	my $self = shift;
@@ -28,7 +29,7 @@ sub setup{
 		'process_multi_strain_form'=>'multiStrain');
 
 #connect to the local database
-
+#Need to change this so that it calls a server setting obejct class.
 $self->connectDatabase({
 	'dbi'=>'Pg',
 	'dbName'=>'chado_db_test',
@@ -91,7 +92,7 @@ sub singleStrain {
 		$template->param(FEATURES=>$formFeatureRef);
 		$template->param(sSMETADATA=>$sSDataRef);
 		my $ssvalidator = "Return Success";
- 		$template->param(sSVALIDATOR=>$ssvalidator);
+		$template->param(sSVALIDATOR=>$ssvalidator);
 	}
 	return $template->output();
 }
@@ -220,9 +221,9 @@ sub _getSingleStrainData {
 		);
 
 	while (my $_featurepropsRow = $_featureProps->next) {
-			my %singleRowData;
-			$singleRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
-			push(@singleStrainData, \%singleRowData);
+		my %singleRowData;
+		$singleRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+		push(@singleStrainData, \%singleRowData);
 		#get all the meta info for that particular feature id and hash it
 	}
 	return \@singleStrainData;
@@ -233,14 +234,13 @@ sub _getMultiStrainData {
 	my $strainFeatureNames = shift;
 	my $strainFeaturepropTable = shift;
 	my $strainFeatureTable = shift;
-	#my @multiStrainData;
-	#my %multiRowData;
 	my @multiNestedRowLoop;
 
-	foreach my $multiStrainName (@{$strainFeatureNames}) {
+	my $ffwHandle = Modules::FastaFileWrite->new();
+	$ffwHandle->dbixSchema($self->dbixSchema);
+	$ffwHandle->writeStrainsToFile($strainFeatureNames);
 
-		my $_mSFeatureprops = $strainFeaturepropTable->find({value => "$multiStrainName"});
-		my $_mSFeatures = $strainFeatureTable->find({feature_id => $_mSFeatureprops->feature_id});
+	foreach my $multiStrainName (@{$strainFeatureNames}) {
 		
 		my $_featureProps = $strainFeaturepropTable->search(
 			{value => "$multiStrainName"},

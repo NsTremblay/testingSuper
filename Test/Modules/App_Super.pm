@@ -13,6 +13,8 @@ use CGI::Application::Plugin::Config::Simple;
 use CGI::Application::Plugin::Redirect;
 use CGI::Application::Plugin::Session;
 use HTML::Template;
+use Role::Tiny::With;
+with 'Roles::DatabaseConnector';
 
 #get script location via File::Basename
 my $SCRIPT_LOCATION = dirname(__FILE__);
