@@ -141,21 +141,32 @@ sub writeStrainsToFile {
 			$contig{'name'} = $contigRow->name;
 			$contig{'residues'} = $contigRow->residues;
 
-			# my $_contigDescription = $self->dbixSchema->resultset('Featureprop')->search(
-			# 	{name => 'description'},
-			# 	{
-			# 		join => ['type'],
-			# 		column => [qw/me.value/]
-			# 	}
-			# 	);
-			# $contig{'description'} = $_contigDescription;
+			my $_contigDescription = $self->dbixSchema->resultset('Featureprop')->search(
+				{'me.feature_id' => $contigRowId},
+				{
+					join => ['type'],
+					column => [qw/me.value/]
+				}
+				);
+
+			my $contDesc = "";
+
+			while (my $cont = $_contigDescription->next) {
+				$contDesc =  $contDesc . ", " . $cont->value;
+			}
+			$contig{'description'} = $contDesc;
 			push(@contigs , \%contig);
 		}
 
 		$genome{'genome_name'} = $strainName;
-		$genome{'contigs'} = @contigs;
+		$genome{'contigs'} = \@contigs;
 
-		print STDERR "Genome: " . $genome{'genome_name'} . "\n";
+		#print STDERR "Genome: " . $genome{'genome_name'} . "\n";
+		foreach my $contig (@{$genome{'contigs'}}){
+			#print STDERR "Name: " . $contig->{'name'} . "\n";
+			#print STDERR "Description: " . $contig->{'description'} . "\n";
+			#print STDERR "Residues: " . $contig->{'residues'} . "\n";
+		}
 	}
 }
 
