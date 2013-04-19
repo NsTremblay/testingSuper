@@ -43,51 +43,31 @@ use Bio::SeqIO;
 			else {
 				$fileNumber++;
 				mkNewFastaFolder();
+				mkNewOutFolder();
 				copyFastaFile($file);
 				readInHeaders($file);
-				uploadGenomeToDb();
+				#uploadGenomeToDb();
 				unlink $file;
 				unlinkFastaFolder();
-				unlink "out.gff";
+				unlinkOutFolder();
 			}
 		}
 		closedir '';
 	}
 
-	sub mkNewFastaFolder {
-		my $mkDirArgs = "mkdir fasta";
-		system($mkDirArgs) == 0 or die "System with $mkDirArgs failed: $? \n";
-		printf "System executed $mkDirArgs with value %d\n" , $? >> 8;
-	}
-
-	sub unlinkFastaFolder {
-		my $unlinkDirArgs = "rm -r fasta";
-		system($unlinkDirArgs) == 0 or die "System with $unlinkDirArgs failed: $? \n";
-		printf "System executed $unlinkDirArgs with value %d\n" , $? >> 8;
-	}
-
-	sub copyFastaFile {
-		my $file = shift;
-		if ($file eq "." || $file eq ".."){
-		}
-		else {
-			my $cpArgs = "cp " . "$directoryName/" . "$file" . " .";
-			system($cpArgs) == 0 or die "System with $cpArgs failed: $? \n";
-			printf "System executed $cpArgs with value %d\n" , $? >> 8;
-		}
-	}
-
 	sub readInHeaders {
 		my $file = shift;
 		my $in = Bio::SeqIO->new(-file => "$file" , -format => 'fasta');
-		#my $in = Bio::SeqIO->new(-file => "$directoryName/" . $file, -format => 'fasta'); 
+		#my $in = Bio::SeqIO->new(-file => "$directoryName/" . $file, -format => 'fasta');
+		my $singleFileNumber = 0; 
 
 		while(my $seq = $in->next_seq()) {
+			$singleFileNumber++;
 			my $singleFileName = $seq->id;
 			my $description = $seq->desc();
 			my $singleFastaHeader = Bio::SeqIO->new(-file => '>'."fasta/$singleFileName" . ".fasta" , -format => 'fasta') or die "$!\n";
 			$singleFastaHeader->write_seq($seq) or die "$!\n";
-			appendAtrributes($seq , $singleFileName , $description);
+			appendAtrributes($seq , $singleFileName , $description , $singleFileNumber);
 		}
 	}
 
@@ -95,31 +75,34 @@ use Bio::SeqIO;
 		my $seq = shift;
 		my $singleFileName = shift;
 		my $description = shift;
-		print $singleFileName;
+		my $singleFileNumber = shift;
 		my $nameAttribute = _getName($seq, $singleFileName);
 		if ($nameAttribute eq "") {
-			die "Errorparsing $singleFileName $!\n";
+			die "Error parsing $singleFileName $!\n";
 		}
 		else{
 			my $keywords = "keywords";
 			$genomeNumber  = $fileNumber;
 			my $attributes = "organism=Escherichia coli" . ";" . "genome_of=$nameAttribute" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
-			my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"";
-			unlink "fasta/directory.index";
+			my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"" . " --gfffilename " . "gffout/out" . "$singleFileNumber" . "." . "gff";
 			system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
 			printf "System executed $appendArgs with value %d\n" , $? >> 8;
+			unlink "fasta/directory.index";
+			unlink "fasta/$singleFileName" . ".fasta";
 		}
 	}
 
 	#Some sequence files may be empty and as a result wont produce an out.gff file. If an out.gff file is not present, the db uploader will throw up. So we specify to skip the file.
 	sub uploadGenomeToDb {
-		my $outFileHandle = IO::File->new();
-		if ($outFileHandle->open("< out.gff")) {
-			my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
+
+		my $outDirectoryName = 'gffout/';
+		my $outFiles = getFileNamesFromDirectory($outDirectoryName);
+
+		foreach my $outFile (@{$outFiles}) {
+			my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile gffout/$outFile";
 			system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
 			printf "System executed $dbArgs with value %d\n", $? >> 8;
-		}
-		else{
+			#printf $outFile . "\n";
 		}
 	}
 
@@ -134,37 +117,111 @@ use Bio::SeqIO;
 		else{
 			$tagName = "";
 		}
-		print "My tag name: $tagName\n";
+		#print "My tag name: $tagName\n";
 		my $newName;
 		my $originalName = $seq->desc;
 		if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
 			$newName = $2;
-			$newName =~ s/Escherichia coli//;
-			$newName =~ s/,//;
-			$newName =~ s/'//;
-			$newName =~ s/'//;
-			$newName =~ s/str./Str./;
-			print "Name : $newName\n";
+			# $newName =~ s/Escherichia coli//;
+			# $newName =~ s/,//;
+			# $newName =~ s/'//;
+			# $newName =~ s/'//;
+			# $newName =~ s/str./Str./;
+			#print "Name : $newName\n";
 		}
 		elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
 			$newName = "$tagName -$2";
-			print "Name : $newName\n"
+			# $newName =~ s/Escherichia coli//;
+			# $newName =~ s/,//;
+			# $newName =~ s/'//;
+			# $newName =~ s/'//;
+			# $newName =~ s/str./Str./;
+			#print "Name : $newName\n"
 		}
 		elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
 			$newName = $2;
 			if ($newName eq "") {
 				$newName = "$tagName -$3";
-				print "Name : $newName\n"
+				# $newName =~ s/Escherichia coli//;
+				# $newName =~ s/,//;
+				# $newName =~ s/'//;
+				# $newName =~ s/'//;
+				# $newName =~ s/str./Str./;
+				#print "Name : $newName\n"
 			}
 			else {
 				$newName = "$tagName -$2";
-				print "Name : $newName\n"
+				# $newName =~ s/Escherichia coli//;
+				# $newName =~ s/,//;
+				# $newName =~ s/'//;
+				# $newName =~ s/'//;
+				# $newName =~ s/str./Str./;
+				#print "Name : $newName\n"
 			}
 		}
 		else{
 			$newName = $originalName;
-			$newName =~ s/Escherichia coli//;
-			print "Name : $newName\n"
+			# $newName =~ s/Escherichia coli//;
+			# $newName =~ s/,//;
+			# $newName =~ s/'//;
+			# $newName =~ s/'//;
+			# $newName =~ s/str./Str./;
+			#print "Name : $newName\n"
 		}
+		$newName =~ s/Escherichia coli//;
+		$newName =~ s/,//;
+		$newName =~ s/'//;
+		$newName =~ s/'//;
+		$newName =~ s/str./Str./;
 		return $newName;
+	}
+
+	sub mkNewOutFolder {
+		my $_mkDirArgs = "mkdir gffout";
+		system($_mkDirArgs) == 0 or die "System with $_mkDirArgs failed: $? \n";
+		printf "System executed $_mkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub unlinkOutFolder {
+		my $_unlinkDirArgs = "rm -r gffout";
+		system($_unlinkDirArgs) == 0 or die "System with $_unlinkDirArgs failed: $? \n";
+		printf "System executed $_unlinkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub mkNewFastaFolder {
+		my $_mkDirArgs = "mkdir fasta";
+		system($_mkDirArgs) == 0 or die "System with $_mkDirArgs failed: $? \n";
+		printf "System executed $_mkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub unlinkFastaFolder {
+		my $_unlinkDirArgs = "rm -r fasta";
+		system($_unlinkDirArgs) == 0 or die "System with $_unlinkDirArgs failed: $? \n";
+		printf "System executed $_unlinkDirArgs with value %d\n" , $? >> 8;
+	}
+
+	sub copyFastaFile {
+		my $file = shift;
+		if ($file eq "." || $file eq ".."){
+		}
+		else {
+			my $cpArgs = "cp " . "$directoryName/" . "$file" . " .";
+			system($cpArgs) == 0 or die "System with $cpArgs failed: $? \n";
+			printf "System executed $cpArgs with value %d\n" , $? >> 8;
+		}	
+	}
+
+	sub getFileNamesFromDirectory{
+		my $directory = shift;
+
+		opendir( DIRECTORY, $directory ) or die "cannot open directory $directory $!\n";
+		my @dir = readdir DIRECTORY;
+		closedir DIRECTORY;
+
+		my @fileNames;
+		foreach my $fileName(@dir){
+			next if substr( $fileName, 0, 1 ) eq '.';
+			push @fileNames, ( $fileName );
+		}
+		return \@fileNames;
 	}

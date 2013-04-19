@@ -161,11 +161,10 @@ sub writeStrainsToFile {
 		$genome{'genome_name'} = $strainName;
 		$genome{'contigs'} = \@contigs;
 
-		#print STDERR "Genome: " . $genome{'genome_name'} . "\n";
+		print STDERR "Genome: " . $genome{'genome_name'} . "\n";
 		foreach my $contig (@{$genome{'contigs'}}){
 			#print STDERR "Name: " . $contig->{'name'} . "\n";
-			#print STDERR "Description: " . $contig->{'description'} . "\n";
-			#print STDERR "Residues: " . $contig->{'residues'} . "\n";
+			print STDERR "Description: " . $contig->{'description'} . "\n";
 		}
 	}
 }

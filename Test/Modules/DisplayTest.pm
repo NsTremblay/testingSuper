@@ -274,6 +274,7 @@ sub _getVFData {
 			order_by 	=> { -asc => ['uniquename'] }
 		}
 		);
+
 	return $_virulenceFactorProperties;
 }
 
