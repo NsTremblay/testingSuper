@@ -116,8 +116,8 @@ sub multiStrain {
 		my $groupOneDataRef = $self->_getMultiStrainData(\@groupOneStrainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
 		my $groupTwoDataRef = $self->_getMultiStrainData(\@groupTwoStrainFeatureIds, $strainFeaturepropTable, $strainFeatureTable);
 		$template->param(FEATURES=>$formFeatureRef);
-		$template->param(mSGPONEFEATURES=>$groupOneDataRef);
-		$template->param(mSGPTWOFEATURES=>$groupTwoDataRef);
+		#$template->param(mSGPONEFEATURES=>$groupOneDataRef);
+		#$template->param(mSGPTWOFEATURES=>$groupTwoDataRef);
 		my $msvalidator = "Return Success";
 		$template->param(mSVALIDATOR=>$msvalidator);
 	}
@@ -236,30 +236,33 @@ sub _getMultiStrainData {
 	my $strainFeatureTable = shift;
 	my @multiNestedRowLoop;
 
+	#Need to make a copy of the dereferenced array into a new list since $ffwhandle will modify the names in the list.
+	push (my @strainNames , @{$strainFeatureNames}); 
+
 	my $ffwHandle = Modules::FastaFileWrite->new();
 	$ffwHandle->dbixSchema($self->dbixSchema);
-	$ffwHandle->writeStrainsToFile($strainFeatureNames);
+	$ffwHandle->writeStrainsToFile(\@strainNames);
 
-	foreach my $multiStrainName (@{$strainFeatureNames}) {
+	# foreach my $multiStrainName (@{$strainFeatureNames}) {
 		
-		my $_featureProps = $strainFeaturepropTable->search(
-			{value => "$multiStrainName"},
-			{
-				column => [qw/me.feature_id/],
-				order_by => {-asc => ['me.feature_id']}
-			}
-			);
+	# 	my $_featureProps = $strainFeaturepropTable->search(
+	# 		{value => "$multiStrainName"},
+	# 		{
+	# 			column => [qw/me.feature_id/],
+	# 			order_by => {-asc => ['me.feature_id']}
+	# 		}
+	# 		);
 
-		while (my $_featurepropsRow = $_featureProps->next){
-			my %multiRowData;
-			my $_rowFeaturedId = $_featurepropsRow->feature_id;
-			my $_rowFeatures = $strainFeatureTable->find({feature_id => $_rowFeaturedId});
-			$multiRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
-			$multiRowData{'UNIQUENAME'}=$_rowFeatures->uniquename;
-			push (@multiNestedRowLoop, \%multiRowData);
-		}
-	}
-	return \@multiNestedRowLoop;
+	# 	while (my $_featurepropsRow = $_featureProps->next){
+	# 		my %multiRowData;
+	# 		my $_rowFeaturedId = $_featurepropsRow->feature_id;
+	# 		my $_rowFeatures = $strainFeatureTable->find({feature_id => $_rowFeaturedId});
+	# 		$multiRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+	# 		$multiRowData{'UNIQUENAME'}=$_rowFeatures->uniquename;
+	# 		push (@multiNestedRowLoop, \%multiRowData);
+	# 	}
+	# }
+	# return \@multiNestedRowLoop;
 }
 
 sub _getVFData {

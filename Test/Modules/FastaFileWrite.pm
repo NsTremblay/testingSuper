@@ -82,7 +82,7 @@ sub _initialize {
 		}
 		else {
 		#logconfess calls the confess of Carp package, as well as logging to Log4perl
-		$self->logger ->logconfess("$key is not a valid parameter in Modules::FastaFileWrite");
+		$self->logger->logconfess("$key is not a valid parameter in Modules::FastaFileWrite");
 	}
 }
 }
@@ -108,36 +108,51 @@ Method which takes in a list of contigs for a single genome and writes it out to
 sub writeStrainsToFile {
 	my $self = shift;
 	my $strainNames = shift;
+	my $outDirectoryName = "../../Sequences/FastAnalysis/";
 
-	#The contig will have three keys name, residues and description which will be accessed as:
-	#contigHash{name}, contigHash{residues}, contigHash{description}
+	#Returns an array reference to a list of %genome.
+	my $genomeRef = $self->_hashStrains($strainNames);
 
-	#We want to append the accessed fields to a file such as:
+	foreach my $genome (@{$genomeRef}) {
+		my $outFile = $genome->{'genome_name'};
+		open(OUT, '>' . "$outDirectoryName" . "$outFile") or die "$!";
+		#my $newFH = \*OUT; If you wanted to pass the handler off to another method
 
-	#>> "\> . contig{name} . contig{description}. \n"
-	#>> "contig{residues} . \n"
+		foreach my $contig (@{$genome->{'contigs'}}){
+			print(OUT ">" . $contig->{'name'} . $contig->{'description'} . "\n" . $contig->{'residues'} . "\n") or die "$!";
+		}
+		close(OUT);
+	}
+}
 
-	#	Need to store an array of %contig into @contigs where each %contig consists of:
-	#	%contig = ('name' => '' , 'residues' => '' , 'description' => '') 
+sub _hashStrains {
+	my $self = shift;
+	my $strainNames = shift;
+	my @genomeList;
+
+	#Genomes are stored with the following structure:
+	# %Genome{{name => '<genome_name>'},
+	# 		@contigs[%contig{
+	# 			{name => '<contig_name'},
+	# 			{residues => '<dna_residues>'},
+	# 			{description => '<contig_description>'}
+	# 			}]
+	# }
+
 
 	foreach my $strainName (@{$strainNames}) {
 		my %genome;
 		my @contigs;
-
 		my $featureProperties = $self->dbixSchema->resultset('Featureprop')->search(
 			{value => "$strainName"},
 			{
 				column => [qw/me.feature_id/]
 			}
 			);
-
 		while (my $featureRow = $featureProperties->next) {
 			my %contig;
-
 			my $contigRowId = $featureRow->feature_id;
-
 			my $contigRow = $self->dbixSchema->resultset('Feature')->find({feature_id => $contigRowId});
-
 			$contig{'name'} = $contigRow->name;
 			$contig{'residues'} = $contigRow->residues;
 
@@ -148,25 +163,19 @@ sub writeStrainsToFile {
 					column => [qw/me.value/]
 				}
 				);
-
 			my $contDesc = "";
-
 			while (my $cont = $_contigDescription->next) {
 				$contDesc =  $contDesc . ", " . $cont->value;
 			}
 			$contig{'description'} = $contDesc;
 			push(@contigs , \%contig);
 		}
-
+		$strainName =~ s/\//-/;
 		$genome{'genome_name'} = $strainName;
 		$genome{'contigs'} = \@contigs;
-
-		print STDERR "Genome: " . $genome{'genome_name'} . "\n";
-		foreach my $contig (@{$genome{'contigs'}}){
-			#print STDERR "Name: " . $contig->{'name'} . "\n";
-			print STDERR "Description: " . $contig->{'description'} . "\n";
-		}
+		push (@genomeList , \%genome);
 	}
+	return \@genomeList;
 }
 
 #The file writeout needs to be able to take in a series of fasta headers and write them out to a fasta file
