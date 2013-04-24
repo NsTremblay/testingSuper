@@ -84,7 +84,7 @@ sub groupWiseComparisons {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'multi_strain.tmpl' , die_on_bad_params=>0 );
+	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
 	my @groupOneStrainNames = $q->param("group1");

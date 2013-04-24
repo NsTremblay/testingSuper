@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
+
+<body onload="onLoadCheck()" style="background-color:#796e6c">
+	<div class="row-fluid">
+		<div class="container" style="background-color:#FFFFFF">
+
+			<TMPL_INCLUDE NAME="strain_info_form_with_map.tmpl">
+
+			<div class="span8">
+
+				<div><h1>Single-strain Page</h1></div>
+
+				<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3;margin-right:5px">
+					<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
+				</div>
+
+				<div class="row-fluid" id="strainInfoDiv" style="display:none;margin:10px 0px 10px 0px">
+					<div class="span6"><h4>Data Retrieved for:</h4>
+						<TMPL_LOOP NAME=METADATA>
+						<TMPL_VAR NAME=FEATUREID>
+						</TMPL_LOOP>
+					</div>
+				</div>
+
+				<div>
+					<p>Output a table with the strain name, its related members, and all the virluece factors it has.</p>
+				</div>
+
+			</div>
+
+		</div>
+
+	</div>
+
+	<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
+
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>

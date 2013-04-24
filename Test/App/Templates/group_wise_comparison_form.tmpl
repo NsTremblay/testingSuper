@@ -1,0 +1,248 @@
+<div class="container" style="padding-bottom:10px">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+
+	<div class="span3" style="border:solid;border-width:1px;max-height:400px;overflow:auto">
+		<form id="strainListForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
+			<div style="padding:10px">
+				<fieldset>
+					<span class="help-block">Select on one or strains to compare them and view metadata</span>
+					<ul id="strainListSelection" style="padding:0px;margin:0px">
+						<TMPL_LOOP NAME=FEATURES>
+						<li style="list-style:none">
+							<label class="checkbox">
+								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+							</label>
+						</li>
+						</TMPL_LOOP>
+					</ul>
+				</fieldset>
+			</form>
+		</div>
+	</div>
+
+	<div class="span2 btn-group btn-group-vertical">
+		<button id="buttonGroup1" class="btn btn-primary span12" type="button" onclick="checkGroup1Fields()"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+		<button id="buttonGroup2" class="btn btn-primary span12" type="button" onclick="checkGroup2Fields()"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
+		<button id="compareGrouped" class="btn btn-primary span12" type="button" value="Submit"><i class="icon-th icon-white"></i> Compare Grouped</button>
+		<!--button id="compareUngrouped" class="btn btn-primary span12" type="button" value="Submit"><i class="icon-th-list icon-white"></i> Compare Ungrouped</button-->
+		<button class="btn btn-primary span12" type="reset" onclick="reload()"><i class="icon-refresh icon-white"></i> Refresh</button>
+	</div>
+
+	<form id="groupedForm" class="form" method="post" action="/home/dispatch.cgi/multi_strain/" enctype="application/x-www-form-urlencoded">
+		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+			<div id="group1" style="max-height:350px;overflow:auto">
+				<fieldset>
+					<span class="help-block">Group 1: </span>
+				</fieldset>
+			</div>
+			<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px" onclick="removeGroup1()"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
+		</div>
+
+		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+			<div id="group2" style="max-height:350px;overflow:auto">
+				<fieldset>
+					<span class="help-block">Group 2: </span>
+				</fieldset>
+			</div>
+			<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px" onclick="removeGroup2()"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
+		</div>
+	</form>
+</div>
+
+<script>
+//$("#compareUngrouped").click( function() {
+//	checkMSFields(strainListForm);
+//});
+$("#compareGrouped").click( function() {
+	checkGroupedFields(groupedForm);
+});
+</script>
+
+<script type="text/javascript">
+
+function initialize() {
+	var mapOptions = {
+		center: new google.maps.LatLng(49.134890, -122.901435),
+		zoom: 15,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	var map = new google.maps.Map(document.getElementById("map_canvas"),
+		mapOptions);
+}
+function displayMap() {
+	document.getElementById('multiStrain').style.display="block";
+	document.getElementById('map_canvas').style.display="block";
+	initialize();
+}
+function checkMSFields(strainListForm) {
+	var selected = 0;
+
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("You must make a valid selection");
+		return false;
+	}
+	else {
+		$('#strainListForm').submit();
+		return true;
+	}
+}
+function checkMultiSeq() {
+	if ($('#validator').is(':empty')) {
+	}
+	else {
+		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseComparisonDiv').show("slow"));
+		$('#multiOption').show("slow");
+	}
+}
+function onLoadCheck() {
+	initialize();
+	checkMultiSeq();
+}
+function reload() {
+	location.reload();
+}
+function checkGroup1Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 1");
+		return false;
+	}
+	else {
+		var checkedOneOption = $('#strainListSelection li :checked').closest('li');
+		checkedOneOption.clone().appendTo('#group1');
+		checkedOneOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup1').show();
+		return true;
+	}
+}
+function checkGroup2Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 2");
+		return false;
+	}
+	else {
+		var checkedTwoOption = $('#strainListSelection li :checked').closest('li');
+		checkedTwoOption.clone().appendTo('#group2');
+		checkedTwoOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup2').show();
+		return true;
+	}
+}
+function removeGroup1() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group1').getElementsByTagName('input').length){
+		if (document.getElementById('group1').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 1");
+		return false;
+	}
+	else {
+		$('#group1 li :checked').closest('li').appendTo('#strainListSelection');
+		unCheckAllBoxes();
+		if ($('#group1 li').length == 0) {
+			$('#buttonRemoveGroup1').hide();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function removeGroup2() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group2').getElementsByTagName('input').length){
+		if (document.getElementById('group2').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 2");
+		return false;
+	}
+	else {
+		$('#group2 li :checked').closest('li').appendTo('#strainListSelection');
+		unCheckAllBoxes();
+		if ($('#group2 li').length == 0) {
+			$('#buttonRemoveGroup2').hide();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function unCheckAllBoxes() {
+	$('input[type=checkbox]').each(function() 
+	{ 
+		this.checked = false; 
+	}); 
+}
+function changeGroupName() {
+	$('#group1 input[type=checkbox]').attr("name", "group1");
+	$('#group2 input[type=checkbox]').attr("name", "group2");
+}
+function checkGroupedFields(groupedForm) {
+	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+		alert('No groups to be compared');
+	}
+	else {
+		$('#group1 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#group2 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#groupedForm').submit();
+	}
+}
+</script>

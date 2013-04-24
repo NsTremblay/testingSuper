@@ -90,8 +90,8 @@ sub home {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$formDataRef);
+	my $template = $self->load_tmpl( 'home.tmpl' , die_on_bad_params=>0 );
+	$template->param(FORMDATA=>$formDataRef);
 	return $template->output();
 }
 

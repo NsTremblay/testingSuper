@@ -1,0 +1,259 @@
+<div class="span4">
+	
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+
+	<h5>Select multiple strains to compare them and view metadata</h5>
+
+	<form id="mSGroupedForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
+		<ul class="nav nav-tabs">
+			<li class="span6"><a href="#mSModalGroup1" data-toggle="modal">Group 1</a></li>
+			<li class="span6"><a href="#mSModalGroup2" data-toggle="modal">Group 2</a></li>
+		</ul>
+		<div id="mSModalGroup1" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+				<h3 id="myModalLabel">Group 1</h3>
+			</div>
+			<div id="group1" class="modal-body" style="padding:5px;max-height:350px;overflow:auto">
+				<div id="modalWarning1" class="alert alert-error">
+					You haven't added any strains yet.
+				</div>
+				<fieldset></fieldset>
+			</div>
+			<div class="modal-footer">
+				<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" onclick="removeGroup1()" style="display:none"><i class="icon-remove-sign icon-white"></i> Remove from Group 1</button>
+			</div>
+		</div>
+
+		<div id="mSModalGroup2" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+				<h3 id="myModalLabel">Group 2</h3>
+			</div>
+			<div id="group2" class="modal-body" style="padding:5px;max-height:350px;overflow:auto">
+				<div id="modalWarning2" class="alert alert-error">
+					You haven't added any strains yet.
+				</div>
+				<fieldset></fieldset>
+			</div>
+			<div class="modal-footer">
+				<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" onclick="removeGroup2()" style="display:none"><i class="icon-remove-sign icon-white"></i> Remove from Group 2</button>
+			</div>
+		</div>
+
+	</form>
+
+	<form id="mSSearchForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
+		<fieldset>
+			<div style="height:265px;overflow:auto;border-style:solid;border-width:1px;border-color:#d3d3d3" class="row-fluid">
+				<ul id="mSSelection" style="padding:0px;margin:0px">
+					<TMPL_LOOP NAME=FORMDATA>
+					<li style="list-style:none">
+						<label class="checkbox">
+							<input id="checkboxName" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+						</label>
+					</li>
+					</TMPL_LOOP>
+				</ul>
+			</div>
+		</fieldset>
+	</form>
+
+	<ul class="nav nav-pills">
+		<li class="dropup">
+			<a class="dropdown-toggle" data-toggle="dropdown" href="#">
+				Multi-strain Options
+				<b class="caret"></b>
+			</a>
+			<ul class="dropdown-menu" role="menu">
+				<li><a tabindex="-1" onclick="checkGroup1Fields()"><i class="icon-plus-sign"></i> Add to Group 1</a></li>
+				<li><a tabindex="-1" onclick="checkGroup2Fields()"><i class="icon-plus-sign"></i> Add to Group 2</a></li>
+				<li class="divider"></li>
+				<li><a id="compareGrouped" tabindex="-1"><i class="icon-th"></i> Compare Grouped Strains</a></li>
+				<!--li><a id="compareUngrouped" tabindex="-1"><i class="icon-th-list"></i> Compare Ungrouped Strains</a></li-->
+				<li class="divider"></li>
+				<li><a tabindex="-1" onclick="reload()"><i class="icon-refresh"></i> Refresh</a></li>
+			</ul>
+		</li>
+	</ul>
+
+</div>
+
+<script>
+$('#mSModalGroup1').modal();
+$('#mSModalGroup2').modal();
+$('.dropdown-toggle').dropdown()
+</script>
+<script>
+$("#compareUngrouped").click( function() {
+	checkMSFields(mSSearchForm);
+});
+$("#compareGrouped").click( function() {
+	checkGroupedFields(mSGroupedForm);
+});
+</script>
+<script type="text/javascript">
+function checkMSFields(mSSearchForm) {
+	var selected = 0;
+
+	var i = 0;
+	while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+		if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("You must make a valid selection");
+		return false;
+	}
+	else {
+		$('#mSSearchForm').submit();
+		return true;
+	}
+}
+function reload() {
+	location.reload();
+}
+function checkGroup1Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+		if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 1");
+		return false;
+	}
+	else {
+		var checkedOneOption = $('#mSSelection li :checked').closest('li');
+		checkedOneOption.clone().appendTo('#group1');
+		checkedOneOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup1').show();
+		$('#modalWarning1').hide();
+		return true;
+	}
+}
+function checkGroup2Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('mSSearchForm').getElementsByTagName('input').length){
+		if (document.getElementById('mSSearchForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 2");
+		return false;
+	}
+	else {
+		var checkedTwoOption = $('#mSSelection li :checked').closest('li');
+		checkedTwoOption.clone().appendTo('#group2');
+		checkedTwoOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup2').show();
+		$('#modalWarning2').hide();
+		return true;
+	}
+}
+function removeGroup1() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group1').getElementsByTagName('input').length){
+		if (document.getElementById('group1').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 1");
+		return false;
+	}
+	else {
+		$('#group1 li :checked').closest('li').appendTo('#mSSelection');
+		unCheckAllBoxes();
+		if ($('#group1 li').length == 0) {
+			$('#buttonRemoveGroup1').hide();
+			$('#modalWarning1').show();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function removeGroup2() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group2').getElementsByTagName('input').length){
+		if (document.getElementById('group2').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 2");
+		return false;
+	}
+	else {
+		$('#group2 li :checked').closest('li').appendTo('#mSSelection');
+		unCheckAllBoxes();
+		if ($('#group2 li').length == 0) {
+			$('#buttonRemoveGroup2').hide();
+			$('#modalWarning2').show();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function unCheckAllBoxes() {
+	$('input[type=checkbox]').each(function()
+	{ 
+		this.checked = false; 
+	}); 
+}
+function changeGroupName() {
+	$('#group1 input[type=checkbox]').attr("name", "group1");
+	$('#group2 input[type=checkbox]').attr("name", "group2");
+}
+function checkGroupedFields(mSGroupedForm) {
+	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+		alert('No groups to be compared');
+	}
+	else {
+		$('#group1 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#group2 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#mSGroupedForm').submit();
+	}
+}
+</script>

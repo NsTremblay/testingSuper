@@ -90,7 +90,7 @@ sub strainInfo {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'single_strain.tmpl' , die_on_bad_params=>0 );
+	my $template = $self->load_tmpl( 'strain_info.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 	my $strainName = $q->param("singleStrainName");
