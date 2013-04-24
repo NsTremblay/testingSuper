@@ -15,6 +15,8 @@ use CGI::Application::Plugin::Session;
 use HTML::Template;
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
+use Log::Log4perl qw(:easy);
+use Carp;
 
 #get script location via File::Basename
 my $SCRIPT_LOCATION = dirname(__FILE__);
@@ -27,7 +29,12 @@ sub cgiapp_init{
 
 	#Session information
 	$self->session_config(DEFAULT_EXPIRY => '+8h');
-	
+	Log::Log4perl->easy_init($DEBUG);
+}
+
+sub logger {
+	my $self=shift;
+	$self->{'_logger'} = shift // return $self->{'_logger'};
 }
 
 1;

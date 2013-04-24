@@ -42,13 +42,13 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
-use Log::Log4perl;
-use Carp;
-use Bio::SeqIO;
 use IO::File;
 use IO::Dir;
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
+
+use Log::Log4perl;
+use Carp;
 
 #object creation
 sub new {

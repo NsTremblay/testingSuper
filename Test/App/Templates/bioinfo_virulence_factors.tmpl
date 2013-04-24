@@ -12,17 +12,15 @@
 	<div class="container" style="background-color:#FFFFFF">
 		<div class="row-fluid">
 			
-			<TMPL_INCLUDE NAME="bioinfo_menu.tmpl">
-
-			<div class="span8">
-				<h1>Bioinfo Page - Virulence Factors</h1>
+			<div class="span4" style="padding:20px">
 				<p> Here you will find information about all the strains and the
 					virluence factors in the database. This is mostly to provide general
 					biological information about each strain and each virulence factor.
 				</p>
-				<p> Click on the links to the left to display differenct tables of information.
-				</p>
+			</div>
 
+			<div class="span8">
+				<h1>Bioinfo Page - Virulence Factors</h1>
 				<div class="row-fluid">
 					<form class="form span5" action="/home/dispatch.cgi/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
 						<fieldset>
@@ -47,7 +45,7 @@
 						</TMPL_LOOP>
 					</div>
 
-					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vFVALIDATOR></div>
+					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
 
 					<script type="text/javascript">
 					function checkVFValidator() {

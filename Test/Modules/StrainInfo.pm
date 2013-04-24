@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-Modules::Home
+Modules::StrainInfo
 
 =head1 SNYNOPSIS
 
@@ -30,7 +30,7 @@ Akiff Manji (akiff.manji@gmail.com)
 
 =cut
 
-package Modules::Home;
+package Modules::StrainInfo;
 
 use strict;
 use warnings;
@@ -50,11 +50,11 @@ Run modes are passed in as <reference name>=><subroutine name>
 sub setup {
 	my $self=shift;
 	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::Home");
+	$self->logger->info("Logger initialized in Modules::StrainInfo");
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'home'=>'home'
+		'strain_info'=>'strainInfo'
 		);
 
 	$self->connectDatabase({
@@ -79,20 +79,64 @@ sub default {
 	return $template->output();
 }
 
-=head2 home
+=head2 singleStrainInfo
 
-Run mode for the home page.
+Run mode for the sinle strain page
 
 =cut
 
-sub home {
+sub strainInfo {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$formDataRef);
+	my $template = $self->load_tmpl( 'single_strain.tmpl' , die_on_bad_params=>0 );
+
+	my $q = $self->query();
+	my $strainName = $q->param("singleStrainName");
+
+	if(!defined $strainName || $strainName eq ""){
+		$template->param(FEATURES=>$formDataRef);
+	}
+	else {
+		my $strainInfoDataRef = $self->_getStrainInfo($strainName);
+		$template->param(FEATURES=>$formDataRef);
+		$template->param(METADATA=>$strainInfoDataRef);
+		my $validator = "Return Success";
+		$template->param(VALIDATOR=>$validator);
+	}
 	return $template->output();
+}
+
+=head2 _getStrainInfo
+
+Takes in a strain name paramer and queries it against the database.
+Returns an array reference to the strain metainfo.
+
+=cut
+
+sub _getStrainInfo {
+	my $self = shift;
+	my $_strainName = shift;
+	my @strainMetaData;
+
+	my $strainFeaturepropTable = $self->dbixSchema->resultset('Featureprop');
+	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
+
+	my $_featureProps = $strainFeaturepropTable->search(
+		{value => "$_strainName"},
+		{
+			column => [qw/me.feature_id/],
+			order_by => {-asc => ['me.feature_id']}
+		}
+		);
+
+	while (my $_featurepropsRow = $_featureProps->next) {
+		my %strainRowData;
+		$strainRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+		push(@strainMetaData, \%strainRowData);
+	}
+	return \@strainMetaData;
 }
 
 1;

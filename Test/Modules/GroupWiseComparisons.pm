@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-Modules::Home
+Modules::GroupWiseComparisons
 
 =head1 SNYNOPSIS
 
@@ -30,7 +30,7 @@ Akiff Manji (akiff.manji@gmail.com)
 
 =cut
 
-package Modules::Home;
+package Modules::GroupWiseComparisons;
 
 use strict;
 use warnings;
@@ -39,22 +39,16 @@ use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
 use parent 'CGI::Application';
 use Modules::FormDataGenerator;
-
-=head2 setup
-
-Defines the start and run modes for CGI::Application and connects to the database.
-Run modes are passed in as <reference name>=><subroutine name>
-
-=cut
+use Modules::FastaFileWrite;
 
 sub setup {
 	my $self=shift;
 	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::Home");
+	$self->logger->info("Logger initialized in Modules::GroupWiseComparisons");
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'home'=>'home'
+		'group_wise_comparisons'=>'groupWiseComparisons'
 		);
 
 	$self->connectDatabase({
@@ -79,20 +73,51 @@ sub default {
 	return $template->output();
 }
 
-=head2 home
+=head2 groupWiseComparisons
 
-Run mode for the home page.
+Run mode for the group wise comparisons page
 
 =cut
 
-sub home {
+sub groupWiseComparisons {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'display_test.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$formDataRef);
+	my $template = $self->load_tmpl( 'multi_strain.tmpl' , die_on_bad_params=>0 );
+	
+	my $q = $self->query();
+	my @groupOneStrainNames = $q->param("group1");
+	my @groupTwoStrainNames = $q->param("group2");
+
+	if(!(@groupOneStrainNames) && !(@groupTwoStrainNames)){
+		$template->param(FEATURES=>$formDataRef);
+	}
+	else{
+		my $groupOneDataRef = $self->_getStrainInfo(\@groupOneStrainNames);
+		my $groupTwoDataRef = $self->_getStrainInfo(\@groupTwoStrainNames);                
+		$template->param(FEATURES=>$formDataRef);
+		my $validator = "Return Success";
+		$template->param(VALIDATOR=>$validator);
+	}
 	return $template->output();
+}
+
+=head2 _getStrainInfo
+
+Writes out user selected fasta files for PanSeq analysis.
+
+=cut
+
+sub _getStrainInfo {
+	my $self = shift;
+	my $_groupedStrainNames = shift;
+
+	push (my @strainNames , @{$_groupedStrainNames}); 
+
+	my $ffwHandle = Modules::FastaFileWrite->new();
+	$ffwHandle->dbixSchema($self->dbixSchema);
+	$ffwHandle->writeStrainsToFile(\@strainNames);
 }
 
 1;

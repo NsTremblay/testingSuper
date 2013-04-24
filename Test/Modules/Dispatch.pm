@@ -25,19 +25,17 @@ sub dispatch_args {
                 TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                '' =>           {app=>'DisplayTest' ,rm=>'display'},
-                '/' =>          {app=>'DisplayTest',rm=>'display'},
-                '/test' =>      {app=>'DisplayTest',rm=>'display'},
-                '/hello' =>     {app=>'DisplayTest' , rm=>'hello'},
-                '/home' =>      {app=>'Home', rm=>'display'},
-                '/single_strain' => {app=>'DisplayTest', rm=>'single_strain'},
-                '/multi_strain' => {app=>'DisplayTest', rm=>'multi_strain'},
-                '/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
-                '/strain_list' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
-                '/virulence_factors' =>   {app=>'DisplayTest' , rm=>'bioinfo_virulence_factors'},
-                '/statistics' =>   {app=>'DisplayTest' , rm=>'bioinfo_statistics'},
-                '/single_strain/ss' => {app=>'DisplayTest', rm=>'process_single_strain_form'},
-                '/multi_strain/ms' => {app=>'DisplayTest', rm=>'process_multi_strain_form'}
+                '' =>           {app=>'Home' , rm=>'home'},
+                '/' =>          {app=>'Home', rm=>'home'},
+                '/test' =>      {app=>'Home', rm=>'home'},
+                '/hello' =>     {app=>'Home' , rm=>'hello'},
+                '/home' =>      {app=>'Home', rm=>'home'},
+                '/single_strain' => {app=>'StrainInfo', rm=>'strain_info'},
+                '/multi_strain' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
+                #'/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
+                #'/strain_list' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
+                '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
+                #'/statistics' =>   {app=>'DisplayTest' , rm=>'bioinfo_statistics'}
         ],
     };
 }
