@@ -3,8 +3,8 @@
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 
-	<div class="span3" style="border:solid;border-width:1px;max-height:400px;overflow:auto">
-		<form id="strainListForm" class="form" action="/home/dispatch.cgi/multi_strain/" method="post" enctype="application/x-www-form-urlencoded">
+	<div class="span3" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+		<form id="strainListForm" class="form" action="/home/dispatch.cgi/group_wise_comparisons/" method="post" enctype="application/x-www-form-urlencoded">
 			<div style="padding:10px">
 				<fieldset>
 					<span class="help-block">Select on one or strains to compare them and view metadata</span>
@@ -30,8 +30,8 @@
 		<button class="btn btn-primary span12" type="reset" onclick="reload()"><i class="icon-refresh icon-white"></i> Refresh</button>
 	</div>
 
-	<form id="groupedForm" class="form" method="post" action="/home/dispatch.cgi/multi_strain/" enctype="application/x-www-form-urlencoded">
-		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+	<form id="groupedForm" class="form" method="post" action="/home/dispatch.cgi/group_wise_comparisons/" enctype="application/x-www-form-urlencoded">
+		<div class="span3" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;max-height:400px">
 			<div id="group1" style="max-height:350px;overflow:auto">
 				<fieldset>
 					<span class="help-block">Group 1: </span>
@@ -40,7 +40,7 @@
 			<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px" onclick="removeGroup1()"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
 		</div>
 
-		<div class="span3" style="border:solid;border-width:1px;padding:10px;max-height:400px">
+		<div class="span3" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;max-height:400px">
 			<div id="group2" style="max-height:350px;overflow:auto">
 				<fieldset>
 					<span class="help-block">Group 2: </span>

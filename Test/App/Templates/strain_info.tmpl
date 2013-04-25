@@ -6,14 +6,17 @@
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 <body onload="onLoadCheck()" style="background-color:#796e6c">
-	<div class="row-fluid">
-		<div class="container" style="background-color:#FFFFFF">
 
+	<div class="container" style="background-color:#FFFFFF">
+
+		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
+			<h1>Strain Information</h1>
+		</div>
+
+		<div class="row-fluid">
 			<TMPL_INCLUDE NAME="strain_info_form_with_map.tmpl">
 
 			<div class="span8">
-
-				<div><h1>Single-strain Page</h1></div>
 
 				<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3;margin-right:5px">
 					<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">

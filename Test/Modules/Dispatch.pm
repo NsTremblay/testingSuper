@@ -27,15 +27,12 @@ sub dispatch_args {
         table   => [
                 '' =>           {app=>'Home' , rm=>'home'},
                 '/' =>          {app=>'Home', rm=>'home'},
-                '/test' =>      {app=>'Home', rm=>'home'},
-                '/hello' =>     {app=>'Home' , rm=>'hello'},
+                '/hello' =>     {app=>'Home' , rm=>'default'},
                 '/home' =>      {app=>'Home', rm=>'home'},
-                '/single_strain' => {app=>'StrainInfo', rm=>'strain_info'},
-                '/multi_strain' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
-                #'/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
-                #'/strain_list' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
+                '/strain_info' => {app=>'StrainInfo', rm=>'strain_info'},
+                '/group_wise_comparisons' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
+                '/genome_uploader' => {app=>'GenomeUploader', rm=>'genome_uploader'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
-                #'/statistics' =>   {app=>'DisplayTest' , rm=>'bioinfo_statistics'}
         ],
     };
 }

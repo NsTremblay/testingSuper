@@ -119,8 +119,8 @@ Hashes row entries returned from the database and returns an array ref to a list
 =cut
 
 sub _hashFormData {
-    my $self=shift;
-    my $features=shift;
+    my $self = shift;
+    my $features = shift;
     my @formData;
     while (my $featureRow = $features->next){
         my %formRowData;
@@ -129,6 +129,44 @@ sub _hashFormData {
         push(@formData, \%formRowData);
     }
     return \@formData;
+}
+
+=head2 getGenomeUploadFormData
+
+Queries the database for form data to be filled in the genome uploader form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub getGenomeUploadFormData {
+    my $self = shift;
+    my $cVTerms = $self->dbixSchema->resultset('Cvterm')->search(
+        {'cv.name' => 'feature_property'},
+        {
+            join => ['cv'],
+            select => [qw/me.name/]
+        }
+        );
+    my $genomeUploaderRef = $self->_hashGenomeUploadFormData($cVTerms);
+    return $genomeUploaderRef;
+}
+
+=head2 _hashGenomeUploadFormData
+
+Hashes row entries returnes from the database and returns an array ref to a list of these rows.
+
+=cut
+
+sub _hashGenomeUploadFormData {
+    my $self = shift;
+    my $cVTerms = shift;
+    my @genomeUploadFormData;
+    while (my $cVTermRow = $cVTerms->next){
+        my %guRowData;
+        $guRowData{'TERM'}=$cVTermRow->name;
+        push(@genomeUploadFormData, \%guRowData);
+    }
+    return \@genomeUploadFormData;
 }
 
 1;
