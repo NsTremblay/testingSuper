@@ -54,12 +54,24 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'genome_uploader'=>'genomeUploader'
+		'genome_uploader'=>'genomeUploader',
+		'upload_genome'=>'uploadGenome'
 		);
+
+	# $self->connectDatabase({
+	# 	'dbi'=>'Pg',
+	# 	'dbName'=>'chado_db_test',
+	# 	'dbHost'=>'localhost',
+	# 	'dbPort'=>'5432',
+	# 	'dbUser'=>'postgres',
+	# 	'dbPass'=>'postgres'
+	# 	});
+
+	#NOTE: This connects to the dummy database to test uploading genomes
 
 	$self->connectDatabase({
 		'dbi'=>'Pg',
-		'dbName'=>'chado_db_test',
+		'dbName'=>'chado_upload_test',
 		'dbHost'=>'localhost',
 		'dbPort'=>'5432',
 		'dbUser'=>'postgres',
@@ -89,11 +101,21 @@ sub genomeUploader {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'genome_uploader.tmpl' , die_on_bad_params=>0 );
 
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $genomeUploadFormRef = $formDataGenerator->getGenomeUploadFormData();
-	$template->param(GENOMEUPLOADFORMDATA=>$genomeUploadFormRef);
+	#my $formDataGenerator = Modules::FormDataGenerator->new();
+	#$formDataGenerator->dbixSchema($self->dbixSchema);
+	#my $genomeUploadFormRef = $formDataGenerator->getGenomeUploadFormData();
+	#$template->param(GENOMEUPLOADFORMDATA=>$genomeUploadFormRef);
 	return $template->output();
+}
+
+=head2
+
+Run mode to upload a user genome.
+
+=cut
+
+sub uploadGenome {
+
 }
 
 1;

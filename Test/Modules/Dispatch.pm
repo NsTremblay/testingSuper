@@ -32,6 +32,7 @@ sub dispatch_args {
                 '/strain_info' => {app=>'StrainInfo', rm=>'strain_info'},
                 '/group_wise_comparisons' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
                 '/genome_uploader' => {app=>'GenomeUploader', rm=>'genome_uploader'},
+                '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
         ],
     };

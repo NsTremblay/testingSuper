@@ -1,0 +1,156 @@
+<div style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
+
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+
+	<form id="genomeUploadForm" class="form" action="/home/dispatch.cgi/upload_genome/" method="post" enctype="application/x-www-form-urlencoded">
+		<fieldset class="form-inline">
+			<input class="input" type="file" name="genomeFile" required></input>
+			<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
+			<!--button type="button" class="btn btn-small btn-primary" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button-->
+		</fieldset>
+
+		<hr/>
+
+		<fieldset class="form-horizontal">
+			<span class="help-block" style="margin:10px"> The following fields are required:</span>
+			<div class="control-group">
+				<label class="control-label" for="inputGenomeName">Genome Name</label>
+				<div class="controls">
+					<input type="text" name="genomeName" id="inputGenomeName" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputAliasName">Alias Name</label>
+				<div class="controls">
+					<input type="text" name="aliasName" id="inputAliasName" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
+				<div class="controls">
+					<input type="text" name="isolationDate" id="inputIsolationDate" placeholder="DD/MM/YYYY" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputHostSource">Isolation Host Source</label>
+				<div class="controls">
+					<input type="text" name="hostSource" id="inputHostSource" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputIsolationLocation">Location of Isolation</label>
+				<div class="controls">
+					<input type="text" name="isolationLocation" id="inputIsolationLocation" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputSpeciesName">Species Name</label>
+				<div class="controls">
+					<input type="text" name="speciesName" id="inputSpeciesName" value="Escherichia coli" readonly="true" placeholder="Escherichia coli" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputSerotype">Serotype</label>
+				<div class="controls">
+					<input type="text" name="serotype" id="inputSerotype" required>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputPrivacy inputPrivacyUntil">Privacy Settings</label>
+				<div class="controls">
+					<label class="radio">
+						<input type="radio" name="inputPrivacy" value="public" id="inputPrivacy" required checked>
+						Public
+					</label>
+				</div>
+				<div class="controls">
+					<label class="radio">
+						<input type="radio" name="inputPrivacy" value="private" id="inputPrivacy" required>
+						Private
+					</label>
+				</div>
+				<div class="controls">
+					<label class="radio">
+						<input type="radio" name="inputPrivacy" id="inputPrivacyUntil">
+						Private Until
+					</label>
+				</div>
+			</div>
+		</fieldset>
+
+		<fieldset class="form-horizontal" id="additionalFields">
+		</fieldset>
+
+		<hr/>
+
+		<fieldset class="form-inline">
+			<span class="help-block" style="margin:10px"> The following fields are optional:</span>
+			<div style="margin-top:10px">
+				<select id="extraList">
+					<option name="description">Description</option>
+					<option name="finished">Finished</option>
+					<option name="keywords">Keywords</option>
+					<option name="mol_type">Molecular Type</option>
+					<option name="owner">Owner</option>
+					<option name="problem">Problem</option>
+					<option name="score">Score</option>
+					<option name="status">Status</option>
+					<option name="symbol">Symbol</option>
+				</select>
+				<button class="btn" type="button" style="margin:0px 20px 0px 20px" onclick="addField()"><i class="icon-plus"></i></button>
+			</div>
+		</fieldset>
+		<hr/>
+		<button type="submit" class="btn btn-small btn-success" name="submit_strain" value="Submit"><i class="icon-upload icon-white"></i> Submit</button>
+		<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
+	</form>
+
+</div>
+<script type="text/javascript">
+
+function addField() {
+	var attrName = $('#extraList option:selected').attr('name');
+	if (attrName == "description"){
+		$('<div class="control-group"><label class="control-label" for="input">Description</label><div class="controls"><input type="text" id="inputDescription"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "finished"){
+		$('<div class="control-group"><label class="control-label" for="input">Finished</label><div class="controls"><input type="text" id="inputFinished"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "keywords"){
+		$('<div class="control-group"><label class="control-label" for="input">Keywords</label><div class="controls"><input type="text" id="inputKeywords"><span class="help-inline">Separate keywords with a <strong>,</strong> (comma).</span></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "mol_type"){
+		$('<div class="control-group"><label class="control-label" for="inputMolType">MolecularType</label><div class="controls"><label class="radio"><input type="radio" name="inputMolType" input="inputMolType" value="dna" checked>DNA</label><label class="radio"><input type="radio" name="inputMolType" input="inputMolType" value="plasmid">Plasmid</label></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "owner"){
+		$('<div class="control-group"><label class="control-label" for="input">Owner</label><div class="controls"><input type="text" id="inputOwner"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "problem"){
+		$('<div class="control-group"><label class="control-label" for="input">Problem</label><div class="controls"><input type="text" id="inputProblem"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "score"){
+		$('<div class="control-group"><label class="control-label" for="input">Score</label><div class="controls"><input type="text" id="inputScore"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "status"){
+		$('<div class="control-group"><label class="control-label" for="input">Status</label><div class="controls"><input type="text" id="inputStatus"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+	else if (attrName == "symbol"){
+		$('<div class="control-group"><label class="control-label" for="input">Symbol</label><div class="controls"><input type="text" id="inputSymbol"></div></div>').appendTo('#additionalFields');
+		$('#extraList option:selected').remove();
+	}
+}
+
+function reload() {
+	location.reload();
+}
+</script>
