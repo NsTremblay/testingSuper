@@ -135,7 +135,7 @@ __PACKAGE__->belongs_to(
   "object",
   "Database::Chado::TestSchema::Result::Phylonode",
   { phylonode_id => "object_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 phylotree
@@ -150,7 +150,7 @@ __PACKAGE__->belongs_to(
   "phylotree",
   "Database::Chado::TestSchema::Result::Phylotree",
   { phylotree_id => "phylotree_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 subject
@@ -165,7 +165,7 @@ __PACKAGE__->belongs_to(
   "subject",
   "Database::Chado::TestSchema::Result::Phylonode",
   { phylonode_id => "subject_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -180,12 +180,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::TestSchema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KvBkQr/3BNR9VtvvSr/ksw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:mwgZhS6Ql2Gr7jPU0tAE3g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

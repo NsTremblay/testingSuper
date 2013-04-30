@@ -7,17 +7,14 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
-use parent 'CGI::Application';
-use Role::Tiny::With;
-#use Phylogeny::PhyloTreeBuilder;
-with 'Roles::DatabaseConnector';
 
 sub setup{
 	my $self = shift;
 	$self->start_mode('hello');
 	# <reference name> => <sub name>
-	$self->run_modes( 'hello'=>'hello', 
-		'display'=>'displayTest', 
+	$self->run_modes( 'hello'=>'hello',
+		'test'=>'test',
+		'display'=>'displayTest',
 		'single_strain'=>'singleStrain',
 		'multi_strain'=>'multiStrain',
 		#'bioinfo'=>'bioinfo',
@@ -26,17 +23,7 @@ sub setup{
 		'bioinfo_statistics'=>'bioinfoStatistics',
 		'process_single_strain_form'=>'singleStrain',
 		'process_multi_strain_form'=>'multiStrain');
-
-#connect to the local database
-
-$self->connectDatabase({
-	'dbi'=>'Pg',
-	'dbName'=>'chado_db_test',
-	'dbHost'=>'localhost',
-	'dbPort'=>'5432',
-	'dbUser'=>'postgres',
-	'dbPass'=>'postgres'
-	});
+	
 }
 
 ###############
@@ -64,6 +51,18 @@ sub hello {
 	my $self = shift;
 	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
+}
+
+sub test {
+	my $self = shift;
+	
+	my $login_info = $self->_loginData;
+	
+	my $template = $self->load_tmpl ( 'test.tmpl' , die_on_bad_params=>0 );
+	
+	$template->param($login_info);
+	
+	return $template->output(); 
 }
 
 ###############################

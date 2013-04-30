@@ -7,6 +7,6 @@ use DBIx::Class::Schema::Loader qw/ make_schema_at /;
 make_schema_at(
 	'Database::Chado::TestSchema',
 	{ debug => 1, 
-	dump_directory => '/home/amanji/Projects/Perl/Database/Chado'},
+	dump_directory => '/home/matt/workspace/a_genodo/sandbox/'},
 	[ 'dbi:Pg:dbname=chado_db_test;host=localhost;port=5432', 'postgres', 'postgres',  ],
 	);

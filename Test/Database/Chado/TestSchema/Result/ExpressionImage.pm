@@ -100,7 +100,7 @@ __PACKAGE__->belongs_to(
   "eimage",
   "Database::Chado::TestSchema::Result::Eimage",
   { eimage_id => "eimage_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 expression
@@ -115,12 +115,12 @@ __PACKAGE__->belongs_to(
   "expression",
   "Database::Chado::TestSchema::Result::Expression",
   { expression_id => "expression_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ER7985FZsoNBqUIi0bcpJA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cFLI9UErs1WxyhzdljI2lQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

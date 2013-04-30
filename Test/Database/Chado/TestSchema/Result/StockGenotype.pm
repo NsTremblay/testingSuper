@@ -105,7 +105,7 @@ __PACKAGE__->belongs_to(
   "genotype",
   "Database::Chado::TestSchema::Result::Genotype",
   { genotype_id => "genotype_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 stock
@@ -120,12 +120,12 @@ __PACKAGE__->belongs_to(
   "stock",
   "Database::Chado::TestSchema::Result::Stock",
   { stock_id => "stock_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FhumgFkiQDBT6T9ICTVQQw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:c7y9yPBrSREcBFX7MHT79A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

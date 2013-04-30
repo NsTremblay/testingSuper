@@ -100,7 +100,7 @@ __PACKAGE__->belongs_to(
   "cell_line",
   "Database::Chado::TestSchema::Result::CellLine",
   { cell_line_id => "cell_line_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -115,12 +115,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::TestSchema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:37CMl7aCi29w79kHR0SMpQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GqK2Gt6b86iDHqK6hJT2VA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

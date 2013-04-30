@@ -25,19 +25,18 @@ sub dispatch_args {
                 TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                '' =>           {app=>'DisplayTest' ,rm=>'display'},
-                '/' =>          {app=>'DisplayTest',rm=>'display'},
-                '/test' =>      {app=>'DisplayTest',rm=>'display'},
-                '/hello' =>     {app=>'DisplayTest' , rm=>'hello'},
-                '/home' =>      {app=>'Home', rm=>'display'},
-                '/single_strain' => {app=>'DisplayTest', rm=>'single_strain'},
-                '/multi_strain' => {app=>'DisplayTest', rm=>'multi_strain'},
-                '/bioinfo' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
-                '/strain_list' =>   {app=>'DisplayTest' , rm=>'bioinfo_strain_list'},
-                '/virulence_factors' =>   {app=>'DisplayTest' , rm=>'bioinfo_virulence_factors'},
-                '/statistics' =>   {app=>'DisplayTest' , rm=>'bioinfo_statistics'},
-                '/single_strain/ss' => {app=>'DisplayTest', rm=>'process_single_strain_form'},
-                '/multi_strain/ms' => {app=>'DisplayTest', rm=>'process_multi_strain_form'}
+                'user/login'          => { app => 'User', rm => 'authen_login' },
+                ':app/:rm'            => { },
+                'start'               => { app => 'DisplayTest', rm => 'display' },
+#                'login'               => { app => 'User', rm => 'authen_login' },
+#                'logout'              => { app => 'User', rm => 'logout' },
+#                'create_account'      => { app => 'User', rm => 'create_account' },
+#                'new_account'         => { app => 'User', rm => 'new_account' },
+#                'update_account'      => { app => 'User', rm => 'update_account' },
+#                'edit_account'        => { app => 'User', rm => 'edit_account' },
+#                'forgot_password'     => { app => 'User', rm => 'forgot_password' },
+#                'email_password'      => { app => 'User', rm => 'email_password' },
+                'test'                => { app => 'User', rm => 'hello' }  
         ],
     };
 }

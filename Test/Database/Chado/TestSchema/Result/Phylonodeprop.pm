@@ -125,7 +125,7 @@ __PACKAGE__->belongs_to(
   "phylonode",
   "Database::Chado::TestSchema::Result::Phylonode",
   { phylonode_id => "phylonode_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -140,12 +140,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::TestSchema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RJ1PkrF+n8ESHvbzOGSfmw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:MWjYWmb+DwVNSCG08Gd25A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
