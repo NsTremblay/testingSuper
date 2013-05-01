@@ -46,7 +46,7 @@ use Bio::SeqIO;
 				mkNewOutFolder();
 				copyFastaFile($file);
 				readInHeaders($file);
-				#uploadGenomeToDb();
+				uploadGenomeToDb();
 				unlink $file;
 				unlinkFastaFolder();
 				unlinkOutFolder();
@@ -99,7 +99,7 @@ use Bio::SeqIO;
 		my $outFiles = getFileNamesFromDirectory($outDirectoryName);
 
 		foreach my $outFile (@{$outFiles}) {
-			my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile gffout/$outFile";
+			my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_upload_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile gffout/$outFile";
 			system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
 			printf "System executed $dbArgs with value %d\n", $? >> 8;
 			#printf $outFile . "\n";
@@ -122,57 +122,27 @@ use Bio::SeqIO;
 		my $originalName = $seq->desc;
 		if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
 			$newName = $2;
-			# $newName =~ s/Escherichia coli//;
-			# $newName =~ s/,//;
-			# $newName =~ s/'//;
-			# $newName =~ s/'//;
-			# $newName =~ s/str./Str./;
-			#print "Name : $newName\n";
 		}
 		elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
 			$newName = "$tagName -$2";
-			# $newName =~ s/Escherichia coli//;
-			# $newName =~ s/,//;
-			# $newName =~ s/'//;
-			# $newName =~ s/'//;
-			# $newName =~ s/str./Str./;
-			#print "Name : $newName\n"
 		}
 		elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
 			$newName = $2;
 			if ($newName eq "") {
 				$newName = "$tagName -$3";
-				# $newName =~ s/Escherichia coli//;
-				# $newName =~ s/,//;
-				# $newName =~ s/'//;
-				# $newName =~ s/'//;
-				# $newName =~ s/str./Str./;
-				#print "Name : $newName\n"
 			}
 			else {
 				$newName = "$tagName -$2";
-				# $newName =~ s/Escherichia coli//;
-				# $newName =~ s/,//;
-				# $newName =~ s/'//;
-				# $newName =~ s/'//;
-				# $newName =~ s/str./Str./;
-				#print "Name : $newName\n"
 			}
 		}
 		else{
 			$newName = $originalName;
-			# $newName =~ s/Escherichia coli//;
-			# $newName =~ s/,//;
-			# $newName =~ s/'//;
-			# $newName =~ s/'//;
-			# $newName =~ s/str./Str./;
-			#print "Name : $newName\n"
 		}
 		$newName =~ s/Escherichia coli//;
-		$newName =~ s/,//;
-		$newName =~ s/'//;
-		$newName =~ s/'//;
-		$newName =~ s/str./Str./;
+		$newName =~ s/,//g;
+		$newName =~ s/'//g;
+		$newName =~ s/'//g;
+		$newName =~ s/str/Str/;
 		return $newName;
 	}
 

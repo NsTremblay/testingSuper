@@ -59,7 +59,7 @@ sub setup {
 
 	$self->connectDatabase({
 		'dbi'=>'Pg',
-		'dbName'=>'chado_db_test',
+		'dbName'=>'chado_upload_test',
 		'dbHost'=>'localhost',
 		'dbPort'=>'5432',
 		'dbUser'=>'postgres',

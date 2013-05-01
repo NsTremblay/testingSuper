@@ -4,7 +4,7 @@
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 
-	<form id="genomeUploadForm" class="form" action="/home/dispatch.cgi/upload_genome/" method="post" enctype="application/x-www-form-urlencoded">
+	<form id="genomeUploadForm" class="form" action="/home/dispatch.cgi/upload_genome/" method="post" enctype="multipart/form-data">
 		<fieldset class="form-inline">
 			<input class="input" type="file" name="genomeFile" required></input>
 			<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
@@ -58,23 +58,24 @@
 				</div>
 			</div>
 			<div class="control-group">
-				<label class="control-label" for="inputPrivacy inputPrivacyUntil">Privacy Settings</label>
+				<label class="control-label" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="public" id="inputPrivacy" required checked>
+						<input type="radio" name="inputPrivacy" value="public" id="inputPublic" required checked>
 						Public
 					</label>
 				</div>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="private" id="inputPrivacy" required>
+						<input type="radio" name="inputPrivacy" value="private" id="inputPrivate" required>
 						Private
 					</label>
 				</div>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" id="inputPrivacyUntil">
+						<input type="radio" name="inputPrivacy" id="inputPrivateUntil" value="privateUntil">
 						Private Until
+						<input type="text" name="inputPrivateUntilDate" id="inputPrivateUntilText" disabled placeholder="DD/MM/YYYY">
 					</label>
 				</div>
 			</div>
@@ -108,20 +109,36 @@
 	</form>
 
 </div>
-<script type="text/javascript">
 
+<script>
+$('#inputPrivateUntil').click( function() {
+	$('#inputPrivateUntilText').attr("disabled", false);
+	$('#inputPrivateUntilText').attr("required", true);
+	$('#inputPrivateUntilText').focus();
+});
+$('#inputPublic').click( function() {
+	$('#inputPrivateUntilText').attr("disabled", true);
+	$('#inputPrivateUntilText').attr("required", false);
+});
+$('#inputPrivate').click( function() {
+	$('#inputPrivateUntilText').attr("disabled", true);
+	$('#inputPrivateUntilText').attr("required", false);
+});
+</script>
+
+<script type="text/javascript">
 function addField() {
 	var attrName = $('#extraList option:selected').attr('name');
 	if (attrName == "description"){
-		$('<div class="control-group"><label class="control-label" for="input">Description</label><div class="controls"><input type="text" id="inputDescription"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputDescription">Description</label><div class="controls"><input type="text" id="inputDescription" name="description"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "finished"){
-		$('<div class="control-group"><label class="control-label" for="input">Finished</label><div class="controls"><input type="text" id="inputFinished"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputFinished">Finished</label><div class="controls"><input type="text" id="inputFinished" name="finished"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "keywords"){
-		$('<div class="control-group"><label class="control-label" for="input">Keywords</label><div class="controls"><input type="text" id="inputKeywords"><span class="help-inline">Separate keywords with a <strong>,</strong> (comma).</span></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputKeywords">Keywords</label><div class="controls"><input type="text" id="inputKeywords" name="keywords"><span class="help-inline">Separate keywords with a "<strong>,</strong>" (comma).</span></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "mol_type"){
@@ -129,23 +146,23 @@ function addField() {
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "owner"){
-		$('<div class="control-group"><label class="control-label" for="input">Owner</label><div class="controls"><input type="text" id="inputOwner"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputOwner">Owner</label><div class="controls"><input type="text" id="inputOwner" name="owner"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "problem"){
-		$('<div class="control-group"><label class="control-label" for="input">Problem</label><div class="controls"><input type="text" id="inputProblem"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputProblem">Problem</label><div class="controls"><input type="text" id="inputProblem" name="problem"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "score"){
-		$('<div class="control-group"><label class="control-label" for="input">Score</label><div class="controls"><input type="text" id="inputScore"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputScore">Score</label><div class="controls"><input type="text" id="inputScore" name="score"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "status"){
-		$('<div class="control-group"><label class="control-label" for="input">Status</label><div class="controls"><input type="text" id="inputStatus"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputStatus">Status</label><div class="controls"><input type="text" id="inputStatus" name="status"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 	else if (attrName == "symbol"){
-		$('<div class="control-group"><label class="control-label" for="input">Symbol</label><div class="controls"><input type="text" id="inputSymbol"></div></div>').appendTo('#additionalFields');
+		$('<div class="control-group"><label class="control-label" for="inputSymbol">Symbol</label><div class="controls"><input type="text" id="inputSymbol" name="symbol"></div></div>').appendTo('#additionalFields');
 		$('#extraList option:selected').remove();
 	}
 }
