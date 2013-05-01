@@ -120,19 +120,37 @@ sub uploadGenome {
 	my $genomeFileName = $q->param("genomeFile");
 	my $genomeFile = $q->upload("genomeFile");
 
+	#Create a hash to store the form inputs.
+	my %fileTags;
+
 	#Here is where we will query for all documents in the form
 	#The fields guaranteed to be set by the form are:
 	#
 	my $genomeName = $q->param("genomeName");
+	$fileTags{'genome_of'} = $genomeName;
 	my $aliasName = $q->param("aliasName");
+	#alias does not exist in the data base
+	$fileTags{'alias'} = $aliasName;
 	my $isolationDate = $q->param("isolationDate");
+	$fileTags{'date'} = $isolationDate;
+	
+	#source is throwing an error
 	my $hostSource = $q->param("hostSource");
+	$fileTags{'host_source'} = $hostSource;
 	my $isolationLocation = $q->param("isolationLocation");
+	#location does not exist in the databse
+	$fileTags{'location'} = $isolationLocation;
 	my $speciesName = $q->param("speciesName");
+	$fileTags{'organism'} = $speciesName;
 	my $serotype = $q->param("serotype");
+	#serotype does not exist in the database
+	$fileTags{'serotype'} = $serotype;
 	my $inputPrivacy = $q->param("inputPrivacy");
+	#privacy does not exist in the database
+	$fileTags{'privacy'} = $inputPrivacy;
 	if ($inputPrivacy eq "privateUntil"){
 		my $privateUntilDate = $q->param("inputPrivateUntilDate");
+		$fileTags{'privacy'} = $privateUntilDate;
 	}
 	else{
 	}
@@ -140,14 +158,23 @@ sub uploadGenome {
 	#With the optional fields:
 	#
 	my $description = $q->param("description");
+	$fileTags{'description'} = $description;
 	my $finished = $q->param("finished");
+	$fileTags{'finished'} = $finished;
 	my $keywords = $q->param("keywords");
+	$fileTags{'keywords'} = $keywords;
 	my $molType = $q->param("mol_type");
+	$fileTags{'mol_type'} = $molType;
 	my $owner = $q->param("owner");
+	$fileTags{'owner'} = $owner;
 	my $problem = $q->param("problem");
+	$fileTags{'problem'} = $problem;
 	my $score = $q->param("score");
+	$fileTags{'score'} = $score;
 	my $status = $q->param("status");
+	$fileTags{'status'} = $status;
 	my $symbol = $q->param("symbol");
+	$fileTags{'symbol'} = $symbol;
 
 	#This would likely cause a conflict if two people are uploading a sequence at the same time.
 	#We need to add an id to each file to distinguish one from another.
@@ -165,7 +192,7 @@ sub uploadGenome {
 	
 	$outHandle->close();
 
-	$self->_uploadToDatabase($genomeFileName , $uploadDir);
+	$self->_uploadToDatabase($genomeFileName , $uploadDir , \%fileTags);
 
 }
 
@@ -180,7 +207,23 @@ sub _uploadToDatabase {
 	my $genomeFileName = shift;
 	my $uploadDir = shift;
 
+	#Hash reference to the tags that need to be printed to each fasta file.
+	my $fileTags = shift;
+	my %fileTags = %{$fileTags};
+
 	my $fileNumber = 0;
+
+	my $attributes = "";
+
+	foreach my $key (keys %fileTags) {
+		if (!($fileTags->{$key})) {
+			#$fileTags->{$key} = "";
+		}
+		else {
+			$attributes = $attributes . $key ."=" . $fileTags->{$key} . ";";
+		}
+	}
+
 
 	my $args1 = "mkdir" . " -m 7777 " . "$uploadDir" . "fasta";
 	system($args1) == 0 or die $self->logger->info("System with $args1 failed: $?");
@@ -197,7 +240,7 @@ sub _uploadToDatabase {
 		my $singleFileName = $seq->id;
 		my $singleFastaHeader = Bio::SeqIO->new(-file => '>' . "$uploadDir/fasta/$singleFileName" . ".fasta" , -format => 'fasta') or die $self->logger->info("$!");
 		$singleFastaHeader->write_seq($seq) or die $self->logger->info("$!");
-		$self->_appendAttributes($singleFileName , $uploadDir , $fileNumber);
+		$self->_appendAttributes($singleFileName , $uploadDir , $fileNumber , $attributes);
 	}
 
 	my $args3 = "rm -r $uploadDir" . "fasta";
@@ -234,8 +277,9 @@ sub _appendAttributes {
 	my $singleFileName = shift;
 	my $uploadDir = shift;
 	my $fileNumber = shift;
-	my $attributes = "genome_of=test3";
-	my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"" . " --fasta_dir " . "$uploadDir" . "fasta/" .  " --gfffilename " . "$uploadDir" . "gffout/out" . "$fileNumber" . ".gff";
+	my $atts = shift;
+	$atts =~ s/;$//;
+	my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$atts\"" . " --fasta_dir " . "$uploadDir" . "fasta/" .  " --gfffilename " . "$uploadDir" . "gffout/out" . "$fileNumber" . ".gff";
 	system($appendArgs) == 0 or die $self->logger->info("System failed with $appendArgs: $?");
 	$self->logger->info("System executed $appendArgs with value: $?");
 	unlink "$uploadDir" . "fasta/" . "directory.index";
