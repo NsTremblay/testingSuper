@@ -6,12 +6,13 @@
 
 	<form id="genomeUploadForm" class="form" action="/home/dispatch.cgi/upload_genome/" method="post" enctype="multipart/form-data">
 		<fieldset class="form-inline">
-			<input class="input" type="file" name="genomeFile" required></input>
+			<input id="attachFile" class="input" type="file" name="genomeFile" required></input>
 			<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
+			<div class="progress progress-striped active">
+				<div class="bar" style="width:100%;display:none">Please wait while your sequence is being uploaded. This may take a while...</div>
+			</div>
 			<!--button type="button" class="btn btn-small btn-primary" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button-->
 		</fieldset>
-
-		<hr/>
 
 		<fieldset class="form-horizontal">
 			<span class="help-block" style="margin:10px"> The following fields are required:</span>
@@ -104,7 +105,7 @@
 			</div>
 		</fieldset>
 		<hr/>
-		<button type="submit" class="btn btn-small btn-success" name="submit_strain" value="Submit"><i class="icon-upload icon-white"></i> Submit</button>
+		<button id="submitGenome" type="button" class="btn btn-small btn-success"><i class="icon-upload icon-white"></i> Submit</button>
 		<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
 	</form>
 
@@ -123,6 +124,24 @@ $('#inputPublic').click( function() {
 $('#inputPrivate').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", true);
 	$('#inputPrivateUntilText').attr("required", false);
+});
+$('#submitGenome').click( function() {
+	var emptyInput = 0;
+	$('input[required]').each( function() {
+		if (!$(this).val()){
+			emptyInput++;
+			//alert('You must fill in the required fields');
+		}
+		else {
+		}
+	});
+	if (emptyInput > 0) {
+		alert('You must fill in the required fields');
+	}
+	else{
+		$('.bar').show();
+		$('#genomeUploadForm').submit();
+	}
 });
 </script>
 

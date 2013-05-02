@@ -57,14 +57,14 @@ sub setup {
 		'home'=>'home'
 		);
 
-	$self->connectDatabase({
-		'dbi'=>'Pg',
-		'dbName'=>'chado_upload_test',
-		'dbHost'=>'localhost',
-		'dbPort'=>'5432',
-		'dbUser'=>'postgres',
-		'dbPass'=>'postgres'
-		});
+	# $self->connectDatabase({
+	# 	'dbi'=>'Pg',
+	# 	'dbName'=>'chado_upload_test',
+	# 	'dbHost'=>'localhost',
+	# 	'dbPort'=>'5432',
+	# 	'dbUser'=>'postgres',
+	# 	'dbPass'=>'postgres'
+	# 	});
 }
 
 =head2 default
@@ -87,11 +87,11 @@ Run mode for the home page.
 
 sub home {
 	my $self = shift;
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $formDataRef = $formDataGenerator->getFormData();
+	#my $formDataGenerator = Modules::FormDataGenerator->new();
+	#$formDataGenerator->dbixSchema($self->dbixSchema);
+	#my $formDataRef = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'home.tmpl' , die_on_bad_params=>0 );
-	$template->param(FORMDATA=>$formDataRef);
+	#$template->param(FORMDATA=>$formDataRef);
 	return $template->output();
 }
 

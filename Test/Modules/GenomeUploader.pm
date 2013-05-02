@@ -263,6 +263,8 @@ sub _uploadToDatabase {
 	my $args5 = "rm -r $uploadDir" . "$genomeFileName";
 	system($args5) == 0 or die $self->logger->info("System with $args5 failed: $?");
 	$self->logger->info("System executed $args5 with value: $?");
+	
+	return $self->redirect('../strain_info');
 
 }
 

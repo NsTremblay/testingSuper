@@ -49,6 +49,7 @@ with 'Roles::DatabaseConnector';
 
 use Log::Log4perl;
 use Carp;
+umask 0000;
 
 #object creation
 sub new {
