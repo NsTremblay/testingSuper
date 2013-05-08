@@ -50,15 +50,6 @@ sub setup {
 		'default'=>'default',
 		'group_wise_comparisons'=>'groupWiseComparisons'
 		);
-
-	$self->connectDatabase({
-		'dbi'=>'Pg',
-		'dbName'=>'chado_db_test',
-		'dbHost'=>'localhost',
-		'dbPort'=>'5432',
-		'dbUser'=>'postgres',
-		'dbPass'=>'postgres'
-		});
 }
 
 =head2 default

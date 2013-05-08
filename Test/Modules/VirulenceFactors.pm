@@ -49,15 +49,6 @@ sub setup {
 		'default'=>'default',
 		'virulence_factors'=>'virulenceFactors'
 		);
-
-	$self->connectDatabase({
-		'dbi'=>'Pg',
-		'dbName'=>'chado_db_test',
-		'dbHost'=>'localhost',
-		'dbPort'=>'5432',
-		'dbUser'=>'postgres',
-		'dbPass'=>'postgres'
-		});
 }
 
 =head2 default

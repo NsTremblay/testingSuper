@@ -23,6 +23,15 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 sub cgiapp_init{
 	my $self = shift;
+	
+	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+
+	$self->connectDatabase(dbi => $self->config_param('db.dbi'),
+		dbName => $self->config_param('db.name'),
+		dbHost => $self->config_param('db.host'),
+		dbPort => $self->config_param('db.port'),
+		dbUser => $self->config_param('db.user'),
+		dbPass => $self->config_param('db.pass')); 
 
 	#set paths
 	#the template path is set using CGI::Application::Dispatch

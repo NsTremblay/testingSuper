@@ -19,6 +19,7 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 
 sub dispatch_args {
+    print STDERR $ENV{PATH_INFO};
     return {
         prefix  => 'Modules',
         args_to_new=>{

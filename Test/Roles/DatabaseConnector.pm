@@ -9,16 +9,17 @@ use strict;
 use warnings;
 use FindBin;
 use lib "FindBin::Bin/../";
-use Database::Chado::TestSchema;
+use Database::Chado::Schema;
 use Role::Tiny;
 
 sub connectDatabase{
 	my $self = shift;
-	my $paramsRef = shift; #This pulls the relevant connection parameters
+	my %paramsRef = @_; #This pulls the relevant connection parameters
 	#dbi:Pg:dbname=chado_db_test;host=localhost;port=5432' , 'username' , ' password'
-	my $dataSource = 'dbi:' . $paramsRef->{'dbi'} . ':dbname=' . $paramsRef->{'dbName'} . ';host=' . $paramsRef->{'dbHost'} . ';port=' . $paramsRef->{'dbPort'};
-	my $dbHandle = Database::Chado::TestSchema->connect($dataSource,$paramsRef->{'dbUser'},$paramsRef->{'dbPass'}) or die "Could not connect to database";
+	my $dataSource = 'dbi:' . $paramsRef{'dbi'} . ':dbname=' . $paramsRef{'dbName'} . ';host=' . $paramsRef{'dbHost'} . ';port=' . $paramsRef{'dbPort'};
+	my $dbHandle = Database::Chado::Schema->connect($dataSource,$paramsRef{'dbUser'},$paramsRef{'dbPass'}) or die "Could not connect to database";
 	$self->dbixSchema($dbHandle);
+	print STDERR $dataSource;
 }
 
 #Get/Set methods

@@ -56,15 +56,6 @@ sub setup {
 		'default'=>'default',
 		'strain_info'=>'strainInfo'
 		);
-
-	$self->connectDatabase({
-		'dbi'=>'Pg',
-		'dbName'=>'chado_db_test',
-		'dbHost'=>'localhost',
-		'dbPort'=>'5432',
-		'dbUser'=>'postgres',
-		'dbPass'=>'postgres'
-		});
 }
 
 =head2 default
@@ -91,7 +82,7 @@ sub strainInfo {
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'strain_info.tmpl' , die_on_bad_params=>0 );
-
+ 
 	my $q = $self->query();
 	my $strainName = $q->param("singleStrainName");
 

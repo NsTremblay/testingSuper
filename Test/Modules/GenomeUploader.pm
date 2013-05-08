@@ -72,15 +72,6 @@ sub setup {
 	# 	});
 
 	#NOTE: This connects to the dummy database to test uploading genomes
-
-	$self->connectDatabase({
-		'dbi'=>'Pg',
-		'dbName'=>'chado_upload_test',
-		'dbHost'=>'localhost',
-		'dbPort'=>'5432',
-		'dbUser'=>'postgres',
-		'dbPass'=>'postgres'
-		});
 }
 
 =head2 default
