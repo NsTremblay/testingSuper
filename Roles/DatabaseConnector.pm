@@ -7,7 +7,7 @@ use warnings;
 use FindBin;
 use Carp qw/croak/;
 use lib "FindBin::Bin/../";
-use Database::Chado::TestSchema;
+use Database::Chado::Schema;
 use Role::Tiny;
 
 
@@ -34,7 +34,7 @@ sub connectDatabase {
 	$source . ';port=' . $dbPort if $dbPort;
 	$self->{_dbixConif}->{dbSource} = $source;
 	
-	$self->{_dbixSchema} = Database::Chado::TestSchema->connect($self->{_dbixConif}->{'dbSource'}, $self->{_dbixConif}->{'dbUser'},
+	$self->{_dbixSchema} = Database::Chado::Schema->connect($self->{_dbixConif}->{'dbSource'}, $self->{_dbixConif}->{'dbUser'},
 			$self->{_dbixConif}->{'dbPass'}) or croak "Could not connect to database";
 }
 

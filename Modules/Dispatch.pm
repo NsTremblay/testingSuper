@@ -27,16 +27,16 @@ sub dispatch_args {
         table   => [
                 'user/login'          => { app => 'User', rm => 'authen_login' },
                 ':app/:rm'            => { },
-                'start'               => { app => 'DisplayTest', rm => 'display' },
-#                'login'               => { app => 'User', rm => 'authen_login' },
-#                'logout'              => { app => 'User', rm => 'logout' },
-#                'create_account'      => { app => 'User', rm => 'create_account' },
-#                'new_account'         => { app => 'User', rm => 'new_account' },
-#                'update_account'      => { app => 'User', rm => 'update_account' },
-#                'edit_account'        => { app => 'User', rm => 'edit_account' },
-#                'forgot_password'     => { app => 'User', rm => 'forgot_password' },
-#                'email_password'      => { app => 'User', rm => 'email_password' },
-                'test'                => { app => 'User', rm => 'hello' }  
+                'test'                => { app => 'User', rm => 'hello' },
+				'/hello' =>     {app=>'Home' , rm=>'default'},
+                '/home' =>      {app=>'Home', rm=>'home'},
+                '/strain_info' => {app=>'StrainInfo', rm=>'strain_info'},
+                '/group_wise_comparisons' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
+                '/genome_uploader' => {app=>'GenomeUploader', rm=>'genome_uploader'},
+                '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
+                '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
+                '/statistics' =>    {app=>'Statistics' , rm=>'stats'}
+  
         ],
     };
 }

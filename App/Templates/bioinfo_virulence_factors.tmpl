@@ -10,36 +10,37 @@
 
 <body onload="checkVFValidator()" style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF">
-		<div class="row-fluid">
-			
-			<TMPL_INCLUDE NAME="bioinfo_menu.tmpl">
+		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
+			<h1>Bioinfo Page - Virulence Factors</h1>
+		</div>
 
-			<div class="span8">
-				<h1>Bioinfo Page - Virulence Factors</h1>
+		<div class="row-fluid">
+			<div class="span4" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
 				<p> Here you will find information about all the strains and the
 					virluence factors in the database. This is mostly to provide general
 					biological information about each strain and each virulence factor.
 				</p>
-				<p> Click on the links to the left to display differenct tables of information.
-				</p>
+				<hr/>
+				<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
+					<fieldset>
+						<h5>Select a VF from the list:</h5>
+						<select class="span12" name="VFName">
+							<TMPL_LOOP NAME=vFACTORS>
+							<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+							</TMPL_LOOP>
+						</select>
+						<div style="margin:10px 0px 0px 0px">
+							<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
+							<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+						</div>
+					</fieldset>
+				</form>
+			</div>
 
+			<div class="span7">
 				<div class="row-fluid">
-					<form class="form span5" action="/home/dispatch.cgi/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
-						<fieldset>
-							<h5>Select a VF from the list:</h5>
-							<select class="span12" name="VFName">
-								<TMPL_LOOP NAME=vFACTORS>
-								<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
-								</TMPL_LOOP>
-							</select>
-							<div style="margin:10px 0px 0px 0px">
-								<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
-								<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-							</div>
-						</fieldset>
-					</form>
 
-					<div class="span6" id="VFMetaInfo" style="padding:0px 0px 10px 0px;display:none">
+					<div id="VFMetaInfo" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;display:none">
 						<h5><u>Virulence Factor Meta Info</u></h5>
 						<TMPL_LOOP NAME=vFMETAINFO>
 						<TMPL_VAR NAME=vFUNIQUENAME>
@@ -47,14 +48,14 @@
 						</TMPL_LOOP>
 					</div>
 
-					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vFVALIDATOR></div>
+					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
 
 					<script type="text/javascript">
 					function checkVFValidator() {
 						if ($('#vfvalidator').is(':empty')) {
 						}
 						else {
-							$('#VFMetaInfo').show("slow");;
+							$('#VFMetaInfo').show("slow");
 						}
 					}
 					</script>

@@ -17,9 +17,14 @@ use Carp qw/croak carp/;
 use HTML::Template;
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
+use Log::Log4perl qw(:easy);
 
 # get script location via File::Basename
 my $SCRIPT_LOCATION = dirname(__FILE__);
+
+# Initialize a basic root logger
+# Note: over-write this in child classes if you want to direct the output somewhere
+Log::Log4perl->easy_init($DEBUG);
 
 =head2 cgiapp_init
 
@@ -30,6 +35,9 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 sub cgiapp_init {
 	my $self = shift;
 
+	my $logger = Log::Log4perl->get_logger;
+	
+	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
 	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
@@ -112,7 +120,7 @@ sub cgiapp_postrun {
  			
  			# Display current username as link to edit page and logout link
 			my $username = $a->username;
- 			$$output_ref =~ s|gg_username|<a href="/user/edit_account">$username</a> (<a href="/user/logout">Sign out</a>)|;
+ 			$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/edit_account">$username</a>&nbsp;&nbsp(<a class="navbar-link" href="/user/logout">Sign out</a>)|;
                        
 		} else {
         	# User is not logged in
@@ -121,24 +129,27 @@ sub cgiapp_postrun {
 				# User has not yet clicked the login link
                 
                 # Display link to login page
-				$$output_ref =~ s|gg_username|<a href="/user/login">Sign in</a>|;
+				$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/login">Sign in</a>|;
 			}
         }
         
-
-        my $status;
-        if($status = $self->param('status')) {
-                $$output_ref =~ s|<\!-- gg_status_div -->|<div id='status_div'><span>$status</span></div>|;
-        } elsif($status = $self->session->param('status')) {
-                $$output_ref =~ s|<\!-- gg_status_div -->|<div id='status_div'><span>$status</span></div>|;
-                $self->session->clear('status');
-        }
-#        $$output_ref =~ s|zz_\w+||g;  # remove any placeholders that might still be left
-#                   # If there is only zz_status_div, the above can be made much faster:
-#                   # $$output_ref =~ s|zz_status_div||;
-#        $$output_ref .= '<pre>DEBUG stuff: [this line is in BaseCgiApp.pm cgiapp_postrun()]<br />'
-#                .$self->dump  # debug
-#                
+		# Print status param as alert box on home page (this only works on the home page).
+		if($self->get_current_runmode eq $self->home_rm) {
+	        my $status;
+	        my $html_block = '<div class="row-fluid" style="margin-top: 10px; margin-bottom: 20px;">'.
+	        				 '<div class="span6 offset3">'.
+	        				 '<div class="alert">'.
+	        				 '<button type="button" class="close" data-dismiss="alert">&times;</button>';
+	        				
+	        if($status = $self->param('status')) {
+	        		$html_block .= $status.'</div></div></div>';
+	                $$output_ref =~ s|<\!-- gg_status_div -->|$html_block|;
+	        } elsif($status = $self->session->param('status')) {
+	        		$html_block .= $status.'</div></div></div>';
+	                $$output_ref =~ s|<\!-- gg_status_div -->|$html_block|;
+	                $self->session->clear('status');
+	        }
+		}            
 		
 	}
 
@@ -163,7 +174,17 @@ URL to home page for redirects
 =cut
 sub home_page {
 	
-	return '/start';
+	return '/home';
+}
+
+=head2 home_rm
+
+Home page run-mode
+
+=cut
+sub home_rm {
+	
+	return 'home';
 }
 
 =head2 script_location

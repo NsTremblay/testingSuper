@@ -104,7 +104,7 @@ use Bio::SeqIO;
 		my $args = "gmod_fasta2gff3.pl" . " $fileName" .  " --attributes " . "\"$attributes\"";
 		system($args) == 0 or die "System with $args failed: $? \n";
 		printf "System executed $args with value %d\n", $? >> 8;
-		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff";
+		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff" . " --remove_lock";
 		system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
 		printf "System executed $dbArgs with value %d\n", $? >> 8;
 		unlink "fasta/$fileName";

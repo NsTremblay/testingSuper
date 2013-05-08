@@ -126,7 +126,7 @@ sub update_account : Runmode {
 	# Update record in DB
 	$user_rs->update or croak "Update of user information in database failed ($!).\n";
 	
-	$self->session->param(status=>'Account updated');
+	$self->session->param( status => '<strong>Success!</strong> Account updated.' );
 	$self->redirect($self->home_page);
 }
 	
@@ -211,7 +211,7 @@ sub create_account : Runmode {
 	$q->param( $authentication_form_params->[1] => $q->param('u_password') );
 	$a->{initialized} = 0;    # force reinitialization, hence storage of login
 	$a->initialize;
-	$self->session->param( status => 'Account created' );
+	$self->session->param( status => '<strong>Success!</strong> Account created.' );
 	
 	# Go to main page
 	$self->redirect($self->home_page);
@@ -273,7 +273,7 @@ sub email_password : RunMode {
 	if($ENV{HTTP_HOST} =~ /184\.64\.136\.138/) {
 		$self->session->param(
 			status => 
-			'A new password has been sent to your email address: '. $user_rs->email
+			'<strong>Heads Up!</strong> A new password has been sent to your email address: '. $user_rs->email
 			.'.<br/>Since you are on the testing site, the email won\'t '
 			.' <br/>be sent, so here is the new password: '. $new_password
 		);
@@ -288,7 +288,7 @@ sub email_password : RunMode {
 			croak "Unable to send new password to $username. Password not reset ($err).";
 		}
 	       
-		$self->session->param(status=>'A new password has been sent to your email address.');
+		$self->session->param( status => '<strong>Check your Email!</strong> a new password has been sent to your email address.');
 	}
 	
 	
