@@ -107,7 +107,7 @@ __PACKAGE__->belongs_to(
   "nd_experiment",
   "Database::Chado::Schema::Result::NdExperiment",
   { nd_experiment_id => "nd_experiment_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 phenotype
@@ -122,12 +122,12 @@ __PACKAGE__->belongs_to(
   "phenotype",
   "Database::Chado::Schema::Result::Phenotype",
   { phenotype_id => "phenotype_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NWidmqBCQ8OPbq0VpuTskg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cWcok+0plczNGvkNS1eQCQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

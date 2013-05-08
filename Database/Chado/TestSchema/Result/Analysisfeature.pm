@@ -148,7 +148,7 @@ __PACKAGE__->belongs_to(
   "analysis",
   "Database::Chado::TestSchema::Result::Analysis",
   { analysis_id => "analysis_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 analysisfeatureprops
@@ -178,12 +178,12 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::TestSchema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9IDtAL3zazH6eZVQoWFX/g
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0iSi52b9Mn+X2MOEo2I/7g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

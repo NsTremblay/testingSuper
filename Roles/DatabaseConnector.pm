@@ -1,6 +1,3 @@
-# This is similar to an interface in Java. We'll set up a connection 
-# subroutine here.
-
 #!/usr/bin/perl
 
 package Roles::DatabaseConnector;
@@ -8,25 +5,64 @@ package Roles::DatabaseConnector;
 use strict;
 use warnings;
 use FindBin;
+use Carp qw/croak/;
 use lib "FindBin::Bin/../";
 use Database::Chado::Schema;
 use Role::Tiny;
 
-sub connectDatabase{
+
+=head2 connectDatabase
+
+Create and save dbix::class::schema handle.  Connect to database using DBI::connect parameters.  If already connected,
+it will die.
+
+=cut
+sub connectDatabase {
 	my $self = shift;
-	my %paramsRef = @_; #This pulls the relevant connection parameters
-	#dbi:Pg:dbname=chado_db_test;host=localhost;port=5432' , 'username' , ' password'
-	my $dataSource = 'dbi:' . $paramsRef{'dbi'} . ':dbname=' . $paramsRef{'dbName'} . ';host=' . $paramsRef{'dbHost'} . ';port=' . $paramsRef{'dbPort'};
-	my $dbHandle = Database::Chado::Schema->connect($dataSource,$paramsRef{'dbUser'},$paramsRef{'dbPass'}) or die "Could not connect to database";
-	$self->dbixSchema($dbHandle);
-	print STDERR $dataSource;
+	my %params = @_;
+	
+	croak "Cannot call connectDatabase with existing connection to database.\n" if $self->{_dbixSchema};
+	
+	my $dbi = $params{'dbi'} // croak 'Missing dbi argument.';
+	my $dbName = $params{'dbName'} // croak 'Missing dbName argument.';
+	my $dbHost = $params{'dbHost'} // croak 'Missing dbHost argument.';
+	my $dbPort = $params{'dbPort'};
+	
+	$self->{_dbixConif}->{dbUser} = $params{'dbUser'} // croak 'Missing dbUser argument.';
+	$self->{_dbixConif}->{dbPass} = $params{'dbPass'} // croak 'Missing dbPass argument.';
+	my $source = 'dbi:' . $dbi . ':dbname=' . $dbName . ';host=' . $dbHost;
+	$source . ';port=' . $dbPort if $dbPort;
+	$self->{_dbixConif}->{dbSource} = $source;
+	
+	$self->{_dbixSchema} = Database::Chado::Schema->connect($self->{_dbixConif}->{'dbSource'}, $self->{_dbixConif}->{'dbUser'},
+			$self->{_dbixConif}->{'dbPass'}) or croak "Could not connect to database";
 }
 
-#Get/Set methods
-#Assigns the parameters as a new connection to the database, otherwise returns the existing dbHandle.
+=head2 dbixSchema
+
+Return the dbix::class::schema object.
+
+=cut
+
 sub dbixSchema{
 	my $self = shift;
-	$self->{'_dbixSchema'}=shift // return $self->{'_dbixSchema'};
+	
+	croak "Database not connected" unless $self->{_dbixSchema};
+	
+	return($self->{_dbixSchema});
+}
+
+=head2 dbh
+
+Return the DBI dbh from the dbix::class::schema object.
+
+=cut
+sub dbh {
+	my $self = shift;
+	
+	croak "Database not connected" unless $self->{_dbixSchema};
+	
+	return($self->{_dbixSchema}->storage->dbh);
 }
 
 1;

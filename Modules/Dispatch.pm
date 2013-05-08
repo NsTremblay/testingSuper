@@ -19,16 +19,16 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 
 sub dispatch_args {
-    print STDERR $ENV{PATH_INFO};
     return {
         prefix  => 'Modules',
         args_to_new=>{
                 TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                '' =>           {app=>'Home' , rm=>'home'},
-                '/' =>          {app=>'Home', rm=>'home'},
-                '/hello' =>     {app=>'Home' , rm=>'default'},
+                'user/login'          => { app => 'User', rm => 'authen_login' },
+                ':app/:rm'            => { },
+                'test'                => { app => 'User', rm => 'hello' },
+				'/hello' =>     {app=>'Home' , rm=>'default'},
                 '/home' =>      {app=>'Home', rm=>'home'},
                 '/strain_info' => {app=>'StrainInfo', rm=>'strain_info'},
                 '/group_wise_comparisons' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
@@ -36,6 +36,7 @@ sub dispatch_args {
                 '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
                 '/statistics' =>    {app=>'Statistics' , rm=>'stats'}
+  
         ],
     };
 }

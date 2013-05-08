@@ -120,7 +120,7 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -135,12 +135,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bXofQ4j+q/CH2hhx9qharw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:q6XFdvJ7H1UF/yGXXhDAyw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
+
+<body onload="onLoadCheck()" style="background-color:#796e6c">
+	<div class="row-fluid">
+		<div class="container" style="background-color:#FFFFFF">
+	
+			<form id="user" action="<TMPL_VAR rm>" method="post">
+				<div id="form_legend"><TMPL_UNLESS new_user>Update<TMPL_ELSE>Create</TMPL_UNLESS> Account</div>
+				<div id="form_instructions">
+					<TMPL_UNLESS new_user>
+						Update the fields you want to change.
+					<TMPL_ELSE>
+						Already registered or want to make changes to your account?
+						<a href="edit_account" tabindex="9">Sign in</a>
+						<br/>To create a new account, fill in all fields below.
+					</TMPL_UNLESS>
+				</div>
+				<TMPL_IF some_errors>
+					<div id='form_general_error'>Please correct the problems below:</div>
+				</TMPL_IF>
+				
+				<fieldset>
+                			<TMPL_IF new_user>
+                        			<div><label for='u_username'>Username</label>
+                          				<input type="text" id='u_username' name='u_username' size="15" maxlength='20' value="<TMPL_VAR u_username>" tabindex="1" />
+                              				<TMPL_VAR err_u_username> <TMPL_VAR err_user_id>
+                              				(alphanumeric)
+                        			</div>
+                			</TMPL_IF>
+                			<div><label for='u_password'>Password</label>
+                  				<input type="Password" id='u_password' name='u_password' size="10"  maxlength='10' value="<TMPL_VAR u_password>" tabindex="2" />
+                      				<TMPL_VAR err_u_password>
+                      				(6-10 characters)
+                			</div>
+                			<div><label for='password_confirm'>Re-enter password</label>
+                  			<input type="Password" id='password_confirm' name='password_confirm' size="10" maxlength='10' value="<TMPL_VAR password_confirm>" tabindex="3" />
+                      				<TMPL_VAR err_password_confirm>
+                			</div>
+                			<div><label for='u_first_name'>First name</label>
+                  				<input type="text" id='u_first_name' name='u_first_name' size="15" maxlength='30' value="<TMPL_VAR u_first_name>" tabindex="4" />
+                      				<TMPL_VAR err_u_first_name>
+                			</div>
+                			<div><label for='u_last_name'>Last name</label>
+                  				<input type="text" id='u_last_name' name='u_last_name' size="15" maxlength='30' value="<TMPL_VAR u_last_name>" tabindex="5" />
+                      				<TMPL_VAR err_u_last_name>
+                			</div>
+                			<div><label for='u_email'>Email</label>
+                  				<input type="text" id='u_email' name='u_email' size="25" maxlength='40' value="<TMPL_VAR u_email>" tabindex="6" />
+                      				<TMPL_VAR err_u_email>
+                			</div>
+					<div><label> </label>
+                  				<input type="submit" class="button" value="<tmpl_unless new_user>Update<tmpl_else>Create</tmpl_unless> account" tabindex="8" />
+               				</div>
+					
+				</fieldset>
+				<TMPL_IF nevs><input type="hidden" name="rm" value="<TMPL_VAR rm>" /></TMPL_IF>
+			</form>
+		
+		</div>
+	</div>
+	<TMPL_IF new_user>
+        	<script>document.forms[0].u_username.focus()</script>
+	<TMPL_ELSE>
+        	<script>document.forms[0].u_password.focus()</script>
+	</TMPL_IF><!-- new_user -->
+	
+	<div id="validator" style="display:none"><TMPL_VAR NAME=sSVALIDATOR></div>
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>	

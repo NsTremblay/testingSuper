@@ -107,7 +107,7 @@ __PACKAGE__->belongs_to(
   "dbxref",
   "Database::Chado::Schema::Result::Dbxref",
   { dbxref_id => "dbxref_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 phylonode
@@ -122,12 +122,12 @@ __PACKAGE__->belongs_to(
   "phylonode",
   "Database::Chado::Schema::Result::Phylonode",
   { phylonode_id => "phylonode_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bxSRG1P0wtZgGcjQpJPOWw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:QIH6qHZsusMox23uoErvTg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

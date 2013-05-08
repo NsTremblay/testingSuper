@@ -100,7 +100,7 @@ __PACKAGE__->belongs_to(
   "expression",
   "Database::Chado::Schema::Result::Expression",
   { expression_id => "expression_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -115,12 +115,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:oq2jNlGtv4QCAOeoFwN34A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:10KQ0wnjHT1IXE+2SwqWMA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

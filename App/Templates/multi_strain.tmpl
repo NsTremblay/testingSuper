@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
+
+<body onload="onLoadCheck()" style="background-color:#796e6c">
+	<div class="container" style="background-color:#FFFFFF">
+		<h1>Multi-strain Page</h1>
+
+		<div>
+				<TMPL_INCLUDE NAME="multi_strain_selection_form.tmpl">
+		</div>
+
+		<div id="multiStrain" class="container" style="display:none;background-color:#FFFFFF;min-height:560px;margin-top:5px">
+			<div class="row-fluid">
+				<div id="svgCanvas" class="span6" style="display:none;padding:5px">
+					<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+				</div>
+				<div class="span6" id="map_canvas" style="display:none;height:500px;padding:5px"></div>
+			</div>
+		</div>
+
+		<TMPL_LOOP NAME=mSFEATURES>
+		<div class="row-fluid" id="mSeqDiv" style="diplay:none;margin:10px 0px 10px 0px">
+			<div class="span4">
+				<ul>
+					<li>Name: <TMPL_VAR NAME=mSVALUE></li>
+					<li>Feature ID: <TMPL_VAR NAME=mSFEATUREID></li>
+					<li>Uniquename: <TMPL_VAR NAME=mSUNIQUENAME></li>
+					<li>Sequence Length: <TMPL_VAR NAME=mSSEQLENGTH> bp</li>
+				</ul>
+			</div>
+			<div id="mSeq" class="span8" style="overflow:auto;word-wrap:break-word;max-height:100px"><TMPL_VAR NAME=mSRESIDUES></div>
+		</div>
+		</TMPL_LOOP>
+
+	</div>
+
+	<div id="validator" style="display:none"><TMPL_VAR NAME=mSVALIDATOR></div>
+
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>

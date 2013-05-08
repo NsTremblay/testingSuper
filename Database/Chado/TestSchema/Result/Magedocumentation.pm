@@ -98,7 +98,7 @@ __PACKAGE__->belongs_to(
   "mageml",
   "Database::Chado::TestSchema::Result::Mageml",
   { mageml_id => "mageml_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 tableinfo
@@ -113,12 +113,12 @@ __PACKAGE__->belongs_to(
   "tableinfo",
   "Database::Chado::TestSchema::Result::Tableinfo",
   { tableinfo_id => "tableinfo_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iuXLYA7FLfPYNx0ql1ed9w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7qsTyHt6xrptwzLBniXULA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -35,15 +35,13 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
-use parent 'CGI::Application';
-
 use Log::Log4perl;
 use Carp;
 
 sub setup {
 	my $self=shift;
-	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::VirulenceFactors");
+	my $logger = Log::Log4perl->get_logger();
+	$logger->info("Logger initialized in Modules::VirulenceFactors");
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',

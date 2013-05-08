@@ -44,9 +44,6 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use IO::File;
 use IO::Dir;
-use Role::Tiny::With;
-with 'Roles::DatabaseConnector';
-
 use Log::Log4perl;
 use Carp;
 umask 0000;
@@ -86,6 +83,17 @@ sub _initialize {
 		$self->logger->logconfess("$key is not a valid parameter in Modules::FastaFileWrite");
 	}
 }
+}
+
+=head2 dbixSchema
+
+A pointer to the dbix::class::schema object used in Application
+
+=cut
+sub dbixSchema {
+	my $self = shift;
+	
+	$self->{_dbixSchema} = shift // return $self->{_dbixSchema};
 }
 
 =head2 logger 

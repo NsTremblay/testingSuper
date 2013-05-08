@@ -40,7 +40,6 @@ use IO::File;
 use IO::Dir;
 use Bio::SeqIO;
 use parent 'Modules::App_Super';
-use parent 'CGI::Application';
 use Modules::FormDataGenerator;
 umask 0000;
 
@@ -53,8 +52,8 @@ Run modes are passed in as <reference name>=><subroutine name>
 
 sub setup {
 	my $self=shift;
-	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::GenomeUploader");
+	my $logger = Log::Log4perl->get_logger();
+	$logger->info("Logger initialized in Modules::GenomeUploader");
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
@@ -197,6 +196,8 @@ sub _uploadToDatabase {
 	my $self  = shift;
 	my $genomeFileName = shift;
 	my $uploadDir = shift;
+	
+	my $logger = Log::Log4perl->get_logger();
 
 	#Hash reference to the tags that need to be printed to each fasta file.
 	my $fileTags = shift;
@@ -217,43 +218,43 @@ sub _uploadToDatabase {
 
 
 	my $args1 = "mkdir" . " -m 7777 " . "$uploadDir" . "fasta";
-	system($args1) == 0 or die $self->logger->info("System with $args1 failed: $?");
-	$self->logger->info("System executed $args1 with value: $?");
+	system($args1) == 0 or die $logger->info("System with $args1 failed: $?");
+	$logger->info("System executed $args1 with value: $?");
 	
 	my $args2 = "mkdir". " -m 7777 " . "$uploadDir" . "gffout" ;
-	system($args2) == 0 or die $self->logger->info("System with $args2 failed: $?");
-	$self->logger->info("System executed $args2 with value: $?");
+	system($args2) == 0 or die $logger->info("System with $args2 failed: $?");
+	$logger->info("System executed $args2 with value: $?");
 
 	my $in = Bio::SeqIO->new(-file => "$uploadDir" . "$genomeFileName", -format => 'fasta');
 
 	while (my $seq = $in->next_seq()) {
 		$fileNumber++;
 		my $singleFileName = $seq->id;
-		my $singleFastaHeader = Bio::SeqIO->new(-file => '>' . "$uploadDir/fasta/$singleFileName" . ".fasta" , -format => 'fasta') or die $self->logger->info("$!");
-		$singleFastaHeader->write_seq($seq) or die $self->logger->info("$!");
+		my $singleFastaHeader = Bio::SeqIO->new(-file => '>' . "$uploadDir/fasta/$singleFileName" . ".fasta" , -format => 'fasta') or die $logger->info("$!");
+		$singleFastaHeader->write_seq($seq) or die $logger->info("$!");
 		$self->_appendAttributes($singleFileName , $uploadDir , $fileNumber , $attributes);
 	}
 
 	my $args3 = "rm -r $uploadDir" . "fasta";
-	system($args3) == 0 or die $self->logger->info("System with $args3 failed: $?");
-	$self->logger->info("System executed $args3 with value: $?");
+	system($args3) == 0 or die $logger->info("System with $args3 failed: $?");
+	$logger->info("System executed $args3 with value: $?");
 
 	my $gffOutDir = $uploadDir . 'gffout/';
 	my $gffOutFiles = _getFileNamesFromDirectory($gffOutDir);
 
 	foreach my $gffOutFile(@{$gffOutFiles}) {
 		my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_upload_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile $gffOutDir" . "$gffOutFile" . " --random_tmp_dir";
-		system($dbArgs) == 0 or die $self->logger->info("System failed with $dbArgs: $?");
-		$self->logger->info("System executed $dbArgs with value: $?");
+		system($dbArgs) == 0 or die $logger->info("System failed with $dbArgs: $?");
+		$logger->info("System executed $dbArgs with value: $?");
 	}
 
 	my $args4 = "rm -r $uploadDir" . "gffout";
-	system($args4) == 0 or die $self->logger->info("System with $args4 failed: $?");
-	$self->logger->info("System executed $args4 with value: $?");
+	system($args4) == 0 or die $logger->info("System with $args4 failed: $?");
+	$logger->info("System executed $args4 with value: $?");
 
 	my $args5 = "rm -r $uploadDir" . "$genomeFileName";
-	system($args5) == 0 or die $self->logger->info("System with $args5 failed: $?");
-	$self->logger->info("System executed $args5 with value: $?");
+	system($args5) == 0 or die $logger->info("System with $args5 failed: $?");
+	$logger->info("System executed $args5 with value: $?");
 	
 	return $self->redirect('../strain_info');
 
@@ -271,10 +272,13 @@ sub _appendAttributes {
 	my $uploadDir = shift;
 	my $fileNumber = shift;
 	my $atts = shift;
+	
+	my $logger = Log::Log4perl->get_logger();
+	
 	$atts =~ s/;$//;
 	my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$atts\"" . " --fasta_dir " . "$uploadDir" . "fasta/" .  " --gfffilename " . "$uploadDir" . "gffout/out" . "$fileNumber" . ".gff";
-	system($appendArgs) == 0 or die $self->logger->info("System failed with $appendArgs: $?");
-	$self->logger->info("System executed $appendArgs with value: $?");
+	system($appendArgs) == 0 or die $logger->info("System failed with $appendArgs: $?");
+	$logger->info("System executed $appendArgs with value: $?");
 	unlink "$uploadDir" . "fasta/" . "directory.index";
 	unlink "$uploadDir" . "fasta/" . "$singleFileName" . ".fasta";
 }

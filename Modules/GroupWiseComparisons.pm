@@ -37,14 +37,13 @@ use warnings;
 use FindBin;
 use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
-use parent 'CGI::Application';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 
 sub setup {
 	my $self=shift;
-	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::GroupWiseComparisons");
+	my $logger = Log::Log4perl->get_logger();
+	$logger->info("Logger initialized in Modules::GroupWiseComparisons");
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',

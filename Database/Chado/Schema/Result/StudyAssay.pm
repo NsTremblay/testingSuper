@@ -100,7 +100,7 @@ __PACKAGE__->belongs_to(
   "assay",
   "Database::Chado::Schema::Result::Assay",
   { assay_id => "assay_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 study
@@ -115,12 +115,12 @@ __PACKAGE__->belongs_to(
   "study",
   "Database::Chado::Schema::Result::Study",
   { study_id => "study_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gCyV/gAOlSX5G2Svki7s3w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4do/+XM/gvQ8h0i8Bs9RRg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -134,7 +134,7 @@ __PACKAGE__->belongs_to(
   "environment",
   "Database::Chado::TestSchema::Result::Environment",
   { environment_id => "environment_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 genotype
@@ -149,7 +149,7 @@ __PACKAGE__->belongs_to(
   "genotype",
   "Database::Chado::TestSchema::Result::Genotype",
   { genotype_id => "genotype_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -164,7 +164,7 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::TestSchema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -179,12 +179,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::TestSchema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:w7lD0aqaSQwjembnb5Ymrg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NYzvkN8YFy9SECo/MFhCtA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

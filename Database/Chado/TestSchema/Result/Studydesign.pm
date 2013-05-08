@@ -83,7 +83,7 @@ __PACKAGE__->belongs_to(
   "study",
   "Database::Chado::TestSchema::Result::Study",
   { study_id => "study_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 studydesignprops
@@ -117,8 +117,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-01-29 14:01:48
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+aLVXvK7zjv2+oEd6lklHw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-04-24 14:52:07
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:65g1mFqTsWwY9f0tNDJZfg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

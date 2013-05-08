@@ -177,7 +177,7 @@ __PACKAGE__->belongs_to(
   "arraydesign",
   "Database::Chado::Schema::Result::Arraydesign",
   { arraydesign_id => "arraydesign_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 assay_biomaterials
@@ -272,7 +272,7 @@ __PACKAGE__->belongs_to(
   "operator",
   "Database::Chado::Schema::Result::Contact",
   { contact_id => "operator_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 protocol
@@ -326,8 +326,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:22
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Hy7bbkY35ziv15Ci2jYPCg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:51
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0urqsPIUp5yUtJRVd/L/fw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

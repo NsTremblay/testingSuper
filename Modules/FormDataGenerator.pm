@@ -34,9 +34,6 @@ use strict;
 use warnings;
 use FindBin;
 use lib 'FindBin::Bin/../';
-use Role::Tiny::With;
-with 'Roles::DatabaseConnector';
-
 use Log::Log4perl;
 use Carp;
 
@@ -77,6 +74,17 @@ sub _initialize {
             $self->logger->logconfess("$key is not a valid parameter in Modules::FormDataGenerator");
         }
     }   
+}
+
+=head2 dbixSchema
+
+A pointer to the dbix::class::schema object used in Application
+
+=cut
+sub dbixSchema {
+	my $self = shift;
+	
+	$self->{_dbixSchema} = shift // return $self->{_dbixSchema};
 }
 
 =head2 logger

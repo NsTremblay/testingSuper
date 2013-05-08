@@ -17,25 +17,8 @@ sub setup{
 	my $self = shift;
 	$self->start_mode('hello');
 	# <reference name> => <sub name>
-	$self->run_modes( 'hello'=>'hello', 
-		#'display'=>'displayTest', 
-		#'single_strain'=>'singleStrain',
-		#'multi_strain'=>'multiStrain',
-		#'bioinfo'=>'bioinfo',
-		#'bioinfo_strain_list'=>'bioinfoStrainList',
-		#'bioinfo_virulence_factors'=>'bioinfoVirulenceFactors',
-		#'bioinfo_statistics'=>'bioinfoStatistics');
+	$self->run_modes( 'hello'=>'hello');
 
-#connect to the local database
-#Need to change this so that it calls a server setting obejct class.
-$self->connectDatabase({
-	'dbi'=>'Pg',
-	'dbName'=>'chado_db_test',
-	'dbHost'=>'localhost',
-	'dbPort'=>'5432',
-	'dbUser'=>'postgres',
-	'dbPass'=>'postgres'
-	});
 }
 
 ###############
