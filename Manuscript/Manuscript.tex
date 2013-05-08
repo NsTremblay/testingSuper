@@ -1,0 +1,110 @@
+%Genodo Manuscript
+
+% add 12pt
+\documentclass[letterpaper,12pt]{report}
+
+%add support for the '\subscript \superscript command'
+%from http://anthony.liekens.net/index.php/LaTeX/SubscriptAndSuperscriptInTextMode
+\newcommand{\subscript}[1]{\ensuremath{_{\textrm{#1}}}}
+\newcommand{\superscript}[1]{\ensuremath{^{\textrm{#1}}}}
+
+\usepackage[left = 1.5 in, top = 1 in, right = 1.0 in]{geometry}
+\usepackage{setspace}
+\usepackage{lscape}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{rotating}
+
+\begin{document}
+\pagenumbering{roman}
+
+\section{Introduction}
+Centralized massively parallel nucleic acid sequencing has led to an exponential increase in genomic data generation that threatens to outpace advances in data storage and analysis \cite{kahn_future_2011,teeling_current_2012}. In addition, small distributed sequencing platforms such as the IonTorrent and MiSeq have emerged that promise to provide point of care / investigation capabilities with near-real time generation of genomic data \cite{loman_performance_2012}. This capability will allow the research community to rapidly disseminate data, especially where decisions may be time-critical; e.g., in clinical medicine and epidemiological investigations. Better algorithms, more powerful analytical tools and state-of-the art infrastructure are needed to analyze these datasets in near-real time, store the raw and computed data and provide the essential biological information to a wide range of end-users, including those with little or no training in bioinformatics, in readily understandable and useful formats.
+
+Efforts to simplify bioinformatics workflows such as Taverna \cite{lanzen_taverna_2008} and Galaxy \cite{goecks_galaxy:_2010} have been created, and provide an effective means for users to create bioinformatics workflows. However, data is not integrated with these tools, requiring transfer of genomic sequences from public or private databases, the re-computation of analyses and the inability to compare thousands of genomes. Likewise, online repositories of genomic sequence data such as the National Center for Biotechnology Information (\url{http://www.ncbi.nlm.nih.gov/}) and the Genomes Online Database (\url{http://www.genomesonline.org/cgi-bin/GOLD/}) provide a wealth of data, but are decoupled from an efficient analysis platform. Additionally, storage and computational analysis of thousands of genomes has moved beyond the standard desktop computer, and even with more memory, efficient methodologies and algorithms, servers storing and analyzing thousands of genomic sequences require leading-edge hardware, and the ability to scale in order to meet the computational requirements projected by this increase in data.
+
+We have previously designed Panseq, a suite of software tools called for the automated comparison of multiple genomes \cite{laing_pan-genome_2010,laing_identification_2011}. Panseq is based on the concept of the bacterial pan-genome, the outputs of which enhance our understanding of the evolution of specific bacterial groups, and the genetic basis of important phenotypic traits which differ among these groups.
+
+In this study, we hope to transform the way the research community analyzes genomic data. In light of the torrent of sequencing data that has been generated and the uptake of distributed sequencing technologies that can provide near-real time data, we will create a counterpart computational platform that can provide near-real time analyses. We will provide all publicly available data for species of interest, pre-computed analyses of the data and novel analyses tools that will decrease computation times and will allow rapid assessment of user-uploaded data. The web-interface to this computational platform will obviate the need for command-line skills, or a particular computer environment. As more of the research community uses the platform, the number of genomic sequences it has processed / analyzed will increase, adding further value to the platform and thus will attract more users. From the outset feedback will be solicited from users to improve performance of the entire system and the needs of specific user groups.   Once completed, the platform will provide data outputs that serve a wide community of users, with translation of the genomic data into biologically relevant reports, useful to researchers in a variety of disciplines.
+
+
+1. We will create a broadly accessible, integrated platform for comparative genomic data storage and analyses
+
+2. The platform will provide near-real time analysis of thousands of genomic sequences using novel computational approaches
+
+3. The platform will generate results that are understandable and useful to a wide community of researchers
+
+
+
+VII.4 Methodology
+
+1.1 All publicly available E. coli genomic sequences and metadata will have been stored in a PostgreSQL 9.2 relational database (http://www.postgresql.org ), which is highly scalable and fast (up to 350 000 read queries per second, supporting up to 64 computing cores).
+
+ 
+1.2 The web-interface will be programmed in a Perl MVC, granting fast access to the computational platform and all the underlying analyses tools.  
+
+1.3 The database will have three privacy levels associated with every data entry, which will govern use of the data. The three modes are: 1) “public”, where the information will be available to all upon upload; 2) “private”, which will allow the registered user only to use the uploaded information in online computation; and 3) “private until a specified date”, after which the data type will automatically be converted to “public”, available for open access.
+
+2.1 Our previous multiple-genome analysis tool, Panseq will include an iterative analyses mode, allowing only new genomic sequences to be analyzed and compared to those already stored in the platform. This computational approach will allow a continuous influx of new sequence data without large time or memory requirements. The software will be written in Perl.
+ 
+2.2 Phylogenies will be created using Bayesian inference via MrBayes [12]. To deal with the prohibitive times needed to construct phylogenies from thousands of whole-genome alignments, a binning algorithm based on the 16S ribosomal DNA sequence, and then on the presence / absence of species-specific genomic regions will be implemented to bin strains into sub-groups. Phylogenetic trees for these sub-groups will then be computed and joined into a “super tree”, negating the need to re-analyze the entire phylogeny for thousands of genomes with every new sequence addition [13].
+
+
+2.3 Pre-computed analyses will be carried out with respect to phylogenetic tree generation, the presence / absence of important phenotypic markers such as unique metabolic pathways, virulence and AMR genes, and single-nucleotide polymorphisms in shared genomic regions. As detailed in Methodology 2.1, we will use Panseq to perform these analyses.
+
+
+2.4 A biostatistical module to rapidly identify markers that differ statistically between groups based on both, single nucleotide polymorphisms and the presence / absence of genomic loci will be created; this will ensure that group differences are not based on errors introduced into single strains during sequencing or assembly. This will be programmed in Perl for group generation and metadata analysis, with the statistical computation being conducted using Fisher’s Exact Test from the R statistical package.  All single-nucleotide data and genomic presence / absence data will reside in the PostgreSQL database, requiring only the retrieval and p-value computation for the strains of interest and allowing the near-real time analysis.
+
+ 
+2.5 In silico genotyping will use the molecular in silico typing (MIST) package developed by our collaborators using C# and the .NET framework version 4, which uses Blast for sequence comparisons and generates multi-locus sequence typing profiles, multi-locus variable number tandem repeat analysis profiles and molecular serotype designations. These typing results will automatically be provided when a sequence is uploaded to the database.
+
+2.7 The online computational platform will be developed for staging on a CentOS server with 16 CPUs and 64 GB of RAM and in collaboration with Cybera, who will provide cloud computing resources in-kind. Cloud resources are dynamically scalable and highly elastic, which makes it ideally suited to test genomic analyses on a wide range of scales. This also mitigates additional expenditures for new hardware as all testing may now be performed in Cybera’s cloud environment. The value of the compute resources Cybera is contributing to this project as provided by a commercial cloud provider is approximately \$2,880/month or \$69,120 over the course of the 2 year project. Furthermore, Cybera is prepared to share its extensive cloud computing expertise with our team to assist with the transition to a cloud computing environment. These in-kind consulting services are valued at approximately \$13,500 at standard commercial rates. The production version of the developed software platform may temporarily be hosted by Cybera and in the long-term via our collaboration with Compute Canada to ensure the most efficient processing possible using multiple computing cores and the ability to concurrently serve web requests from around the world. 
+
+3.1 The genome(s) of interest will be shown on a phylogenetic tree of all genomic sequences, indicating its closest neighbor and closest known reference strain. This will be established as in Methodology using the presence / absence of genomic loci and SNPs to establish a broad phylogenetic group that the strain is part of, after which sequence alignment and a tree using Bayesian inference will be computed. 
+
+3.2 A report graphically highlighting the genome and depicting important genomic regions that differ between the genome of interest, the closest reference genome, and other user-specified genome(s) will be generated. It will include virulence factors, antimicrobial resistance genes and any genomic insertion / deletions unique to the genome of interest (e.g., the acquisition of bacteriophage).
+   
+
+VII.5 Example Use Cases
+
+1) Time critical genomic analyses. E.g., A clinician has just received a bacterial isolate from a patient with gastrointestinal illness and would like to know the risk to the patient (how severe and what sort of illness is associated with the strains), the risk to the community (have these bacteria been isolated from other patients; i.e., is this an outbreak?) and possible treatment or prevention options. In order for the information to be to useful, the bacterial isolate must be characterized as soon as possible. The genome sequence is determined in the hospital using a distributed sequencing platform such as the IonTorrent or MinION. She uploads the assembled contigs to the analysis platform (Milestones 1.1 and 1.2) where in a manner of minutes she is presented with a summary of the strain characteristics and community distribution, encompassing Milestones 3.1 – 3.4. The user also has the opportunity to add this new strain to the public database, or mark it as private, or restricted for a limited time, in which case it will be processed by the platform but only visible by her user account (Milestone 1.3).
+
+
+In the current genomics landscape, it is impossible to perform the above analyses in the time required to make effective decisions. Results of this sort are usually historical and of no immediate clinical value. The same analysis would require knowledge of a number of bioinformatics programs, a local collection of strains to run the comparison against, a collection of virulence and anti-microbial factors, and a means of identifying unique genomic elements. The entire process would take days and the knowledge gained would not be immediately available to others. With our novel integration of the data and computational approaches, the analyses can be performed in minutes, a summary report generated, and both the genome and information about that genome stored and available for other users, saving duplication of analyses and increasing the value of the computational platform.
+
+ 
+
+2) Identification of genomic novelty informing phenotype. E.g., 1) An epidemiologist has identified a pathogen responsible for high levels of severe illness and wishes to identify genomic regions that are present in the pathogen but absent among closely related strains not implicated in human disease; 2) An agricultural researcher wishes to identify genomic elements statistically associated with E. coli strains that are shed from cattle more frequently and in higher amounts than other E. coli found in the bovine gastrointestinal tract; 3) A researcher in the oil industry wishes to identify novel genes in a bacterial strain that has been shown to break down hydrocarbons at a rate greater than other bacteria; 4) An environmental scientist wishes to identify genomic regions that allows one group of bacteria from a species to persist in an environment that is toxic to other groups of bacteria of the same species
+
+
+As the computational platform is integrated with the data (Deliverable 1), all metadata (source, host, severity of illness, etc.) is immediately available for determining phenotypic groups that can be compared at the genomic level. Additionally, the spatial distribution of genomic sequences is pre-displayed in map form, allowing the user to “zoom in” and select strains by means of graphically highlighting a region (Milestone 2.6). The presence / absence of all genomic regions and single-nucleotide polymorphism type among shared genomic regions is also pre-computed, enabling the identification of genomic regions that are statistically different between groups, be they based on severity of illness, shedding frequency from a host, a novel biochemical pathway or geographical location (Milestone 2.4 and 2.6). The results are then made available for download and the analysis saved in the platform for others to use if desired by the user.
+
+ 
+3) Discovery research. E.g., A genomics researcher has obtained the assembled contigs from an Illumina sequencing run, generating 200 novel genomic sequences in an underrepresented bacterial species responsible for infrequent but severe cases of human disease. He wishes to quickly identify the phylogenetic relationships among these bacteria and all previously sequenced genomes, as well as to identify virulence and AMR genes, and novel genomic regions present in the strains with respect to closely related genomic sequences. The researcher simply uploads his sequences to the platform, which due to the high-bandwidth CANARIE connection to the Compute Canada resources, takes only a few minutes (Milestone 2.7). In another few minutes, due to the novel heuristic phylogenetic binning process (Milestone 2.2) and leading-edge hardware, the new strains are placed on the phylogenetic tree of all strains, and the presence of any known virulence / AMR genes is determined (Milestone 2.1). Lastly, the 200 new strains are compared to the pre-computed genomics database, where any novel genomic regions are identified for the researcher (Milestone 2.3). Depending on the needs of the researcher, a summary of all 200 strains, or a specific subset, is produced in a format that gives a broad overview of phenotype, phylogenetic position and a graphical depiction of the genome and novel regions (Deliverable 3).
+
+Background: Currently, high-volume comparative genomics requires researchers to locally obtain and store large quantities of genomic sequence data, and install many bioinformatics tools in order to process the sequences, converting the information from a raw form to meaningful information that the researcher is after. Additionally, expensive and continually changing hardware is needed, along with staff versed in use of bioinformatics tools are required to perform the analyses. The combination of all these things is often not possible for many researchers in the genomics community, even though the low cost of sequencing has put next-generation sequencing within the grasp of most.
+
+Deliverables: We will create an integrated platform where the data and tools for analysis of genomic data are coupled, allowing comparative genomic questions to be asked and answered in real time, and the results to be reported in a format understandable to the broad genomics community.
+
+Benefits to the research community:
+
+1) Integration of data and analysis tools, allowing high-volume comparative genomics to all those with internet access. Our program will allow community contribution to the platform, which will increase the value of the platform, and in turn will increase its appeal to researchers in the genomics community.
+
+2) Near real-time data analysis. High-bandwidth server connections that allow fast, high-volume data transfers to the platform, where pre-computed analyses and novel algorithms allow instant results.
+
+3) Data reports where the biologically meaningful features of the comparisons are presented, graphically depicted and summarized. Strains of interest will be summarized by phylogenetic position, indicating closest neighbor and closest known reference strain. A report graphically highlighting important genomic differences between the strain of interest and the closest reference strain will be generated, including virulence factors, antimicrobial resistance genes and any genomic insertion / deletion. The pathotype, MLST type, MLVA type, and serotype if known will be identified in silico and included in the report. Lastly, for epidemiological studies, a “risk level” for the strain of interest will be generated on a scale of 1 – 5 for broad categorization of microbial risk, based on the presence / absence of genomic loci, phylogenetic group membership, and frequency of genotype isolation and severity of human disease caused by closely related strains.
+
+4) Those using the platform may have sensitive data that they would like to analyze, but would not like to make public at the time. The computational platform will allow three privacy modes to be selected: public, private, and private-until-given-date, to meet these needs.
+
+5) Rapid identification of differences in the genomes of groups of bacterial strains. Through use of this analysis tool, novel DNA elements can be identified that encode novel enzymes or regulatory factors which can either up or down regulate existing metabolic pathways. This is of significant benefit to scientists conducting both basic and applied research. Elements of interest can be readily identified when the genomes of closely related strains which differ in key phenotypic trait are compared; e.g., difference in the ability to metabolize a substrate, survive in harsh environments, resistance to antimicrobials or virulence for a specific host can be identified.
+
+6) Novel genomic regions and SNPs that are statistically associated with particular strain clusters can easily be identified. These biomarkers can be used for identification of members of these groups, and the regions responsible for differences in the phenotype. This will be of significant benefit to researchers in a range of different disciplines from epidemiologists to evolutionary biologists, allowing researchers to trace the sources of pathogenic bacteria and to stop outbreaks of disease, as well as study the movement of pollution-associated bacteria in ecosystems.
+
+Strategy to realize benefits: We have initially formed collaborations with users in specific fields (the team includes expertise in Public Health, Food Safety and Agriculture) where we feel the impact of the software will provide the greatest benefit and where there is the greatest likelihood of uptake.  These and other online users around the world will provide feedback on the system design and will test beta versions of software (which will be modified based on their input). The software platform will be marketed through conventional means such as scientific presentations and publications and also at agency and institutional levels to get early high level buy in and foster collaboration. We also have collaborations with both Cybera (\url{http://www.cybera.ca/}), who will provide cloud resources for system development and testing, as well as Compute Canada who has offered resources for, platform delivery. This allows us to develop and deliver the program in the most cost-effective manner on state of the art facilities, utilizing shared resources made available by these organizations. Further, these collaborations will ensure 1) the rapid transfer of gigabytes of data; 2) the computing resources to process terabytes of data; and 3) the ability to concurrently process hundreds of simultaneous requests. As with most software used to compare genomes, computational time increases exponentially with the number of genome sequences analysed. To meet this challenge we will make use of smart comparison algorithms, binning of sequences and a heuristic approach, where only newly added sequence data need be computed, and previously run comparisons can be cached for instant retrieval later, allowing for the comparison of tens of thousands of genomes. We aim to provide near real-time analysis of genomic data to researchers.
+
+ 
+\bibliographystyle{bmc_article}
+\addcontentsline{toc}{chapter}{Bibliography}
+\bibliography{genodo}
+\end{document}
