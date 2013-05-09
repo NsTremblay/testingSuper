@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
+
+<body onload="onLoadCheck()" style="background-color:#796e6c">
+	<div class="row-fluid">
+		<div class="container" style="background-color:#FFFFFF">
+		
+			<form id="add_access_form" action="<TMPL_VAR rm>" method="post">
+				<div id="form_legend">Grant access to other users to your uploaded genomes.</div>
+				<div id="form_instructions">
+					<p>
+						Select genomes, user and permission level to grant another person the 
+						ability to view (and potentially modify or share) your uploaded genomes.
+					</p>
+					<p>		
+						You will need to know the username of the person you wish to grant access to.
+						Any added user will have the ability to view the selected genomes. You can also
+						grant a user the additional permissions of <span class="perm_term">Admin</span> (gives user the ability to 
+						change user access to the genomes) and <span class="perm_term">Modify</span> (allows user to change information
+						on the genome).  <span class="perm_term">Admin</span> implies <span class="perm_term">Modify</span> permission.
+					</p>
+					<p>
+						If you wish to alter an existing access setting, go to the 
+						<a href="/user/edit_access" tabindex="9">Update access settings</a> page.
+					</p>
+				</div>
+				<TMPL_IF some_errors>
+					<div id='form_general_error'>Please correct the problems below:</div>
+				</TMPL_IF>
+				
+				<fieldset id='add_access_sequences'>
+					<legend>1. Select sequences:</legend>
+                	<TMPL_LOOP uploads>
+                		<div id='sequence_set<TMPL_VAR NAME="__counter__">'>
+                			<span class='sequence_set_header'><TMPL_VAR group_name></span>
+	                		Select <a href="javascript:selectAll(true, 'sequence_set<TMPL_VAR NAME="__counter__">');">All</a> | 
+	                		       <a href="javascript:selectAll(false, 'sequence_set<TMPL_VAR NAME="__counter__">');">None</a>
+                			<TMPL_LOOP group_rows>
+                				<label><input type="checkbox" name="a_sequence" value="<TMPL_VAR uid>"><TMPL_VAR name>, uploaded: <TMPL_VAR date></label>
+                			</TMPL_LOOP>
+                		</div>
+                	</TMPL_LOOP>
+                	<TMPL_VAR err_a_sequence>
+				</fieldset>
+				
+				<fieldset id='add_access_users'>
+					<legend>2. Enter username:</legend>
+					
+					<div id="user_set">
+    					
+        				<label for="user_row_name">Username: </label>
+        				<input type="text" id="user_row_name" size="15" maxlength='20' name="a_username" value=""/>
+   						
+   						<TMPL_VAR err_a_username>
+					</div>
+					
+				</fieldset>
+				
+				<fieldset id='add_access_perms'>
+					<legend>3. Select additional permissions (view only is default):</legend>
+					
+					<div id="perm_set">
+    					<div id="perm_subset">
+        					<label for="perm_row_none">View
+        					<input type="radio" id="perm_row_view" name="a_perm" value="view" checked="checked"/></label>
+        					
+        					<label for="perm_row_modi">Modify
+        					<input type="radio" id="user_row_modi" name="a_perm" value="modify"/></label>
+        					
+        					<label for="user_row_admin">Admin
+        					<input type="radio" id="user_row_admin" name="a_perm" value="admin"/></label>
+   						</div>
+   						<TMPL_VAR err_a_perm>
+					</div>
+				</fieldset>
+				
+				<input type="submit" class="button" value="Submit" />
+	
+			</form>
+		</div>
+	</div>
+	
+	
+	<div id="validator" style="display:none"><TMPL_VAR NAME=sSVALIDATOR></div>
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+<script type="text/javascript">
+	var i = 1;
+	function selectAll(toggle, form_set) {
+		$('#' + form_set + ' input[type="checkbox"]').attr('checked', toggle);
+	}
+</script>
+
+</html>	

@@ -76,6 +76,20 @@ CREATE TYPE soi_type AS (
 
 ALTER TYPE public.soi_type OWNER TO postgres;
 
+--
+-- Name: upload_type; Type: TYPE; Schema: public; Owner: matt
+--
+
+CREATE TYPE upload_type AS ENUM (
+    'public',
+    'release',
+    'private',
+    'undefined'
+);
+
+
+ALTER TYPE public.upload_type OWNER TO matt;
+
 SET search_path = frange, pg_catalog;
 
 --
@@ -9685,6 +9699,42 @@ ALTER SEQUENCE organismprop_organismprop_id_seq OWNED BY organismprop.organismpr
 
 
 --
+-- Name: permission; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE permission (
+    permission_id integer NOT NULL,
+    upload_id integer NOT NULL,
+    login_id integer NOT NULL,
+    can_modify boolean NOT NULL,
+    can_share boolean NOT NULL
+);
+
+
+ALTER TABLE public.permission OWNER TO postgres;
+
+--
+-- Name: permission_permission_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE permission_permission_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.permission_permission_id_seq OWNER TO postgres;
+
+--
+-- Name: permission_permission_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE permission_permission_id_seq OWNED BY permission.permission_id;
+
+
+--
 -- Name: phendesc; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -10347,6 +10397,113 @@ ALTER TABLE public.phylotree_pub_phylotree_pub_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE phylotree_pub_phylotree_pub_id_seq OWNED BY phylotree_pub.phylotree_pub_id;
+
+
+--
+-- Name: private_feature; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_feature (
+    feature_id integer NOT NULL,
+    dbxref_id integer,
+    organism_id integer NOT NULL,
+    name character varying(255),
+    uniquename text NOT NULL,
+    residues text,
+    seqlen integer,
+    md5checksum character(32),
+    type_id integer NOT NULL,
+    is_analysis boolean DEFAULT false NOT NULL,
+    is_obsolete boolean DEFAULT false NOT NULL,
+    timeaccessioned timestamp without time zone DEFAULT now() NOT NULL,
+    timelastmodified timestamp without time zone DEFAULT now() NOT NULL,
+    upload_id integer NOT NULL
+);
+ALTER TABLE ONLY private_feature ALTER COLUMN residues SET STORAGE EXTERNAL;
+
+
+ALTER TABLE public.private_feature OWNER TO postgres;
+
+--
+-- Name: TABLE private_feature; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE private_feature IS 'private_feature is identical to feature table but is 
+intended to contain private data only available to specific users.  The table
+private_feature contains upload_id column. This column references the upload table and
+links sequences to specific users via the permission table.  All other columns are
+identical in feature and private_feature.  See feature table comments for further 
+information on other columns.';
+
+
+--
+-- Name: private_feature_feature_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE private_feature_feature_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_feature_feature_id_seq OWNER TO postgres;
+
+--
+-- Name: private_feature_feature_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE private_feature_feature_id_seq OWNED BY private_feature.feature_id;
+
+
+--
+-- Name: private_featureprop; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_featureprop (
+    featureprop_id integer NOT NULL,
+    feature_id integer NOT NULL,
+    type_id integer NOT NULL,
+    value text,
+    rank integer DEFAULT 0 NOT NULL,
+    upload_id integer NOT NULL
+);
+
+
+ALTER TABLE public.private_featureprop OWNER TO postgres;
+
+--
+-- Name: TABLE private_featureprop; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE private_featureprop IS 'private_featureprop is identical to featureprop
+table but is intended to contain private data only available to specific users.  The table
+private_featureprop contains upload_id column. This column references the upload table and
+links sequences to specific users via the permission table.  All other columns are
+identical in featureprop and private_featureprop.  See featureprop table comments for further 
+information on other columns.';
+
+
+--
+-- Name: private_featureprop_featureprop_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE private_featureprop_featureprop_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_featureprop_featureprop_id_seq OWNER TO postgres;
+
+--
+-- Name: private_featureprop_featureprop_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE private_featureprop_featureprop_id_seq OWNED BY private_featureprop.featureprop_id;
 
 
 --
@@ -12251,6 +12408,43 @@ ALTER TABLE public.type_feature_count OWNER TO postgres;
 --
 
 COMMENT ON VIEW type_feature_count IS 'per-feature-type feature counts';
+
+
+--
+-- Name: upload; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE upload (
+    upload_id integer NOT NULL,
+    login_id integer DEFAULT 0 NOT NULL,
+    tag character varying(50) DEFAULT ''::character varying NOT NULL,
+    release_date date DEFAULT 'infinity'::timestamp without time zone NOT NULL,
+    category upload_type DEFAULT 'undefined'::upload_type NOT NULL,
+    upload_date timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.upload OWNER TO postgres;
+
+--
+-- Name: upload_upload_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE upload_upload_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.upload_upload_id_seq OWNER TO postgres;
+
+--
+-- Name: upload_upload_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE upload_upload_id_seq OWNED BY upload.upload_id;
 
 
 SET search_path = so, pg_catalog;
@@ -31458,6 +31652,13 @@ ALTER TABLE ONLY organismprop ALTER COLUMN organismprop_id SET DEFAULT nextval('
 
 
 --
+-- Name: permission_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY permission ALTER COLUMN permission_id SET DEFAULT nextval('permission_permission_id_seq'::regclass);
+
+
+--
 -- Name: phendesc_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -31553,6 +31754,20 @@ ALTER TABLE ONLY phylotree ALTER COLUMN phylotree_id SET DEFAULT nextval('phylot
 --
 
 ALTER TABLE ONLY phylotree_pub ALTER COLUMN phylotree_pub_id SET DEFAULT nextval('phylotree_pub_phylotree_pub_id_seq'::regclass);
+
+
+--
+-- Name: feature_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature ALTER COLUMN feature_id SET DEFAULT nextval('private_feature_feature_id_seq'::regclass);
+
+
+--
+-- Name: featureprop_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_featureprop ALTER COLUMN featureprop_id SET DEFAULT nextval('private_featureprop_featureprop_id_seq'::regclass);
 
 
 --
@@ -31840,6 +32055,13 @@ ALTER TABLE ONLY tableinfo ALTER COLUMN tableinfo_id SET DEFAULT nextval('tablei
 --
 
 ALTER TABLE ONLY treatment ALTER COLUMN treatment_id SET DEFAULT nextval('treatment_treatment_id_seq'::regclass);
+
+
+--
+-- Name: upload_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY upload ALTER COLUMN upload_id SET DEFAULT nextval('upload_upload_id_seq'::regclass);
 
 
 SET search_path = so, pg_catalog;
@@ -47861,7 +48083,7 @@ COPY login (login_id, username, password, firstname, lastname, email, creation_d
 -- Name: login_login_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('login_login_id_seq', 1, false);
+SELECT pg_catalog.setval('login_login_id_seq', 1, true);
 
 
 --
@@ -48268,6 +48490,21 @@ SELECT pg_catalog.setval('organismprop_organismprop_id_seq', 1, false);
 
 
 --
+-- Data for Name: permission; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY permission (permission_id, upload_id, login_id, can_modify, can_share) FROM stdin;
+\.
+
+
+--
+-- Name: permission_permission_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('permission_permission_id_seq', 1, false);
+
+
+--
 -- Data for Name: phendesc; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -48475,6 +48712,36 @@ COPY phylotree_pub (phylotree_pub_id, phylotree_id, pub_id) FROM stdin;
 --
 
 SELECT pg_catalog.setval('phylotree_pub_phylotree_pub_id_seq', 1, false);
+
+
+--
+-- Data for Name: private_feature; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY private_feature (feature_id, dbxref_id, organism_id, name, uniquename, residues, seqlen, md5checksum, type_id, is_analysis, is_obsolete, timeaccessioned, timelastmodified, upload_id) FROM stdin;
+\.
+
+
+--
+-- Name: private_feature_feature_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('private_feature_feature_id_seq', 1, false);
+
+
+--
+-- Data for Name: private_featureprop; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY private_featureprop (featureprop_id, feature_id, type_id, value, rank, upload_id) FROM stdin;
+\.
+
+
+--
+-- Name: private_featureprop_featureprop_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('private_featureprop_featureprop_id_seq', 1, false);
 
 
 --
@@ -49099,6 +49366,21 @@ COPY treatment (treatment_id, rank, biomaterial_id, type_id, protocol_id, name) 
 --
 
 SELECT pg_catalog.setval('treatment_treatment_id_seq', 1, false);
+
+
+--
+-- Data for Name: upload; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY upload (upload_id, login_id, tag, release_date, category, upload_date) FROM stdin;
+\.
+
+
+--
+-- Name: upload_upload_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('upload_upload_id_seq', 1, false);
 
 
 SET search_path = so, pg_catalog;
@@ -52773,6 +53055,22 @@ ALTER TABLE ONLY organismprop
 
 
 --
+-- Name: permission_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY permission
+    ADD CONSTRAINT permission_c1 UNIQUE (upload_id, login_id);
+
+
+--
+-- Name: permission_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY permission
+    ADD CONSTRAINT permission_pkey PRIMARY KEY (permission_id);
+
+
+--
 -- Name: phendesc_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -52994,6 +53292,38 @@ ALTER TABLE ONLY phylotree_pub
 
 ALTER TABLE ONLY phylotree_pub
     ADD CONSTRAINT phylotree_pub_pkey PRIMARY KEY (phylotree_pub_id);
+
+
+--
+-- Name: private_feature_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_c1 UNIQUE (organism_id, uniquename, type_id);
+
+
+--
+-- Name: private_feature_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_pkey PRIMARY KEY (feature_id);
+
+
+--
+-- Name: private_featureprop_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_featureprop
+    ADD CONSTRAINT private_featureprop_c1 UNIQUE (feature_id, type_id, rank);
+
+
+--
+-- Name: private_featureprop_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_featureprop
+    ADD CONSTRAINT private_featureprop_pkey PRIMARY KEY (featureprop_id);
 
 
 --
@@ -53610,6 +53940,14 @@ ALTER TABLE ONLY tableinfo
 
 ALTER TABLE ONLY treatment
     ADD CONSTRAINT treatment_pkey PRIMARY KEY (treatment_id);
+
+
+--
+-- Name: upload_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY upload
+    ADD CONSTRAINT upload_pkey PRIMARY KEY (upload_id);
 
 
 SET search_path = so, pg_catalog;
@@ -55087,6 +55425,27 @@ CREATE INDEX organismprop_idx2 ON organismprop USING btree (type_id);
 
 
 --
+-- Name: INDEX permission_c1; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON INDEX permission_c1 IS 'Each each user can be matched with each upload only once.';
+
+
+--
+-- Name: permission_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX permission_idx1 ON permission USING btree (login_id);
+
+
+--
+-- Name: permission_idx2; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX permission_idx2 ON permission USING btree (upload_id);
+
+
+--
 -- Name: phendesc_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -55287,6 +55646,62 @@ CREATE INDEX phylotree_pub_idx1 ON phylotree_pub USING btree (phylotree_id);
 --
 
 CREATE INDEX phylotree_pub_idx2 ON phylotree_pub USING btree (pub_id);
+
+
+--
+-- Name: private_feature_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_idx1 ON private_feature USING btree (dbxref_id);
+
+
+--
+-- Name: private_feature_idx2; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_idx2 ON private_feature USING btree (organism_id);
+
+
+--
+-- Name: private_feature_idx3; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_idx3 ON private_feature USING btree (type_id);
+
+
+--
+-- Name: private_feature_idx4; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_idx4 ON private_feature USING btree (uniquename);
+
+
+--
+-- Name: private_feature_idx5; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_idx5 ON private_feature USING btree (lower((name)::text));
+
+
+--
+-- Name: private_feature_name_ind1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_name_ind1 ON private_feature USING btree (name);
+
+
+--
+-- Name: private_featureprop_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_featureprop_idx1 ON private_featureprop USING btree (feature_id);
+
+
+--
+-- Name: private_featureprop_idx2; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_featureprop_idx2 ON private_featureprop USING btree (type_id);
 
 
 --
@@ -55875,6 +56290,13 @@ CREATE INDEX treatment_idx2 ON treatment USING btree (type_id);
 --
 
 CREATE INDEX treatment_idx3 ON treatment USING btree (protocol_id);
+
+
+--
+-- Name: upload_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX upload_idx1 ON upload USING btree (login_id);
 
 
 SET search_path = so, pg_catalog;
@@ -57949,6 +58371,36 @@ ALTER TABLE ONLY organismprop
 
 
 --
+-- Name: permission_login_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY permission
+    ADD CONSTRAINT permission_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: CONSTRAINT permission_login_id_fkey ON permission; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON CONSTRAINT permission_login_id_fkey ON permission IS 'If user in login table is deleted, their permission entries will also be deleted.';
+
+
+--
+-- Name: permission_upload_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY permission
+    ADD CONSTRAINT permission_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: CONSTRAINT permission_upload_id_fkey ON permission; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON CONSTRAINT permission_upload_id_fkey ON permission IS 'If entry in upload table is deleted, permission entries linked to upload will also be deleted.';
+
+
+--
 -- Name: phendesc_environment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -58322,6 +58774,78 @@ ALTER TABLE ONLY phylotree_pub
 
 ALTER TABLE ONLY phylotree
     ADD CONSTRAINT phylotree_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE;
+
+
+--
+-- Name: private_feature_dbxref_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES dbxref(dbxref_id) ON DELETE SET NULL DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_organism_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_organism_id_fkey FOREIGN KEY (organism_id) REFERENCES organism(organism_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_upload_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature
+    ADD CONSTRAINT private_feature_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id);
+
+
+--
+-- Name: CONSTRAINT private_feature_upload_id_fkey ON private_feature; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON CONSTRAINT private_feature_upload_id_fkey ON private_feature IS 'Cannot delete upload entry if there are referenced entries in private_feature.
+Must manually delete.';
+
+
+--
+-- Name: private_featureprop_feature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_featureprop
+    ADD CONSTRAINT private_featureprop_feature_id_fkey FOREIGN KEY (feature_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_featureprop_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_featureprop
+    ADD CONSTRAINT private_featureprop_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_featureprop_upload_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_featureprop
+    ADD CONSTRAINT private_featureprop_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id);
+
+
+--
+-- Name: CONSTRAINT private_featureprop_upload_id_fkey ON private_featureprop; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON CONSTRAINT private_featureprop_upload_id_fkey ON private_featureprop IS 'Cannot delete upload entry if there are referenced entries in private_featureprop.
+Must manually delete.';
 
 
 --
@@ -59026,6 +59550,21 @@ ALTER TABLE ONLY treatment
 
 ALTER TABLE ONLY treatment
     ADD CONSTRAINT treatment_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: upload_login_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY upload
+    ADD CONSTRAINT upload_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id);
+
+
+--
+-- Name: CONSTRAINT upload_login_id_fkey ON upload; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON CONSTRAINT upload_login_id_fkey ON upload IS 'Cannot delete user if they have upload entries remaining in upload table.';
 
 
 --

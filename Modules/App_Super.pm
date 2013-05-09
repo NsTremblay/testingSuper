@@ -120,7 +120,7 @@ sub cgiapp_postrun {
  			
  			# Display current username as link to edit page and logout link
 			my $username = $a->username;
- 			$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/edit_account">$username</a>&nbsp;&nbsp(<a class="navbar-link" href="/user/logout">Sign out</a>)|;
+ 			$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/edit_account">$username</a>&nbsp;(<a class="navbar-link" href="/user/logout">Sign out</a>)|;
                        
 		} else {
         	# User is not logged in
