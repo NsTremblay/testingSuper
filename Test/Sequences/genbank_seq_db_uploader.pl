@@ -53,10 +53,10 @@ sub parseGenome {
 			aggregateGffs();
 		}
 	}	
-	uploadSequences();
+	#uploadSequences();
 	system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
 	system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
-	system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
+	#system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
 	closedir GENOMEDIR;
 }
 
@@ -227,7 +227,7 @@ sub uploadSequences {
 }
 
 sub hashConfigSettings {
-	my $configLocation = "$FindBin::Bin/../Modules/chado_upload_test.cfg";
+	my $configLocation = "$FindBin::Bin/../Modules/chado_db_test.cfg";
 	open my $in, '<' , $configLocation or die "Cannot open $configLocation: $!\n";
 	my ($dbName , $dbUser , $dbPass);
 	while (my $confLine = <$in>) {

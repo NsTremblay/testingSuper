@@ -46,10 +46,10 @@ use Bio::SeqIO;
 				mkNewOutFolder();
 				copyFastaFile($file);
 				readInHeaders($file);
-				uploadGenomeToDb();
+				#uploadGenomeToDb();
 				unlink $file;
-				unlinkFastaFolder();
-				unlinkOutFolder();
+				#unlinkFastaFolder();
+				#unlinkOutFolder();
 			}
 		}
 		closedir '';
@@ -83,12 +83,12 @@ use Bio::SeqIO;
 		else{
 			my $keywords = "keywords";
 			$genomeNumber  = $fileNumber;
-			my $attributes = "organism=Escherichia coli" . ";" . "genome_of=$nameAttribute" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
+			my $attributes = "organism=Escherichia coli" . ";" . "is_a=$nameAttribute" . ";" . "description=$description" . ";" . "keywords=Genome Sequence" . ";" . "mol_type=dna" . ";" . "member_of=$genomeNumber";
 			my $appendArgs = "gmod_fasta2gff3.pl" . " --attributes " . "\"$attributes\"" . " --gfffilename " . "gffout/out" . "$singleFileNumber" . "." . "gff";
 			system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
 			printf "System executed $appendArgs with value %d\n" , $? >> 8;
 			unlink "fasta/directory.index";
-			unlink "fasta/$singleFileName" . ".fasta";
+			#unlink "fasta/$singleFileName" . ".fasta";
 		}
 	}
 

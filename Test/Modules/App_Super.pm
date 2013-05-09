@@ -24,7 +24,8 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 sub cgiapp_init{
 	my $self = shift;
 	
-	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	$self->connectDatabase(dbi => $self->config_param('db.dbi'),
 		dbName => $self->config_param('db.name'),
