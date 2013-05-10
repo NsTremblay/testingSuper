@@ -53,10 +53,10 @@ sub parseGenome {
 			aggregateGffs();
 		}
 	}	
-	#uploadSequences();
+	uploadSequences();
 	system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
 	system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
-	#system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
+	system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
 	closedir GENOMEDIR;
 }
 
@@ -156,7 +156,7 @@ sub parseName {
 	}
 	elsif($originalName =~ m/^(.+)\|Length=/){
 		$newName = $1;
-	else{
+	} else {
 		$newName = $originalName;
 	}
 	$newName =~ s/Escherichia coli//;

@@ -40,7 +40,8 @@ sub cgiapp_init {
 	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
-	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	# Set up database connection
 	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),

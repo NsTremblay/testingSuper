@@ -360,18 +360,16 @@ sub add_access : RunMode {
 		{
 			'permissions.can_share'     => 1,
 			'login.username'            => $self->authen->username,
-			'type.name'                 => 'genome_of',
-			'private_featureprops.rank' => 0
+			'type.name'                 => 'contig_collection',
 		},
 		{
 			join => [
-				{ 'permissions'          => 'login' },
-				{ 'private_featureprops' => 'type' }
+				{ 'permissions'     => 'login' },
+				{ 'private_features' => 'type' }
 			],
 			columns   => [qw/me.upload_id me.tag me.upload_date/],
-			'+select' => [qw/private_featureprops.value/],
-			'+as'     => [qw/value/],
-			distinct  => 1
+			'+select' => [qw/private_features.uniquename/],
+			'+as'     => [qw/name/],
 		}
 	);
 
@@ -383,7 +381,7 @@ sub add_access : RunMode {
 		$form_hash{$group_nm} = [] unless defined $form_hash{$group_nm};
 		push @{ $form_hash{$group_nm} },
 		  {
-			name => $upload_row->get_column('value'),
+			name => $upload_row->get_column('name'),
 			date => _strip_time( $upload_row->upload_date ),
 			uid  => $upload_row->upload_id
 		  };
@@ -496,19 +494,17 @@ sub edit_access : RunMode {
 			'permissions_2.can_share'   => 1,
 			'login_2.username'          => $self->authen->username,
 			'login.username'            => { '!=', $self->authen->username },
-			'type.name'                 => 'genome_of',
-			'private_featureprops.rank' => 0
+			'type.name'                 => 'contig_collection',
 		},
 		{
 			join => [
 				{ 'permissions'          => 'login' },
 				{ 'permissions'          => 'login' },
-				{ 'private_featureprops' => 'type' }
+				{ 'private_features'     => 'type' }
 			],
 			columns   => [qw/me.upload_id me.tag me.upload_date/],
-			'+select' => [qw/login.username permissions.permission_id permissions.can_modify permissions.can_share private_featureprops.value/],
-			'+as'    => [qw/username permission_id modify share value/],
-			distinct => 1
+			'+select' => [qw/login.username permissions.permission_id permissions.can_modify permissions.can_share private_features.uniquename/],
+			'+as'    => [qw/username permission_id modify share name/],
 		}
 	);
 
@@ -528,7 +524,7 @@ sub edit_access : RunMode {
 
 		push @{ $form_hash{$user}->{groups}->{$group_nm} },
 		  {
-			name   => $upload_row->get_column('value'),
+			name   => $upload_row->get_column('name'),
 			date   => _strip_time( $upload_row->upload_date ),
 			target_id    => $upload_row->get_column('permission_id'),
 			admin  => ($perm eq 'admin') ? 1:0,
