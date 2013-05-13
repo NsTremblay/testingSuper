@@ -184,4 +184,17 @@ __PACKAGE__->has_many(
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+
+=head2 private_features
+
+Join with database view of all contig_collection names
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_genome_names",
+  "Database::Chado::Schema::Result::PrivateGenomeName",
+  { "foreign.upload_id" => "self.upload_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 1;

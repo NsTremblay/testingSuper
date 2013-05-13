@@ -40,8 +40,8 @@ sub cgiapp_init {
 	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
-	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
-	$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	#$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	# Set up database connection
 	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
@@ -196,6 +196,70 @@ Accessor for child classes
 sub script_location {
 	
 	return $SCRIPT_LOCATION;
+}
+
+=head2 getGenomes
+
+Queries the database to return list of genomes available to user.
+
+Method is used to populate forms with a list of public and
+private genomes.
+
+=cut
+sub getGenomes {
+    my $self = shift;
+    
+    # Return public genome names as list of hash-refs
+    my $genomes = $self->dbixSchema->resultset('GenomeName')->search({},
+    	{
+    		result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+    		columns => [qw/feature_id uniquename/],
+    	}
+    );
+ 	
+ 	my @publicFormData = $genomes->all;
+ 	
+ 	# Get private list (or empty list)
+ 	my $privateFormData = $self->privateGenomes();
+ 	
+    # Return two lists
+    return(\@publicFormData, $privateFormData);
+}
+
+
+=head2 privateGenomes
+
+Queries the database to return list of private uploaded genomes available to user.
+
+User must be logged in. If none available, returns empty list.
+
+=cut
+sub privateGenomes {
+	my $self = shift;
+	
+	if($self->authen->is_authenticated) {
+		# user is logged in
+		
+		# Return private genome names as list of hash-refs
+		# Need to check view permissions for user
+		my $genomes = $self->dbixSchema->resultset('PrivateGenomeName')->search(
+			{
+				'login.username' => $self->authen->username
+			},
+	    	{
+	    		result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+	    		columns => [qw/feature_id uniquename/],
+	    		join => {'upload' => { 'permissions' => 'login'} }
+	    	}
+	    );
+	    
+	    my @privateFormData = $genomes->all;
+	    
+	    return \@privateFormData;
+		
+	} else {
+		return [];
+	}
 }
 
 1;

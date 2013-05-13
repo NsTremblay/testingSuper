@@ -7977,6 +7977,16 @@ CREATE VIEW fp_key AS
 ALTER TABLE public.fp_key OWNER TO postgres;
 
 --
+-- Name: genome_names; Type: VIEW; Schema: public; Owner: matt
+--
+
+CREATE VIEW genome_names AS
+    SELECT feature.feature_id, feature.name, feature.uniquename, feature.type_id FROM feature WHERE (feature.type_id = 1542);
+
+
+ALTER TABLE public.genome_names OWNER TO matt;
+
+--
 -- Name: genotype; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -10505,6 +10515,16 @@ ALTER TABLE public.private_featureprop_featureprop_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE private_featureprop_featureprop_id_seq OWNED BY private_featureprop.featureprop_id;
 
+
+--
+-- Name: private_genome_names; Type: VIEW; Schema: public; Owner: matt
+--
+
+CREATE VIEW private_genome_names AS
+    SELECT private_feature.feature_id, private_feature.name, private_feature.uniquename, private_feature.type_id, private_feature.upload_id FROM private_feature WHERE (private_feature.type_id = 1542);
+
+
+ALTER TABLE public.private_genome_names OWNER TO matt;
 
 --
 -- Name: project; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
@@ -48975,6 +48995,7 @@ SELECT pg_catalog.setval('quantificationprop_quantificationprop_id_seq', 1, fals
 --
 
 COPY sessions (id, a_session) FROM stdin;
+d86cbcfaeb694ad0efe3a261173be219	\\x04080831323334353637380408080803050000000680700000000000000e0000005f53455353494f4e5f4554494d450a2064383663626366616562363934616430656665336132363131373362653231390b0000005f53455353494f4e5f49440659669151000000000e0000005f53455353494f4e5f4154494d450a0e3138342e36342e3133362e313338140000005f53455353494f4e5f52454d4f54455f41444452064b669151000000000e0000005f53455353494f4e5f4354494d45
 \.
 
 

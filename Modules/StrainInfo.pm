@@ -37,12 +37,11 @@ use warnings;
 use FindBin;
 use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
-use Modules::FormDataGenerator;
+use CGI::Application::Plugin::AutoRunmode;
 
 =head2 setup
 
 Defines the start and run modes for CGI::Application and connects to the database.
-Run modes are passed in as <reference name>=><subroutine name>
 
 =cut
 
@@ -50,82 +49,119 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
 	$logger->info("Logger initialized in Modules::StrainInfo");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'strain_info'=>'strainInfo'
-		);
+	
 }
 
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
-}
-
-=head2 singleStrainInfo
+=head2 strain_info
 
 Run mode for the sinle strain page
 
 =cut
 
-sub strainInfo {
+sub strain_info : StartRunmode {
 	my $self = shift;
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $formDataRef = $formDataGenerator->getFormData();
+	
+	my ($pubDataRef, $priDataRef) = $self->getGenomes();
+	
+#	my $logger = Log::Log4perl->get_logger();
+#	$logger->debug('USER: '.$self->authen->username);
+#	foreach(@$priDataRef) {
+#		$logger->debug('USERs PRIVATE GENOME ID: '.$_);
+#	}
+	
 	my $template = $self->load_tmpl( 'strain_info.tmpl' , die_on_bad_params=>0 );
  
 	my $q = $self->query();
-	my $strainName = $q->param("singleStrainName");
-
-	if(!defined $strainName || $strainName eq ""){
-		$template->param(FEATURES=>$formDataRef);
+	my $strainID = $q->param("singleStrainID");
+	my $privateStrainID = $q->param("privateSingleStrainID");
+	
+	# Populate forms
+	$template->param(FEATURES => $pubDataRef);
+	if(@$priDataRef) {
+		# User has private data
+		$template->param(PRIVATE_DATA => 1);
+		$template->param(PRIVATE_FEATURES => $priDataRef);
+		
+	} else {
+		$template->param(PRIVATE_DATA => 0);
 	}
-	else {
-		my $strainInfoDataRef = $self->_getStrainInfo($strainName);
-		$template->param(FEATURES=>$formDataRef);
+
+	if(defined $strainID && $strainID ne "") {
+		# User requested information on public strain
+		
+		my $strainInfoDataRef = $self->_getStrainInfo($strainID, 1);
+		
 		$template->param(METADATA=>$strainInfoDataRef);
+		
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
+		
+	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		# User requested information on private strain
+		
+		# Verify that user has access to strain
+		my $confirm_access=0;
+		foreach my $str (@$priDataRef) {
+			if($privateStrainID eq $str->{feature_id}) {
+				$confirm_access = 1;
+				last;
+			}
+		}
+		
+		unless($confirm_access) {
+			# User requested strain that they do not have permission to view
+			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genome ID: '.$privateStrainID );
+			return $self->redirect( $self->home_page );
+		}
+		
+		# Obtain private strain info
+		my $strainInfoDataRef = $self->_getStrainInfo($privateStrainID, 0);
+		
+		$template->param(METADATA => $strainInfoDataRef);
+		
+		my $validator = "Return Success";
+		$template->param(VALIDATOR => $validator);
 	}
+	
 	return $template->output();
 }
 
+
 =head2 _getStrainInfo
 
-Takes in a strain name paramer and queries it against the database.
+Takes in a strain name paramer and queries it against the appropriate table.
 Returns an array reference to the strain metainfo.
 
 =cut
 
 sub _getStrainInfo {
 	my $self = shift;
-	my $_strainName = shift;
+	my $strainID = shift;
+	my $public = shift;
+	
 	my @strainMetaData;
+	my $feature_table_name = 'Feature';
+	my $featureprop_table_name = 'Featureprop';
+	
+	# Data is in private tables
+	unless($public) {
+		$feature_table_name = 'PrivateFeature';
+		$featureprop_table_name = 'PrivateFeatureprop';
+	}
 
-	my $strainFeaturepropTable = $self->dbixSchema->resultset('Featureprop');
-	my $strainFeatureTable = $self->dbixSchema->resultset('Feature');
+	my $features = $self->dbixSchema->resultset($feature_table_name)->search({ feature_id => $strainID});
+	my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
 
-	my $_featureProps = $strainFeaturepropTable->search(
-		{value => "$_strainName"},
-		{
-			column => [qw/me.feature_id/],
-			order_by => {-asc => ['me.feature_id']}
-		}
-		);
-
-	while (my $_featurepropsRow = $_featureProps->next) {
+	### GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
+	while(my $row = $featureprops->next) {
 		my %strainRowData;
-		$strainRowData{'FEATUREID'}=$_featurepropsRow->feature_id;
+		$strainRowData{'FEATUREID'} = $strainID;
+		$strainRowData{'VALUE'} = $row->value;
+		$strainRowData{'TYPEID'} = $row->type_id;
 		push(@strainMetaData, \%strainRowData);
 	}
+	###
+	
 	return \@strainMetaData;
 }
 
