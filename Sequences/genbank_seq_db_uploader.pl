@@ -139,24 +139,7 @@ sub parseName {
 			$newName = "$tagName -$2";
 		}
 	}
-	elsif($originalName =~ m/name=\|(\w+)\|/){
-		$newName = $1;
-	}
-	elsif($originalName =~ m/lcl\|([\w-]*)\|/){
-		$newName = $1;
-	}
-	elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
-		$newName = $1;
-	}
-	elsif($originalName =~ m/(gi\|\d+)\|/){
-		$newName = $1;
-	}
-	elsif($originalName =~ m/^(.+)\|Segment=/){
-		$newName = $1;
-	}
-	elsif($originalName =~ m/^(.+)\|Length=/){
-		$newName = $1;
-	} else {
+	else{
 		$newName = $originalName;
 	}
 	$newName =~ s/Escherichia coli//;
