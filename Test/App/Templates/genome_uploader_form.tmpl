@@ -74,7 +74,7 @@
 				</div>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" id="inputPrivateUntil" value="privateUntil">
+						<input type="radio" name="inputPrivacy" id="inputPrivateUntil" value="private_until">
 						Private Until
 						<input type="text" name="inputPrivateUntilDate" id="inputPrivateUntilText" disabled placeholder="DD/MM/YYYY">
 					</label>
@@ -116,6 +116,7 @@ $('#inputPrivateUntil').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", false);
 	$('#inputPrivateUntilText').attr("required", true);
 	$('#inputPrivateUntilText').focus();
+	//$('#inputPrivateUntilText').val($('#inputPrivateUntilText').val());
 });
 $('#inputPublic').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", true);
