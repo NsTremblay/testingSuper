@@ -6,7 +6,7 @@
 
 	<form id="genomeUploadForm" class="form" action="/upload_genome/" method="post" enctype="multipart/form-data">
 		<fieldset class="form-inline">
-			<input id="attachFile" class="input" type="file" name="genomeFile" required></input>
+			<input id="attachFile" class="input" type="file" name="genome_file" required></input>
 			<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
 			<div class="progress progress-striped active">
 				<div class="bar" style="width:100%;display:none">Please wait while your sequence is being uploaded. This may take a while...</div>
@@ -19,37 +19,37 @@
 			<div class="control-group">
 				<label class="control-label" for="inputGenomeName">Genome Name</label>
 				<div class="controls">
-					<input type="text" name="genomeName" id="inputGenomeName" required>
+					<input type="text" name="genome_of" id="inputGenomeName" required>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputAliasName">Alias Name</label>
 				<div class="controls">
-					<input type="text" name="aliasName" id="inputAliasName" required>
+					<input type="text" name="alias" id="inputAliasName" required>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
 				<div class="controls">
-					<input type="text" name="isolationDate" id="inputIsolationDate" placeholder="DD/MM/YYYY" required>
+					<input type="text" name="isolation_date" id="inputIsolationDate" placeholder="DD/MM/YYYY" required>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputHostSource">Isolation Host Source</label>
 				<div class="controls">
-					<input type="text" name="hostSource" id="inputHostSource" required>
+					<input type="text" name="host_source" id="inputHostSource" required>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputIsolationLocation">Location of Isolation</label>
 				<div class="controls">
-					<input type="text" name="isolationLocation" id="inputIsolationLocation" required>
+					<input type="text" name="location" id="inputIsolationLocation" required>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputSpeciesName">Species Name</label>
 				<div class="controls">
-					<input type="text" name="speciesName" id="inputSpeciesName" value="Escherichia coli" readonly="true" placeholder="Escherichia coli" required>
+					<input type="text" name="organism" id="inputSpeciesName" value="Escherichia coli" readonly="true" placeholder="Escherichia coli" required>
 				</div>
 			</div>
 			<div class="control-group">
@@ -62,21 +62,21 @@
 				<label class="control-label" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="public" id="inputPublic" required checked>
+						<input type="radio" name="privacy" value="public" id="inputPublic" required checked>
 						Public
 					</label>
 				</div>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="private" id="inputPrivate" required>
+						<input type="radio" name="privacy" value="private" id="inputPrivate" required>
 						Private
 					</label>
 				</div>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" id="inputPrivateUntil" value="private_until">
+						<input type="radio" name="privacy" id="inputPrivateUntil" value="private_until">
 						Private Until
-						<input type="text" name="inputPrivateUntilDate" id="inputPrivateUntilText" disabled placeholder="DD/MM/YYYY">
+						<input type="text" id="inputPrivateUntilText" disabled placeholder="DD/MM/YYYY">
 					</label>
 				</div>
 			</div>
@@ -116,7 +116,9 @@ $('#inputPrivateUntil').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", false);
 	$('#inputPrivateUntilText').attr("required", true);
 	$('#inputPrivateUntilText').focus();
-	//$('#inputPrivateUntilText').val($('#inputPrivateUntilText').val());
+	$('#inputPrivateUntilText').keyup(function()  {
+		$(this).parent().find('#inputPrivateUntil').val($(this).val());
+	});
 });
 $('#inputPublic').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", true);
