@@ -220,6 +220,14 @@ sub script_location {
 	
 	return $SCRIPT_LOCATION;
 }
+=head2 logger
+
+=cut
+
+sub logger {
+	my $self=shift;
+	$self->{'_logger'} = shift // return $self->{'_logger'};
+}
 
 =head2 script_location
 
