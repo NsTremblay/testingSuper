@@ -14,3 +14,6 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 	
 4. create_permission_tables.sql
 	Schema for the permission, upload, private_feature, private_featureprop tables. Additions on top of #3.
+	
+5. create_genome_name_views.sql
+	SQL statements for creating genome_name and private_genome_name views.  Additions on top of #4.

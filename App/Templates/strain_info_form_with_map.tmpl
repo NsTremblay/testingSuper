@@ -18,14 +18,20 @@
 				</style>
 				<script>
 				$(function() {
-					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=UNIQUENAME>" } , </TMPL_LOOP> ]
-				//var availableTags = [<TMPL_LOOP NAME=FEATURES>"<TMPL_VAR NAME=UNIQUENAME>",</TMPL_LOOP>];
+					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATURE_ID>" } , </TMPL_LOOP> ]
 				$("#autoComp").autocomplete({
-					source: availableTags
+					source: availableTags,
+					select: function( event, ui ) {
+			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
+			            $("#autoComp_hidden").val( ui.item.value );
+			            return false;
+			        }
+
 				});
-			});
+				});
 				</script>
-				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName" value='<TMPL_VAR NAME=UNIQUENAME>'></input>
+				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName"></input>
+				<input id="autoComp_hidden" type="hidden" name="singleStrainID"/>
 				<div>
 					<button id="sSSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
@@ -36,9 +42,9 @@
 		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				<span style="color:#796e6c">Select a strain from the list:</span>
-				<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainName">
+				<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainID">
 					<TMPL_LOOP NAME=FEATURES>
-					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
+					<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
 				</select>
 				<div style="margin:10px 0px 0px 0px">
@@ -48,6 +54,24 @@
 				<!--hr-->
 			</fieldset>
 		</form>
+		
+		<TMPL_IF PRIVATE_DATA>
+			<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+				<fieldset>
+					<span style="color:#796e6c">Or select from your uploaded strains:</span>
+					<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
+						<TMPL_LOOP NAME=PRIVATE_FEATURES>
+						<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
+						</TMPL_LOOP>
+					</select>
+					<div style="margin:10px 0px 0px 0px">
+						<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+						<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+					</div>
+					<!--hr-->
+				</fieldset>
+			</form>
+		</TMPL_IF>
 
 	</div>
 	<!--form class="form" style="padding:0px 70px 5px 20px" method="post">
@@ -86,7 +110,7 @@
 		initialize();
 	}
 	function checkSSFields(strainInfoSearch) {
-		if (strainInfoSearch.singleStrainName.value == "") {
+		if (strainInfoSearch.singleStrainID.value == "") {
 			alert("You must enter a valid search term.");
 			return false;
 		}
