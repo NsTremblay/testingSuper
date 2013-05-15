@@ -40,8 +40,8 @@ sub cgiapp_init {
 	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
-	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
-	#$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
+	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	# Set up database connection
 	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
@@ -73,12 +73,7 @@ sub cgiapp_init {
 		],
 		POST_LOGIN_URL            => $self->home_page,
 		LOGOUT_URL                => $self->home_page,
-		LOGIN_FORM                => {
-			REGISTER_URL          => '/user/new_account',
-			REGISTER_LABEL        => 'Create account',
-			FORGOTPASSWORD_URL    => '/user/forgot_password',
-			FORGOTPASSWORD_LABEL  => 'Forgot password?'
-		}
+		RENDER_LOGIN              => \&render_login
 	);
 	
 	
@@ -122,6 +117,20 @@ sub cgiapp_postrun {
  			# Display current username as link to edit page and logout link
 			my $username = $a->username;
  			$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/edit_account">$username</a>&nbsp;(<a class="navbar-link" href="/user/logout">Sign out</a>)|;
+ 			
+ 			# Enable any links in nav bar that require user to be logged in.
+ 			
+ 			# Genome uploader requires user to be logged in.
+ 			my $authen_gu = 
+ 			q|<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome_uploader">Upload a genome</a></li>
+			<li role="presentation" class="divider"></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/add_access">Grant access to an uploaded genome</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/edit_access">Change access to uploaded genomes</a></li>
+            </ul>|;
+            
+            $$output_ref =~ s|gg_genome_uploader|$authen_gu|;
+            
                        
 		} else {
         	# User is not logged in
@@ -131,6 +140,20 @@ sub cgiapp_postrun {
                 
                 # Display link to login page
 				$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/login">Sign in</a>|;
+				
+            	# Show but disable any links in nav bar that require user to be logged in.
+ 			
+	 			# Genome uploader requires user to be logged in.
+	 			my $notauthen_gu = 
+	 			q|<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+	 			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/login">These features require login</a></li>
+	            <li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Upload a genome</a></li>
+				<li role="presentation" class="divider"></li>
+				<li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Grant access to an uploaded genome</a></li>
+				<li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Change access to uploaded genomes</a></li>
+	            </ul>|;
+            
+            	$$output_ref =~ s|gg_genome_uploader|$notauthen_gu|;
 			}
         }
         
@@ -196,6 +219,20 @@ Accessor for child classes
 sub script_location {
 	
 	return $SCRIPT_LOCATION;
+}
+
+=head2 script_location
+
+Create HTML for login form
+
+=cut
+sub render_login {
+	my $self = shift;
+
+	my $template = $self->load_tmpl('login_form.tmpl', die_on_bad_params => 0);
+	$template->param( destination => $self->home_page );
+
+	return $template->output();
 }
 
 =head2 getGenomes

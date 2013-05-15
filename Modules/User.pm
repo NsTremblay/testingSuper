@@ -516,9 +516,7 @@ sub edit_access : RunMode {
 		$form_hash{$user}->{num_genomes}++;
 		
 		my $perm = _permission_descriptor($upload_row->get_column('share'), $upload_row->get_column('modify'));
-		
-		$logger->debug("HEADING OUT - upl: ",$upload_row->upload_id," perm: $perm");
-
+	
 		push @{ $form_hash{$user}->{groups}->{$group_nm} },
 		  {
 			name   => $upload_row->get_column('name'),
@@ -526,7 +524,8 @@ sub edit_access : RunMode {
 			target_id    => $upload_row->get_column('permission_id'),
 			admin  => ($perm eq 'admin') ? 1:0,
 			modify => ($perm eq 'modify') ? 1:0,
-			view => ($perm eq 'view') ? 1:0
+			view => ($perm eq 'view') ? 1:0,
+			sequence_id => $form_hash{$user}->{num_genomes}
 		  };
 	}
 
@@ -668,7 +667,7 @@ sub _dfv_common_rules {
 			u_email          => email(),
 		},
 		msgs => {
-			format      => '<span class="dfv_errors">%s</span>',
+			format      => '<span class="help-inline"><span class="text-error"><strong>%s</strong></span></span>',
 			any_errors  => 'some_errors',
 			prefix      => 'err_',
 			constraints => {
@@ -797,7 +796,7 @@ sub _dfv_forgot_password_rules {
 		constraint_methods =>
 		  { u_username => [ \&_valid_username, \&_username_exists, ], },
 		msgs => {
-			format      => '<span class="dfv_errors">%s</span>',
+			format      => '<span class="help-inline"><span class="text-error"><strong>%s</strong></span></span>',
 			prefix      => 'err_',
 			constraints => { username_exists => 'username does not exist' }
 		},
@@ -817,7 +816,7 @@ sub _dfv_add_access_rules {
 		constraint_methods =>
 		  { a_username => [ \&_valid_username, \&_username_exists, ], },
 		msgs => {
-			format      => '<span class="dfv_errors">%s</span>',
+			format      => '<span class="help-inline"><span class="text-error"><strong>%s</strong></span></span>',
 			prefix      => 'err_',
 			constraints => { username_exists => 'username does not exist' }
 		},

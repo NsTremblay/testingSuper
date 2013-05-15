@@ -5,112 +5,147 @@
 
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body onload="onLoadCheck()" style="background-color:#796e6c">
-	<div class="row-fluid">
-		<div class="container" style="background-color:#FFFFFF">
+<body style="background-color:#796e6c">
+	
+	<div class="container" style="background-color:#FFFFFF">
+		<div class="row-fluid">
+		<div style="padding-left:20px; padding-bottom:20px;">
 		
-			<div id="form_legend">Modify or delete other user's access to your uploaded genomes.</div>
+			<!-- Instructions -->
+			<h3>Modify or delete user access to your uploaded genomes</h3>
 			<div id="form_instructions">
 				<p>Listed individually for each user are the genomes they have access to and their corresponding access level.
 				</p>
-				<p>This form allows you to remove or change a users access level for a genome. <span>View</span> only provides user the 
-				ability to view the selected genome. <span class="perm_term">Admin</span> gives user the ability to change user access to 
-				the genomes and <span class="perm_term">Modify</span> allows user to change information on the genome. 
-				Note: <span class="perm_term">Admin</span> implies <span class="perm_term">Modify</span> permission.
+				<p>This form allows you to remove or change a users access level for a genome. <span class="text-info"><em>View</em></span> only provides user the 
+				ability to view the selected genome. <span class="text-info"><em>Admin</em></span> gives user the ability to change user access to 
+				the genomes and <span class="text-info"><em>Modify</em></span> allows user to change information on the genome. 
+				Note: <span class="text-info"><em>Admin</em></span> implies <span class="text-info"><em>Modify</em></span> permission.
 				</p>
-				<p>To remove access to a genome for a user, select <span>No access</span>.
+				<p>To remove access to a genome for a user, select <span class="text-info"><em>No access</em></span>.
 				</p>
-				<p>Finally, click <span>Update user access</span> to submit any changes for a particular user.
+				<p>Finally, click <span class="text-info"><em>Update user access</em></span> to submit any changes for a particular user.
 				</p>
 				<p>If you wish to add a new access setting, go to the <a href="/user/add_access" tabindex="9">Create access settings</a> page.
 				</p>
 			</div>
 			
-			<div class="row-fluid" style="margin-top: 10px; margin-bottom: 20px;">
+			<div class="row-fluid">
+				<div style="margin-top:10px; margin-bottom:5px;">
 				<div class="span6 offset3">
 					<TMPL_IF update_status>
 						<div class="alert">
 		        			<button type="button" class="close" data-dismiss="alert">&times;</button>
 		        			<TMPL_VAR update_status>
-		        		</div>
-	        		</TMPL_IF>
+		        			</div>
+	        			</TMPL_IF>
+	        		</div>
+	        		</div>
 	        	</div>
-	        </div>
 	        
 			<TMPL_IF some_errors>
-				<div id='form_general_error'>Error encountered with submission.</div>
+				<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
 			</TMPL_IF>
 			
+			<!-- Forms -->
+			<hr>
 			<TMPL_LOOP uploads>
 			
 			<form action="<TMPL_VAR rm>" method="post">
 				
 				<fieldset>
-				
-					<div><TMPL_VAR target_user></div>
+					<!-- User header block -->
+					<div class="row-fluid">
 					
-					Set user's access for all genomes as 
-	               	<a href="javascript:setAll('remove', 'target_block_<TMPL_VAR target_user>');">No access</a> | 
-	                <a href="javascript:setAll('view', 'target_block_<TMPL_VAR target_user>');">View</a> |
-	                <a href="javascript:setAll('modify', 'target_block_<TMPL_VAR target_user>');">Modify</a> |
-	                <a href="javascript:setAll('admin', 'target_block_<TMPL_VAR target_user>');">Admin</a>
+					<div style="padding-top: 15px; font-size:16px">
+						<div class="span4" style="font-size:18px;">Username: <strong><TMPL_VAR target_user></strong></div>
+						<div class="span8">
+						Set access for all genomes as
+						<span style="padding-left:5px">
+					       	<a href="javascript:setAll('remove', 'target_block_<TMPL_VAR target_user>');">No access</a> | 
+						<a href="javascript:setAll('view', 'target_block_<TMPL_VAR target_user>');">View</a> |
+						<a href="javascript:setAll('modify', 'target_block_<TMPL_VAR target_user>');">Modify</a> |
+						<a href="javascript:setAll('admin', 'target_block_<TMPL_VAR target_user>');">Admin</a>
+						</span>
+						</div>
+				      	</div>
+				      	</div>
 					
-					<input type="hidden" name="c_num_genomes" value="<TMPL_VAR target_num_genomes>">
+					<input type="hidden" name="c_num_genomes" value="<TMPL_VAR target_num_genomes>"/>
 					
 					<div id="target_block_<TMPL_VAR target_user>">
+		
+                			<TMPL_LOOP target_rows>
+                				
+						<div class="row-fluid">
+						<div style="padding-top: 15px; font-size:16px">
+		        				<div class="span4"><strong>Group:</strong> <TMPL_VAR group_name></div>
+		        				<div class="span8">
+                					Set access for group as 
+                					<span style="padding-left:5px">
+	                	    			<a href="javascript:setAll('remove', 'sequence_set_<TMPL_VAR group_id>');">No access</a> | 
+							<a href="javascript:setAll('view', 'sequence_set_<TMPL_VAR group_id>');">View</a> |
+							<a href="javascript:setAll('modify', 'sequence_set_<TMPL_VAR group_id>');">Modify</a> |
+							<a href="javascript:setAll('admin', 'sequence_set_<TMPL_VAR group_id>');">Admin</a>
+							</span>
+	                				</div>
+						</div>
+						</div>
+                	
+                				<div id="sequence_set_<TMPL_VAR group_id>" style="padding-left:10px">
+                		
+                				<TMPL_LOOP group_rows>
+                			
+                				<div class="row-fluid">
+							<div class="span4">
+								<TMPL_VAR name> <span style="padding-left: 10px"><small>(uploaded: <TMPL_VAR date>)</small></span>
+								<input type="hidden" name="c_target<TMPL_VAR sequence_id>" value="<TMPL_VAR target_id>"/>
+							</div>
+                					<div class="span8">
+                			
+                					<label class="radio inline">No access
+	        					<input type="radio" name="c_perm<TMPL_VAR sequence_id>_<TMPL_VAR target_id>" value="remove"/></label>
+                				
+	                				<label class="radio inline">View
+	        					<input type="radio" name="c_perm<TMPL_VAR sequence_id>_<TMPL_VAR target_id>" value="view" <TMPL_IF view>checked="checked"</TMPL_IF>/></label>
+	        					
+	        					<label class="radio inline">Modify
+	        					<input type="radio" name="c_perm<TMPL_VAR sequence_id>_<TMPL_VAR target_id>" value="modify" <TMPL_IF modify>checked="checked"</TMPL_IF> />
+	        					</label>
+	        					
+	        					<label class="radio inline">Admin
+	        					<input type="radio" name="c_perm<TMPL_VAR sequence_id>_<TMPL_VAR target_id>" value="admin" <TMPL_IF admin>checked="checked"</TMPL_IF> />
+	        					</label>
+                					</div>
+						</div>
+                			
+                				</TMPL_LOOP> <!-- group_rows -->
 					
-                	<TMPL_LOOP target_rows>
+                				</div>
+
+                			</TMPL_LOOP> <!-- target_rows -->
                 	
-                		<span><TMPL_VAR group_name></span>
-	                	Set access for all genomes in this group as 
-	                	    <a href="javascript:setAll('remove', 'sequence_set_<TMPL_VAR group_id>');">No access</a> | 
-	                		<a href="javascript:setAll('view', 'sequence_set_<TMPL_VAR group_id>');">View</a> |
-	                		<a href="javascript:setAll('modify', 'sequence_set_<TMPL_VAR group_id>');">Modify</a> |
-	                		<a href="javascript:setAll('admin', 'sequence_set_<TMPL_VAR group_id>');">Admin</a>
-	                	
-                		<div id="sequence_set_<TMPL_VAR group_id>">
-                		
-                			<TMPL_LOOP group_rows>
-                			
-                				<TMPL_VAR name>, uploaded: <TMPL_VAR date>
-                				<input type="hidden" name="c_target<TMPL_VAR NAME="__counter__">" value="<TMPL_VAR target_id>">
-                				
-                				<label>No access
-	        					<input type="radio" name="c_perm<TMPL_VAR NAME="__counter__">_<TMPL_VAR target_id>" value="remove"/></label>
-                				
-	                			<label>View
-	        					<input type="radio" name="c_perm<TMPL_VAR NAME="__counter__">_<TMPL_VAR target_id>" value="view" <TMPL_IF view>checked="checked"</TMPL_IF>/></label>
-	        					
-	        					<label>Modify
-	        					<input type="radio" name="c_perm<TMPL_VAR NAME="__counter__">_<TMPL_VAR target_id>" value="modify" <TMPL_IF modify>checked="checked"</TMPL_IF> />
-	        					</label>
-	        					
-	        					<label>Admin
-	        					<input type="radio" name="c_perm<TMPL_VAR NAME="__counter__">_<TMPL_VAR target_id>" value="admin" <TMPL_IF admin>checked="checked"</TMPL_IF> />
-	        					</label>
-                				
-                			</TMPL_LOOP>
-                			
-                		</div>
-                		
-                	</TMPL_LOOP>
-                	
-                	</div>
-                	
+                			</div> <!-- target_block -->
+			
 				</fieldset>
 				
-				<input type="submit" class="button" value="Update user access" />
+				<div style="padding-top:20px">
+					<input type="submit" class="btn btn-primary" value="Update user access" />
+				</div>
 				
 			</form>
-			</TMPL_LOOP>
 			
-			<div>Return to the <a href="<TMPL_VAR go_home>">home</a> page.</div>
+			<hr>
+			
+			</TMPL_LOOP> <!-- uploads -->
+			
+			<div class="row-fluid">
+				<div style="margin-top:10px; margin-bottom:10px;">Return <a href="<TMPL_VAR go_home>">home</a>.</div>
+			</div>
+			
 		</div>
-		
+		</div>	
 	</div>
 	
-	
-	<div id="validator" style="display:none"><TMPL_VAR NAME=sSVALIDATOR></div>
 </body>
 
 <TMPL_INCLUDE NAME="footer.tmpl">
