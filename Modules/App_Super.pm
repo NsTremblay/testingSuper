@@ -270,14 +270,5 @@ sub privateGenomes {
 	}
 }
 
-=head2 logger
-
-=cut
-
-sub logger {
-	my $self=shift;
-	$self->{'_logger'} = shift // return $self->{'_logger'};
-}
-
 1;
 
