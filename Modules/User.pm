@@ -359,14 +359,15 @@ sub add_access : RunMode {
 		{
 			'permissions.can_share'     => 1,
 			'login.username'            => $self->authen->username,
+			'type.name'                 => 'contig_collection',
 		},
 		{
 			join => [
-				{ 'permissions'     => 'login' },
-				{ 'private_genome_names' }
+				{ 'permissions'      => 'login' },
+				{ 'private_features' => 'type' }
 			],
 			columns   => [qw/me.upload_id me.tag me.upload_date/],
-			'+select' => [qw/private_genome_names.uniquename/],
+			'+select' => [qw/private_features.uniquename/],
 			'+as'     => [qw/name/],
 		}
 	);
@@ -492,15 +493,16 @@ sub edit_access : RunMode {
 			'permissions_2.can_share'   => 1,
 			'login_2.username'          => $self->authen->username,
 			'login.username'            => { '!=', $self->authen->username },
+			'type.name'                 => 'contig_collection',
 		},
 		{
 			join => [
 				{ 'permissions'          => 'login' },
 				{ 'permissions'          => 'login' },
-				{ 'private_genome_names' }
+				{ 'private_features'     => 'type' }
 			],
 			columns   => [qw/me.upload_id me.tag me.upload_date/],
-			'+select' => [qw/login.username permissions.permission_id permissions.can_modify permissions.can_share private_genome_names.uniquename/],
+			'+select' => [qw/login.username permissions.permission_id permissions.can_modify permissions.can_share private_features.uniquename/],
 			'+as'    => [qw/username permission_id modify share name/],
 		}
 	);

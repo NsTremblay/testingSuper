@@ -255,10 +255,14 @@ sub getGenomes {
     my $self = shift;
     
     # Return public genome names as list of hash-refs
-    my $genomes = $self->dbixSchema->resultset('GenomeName')->search({},
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    	{
+    		'type.name'      => 'contig_collection'
+    	},
     	{
     		result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     		columns => [qw/feature_id uniquename/],
+    		join => 'type'
     	}
     );
  	
@@ -287,14 +291,18 @@ sub privateGenomes {
 		
 		# Return private genome names as list of hash-refs
 		# Need to check view permissions for user
-		my $genomes = $self->dbixSchema->resultset('PrivateGenomeName')->search(
+		my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
 			{
-				'login.username' => $self->authen->username
+				'login.username' => $self->authen->username,
+				'type.name'      => 'contig_collection'
 			},
 	    	{
 	    		result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 	    		columns => [qw/feature_id uniquename/],
-	    		join => {'upload' => { 'permissions' => 'login'} }
+	    		join => [
+	    			{ 'upload' => { 'permissions' => 'login'} },
+	    			'type'
+	    		]
 	    	}
 	    );
 	    
