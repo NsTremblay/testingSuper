@@ -5,87 +5,107 @@
 
 <TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body onload="onLoadCheck()" style="background-color:#796e6c">
-	<div class="row-fluid">
-		<div class="container" style="background-color:#FFFFFF">
+<body style="background-color:#796e6c">
+	
+	<div class="container" style="background-color:#FFFFFF">
+		<div class="row-fluid">
+		<div style="padding-left: 20px;">
 		
-			<form id="add_access_form" action="<TMPL_VAR rm>" method="post">
-				<div id="form_legend">Grant access to other users to your uploaded genomes.</div>
-				<div id="form_instructions">
-					<p>
-						Select genomes, user and permission level to grant another person the 
-						ability to view (and potentially modify or share) your uploaded genomes.
-					</p>
-					<p>		
-						You will need to know the username of the person you wish to grant access to.
-						Any added user will have the ability to view the selected genomes. You can also
-						grant a user the additional permissions of <span class="perm_term">Admin</span> (gives user the ability to 
-						change user access to the genomes) and <span class="perm_term">Modify</span> (allows user to change information
-						on the genome).  <span class="perm_term">Admin</span> implies <span class="perm_term">Modify</span> permission.
-					</p>
-					<p>
-						If you wish to alter an existing access setting, go to the 
-						<a href="/user/edit_access" tabindex="9">Update access settings</a> page.
-					</p>
-				</div>
+			<h3>Grant access to your uploaded genomes</h3>
+			<div id="form_instructions">
+				<p>Select genomes, user and permission level to grant another person the 
+				ability to view (and potentially modify or share) your uploaded genomes.
+				</p>
+				<p>The default access level will allow the user to only <span class="text-info"><em>View</em></span> the selected genomes. You can also
+				grant a user the additional permissions of <span class="text-info"><em>Admin</em></span> (gives user the ability to 
+				change user access to the genomes) and <span class="text-info"><em>Modify</em></span> (allows user to change information
+				on the genome).  <span class="text-info"><em>Admin</em></span> implies <span class="text-info"><em>Modify</em></span> permission.
+				</p>
+				<p>If you wish to alter an existing access setting, go to the 
+				<a href="/user/edit_access" tabindex="9">Update access settings</a> page.
+				</p>
+			</div>
+			<form id="add_access_form" action="<TMPL_VAR rm>" method="post" style="padding-top:20px;">
+				
 				<TMPL_IF some_errors>
-					<div id='form_general_error'>Please correct the problems below:</div>
+					<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
 				</TMPL_IF>
 				
-				<fieldset id='add_access_sequences'>
-					<legend>1. Select sequences:</legend>
+				<hr>
+				
+				<fieldset id='add_access_sequences' style="padding-bottom:20px;">
+					<h4>1. Select sequences:</h4>
                 	<TMPL_LOOP uploads>
                 		<div id='sequence_set<TMPL_VAR NAME="__counter__">'>
-                			<span class='sequence_set_header'><TMPL_VAR group_name></span>
-	                		Select <a href="javascript:selectAll(true, 'sequence_set<TMPL_VAR NAME="__counter__">');">All</a> | 
+                			<div class="row-fluid">
+                			<div style="padding-top: 15px; font-size:16px">
+                			<div class="span4"><strong>Group:</strong> <TMPL_VAR group_name></div>
+                			<div class="span8">
+                			Select <a href="javascript:selectAll(true, 'sequence_set<TMPL_VAR NAME="__counter__">');">All</a> | 
 	                		       <a href="javascript:selectAll(false, 'sequence_set<TMPL_VAR NAME="__counter__">');">None</a>
+	                		</div>
+	                		</div>
+                			</div>
+	                		
                 			<TMPL_LOOP group_rows>
-                				<label><input type="checkbox" name="a_sequence" value="<TMPL_VAR uid>"><TMPL_VAR name>, uploaded: <TMPL_VAR date></label>
+                			<div class="row-fluid">
+                				<div class="span12" style="padding-left:10px;">
+                				<label class="checkbox">
+                					<input type="checkbox" name="a_sequence" value="<TMPL_VAR uid>"><TMPL_VAR name> <span style="padding-left: 10px"><small>(uploaded: <TMPL_VAR date>)</small></span>
+                				</label>
+                				</div>
+                			</div>
                 			</TMPL_LOOP>
                 		</div>
                 	</TMPL_LOOP>
                 	<TMPL_VAR err_a_sequence>
 				</fieldset>
 				
-				<fieldset id='add_access_users'>
-					<legend>2. Enter username:</legend>
+				<hr>
+				
+				<fieldset id='add_access_users' style="padding-bottom:20px">
+					<h4>2. Enter username:</h4>
 					
 					<div id="user_set">
-    					
-        				<label for="user_row_name">Username: </label>
-        				<input type="text" id="user_row_name" size="15" maxlength='20' name="a_username" value=""/>
-   						
-   						<TMPL_VAR err_a_username>
+						<label for="inputUsername">Username</label>
+        				<input id="inputUsername" type="text" type="text" placeHolder="Username" size="15" maxlength='20' name="a_username" value=""/>
+   							<TMPL_VAR err_a_username>
+   							  						
 					</div>
 					
 				</fieldset>
 				
-				<fieldset id='add_access_perms'>
-					<legend>3. Select additional permissions (view only is default):</legend>
+				<hr>
+				
+				<fieldset id='add_access_perms' style="padding-bottom:20px">
+					<h4>3. Set access level:</h4>
 					
 					<div id="perm_set">
-    					<div id="perm_subset">
-        					<label for="perm_row_none">View
-        					<input type="radio" id="perm_row_view" name="a_perm" value="view" checked="checked"/></label>
-        					
-        					<label for="perm_row_modi">Modify
-        					<input type="radio" id="user_row_modi" name="a_perm" value="modify"/></label>
-        					
-        					<label for="user_row_admin">Admin
-        					<input type="radio" id="user_row_admin" name="a_perm" value="admin"/></label>
-   						</div>
+    					
+    					<label for="perm_row_none" class="radio inline">View
+    					<input type="radio" id="perm_row_view" name="a_perm" value="view" checked="checked"/></label>
+    					
+    					<label for="perm_row_modi" class="radio inline">Modify
+    					<input type="radio" id="user_row_modi" name="a_perm" value="modify"/></label>
+    					
+    					<label for="user_row_admin" class="radio inline">Admin
+    					<input type="radio" id="user_row_admin" name="a_perm" value="admin"/></label>
+   						
    						<TMPL_VAR err_a_perm>
 					</div>
 				</fieldset>
 				
-				<input type="submit" class="button" value="Submit" />
+				<hr>
+				
+				<div style="padding-top:20px">
+                  	<input type="submit" class="btn btn-primary" value="Submit"/>
+               	</div>
 	
 			</form>
 		</div>
+		</div>
 	</div>
 	
-	
-	<div id="validator" style="display:none"><TMPL_VAR NAME=sSVALIDATOR></div>
 </body>
 
 <TMPL_INCLUDE NAME="footer.tmpl">

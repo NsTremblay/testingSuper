@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<title>Genodo Login</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Bootstrap -->
+	<link rel="stylesheet" type="text/css" href="/App/Styling/css/bootstrap.css" media="screen">
+	<link rel="stylesheet" type="text/css" href="/App/Styling/css/bootstrap-responsive.css" media="screen">
+
+	<!--jQuery-->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+	<style type="text/css">
+		body {
+		  padding-top: 40px;
+		  padding-bottom: 40px;
+		  background-color: #796e6c;
+		}
+		
+		.form-signin {
+		  max-width: 300px;
+		  padding: 19px 29px 29px;
+		  margin: 0 auto 20px;
+		  background-color: #fff;
+		  border: 1px solid #e5e5e5;
+		  -webkit-border-radius: 5px;
+		     -moz-border-radius: 5px;
+		          border-radius: 5px;
+		  -webkit-box-shadow: 0 1px 2px rgba(0,0,0,.05);
+		     -moz-box-shadow: 0 1px 2px rgba(0,0,0,.05);
+		          box-shadow: 0 1px 2px rgba(0,0,0,.05);
+		}
+		.form-signin .form-signin-heading,
+		.form-signin .checkbox {
+		  margin-bottom: 10px;
+		}
+		.form-signin input[type="text"],
+		.form-signin input[type="password"] {
+		  font-size: 16px;
+		  height: auto;
+		  margin-bottom: 15px;
+		  padding: 7px 9px;
+		}
+		.form-signin-links {
+			margin: 0 0 0 0;
+		}
+    </style>
+    
+    
+</head>
+
+
+<body onload="onLoadCheck()" style="background-color:#796e6c">
+	
+
+<form class="form-signin" name="loginform" method="post" action="">
+  <div class="login">
+    <h3 class="form-signin-heading">Please sign in</h3>
+   
+     
+      <fieldset>
+        <input id="authen_loginfield" class="input-block-level" tabindex="1" type="text" placeHolder="Username" name="authen_username" size="20" value="" /><br />
+        <input id="authen_passwordfield" class="input-block-level" tabindex="2" type="password" placeHolder="Password" name="authen_password" size="20" /><br />
+        <label for="authen_rememberuser" class="checkbox inline"><input id="authen_rememberuserfield" tabindex="3" type="checkbox" name="authen_rememberuser" value="1" />Remember username<label/>
+      </fieldset>
+    
+    <input id="authen_loginbutton" tabindex="4" type="submit" name="authen_loginbutton" value="Sign In" class="btn btn-primary" />
+   
+   <hr>
+	<ul class="unstyled form-signin-links">
+    	<li><a href="/user/new_account" id="authen_registerlink" tabindex="5">Create account</a></li>
+    	<li><a href="/user/forgot_password" id="authen_forgotpasswordlink" tabindex="6">Forgot password?</a></li>
+  	</ul>
+    
+ 
+  	<input type="hidden" name="destination" value="<TMPL_VAR destination>" />
+  	<input type="hidden" name="rm" value="login" />
+</form>
+
+</body>
+</html>
