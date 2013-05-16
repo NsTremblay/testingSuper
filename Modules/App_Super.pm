@@ -116,7 +116,7 @@ sub cgiapp_postrun {
  			
  			# Display current username as link to edit page and logout link
 			my $username = $a->username;
- 			$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/edit_account">$username</a>&nbsp;(<a class="navbar-link" href="/user/logout">Sign out</a>)|;
+ 			$$output_ref =~ s|gg_username|<a href="/user/edit_account">$username</a><li class="divider-vertical"><a href="/user/logout">Sign out</a></li>|;
  			
  			# Enable any links in nav bar that require user to be logged in.
  			
@@ -139,7 +139,7 @@ sub cgiapp_postrun {
 				# User has not yet clicked the login link
                 
                 # Display link to login page
-				$$output_ref =~ s|gg_username|<a class="navbar-link" style="padding-left:10px" href="/user/login">Sign in</a>|;
+				$$output_ref =~ s|gg_username|<a href="/user/login">Sign in</a>|;
 				
             	# Show but disable any links in nav bar that require user to be logged in.
  			
