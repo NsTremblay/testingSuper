@@ -124,41 +124,9 @@ __PACKAGE__->set_primary_key("login_id");
 
 __PACKAGE__->add_unique_constraint("login_c1", ["username"]);
 
-=head1 RELATIONS
 
-=head2 permissions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Permission>
-
-=cut
-
-__PACKAGE__->has_many(
-  "permissions",
-  "Database::Chado::Schema::Result::Permission",
-  { "foreign.login_id" => "self.login_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 uploads
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Upload>
-
-=cut
-
-__PACKAGE__->has_many(
-  "uploads",
-  "Database::Chado::Schema::Result::Upload",
-  { "foreign.login_id" => "self.login_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-08 14:44:04
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4c3a0MvEdqLhMcmh7lm6Qg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-17 11:42:08
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/7Qs+B8iguAVu1j2UbYAfQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
