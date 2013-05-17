@@ -103,11 +103,11 @@ sub _getStrainInfo {
 	my $self = shift;
 	my $_groupedStrainNames = shift;
 
-	push (my @strainNames , @{$_groupedStrainNames}); 
+	#push (my @strainNames , @{$_groupedStrainNames}); 
 
-	my $ffwHandle = Modules::FastaFileWrite->new();
-	$ffwHandle->dbixSchema($self->dbixSchema);
-	$ffwHandle->writeStrainsToFile(\@strainNames);
+	#my $ffwHandle = Modules::FastaFileWrite->new();
+	#$ffwHandle->dbixSchema($self->dbixSchema);
+	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
 }
 
 1;
