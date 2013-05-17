@@ -108,5 +108,4 @@ sub getBinaryData {
 		return \@binaryData;
 	}
 
-
 	1;
