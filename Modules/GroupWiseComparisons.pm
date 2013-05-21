@@ -40,6 +40,8 @@ use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 
+use Modules::GroupComparator;
+
 sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
@@ -47,7 +49,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'group_wise_comparisons'=>'groupWiseComparisons'
+		'group_wise_comparisons'=>'groupWiseComparisons',
+		'group_compare_test' => '_getStrainInfo'
 		);
 }
 
@@ -101,13 +104,28 @@ Writes out user selected fasta files for PanSeq analysis.
 
 sub _getStrainInfo {
 	my $self = shift;
-	my $_groupedStrainNames = shift;
+	#my $_groupedStrainNames = shift;
 
 	#push (my @strainNames , @{$_groupedStrainNames}); 
 
 	#my $ffwHandle = Modules::FastaFileWrite->new();
 	#$ffwHandle->dbixSchema($self->dbixSchema);
 	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
+
+	#This is just a test
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $formDataRef = $formDataGenerator->getFormData();
+
+	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
+
+	my $comparisonHandle = Modules::GroupComparator->new();
+	$comparisonHandle->dbixSchema($self->dbixSchema);
+	my $dataRef = $comparisonHandle->getBinaryData();
+
+	$template->param(FEATURES=>$formDataRef);
+	$template->param(DATA=>$dataRef);
+	return $template->output();
 }
 
 1;

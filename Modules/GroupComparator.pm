@@ -80,32 +80,32 @@ sub dbixSchema {
 
 sub getBinaryData {
 	my $self = shift;
-	
+
 	#For demo purposes we will query the first three strains from the data tables.
 	#my $strainIds = shift;
 	my @strainIds = (1,2,3);
-
-	#The real strain id's will be passed as array refs;
 	#foreach my $strainId (@{$strainIds}) {
-		my @binaryData;
-		foreach my $strainId (@strainIds) {
-			my @binaryStrain;
-			my $strainBinaryData = $self->dbixSchema->('raw_binary_data')->search(
-				{strain => "$strainId"},
-				{
-					column => [qw/me.strain me.locus_name me.presence_absence/]
-				}
-				);
-			while (my $binaryRow = $strainBinaryData->next) {
-				my @binaryRowData;
-				$binaryRowData[0] = $binaryRow->strain;
-				$binaryRowData[1] = $binaryRow->locus_name;
-				$binaryRowData[2] = $binaryRow->presence_absence;
-				push(@binaryStrain , \@binaryRowData);
+	#The real strain id's will be passed as array refs;
+	
+	my @lociData;
+	#my @present;
+	#my @absent;
+	foreach my $strainId (@strainIds) {
+		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
+			{strain => "$strainId"},
+			{
+				column => [qw/me.strain me.locus_name me.presence_absence/]
 			}
-			push(@binaryData , \@binaryStrain);
+			);
+		while (my $rawBinaryDataRow = $rawBinaryData->next) {
+			my %strain;
+			$strain{'STRAIN'} = $rawBinaryDataRow->strain;
+			$strain{'LOCUSNAME'} = $rawBinaryDataRow->locus_name;
+			$strain{'PRESENCEABSENCE'} = $rawBinaryDataRow->presence_absence;
+			push (@lociData , \%strain);
 		}
-		return \@binaryData;
 	}
+	return \@lociData;
+}
 
-	1;
+1;

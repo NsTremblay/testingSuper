@@ -35,7 +35,8 @@ sub dispatch_args {
                 '/genome_uploader' => {app=>'GenomeUploader', rm=>'genome_uploader'},
                 '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
-                '/statistics' =>    {app=>'Statistics' , rm=>'stats'}
+                '/statistics' =>    {app=>'Statistics' , rm=>'stats'},
+                '/group_compare_test/' => {app=>'GroupWiseComparisons', rm=>'group_compare_test'}
   
         ],
     };
