@@ -119,6 +119,7 @@ sub getBinaryData {
 				push (@locusNames , $rawBinaryDataRow->locus_name);
 			}
 			else {
+				#This next block needs to be optimized because its very slow with the extra for loop
 				for (my $i = 0; $i < scalar(@lociData); $i++) {
 					if (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->presence_absence == 1)) {
 						push (@{$lociData[$i]}{'present'} , {strain => $rawBinaryDataRow->strain});
