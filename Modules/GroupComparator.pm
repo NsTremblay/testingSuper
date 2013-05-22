@@ -39,6 +39,7 @@ use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
+use List::MoreUtils qw(indexes);
 
 sub new {
 	my ($class) = shift;
@@ -83,13 +84,13 @@ sub getBinaryData {
 
 	#For demo purposes we will query the first three strains from the data tables.
 	#my $strainIds = shift;
-	my @strainIds = (1,2,3);
+	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
 	#foreach my $strainId (@{$strainIds}) {
 	#The real strain id's will be passed as array refs;
 	
 	my @lociData;
-	#my @present;
-	#my @absent;
+	my @locusNames;
+
 	foreach my $strainId (@strainIds) {
 		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
 			{strain => "$strainId"},
@@ -97,15 +98,40 @@ sub getBinaryData {
 				column => [qw/me.strain me.locus_name me.presence_absence/]
 			}
 			);
+
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-			my %strain;
-			$strain{'STRAIN'} = $rawBinaryDataRow->strain;
-			$strain{'LOCUSNAME'} = $rawBinaryDataRow->locus_name;
-			$strain{'PRESENCEABSENCE'} = $rawBinaryDataRow->presence_absence;
-			push (@lociData , \%strain);
+			if (!grep($_ eq $rawBinaryDataRow->locus_name , @locusNames)){
+				my %locus;
+				my @present;
+				my @absent;
+				$locus{'locusname'} = $rawBinaryDataRow->locus_name;
+				$locus{'present'} = \@present;
+				$locus{'absent'} = \@absent;
+				if ($rawBinaryDataRow->presence_absence == 1) {
+					push (@{$locus{'present'}} , {strain => $rawBinaryDataRow->strain});
+				}
+				elsif ($rawBinaryDataRow->presence_absence == 0) {
+					push (@{$locus{'absent'}} , {strain => $rawBinaryDataRow->strain})
+				}
+				else {
+				}
+				push (@lociData , \%locus);
+				push (@locusNames , $rawBinaryDataRow->locus_name);
+			}
+			else {
+				for (my $i = 0; $i < scalar(@lociData); $i++) {
+					if (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->presence_absence == 1)) {
+						push (@{$lociData[$i]}{'present'} , {strain => $rawBinaryDataRow->strain});
+					}
+					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->presence_absence == 0)) {
+						push (@{$lociData[$i]}{'absent'} , {strain => $rawBinaryDataRow->strain})
+					}
+					else {
+					}
+				}
+			}
 		}
 	}
 	return \@lociData;
 }
-
 1;

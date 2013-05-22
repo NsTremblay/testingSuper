@@ -30,21 +30,22 @@
 		<div class="row-fluid" id="groupWiseComparisonDiv" style="display:none;margin:10px 0px 10px 0px">
 		</div>
 
-		<div><table class="table table-striped table-condensed">
+		<div>
+			<h5>Brinary Data</h5>
+			<table class="table table-striped table-condensed">
 			<thead></thead>
 			<tr>
-				<th>Strain Number</th>
 				<th>Locus Name</th>
-				<th>Presence/Absence</th>
+				<th>Strains Present</th>
+				<th>Strains Absent</th>
 			</tr>
 			<TMPL_LOOP NAME=DATA>
-			<tr>
-				<td><TMPL_VAR NAME=STRAIN></td>
-				<td><TMPL_VAR NAME=LOCUSNAME></td>
-				<td><TMPL_VAR NAME=PRESENCEABSENCE></td>
-			</tr>
-			</TMPL_LOOP>
-		</table></div>
+				<tr><td><TMPL_VAR NAME=locusname>
+				<td><TMPL_LOOP NAME=present><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+				<td><TMPL_LOOP NAME=absent><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+			</TMPL_LOOP></td></tr>
+		</table>
+	</div>
 
 	</div>
 
