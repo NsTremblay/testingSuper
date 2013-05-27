@@ -1379,6 +1379,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_feature_relationships",
+  "Database::Chado::Schema::Result::PrivateFeatureRelationship",
+  { "foreign.type_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_featureprops
 
 Type: has_many
@@ -1785,8 +1800,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-08 14:44:04
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:b5rpqFl0Kt0AEw7xc37sbA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-27 15:24:52
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iD6ZASWxwJA6PQsJZ0V2/g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

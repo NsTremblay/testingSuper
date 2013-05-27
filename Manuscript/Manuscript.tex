@@ -15,6 +15,7 @@
 \usepackage{longtable}
 \usepackage{multirow}
 \usepackage{rotating}
+\usepackage{url}
 
 \begin{document}
 \pagenumbering{roman}
@@ -57,7 +58,7 @@ VII.4 Methodology
 2.4 A biostatistical module to rapidly identify markers that differ statistically between groups based on both, single nucleotide polymorphisms and the presence / absence of genomic loci will be created; this will ensure that group differences are not based on errors introduced into single strains during sequencing or assembly. This will be programmed in Perl for group generation and metadata analysis, with the statistical computation being conducted using Fisher’s Exact Test from the R statistical package.  All single-nucleotide data and genomic presence / absence data will reside in the PostgreSQL database, requiring only the retrieval and p-value computation for the strains of interest and allowing the near-real time analysis.
 
  
-2.5 In silico genotyping will use the molecular in silico typing (MIST) package developed by our collaborators using C# and the .NET framework version 4, which uses Blast for sequence comparisons and generates multi-locus sequence typing profiles, multi-locus variable number tandem repeat analysis profiles and molecular serotype designations. These typing results will automatically be provided when a sequence is uploaded to the database.
+2.5 In silico genotyping will use the molecular in silico typing (MIST) package developed by our collaborators using C\# and the .NET framework version 4, which uses Blast for sequence comparisons and generates multi-locus sequence typing profiles, multi-locus variable number tandem repeat analysis profiles and molecular serotype designations. These typing results will automatically be provided when a sequence is uploaded to the database.
 
 2.7 The online computational platform will be developed for staging on a CentOS server with 16 CPUs and 64 GB of RAM and in collaboration with Cybera, who will provide cloud computing resources in-kind. Cloud resources are dynamically scalable and highly elastic, which makes it ideally suited to test genomic analyses on a wide range of scales. This also mitigates additional expenditures for new hardware as all testing may now be performed in Cybera’s cloud environment. The value of the compute resources Cybera is contributing to this project as provided by a commercial cloud provider is approximately \$2,880/month or \$69,120 over the course of the 2 year project. Furthermore, Cybera is prepared to share its extensive cloud computing expertise with our team to assist with the transition to a cloud computing environment. These in-kind consulting services are valued at approximately \$13,500 at standard commercial rates. The production version of the developed software platform may temporarily be hosted by Cybera and in the long-term via our collaboration with Compute Canada to ensure the most efficient processing possible using multiple computing cores and the ability to concurrently serve web requests from around the world. 
 

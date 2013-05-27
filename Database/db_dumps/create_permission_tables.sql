@@ -1,3 +1,5 @@
+BEGIN;
+
 --
 -- SQL for creating additional tables for sequence uploads and permissions
 --
@@ -286,6 +288,147 @@ ALTER TABLE ONLY private_featureprop
 CREATE INDEX private_featureprop_idx1 ON private_featureprop USING btree (feature_id);
 
 CREATE INDEX private_featureprop_idx2 ON private_featureprop USING btree (type_id);
+
+
+-----------------------------------------------------------------------------
+--
+-- Name: private_feature_relationship; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+CREATE TABLE private_feature_relationship (
+    feature_relationship_id integer NOT NULL,
+    subject_id integer NOT NULL,
+    object_id integer NOT NULL,
+    type_id integer NOT NULL,
+    value text,
+    rank integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.private_feature_relationship OWNER TO postgres;
+
+COMMENT ON TABLE private_feature_relationship IS 'A mirror of the feature_relationship table.
+ Only difference is that this table references features in the private_feature table.  See
+comments on feature_relationship table for more information.';
+
+
+--
+-- primary key
+--
+CREATE SEQUENCE private_feature_relationship_feature_relationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_feature_relationship_feature_relationship_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE private_feature_relationship_feature_relationship_id_seq OWNED BY private_feature_relationship.feature_relationship_id;
+
+ALTER TABLE ONLY private_feature_relationship ALTER COLUMN feature_relationship_id SET DEFAULT nextval('private_feature_relationship_feature_relationship_id_seq'::regclass);
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_pkey PRIMARY KEY (feature_relationship_id);
+
+
+--
+-- foreign keys
+--
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_object_id_fkey FOREIGN KEY (object_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- constraints
+--
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_c1 UNIQUE (subject_id, object_id, type_id, rank);
+
+
+--
+-- Indices 
+--
+CREATE INDEX private_feature_relationship_idx1 ON private_feature_relationship USING btree (subject_id);
+
+CREATE INDEX private_feature_relationship_idx2 ON private_feature_relationship USING btree (object_id);
+
+CREATE INDEX private_feature_relationship_idx3 ON private_feature_relationship USING btree (type_id);
+
+
+-----------------------------------------------------------------------------
+--
+-- Name: feature_dbxref; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_feature_dbxref (
+    feature_dbxref_id integer NOT NULL,
+    feature_id integer NOT NULL,
+    dbxref_id integer NOT NULL,
+    is_current boolean DEFAULT true NOT NULL
+);
+
+ALTER TABLE public.private_feature_dbxref OWNER TO postgres;
+
+
+COMMENT ON TABLE private_feature_dbxref IS 'A mirror of the feature_dbxref table.
+ Only difference is that this table references features in the private_feature table.  See
+comments on feature_dbxref table for more information.';
+
+
+--
+-- primary key
+--
+CREATE SEQUENCE private_feature_dbxref_feature_dbxref_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_feature_dbxref_feature_dbxref_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE private_feature_dbxref_feature_dbxref_id_seq OWNED BY private_feature_dbxref.feature_dbxref_id;
+
+ALTER TABLE ONLY private_feature_dbxref ALTER COLUMN feature_dbxref_id SET DEFAULT nextval('private_feature_dbxref_feature_dbxref_id_seq'::regclass);
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_pkey PRIMARY KEY (feature_dbxref_id);
+
+
+--
+-- foreign keys
+--
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES dbxref(dbxref_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_feature_id_fkey FOREIGN KEY (feature_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- constraints
+--
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_c1 UNIQUE (feature_id, dbxref_id);
+
+
+--
+-- Indices 
+--
+CREATE INDEX private_feature_dbxref_idx1 ON private_feature_dbxref USING btree (feature_id);
+CREATE INDEX private_feature_dbxref_idx2 ON private_feature_dbxref USING btree (dbxref_id);
+
+COMMIT;
+
+
 
 
 
