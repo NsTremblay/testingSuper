@@ -121,10 +121,12 @@ sub _getStrainInfo {
 
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my $dataRef = $comparisonHandle->getBinaryData();
+	my $binaryDataRef = $comparisonHandle->getBinaryData();
+	my $snpDataRef = $comparisonHandle->getSnpData();
 
 	$template->param(FEATURES=>$formDataRef);
-	$template->param(DATA=>$dataRef);
+	$template->param(BINARYDATA=>$binaryDataRef);
+	$template->param(SNPDATA=>$snpDataRef);
 	return $template->output();
 }
 

@@ -39,22 +39,49 @@
 						<th>Locus Name</th>
 						<th>Strains Present</th>
 						<th>Strains Absent</th>
+						<th>p-value</th>
 					</tr>
-					<TMPL_LOOP NAME=DATA>
+					<TMPL_LOOP NAME=BINARYDATA>
 					<tr><td><TMPL_VAR NAME=locusname>
 						<td><TMPL_LOOP NAME=present><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
 						<td><TMPL_LOOP NAME=absent><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
-						</TMPL_LOOP></td></tr>
-					</table>
-				</div>
+					</td></tr></TMPL_LOOP>
+				</table>
 			</div>
-
 		</div>
 
-		<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
+	</br>
 
-	</body>
+		<div>
+			<h5 style="margin:10px">SNP Data</h5>
+			<div style="margin:10px;height:300px;overflow:auto">
+				<table class="table table-striped table-condensed">
+					<thead></thead>
+					<tr>
+						<th>Locus Name</th>
+						<th>A</th>
+						<th>T </th>
+						<th>C </th>
+						<th>G </th>
+						<th>p-value</th>
+					</tr>
+					<TMPL_LOOP NAME=SNPDATA>
+					<tr><td><TMPL_VAR NAME=locusname>
+						<td><TMPL_LOOP NAME=adenine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_LOOP NAME=thymidine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_LOOP NAME=cytosine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_LOOP NAME=guanine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+					</td></tr></TMPL_LOOP>
+				</table>
+			</div>
+		</div>
 
-	<TMPL_INCLUDE NAME="footer.tmpl">
+	</div>
 
-	</html>
+	<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
+
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>

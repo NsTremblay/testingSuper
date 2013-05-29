@@ -135,4 +135,81 @@ sub getBinaryData {
 	}
 	return \@lociData;
 }
+
+sub getSnpData {
+	my $self = shift;
+
+	#For demo purposes we will query the first three strains from the data tables.
+	#my $strainIds = shift;
+	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
+	#foreach my $strainId (@{$strainIds}) {
+	#The real strain id's will be passed as array refs;
+
+	my @lociData;
+	my @locusNames;
+
+	foreach my $strainId (@strainIds) {
+		my $rawBinaryData = $self->dbixSchema->resultset('RawSnpData')->search(
+			{strain => "$strainId"},
+			{
+				column => [qw/me.strain me.locus_name me.presence_absence/]
+			}
+			);
+
+		while (my $rawBinaryDataRow = $rawBinaryData->next) {
+			if (!grep($_ eq $rawBinaryDataRow->locus_name , @locusNames)){
+				my %locus;
+				my @adenine;
+				my @thymidine;
+				my @cytosine;
+				my @guanine;
+
+				$locus{'locusname'} = $rawBinaryDataRow->locus_name;
+				$locus{'adenine'} = \@adenine;
+				$locus{'thymidine'} = \@thymidine;
+				$locus{'cytosine'} = \@cytosine;
+				$locus{'guanine'} = \@guanine;
+
+				if ($rawBinaryDataRow->snp eq 'A') {
+					push (@{$locus{'adenine'}} , {strain => $rawBinaryDataRow->strain});
+				}
+				elsif ($rawBinaryDataRow->snp eq 'T') {
+					push (@{$locus{'thymidine'}} , {strain => $rawBinaryDataRow->strain})
+				}
+				elsif ($rawBinaryDataRow->snp eq 'C') {
+					push (@{$locus{'cytosine'}} , {strain => $rawBinaryDataRow->strain})
+				}
+				elsif ($rawBinaryDataRow->snp eq 'G') {
+					push (@{$locus{'guanine'}} , {strain => $rawBinaryDataRow->strain})
+				}
+				else {
+				}
+				push (@lociData , \%locus);
+				push (@locusNames , $rawBinaryDataRow->locus_name);
+			}
+			else {
+				#This next block needs to be optimized because its very slow with the extra for loop
+				for (my $i = 0; $i < scalar(@lociData); $i++) {
+					if (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'A')) {
+						push (@{$lociData[$i]}{'adenine'} , {strain => $rawBinaryDataRow->strain});
+					}
+					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'T')) {
+						push (@{$lociData[$i]}{'thymidine'} , {strain => $rawBinaryDataRow->strain})
+					}
+					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'C')) {
+						push (@{$lociData[$i]}{'cytosine'} , {strain => $rawBinaryDataRow->strain})
+					}
+					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'G')) {
+						push (@{$lociData[$i]}{'guanine'} , {strain => $rawBinaryDataRow->strain})
+					}
+					else {
+					}
+				}
+			}
+		}
+	}
+	return \@lociData;
+
+}
+
 1;
