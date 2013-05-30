@@ -38,13 +38,17 @@
 					<tr>
 						<th>Locus Name</th>
 						<th>Strains Present</th>
+						<th>Present Count</th>
 						<th>Strains Absent</th>
+						<th>Absent Count</th>
 						<th>p-value</th>
 					</tr>
 					<TMPL_LOOP NAME=BINARYDATA>
 					<tr><td><TMPL_VAR NAME=locusname>
 						<td><TMPL_LOOP NAME=present><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=present_count></td>
 						<td><TMPL_LOOP NAME=absent><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=absent_count></td>
 					</td></tr></TMPL_LOOP>
 				</table>
 			</div>
@@ -60,17 +64,25 @@
 					<tr>
 						<th>Locus Name</th>
 						<th>A</th>
-						<th>T </th>
-						<th>C </th>
-						<th>G </th>
+						<th>A count</th>
+						<th>T</th>
+						<th>T count</th>
+						<th>C</th>
+						<th>C count</th>
+						<th>G</th>
+						<th>G count</th>
 						<th>p-value</th>
 					</tr>
 					<TMPL_LOOP NAME=SNPDATA>
 					<tr><td><TMPL_VAR NAME=locusname>
 						<td><TMPL_LOOP NAME=adenine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=adenine_count></td>
 						<td><TMPL_LOOP NAME=thymidine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=thymidine_count></td>
 						<td><TMPL_LOOP NAME=cytosine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=cytosine_count></td>
 						<td><TMPL_LOOP NAME=guanine><TMPL_VAR NAME=strain> </TMPL_LOOP></td>
+						<td><TMPL_VAR NAME=guanine_count></td>
 					</td></tr></TMPL_LOOP>
 				</table>
 			</div>

@@ -79,6 +79,61 @@ sub dbixSchema {
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
+# sub getBinaryData {
+# 	my $self = shift;
+
+# 	#For demo purposes we will query the first three strains from the data tables.
+# 	#my $strainIds = shift;
+# 	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
+# 	#foreach my $strainId (@{$strainIds}) {
+# 	#The real strain id's will be passed as array refs;
+
+# 	my @lociData;
+
+# 	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
+# 		{},
+# 		{
+# 			column => [qw/me.locus_name/]
+# 		}
+# 		);
+
+# 	my $strainDataTable = $self->dbixSchema->resultset('RawBinaryData');
+
+# 	while (my $locusNameRow = $locusNameTable->next) {
+# 		print STDERR $locusNameRow->locus_name . "\n";
+
+# 		my %locus;
+# 		my @present;
+# 		my @absent;
+
+# 		$locus{'locusname'} = $locusNameRow->locus_name;
+# 		$locus{'present'} = \@present;
+# 		$locus{'absent'} = \@absent;
+
+# 		foreach my $strain (@strainIds) {
+# 			my $binaryDataTable = $strainDataTable->search(
+# 				{'me.locus_name' => $locusNameRow->locus_name,
+# 				'me.strain' => "strain"},
+# 				{
+# 					column => [qw/me.strain me.presence_absence/]
+# 				}
+# 				);
+
+# 			if ($binaryDataTable->presence_absence == 1) {
+# 				push (@{$locus{'present'}} , {strain => $binaryDataTable->strain});
+# 			}
+# 			elsif ($binaryDataTable->presence_absence == 0) {
+# 				push (@{$locus{'absent'}} , {strain => $binaryDataTable->strain});
+# 			}
+# 			else {
+# 			}
+# 		}
+# 		push (@lociData , \%locus);
+# 	}
+
+# return \@lociData;
+# }
+
 sub getBinaryData {
 	my $self = shift;
 
@@ -87,10 +142,25 @@ sub getBinaryData {
 	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
 	#foreach my $strainId (@{$strainIds}) {
 	#The real strain id's will be passed as array refs;
-	
 	my @lociData;
-	my @locusNames;
-
+	#my @locusNames;
+	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
+		{},
+		{
+			column => [qw/me.locus_name/]
+		}
+		);
+	while (my $locusNameRow = $locusNameTable->next) {
+		my %locus;
+		my @present;
+		my @absent;
+		$locus{'locusname'} = $locusNameRow->locus_name;
+		$locus{'present'} = \@present;
+		$locus{'present_count'} = 0;
+		$locus{'absent'} = \@absent;
+		$locus{'absent_count'} = 0;
+		push (@lociData , \%locus); 
+	}
 	foreach my $strainId (@strainIds) {
 		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
 			{strain => "$strainId"},
@@ -98,39 +168,20 @@ sub getBinaryData {
 				column => [qw/me.strain me.locus_name me.presence_absence/]
 			}
 			);
-
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-			if (!grep($_ eq $rawBinaryDataRow->locus_name , @locusNames)){
-				my %locus;
-				my @present;
-				my @absent;
-				$locus{'locusname'} = $rawBinaryDataRow->locus_name;
-				$locus{'present'} = \@present;
-				$locus{'absent'} = \@absent;
-				if ($rawBinaryDataRow->presence_absence == 1) {
-					push (@{$locus{'present'}} , {strain => $rawBinaryDataRow->strain});
-				}
-				elsif ($rawBinaryDataRow->presence_absence == 0) {
-					push (@{$locus{'absent'}} , {strain => $rawBinaryDataRow->strain})
-				}
-				else {
-				}
-				push (@lociData , \%locus);
-				push (@locusNames , $rawBinaryDataRow->locus_name);
+			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
+			print STDERR @locus . "\n";
+			if ($rawBinaryDataRow->presence_absence == 1) {
+				push ($locus[0]->{'present'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'present_count'}++;
+			}
+			elsif ($rawBinaryDataRow->presence_absence == 0) {
+				push ($locus[0]->{'absent'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'absent_count'}++;
 			}
 			else {
-				#This next block needs to be optimized because its very slow with the extra for loop
-				for (my $i = 0; $i < scalar(@lociData); $i++) {
-					if (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->presence_absence == 1)) {
-						push (@{$lociData[$i]}{'present'} , {strain => $rawBinaryDataRow->strain});
-					}
-					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->presence_absence == 0)) {
-						push (@{$lociData[$i]}{'absent'} , {strain => $rawBinaryDataRow->strain})
-					}
-					else {
-					}
-				}
-			}
+			}		
+			#push (@locusNames , $rawBinaryDataRow->locus_name);
 		}
 	}
 	return \@lociData;
@@ -138,15 +189,38 @@ sub getBinaryData {
 
 sub getSnpData {
 	my $self = shift;
-
 	#For demo purposes we will query the first three strains from the data tables.
 	#my $strainIds = shift;
 	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
 	#foreach my $strainId (@{$strainIds}) {
 	#The real strain id's will be passed as array refs;
-
 	my @lociData;
 	my @locusNames;
+
+	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
+		{},
+		{
+			column => [qw/me.locus_name/]
+		}
+		);
+	
+	while (my $locusNameRow = $locusNameTable->next) {
+		my %locus;
+		my @adenine;
+		my @thymidine;
+		my @cytosine;
+		my @guanine;
+		$locus{'locusname'} = $locusNameRow->locus_name;
+		$locus{'adenine'} = \@adenine;
+		$locus{'adenine_count'} = 0;
+		$locus{'thymidine'} = \@thymidine;
+		$locus{'thymidine_count'} = 0;
+		$locus{'cytosine'} = \@cytosine;
+		$locus{'cytosine_count'} = 0;
+		$locus{'guanine'} = \@guanine;
+		$locus{'guanine_count'} = 0;
+		push (@lociData , \%locus); 
+	}
 
 	foreach my $strainId (@strainIds) {
 		my $rawBinaryData = $self->dbixSchema->resultset('RawSnpData')->search(
@@ -155,61 +229,30 @@ sub getSnpData {
 				column => [qw/me.strain me.locus_name me.presence_absence/]
 			}
 			);
-
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-			if (!grep($_ eq $rawBinaryDataRow->locus_name , @locusNames)){
-				my %locus;
-				my @adenine;
-				my @thymidine;
-				my @cytosine;
-				my @guanine;
-
-				$locus{'locusname'} = $rawBinaryDataRow->locus_name;
-				$locus{'adenine'} = \@adenine;
-				$locus{'thymidine'} = \@thymidine;
-				$locus{'cytosine'} = \@cytosine;
-				$locus{'guanine'} = \@guanine;
-
-				if ($rawBinaryDataRow->snp eq 'A') {
-					push (@{$locus{'adenine'}} , {strain => $rawBinaryDataRow->strain});
-				}
-				elsif ($rawBinaryDataRow->snp eq 'T') {
-					push (@{$locus{'thymidine'}} , {strain => $rawBinaryDataRow->strain})
-				}
-				elsif ($rawBinaryDataRow->snp eq 'C') {
-					push (@{$locus{'cytosine'}} , {strain => $rawBinaryDataRow->strain})
-				}
-				elsif ($rawBinaryDataRow->snp eq 'G') {
-					push (@{$locus{'guanine'}} , {strain => $rawBinaryDataRow->strain})
-				}
-				else {
-				}
-				push (@lociData , \%locus);
-				push (@locusNames , $rawBinaryDataRow->locus_name);
+			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
+			if ($rawBinaryDataRow->snp eq 'A') {
+				push ($locus[0]->{'adenine'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'adednine_count'}++;
+			}
+			elsif ($rawBinaryDataRow->snp eq 'T') {
+				push ($locus[0]->{'thymidine'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'thymidine_count'}++;
+			}
+			elsif ($rawBinaryDataRow->snp eq 'C') {
+				push ($locus[0]->{'cytosine'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'cytosine_count'}++;
+			}
+			elsif ($rawBinaryDataRow->snp eq 'G') {
+				push ($locus[0]->{'guanine'} , {strain => $rawBinaryDataRow->strain});
+				$locus[0]->{'guanine_count'}++;
 			}
 			else {
-				#This next block needs to be optimized because its very slow with the extra for loop
-				for (my $i = 0; $i < scalar(@lociData); $i++) {
-					if (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'A')) {
-						push (@{$lociData[$i]}{'adenine'} , {strain => $rawBinaryDataRow->strain});
-					}
-					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'T')) {
-						push (@{$lociData[$i]}{'thymidine'} , {strain => $rawBinaryDataRow->strain})
-					}
-					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'C')) {
-						push (@{$lociData[$i]}{'cytosine'} , {strain => $rawBinaryDataRow->strain})
-					}
-					elsif (($lociData[$i]{'locusname'} eq $rawBinaryDataRow->locus_name) && ($rawBinaryDataRow->snp eq 'G')) {
-						push (@{$lociData[$i]}{'guanine'} , {strain => $rawBinaryDataRow->strain})
-					}
-					else {
-					}
-				}
 			}
+			#push (@locusNames , $rawBinaryDataRow->locus_name);
 		}
 	}
 	return \@lociData;
-
 }
 
 1;
