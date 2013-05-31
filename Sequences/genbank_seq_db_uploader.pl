@@ -53,10 +53,10 @@ sub parseGenome {
 			aggregateGffs();
 		}
 	}	
-	uploadSequences();
-	system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
-	system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
-	system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
+	#uploadSequences();
+	#system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
+	#system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
+	#system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
 	closedir GENOMEDIR;
 }
 
@@ -110,43 +110,77 @@ sub appendAttributes {
 	unlink "$fastaFileName";
 }
 
+# sub parseName {
+# 	#$_singleFileName is the seq->id of the first header.
+# 	my $_fastaHeader = shift;
+# 	my $_singleFileName = $_fastaHeader->id;
+# 	my $_singleFileDescription = $_fastaHeader->desc;
+# 	my $tagName;
+# 	if ($_singleFileName =~ /(|gb|)([A-Z][A-Z][A-Z][A-Z])/){
+# 		$tagName = $2;
+# 	}
+# 	else{
+# 		$tagName = "";
+# 	}
+# 	my $newName;
+# 	my $originalName = $_singleFileDescription;
+# 	if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
+# 		$newName = $2;
+# 	}
+# 	elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
+# 		$newName = "$tagName -$2";
+# 	}
+# 	elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
+# 		$newName = $2;
+# 		if ($newName eq "") {
+# 			$newName = "$tagName -$3";
+# 		}
+# 		else {
+# 			$newName = "$tagName -$2";
+# 		}
+# 	}
+# 	else{
+# 		$newName = $originalName;
+# 	}
+# 	$newName =~ s/Escherichia coli//;
+# 	$newName =~ s/,//g;
+# 	$newName =~ s/'//g;
+# 	$newName =~ s/'//g;
+# 	$newName =~ s/str/Str/;
+# 	return $newName;
+# }
+
 sub parseName {
 	#$_singleFileName is the seq->id of the first header.
 	my $_fastaHeader = shift;
 	my $_singleFileName = $_fastaHeader->id;
 	my $_singleFileDescription = $_fastaHeader->desc;
+	my $originalName = $_singleFileName;
 	my $tagName;
-	if ($_singleFileName =~ /(|gb|)([A-Z][A-Z][A-Z][A-Z])/){
-		$tagName = $2;
-	}
-	else{
-		$tagName = "";
-	}
+
 	my $newName;
-	my $originalName = $_singleFileDescription;
-	if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
-		$newName = $2;
+	if($originalName =~ m/name=\|(\w+)\|/){
+		$newName = $1;
 	}
-	elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
-		$newName = "$tagName -$2";
+	elsif($originalName =~ m/lcl\|([\w-]*)\|/){
+		$newName = $1;
 	}
-	elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
-		$newName = $2;
-		if ($newName eq "") {
-			$newName = "$tagName -$3";
-		}
-		else {
-			$newName = "$tagName -$2";
-		}
+	elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/(gi\|\d+)\|/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/^(.+)\|Segment=/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/^(.+)\|Length=/){
+		$newName = $1;
 	}
 	else{
 		$newName = $originalName;
 	}
-	$newName =~ s/Escherichia coli//;
-	$newName =~ s/,//g;
-	$newName =~ s/'//g;
-	$newName =~ s/'//g;
-	$newName =~ s/str/Str/;
+	$newName =~ s/^>//;
 	return $newName;
 }
 
