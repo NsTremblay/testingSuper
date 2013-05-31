@@ -233,7 +233,7 @@ sub getSnpData {
 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
 			if ($rawBinaryDataRow->snp eq 'A') {
 				push ($locus[0]->{'adenine'} , {strain => $rawBinaryDataRow->strain});
-				$locus[0]->{'adednine_count'}++;
+				$locus[0]->{'adenine_count'}++;
 			}
 			elsif ($rawBinaryDataRow->snp eq 'T') {
 				push ($locus[0]->{'thymidine'} , {strain => $rawBinaryDataRow->strain});
