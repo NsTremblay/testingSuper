@@ -71,28 +71,43 @@ Run mode for the virulence factor page
 sub virulenceFactors {
 	my $self = shift;
 	my $vFactorsRef = $self->_getVirulenceFactors();
+	my $amrFactorsRef = $self->_getAMRFactors();
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 	my $vfFeatureId = $q->param("VFName");
+	my $amrFeatureId = $q->param("AMRName");
 
-	if (!defined $vfFeatureId || $vfFeatureId eq ""){
+	if ((!defined $vfFeatureId || $vfFeatureId eq "") && (!defined $amrFeatureId || $amrFeatureId eq "")){
 		$template->param(vFACTORS=>$vFactorsRef);
+		$template->param(amrFACTORS=>$amrFactorsRef);
+	}
+	elsif (defined $amrFeatureId || $amrFeatureId ne "") {
+		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
+		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
+		$template->param(vFACTORS=>$vFactorsRef);
+		$template->param(amrFACTORS=>$amrFactorsRef);
+		my $validator = "Return Success";
+		$template->param(amrVALIDATOR=>$validator);
+		$template->param(amrMETAINFO=>$amrMetaInfoRef);
 	}
 	else {
 		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
+		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
 		$template->param(vFACTORS=>$vFactorsRef);
+		$template->param(amrFACTORS=>$amrFactorsRef);
 		my $validator = "Return Success";
-		$template->param(VALIDATOR=>$validator);
+		$template->param(vfVALIDATOR=>$validator);
 		$template->param(vFMETAINFO=>$vFMetaInfoRef);
 	}	
 	return $template->output();
 }
 
+
 =head2 _getVirulenceFactors
 
-Queries the database for all the available virulence factors or their meta info.
-Returns an array reference of virulence factors or the meta info of a virulence factor.
+Queries the database for all the available virulence factors.
+Returns an array reference of virulence factors.
 
 =cut
 
@@ -108,34 +123,56 @@ sub _getVirulenceFactors {
 			order_by 	=> { -asc => ['uniquename'] }
 		}
 		);
-	$self->_hashVirulenceFactors($_virulenceFactorProperties);
+	$self->_hashFactors($_virulenceFactorProperties);
 }
 
-=head2 _hashVirulenceFactors
+=head2 _getAMRFactors();
 
-Inputs all column data into a hash table and returns a reference to the hash table.
-Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
-	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
-	i.e. Fasta files must have attributes tagged to them before uploading.
+Queries the database for all the available AMR genes. 
+Returns an array reference of virulence factors.
 
 =cut
 
-sub _hashVirulenceFactors {
-	my $self=shift;
-	my $_virulenceFactorProperties = shift;
-
-	my @virulenceFactors;
-	
-	while (my $vFRow = $_virulenceFactorProperties->next){
-		my %vFRowData;
-		$vFRowData{'FEATUREID'}=$vFRow->feature_id;
-		$vFRowData{'UNIQUENAME'}=$vFRow->feature->uniquename;
-		push(@virulenceFactors, \%vFRowData);
-	}
-	return \@virulenceFactors;
+sub _getAMRFactors {
+	my $self = shift;
+	my $_amrFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{value => 'Antimicrobial Resistance'},
+		{
+			join		=> ['type', 'feature'],
+			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by 	=> { -asc => ['uniquename'] }
+		}
+		);
+	$self->_hashFactors($_amrFactorProperties);
 }
 
-=head2
+=head2 _hashFactors
+
+Inputs all column data into a hash table and returns a reference to the hash table.
+Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+i.e. Fasta files must have attributes tagged to them before uploading.
+
+=cut
+
+sub _hashFactors {
+	my $self=shift;
+	my $_factorProperties = shift;
+
+	my @factors;
+	
+	while (my $fRow = $_factorProperties->next){
+		my %fRowData;
+		$fRowData{'FEATUREID'}=$fRow->feature_id;
+		$fRowData{'UNIQUENAME'}=$fRow->feature->uniquename;
+		push(@factors, \%fRowData);
+	}
+	return \@factors;
+}
+
+=head2 _getVFMetaInfo
 
 Queries the database for a virulence factor feature_id.
 Returns an array reference containing the virulence factor meta info
@@ -196,5 +233,52 @@ sub _getVFMetaInfo {
 	}
 	return \@vFMetaData;
 }
+
+=head2 _getAMRMetaInfo
+
+Queries the database for an AMR gene feature_id.
+Returns an array reference containing the virulence factor meta info.
+
+=cut
+
+sub _getAMRMetaInfo {
+	my $self = shift;
+	my $_amrFeatureId = shift;
+
+	my @amrMetaData;
+
+	my $_amrFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{'me.feature_id' => $_amrFeatureId},
+		{
+			join		=> ['type' , 'feature'],
+			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by	=> { -asc => ['type.name'] }
+		}
+		);
+
+	while (my $amrMetaRow = $_amrFactorMetaProperties->next) {
+		my %amrMetaRowData;
+		$amrMetaRowData{'amrFEATUREID'} = $amrMetaRow->feature_id;
+		$amrMetaRowData{'amrUNIQUENAME'} = $amrMetaRow->feature->uniquename;
+		$amrMetaRowData{'amrTERMVALUE'} = $amrMetaRow->value;
+		if ($amrMetaRow->type->name eq "description") {
+			$amrMetaRowData{'amrTERMNAME'}="Description";
+		}
+		elsif ($amrMetaRow->type->name eq "organism"){
+			$amrMetaRowData{'vFTERMNAME'}="Organism";
+		}
+		elsif ($amrMetaRow->type->name eq "keywords"){
+			$amrMetaRowData{'vFTERMNAME'}="Keyword";
+		}
+		else {
+			$amrMetaRowData{'vFTERMNAME'}=$amrMetaRow->type->name;
+		}
+		push(@amrMetaData , \%amrMetaRowData);
+	}
+	return \@amrMetaData;
+}
+
 
 1;
