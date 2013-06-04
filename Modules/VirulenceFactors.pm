@@ -124,6 +124,18 @@ sub _getVirulenceFactors {
 		}
 		);
 	$self->_hashFactors($_virulenceFactorProperties);
+
+	# my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+	# 	{'me.value' => 'Virulence Factor' , 'type.cvterm_id' => 'feature.type_id'},
+	# 	{
+	# 		join		=> ['type' , 'feature'],
+	# 		select		=> [ qw/type.cvterm_id feature.name feature.type_id feature.uniquename feature.feature_id/],
+	# 		#as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+	# 		#group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+	# 		order_by 	=> { -asc => ['feature.uniquename'] }
+	# 	}
+	# 	);
+	# $self->_hashFactors($_virulenceFactorProperties);
 }
 
 =head2 _getAMRFactors();
@@ -267,13 +279,13 @@ sub _getAMRMetaInfo {
 			$amrMetaRowData{'amrTERMNAME'}="Description";
 		}
 		elsif ($amrMetaRow->type->name eq "organism"){
-			$amrMetaRowData{'vFTERMNAME'}="Organism";
+			$amrMetaRowData{'amrTERMNAME'}="Organism";
 		}
 		elsif ($amrMetaRow->type->name eq "keywords"){
-			$amrMetaRowData{'vFTERMNAME'}="Keyword";
+			$amrMetaRowData{'amrTERMNAME'}="Keyword";
 		}
 		else {
-			$amrMetaRowData{'vFTERMNAME'}=$amrMetaRow->type->name;
+			$amrMetaRowData{'amrTERMNAME'}=$amrMetaRow->type->name;
 		}
 		push(@amrMetaData , \%amrMetaRowData);
 	}

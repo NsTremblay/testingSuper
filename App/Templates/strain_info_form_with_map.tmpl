@@ -18,7 +18,7 @@
 				</style>
 				<script>
 				$(function() {
-					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATURE_ID>" } , </TMPL_LOOP> ]
+					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=UNIQUENAME>" } , </TMPL_LOOP> ]
 				$("#autoComp").autocomplete({
 					source: availableTags,
 					select: function( event, ui ) {
@@ -44,7 +44,7 @@
 				<span style="color:#796e6c">Select a strain from the list:</span>
 				<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainID">
 					<TMPL_LOOP NAME=FEATURES>
-					<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
+					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
 				</select>
 				<div style="margin:10px 0px 0px 0px">
@@ -61,7 +61,7 @@
 					<span style="color:#796e6c">Or select from your uploaded strains:</span>
 					<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
 						<TMPL_LOOP NAME=PRIVATE_FEATURES>
-						<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
+						<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
 						</TMPL_LOOP>
 					</select>
 					<div style="margin:10px 0px 0px 0px">
@@ -74,17 +74,6 @@
 		</TMPL_IF>
 
 	</div>
-	<!--form class="form" style="padding:0px 70px 5px 20px" method="post">
-		<fieldset>
-			<span class="help-block">Attach a strain file and submit it for analysis</span>
-			<input type="text" class="span12" readonly placeholder="This feature is currently disabled"></input>
-			<div>
-				<button type="submit" class="btn btn-small btn-primary disabled" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button>
-				<button type="submit" class="btn btn-small btn-success disabled" name="submit_strain" value="Submit"><i class="icon-ok icon-white"></i> Submit</button>
-				<button type="reset" class="btn btn-small btn-danger disabled" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-			</div>
-		</fieldset>
-	</form-->
 
 	<div id="map_div" style="display:none;border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
 		<div id="map_canvas" style="height:300px"></div>

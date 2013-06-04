@@ -79,61 +79,6 @@ sub dbixSchema {
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
-# sub getBinaryData {
-# 	my $self = shift;
-
-# 	#For demo purposes we will query the first three strains from the data tables.
-# 	#my $strainIds = shift;
-# 	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
-# 	#foreach my $strainId (@{$strainIds}) {
-# 	#The real strain id's will be passed as array refs;
-
-# 	my @lociData;
-
-# 	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
-# 		{},
-# 		{
-# 			column => [qw/me.locus_name/]
-# 		}
-# 		);
-
-# 	my $strainDataTable = $self->dbixSchema->resultset('RawBinaryData');
-
-# 	while (my $locusNameRow = $locusNameTable->next) {
-# 		print STDERR $locusNameRow->locus_name . "\n";
-
-# 		my %locus;
-# 		my @present;
-# 		my @absent;
-
-# 		$locus{'locusname'} = $locusNameRow->locus_name;
-# 		$locus{'present'} = \@present;
-# 		$locus{'absent'} = \@absent;
-
-# 		foreach my $strain (@strainIds) {
-# 			my $binaryDataTable = $strainDataTable->search(
-# 				{'me.locus_name' => $locusNameRow->locus_name,
-# 				'me.strain' => "strain"},
-# 				{
-# 					column => [qw/me.strain me.presence_absence/]
-# 				}
-# 				);
-
-# 			if ($binaryDataTable->presence_absence == 1) {
-# 				push (@{$locus{'present'}} , {strain => $binaryDataTable->strain});
-# 			}
-# 			elsif ($binaryDataTable->presence_absence == 0) {
-# 				push (@{$locus{'absent'}} , {strain => $binaryDataTable->strain});
-# 			}
-# 			else {
-# 			}
-# 		}
-# 		push (@lociData , \%locus);
-# 	}
-
-# return \@lociData;
-# }
-
 sub getBinaryData {
 	my $self = shift;
 
@@ -144,7 +89,7 @@ sub getBinaryData {
 	#The real strain id's will be passed as array refs;
 	my @lociData;
 	#my @locusNames;
-	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
+	my $locusNameTable = $self->dbixSchema->resultset('DataLociName')->search(
 		{},
 		{
 			column => [qw/me.locus_name/]
@@ -197,7 +142,7 @@ sub getSnpData {
 	my @lociData;
 	my @locusNames;
 
-	my $locusNameTable = $self->dbixSchema->resultset('DataLoci')->search(
+	my $locusNameTable = $self->dbixSchema->resultset('DataLociName')->search(
 		{},
 		{
 			column => [qw/me.locus_name/]

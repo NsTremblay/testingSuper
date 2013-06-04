@@ -68,13 +68,13 @@ sub strain_info : StartRunmode {
 #	foreach(@$priDataRef) {
 #		$logger->debug('USERs PRIVATE GENOME ID: '.$_);
 #	}
-	
-	my $template = $self->load_tmpl( 'strain_info.tmpl' , die_on_bad_params=>0 );
- 
-	my $q = $self->query();
-	my $strainID = $q->param("singleStrainID");
-	my $privateStrainID = $q->param("privateSingleStrainID");
-	
+
+my $template = $self->load_tmpl( 'strain_info.tmpl' , die_on_bad_params=>0 );
+
+my $q = $self->query();
+my $strainID = $q->param("singleStrainID");
+my $privateStrainID = $q->param("privateSingleStrainID");
+
 	# Populate forms
 	$template->param(FEATURES => $pubDataRef);
 	if(@$priDataRef) {
@@ -82,21 +82,20 @@ sub strain_info : StartRunmode {
 		$template->param(PRIVATE_DATA => 1);
 		$template->param(PRIVATE_FEATURES => $priDataRef);
 		
-	} else {
-		$template->param(PRIVATE_DATA => 0);
-	}
+		} else {
+			$template->param(PRIVATE_DATA => 0);
+		}
 
-	if(defined $strainID && $strainID ne "") {
+		if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
 		
 		my $strainInfoDataRef = $self->_getStrainInfo($strainID, 1);
-		
 		$template->param(METADATA=>$strainInfoDataRef);
 		
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
 		
-	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
 		# Verify that user has access to strain
@@ -116,7 +115,6 @@ sub strain_info : StartRunmode {
 		
 		# Obtain private strain info
 		my $strainInfoDataRef = $self->_getStrainInfo($privateStrainID, 0);
-		
 		$template->param(METADATA => $strainInfoDataRef);
 		
 		my $validator = "Return Success";
@@ -138,8 +136,9 @@ sub _getStrainInfo {
 	my $self = shift;
 	my $strainID = shift;
 	my $public = shift;
-	
+
 	my @strainMetaData;
+	
 	my $feature_table_name = 'Feature';
 	my $featureprop_table_name = 'Featureprop';
 	
@@ -152,35 +151,65 @@ sub _getStrainInfo {
 	my $features = $self->dbixSchema->resultset($feature_table_name)->search({ feature_id => $strainID});
 	my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
 
-	### GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
-	# Akiff: I will add a sub here to get a list of the virulence factrs and AMR genes
+	## GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
+	#Akiff: I will add a sub here to get a list of the virulence factrs and AMR genes
+	
 	while(my $row = $featureprops->next) {
 		my %strainRowData;
 		$strainRowData{'FEATUREID'} = $strainID;
 		$strainRowData{'VALUE'} = $row->value;
 		$strainRowData{'TYPEID'} = $row->type_id;
-		
-		#This will query the amr and vir binary table and will retrun a list of those factors
-		#for that particular strain.
-		$self->_getVirAmrData($strainID);
-
 		push(@strainMetaData, \%strainRowData);
 	}
-	###
-	
 	return \@strainMetaData;
 }
 
-=head2 _getMetaData
+sub _getVirulenceData {
+	my $self = shift;
+	my $strainID = shift;
+	my $virulence_table_name = 'RawVirulenceData';
 
-Returns all the Virulence and AMR genes for a particular strain
+	my @virulenceData;
+	my $virCount = 0;
 
-=cut
+	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
+		{'me.strain' => "$strainID"},
+		{
+			column => [qw/me.strain me.gene_name me.presence_absence/]
+		}
+		);
 
-sub _getVirAmrData {
-	my $self=shift;
-	my $_strainId = shift;
+	while (my $virulenceDataRow = $virulenceData->next) {
+		if ($virulenceDataRow->presence_absence == 1) {
+		}
+		else {
+		}
+	}
+	return \@virulenceData;
 }
 
+sub _getAmrData {
+	my $self = shift;
+	my $strainID = shift;
+	my $amr_table_name = 'RawAmrData';
+
+	my @amrData;
+	my $amrCount = 0;
+
+	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
+		{'me.strain' => "$strainID"},
+		{
+			column => [qw/me.strain me.gene_name me.presence_absence/]
+		}
+		);
+
+	while (my $amrDataRow = $amrData->next) {
+		if ($amrDataRow->presence_absence == 1) {
+		}
+		else {
+		}
+	}
+	return \@amrData;
+}
 
 1;

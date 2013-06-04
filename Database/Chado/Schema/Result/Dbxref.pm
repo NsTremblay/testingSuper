@@ -397,6 +397,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_features
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeature>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_features",
+  "Database::Chado::Schema::Result::PrivateFeature",
+  { "foreign.dbxref_id" => "self.dbxref_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 protocols
 
 Type: has_many
@@ -473,8 +488,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-17 11:42:07
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:UsjjpoKNSoNiZywajhTrNA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-04 13:04:27
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8beJY5NVu66zGANYbT/Oyw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

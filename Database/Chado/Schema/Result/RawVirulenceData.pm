@@ -1,12 +1,12 @@
 use utf8;
-package Database::Chado::Schema::Result::RawSnpData;
+package Database::Chado::Schema::Result::RawVirulenceData;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-Database::Chado::Schema::Result::RawSnpData
+Database::Chado::Schema::Result::RawVirulenceData
 
 =cut
 
@@ -15,11 +15,11 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-=head1 TABLE: C<raw_snp_data>
+=head1 TABLE: C<raw_virulence_data>
 
 =cut
 
-__PACKAGE__->table("raw_snp_data");
+__PACKAGE__->table("raw_virulence_data");
 
 =head1 ACCESSORS
 
@@ -28,19 +28,19 @@ __PACKAGE__->table("raw_snp_data");
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
-  sequence: 'raw_snp_data_serial_id_seq'
+  sequence: 'raw_virulence_data_serial_id_seq'
 
 =head2 strain
 
   data_type: 'text'
   is_nullable: 1
 
-=head2 locus_name
+=head2 gene_name
 
   data_type: 'text'
   is_nullable: 1
 
-=head2 snp
+=head2 presence_absence
 
   data_type: 'text'
   is_nullable: 1
@@ -53,13 +53,13 @@ __PACKAGE__->add_columns(
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "raw_snp_data_serial_id_seq",
+    sequence          => "raw_virulence_data_serial_id_seq",
   },
   "strain",
   { data_type => "text", is_nullable => 1 },
-  "locus_name",
+  "gene_name",
   { data_type => "text", is_nullable => 1 },
-  "snp",
+  "presence_absence",
   { data_type => "text", is_nullable => 1 },
 );
 
@@ -76,8 +76,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("serial_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-04 13:04:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:a5d1vYurT34Ht7m7e1IzaA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-04 13:29:31
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TFN54nWTKpMqZHRltaqC2g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
