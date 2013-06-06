@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
+
+<body style="background-color:#796e6c">
+	
+	<div class="container" style="background-color:#FFFFFF">
+		<div class="row-fluid">
+		<div style="padding-left:20px; padding-bottom:10px;">
+		
+			<!-- Instructions -->
+			<h3>Modify or delete uploaded genomes</h3>
+			<div>
+				<p>Listed below are all uploaded genomes that you have access to.
+				</p>
+				<p>Select <span class="text-info">Modify</span> to change the attributes of an uploaded genome
+				   (note: to change the DNA sequence you will have too delete and then re-upload the genome).
+				   Select to <span class="text-info">Delete</span> to remove the genome from our database.
+				   Only genomes for which you have administrator or modify permissions will have <span class="text-info">Modify</span>
+				   and <span class="text-info">Delete</span> options.
+				</p>
+			</div>
+			
+			<div class="row-fluid">
+				<div style="margin-top:5px; margin-bottom:5px;">
+				<div class="span6 offset3">
+					<TMPL_IF operation_status>
+						<div class="alert">
+		        			<button type="button" class="close" data-dismiss="alert">&times;</button>
+		        			<TMPL_VAR operation_status>
+		        			</div>
+	        			</TMPL_IF>
+	        		</div>
+	        		</div>
+	        	</div>
+		</div>
+		</div>
+	        
+		<!-- Table -->
+		<hr>
+		<TMPL_LOOP uploads>
+			<div class="row-fluid">
+                		<div style="padding-top: 30px; font-size:16px">
+                			<div class="span4"><strong>Genome Group:</strong> <TMPL_VAR group_name></div>
+	                	</div>
+                	</div>
+	                <div class="row-fluid">
+			<div class="span8">
+			<div style="padding-top:20px; padding-left:40px">
+			<table class="table table-hover">
+			<tbody>	
+                	<TMPL_LOOP group_rows>
+                		<tr>
+					<td>
+                				<p><TMPL_VAR name> <span style="padding-left: 10px"><small>(uploaded: <TMPL_VAR date>)</small></span></p>	
+                			</td>
+              				<td style="text-align:right;">
+						<a href="<TMPL_VAR view_rm><TMPL_VAR feature_id>">View</a>
+						<TMPL_IF can_modify>
+						| <a href="<TMPL_VAR edit_rm><TMPL_VAR feature_id>">Modify</a>
+						</TMPL_IF>
+						<TMPL_IF can_delete>
+						| <a href="<TMPL_VAR delete_rm><TMPL_VAR feature_id>" onclick="return confirm('Are you sure you would like to delete this genome?');">Delete</a>
+						</TMPL_IF>
+                			</td>
+				</tr>
+				
+                	</TMPL_LOOP>
+			</tbody>
+                	</table>
+			</div>
+			</div>
+			</div>
+               
+			
+		</TMPL_LOOP> <!-- uploads -->
+		
+		<hr>
+			
+		<div class="row-fluid">
+			<div class="span12">
+				<div style="margin-top:20px; margin-bottom:50px; margin-left:30px">
+					Return <a href="<TMPL_VAR go_home>">home</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+</body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>	
