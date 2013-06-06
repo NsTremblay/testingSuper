@@ -106,21 +106,34 @@ Qeuries the database for form data and returns a array reference to a list of ta
 
 sub getFormData {
     my $self = shift;
-    my $features = $self->dbixSchema->resultset('Featureprop')->search(
+    my $features = $self->dbixSchema->resultset('Feature')->search(
     {
-        name => 'genome_of'
+        type_id => '1569'
         },
-        {   join => ['type'],
-        select => [qw/me.value type.name/],
-        group_by => [qw/me.value type.name/],
-        order_by    => {-asc => ['me.value']}
+        {   
+        select => [qw/me.uniquename/],
+        order_by    => {-asc => ['me.uniquename']}
     }
     );
     my $formDataRef = $self->_hashFormData($features);
     return $formDataRef;
 }
 
-
+# sub getFormData {
+#     my $self = shift;
+#     my $features = $self->dbixSchema->resultset('Featureprop')->search(
+#     {
+#         name => 'genome_of'
+#         },
+#         {   join => ['type'],
+#         select => [qw/me.value type.name/],
+#         group_by => [qw/me.value type.name/],
+#         order_by    => {-asc => ['me.value']}
+#     }
+#     );
+#     my $formDataRef = $self->_hashFormData($features);
+#     return $formDataRef;
+# }
 
 =head2 _hashFormData
 
@@ -134,8 +147,8 @@ sub _hashFormData {
     my @formData;
     while (my $featureRow = $features->next){
         my %formRowData;
-        #$formRowData{'FEATUREID'}=$featureRow->feature_id;
-        $formRowData{'UNIQUENAME'}=$featureRow->value;
+        $formRowData{'FEATUREID'}=$featureRow->feature_id;
+        $formRowData{'UNIQUENAME'}=$featureRow->uniquename;
         push(@formData, \%formRowData);
     }
     return \@formData;
