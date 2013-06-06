@@ -52,9 +52,9 @@ ALTER TABLE ONLY tracker
 -- foreign keys
 --
 ALTER TABLE ONLY tracker
-	ADD CONSTRAINT tracker_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id);
+	ADD CONSTRAINT tracker_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;;
 
 ALTER TABLE ONLY tracker
-	ADD CONSTRAINT tracker_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id);
+	ADD CONSTRAINT tracker_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;;
 
 COMMIT;

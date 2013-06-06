@@ -18,3 +18,9 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 	
 5. ../genodo_add_ontology.pl
 	Add additional ontology terms used by Genodo to cvterm table (e.g. serotype, strain, isolation_host, etc.)
+	
+6. create_tracking_table.sql
+	Schema for the tracker table (used to record progression of a uploaded genome being analyzed). Additions on top of #4.
+
+7. create_deleted_upload_table.sql
+	Schema for the deleted_upload table (used to record uploaded genomes that have been deleted by the user). Additions on top of #6.

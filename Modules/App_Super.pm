@@ -123,7 +123,8 @@ sub cgiapp_postrun {
  			# Genome uploader requires user to be logged in.
  			my $authen_gu = 
  			q|<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome_uploader">Upload a genome</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome-uploader/submit_genome">Upload a genome</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome-uploader/list">Modify or delete a genome</a></li>
 			<li role="presentation" class="divider"></li>
 			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/add_access">Grant access to an uploaded genome</a></li>
 			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/edit_access">Change access to uploaded genomes</a></li>
@@ -148,6 +149,7 @@ sub cgiapp_postrun {
 	 			q|<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
 	 			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/login">These features require login</a></li>
 	            <li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Upload a genome</a></li>
+	            <li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Modify or delete a genome</a></li>
 				<li role="presentation" class="divider"></li>
 				<li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Grant access to an uploaded genome</a></li>
 				<li role="presentation"><a style="color:#C0C0C0" role="menuitem" tabindex="-1" href="#">Change access to uploaded genomes</a></li>

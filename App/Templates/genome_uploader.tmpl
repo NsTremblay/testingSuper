@@ -10,7 +10,7 @@
 	<div class="container" style="background-color:#FFFFFF">
 		
 		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
-			<h1>Genome Uploader</h1>
+			<h1><TMPL_IF new_genome>Upload a Genome<TMPL_ELSE>Modify Genome Attributes</TMPL_IF></h1>
 		</div>
 
 		<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">

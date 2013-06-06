@@ -397,7 +397,7 @@ sub add_access : RunMode {
 	# User has no sequences
 	# Redirect to home page with status message indicating problem
 	unless ( scalar @form_list ) {
-		$self->session->param( status => '<strong>No Sequences!</strong> You have not uploaded any sequences or been granted Admin access to other uploaded sequences.');
+		$self->session->param( status => '<strong>No Genomes!</strong> You have not uploaded any genome sequences or been granted Administrator access to other uploaded genome sequences.');
 		$self->redirect( $self->home_page );
 	}
 
@@ -553,7 +553,8 @@ sub edit_access : RunMode {
 	# User has no sequences
 	# Redirect to home page with status message indicating problem
 	unless ( scalar @form_list ) {
-		$self->session->param( status => '<strong>No Sequences!</strong> You have not uploaded any sequences or been granted Admin access to other uploaded sequences.');
+		$self->session->param( status => '<strong>No Access Permissions Set!</strong> You have not created any access permissions to your uploaded genomes.'.
+			'<br/><br/>Use <span class="text-info">Genome Submission > Grant access to an uploaded genome</span> to give a user access to an uploaded genome.');
 		$self->redirect( $self->home_page );
 	}
 	

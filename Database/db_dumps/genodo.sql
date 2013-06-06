@@ -6172,6 +6172,44 @@ ALTER SEQUENCE dbxrefprop_dbxrefprop_id_seq OWNED BY dbxrefprop.dbxrefprop_id;
 
 
 --
+-- Name: deleted_upload; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE deleted_upload (
+    deleted_upload_id integer NOT NULL,
+    upload_id integer NOT NULL,
+    upload_date timestamp without time zone NOT NULL,
+    cc_feature_id integer NOT NULL,
+    cc_uniquename text NOT NULL,
+    username character varying(20) NOT NULL,
+    deletion_date timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.deleted_upload OWNER TO postgres;
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE deleted_upload_deleted_upload_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.deleted_upload_deleted_upload_id_seq OWNER TO postgres;
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE deleted_upload_deleted_upload_id_seq OWNED BY deleted_upload.deleted_upload_id;
+
+
+--
 -- Name: dfeatureloc; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -12446,6 +12484,47 @@ ALTER TABLE public.tableinfo_tableinfo_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE tableinfo_tableinfo_id_seq OWNED BY tableinfo.tableinfo_id;
+
+
+--
+-- Name: tracker; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE tracker (
+    tracker_id integer NOT NULL,
+    step integer DEFAULT 0 NOT NULL,
+    failed boolean DEFAULT false NOT NULL,
+    feature_name character varying(255),
+    command character varying(255),
+    pid character varying(100),
+    upload_id integer,
+    login_id integer DEFAULT 0 NOT NULL,
+    start_date timestamp without time zone DEFAULT now() NOT NULL,
+    end_date timestamp without time zone
+);
+
+
+ALTER TABLE public.tracker OWNER TO postgres;
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE tracker_tracker_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tracker_tracker_id_seq OWNER TO postgres;
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE tracker_tracker_id_seq OWNED BY tracker.tracker_id;
 
 
 --
@@ -31220,6 +31299,13 @@ ALTER TABLE ONLY dbxrefprop ALTER COLUMN dbxrefprop_id SET DEFAULT nextval('dbxr
 
 
 --
+-- Name: deleted_upload_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY deleted_upload ALTER COLUMN deleted_upload_id SET DEFAULT nextval('deleted_upload_deleted_upload_id_seq'::regclass);
+
+
+--
 -- Name: eimage_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -32162,6 +32248,13 @@ ALTER TABLE ONLY synonym ALTER COLUMN synonym_id SET DEFAULT nextval('synonym_sy
 --
 
 ALTER TABLE ONLY tableinfo ALTER COLUMN tableinfo_id SET DEFAULT nextval('tableinfo_tableinfo_id_seq'::regclass);
+
+
+--
+-- Name: tracker_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker ALTER COLUMN tracker_id SET DEFAULT nextval('tracker_tracker_id_seq'::regclass);
 
 
 --
@@ -47463,6 +47556,21 @@ SELECT pg_catalog.setval('dbxrefprop_dbxrefprop_id_seq', 1, false);
 
 
 --
+-- Data for Name: deleted_upload; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY deleted_upload (deleted_upload_id, upload_id, upload_date, cc_feature_id, cc_uniquename, username, deletion_date) FROM stdin;
+\.
+
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('deleted_upload_deleted_upload_id_seq', 1, false);
+
+
+--
 -- Data for Name: eimage; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -49506,6 +49614,21 @@ COPY tableinfo (tableinfo_id, name, primary_key_column, is_view, view_on_table_i
 --
 
 SELECT pg_catalog.setval('tableinfo_tableinfo_id_seq', 1, false);
+
+
+--
+-- Data for Name: tracker; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY tracker (tracker_id, step, failed, feature_name, command, pid, upload_id, login_id, start_date, end_date) FROM stdin;
+\.
+
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('tracker_tracker_id_seq', 1, false);
 
 
 --
@@ -52154,6 +52277,14 @@ ALTER TABLE ONLY dbxrefprop
 
 
 --
+-- Name: deleted_upload_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY deleted_upload
+    ADD CONSTRAINT deleted_upload_pkey PRIMARY KEY (deleted_upload_id);
+
+
+--
 -- Name: eimage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -54119,6 +54250,14 @@ ALTER TABLE ONLY tableinfo
 
 ALTER TABLE ONLY tableinfo
     ADD CONSTRAINT tableinfo_pkey PRIMARY KEY (tableinfo_id);
+
+
+--
+-- Name: tracker_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_pkey PRIMARY KEY (tracker_id);
 
 
 --
@@ -59788,6 +59927,22 @@ ALTER TABLE ONLY studyprop
 
 ALTER TABLE ONLY synonym
     ADD CONSTRAINT synonym_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: tracker_login_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: tracker_upload_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --

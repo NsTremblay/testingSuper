@@ -184,80 +184,88 @@ use constant SEARCH_LONG_DBXREF =>
                "SELECT dbxref_id FROM dbxref WHERE accession =?
                                                   AND version =?
                                                   AND db_id =?";
-               
+=head2 new
+
+Constructor
+
+=cut
 
 sub new {
 	my $class = shift;
-    my %arg   = @_;
-
-    my $self  = bless {}, ref($class) || $class;
-
-    my $dbname = $arg{dbname};
-    my $dbport = $arg{dbport};
-    my $dbhost = $arg{dbhost};
-    my $dbuser = $arg{dbuser};
-    my $dbpass = $arg{dbpass};
-    my $skipinit=0;
-   
+	my %arg   = @_;
+	
+	$DEBUG = 1 if $arg{debug};
+	
+	my $self  = bless {}, ref($class) || $class;
+	
+	my $dbname  =  $arg{dbname};
+	my $dbport  =  $arg{dbport};
+	my $dbhost  =  $arg{dbhost};
+	my $dbuser  =  $arg{dbuser};
+	my $dbpass  =  $arg{dbpass};
+	my $tmp_dir =  $arg{tmp_dir};
+	croak "Missing argument: tmp_dir." unless $tmp_dir;
+	
+	my $skipinit=0;
+	
 	my $dbh = DBI->connect(
-        "dbi:Pg:dbname=$dbname;port=$dbport;host=$dbhost",
-        $dbuser,
-        $dbpass,
-        {AutoCommit => 0,
-         TraceLevel => 0}
-    ) or croak "Unable to connect to database";
-
-    $self->dbh($dbh);
-
-    $self->dbname(          $arg{dbname}          );
-    $self->dbport(          $arg{dbport}          ); 
-    $self->dbhost(          $arg{dbhost}          );
-    $self->dbuser(          $arg{dbuser}          );
-    $self->dbpass(          $arg{dbpass}          );
-    $self->noload(          $arg{noload}          );
-    $self->recreate_cache(  $arg{recreate_cache}  );
-    $self->save_tmpfiles(   $arg{save_tmpfiles}   );
-    $self->vacuum(          $arg{vacuum}          );
-  
-    $self->prepare_queries();
-    unless ($skipinit) {
-    	$self->initialize_sequences();
-        $self->initialize_ontology();
-        $self->initialize_organism();
-        $self->initialize_uniquename_cache();
-    }
-    
-    # All genomes uploaded by users (whether released as public or private by user)
-    # are stored in the private_feature and private_featureprop tables.
-    if($arg{web_upload}) {
-    	# Genomes are being uploaded in the private feature and
-    	# featureprop tables.
-    	# Need to change some resources to point to these tables.
-    	
-    	$table_names{feature} = 'private_' . $table_names{feature};
-    	$table_names{featureprop} = 'private_' . $table_names{featureprop};
-    	$table_names{feature_relationship} = 'private_' . $table_names{feature_relationship};
-    	$table_names{feature_dbxref} = 'private_' . $table_names{feature_dbxref};
-    	$sequences{feature} = 'private_' . $sequences{feature};
-    	$sequences{featureprop} = 'private_' . $sequences{featureprop};
-    	$sequences{feature_dbxref} = 'private_' . $sequences{feature_dbxref};
-    	$sequences{feature_relationship} = 'private_' . $sequences{feature_relationship};
-    	
-    	my $num = ($copystring{feature} =~ s/,residues\)/,upload_id,residues\)/);
-    	croak "Unexpected format in feature copystring." unless $num == 1;
-    	$num = ($copystring{featureprop} =~ s/,rank\)/,rank,upload_id\)/);
-    	croak "Unexpected format in featureprop copystring." unless $num == 1;
-    	
-    	$self->{web_upload} = 1;
-    	
-    } else {
-    	
-    	$self->{web_upload} = 0;
-    }
-    
-    $DEBUG = 1 if $arg{debug};
-
-    return $self;
+		"dbi:Pg:dbname=$dbname;port=$dbport;host=$dbhost",
+		$dbuser,
+		$dbpass,
+		{AutoCommit => 0,
+		 TraceLevel => 0}
+	) or croak "Unable to connect to database";
+	
+	$self->dbh($dbh);
+	
+	$self->tmp_dir(         $arg{tmp_dir}         );
+	$self->dbname(          $arg{dbname}          );
+	$self->dbport(          $arg{dbport}          ); 
+	$self->dbhost(          $arg{dbhost}          );
+	$self->dbuser(          $arg{dbuser}          );
+	$self->dbpass(          $arg{dbpass}          );
+	$self->noload(          $arg{noload}          );
+	$self->recreate_cache(  $arg{recreate_cache}  );
+	$self->save_tmpfiles(   $arg{save_tmpfiles}   );
+	$self->vacuum(          $arg{vacuum}          );
+	
+	# All genomes uploaded by users (whether released as public or private by user)
+	# are stored in the private_feature and private_featureprop tables.
+	if($arg{web_upload}) {
+		# Genomes are being uploaded in the private feature and
+		# featureprop tables.
+		# Need to change some resources to point to these tables.
+		
+		$table_names{feature} = 'private_' . $table_names{feature};
+		$table_names{featureprop} = 'private_' . $table_names{featureprop};
+		$table_names{feature_relationship} = 'private_' . $table_names{feature_relationship};
+		$table_names{feature_dbxref} = 'private_' . $table_names{feature_dbxref};
+		$sequences{feature} = 'private_' . $sequences{feature};
+		$sequences{featureprop} = 'private_' . $sequences{featureprop};
+		$sequences{feature_dbxref} = 'private_' . $sequences{feature_dbxref};
+		$sequences{feature_relationship} = 'private_' . $sequences{feature_relationship};
+		
+		my $num = ($copystring{feature} =~ s/,residues\)/,upload_id,residues\)/);
+		croak "Unexpected format in feature copystring." unless $num == 1;
+		$num = ($copystring{featureprop} =~ s/,rank\)/,rank,upload_id\)/);
+		croak "Unexpected format in featureprop copystring." unless $num == 1;
+		
+		$self->{web_upload} = 1;
+		
+	} else {
+		
+		$self->{web_upload} = 0;
+	}
+	
+	$self->prepare_queries();
+	unless ($skipinit) {
+		$self->initialize_sequences();
+		$self->initialize_ontology();
+		$self->initialize_organism();
+		$self->initialize_uniquename_cache();
+	}
+	
+	return $self;
 }
 
 #################
@@ -396,16 +404,18 @@ none
 =cut
 
 sub initialize_sequences {
-    my $self = shift;
-
-    foreach my $table (@tables) {
-      my $sth = $self->dbh->prepare("select nextval('$sequences{$table}')");
-      $sth->execute;
-      my ($nextoid) = $sth->fetchrow_array();
-      $self->nextoid($table, $nextoid);
-      print "$table, $nextoid\n" if $DEBUG;
-    }
-    return;
+	my $self = shift;
+	
+	foreach my $table (@tables) {
+		my $sth = $self->dbh->prepare("select nextval('$sequences{$table}')");
+		$sth->execute;
+		my ($nextoid) = $sth->fetchrow_array();
+		$self->nextoid($table, $nextoid);
+		
+		print "$table, $nextoid\n" if $DEBUG;
+	}
+	
+	return;
 }
 
 
@@ -439,12 +449,15 @@ sub update_sequences {
     my $self = shift;
 
 	foreach my $table (@tables) {
-
+		
 		my $id_name      = $table_ids{$table};
-		my $max_id_query = "SELECT max($id_name) FROM $table";
+		my $table_name   = $table_names{$table};
+		my $max_id_query = "SELECT max($id_name) FROM $table_name";
 		my $sth          = $self->dbh->prepare($max_id_query);
 		$sth->execute;
 		my ($max_id)     = $sth->fetchrow_array();
+		
+		$max_id = 1 unless $max_id; # Empty table
 		
 		my $curval_query = "SELECT nextval('$sequences{$table}')";
 		$sth             = $self->dbh->prepare($curval_query);
@@ -465,7 +478,6 @@ sub update_sequences {
 
     return;
 }
-
 
 
 =head2 initialize_uniquename_cache
@@ -566,7 +578,7 @@ sub file_handles {
         return $self->{file_handles}{$fhhame};
     }
     else {
-        my $file_path = "./";
+        my $file_path = $self->{tmp_dir};
      
         for my $key (keys %files) {
             my $tmpfile = new File::Temp(
@@ -810,7 +822,6 @@ sub place_lock {
 
     return;
 }
-
 
 =head2 uniquename_cache
 
@@ -1277,7 +1288,7 @@ sub load_data {
 	}
 	
 	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
-  
+	
 	if($self->vacuum) {
 		warn "Optimizing database (this may take a while) ...\n";
 		warn "  ";
@@ -1291,6 +1302,8 @@ sub load_data {
 		
 		warn "\nDone.\n";
 	}
+	
+	
 }
 
 =head2 copy_from_stdin
@@ -1356,6 +1369,49 @@ sub copy_from_stdin {
 	#update the sequence so that later inserts will work
 	$dbh->do("SELECT setval('$sequence', $nextval) FROM $table")
 		or croak("Error when executing:  setval('$sequence', $nextval) FROM $table: $!"); 
+}
+
+=head2 update_tracker
+
+=over
+
+=item Usage
+
+  $obj->update_tracker(tracker_id)
+
+=item Function
+
+Updates the upload_id column in the tracker table
+for the provided tracker_id.
+
+upload_id must be in upload to prevent foreign key
+violation.
+
+Make sure 
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+A tracker_id in the tracker table
+
+=back
+
+=cut
+
+sub update_tracker {
+	my ($self, $tracking_id, $upload_id) = @_;
+	
+	my $sth = $self->dbh->prepare("SELECT count(*) FROM upload WHERE upload_id = $upload_id");
+	$sth->execute();
+	my ($found) = $sth->fetchrow_array();
+	
+	croak "Method must be called after upload table has been loaded with the provided upload_id: $upload_id." unless $found;
+	
+	$self->dbh->do("UPDATE tracker SET upload_id = $upload_id WHERE tracker_id = $tracking_id");
+	$self->dbh->commit || croak "Tracker table update failed: ".$self->dbh->errstr();
 }
 
 =head2 handle_upload
@@ -1442,8 +1498,17 @@ sub handle_upload {
 		$self->nextoid('permission','++');
 	}
 	
+	# Fill in tracker table, if req'd
+	if($argv{'tracking_id'}) {
+		my $trk_id = $argv{'tracking_id'};
+		my $trk_sth = $self->dbh->do("UPDATE tracker SET upload_id = $upload_id WHERE tracker_id = $trk_id");
+	}
 	
+	return($upload_id);
 }
+
+
+=cut
 
 =head2 handle_reserved_properties
 
@@ -1537,9 +1602,9 @@ sub handle_dbxref {
     # Primary dbxref is first on list
     # primary dbxref_id stored in feature table and in feature_dbxref table
     # secondary dbxref_id stored only in feature_dbxref table
-   
-    my @dbxrefs = ($dbxhash_ref->{primary});
-    push @dbxrefs, @{$dbxhash_ref->{secondary}};
+    my @dbxrefs;
+    croak 'Must define a primary dbxref before defining secondary dbxrefs.' unless $dbxhash_ref->{primary};
+    push @dbxrefs, @{$dbxhash_ref->{secondary}} if $dbxhash_ref->{secondary};
     my $primary_dbxref_id;
     
 	foreach my $dbxref (@dbxrefs) {
@@ -1823,6 +1888,37 @@ sub dbh {
     my $dbh = shift if defined(@_);
     return $self->{'dbh'} = $dbh if defined($dbh);
     return $self->{'dbh'};
+}
+
+=head2 tmp_dir
+
+=over
+
+=item Usage
+
+  $obj->tmp_dir()        #get existing value
+  $obj->tmp_dir($newval) #set new value
+
+=item Function
+
+=item Returns
+
+file path to a tmp directory
+
+=item Arguments
+
+new value of tmp_dir (to set)
+
+=back
+
+=cut
+
+sub tmp_dir {
+    my $self = shift;
+
+    my $tmp_dir = shift if defined(@_);
+    return $self->{'tmp_dir'} = $tmp_dir if defined($tmp_dir);
+    return $self->{'tmp_dir'};
 }
 
 =head2 dbname

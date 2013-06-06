@@ -5,10 +5,8 @@ use warnings;
 use Bio::SeqIO;
 use Adapter;
 use Getopt::Long;
-#use Data::Dumper;
 use Pod::Usage;
 use Carp;
-#use URI::Escape;
 use Sys::Hostname;
 use Config::Simple;
 use POSIX qw(strftime);
@@ -31,6 +29,7 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
  --remove_lock     Remove the lock to allow a new process to run
  --save_tmpfiles   Save the temp files used for loading the database
  --manual          Detailed manual pages
+ --webupload       Indicates that genome is user uploaded. Loads to private tables.
 
 =head1 DESCRIPTION
 
@@ -186,9 +185,9 @@ my ($CONFIGFILE, $FASTAFILE, $PROPFILE, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
-    $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI,
+    $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI, $TMPDIR,
     $VACUUM,
-    $WEBUPLOAD);
+    $WEBUPLOAD, $TRACKINGID);
 
 GetOptions(
 	'configfile=s'=> \$CONFIGFILE,
@@ -201,7 +200,8 @@ GetOptions(
     'manual'   => \$MANPAGE,
     'debug'   => \$DEBUG,
     'vacuum'  => \$VACUUM,
-    'webupload' => \$WEBUPLOAD
+    'webupload' => \$WEBUPLOAD,
+    'tracking_id:s' => \$TRACKINGID
 ) 
 
 or pod2usage(-verbose => 1, -exitval => 1);
@@ -220,6 +220,7 @@ if(my $db_conf = new Config::Simple($CONFIGFILE)) {
 	$DBHOST    = $db_conf->param('db.host');
 	$DBPORT    = $db_conf->param('db.port');
 	$DBI       = $db_conf->param('db.dbi');
+	$TMPDIR    = $db_conf->param('tmp.dir');
 } else {
 	die Config::Simple->error();
 }
@@ -242,6 +243,7 @@ my %argv;
   $argv{dbhost}         = $DBHOST;
   $argv{dbport}         = $DBPORT;
   $argv{dbi}            = $DBI;
+  $argv{tmp_dir}        = $TMPDIR;
   $argv{noload}         = $NOLOAD;
   $argv{recreate_cache} = $RECREATE_CACHE;
   $argv{save_tmpfiles}  = $SAVE_TMPFILES;
@@ -267,14 +269,17 @@ warn "Preparing data for inserting into the $DBNAME database\n";
 warn "(This may take a while ...)\n";
 
 ## Create upload entry, if private?
+my $upload_id;
 if($WEBUPLOAD) {
 	validate_upload_parameters($upload_params);
-	
-	$chado->handle_upload(category     => $upload_params->{category},
+
+	$upload_id = $chado->handle_upload(category     => $upload_params->{category},
 	                      upload_date  => $upload_params->{upload_date},
 	                      login_id     => $upload_params->{login_id},
 	                      release_date => $upload_params->{release_date},
-	                      tag          => $upload_params->{tag});
+	                      tag          => $upload_params->{tag},
+	               		 );
+	  
 }
 
 
@@ -300,10 +305,13 @@ $chado->flush_caches();
 
 $chado->load_data() unless $NOLOAD;
 
+if($WEBUPLOAD && $TRACKINGID && !$NOLOAD) {
+	$chado->update_tracker($TRACKINGID, $upload_id);
+}
+
 $chado->remove_lock();
 
 exit(0);
-
 
 =cut
 
@@ -457,10 +465,10 @@ sub validate_genome_properties {
 				croak 'Must provide a accession for foreign IDs.' unless $acc;
 				
 				my $ver = $dbxref->{ver};
-				$ver ||= 1;
+				$ver ||= '';
 				
 				my $desc = $dbxref->{desc};
-				$desc ||= 1;
+				$desc ||= '\N';
 				
 				if($type eq 'primary_dbxref') {
 					croak 'Primary foreign ID re-defined.' if defined($dx{primary});

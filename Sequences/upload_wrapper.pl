@@ -69,6 +69,17 @@ my $sql = qq/UPDATE tracker SET step = ? WHERE tracker_id = $tracking_id/;
 my $update_step_sth = $dbh->prepare($sql);
 
 
+# Keep track of progress in tracker table
+my $next_step = 2;
+
+
+# If recovering from a previous failed run, 
+# reset the failed column in the tracker table
+if($RECOVER) {
+	my $sql = qq/UPDATE tracker SET failed = FALSE WHERE tracker_id = $tracking_id/;
+	$dbh->do($sql);
+}
+
 ## Loading
 
 # Check for other loading scripts currently running.
@@ -104,7 +115,7 @@ my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 
 if($success) {
 	# Update step
-	$update_step_sth->execute(2);
+	$update_step_sth->execute($next_step++);
 } else {
 	my $err_msg = "Loading script failed\n $stderr";
 	handle_error($dbh, $tracking_id, $err_msg);
@@ -123,6 +134,7 @@ if($success) {
 my $now = strftime "%Y-%m-%d %H:%M:%S", localtime;
 $sql = qq/UPDATE tracker SET end_date = '$now' WHERE tracker_id = $tracking_id/;
 $dbh->do($sql);
+$update_step_sth->execute($next_step++);
 
 # Delete tmp files
 clean_up(@remove_tmp_files);

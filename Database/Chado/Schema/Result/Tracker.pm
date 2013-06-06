@@ -151,7 +151,7 @@ __PACKAGE__->belongs_to(
   "login",
   "Database::Chado::Schema::Result::Login",
   { login_id => "login_id" },
-  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 upload
@@ -167,16 +167,16 @@ __PACKAGE__->belongs_to(
   "Database::Chado::Schema::Result::Upload",
   { upload_id => "upload_id" },
   {
-    is_deferrable => 0,
+    is_deferrable => 1,
     join_type     => "LEFT",
-    on_delete     => "NO ACTION",
+    on_delete     => "CASCADE,",
     on_update     => "NO ACTION",
   },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-03 13:58:21
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:87/z2N3fQKRd640SFBxXVQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-04 16:47:12
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iUaQ76Iw4AXDlQE1F2Z50A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

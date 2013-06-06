@@ -3,110 +3,230 @@
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+	
+	<TMPL_IF some_errors>
+		<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
+	</TMPL_IF>
 
-	<form id="genomeUploadForm" class="form" action="/upload_genome/" method="post" enctype="multipart/form-data">
-		<fieldset class="form-inline">
-			<input id="attachFile" class="input" type="file" name="genomeFile" required></input>
-			<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
-			<div class="progress progress-striped active">
-				<div class="bar" style="width:100%;display:none">Please wait while your sequence is being uploaded. This may take a while...</div>
-			</div>
-			<!--button type="button" class="btn btn-small btn-primary" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button-->
-		</fieldset>
-
+	<form id="genomeUploadForm" class="form" action="<TMPL_VAR rm>" method="post" enctype="multipart/form-data">
+	
+		<TMPL_IF upload_id>
+			<input type="hidden" name="upload_id" value="<TMPL_VAR upload_id>">
+		</TMPL_IF>
+		
 		<fieldset class="form-horizontal">
 			<span class="help-block" style="margin:10px"> The following fields are required:</span>
+			<TMPL_IF new_genome>
+			<div class="control-group">
+				<label class="control-label">DNA sequence FASTA file</label>
+				<div class="controls">
+					<input id="attachFile" class="input" type="file" name="g_file" required>
+					<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
+					<TMPL_VAR err_g_file>
+				</div>
+			</div>
+			</TMPL_IF>
 			<div class="control-group">
 				<label class="control-label" for="inputGenomeName">Genome Name</label>
 				<div class="controls">
-					<input type="text" name="genomeName" id="inputGenomeName" required>
-				</div>
-			</div>
-			<div class="control-group">
-				<label class="control-label" for="inputAliasName">Alias Name</label>
-				<div class="controls">
-					<input type="text" name="aliasName" id="inputAliasName" required>
-				</div>
-			</div>
-			<div class="control-group">
-				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
-				<div class="controls">
-					<input type="text" name="isolationDate" id="inputIsolationDate" placeholder="DD/MM/YYYY" required>
+					<input type="text" name="g_name" id="inputGenomeName" value="<TMPL_VAR g_name>" required>
+						<TMPL_VAR err_g_name>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputHostSource">Isolation Host Source</label>
 				<div class="controls">
-					<input type="text" name="hostSource" id="inputHostSource" required>
+					<input type="text" name="g_source" id="inputHostSource" value="<TMPL_VAR g_source>" required>
+						<TMPL_VAR err_g_source>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
+				<div class="controls">
+					<input type="text" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" value="<TMPL_VAR g_date>" required>						
+						<TMPL_VAR err_g_date>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputIsolationLocation">Location of Isolation</label>
 				<div class="controls">
-					<input type="text" name="isolationLocation" id="inputIsolationLocation" required>
+					<input type="text" name="g_location" id="inputIsolationLocation" value="<TMPL_VAR g_location>" required>
+						<TMPL_VAR err_g_location>
 				</div>
 			</div>
 			<div class="control-group">
-				<label class="control-label" for="inputSpeciesName">Species Name</label>
+				<label class="control-label" for="inputStrain">Strain</label>
 				<div class="controls">
-					<input type="text" name="speciesName" id="inputSpeciesName" value="Escherichia coli" readonly="true" placeholder="Escherichia coli" required>
+					<input type="text" name="g_strain" id="inputStrain" value="<TMPL_VAR g_strain>" required>
+						<TMPL_VAR err_g_strain>
 				</div>
 			</div>
 			<div class="control-group">
 				<label class="control-label" for="inputSerotype">Serotype</label>
 				<div class="controls">
-					<input type="text" name="serotype" id="inputSerotype" required>
+					<input type="text" name="g_serotype" id="inputSerotype" value="<TMPL_VAR g_serotype>" required>
+						<TMPL_VAR err_g_serotype>
 				</div>
 			</div>
+			<TMPL_IF set_privacy>
 			<div class="control-group">
 				<label class="control-label" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="public" id="inputPublic" required checked>
+						<input type="radio" name="g_privacy" value="public" id="inputPublic" <TMPL_IF g_public>checked</TMPL_IF>>
 						Public
 					</label>
-				</div>
-				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" value="private" id="inputPrivate" required>
+						<input type="radio" name="g_privacy" value="private" id="inputPrivate" <TMPL_IF g_private>checked</TMPL_IF>>
 						Private
 					</label>
+					<label class="radio">
+						<input type="radio" name="g_privacy" value="release" id="inputPrivateUntil" <TMPL_IF g_release>checked</TMPL_IF>>
+						Private Until
+						<input type="text" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD" value="<TMPL_VAR g_release_date>">
+					</label>
+					<TMPL_VAR err_g_privacy>
+					<TMPL_VAR err_g_release_date>
 				</div>
+			</div>
+			</TMPL_IF>
+			
+		</fieldset>
+		
+		<TMPL_IF new_genome>
+		<fieldset class="form-inline">
+			<div style="position:relative; margin:20px 0; padding:10px 20px 0px" >
+				<div class="progress progress-striped active">
+					<div class="bar" style="width:100%;display:none">Upload in progress...</div>
+				</div>
+			</div>
+		</fieldset>
+		</TMPL_IF>
+		
+		<hr/>
+		
+		<fieldset class="form-horizontal" id="additionalFields">
+			<span class="help-block" style="margin:10px"> The following fields are optional:</span>
+			<div class="control-group">
+				<label class="control-label" for="inputGroupLabel">
+					Group Label
+				</label>
+				<div class="controls">
+					<input type="text" id="inputGroupLabel" name="g_group" value="<TMPL_VAR g_group>">
+						<span class="help-inline">If multiple uploads are part of same project, assign them a common group descriptor here.</span>
+						<TMPL_VAR err_g_group>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputDescription">
+					Description
+				</label>
+				<div class="controls">
+					<input type="text" id="inputDescription" name="g_description" value="<TMPL_VAR g_description>">
+						<TMPL_VAR err_g_description>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputKeywords">
+					Keywords
+				</label>
+				<div class="controls">
+					<input type="text" id="inputKeywords" name="g_keywords" value="<TMPL_VAR g_keywords>">
+						<span class="help-inline">Separate keywords with a "<strong>,</strong>" (comma).</span>
+						<TMPL_VAR err_g_keywords>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputOwner">
+					Owner
+				</label>
+				<div class="controls">
+					<input type="text" id="inputOwner" name="g_owner" value="<TMPL_VAR g_owner>">
+						<TMPL_VAR err_g_owner>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputSynonym">
+					Genome Alias
+				</label>
+				<div class="controls">
+					<input type="text" id="inputSynonym" name="g_synonym" value="<TMPL_VAR g_synonym>">
+						<TMPL_VAR err_g_synonym>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputDbxrefDB inputDbxrefAcc inputDbxrefVer">
+					External DB Identifier
+				</label>
+				<div class="controls">
+					<div>
+						<input type="text" class="input-medium" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" value="<TMPL_VAR g_dbxref_db>"/>
+						<input type="text" class="input-medium" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" value="<TMPL_VAR g_dbxref_acc>"/>
+						<input type="text" class="input-mini" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" value="<TMPL_VAR g_dbxref_ver>"/>
+					
+						<TMPL_VAR err_g_dbxref_db>
+						<TMPL_VAR err_g_dbxref_acc>
+						<TMPL_VAR err_g_dbxref_ver>
+					</div>
+				</div>
+			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputFinished inputUnfinished">
+					Genome Sequence Status
+				</label>
 				<div class="controls">
 					<label class="radio">
-						<input type="radio" name="inputPrivacy" id="inputPrivateUntil" value="privateUntil">
-						Private Until
-						<input type="text" name="inputPrivateUntilDate" id="inputPrivateUntilText" disabled placeholder="DD/MM/YYYY">
+						<input type="radio" name="g_finished" id="inputFinished" value="yes" <TMPL_IF g_is_finished>checked</TMPL_IF>>
+							Complete
 					</label>
+					<label class="radio">
+						<input type="radio" name="g_finished" id="inputUnfinished" value="no" <TMPL_IF g_not_finished>checked</TMPL_IF>>
+							Incomplete
+					</label>
+					<label class="radio">
+						<input type="radio" name="g_finished" id="inputUnfinished" value="unknown" <TMPL_IF g_unkn_finished>checked</TMPL_IF>>
+							Unspecified
+					</label>
+					<TMPL_VAR err_g_finished>
 				</div>
 			</div>
+			<div class="control-group">
+				<label class="control-label" for="inputMolType">
+					Molecular Type
+				</label>
+		  		<div class="controls">
+				  	<label class="radio">
+				  		<input type="radio" name="g_mol_type" id="inputMolType" value="wgs" <TMPL_IF g_wgs_mtype>checked</TMPL_IF>>
+				  		Whole genome shotgun sequence
+				  	</label>
+				  	<label class="radio">
+				  		<input type="radio" name="g_mol_type" id="inputMolType" value="genome" <TMPL_IF g_gen_mtype>checked</TMPL_IF>>
+				  		Genome
+				  	</label>
+				  	<label class="radio">
+				  		<input type="radio" name="g_mol_type" id="inputMolType" value="chromosome" <TMPL_IF g_chr_mtype>checked</TMPL_IF>>
+				  		Chromosome
+				  	</label>
+				  	<label class="radio">
+				  		<input type="radio" name="g_mol_type" id="inputMolType" value="plasmid" <TMPL_IF g_plas_mtype>checked</TMPL_IF>>
+				  		Plasmid
+				  	</label>
+				  	<label class="radio">
+				  		<input type="radio" name="g_mol_type" id="inputMolType" value="dna" <TMPL_IF g_dna_mtype>checked</TMPL_IF>>
+				  		Unspecified
+				  	</label>
+				  	<TMPL_VAR err_g_mol_type>
+		  		</div>
+		  	</div>
+	
 		</fieldset>
 
-		<fieldset class="form-horizontal" id="additionalFields">
-		</fieldset>
-
-		<hr/>
-
-		<fieldset class="form-inline">
-			<span class="help-block" style="margin:10px"> The following fields are optional:</span>
-			<div style="margin-top:10px">
-				<select id="extraList">
-					<option name="description">Description</option>
-					<option name="finished">Finished</option>
-					<option name="keywords">Keywords</option>
-					<option name="mol_type">Molecular Type</option>
-					<option name="owner">Owner</option>
-					<option name="problem">Problem</option>
-					<option name="score">Score</option>
-					<option name="status">Status</option>
-					<option name="symbol">Symbol</option>
-				</select>
-				<button class="btn" type="button" style="margin:0px 20px 0px 20px" onclick="addField()"><i class="icon-plus"></i></button>
-			</div>
-		</fieldset>
-		<hr/>
-		<button id="submitGenome" type="button" class="btn btn-small btn-success"><i class="icon-upload icon-white"></i> Submit</button>
-		<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
+		
+		<div style="background-color:#FFFFFF" class="form-actions">
+			<button id="submitGenome" type="button" class="btn btn-small btn-success"><i class="icon-upload icon-white"></i> Submit</button>
+			<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
+		</div>
+		
 	</form>
 
 </div>
@@ -143,50 +263,4 @@ $('#submitGenome').click( function() {
 		$('#genomeUploadForm').submit();
 	}
 });
-</script>
-
-<script type="text/javascript">
-function addField() {
-	var attrName = $('#extraList option:selected').attr('name');
-	if (attrName == "description"){
-		$('<div class="control-group"><label class="control-label" for="inputDescription">Description</label><div class="controls"><input type="text" id="inputDescription" name="description"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "finished"){
-		$('<div class="control-group"><label class="control-label" for="inputFinished">Finished</label><div class="controls"><input type="text" id="inputFinished" name="finished"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "keywords"){
-		$('<div class="control-group"><label class="control-label" for="inputKeywords">Keywords</label><div class="controls"><input type="text" id="inputKeywords" name="keywords"><span class="help-inline">Separate keywords with a "<strong>,</strong>" (comma).</span></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "mol_type"){
-		$('<div class="control-group"><label class="control-label" for="inputMolType">MolecularType</label><div class="controls"><label class="radio"><input type="radio" name="inputMolType" input="inputMolType" value="dna" checked>DNA</label><label class="radio"><input type="radio" name="inputMolType" input="inputMolType" value="plasmid">Plasmid</label></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "owner"){
-		$('<div class="control-group"><label class="control-label" for="inputOwner">Owner</label><div class="controls"><input type="text" id="inputOwner" name="owner"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "problem"){
-		$('<div class="control-group"><label class="control-label" for="inputProblem">Problem</label><div class="controls"><input type="text" id="inputProblem" name="problem"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "score"){
-		$('<div class="control-group"><label class="control-label" for="inputScore">Score</label><div class="controls"><input type="text" id="inputScore" name="score"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "status"){
-		$('<div class="control-group"><label class="control-label" for="inputStatus">Status</label><div class="controls"><input type="text" id="inputStatus" name="status"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-	else if (attrName == "symbol"){
-		$('<div class="control-group"><label class="control-label" for="inputSymbol">Symbol</label><div class="controls"><input type="text" id="inputSymbol" name="symbol"></div></div>').appendTo('#additionalFields');
-		$('#extraList option:selected').remove();
-	}
-}
-
-function reload() {
-	location.reload();
-}
 </script>
