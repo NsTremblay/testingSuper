@@ -262,7 +262,8 @@ sub getGenomes {
     	{
     		result_class => 'DBIx::Class::ResultClass::HashRefInflator',
     		columns => [qw/feature_id uniquename/],
-    		join => 'type'
+    		join => ['type'],
+    		order_by    => {-asc => ['me.uniquename']}
     	}
     );
  	

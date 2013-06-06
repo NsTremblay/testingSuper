@@ -87,9 +87,13 @@ sub groupWiseComparisons {
 		$template->param(FEATURES=>$formDataRef);
 	}
 	else{
-		my $groupOneDataRef = $self->_getStrainInfo(\@groupOneStrainNames);
-		my $groupTwoDataRef = $self->_getStrainInfo(\@groupTwoStrainNames);                
+		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
+		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);                
 		$template->param(FEATURES=>$formDataRef);
+		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
+		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
+		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);
+		$template->param(GROUP2SNPDATA=>$groupTwoSnpDataRef);
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
 	}
@@ -104,7 +108,7 @@ Writes out user selected fasta files for PanSeq analysis.
 
 sub _getStrainInfo {
 	my $self = shift;
-	#my $_groupedStrainNames = shift;
+	my $_groupedStrainNames = shift;
 
 	#push (my @strainNames , @{$_groupedStrainNames}); 
 
@@ -112,22 +116,16 @@ sub _getStrainInfo {
 	#$ffwHandle->dbixSchema($self->dbixSchema);
 	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
 
-	#This is just a test
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
 
-	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
-
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my $binaryDataRef = $comparisonHandle->getBinaryData();
-	my $snpDataRef = $comparisonHandle->getSnpData();
+	my $binaryDataRef = $comparisonHandle->getBinaryData($_groupedStrainNames);
+	my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
-	$template->param(FEATURES=>$formDataRef);
-	$template->param(BINARYDATA=>$binaryDataRef);
-	$template->param(SNPDATA=>$snpDataRef);
-	return $template->output();
+	return ($binaryDataRef , $snpDataRef);
 }
 
 1;

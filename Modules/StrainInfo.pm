@@ -91,6 +91,12 @@ my $privateStrainID = $q->param("privateSingleStrainID");
 		
 		my $strainInfoDataRef = $self->_getStrainInfo($strainID, 1);
 		$template->param(METADATA=>$strainInfoDataRef);
+
+		my $strainVirDataRef = $self->_getVirulenceData($strainID);
+		$template->param(VIRDATA=>$strainVirDataRef);
+
+		my $strainAmrDataRef = $self->_getAmrData($strainID);
+		$template->param(AMRDATA=>$strainAmrDataRef);
 		
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
@@ -116,6 +122,12 @@ my $privateStrainID = $q->param("privateSingleStrainID");
 		# Obtain private strain info
 		my $strainInfoDataRef = $self->_getStrainInfo($privateStrainID, 0);
 		$template->param(METADATA => $strainInfoDataRef);
+
+		my $strainVirDataRef = $self->_getVirulenceData($strainID);
+		$template->param(VIRDATA=>$strainVirDataRef);
+
+		my $strainAmrDataRef = $self->_getAmrData($strainID);
+		$template->param(AMRDATA=>$strainAmrDataRef);
 		
 		my $validator = "Return Success";
 		$template->param(VALIDATOR => $validator);
@@ -148,19 +160,19 @@ sub _getStrainInfo {
 		$featureprop_table_name = 'PrivateFeatureprop';
 	}
 
-	my $features = $self->dbixSchema->resultset($feature_table_name)->search({ feature_id => $strainID});
-	my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
+	#my $features = $self->dbixSchema->resultset($feature_table_name)->search({ feature_id => $strainID});
+	#my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
 
 	## GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
 	#Akiff: I will add a sub here to get a list of the virulence factrs and AMR genes
 	
-	while(my $row = $featureprops->next) {
-		my %strainRowData;
-		$strainRowData{'FEATUREID'} = $strainID;
-		$strainRowData{'VALUE'} = $row->value;
-		$strainRowData{'TYPEID'} = $row->type_id;
-		push(@strainMetaData, \%strainRowData);
-	}
+	# while(my $row = $featureprops->next) {
+	# 	my %strainRowData;
+	# 	$strainRowData{'FEATUREID'} = $strainID;
+	# 	$strainRowData{'VALUE'} = $row->value;
+	# 	$strainRowData{'TYPEID'} = $row->type_id;
+	# 	push(@strainMetaData, \%strainRowData);
+	# }
 	return \@strainMetaData;
 }
 
@@ -180,10 +192,14 @@ sub _getVirulenceData {
 		);
 
 	while (my $virulenceDataRow = $virulenceData->next) {
+		my %virRow;
 		if ($virulenceDataRow->presence_absence == 1) {
+			$virRow{'data'} = $virulenceDataRow->gene_name;
+			push (@virulenceData, \%virRow);
 		}
 		else {
 		}
+		
 	}
 	return \@virulenceData;
 }
@@ -204,10 +220,14 @@ sub _getAmrData {
 		);
 
 	while (my $amrDataRow = $amrData->next) {
+		my %amrRow;
 		if ($amrDataRow->presence_absence == 1) {
+			$amrRow{'data'} = $amrDataRow->gene_name;
+			push (@amrData , \%amrRow);
 		}
 		else {
 		}
+		
 	}
 	return \@amrData;
 }

@@ -83,8 +83,8 @@ sub getBinaryData {
 	my $self = shift;
 
 	#For demo purposes we will query the first three strains from the data tables.
-	#my $strainIds = shift;
-	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
+	my $strainIds = shift;
+	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
 	#foreach my $strainId (@{$strainIds}) {
 	#The real strain id's will be passed as array refs;
 	my @lociData;
@@ -106,7 +106,7 @@ sub getBinaryData {
 		$locus{'absent_count'} = 0;
 		push (@lociData , \%locus); 
 	}
-	foreach my $strainId (@strainIds) {
+	foreach my $strainId (@{$strainIds}) {
 		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
 			{strain => "$strainId"},
 			{
@@ -135,8 +135,8 @@ sub getBinaryData {
 sub getSnpData {
 	my $self = shift;
 	#For demo purposes we will query the first three strains from the data tables.
-	#my $strainIds = shift;
-	my @strainIds = (1,2,3,4,5,6,7,8,9,10);
+	my $strainIds = shift;
+	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
 	#foreach my $strainId (@{$strainIds}) {
 	#The real strain id's will be passed as array refs;
 	my @lociData;
@@ -167,7 +167,7 @@ sub getSnpData {
 		push (@lociData , \%locus); 
 	}
 
-	foreach my $strainId (@strainIds) {
+	foreach my $strainId (@{$strainIds}) {
 		my $rawBinaryData = $self->dbixSchema->resultset('RawSnpData')->search(
 			{strain => "$strainId"},
 			{
