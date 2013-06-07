@@ -111,10 +111,10 @@ sub getFormData {
         type_id => '1569'
         },
         {   
-        select => [qw/me.uniquename/],
-        order_by    => {-asc => ['me.uniquename']}
-    }
-    );
+            select => [qw/me.uniquename/],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
     my $formDataRef = $self->_hashFormData($features);
     return $formDataRef;
 }
@@ -191,5 +191,80 @@ sub _hashGenomeUploadFormData {
     }
     return \@genomeUploadFormData;
 }
+
+=cut _getVirulenceFormData
+
+Queries the database for form data to be filled in the virluence factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub _getVirulenceFormData {
+    my $self = shift;
+    my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+        {value => 'Virulence Factor'},
+        {
+            join        => ['type', 'feature'],
+            select      => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+            as          => ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+            group_by    => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
+    return $virulenceFormDataRef;
+}
+
+=cut _getAmrFormData
+
+Queries the database for form data to be filled in the amr factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub _getAmrFormData {
+    my $self = shift;
+    my $_amrFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+        {value => 'Antimicrobial Resistance'},
+        {
+            join        => ['type', 'feature'],
+            select      => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+            as          => ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+            group_by    => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
+    return $amrFormDataRef;
+}
+
+=cut _hashVirAmrFormData
+
+Inputs all column data into a hash table and returns a reference to the hash table.
+Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+i.e. Fasta files must have attributes tagged to them before uploading.
+
+=cut
+
+sub _hashVirAmrFormData {
+    my $self=shift;
+    my $_factorProperties = shift;
+
+    my @factors;
+    
+    while (my $fRow = $_factorProperties->next){
+        my %fRowData;
+        $fRowData{'FEATUREID'}=$fRow->feature_id;
+        $fRowData{'UNIQUENAME'}=$fRow->feature->uniquename;
+        push(@factors, \%fRowData);
+    }
+    return \@factors;
+}
+
+
+
+
+
 
 1;

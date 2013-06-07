@@ -35,6 +35,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
+use Modules::FormDataGenerator;
 
 use Log::Log4perl;
 use Carp;
@@ -70,8 +71,11 @@ Run mode for the virulence factor page
 
 sub virulenceFactors {
 	my $self = shift;
-	my $vFactorsRef = $self->_getVirulenceFactors();
-	my $amrFactorsRef = $self->_getAMRFactors();
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $vFactorsRef = $formDataGenerator->_getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->_getAmrFormData();
+
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
@@ -101,87 +105,6 @@ sub virulenceFactors {
 		$template->param(vFMETAINFO=>$vFMetaInfoRef);
 	}	
 	return $template->output();
-}
-
-
-=head2 _getVirulenceFactors
-
-Queries the database for all the available virulence factors.
-Returns an array reference of virulence factors.
-
-=cut
-
-sub _getVirulenceFactors {
-	my $self = shift;
-	my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{value => 'Virulence Factor'},
-		{
-			join		=> ['type', 'feature'],
-			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by 	=> { -asc => ['uniquename'] }
-		}
-		);
-	$self->_hashFactors($_virulenceFactorProperties);
-
-	# my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-	# 	{'me.value' => 'Virulence Factor' , 'type.cvterm_id' => 'feature.type_id'},
-	# 	{
-	# 		join		=> ['type' , 'feature'],
-	# 		select		=> [ qw/type.cvterm_id feature.name feature.type_id feature.uniquename feature.feature_id/],
-	# 		#as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-	# 		#group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-	# 		order_by 	=> { -asc => ['feature.uniquename'] }
-	# 	}
-	# 	);
-	# $self->_hashFactors($_virulenceFactorProperties);
-}
-
-=head2 _getAMRFactors();
-
-Queries the database for all the available AMR genes. 
-Returns an array reference of virulence factors.
-
-=cut
-
-sub _getAMRFactors {
-	my $self = shift;
-	my $_amrFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{value => 'Antimicrobial Resistance'},
-		{
-			join		=> ['type', 'feature'],
-			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by 	=> { -asc => ['uniquename'] }
-		}
-		);
-	$self->_hashFactors($_amrFactorProperties);
-}
-
-=head2 _hashFactors
-
-Inputs all column data into a hash table and returns a reference to the hash table.
-Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
-i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
-i.e. Fasta files must have attributes tagged to them before uploading.
-
-=cut
-
-sub _hashFactors {
-	my $self=shift;
-	my $_factorProperties = shift;
-
-	my @factors;
-	
-	while (my $fRow = $_factorProperties->next){
-		my %fRowData;
-		$fRowData{'FEATUREID'}=$fRow->feature_id;
-		$fRowData{'UNIQUENAME'}=$fRow->feature->uniquename;
-		push(@factors, \%fRowData);
-	}
-	return \@factors;
 }
 
 =head2 _getVFMetaInfo
