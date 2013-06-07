@@ -22,12 +22,13 @@
 			<TMPL_INCLUDE NAME="group_wise_comparison_form.tmpl">
 		</div>
 
-		<div id="multiStrain" class="container" style="display:none;background-color:#FFFFFF;min-height:560px;margin-top:5px">
+		<span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span>
+		<div id="multiStrain" class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
 			<div class="row-fluid">
-				<div id="svgCanvas" class="span6" style="display:none;padding:5px">
+				<div id="svgCanvas" class="span6" style="padding:5px">
 					<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
 				</div>
-				<div class="span6" id="map_canvas" style="display:none;height:500px;padding:5px"></div>
+				<div class="span6" id="map_canvas" style="height:500px;padding:5px"></div>
 			</div>
 		</div>
 		
