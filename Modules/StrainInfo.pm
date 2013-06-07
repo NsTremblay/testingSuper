@@ -160,19 +160,19 @@ sub _getStrainInfo {
 		$featureprop_table_name = 'PrivateFeatureprop';
 	}
 
-	#my $features = $self->dbixSchema->resultset($feature_table_name)->search({ feature_id => $strainID});
+	my $features = $self->dbixSchema->resultset($feature_table_name)->search({ uniquename => $strainID});
 	#my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
 
 	## GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
-	#Akiff: I will add a sub here to get a list of the virulence factrs and AMR genes
 	
-	# while(my $row = $featureprops->next) {
-	# 	my %strainRowData;
-	# 	$strainRowData{'FEATUREID'} = $strainID;
-	# 	$strainRowData{'VALUE'} = $row->value;
-	# 	$strainRowData{'TYPEID'} = $row->type_id;
-	# 	push(@strainMetaData, \%strainRowData);
-	# }
+	 while(my $row = $features->next) {
+	 	my %strainRowData;
+	 	$strainRowData{'FEATUREID'} = $strainID;
+	 	#$strainRowData{'VALUE'} = $row->value;
+	 	#$strainRowData{'TYPEID'} = $row->type_id;
+	 	$strainRowData{'UNIQUENAME'} = $row->uniquename;
+	 	push(@strainMetaData, \%strainRowData);
+	 }
 	return \@strainMetaData;
 }
 

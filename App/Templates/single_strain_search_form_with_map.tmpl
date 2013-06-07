@@ -60,44 +60,87 @@
 	</form>
 	<div class="span10" id="map_canvas" style="display:none;height:300px;padding:5px"></div>
 	<script>
-		$('#sSSearchButton').click(function(){
-			checkSSFields(sSSearchForm);
-		});
+	$('#sSSearchButton').click(function(){
+		checkSSFields(sSSearchForm);
+	});
 	</script>
 	<script type="text/javascript">
+	
 	function initialize() {
 		var mapOptions = {
-			center: new google.maps.LatLng(49.134890, -122.901435),
-			zoom: 15,
+			//center: new google.maps.LatLng(49.134890, -122.901435),
+			zoom: 6,
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
 		var map = new google.maps.Map(document.getElementById("map_canvas"),
 			mapOptions);
+
+		if(navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(function(position) {
+				var pos = new google.maps.LatLng(position.coords.latitude,
+					position.coords.longitude);
+
+				var infowindow = new google.maps.InfoWindow({
+					map: map,
+					position: pos,
+					content: 'Location found using HTML5.'
+				});
+
+				map.setCenter(pos);
+			}, function() {
+				handleNoGeolocation(true);
+			});
+		} else {
+    // Browser doesn't support Geolocation
+    handleNoGeolocation(false);
+}
+
+function handleNoGeolocation(errorFlag) {
+	if (errorFlag) {
+		var content = 'Error: The Geolocation service failed.';
+	} else {
+		var content = 'Error: Your browser doesn\'t support geolocation.';
 	}
-	function displayMap() {
-		document.getElementById('map_canvas').style.display="block";
-		initialize();
+
+	var options = {
+		map: map,
+		position: new google.maps.LatLng(60, 105),
+		content: content
+	};
+
+	var infowindow = new google.maps.InfoWindow(options);
+	map.setCenter(options.position);
+}
+
+
+//google.maps.event.addDomListener(window, 'load', initialize);
+
+
+}
+function displayMap() {
+	document.getElementById('map_canvas').style.display="block";
+	initialize();
+}
+function checkSSFields(sSSearchForm) {
+	if (sSSearchForm.singleStrainName.value == "") {
+		alert("You must enter a valid search term.");
+		return false;
 	}
-	function checkSSFields(sSSearchForm) {
-		if (sSSearchForm.singleStrainName.value == "") {
-			alert("You must enter a valid search term.");
-			return false;
-		}
-		else {
-			$('#sSSearchForm').submit();
-			return true;
-		}
+	else {
+		$('#sSSearchForm').submit();
+		return true;
 	}
-	function checkSingleSeq() {
-		if ($('#validator').is(':empty')) {
-		}
-		else {
+}
+function checkSingleSeq() {
+	if ($('#validator').is(':empty')) {
+	}
+	else {
 		$('#svgCanvas').show("slow", displayMap(), $('#sSeqDiv').show("slow"));
-		}
 	}
-	function onLoadCheck() {
-		initialize();
-		checkSingleSeq();
-	}
-	</script>
+}
+function onLoadCheck() {
+	initialize();
+	checkSingleSeq();
+}
+</script>
 </div>
