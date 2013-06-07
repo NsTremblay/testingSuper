@@ -33,7 +33,7 @@ package Modules::FormDataGenerator;
 use strict;
 use warnings;
 use FindBin;
-use lib 'FindBin::Bin/../';
+use lib "$FindBin::Bin/../";
 use Log::Log4perl;
 use Carp;
 
