@@ -35,7 +35,7 @@ package Modules::GroupWiseComparisons;
 use strict;
 use warnings;
 use FindBin;
-use lib 'FindBin::Bin/../';
+use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
