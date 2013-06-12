@@ -115,7 +115,6 @@ sub getBinaryData {
 			);
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
-			print STDERR @locus . "\n";
 			if ($rawBinaryDataRow->presence_absence == 1) {
 				push ($locus[0]->{'present'} , {strain => $rawBinaryDataRow->strain});
 				$locus[0]->{'present_count'}++;

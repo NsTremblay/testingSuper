@@ -47,7 +47,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'virulence_factors'=>'virulenceFactors'
+		'virulence_factors'=>'virulenceFactors',
+		'virulence_amr_by_strain'=>'virulenceAmrByStrain'
 		);
 }
 
@@ -73,8 +74,9 @@ sub virulenceFactors {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $vFactorsRef = $formDataGenerator->_getVirulenceFormData();
-	my $amrFactorsRef = $formDataGenerator->_getAmrFormData();
+	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
+	my $strainListRef = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
@@ -82,15 +84,15 @@ sub virulenceFactors {
 	my $vfFeatureId = $q->param("VFName");
 	my $amrFeatureId = $q->param("AMRName");
 
+	$template->param(vFACTORS=>$vFactorsRef);
+	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(amrFACTORS=>$amrFactorsRef);
+
 	if ((!defined $vfFeatureId || $vfFeatureId eq "") && (!defined $amrFeatureId || $amrFeatureId eq "")){
-		$template->param(vFACTORS=>$vFactorsRef);
-		$template->param(amrFACTORS=>$amrFactorsRef);
 	}
 	elsif (defined $amrFeatureId || $amrFeatureId ne "") {
 		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
 		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
-		$template->param(vFACTORS=>$vFactorsRef);
-		$template->param(amrFACTORS=>$amrFactorsRef);
 		my $validator = "Return Success";
 		$template->param(amrVALIDATOR=>$validator);
 		$template->param(amrMETAINFO=>$amrMetaInfoRef);
@@ -98,13 +100,47 @@ sub virulenceFactors {
 	else {
 		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
 		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
-		$template->param(vFACTORS=>$vFactorsRef);
-		$template->param(amrFACTORS=>$amrFactorsRef);
 		my $validator = "Return Success";
 		$template->param(vfVALIDATOR=>$validator);
 		$template->param(vFMETAINFO=>$vFMetaInfoRef);
 	}	
 	return $template->output();
+}
+
+=head2 virulenceAmrByStrain
+
+Run mode for selected virulence and amr by strain
+
+=cut
+
+sub virulenceAmrByStrain {
+	my $self = shift;
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
+	my $strainListRef = $formDataGenerator->getFormData();
+
+	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
+
+	my $q = $self->query();
+	my @selectedStrainNames = $q->param("selectedStrains");
+	my @selectedVirulenceFactors = $q->param("selectedVirulence");
+	my @selectedAmrGenes = $q->("selectedAmr");
+
+	$template->param(vFACTORS=>$vFactorsRef);
+	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(amrFACTORS=>$amrFactorsRef);
+
+	# if (!@selectedStrainNames || (!@selectedVirulenceFactors && !@selectedAmrGenes)) {
+	# 	# do nothing because either strain list is empty or the user didnt specify any virulence or amr factors
+	# }
+	# else {
+	# 	my $vfByStrainRef = _getVirulenceByStrain(@selectedStrainNames , @selectedVirulenceFactors);
+	# 	#my $amrByStrainRef = _getAmrByStrain(@selectedStrainNames , @selectedAmrGenes);
+	# 	$template->param(vFACTORSBYSTRAIN=>$vfByStrainRef);
+	# }
+	# return $template->output();
 }
 
 =head2 _getVFMetaInfo
@@ -215,5 +251,20 @@ sub _getAMRMetaInfo {
 	return \@amrMetaData;
 }
 
+sub _getVirulenceByStrain {
+	my $self = shift;
+	my @_selectedStrainNames = shift;
+	my @_selectedVirulenceFactors = shift;
+
+	my $_amrTable = $self->dbixSchema->resultset('RawAmrData')->search(
+	{},
+	{
+		columns => [qw//]
+	}
+		);
+}
+
+sub _getAmrByStrain {
+}
 
 1;

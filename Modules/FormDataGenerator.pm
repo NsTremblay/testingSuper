@@ -199,18 +199,35 @@ Returns an array ref to form entry data.
 
 =cut
 
-sub _getVirulenceFormData {
+# sub getVirulenceFormData {
+#     my $self = shift;
+#     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
+#         {value => 'Virulence Factor'},
+#         {
+#             join        => ['feature'],
+#             select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
+#             as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
+#             order_by    => { -asc => ['uniquename'] }
+#         }
+#         );
+#     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
+#     return $virulenceFormDataRef;
+# }
+
+sub getVirulenceFormData {
     my $self = shift;
-    my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-        {value => 'Virulence Factor'},
+    my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+        {'featureprops.value' => "Virulence Factor" , 'type.name' => "gene"},
         {
-            join        => ['type', 'feature'],
-            select      => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-            as          => ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-            group_by    => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'uniquename'],
+            column  => [qw/feature_id type_id uniquename/],
             order_by    => { -asc => ['uniquename'] }
         }
         );
+
+    print STDERR $_virulenceFactorProperties->first->uniquename . "\n";
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
     return $virulenceFormDataRef;
 }
@@ -222,15 +239,15 @@ Returns an array ref to form entry data.
 
 =cut
 
-sub _getAmrFormData {
+sub getAmrFormData {
     my $self = shift;
-    my $_amrFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-        {value => 'Antimicrobial Resistance'},
+    my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+        {'featureprops.value' => "Antimicrobial Resistance" , 'type.name' => "gene"},
         {
-            join        => ['type', 'feature'],
-            select      => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-            as          => ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-            group_by    => [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
+                        column  => [qw/feature_id type_id uniquename/],
             order_by    => { -asc => ['uniquename'] }
         }
         );
@@ -256,15 +273,11 @@ sub _hashVirAmrFormData {
     while (my $fRow = $_factorProperties->next){
         my %fRowData;
         $fRowData{'FEATUREID'}=$fRow->feature_id;
-        $fRowData{'UNIQUENAME'}=$fRow->feature->uniquename;
+        $fRowData{'UNIQUENAME'}=$fRow->uniquename;
         push(@factors, \%fRowData);
     }
     return \@factors;
 }
-
-
-
-
 
 
 1;

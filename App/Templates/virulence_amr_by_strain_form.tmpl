@@ -1,0 +1,70 @@
+<div class="container" style="padding-bottom:10px">
+
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+
+	<div class="row-fluid">
+		<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+			<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
+				<div style="padding:10px">
+					<fieldset>
+						<span class="help-block">Select on one or more strains</span>
+						<ul id="strainListSelection" style="padding:0px;margin:0px">
+							<TMPL_LOOP NAME=STRAINLIST>
+							<li style="list-style:none">
+								<label class="checkbox">
+									<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+								</label>
+							</li>
+							</TMPL_LOOP>
+						</ul>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+
+		<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+			<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
+				<div style="padding:10px">
+					<fieldset>
+						<span class="help-block">Select on one or more virulence factors</span>
+						<ul id="strainListSelection" style="padding:0px;margin:0px">
+							<TMPL_LOOP NAME=vFACTORS>
+							<li style="list-style:none">
+								<label class="checkbox">
+									<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedVirulence"><TMPL_VAR NAME=UNIQUENAME></input>
+								</label>
+							</li>
+							</TMPL_LOOP>
+						</ul>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+
+		<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+			<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
+				<div style="padding:10px">
+					<fieldset>
+						<span class="help-block">Select on one or more amr genes</span>
+						<ul id="strainListSelection" style="padding:0px;margin:0px">
+							<TMPL_LOOP NAME=amrFACTORS>
+							<li style="list-style:none">
+								<label class="checkbox">
+									<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
+								</label>
+							</li>
+							</TMPL_LOOP>
+						</ul>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+	</div>
+
+	<div class="row-fluid" style="margin:10px 0px 0px 10px">
+			<button class="btn btn-primary span3" type="button" value="Submit"><i class="icon-th icon-white"></i> Compared Selections</button>
+	</div>
+
+</div>
