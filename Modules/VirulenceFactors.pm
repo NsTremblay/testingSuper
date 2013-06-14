@@ -126,21 +126,23 @@ sub virulenceAmrByStrain {
 	my $q = $self->query();
 	my @selectedStrainNames = $q->param("selectedStrains");
 	my @selectedVirulenceFactors = $q->param("selectedVirulence");
-	my @selectedAmrGenes = $q->("selectedAmr");
+	my @selectedAmrGenes = $q->param("selectedAmr");
 
 	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(STRAINLIST=>$strainListRef);
 	$template->param(amrFACTORS=>$amrFactorsRef);
 
-	# if (!@selectedStrainNames || (!@selectedVirulenceFactors && !@selectedAmrGenes)) {
-	# 	# do nothing because either strain list is empty or the user didnt specify any virulence or amr factors
-	# }
-	# else {
-	# 	my $vfByStrainRef = _getVirulenceByStrain(@selectedStrainNames , @selectedVirulenceFactors);
-	# 	#my $amrByStrainRef = _getAmrByStrain(@selectedStrainNames , @selectedAmrGenes);
-	# 	$template->param(vFACTORSBYSTRAIN=>$vfByStrainRef);
-	# }
-	# return $template->output();
+	if (!@selectedStrainNames || (!@selectedVirulenceFactors && !@selectedAmrGenes)) {
+		print STDERR " If executed" . "\n";
+		# do nothing because either strain list is empty or the user didnt specify any virulence or amr factors
+	}
+	else {
+		my $vfByStrainRef = $self->_getVirulenceByStrain(@selectedStrainNames , @selectedVirulenceFactors);
+		print STDERR " Else executed" . "\n";
+		#my $amrByStrainRef = $self->_getAmrByStrain(@selectedStrainNames , @selectedAmrGenes);
+		$template->param(vFACTORSBYSTRAIN=>$vfByStrainRef);
+	}
+	return $template->output();
 }
 
 =head2 _getVFMetaInfo
@@ -256,12 +258,32 @@ sub _getVirulenceByStrain {
 	my @_selectedStrainNames = shift;
 	my @_selectedVirulenceFactors = shift;
 
-	my $_amrTable = $self->dbixSchema->resultset('RawAmrData')->search(
-	{},
-	{
-		columns => [qw//]
+	my @strainTableNames;
+	my @virulenceTableData;
+
+	my $_dataTable = $self->dbixSchema->resultset('RawVirulenceData');
+
+	foreach my $virGeneName (@_selectedVirulenceFactors) {
+		my $_dataTableByVirGene = $_dataTable->search(
+			{gene_name => "$virGeneName"},
+			{
+				column => [qw/strain gene_name presence_absence/]
+			}
+			);
+
+		my %virGene;
+		my @presenceAbsence;
+
+		push (@presenceAbsence , $virGeneName);
+
+		foreach my $strainName (@_selectedStrainNames) {
+			my $_dataRowByStrain = $_dataTableByVirGene->find({strain => "$strainName"});
+			push (@presenceAbsence , $_dataRowByStrain->gene_name);
+		}
+		$virGene{'presence_absence'} = \@presenceAbsence;
+		push (@virulenceTableData, \%virGene);
 	}
-		);
+	return \@virulenceTableData;
 }
 
 sub _getAmrByStrain {
