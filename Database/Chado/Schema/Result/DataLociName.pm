@@ -32,8 +32,9 @@ __PACKAGE__->table("data_loci_names");
 
 =head2 locus_name
 
-  data_type: 'text'
+  data_type: 'varchar'
   is_nullable: 1
+  size: 50
 
 =cut
 
@@ -46,7 +47,7 @@ __PACKAGE__->add_columns(
     sequence          => "data_loci_names_serial_id_seq",
   },
   "locus_name",
-  { data_type => "text", is_nullable => 1 },
+  { data_type => "varchar", is_nullable => 1, size => 50 },
 );
 
 =head1 PRIMARY KEY
@@ -62,8 +63,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("serial_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-04 13:04:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pIQDz/3RHnhKXH0x5w6vJA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-15 13:08:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yxRlqDQNP9D7a+4tXYSNCw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

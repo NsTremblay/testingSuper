@@ -34,7 +34,6 @@ __PACKAGE__->table("upload");
 
   data_type: 'integer'
   default_value: 0
-  is_foreign_key: 1
   is_nullable: 0
 
 =head2 tag
@@ -75,12 +74,7 @@ __PACKAGE__->add_columns(
     sequence          => "upload_upload_id_seq",
   },
   "login_id",
-  {
-    data_type      => "integer",
-    default_value  => 0,
-    is_foreign_key => 1,
-    is_nullable    => 0,
-  },
+  { data_type => "integer", default_value => 0, is_nullable => 0 },
   "tag",
   { data_type => "varchar", default_value => "", is_nullable => 0, size => 50 },
   "release_date",
@@ -117,21 +111,6 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("upload_id");
 
 =head1 RELATIONS
-
-=head2 login
-
-Type: belongs_to
-
-Related object: L<Database::Chado::Schema::Result::Login>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "login",
-  "Database::Chado::Schema::Result::Login",
-  { login_id => "login_id" },
-  { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
-);
 
 =head2 permissions
 
@@ -179,8 +158,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-08 14:44:05
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:R4cUpkPorkPyOkytvPvSvQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-15 13:08:45
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:lvUuZ00Y8JfevksBYkj5Ww
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

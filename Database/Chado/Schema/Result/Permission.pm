@@ -39,7 +39,6 @@ __PACKAGE__->table("permission");
 =head2 login_id
 
   data_type: 'integer'
-  is_foreign_key: 1
   is_nullable: 0
 
 =head2 can_modify
@@ -65,7 +64,7 @@ __PACKAGE__->add_columns(
   "upload_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "login_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  { data_type => "integer", is_nullable => 0 },
   "can_modify",
   { data_type => "boolean", is_nullable => 0 },
   "can_share",
@@ -102,21 +101,6 @@ __PACKAGE__->add_unique_constraint("permission_c1", ["upload_id", "login_id"]);
 
 =head1 RELATIONS
 
-=head2 login
-
-Type: belongs_to
-
-Related object: L<Database::Chado::Schema::Result::Login>
-
-=cut
-
-__PACKAGE__->belongs_to(
-  "login",
-  "Database::Chado::Schema::Result::Login",
-  { login_id => "login_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
-);
-
 =head2 upload
 
 Type: belongs_to
@@ -133,8 +117,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-08 14:44:05
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zcg+0BEvCcr99nk1wJX91A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-15 13:08:45
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zzanJCvD2IXCcwPQAsS0uA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
