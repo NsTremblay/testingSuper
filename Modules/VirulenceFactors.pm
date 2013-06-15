@@ -137,8 +137,9 @@ sub virulenceAmrByStrain {
 	}
 	else {
 		my ($vfByStrainRef , $strainTableNamesRef) = $self->_getVirulenceByStrain(\@selectedStrainNames , \@selectedVirulenceFactors);
-		#my $amrByStrainRef = $self->_getAmrByStrain(@selectedStrainNames , @selectedAmrGenes);
+		my ($amrByStrainRef , $strainTableNamesRef) = $self->_getAmrByStrain(\@selectedStrainNames , \@selectedAmrGenes);
 		$template->param(vFACTORSBYSTRAIN=>$vfByStrainRef);
+		$template->param(amrFACTORSBYSTRAIN=>$amrByStrainRef);
 		$template->param(STRAINTABLENAMES=>$strainTableNamesRef);
 	}
 	return $template->output();
@@ -305,6 +306,55 @@ sub _getVirulenceByStrain {
 }
 
 sub _getAmrByStrain {
+	my $self = shift;
+	my $_selectedStrainNames = shift;
+	my $_selectedAmrFactors = shift;
+
+	my @_selectedStrainNames = @{$_selectedStrainNames};
+	my @_selectedAmrFactors = @{$_selectedAmrFactors};
+
+	my @strainTableNames;
+	my @unprunedTableNames;
+	my @amrTableData;
+
+	my $_dataTable = $self->dbixSchema->resultset('RawAmrData');
+
+	foreach my $amrGeneName (@_selectedAmrFactors) {
+		my $_dataTableByAmrGene = $_dataTable->search(
+			{'gene_name' => "$amrGeneName"},
+			{
+				select => [qw/me.strain me.gene_name me.presence_absence/],
+				as 	=> ['strain', 'gene_name', 'presence_absence']
+			}
+			);
+
+		my %amrGene;
+		my @presenceAbsence;
+
+		foreach my $strainName (@_selectedStrainNames) {
+			my %strainName;
+			my %data;
+			my $presenceAbsenceValue = "Unknown";
+			my $_dataRowByStrain = $_dataTableByAmrGene->search(
+				{'strain' => "$strainName"},
+				{
+					column => [qw/strain gene_name presence_absence/]
+				}
+				);
+			while (my $_dataRow = $_dataRowByStrain->next) {
+				$presenceAbsenceValue = $_dataRow->presence_absence;
+			}
+			$strainName{'strain_name'} = $strainName;
+			push (@unprunedTableNames , \%strainName);
+			$data{'value'} = $presenceAbsenceValue;
+			push (@presenceAbsence , \%data);
+		}
+		$amrGene{'presence_absence'} = \@presenceAbsence;
+		$amrGene{'gene_name'} = $amrGeneName;
+		push (@amrTableData, \%amrGene);
+	}
+	my @strainTableNames = @unprunedTableNames[0..scalar(@_selectedStrainNames)-1];
+	return (\@amrTableData , \@strainTableNames);
 }
 
 1;
