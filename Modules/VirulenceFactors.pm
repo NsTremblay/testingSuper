@@ -74,7 +74,7 @@ sub virulenceFactors {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my ($vFactorsRef , $jsonData) = $formDataGenerator->getVirulenceFormData();
 	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
 	my $strainListRef = $formDataGenerator->getFormData();
 
@@ -85,6 +85,9 @@ sub virulenceFactors {
 	my $amrFeatureId = $q->param("AMRName");
 
 	$template->param(vFACTORS=>$vFactorsRef);
+
+	$template->param(JSON=>$jsonData);
+
 	$template->param(STRAINLIST=>$strainListRef);
 	$template->param(amrFACTORS=>$amrFactorsRef);
 
@@ -117,7 +120,7 @@ sub virulenceAmrByStrain {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my ($vFactorsRef , $jsonData) = $formDataGenerator->getVirulenceFormData();
 	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
 	my $strainListRef = $formDataGenerator->getFormData();
 
@@ -129,6 +132,9 @@ sub virulenceAmrByStrain {
 	my @selectedAmrGenes = $q->param("selectedAmr");
 
 	$template->param(vFACTORS=>$vFactorsRef);
+
+	$template->param(JSON=>$jsonData);
+	
 	$template->param(STRAINLIST=>$strainListRef);
 	$template->param(amrFACTORS=>$amrFactorsRef);
 

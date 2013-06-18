@@ -37,6 +37,8 @@ use lib 'FindBin::Bin/../';
 use Log::Log4perl;
 use Carp;
 
+use JSON;
+
 #object creation
 sub new {
 	my ($class) = shift;
@@ -199,21 +201,6 @@ Returns an array ref to form entry data.
 
 =cut
 
-# sub getVirulenceFormData {
-#     my $self = shift;
-#     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-#         {value => 'Virulence Factor'},
-#         {
-#             join        => ['feature'],
-#             select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
-#             as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
-#             order_by    => { -asc => ['uniquename'] }
-#         }
-#         );
-#     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
-#     return $virulenceFormDataRef;
-# }
-
 sub getVirulenceFormData {
     my $self = shift;
     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
@@ -226,10 +213,18 @@ sub getVirulenceFormData {
             order_by    => { -asc => ['uniquename'] }
         }
         );
-
-    print STDERR $_virulenceFactorProperties->first->uniquename . "\n";
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
-    return $virulenceFormDataRef;
+    
+    ###Test to return a JSON object###
+
+    my $json = JSON::XS->new->pretty(1);
+    my %jsonHash;
+    $jsonHash{'data'} = $virulenceFormDataRef;
+    my $encodedText = $json->encode(\%jsonHash);
+
+    ####
+
+    return ($virulenceFormDataRef , $encodedText);
 }
 
 =cut _getAmrFormData
