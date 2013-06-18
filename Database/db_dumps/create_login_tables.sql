@@ -19,7 +19,7 @@ ALTER TABLE public.sessions OWNER TO postgres;
 --
 
 CREATE TABLE login (
-	login_id        integer NOT NULL,
+	login_id       integer NOT NULL,
 	username       varchar(20) NOT NULL,
 	password       varchar(22) NOT NULL,
 	firstname      varchar(30) NOT NULL DEFAULT '',

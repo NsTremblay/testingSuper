@@ -157,9 +157,24 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 trackers
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-15 13:08:45
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:lvUuZ00Y8JfevksBYkj5Ww
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::Tracker>
+
+=cut
+
+__PACKAGE__->has_many(
+  "trackers",
+  "Database::Chado::Schema::Result::Tracker",
+  { "foreign.upload_id" => "self.upload_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-06-18 14:19:17
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iXMGE9zs6kNf9q2aW7GSWA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -6172,6 +6172,44 @@ ALTER SEQUENCE dbxrefprop_dbxrefprop_id_seq OWNED BY dbxrefprop.dbxrefprop_id;
 
 
 --
+-- Name: deleted_upload; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE deleted_upload (
+    deleted_upload_id integer NOT NULL,
+    upload_id integer NOT NULL,
+    upload_date timestamp without time zone NOT NULL,
+    cc_feature_id integer NOT NULL,
+    cc_uniquename text NOT NULL,
+    username character varying(20) NOT NULL,
+    deletion_date timestamp without time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.deleted_upload OWNER TO postgres;
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE deleted_upload_deleted_upload_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.deleted_upload_deleted_upload_id_seq OWNER TO postgres;
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE deleted_upload_deleted_upload_id_seq OWNED BY deleted_upload.deleted_upload_id;
+
+
+--
 -- Name: dfeatureloc; Type: VIEW; Schema: public; Owner: postgres
 --
 
@@ -10447,6 +10485,50 @@ information on other columns.';
 
 
 --
+-- Name: private_feature_dbxref; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_feature_dbxref (
+    feature_dbxref_id integer NOT NULL,
+    feature_id integer NOT NULL,
+    dbxref_id integer NOT NULL,
+    is_current boolean DEFAULT true NOT NULL
+);
+
+
+ALTER TABLE public.private_feature_dbxref OWNER TO postgres;
+
+--
+-- Name: TABLE private_feature_dbxref; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE private_feature_dbxref IS 'A mirror of the feature_dbxref table.
+ Only difference is that this table references features in the private_feature table.  See
+comments on feature_dbxref table for more information.';
+
+
+--
+-- Name: private_feature_dbxref_feature_dbxref_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE private_feature_dbxref_feature_dbxref_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_feature_dbxref_feature_dbxref_id_seq OWNER TO postgres;
+
+--
+-- Name: private_feature_dbxref_feature_dbxref_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE private_feature_dbxref_feature_dbxref_id_seq OWNED BY private_feature_dbxref.feature_dbxref_id;
+
+
+--
 -- Name: private_feature_feature_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
@@ -10465,6 +10547,52 @@ ALTER TABLE public.private_feature_feature_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE private_feature_feature_id_seq OWNED BY private_feature.feature_id;
+
+
+--
+-- Name: private_feature_relationship; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_feature_relationship (
+    feature_relationship_id integer NOT NULL,
+    subject_id integer NOT NULL,
+    object_id integer NOT NULL,
+    type_id integer NOT NULL,
+    value text,
+    rank integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.private_feature_relationship OWNER TO postgres;
+
+--
+-- Name: TABLE private_feature_relationship; Type: COMMENT; Schema: public; Owner: postgres
+--
+
+COMMENT ON TABLE private_feature_relationship IS 'A mirror of the feature_relationship table.
+ Only difference is that this table references features in the private_feature table.  See
+comments on feature_relationship table for more information.';
+
+
+--
+-- Name: private_feature_relationship_feature_relationship_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE private_feature_relationship_feature_relationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.private_feature_relationship_feature_relationship_id_seq OWNER TO postgres;
+
+--
+-- Name: private_feature_relationship_feature_relationship_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE private_feature_relationship_feature_relationship_id_seq OWNED BY private_feature_relationship.feature_relationship_id;
 
 
 --
@@ -10515,16 +10643,6 @@ ALTER TABLE public.private_featureprop_featureprop_id_seq OWNER TO postgres;
 
 ALTER SEQUENCE private_featureprop_featureprop_id_seq OWNED BY private_featureprop.featureprop_id;
 
-
---
--- Name: private_genome_names; Type: VIEW; Schema: public; Owner: matt
---
-
-CREATE VIEW private_genome_names AS
-    SELECT private_feature.feature_id, private_feature.name, private_feature.uniquename, private_feature.type_id, private_feature.upload_id FROM private_feature WHERE (private_feature.type_id = 1542);
-
-
-ALTER TABLE public.private_genome_names OWNER TO matt;
 
 --
 -- Name: project; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
@@ -12366,6 +12484,47 @@ ALTER TABLE public.tableinfo_tableinfo_id_seq OWNER TO postgres;
 --
 
 ALTER SEQUENCE tableinfo_tableinfo_id_seq OWNED BY tableinfo.tableinfo_id;
+
+
+--
+-- Name: tracker; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE tracker (
+    tracker_id integer NOT NULL,
+    step integer DEFAULT 0 NOT NULL,
+    failed boolean DEFAULT false NOT NULL,
+    feature_name character varying(255),
+    command character varying(255),
+    pid character varying(100),
+    upload_id integer,
+    login_id integer DEFAULT 0 NOT NULL,
+    start_date timestamp without time zone DEFAULT now() NOT NULL,
+    end_date timestamp without time zone
+);
+
+
+ALTER TABLE public.tracker OWNER TO postgres;
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
+--
+
+CREATE SEQUENCE tracker_tracker_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.tracker_tracker_id_seq OWNER TO postgres;
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
+--
+
+ALTER SEQUENCE tracker_tracker_id_seq OWNED BY tracker.tracker_id;
 
 
 --
@@ -31140,6 +31299,13 @@ ALTER TABLE ONLY dbxrefprop ALTER COLUMN dbxrefprop_id SET DEFAULT nextval('dbxr
 
 
 --
+-- Name: deleted_upload_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY deleted_upload ALTER COLUMN deleted_upload_id SET DEFAULT nextval('deleted_upload_deleted_upload_id_seq'::regclass);
+
+
+--
 -- Name: eimage_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -31784,6 +31950,20 @@ ALTER TABLE ONLY private_feature ALTER COLUMN feature_id SET DEFAULT nextval('pr
 
 
 --
+-- Name: feature_dbxref_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_dbxref ALTER COLUMN feature_dbxref_id SET DEFAULT nextval('private_feature_dbxref_feature_dbxref_id_seq'::regclass);
+
+
+--
+-- Name: feature_relationship_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_relationship ALTER COLUMN feature_relationship_id SET DEFAULT nextval('private_feature_relationship_feature_relationship_id_seq'::regclass);
+
+
+--
 -- Name: featureprop_id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -32068,6 +32248,13 @@ ALTER TABLE ONLY synonym ALTER COLUMN synonym_id SET DEFAULT nextval('synonym_sy
 --
 
 ALTER TABLE ONLY tableinfo ALTER COLUMN tableinfo_id SET DEFAULT nextval('tableinfo_tableinfo_id_seq'::regclass);
+
+
+--
+-- Name: tracker_id; Type: DEFAULT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker ALTER COLUMN tracker_id SET DEFAULT nextval('tracker_tracker_id_seq'::regclass);
 
 
 --
@@ -35058,6 +35245,11 @@ COPY cvterm (cvterm_id, cv_id, name, definition, dbxref_id, is_obsolete, is_rela
 2311	12	Note		3132	0	1
 2312	12	Gap		3133	0	1
 2313	12	score		3134	0	1
+2314	2	serotype	\N	3135	0	0
+2315	2	strain	\N	3136	0	0
+2316	2	isolation_host	\N	3137	0	0
+2317	2	isolation_location	\N	3138	0	0
+2318	2	isolation_date	\N	3139	0	0
 \.
 
 
@@ -35065,7 +35257,7 @@ COPY cvterm (cvterm_id, cv_id, name, definition, dbxref_id, is_obsolete, is_rela
 -- Name: cvterm_cvterm_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('cvterm_cvterm_id_seq', 2313, true);
+SELECT pg_catalog.setval('cvterm_cvterm_id_seq', 2318, true);
 
 
 --
@@ -44183,6 +44375,7 @@ COPY db (db_id, name, description, urlprefix, url) FROM stdin;
 80	HGNC	\N	\N	\N
 81	Invitrogen	\N	\N	\N
 82	SOFP	\N	\N	\N
+83	Genodo	A DB reference for data stored in our database.	\N	\N
 \.
 
 
@@ -44190,7 +44383,7 @@ COPY db (db_id, name, description, urlprefix, url) FROM stdin;
 -- Name: db_db_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('db_db_id_seq', 82, true);
+SELECT pg_catalog.setval('db_db_id_seq', 83, true);
 
 
 --
@@ -47332,6 +47525,11 @@ COPY dbxref (dbxref_id, db_id, accession, version, description) FROM stdin;
 3132	82	Note		\N
 3133	82	Gap		\N
 3134	82	score		\N
+3135	83	serotype		\N
+3136	83	strain		\N
+3137	83	isolation_host		\N
+3138	83	isolation_location		\N
+3139	83	isolation_date		\N
 \.
 
 
@@ -47339,7 +47537,7 @@ COPY dbxref (dbxref_id, db_id, accession, version, description) FROM stdin;
 -- Name: dbxref_dbxref_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('dbxref_dbxref_id_seq', 3134, true);
+SELECT pg_catalog.setval('dbxref_dbxref_id_seq', 3139, true);
 
 
 --
@@ -47355,6 +47553,21 @@ COPY dbxrefprop (dbxrefprop_id, dbxref_id, type_id, value, rank) FROM stdin;
 --
 
 SELECT pg_catalog.setval('dbxrefprop_dbxrefprop_id_seq', 1, false);
+
+
+--
+-- Data for Name: deleted_upload; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY deleted_upload (deleted_upload_id, upload_id, upload_date, cc_feature_id, cc_uniquename, username, deletion_date) FROM stdin;
+\.
+
+
+--
+-- Name: deleted_upload_deleted_upload_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('deleted_upload_deleted_upload_id_seq', 1, false);
 
 
 --
@@ -48468,7 +48681,7 @@ COPY organism (organism_id, abbreviation, genus, species, common_name, comment) 
 10	S.cerevisiae	Saccharomyces	cerevisiae	yeast	\N
 11	X.laevis	Xenopus	laevis	frog	\N
 12	D.discoideum	Dictyostelium	discoideum	dicty	\N
-13	E.coli	Escherichia	coli	Escherichia coli	
+13	E.coli	Escherichia	coli	Escherichia coli	All species in Genodo are E.coli. Use feature properties strain and serotype to distinguish E.coli isolates.
 \.
 
 
@@ -48743,10 +48956,40 @@ COPY private_feature (feature_id, dbxref_id, organism_id, name, uniquename, resi
 
 
 --
+-- Data for Name: private_feature_dbxref; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY private_feature_dbxref (feature_dbxref_id, feature_id, dbxref_id, is_current) FROM stdin;
+\.
+
+
+--
+-- Name: private_feature_dbxref_feature_dbxref_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('private_feature_dbxref_feature_dbxref_id_seq', 1, false);
+
+
+--
 -- Name: private_feature_feature_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
 SELECT pg_catalog.setval('private_feature_feature_id_seq', 1, false);
+
+
+--
+-- Data for Name: private_feature_relationship; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY private_feature_relationship (feature_relationship_id, subject_id, object_id, type_id, value, rank) FROM stdin;
+\.
+
+
+--
+-- Name: private_feature_relationship_feature_relationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('private_feature_relationship_feature_relationship_id_seq', 1, false);
 
 
 --
@@ -48995,7 +49238,6 @@ SELECT pg_catalog.setval('quantificationprop_quantificationprop_id_seq', 1, fals
 --
 
 COPY sessions (id, a_session) FROM stdin;
-d86cbcfaeb694ad0efe3a261173be219	\\x04080831323334353637380408080803050000000680700000000000000e0000005f53455353494f4e5f4554494d450a2064383663626366616562363934616430656665336132363131373362653231390b0000005f53455353494f4e5f49440659669151000000000e0000005f53455353494f4e5f4154494d450a0e3138342e36342e3133362e313338140000005f53455353494f4e5f52454d4f54455f41444452064b669151000000000e0000005f53455353494f4e5f4354494d45
 \.
 
 
@@ -49372,6 +49614,21 @@ COPY tableinfo (tableinfo_id, name, primary_key_column, is_view, view_on_table_i
 --
 
 SELECT pg_catalog.setval('tableinfo_tableinfo_id_seq', 1, false);
+
+
+--
+-- Data for Name: tracker; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY tracker (tracker_id, step, failed, feature_name, command, pid, upload_id, login_id, start_date, end_date) FROM stdin;
+\.
+
+
+--
+-- Name: tracker_tracker_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
+--
+
+SELECT pg_catalog.setval('tracker_tracker_id_seq', 1, false);
 
 
 --
@@ -52020,6 +52277,14 @@ ALTER TABLE ONLY dbxrefprop
 
 
 --
+-- Name: deleted_upload_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY deleted_upload
+    ADD CONSTRAINT deleted_upload_pkey PRIMARY KEY (deleted_upload_id);
+
+
+--
 -- Name: eimage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -53324,11 +53589,43 @@ ALTER TABLE ONLY private_feature
 
 
 --
+-- Name: private_feature_dbxref_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_c1 UNIQUE (feature_id, dbxref_id);
+
+
+--
+-- Name: private_feature_dbxref_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_pkey PRIMARY KEY (feature_dbxref_id);
+
+
+--
 -- Name: private_feature_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
 --
 
 ALTER TABLE ONLY private_feature
     ADD CONSTRAINT private_feature_pkey PRIMARY KEY (feature_id);
+
+
+--
+-- Name: private_feature_relationship_c1; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_c1 UNIQUE (subject_id, object_id, type_id, rank);
+
+
+--
+-- Name: private_feature_relationship_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_pkey PRIMARY KEY (feature_relationship_id);
 
 
 --
@@ -53953,6 +54250,14 @@ ALTER TABLE ONLY tableinfo
 
 ALTER TABLE ONLY tableinfo
     ADD CONSTRAINT tableinfo_pkey PRIMARY KEY (tableinfo_id);
+
+
+--
+-- Name: tracker_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres; Tablespace: 
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_pkey PRIMARY KEY (tracker_id);
 
 
 --
@@ -55670,6 +55975,20 @@ CREATE INDEX phylotree_pub_idx2 ON phylotree_pub USING btree (pub_id);
 
 
 --
+-- Name: private_feature_dbxref_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_dbxref_idx1 ON private_feature_dbxref USING btree (feature_id);
+
+
+--
+-- Name: private_feature_dbxref_idx2; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_dbxref_idx2 ON private_feature_dbxref USING btree (dbxref_id);
+
+
+--
 -- Name: private_feature_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
 --
 
@@ -55709,6 +56028,27 @@ CREATE INDEX private_feature_idx5 ON private_feature USING btree (lower((name)::
 --
 
 CREATE INDEX private_feature_name_ind1 ON private_feature USING btree (name);
+
+
+--
+-- Name: private_feature_relationship_idx1; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_relationship_idx1 ON private_feature_relationship USING btree (subject_id);
+
+
+--
+-- Name: private_feature_relationship_idx2; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_relationship_idx2 ON private_feature_relationship USING btree (object_id);
+
+
+--
+-- Name: private_feature_relationship_idx3; Type: INDEX; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE INDEX private_feature_relationship_idx3 ON private_feature_relationship USING btree (type_id);
 
 
 --
@@ -58798,6 +59138,22 @@ ALTER TABLE ONLY phylotree
 
 
 --
+-- Name: private_feature_dbxref_dbxref_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_dbxref_id_fkey FOREIGN KEY (dbxref_id) REFERENCES dbxref(dbxref_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_dbxref_feature_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_dbxref
+    ADD CONSTRAINT private_feature_dbxref_feature_id_fkey FOREIGN KEY (feature_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
 -- Name: private_feature_dbxref_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -58811,6 +59167,30 @@ ALTER TABLE ONLY private_feature
 
 ALTER TABLE ONLY private_feature
     ADD CONSTRAINT private_feature_organism_id_fkey FOREIGN KEY (organism_id) REFERENCES organism(organism_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_relationship_object_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_object_id_fkey FOREIGN KEY (object_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_relationship_subject_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: private_feature_relationship_type_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY private_feature_relationship
+    ADD CONSTRAINT private_feature_relationship_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
@@ -59547,6 +59927,22 @@ ALTER TABLE ONLY studyprop
 
 ALTER TABLE ONLY synonym
     ADD CONSTRAINT synonym_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: tracker_login_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_login_id_fkey FOREIGN KEY (login_id) REFERENCES login(login_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Name: tracker_upload_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY tracker
+    ADD CONSTRAINT tracker_upload_id_fkey FOREIGN KEY (upload_id) REFERENCES upload(upload_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
