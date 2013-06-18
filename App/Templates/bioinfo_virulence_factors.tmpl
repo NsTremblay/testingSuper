@@ -157,7 +157,7 @@
 		var vJson = <TMPL_VAR NAME=vJSON>;
 		$('#changeForm').click(function () {
 			$('#vfList').empty();
-			$.each(json.data, function(FEATUREID, UNIQUENAME) {
+			$.each(vJson.data, function(FEATUREID, UNIQUENAME) {
 				$('#vfList').append($("<option></option>").attr("value", FEATUREID).text(FEATUREID));
 			});
 		});

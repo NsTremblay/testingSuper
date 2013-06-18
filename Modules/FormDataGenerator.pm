@@ -216,12 +216,7 @@ sub getVirulenceFormData {
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
     
     ###Test to return a JSON object###
-
-    my $json = JSON::XS->new->pretty(1);
-    my %jsonHash;
-    $jsonHash{'data'} = $virulenceFormDataRef;
-    my $encodedText = $json->encode(\%jsonHash);
-
+    my $encodedText = $self->_getJSONFormat($virulenceFormDataRef);
     ####
 
     return ($virulenceFormDataRef , $encodedText);
@@ -272,6 +267,19 @@ sub _hashVirAmrFormData {
         push(@factors, \%fRowData);
     }
     return \@factors;
+}
+
+
+sub _getJSONFormat {
+    my $self=shift;
+    my $dataHashRef = shift;
+    ###Test to return a JSON object###
+    my $json = JSON::XS->new->pretty(1);
+    my %jsonHash;
+    $jsonHash{'data'} = $dataHashRef;
+    my $_encodedText = $json->encode(\%jsonHash);
+    ####
+    return $_encodedText;
 }
 
 
