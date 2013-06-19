@@ -33,6 +33,7 @@ my $directoryName = $ARGV[0];
 
 #This is set globally after parsing the first fasta header
 my $genomeName;
+my $genomeHumanReadableName;
 my $genomeNumber = 0;
 
 parseGenome();
@@ -83,6 +84,7 @@ sub setGenomeName {
 	my $firstSeq = shift;
 	my $fileNumber = shift;
 	$genomeName = parseName($firstSeq);
+	$genomeHumanReadableName = getHumanReadableName($firstSeq);
 	print "$genomeName\n";
 	appendAttributes($firstSeq , $fileNumber);
 }
@@ -228,7 +230,7 @@ sub mergeFiles {
 		open my $inTagFile, '<' , $tempTagFile or die "Can't read $tempTagFile: $!";
 		open my $inSeqFile, '<' , $tempSeqFile or die "Can't read $tempSeqFile: $!";
 		open my $out, '>>' , "$directoryName/gffsToUpload/$genomeFileName";
-		print $out "$genomeName	.	contig_collection	.	.	.	.	.	ID=$genomeName;Name=$genomeName\n";
+		print $out "$genomeName	.	contig_collection	.	.	.	.	.	ID=$genomeName;Name=$genomeName;human_readable_name=$genomeHumanReadableName\n";
 		while (my $line = <$inTagFile>) {
 			print $out $line;
 		}

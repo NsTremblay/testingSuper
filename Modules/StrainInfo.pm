@@ -37,6 +37,7 @@ use warnings;
 use FindBin;
 use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
+use Modules::FormDataGenerator;
 use CGI::Application::Plugin::AutoRunmode;
 
 =head2 setup
@@ -61,7 +62,10 @@ Run mode for the sinle strain page
 sub strain_info : StartRunmode {
 	my $self = shift;
 	
-	my ($pubDataRef, $priDataRef) = $self->getGenomes();
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
+	#my ($pubDataRef, $priDataRef) = $self->getGenomes();
 	
 #	my $logger = Log::Log4perl->get_logger();
 #	$logger->debug('USER: '.$self->authen->username);
