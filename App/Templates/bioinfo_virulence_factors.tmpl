@@ -71,87 +71,87 @@
 						<h5>Select a VF from the list:</h5>
 						<select id="vfList" class="span12" name="VFName">
 							<TMPL_LOOP NAME=vFACTORS>
-								<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
-								</TMPL_LOOP>
-							</select>
-							<div style="margin:10px 0px 0px 0px">
-								<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
-								<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-
-								<!--Adding a tester button here for now-->
-								<button id="changeForm" type="button" class="btn btn-small">Demo</button>
-
-							</div>
-						</fieldset>
-					</form>
-				</div>
-
-				<div class="span7">
-					<div class="row-fluid">
-						<div id="VFMetaInfo" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;display:none">
-							<h5><u>Virulence Factor Meta Info</u></h5>
-							<TMPL_LOOP NAME=vFMETAINFO>
-							<TMPL_VAR NAME=vFUNIQUENAME>
-							<strong><TMPL_VAR NAME=vFTERMNAME></strong> : <TMPL_VAR NAME=vFTERMVALUE> <br>
+							<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 							</TMPL_LOOP>
+						</select>
+						<div style="margin:10px 0px 0px 0px">
+							<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
+							<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+
+							<!--Adding a tester button here for now-->
+							<button id="changeForm" type="button" class="btn btn-small">Demo</button>
+
 						</div>
-
-						<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vfVALIDATOR></div>
-					</div>
-				</div>
-
+					</fieldset>
+				</form>
 			</div>
 
-			<div class="row-fluid">
-				<div class="span4" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
-					<p> Here you will find information about all AMR factors in the database. This is mostly to provide general biological information about each AMR factor.
-					</p>
-					<hr/>
-					<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
-						<fieldset>
-							<h5>Select an AMR gene from the list:</h5>
-							<select class="span12" name="AMRName">
-								<TMPL_LOOP NAME=amrFACTORS>
-								<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
-								</TMPL_LOOP>
-							</select>
-							<div style="margin:10px 0px 0px 0px">
-								<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
-								<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-							</div>
-						</fieldset>
-					</form>
-				</div>
-
-				<div class="span7">
-					<div class="row-fluid">
-						<div id="AMRMetaInfo" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;display:none">
-							<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>
-							<TMPL_LOOP NAME=amrMETAINFO>
-							<TMPL_VAR NAME=amrUNIQUENAME>
-							<strong><TMPL_VAR NAME=amrTERMNAME></strong> : <TMPL_VAR NAME=amrTERMVALUE> <br>
-							</TMPL_LOOP>
-						</div>
-
-						<div id="amrvalidator" style="display:none"><TMPL_VAR NAME=amrVALIDATOR></div>
+			<div class="span7">
+				<div class="row-fluid">
+					<div id="VFMetaInfo" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;display:none">
+						<h5><u>Virulence Factor Meta Info</u></h5>
+						<TMPL_LOOP NAME=vFMETAINFO>
+						<TMPL_VAR NAME=vFUNIQUENAME>
+						<strong><TMPL_VAR NAME=vFTERMNAME></strong> : <TMPL_VAR NAME=vFTERMVALUE> <br>
+						</TMPL_LOOP>
 					</div>
-				</div>
 
+					<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vfVALIDATOR></div>
+				</div>
 			</div>
 
 		</div>
 
-		<script type="text/javascript">
-		function checkValidator() {
-			if ($('#amrvalidator').is(':empty') && $('#vfvalidator').is(':empty')) {
-			}
-			else if (!($('#vfvalidator').is(':empty'))){
-				$('#VFMetaInfo').show("slow");
-			}
-			else {
-				$('#AMRMetaInfo').show("slow");
-			}
+		<div class="row-fluid">
+			<div class="span4" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
+				<p> Here you will find information about all AMR factors in the database. This is mostly to provide general biological information about each AMR factor.
+				</p>
+				<hr/>
+				<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
+					<fieldset>
+						<h5>Select an AMR gene from the list:</h5>
+						<select class="span12" name="AMRName">
+							<TMPL_LOOP NAME=amrFACTORS>
+							<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+							</TMPL_LOOP>
+						</select>
+						<div style="margin:10px 0px 0px 0px">
+							<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
+							<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+						</div>
+					</fieldset>
+				</form>
+			</div>
+
+			<div class="span7">
+				<div class="row-fluid">
+					<div id="AMRMetaInfo" style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;display:none">
+						<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>
+						<TMPL_LOOP NAME=amrMETAINFO>
+						<TMPL_VAR NAME=amrUNIQUENAME>
+						<strong><TMPL_VAR NAME=amrTERMNAME></strong> : <TMPL_VAR NAME=amrTERMVALUE> <br>
+						</TMPL_LOOP>
+					</div>
+
+					<div id="amrvalidator" style="display:none"><TMPL_VAR NAME=amrVALIDATOR></div>
+				</div>
+			</div>
+
+		</div>
+
+	</div>
+
+	<script type="text/javascript">
+	function checkValidator() {
+		if ($('#amrvalidator').is(':empty') && $('#vfvalidator').is(':empty')) {
 		}
+		else if (!($('#vfvalidator').is(':empty'))){
+			$('#VFMetaInfo').show("slow");
+		}
+		else {
+			$('#AMRMetaInfo').show("slow");
+		}
+	}
 
 		//This is a demo of being able to switch lists in the virulence factor file.
 		var vJson = <TMPL_VAR NAME=vJSON>;

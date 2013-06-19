@@ -41,7 +41,7 @@ sub cgiapp_init {
 
 	# Load config options
 	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
-	$self->config_file($SCRIPT_LOCATION.'/chado_upload_test.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	# Set up database connection
 	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),

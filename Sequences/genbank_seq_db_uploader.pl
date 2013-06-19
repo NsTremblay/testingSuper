@@ -53,10 +53,10 @@ sub parseGenome {
 			aggregateGffs();
 		}
 	}	
-	#uploadSequences();
-	#system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
-	#system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
-	#system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
+	uploadSequences();
+	system("rm -r $directoryName/fastaTemp") == 0 or die "System with args failed: $?";
+	system("rm -r $directoryName/gffsTemp") == 0 or die "System with args failed: $?";
+	system("rm -r $directoryName/gffsToUpload") == 0 or die "System with args failed: $?";
 	closedir GENOMEDIR;
 }
 
@@ -102,7 +102,8 @@ sub appendAttributes {
 	else {
 		$mol_type = "dna";
 	}
-	my $attributes = "description=$fastaDescription;keywords=Genome Sequence;mol_type=$mol_type;Parent=$genomeName";
+	my $humanReadable = getHumanReadableName($fastaSeq);
+	my $attributes = "description=$fastaDescription;keywords=Genome Sequence;mol_type=$mol_type;human_readable_name=$humanReadable;Parent=$genomeName";
 	my $appendArgs = "gmod_fasta2gff3.pl --type contig --attributes \"$attributes\" --gfffilename $directoryName/gffsTemp/tempout$fileNumber.gff --fasta_dir $directoryName/fastaTemp/";
 	system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
 	printf "System executed $appendArgs with value %d\n" , $? >> 8;
@@ -110,45 +111,45 @@ sub appendAttributes {
 	unlink "$fastaFileName";
 }
 
-# sub parseName {
-# 	#$_singleFileName is the seq->id of the first header.
-# 	my $_fastaHeader = shift;
-# 	my $_singleFileName = $_fastaHeader->id;
-# 	my $_singleFileDescription = $_fastaHeader->desc;
-# 	my $tagName;
-# 	if ($_singleFileName =~ /(|gb|)([A-Z][A-Z][A-Z][A-Z])/){
-# 		$tagName = $2;
-# 	}
-# 	else{
-# 		$tagName = "";
-# 	}
-# 	my $newName;
-# 	my $originalName = $_singleFileDescription;
-# 	if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
-# 		$newName = $2;
-# 	}
-# 	elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
-# 		$newName = "$tagName -$2";
-# 	}
-# 	elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
-# 		$newName = $2;
-# 		if ($newName eq "") {
-# 			$newName = "$tagName -$3";
-# 		}
-# 		else {
-# 			$newName = "$tagName -$2";
-# 		}
-# 	}
-# 	else{
-# 		$newName = $originalName;
-# 	}
-# 	$newName =~ s/Escherichia coli//;
-# 	$newName =~ s/,//g;
-# 	$newName =~ s/'//g;
-# 	$newName =~ s/'//g;
-# 	$newName =~ s/str/Str/;
-# 	return $newName;
-# }
+sub getHumanReadableName {
+	#$_singleFileName is the seq->id of the first header.
+	my $_fastaHeader = shift;
+	my $_singleFileName = $_fastaHeader->id;
+	my $_singleFileDescription = $_fastaHeader->desc;
+	my $tagName;
+	if ($_singleFileName =~ /(|gb|)([A-Z][A-Z][A-Z][A-Z])/){
+		$tagName = $2;
+	}
+	else{
+		$tagName = "";
+	}
+	my $newName;
+	my $originalName = $_singleFileDescription;
+	if ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(,)?(complete)/){
+		$newName = $2;
+	}
+	elsif($originalName =~ /(Escherichia coli)([\w\d\W\D]*)(WGS)/){
+		$newName = "$tagName -$2";
+	}
+	elsif ($originalName =~ /(Escherichia coli)([\w\d\W\D]*)\s([\w\d\W\D]*)(,)/) {
+		$newName = $2;
+		if ($newName eq "") {
+			$newName = "$tagName -$3";
+		}
+		else {
+			$newName = "$tagName -$2";
+		}
+	}
+	else{
+		$newName = $originalName;
+	}
+	$newName =~ s/Escherichia coli//;
+	$newName =~ s/,//g;
+	$newName =~ s/'//g;
+	$newName =~ s/'//g;
+	$newName =~ s/str/Str/;
+	return $newName;
+}
 
 sub parseName {
 	#$_singleFileName is the seq->id of the first header.
