@@ -40,6 +40,8 @@ use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 
+use Modules::GroupComparator;
+
 sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
@@ -47,7 +49,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'group_wise_comparisons'=>'groupWiseComparisons'
+		'group_wise_comparisons'=>'groupWiseComparisons',
+		'group_compare_test' => '_getStrainInfo'
 		);
 }
 
@@ -84,9 +87,13 @@ sub groupWiseComparisons {
 		$template->param(FEATURES=>$formDataRef);
 	}
 	else{
-		my $groupOneDataRef = $self->_getStrainInfo(\@groupOneStrainNames);
-		my $groupTwoDataRef = $self->_getStrainInfo(\@groupTwoStrainNames);                
+		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
+		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);                
 		$template->param(FEATURES=>$formDataRef);
+		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
+		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
+		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);
+		$template->param(GROUP2SNPDATA=>$groupTwoSnpDataRef);
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
 	}
@@ -103,11 +110,22 @@ sub _getStrainInfo {
 	my $self = shift;
 	my $_groupedStrainNames = shift;
 
-	push (my @strainNames , @{$_groupedStrainNames}); 
+	#push (my @strainNames , @{$_groupedStrainNames}); 
 
-	my $ffwHandle = Modules::FastaFileWrite->new();
-	$ffwHandle->dbixSchema($self->dbixSchema);
-	$ffwHandle->writeStrainsToFile(\@strainNames);
+	#my $ffwHandle = Modules::FastaFileWrite->new();
+	#$ffwHandle->dbixSchema($self->dbixSchema);
+	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $formDataRef = $formDataGenerator->getFormData();
+
+	my $comparisonHandle = Modules::GroupComparator->new();
+	$comparisonHandle->dbixSchema($self->dbixSchema);
+	my $binaryDataRef = $comparisonHandle->getBinaryData($_groupedStrainNames);
+	my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
+
+	return ($binaryDataRef , $snpDataRef);
 }
 
 1;

@@ -18,16 +18,16 @@
 				</style>
 				<script>
 				$(function() {
-					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATURE_ID>" } , </TMPL_LOOP> ]
-				$("#autoComp").autocomplete({
-					source: availableTags,
-					select: function( event, ui ) {
+					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=UNIQUENAME>" } , </TMPL_LOOP> ]
+					$("#autoComp").autocomplete({
+						source: availableTags,
+						select: function( event, ui ) {
 			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
 			            $("#autoComp_hidden").val( ui.item.value );
 			            return false;
 			        }
 
-				});
+			    });
 				});
 				</script>
 				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName"></input>
@@ -44,7 +44,7 @@
 				<span style="color:#796e6c">Select a strain from the list:</span>
 				<select class="span12" style="margin:10px 0px 0px 0px" name="singleStrainID">
 					<TMPL_LOOP NAME=FEATURES>
-					<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
+					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
 				</select>
 				<div style="margin:10px 0px 0px 0px">
@@ -56,35 +56,24 @@
 		</form>
 		
 		<TMPL_IF PRIVATE_DATA>
-			<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
-				<fieldset>
-					<span style="color:#796e6c">Or select from your uploaded strains:</span>
-					<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
-						<TMPL_LOOP NAME=PRIVATE_FEATURES>
-						<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
-						</TMPL_LOOP>
-					</select>
-					<div style="margin:10px 0px 0px 0px">
-						<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
-						<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-					</div>
-					<!--hr-->
-				</fieldset>
-			</form>
+		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+			<fieldset>
+				<span style="color:#796e6c">Or select from your uploaded strains:</span>
+				<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
+					<TMPL_LOOP NAME=PRIVATE_FEATURES>
+					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
+					</TMPL_LOOP>
+				</select>
+				<div style="margin:10px 0px 0px 0px">
+					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
+				</div>
+				<!--hr-->
+			</fieldset>
+		</form>
 		</TMPL_IF>
 
 	</div>
-	<!--form class="form" style="padding:0px 70px 5px 20px" method="post">
-		<fieldset>
-			<span class="help-block">Attach a strain file and submit it for analysis</span>
-			<input type="text" class="span12" readonly placeholder="This feature is currently disabled"></input>
-			<div>
-				<button type="submit" class="btn btn-small btn-primary disabled" name="attach_file" value="Attach file"><i class="icon-folder-open icon-white"></i> Attach file</button>
-				<button type="submit" class="btn btn-small btn-success disabled" name="submit_strain" value="Submit"><i class="icon-ok icon-white"></i> Submit</button>
-				<button type="reset" class="btn btn-small btn-danger disabled" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-			</div>
-		</fieldset>
-	</form-->
 
 	<div id="map_div" style="display:none;border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
 		<div id="map_canvas" style="height:300px"></div>
@@ -97,13 +86,20 @@
 	</script>
 	<script type="text/javascript">
 	function initialize() {
+		var myLatlng = new google.maps.LatLng(-25.363882,131.044922);
 		var mapOptions = {
-			center: new google.maps.LatLng(49.134890, -122.901435),
-			zoom: 15,
+			center: myLatlng,
+			zoom: 4,
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
 		var map = new google.maps.Map(document.getElementById("map_canvas"),
 			mapOptions);
+		
+		var marker = new google.maps.Marker({
+			position: myLatlng,
+			map: map,
+			title: '<TMPL_LOOP NAME=METADATA><TMPL_VAR NAME=UNIQUENAME></TMPL_LOOP>'
+		});
 	}
 	function displayMap() {
 		document.getElementById('map_div').style.display="block";

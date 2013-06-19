@@ -102,7 +102,8 @@ sub appendAttributes {
 	else {
 		$mol_type = "dna";
 	}
-	my $attributes = "description=$fastaDescription;keywords=Genome Sequence;mol_type=$mol_type;Parent=$genomeName";
+	my $humanReadable = getHumanReadableName($fastaSeq);
+	my $attributes = "description=$fastaDescription;keywords=Genome Sequence;mol_type=$mol_type;human_readable_name=$humanReadable;Parent=$genomeName";
 	my $appendArgs = "gmod_fasta2gff3.pl --type contig --attributes \"$attributes\" --gfffilename $directoryName/gffsTemp/tempout$fileNumber.gff --fasta_dir $directoryName/fastaTemp/";
 	system($appendArgs) == 0 or die "System failed with  $appendArgs: $? \n";
 	printf "System executed $appendArgs with value %d\n" , $? >> 8;
@@ -110,7 +111,7 @@ sub appendAttributes {
 	unlink "$fastaFileName";
 }
 
-sub parseName {
+sub getHumanReadableName {
 	#$_singleFileName is the seq->id of the first header.
 	my $_fastaHeader = shift;
 	my $_singleFileName = $_fastaHeader->id;
@@ -147,6 +148,40 @@ sub parseName {
 	$newName =~ s/'//g;
 	$newName =~ s/'//g;
 	$newName =~ s/str/Str/;
+	return $newName;
+}
+
+sub parseName {
+	#$_singleFileName is the seq->id of the first header.
+	my $_fastaHeader = shift;
+	my $_singleFileName = $_fastaHeader->id;
+	my $_singleFileDescription = $_fastaHeader->desc;
+	my $originalName = $_singleFileName;
+	my $tagName;
+
+	my $newName;
+	if($originalName =~ m/name=\|(\w+)\|/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/lcl\|([\w-]*)\|/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/(ref\|\w\w_\w\w\w\w\w\w|gb\|\w\w\w\w\w\w\w\w|emb\|\w\w\w\w\w\w\w\w|dbj\|\w\w\w\w\w\w\w\w)/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/(gi\|\d+)\|/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/^(.+)\|Segment=/){
+		$newName = $1;
+	}
+	elsif($originalName =~ m/^(.+)\|Length=/){
+		$newName = $1;
+	}
+	else{
+		$newName = $originalName;
+	}
+	$newName =~ s/^>//;
 	return $newName;
 }
 

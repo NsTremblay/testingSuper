@@ -37,6 +37,8 @@ use lib "$FindBin::Bin/../";
 use Log::Log4perl;
 use Carp;
 
+use JSON;
+
 #object creation
 sub new {
 	my ($class) = shift;
@@ -111,10 +113,10 @@ sub getFormData {
         type_id => '1569'
         },
         {   
-        select => [qw/me.uniquename/],
-        order_by    => {-asc => ['me.uniquename']}
-    }
-    );
+            select => [qw/me.uniquename/],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
     my $formDataRef = $self->_hashFormData($features);
     return $formDataRef;
 }
@@ -191,5 +193,94 @@ sub _hashGenomeUploadFormData {
     }
     return \@genomeUploadFormData;
 }
+
+=cut _getVirulenceFormData
+
+Queries the database for form data to be filled in the virluence factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub getVirulenceFormData {
+    my $self = shift;
+    my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+        {'featureprops.value' => "Virulence Factor" , 'type.name' => "gene"},
+        {
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'uniquename'],
+            column  => [qw/feature_id type_id uniquename/],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
+    
+    ###Test to return a JSON object###
+    my $encodedText = $self->_getJSONFormat($virulenceFormDataRef);
+    ####
+
+    return ($virulenceFormDataRef , $encodedText);
+}
+
+=cut _getAmrFormData
+
+Queries the database for form data to be filled in the amr factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub getAmrFormData {
+    my $self = shift;
+    my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+        {'featureprops.value' => "Antimicrobial Resistance" , 'type.name' => "gene"},
+        {
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
+                        column  => [qw/feature_id type_id uniquename/],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
+    return $amrFormDataRef;
+}
+
+=cut _hashVirAmrFormData
+
+Inputs all column data into a hash table and returns a reference to the hash table.
+Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+i.e. Fasta files must have attributes tagged to them before uploading.
+
+=cut
+
+sub _hashVirAmrFormData {
+    my $self=shift;
+    my $_factorProperties = shift;
+
+    my @factors;
+    
+    while (my $fRow = $_factorProperties->next){
+        my %fRowData;
+        $fRowData{'FEATUREID'}=$fRow->feature_id;
+        $fRowData{'UNIQUENAME'}=$fRow->uniquename;
+        push(@factors, \%fRowData);
+    }
+    return \@factors;
+}
+
+
+sub _getJSONFormat {
+    my $self=shift;
+    my $dataHashRef = shift;
+    ###Test to return a JSON object###
+    my $json = JSON::XS->new->pretty(1);
+    my %jsonHash;
+    $jsonHash{'data'} = $dataHashRef;
+    my $_encodedText = $json->encode(\%jsonHash);
+    ####
+    return $_encodedText;
+}
+
 
 1;

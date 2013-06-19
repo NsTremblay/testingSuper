@@ -35,6 +35,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
+use Modules::FormDataGenerator;
 
 use Log::Log4perl;
 use Carp;
@@ -46,7 +47,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'virulence_factors'=>'virulenceFactors'
+		'virulence_factors'=>'virulenceFactors',
+		'virulence_amr_by_strain'=>'virulenceAmrByStrain'
 		);
 }
 
@@ -70,72 +72,85 @@ Run mode for the virulence factor page
 
 sub virulenceFactors {
 	my $self = shift;
-	my $vFactorsRef = $self->_getVirulenceFactors();
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
+	my $strainListRef = $formDataGenerator->getFormData();
+
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 	my $vfFeatureId = $q->param("VFName");
+	my $amrFeatureId = $q->param("AMRName");
 
-	if (!defined $vfFeatureId || $vfFeatureId eq ""){
-		$template->param(vFACTORS=>$vFactorsRef);
+	$template->param(vFACTORS=>$vFactorsRef);
+	$template->param(vJSON=>$vJsonData);
+
+	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(amrFACTORS=>$amrFactorsRef);
+
+	if ((!defined $vfFeatureId || $vfFeatureId eq "") && (!defined $amrFeatureId || $amrFeatureId eq "")){
+	}
+	elsif (defined $amrFeatureId || $amrFeatureId ne "") {
+		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
+		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
+		my $validator = "Return Success";
+		$template->param(amrVALIDATOR=>$validator);
+		$template->param(amrMETAINFO=>$amrMetaInfoRef);
 	}
 	else {
 		my $vFMetaInfoRef = $self->_getVFMetaInfo($vfFeatureId);
-		$template->param(vFACTORS=>$vFactorsRef);
+		my $amrMetaInfoRef = $self->_getAMRMetaInfo($amrFeatureId);
 		my $validator = "Return Success";
-		$template->param(VALIDATOR=>$validator);
+		$template->param(vfVALIDATOR=>$validator);
 		$template->param(vFMETAINFO=>$vFMetaInfoRef);
 	}	
 	return $template->output();
 }
 
-=head2 _getVirulenceFactors
+=head2 virulenceAmrByStrain
 
-Queries the database for all the available virulence factors or their meta info.
-Returns an array reference of virulence factors or the meta info of a virulence factor.
+Run mode for selected virulence and amr by strain
 
 =cut
 
-sub _getVirulenceFactors {
+sub virulenceAmrByStrain {
 	my $self = shift;
-	my $_virulenceFactorProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{value => 'Virulence Factor'},
-		{
-			join		=> ['type', 'feature'],
-			select		=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by 	=> { -asc => ['uniquename'] }
-		}
-		);
-	$self->_hashVirulenceFactors($_virulenceFactorProperties);
-}
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($vFactorsRef , $jsonData) = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
+	my $strainListRef = $formDataGenerator->getFormData();
 
-=head2 _hashVirulenceFactors
+	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
-Inputs all column data into a hash table and returns a reference to the hash table.
-Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
-	i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
-	i.e. Fasta files must have attributes tagged to them before uploading.
+	my $q = $self->query();
+	my @selectedStrainNames = $q->param("selectedStrains");
+	my @selectedVirulenceFactors = $q->param("selectedVirulence");
+	my @selectedAmrGenes = $q->param("selectedAmr");
 
-=cut
+	$template->param(vFACTORS=>$vFactorsRef);
 
-sub _hashVirulenceFactors {
-	my $self=shift;
-	my $_virulenceFactorProperties = shift;
-
-	my @virulenceFactors;
+	$template->param(JSON=>$jsonData);
 	
-	while (my $vFRow = $_virulenceFactorProperties->next){
-		my %vFRowData;
-		$vFRowData{'FEATUREID'}=$vFRow->feature_id;
-		$vFRowData{'UNIQUENAME'}=$vFRow->feature->uniquename;
-		push(@virulenceFactors, \%vFRowData);
+	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(amrFACTORS=>$amrFactorsRef);
+
+	if (!@selectedStrainNames || (!@selectedVirulenceFactors && !@selectedAmrGenes)) {
+		# do nothing because either strain list is empty or the user didnt specify any virulence or amr factors
 	}
-	return \@virulenceFactors;
+	else {
+		my ($vfByStrainRef , $strainTableNamesRef) = $self->_getVirulenceByStrain(\@selectedStrainNames , \@selectedVirulenceFactors);
+		my ($amrByStrainRef , $strainTableNamesRef) = $self->_getAmrByStrain(\@selectedStrainNames , \@selectedAmrGenes);
+		$template->param(vFACTORSBYSTRAIN=>$vfByStrainRef);
+		$template->param(amrFACTORSBYSTRAIN=>$amrByStrainRef);
+		$template->param(STRAINTABLENAMES=>$strainTableNamesRef);
+	}
+	return $template->output();
 }
 
-=head2
+=head2 _getVFMetaInfo
 
 Queries the database for a virulence factor feature_id.
 Returns an array reference containing the virulence factor meta info
@@ -195,6 +210,156 @@ sub _getVFMetaInfo {
 		push(@vFMetaData, \%vFMetaRowData);
 	}
 	return \@vFMetaData;
+}
+
+=head2 _getAMRMetaInfo
+
+Queries the database for an AMR gene feature_id.
+Returns an array reference containing the virulence factor meta info.
+
+=cut
+
+sub _getAMRMetaInfo {
+	my $self = shift;
+	my $_amrFeatureId = shift;
+
+	my @amrMetaData;
+
+	my $_amrFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{'me.feature_id' => $_amrFeatureId},
+		{
+			join		=> ['type' , 'feature'],
+			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by	=> { -asc => ['type.name'] }
+		}
+		);
+
+	while (my $amrMetaRow = $_amrFactorMetaProperties->next) {
+		my %amrMetaRowData;
+		$amrMetaRowData{'amrFEATUREID'} = $amrMetaRow->feature_id;
+		$amrMetaRowData{'amrUNIQUENAME'} = $amrMetaRow->feature->uniquename;
+		$amrMetaRowData{'amrTERMVALUE'} = $amrMetaRow->value;
+		if ($amrMetaRow->type->name eq "description") {
+			$amrMetaRowData{'amrTERMNAME'}="Description";
+		}
+		elsif ($amrMetaRow->type->name eq "organism"){
+			$amrMetaRowData{'amrTERMNAME'}="Organism";
+		}
+		elsif ($amrMetaRow->type->name eq "keywords"){
+			$amrMetaRowData{'amrTERMNAME'}="Keyword";
+		}
+		else {
+			$amrMetaRowData{'amrTERMNAME'}=$amrMetaRow->type->name;
+		}
+		push(@amrMetaData , \%amrMetaRowData);
+	}
+	return \@amrMetaData;
+}
+
+sub _getVirulenceByStrain {
+	my $self = shift;
+	my $_selectedStrainNames = shift;
+	my $_selectedVirulenceFactors = shift;
+
+	my @_selectedStrainNames = @{$_selectedStrainNames};
+	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
+
+	my @strainTableNames;
+	my @unprunedTableNames;
+	my @virulenceTableData;
+
+	my $_dataTable = $self->dbixSchema->resultset('RawVirulenceData');
+
+	foreach my $virGeneName (@_selectedVirulenceFactors) {
+		my $_dataTableByVirGene = $_dataTable->search(
+			{'gene_name' => "$virGeneName"},
+			{
+				select => [qw/me.strain me.gene_name me.presence_absence/],
+				as 	=> ['strain', 'gene_name', 'presence_absence']
+			}
+			);
+
+		my %virGene;
+		my @presenceAbsence;
+
+		foreach my $strainName (@_selectedStrainNames) {
+			my %strainName;
+			my %data;
+			my $presenceAbsenceValue = "Unknown";
+			my $_dataRowByStrain = $_dataTableByVirGene->search(
+				{'strain' => "$strainName"},
+				{
+					column => [qw/strain gene_name presence_absence/]
+				}
+				);
+			while (my $_dataRow = $_dataRowByStrain->next) {
+				$presenceAbsenceValue = $_dataRow->presence_absence;
+			}
+			$strainName{'strain_name'} = $strainName;
+			push (@unprunedTableNames , \%strainName);
+			$data{'value'} = $presenceAbsenceValue;
+			push (@presenceAbsence , \%data);
+		}
+		$virGene{'presence_absence'} = \@presenceAbsence;
+		$virGene{'gene_name'} = $virGeneName;
+		push (@virulenceTableData, \%virGene);
+	}
+	my @strainTableNames = @unprunedTableNames[0..scalar(@_selectedStrainNames)-1];
+	return (\@virulenceTableData , \@strainTableNames);
+}
+
+sub _getAmrByStrain {
+	my $self = shift;
+	my $_selectedStrainNames = shift;
+	my $_selectedAmrFactors = shift;
+
+	my @_selectedStrainNames = @{$_selectedStrainNames};
+	my @_selectedAmrFactors = @{$_selectedAmrFactors};
+
+	my @strainTableNames;
+	my @unprunedTableNames;
+	my @amrTableData;
+
+	my $_dataTable = $self->dbixSchema->resultset('RawAmrData');
+
+	foreach my $amrGeneName (@_selectedAmrFactors) {
+		my $_dataTableByAmrGene = $_dataTable->search(
+			{'gene_name' => "$amrGeneName"},
+			{
+				select => [qw/me.strain me.gene_name me.presence_absence/],
+				as 	=> ['strain', 'gene_name', 'presence_absence']
+			}
+			);
+
+		my %amrGene;
+		my @presenceAbsence;
+
+		foreach my $strainName (@_selectedStrainNames) {
+			my %strainName;
+			my %data;
+			my $presenceAbsenceValue = "Unknown";
+			my $_dataRowByStrain = $_dataTableByAmrGene->search(
+				{'strain' => "$strainName"},
+				{
+					column => [qw/strain gene_name presence_absence/]
+				}
+				);
+			while (my $_dataRow = $_dataRowByStrain->next) {
+				$presenceAbsenceValue = $_dataRow->presence_absence;
+			}
+			$strainName{'strain_name'} = $strainName;
+			push (@unprunedTableNames , \%strainName);
+			$data{'value'} = $presenceAbsenceValue;
+			push (@presenceAbsence , \%data);
+		}
+		$amrGene{'presence_absence'} = \@presenceAbsence;
+		$amrGene{'gene_name'} = $amrGeneName;
+		push (@amrTableData, \%amrGene);
+	}
+	my @strainTableNames = @unprunedTableNames[0..scalar(@_selectedStrainNames)-1];
+	return (\@amrTableData , \@strainTableNames);
 }
 
 1;
