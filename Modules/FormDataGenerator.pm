@@ -132,33 +132,31 @@ sub getFormData {
     
     # Return public genome names as list of hash-refs
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
-        {
-            'type.name'      => 'contig_collection'
+    {
+        'type.name'      => 'contig_collection'
         },
         {
             result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            columns => [qw/feature_id uniquename/],
-            join => ['type'],
+            columns => [qw/feature_id uniquename type.name featureprops.value/],
+            join => ['type' , 'featureprops'],
             order_by    => {-asc => ['me.uniquename']}
         }
-    );
+        );
     
     my @publicFormData = $genomes->all;
-    
+    #my $publicFormData = $self->_hashFormData($genomes);
+
+
+    my $encodedText = $self->_getJSONFormat(\@publicFormData);
+    #print STDERR $encodedText . "\n";
+
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes();
     
     # Return two lists
     return(\@publicFormData, $privateFormData);
+    #return($publicFormData, $privateFormData);
 }
-
-=head2 privateGenomes
-
-Queries the database to return list of private uploaded genomes available to user.
-
-User must be logged in. If none available, returns empty list.
-
-=cut
 
 sub privateGenomes {
     my $self = shift;
@@ -169,28 +167,31 @@ sub privateGenomes {
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
         my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-            {
-                'login.username' => $self->authen->username,
-                'type.name'      => 'contig_collection'
+        {
+            'login.username' => $self->authen->username,
+            'type.name'      => 'contig_collection'
             },
             {
                 result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-                columns => [qw/feature_id uniquename/],
+                columns => [qw/feature_id uniquename type.name privatefeatureprops.value/],
                 join => [
-                    { 'upload' => { 'permissions' => 'login'} },
-                    'type'
+                { 'upload' => { 'permissions' => 'login'} },
+                'type',
+                'privatefeatureprops'
                 ]
             }
-        );
+            );
         
         my @privateFormData = $genomes->all;
+        #my $privateFormData = $self->_hashFormData($genomes);
         
         return \@privateFormData;
+        #return $privateFormData;
         
-    } else {
-        return [];
+        } else {
+            return [];
+        }
     }
-}
 
 =head2 _hashFormData
 
@@ -264,15 +265,18 @@ sub getVirulenceFormData {
         'type.name' => "gene"
         },
         {
+            #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            column  => [qw/feature_id type_id uniquename/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.uniquename/],
             # as          => ['feature_id', 'type_id' , 'uniquename'],
-            column  => [qw/feature_id type_id uniquename/],
             order_by    => { -asc => ['uniquename'] }
         }
         );
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
+    #my $virulenceFormDataRef = $_virulenceFactorProperties->all;
     my $encodedText = $self->_getJSONFormat($virulenceFormDataRef);
+    
     return ($virulenceFormDataRef , $encodedText);
 }
 
@@ -291,14 +295,16 @@ sub getAmrFormData {
         'type.name' => "gene"
         },
         {
+            #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            column  => [qw/feature_id type_id uniquename/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
             # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
-            column  => [qw/feature_id type_id uniquename/],
             order_by    => { -asc => ['uniquename'] }
         }
         );
     my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
+    #my $amrFormDataRef = $_amrFactorProperties->all;
     my $encodedText = $self->_getJSONFormat($amrFormDataRef);
     return ($amrFormDataRef , $encodedText);
 }
