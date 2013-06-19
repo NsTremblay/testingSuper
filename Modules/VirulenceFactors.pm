@@ -75,8 +75,8 @@ sub virulenceFactors {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
-	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
-	my $strainListRef = $formDataGenerator->getFormData();
+	my ($amrFactorsRef , $amrJsonData) = $formDataGenerator->getAmrFormData();
+	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
@@ -87,8 +87,10 @@ sub virulenceFactors {
 	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(vJSON=>$vJsonData);
 
-	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(STRAINLIST=>$pubDataRef);
+
 	$template->param(amrFACTORS=>$amrFactorsRef);
+	$template->param(amrJSON=>$amrJsonData);
 
 	if ((!defined $vfFeatureId || $vfFeatureId eq "") && (!defined $amrFeatureId || $amrFeatureId eq "")){
 	}
@@ -119,9 +121,9 @@ sub virulenceAmrByStrain {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($vFactorsRef , $jsonData) = $formDataGenerator->getVirulenceFormData();
-	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
-	my $strainListRef = $formDataGenerator->getFormData();
+	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
+	my ($amrFactorsRef , $amrJsonData)= $formDataGenerator->getAmrFormData();
+	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
@@ -131,11 +133,12 @@ sub virulenceAmrByStrain {
 	my @selectedAmrGenes = $q->param("selectedAmr");
 
 	$template->param(vFACTORS=>$vFactorsRef);
-
-	$template->param(JSON=>$jsonData);
+	$template->param(vJSON=>$vJsonData);
 	
-	$template->param(STRAINLIST=>$strainListRef);
+	$template->param(STRAINLIST=>$pubDataRef);
+
 	$template->param(amrFACTORS=>$amrFactorsRef);
+	$template->param(amrJSON=>$amrJsonData);
 
 	if (!@selectedStrainNames || (!@selectedVirulenceFactors && !@selectedAmrGenes)) {
 		# do nothing because either strain list is empty or the user didnt specify any virulence or amr factors

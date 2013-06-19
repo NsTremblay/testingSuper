@@ -37,6 +37,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
+use Modules::FormDataGenerator;
 use CGI::Application::Plugin::AutoRunmode;
 
 =head2 setup
@@ -61,7 +62,9 @@ Run mode for the sinle strain page
 sub strain_info : StartRunmode {
 	my $self = shift;
 	
-	my ($pubDataRef, $priDataRef) = $self->getGenomes();
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
 	
 #	my $logger = Log::Log4perl->get_logger();
 #	$logger->debug('USER: '.$self->authen->username);
@@ -132,7 +135,6 @@ my $privateStrainID = $q->param("privateSingleStrainID");
 		my $validator = "Return Success";
 		$template->param(VALIDATOR => $validator);
 	}
-	
 	return $template->output();
 }
 
@@ -161,7 +163,7 @@ sub _getStrainInfo {
 	}
 
 	my $features = $self->dbixSchema->resultset($feature_table_name)->search({ uniquename => $strainID});
-	#my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
+	my $featureprops = $self->dbixSchema->resultset($featureprop_table_name)->search({ feature_id => $strainID});
 
 	## GRAB DATA -- this just a demo. Need to obtain all required strain metadata ###
 	
@@ -169,7 +171,7 @@ sub _getStrainInfo {
 	 	my %strainRowData;
 	 	$strainRowData{'FEATUREID'} = $strainID;
 	 	#$strainRowData{'VALUE'} = $row->value;
-	 	#$strainRowData{'TYPEID'} = $row->type_id;
+	 	$strainRowData{'TYPEID'} = $row->type_id;
 	 	$strainRowData{'UNIQUENAME'} = $row->uniquename;
 	 	push(@strainMetaData, \%strainRowData);
 	 }
