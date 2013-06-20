@@ -54,6 +54,56 @@
 
 	<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
 
+	<script>
+
+	var strainJson = <TMPL_VAR NAME=strainJSONData>;
+
+	$('#uniqueNameView').click(function () {
+		var availableTags = [];
+		$('#pubStrainList').empty();
+		for (i=0 ; i<strainJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(strainJson.data[i].uniquename);
+			opt.value = strainJson.data[i].uniquename;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:strainJson.data[i].uniquename, value:strainJson.data[i].uniquename } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
+			            $("#autoComp_hidden").val( ui.item.value );
+			            return false;
+			        }
+			    });
+	});
+
+	$('#commonNameView').click(function () {
+		$('#pubStrainList').empty();
+		var availableTags = [];
+		for (i=0 ; i<strainJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(strainJson.data[i].featureprops.value);
+			opt.value = strainJson.data[i].uniquename;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:strainJson.data[i].featureprops.value, value:strainJson.data[i].uniquename } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
+			            $("#autoComp_hidden").val( ui.item.value );
+			            return false;
+			        }
+			    });
+	});
+
+	</script>
+
 </body>
 
 <TMPL_INCLUDE NAME="footer.tmpl">
