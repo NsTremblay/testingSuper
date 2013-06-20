@@ -33,107 +33,78 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 
 =head1 DESCRIPTION
 
+A contig_collection is the parent label used for a set of DNA sequences belonging to a 
+single project (which may be a WGS or a completed whole genome sequence). Global properties 
+such as strain, host etc are defined at the contig_collection level.  The contig_collection 
+properties are defined in a hash that is written to file using Data::Dumper.
 
+Each sequence in the fasta files is labelled as a contig (whether is its a chromosome or true contig). 
+The contig properties are obtained from the fasta file. Names for the contigs are obtained from 
+the accessions in the fasta file.  The fasta file header lines are also used to define the mol_type 
+as chromosome or plasmid.
+  
+=head2 Properties
 
-=head2 How Fasta is stored in chado
-
-Here is summary of how GFF3 data is stored in chado:
-
-=over
-
-=item Column 1 (reference sequence)
-
-The reference sequence for the feature becomes the srcfeature_id
-of the feature in the featureloc table for that feature.  That featureloc 
-generally assigned a rank of zero if there are other locations associated
-with this feature (for instance, for a match feature), the other locations
-will be assigned featureloc.rank values greater than zero.
-
-=item Column 2 (source)
-
-The source is stored as a dbxref.  The chado instance must of an entry
-in the db table named 'GFF_source'.  The script will then create a dbxref
-entry for the feature's source and associate it to the feature via
-the feature_dbxref table.
-
-=over
-
-=item Assigning feature.name, feature.uniquename
-
-The values of feature.name and feature.uniquename are assigned 
-according to these simple rules:
-
-=over 
-
-=item If there is an ID tag, that is used as feature.uniquename
-
-otherwise, it is assigned a uniquename that is equal to
-'auto' concatenated with the feature_id.
-
-=back
-
-=item Assigning feature_relationship entries
-
-All Parent tagged features are assigned feature_relationship
-entries of 'part_of' to their parent features.  Derived_from
-tags are assigned 'derived_from' relationships.  Note that
-parent features must appear in the file before any features
-use a Parent or Derived_from tags referring to that feature.
-
-=item Alias tags
-
-Alias values are stored in the synonym table, under
-both synonym.name and synonym.synonym_sgml, and are
-linked to the feature via the feature_synonym table.
-
-=item Dbxref tags
-
-Dbxref values must be of the form 'db_name:accession', where 
-db_name must have an entry in the db table, with a value of 
-db.name equal to 'DB:db_name'; several database names were preinstalled
-with the database when 'make prepdb' was run.  Execute 'SELECT name
-FROM db' to find out what databases are already availble.  New dbxref
-entries are created in the dbxref table, and dbxrefs are linked to
-features via the feature_dbxref table.
-
-=back
-
-=back
+	my %genome_properties = (
+		name => 'lambda',
+		uniquename => 'beta',
+		mol_type => 'dna',
+		serotype => 'O157:H3',
+		strain => 'K12',
+		keywords => 'a, really, bad, strain',
+		isolation_host => 'H. sapiens',
+		isolation_location => 'Canada',
+		isolation_source => 'Blood'
+		synonym => 'gamma',
+		isolation_date => '1999-03-13',
+		description => 'infection from someone\'s nasty hot tub',
+		owner => 'kermit the frog',
+		finished => 'yes',
+		primary_dbxref => {
+			db => 'refseq',
+			acc => '12345',
+			ver => '1',
+			desc => 'Second home'
+		},
+		secondary_dbxref => {
+			db => 'MyNCBI',
+			acc => '12345',
+			ver => '1',
+			desc => 'Its second home'
+		},
+		pmid => [123456, 78901010]
+	);
+	
+	# upload_params are only needed for a user uploaded sequence
+	my %upload_params = (
+		category => 'release',
+		login_id => 10,
+		tag => 'Isolates from Zombie Outbreak',
+		release_date => '2013-05-31'
+	);
+	
+	open(OUT,">dump.txt");
+	print OUT Data::Dumper->Dump([\%genome_properties, \%upload_params], ['contig_collection_properties', 'upload_parameters']);
+	close OUT;
 
 =head2 NOTES
 
 =over
-
-=item Loading fasta file
-
-When the --fastafile is provided with an argument that is the path to
-a file containing fasta sequence, the loader will attempt to update the
-feature table with the sequence provided.  Note that the ID provided in the
-fasta description line must exactly match what is in the feature table
-uniquename field.  Be careful if it is possible that the uniquename of the
-feature was changed to ensure uniqueness when it was loaded from the
-original GFF.  Also note that when loading sequence from a fasta file, 
-loading GFF from standard in is disabled.  Sorry for any inconvenience.
 
 =item Transactions
 
 This application will, by default, try to load all of the data at
 once as a single transcation.  This is safer from the database's
 point of view, since if anything bad happens during the load, the 
-transaction will be rolled back and the database will be untouched.  
-The problem occurs if there are many (say, greater than a 2-300,000)
-rows in the GFF file.  When that is the case, doing the load as 
-a single transcation can result in the machine running out of memory
-and killing processes.  If --notranscat is provided on the commandline,
-each table will be loaded as a separate transaction.
+transaction will be rolled back and the database will be untouched.
 
 =item The run lock
 
-The bulk loader is not a multiuser application.  If two separate
+The loader is not a multiuser application.  If two separate
 bulk load processes try to load data into the database at the same
 time, at least one and possibly all loads will fail.  To keep this from
 happening, the bulk loader places a lock in the database to prevent
-other gmod_bulk_load_gff3.pl processes from running at the same time.
+other processes from running at the same time.
 When the application exits normally, this lock will be removed, but if
 it crashes for some reason, the lock will not be removed.  To remove the
 lock from the command line, provide the flag --remove_lock.  Note that
@@ -150,20 +121,6 @@ that new features have been added via some method that is not this
 loader (eg, Apollo edits or loads with XORT) or if a previous load using
 this loader was aborted, then you should supply
 the --recreate_cache option to make sure the cache is fresh.
-
-=item Sequence
-
-By default, if there is sequence in the GFF file, it will be loaded
-into the residues column in the feature table row that corresponds
-to that feature.  By supplying the --nosequence option, the sequence
-will be skipped.  You might want to do this if you have very large
-sequences, which can be difficult to load.  In this context, "very large"
-means more than 200MB.
-
-Also note that for sequences to load properly, the GFF file must have
-the ##FASTA directive (it is required for proper parsing by Bio::FeatureIO),
-and the ID of the feature must be exactly the same as the name of the
-sequence following the > in the fasta section.
 
 =back
 
@@ -431,7 +388,9 @@ sub validate_genome_properties {
 	
 	my %valid_f_tags = qw/name 1 uniquename 1 organism 1 properties 1/;
 	my %valid_fp_tags = qw/mol_type 1 serotype 1 strain 1 keywords 1 isolation_host 1 
-		isolation_location 1 isolation_date 1 description 1 owner 1 finished 1 synonym 1/;
+		isolation_location 1 isolation_date 1 description 1 owner 1 finished 1 synonym 1
+		comment 1 isolation_source 1 isolation_latlng 1 isolation_age 1 severity 1
+		syndrome 1 pmid 1/;
 	my %valid_dbxref_tags = qw/primary_dbxref 1 secondary_dbxref 1/;
 	
 	# Make sure no unrecognized property types
@@ -666,7 +625,7 @@ sub contig {
 			$mol_type = 'chromosome';
 		}
 	
-		$contig_fp{description} = $desc if $desc;
+		$contig_fp{description} = $desc;
 	} else {
 		if($name =~ m/plasmid/i) {
 			$mol_type = 'plasmid';

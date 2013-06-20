@@ -2,6 +2,8 @@
 
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.en_US.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 	
 	<TMPL_IF some_errors>
@@ -15,17 +17,22 @@
 		</TMPL_IF>
 		
 		<fieldset class="form-horizontal">
-			<span class="help-block" style="margin:10px"> The following fields are required:</span>
+			<h4>These fields are required:</h4>
+			<span class="help-block" style="margin:10px; padding-top:20px"><em>Escherichia coli</em> Genome information:</span>
 			<TMPL_IF new_genome>
 			<div class="control-group">
-				<label class="control-label">DNA sequence FASTA file</label>
+				<label class="control-label">
+					DNA FASTA file
+					<i class="icon-question-sign" data-toggle="tooltip" title="A multi-fasta file containing genomic DNA. Incomplete whole genome shotgun (WGS) sequence that have assembled or completed genomes are permitted.">
+					</i>
+				</label>
 				<div class="controls">
 					<input id="attachFile" class="input" type="file" name="g_file" required>
-					<span class="help-inline">Ensure that files are <i>FASTA</i> format</span>
 					<TMPL_VAR err_g_file>
 				</div>
 			</div>
 			</TMPL_IF>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputGenomeName">Genome Name</label>
 				<div class="controls">
@@ -33,27 +40,7 @@
 						<TMPL_VAR err_g_name>
 				</div>
 			</div>
-			<div class="control-group">
-				<label class="control-label" for="inputHostSource">Isolation Host Source</label>
-				<div class="controls">
-					<input type="text" name="g_source" id="inputHostSource" value="<TMPL_VAR g_source>" required>
-						<TMPL_VAR err_g_source>
-				</div>
-			</div>
-			<div class="control-group">
-				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
-				<div class="controls">
-					<input type="text" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" value="<TMPL_VAR g_date>" required>						
-						<TMPL_VAR err_g_date>
-				</div>
-			</div>
-			<div class="control-group">
-				<label class="control-label" for="inputIsolationLocation">Location of Isolation</label>
-				<div class="controls">
-					<input type="text" name="g_location" id="inputIsolationLocation" value="<TMPL_VAR g_location>" required>
-						<TMPL_VAR err_g_location>
-				</div>
-			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputStrain">Strain</label>
 				<div class="controls">
@@ -61,6 +48,7 @@
 						<TMPL_VAR err_g_strain>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputSerotype">Serotype</label>
 				<div class="controls">
@@ -68,6 +56,122 @@
 						<TMPL_VAR err_g_serotype>
 				</div>
 			</div>
+			
+			<span class="help-block" style="margin:10px; padding-top:20px">Isolation details:</span>
+			<div class="control-group">
+				<label class="control-label" for="inputHost">Isolation Host</label>
+				<div class="controls controls-row">
+					<select class="span3" name="g_host" id="inputHost" required>
+						<option value="Empty"></option>
+					</select>
+					<div id="inputOtherHost" style="display:none">
+						<input type="text" class="span2" style="margin-left:20px" name="g_host_name" id="inputHostName" placeholder="Common Name">
+						<input type="text" style="margin-left:10px" class="input-small" name="g_host_genus" id="inputHostGenus" placeholder="Genus">
+						<input type="text" class="input-small" name="g_host_species" id="inputHostSpecies" placeholder="Species">
+					</div>
+					<TMPL_VAR err_g_host>
+					<TMPL_VAR err_g_host_name>
+					<TMPL_VAR err_g_host_genus>
+					<TMPL_VAR err_g_host_species>
+				</div>
+			</div>
+			
+			<div class="control-group" style="padding-left:60px">
+				<label class="control-label" for="inputSource">Isolation Source</label>
+				<div class="controls controls-row">
+					<select class="span3" name="g_source" id="inputSource" required>
+						<option value="">Select host first</option>
+					</select>
+					<div id="inputOtherSource" style="display:none">
+						<input type="text" class="span2" style="margin-left:20px" name="g_other_source" id="inputSourceName" placeholder="Other Source">
+					</div>
+					<TMPL_VAR err_g_source>
+					<TMPL_VAR err_g_other_source>
+				</div>
+			</div>
+			
+			<div class="control-group" style="padding-left:60px">
+				<label class="control-label" for="inputShowAge inputHideAge">Host Age</label>
+				<div class="controls">
+					<div id="inputShowAge" style="display:none">
+						<input name="g_age" id="inputAge" class="input-mini" type="text"></input>
+						<label class="radio inline">
+							<input type="radio" name="g_age_unit" value="year" id="inputAgeUnitYears" checked="checked">
+								Years
+						</label>
+						<label class="radio inline">
+							<input type="radio" name="g_age_unit" value="months" id="inputAgeUnitMonths">
+								Months
+						</label>
+						<label class="radio inline">
+							<input type="radio" name="g_age_unit" value="days" id="inputAgeUnitDays">
+								Days
+						</label>
+					</div>
+					<TMPL_VAR err_g_age>
+					<div id="inputHideAge">
+						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
+					</div>
+				</div>
+			</div>
+			
+			<div class="control-group" style="padding-left:60px">
+				<label class="control-label">Associated Diseases and Symptoms</label>
+				<div class="controls">
+					<div id="inputDiseases" name="g_syndrome" style="width:500px;">
+						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
+					</div>
+					<div id="inputOtherDiseases" style="display:none">
+						<label class="checkbox inline">
+							<input id="inputAsymptomatic" name="g_asymptomatic" type="checkbox"></input>
+							Asymptomatic
+						</label>
+						<label class="checkbox inline">
+							<input id="inputOtherDiseaseCheck" name="g_other_syndrome_cb" type="checkbox"></input>
+							Other:
+						</label>
+						<input id="inputOtherDiseaseText" name="g_other_syndrome" type="text" class="input-medium" disabled></input>
+					</div>
+					<TMPL_VAR err_g_syndrome>
+					<TMPL_VAR err_g_other_syndrome>
+				</div>
+			</div>
+			
+			<div class="control-group">
+				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
+				<div class="controls">
+					<input type="text" class="input-medium" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" value="<TMPL_VAR g_date>" required>						
+						<TMPL_VAR err_g_date>
+				</div>
+			</div>
+			
+			<div class="control-group">
+				<label class="control-label" for="inputLocationName inputLocationMapPoint">Location of Isolation</label>
+				<div class="controls">
+					<div>
+						<label class="radio">
+							<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
+								<span class="help-block">Specify by name:</span>
+						</label>
+						<select class="input-medium bfh-countries" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
+						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" value="<TMPL_VAR g_location>" placeholder="State/Province/Region"/>
+						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity"  value="<TMPL_VAR g_location>" placeholder="City"/>
+						<TMPL_VAR err_g_location_country>
+						<TMPL_VAR err_g_location_state>
+						<TMPL_VAR err_g_location_city>
+					</div>
+					<div>
+						<label class="radio">
+							<input type="radio" name="g_locate_method" value="map" id="inputLocationMapPoint">
+								<span class="help-block">Or by location on map:</span>
+								<div id="map_canvas" style="display:none; height:400px; width:500px;"></div>
+						</label>
+					</div>
+					<TMPL_VAR err_g_location_latlng>
+				</div>
+			</div>
+			
+			<span class="help-block" style="margin:10px; padding-top:20px">Data privacy:</span>
 			<TMPL_IF set_privacy>
 			<div class="control-group">
 				<label class="control-label" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
@@ -83,7 +187,7 @@
 					<label class="radio">
 						<input type="radio" name="g_privacy" value="release" id="inputPrivateUntil" <TMPL_IF g_release>checked</TMPL_IF>>
 						Private Until
-						<input type="text" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD" value="<TMPL_VAR g_release_date>">
+						<input type="text" class="input-medium" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD" value="<TMPL_VAR g_release_date>">
 					</label>
 					<TMPL_VAR err_g_privacy>
 					<TMPL_VAR err_g_release_date>
@@ -106,36 +210,52 @@
 		<hr/>
 		
 		<fieldset class="form-horizontal" id="additionalFields">
-			<span class="help-block" style="margin:10px"> The following fields are optional:</span>
+			<h4>The following fields are optional:</h4>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputGroupLabel">
 					Group Label
+					<i class="icon-question-sign" data-toggle="tooltip" title="If multiple uploads are part of same project, assign them a common group descriptor here.">
+					</i>
 				</label>
 				<div class="controls">
 					<input type="text" id="inputGroupLabel" name="g_group" value="<TMPL_VAR g_group>">
-						<span class="help-inline">If multiple uploads are part of same project, assign them a common group descriptor here.</span>
 						<TMPL_VAR err_g_group>
 				</div>
 			</div>
+			
+			<div class="control-group">
+				<label class="control-label" for="inputComments">
+					Additional Notes on Strain
+				</label>
+				<div class="controls">
+					<textarea rows=2 id="inputComments" name="g_comments" value="<TMPL_VAR g_comments>"></textarea>
+						<TMPL_VAR err_g_comments>
+				</div>
+			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputDescription">
-					Description
+					Genome Description
 				</label>
 				<div class="controls">
 					<input type="text" id="inputDescription" name="g_description" value="<TMPL_VAR g_description>">
 						<TMPL_VAR err_g_description>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputKeywords">
 					Keywords
+					<i class="icon-info-sign" data-toggle="tooltip" title='Separate keywords with a "," (comma).'>
+					</i>
 				</label>
 				<div class="controls">
 					<input type="text" id="inputKeywords" name="g_keywords" value="<TMPL_VAR g_keywords>">
-						<span class="help-inline">Separate keywords with a "<strong>,</strong>" (comma).</span>
 						<TMPL_VAR err_g_keywords>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputOwner">
 					Owner
@@ -145,6 +265,7 @@
 						<TMPL_VAR err_g_owner>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputSynonym">
 					Genome Alias
@@ -154,6 +275,7 @@
 						<TMPL_VAR err_g_synonym>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputDbxrefDB inputDbxrefAcc inputDbxrefVer">
 					External DB Identifier
@@ -170,6 +292,21 @@
 					</div>
 				</div>
 			</div>
+			
+			<div class="control-group">
+				<label class="control-label" for="inputRef">
+					Pubmed References
+					<i class="icon-info-sign" data-toggle="tooltip" title='Separate multiple pubmed IDs with a "," (comma).'>
+					</i>
+				</label>
+				<div class="controls">
+					<div>
+						<input type="text" id="inputRef" name="g_pmid" placeHolder="Pubmed ID" value="<TMPL_VAR g_pmid>"/>
+						<TMPL_VAR err_g_pmid>
+					</div>
+				</div>
+			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputFinished inputUnfinished">
 					Genome Sequence Status
@@ -190,6 +327,7 @@
 					<TMPL_VAR err_g_finished>
 				</div>
 			</div>
+			
 			<div class="control-group">
 				<label class="control-label" for="inputMolType">
 					Molecular Type
@@ -231,7 +369,144 @@
 
 </div>
 
-<script>
+<script type="text/javascript">
+	function initialize() {
+		var mapOptions = {
+			center: new google.maps.LatLng(49.134890, -122.901435),
+			zoom: 2,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+		var map = new google.maps.Map(document.getElementById("map_canvas"),
+			mapOptions);
+	}
+	
+	$('#inputLocationMapPoint').click( function() {
+		$('#inputLocationCountry').attr("disabled", true);
+		$('#inputLocationCountry').attr("required", false);
+		$('#inputLocationState').attr("disabled", true);
+		$('#inputLocationCity').attr("disabled", true);
+		$('#map_canvas').show();
+		initialize();
+	});
+	
+	$('#inputLocationName').click( function() {
+		$('#map_canvas').hide();
+		$('#inputLocationCountry').attr("disabled", false);
+		$('#inputLocationCountry').attr("required", true);
+		$('#inputLocationState').attr("disabled", false);
+		$('#inputLocationCity').attr("disabled", false);
+	});
+</script>
+
+<script type="text/javascript">
+
+var sourceCategories = <TMPL_VAR json_categories>;
+
+var sourceList = <TMPL_VAR json_sources>;
+
+var diseaseList = <TMPL_VAR json_diseases>;
+
+$('#inputHost').change ( function() {
+
+	if($(this).val() == 'other') {
+		$("#inputOtherHost").show();
+		$('#inputHostName').attr("required", true);
+		$('#inputHostGenus').attr("required", true);
+		$('#inputHostSpecies').attr("required", true);
+		
+	} else {
+		$("#inputOtherHost").hide();
+		$('#inputHostName').attr("required", false);
+		$('#inputHostGenus').attr("required", false);
+		$('#inputHostSpecies').attr("required", false);
+	}
+		
+	// Add new Source options for specified host
+	var $el = $("#inputSource");
+	$el.empty(); // remove old options
+	
+	var cat = sourceCategories[$(this).val()];
+	
+	$.each(sourceList[cat], function(key, value) {
+  		$el.append($("<option></option>")
+     	.attr("value", key).text(value));
+	});
+	
+	// Set default to empty
+	$el.append($("<option></option>")
+		.attr("value","").attr("selected", "selected").text("--Select Source--"));
+		
+	// Diseases for specified host
+	var $el2 = $("#inputDiseases");
+	$el2.empty();
+	var hostDiseases = diseaseList[cat];
+	$.each(hostDiseases, function(key, value) {
+  		$el2.append($('<label class="checkbox inline"><input type="checkbox"></input>'+value+'</label>')
+     	.attr("value", key));
+	});
+	
+	var $el3 = $("#inputOtherDiseases");
+	$el3.show();
+		
+	if(cat != 'env') {
+	// Initialize age
+	
+		$("#inputShowAge").show();
+		$("#inputHideAge").hide();
+		
+	} else {
+	// Hide age
+		
+		$("#inputShowAge").hide();
+		$("#inputHideAge").show();
+	}
+	
+});
+
+$('#inputSource').change ( function() {
+
+	if($(this).val() == 'other') {
+		$("#inputOtherSource").show();
+		$('#inputSourceName').attr("required", true);
+	} else {
+		$("#inputOtherSource").hide();
+		$('#inputSourceName').attr("required", false);
+	}
+
+});
+
+// Uncheck other symptoms if asymptomatic checked
+$("#inputAsymptomatic").click(function() {
+	var thisCheck = $(this);
+
+	if(thisCheck.is(':checked')) {
+		$("#inputDiseases input:checked").each(function() {
+		 	$(this).prop('checked', false);
+		});
+	}
+});
+
+// Uncheck asymptomatic if other symptoms checked
+$("#inputDiseases").click(function() {
+	var asymCheck = $("#inputAsymptomatic");
+
+	if(asymCheck.is(':checked') && $('#inputDiseases input:checked').length > 0) {
+		asymCheck.prop('checked', false);
+	}
+});
+
+$('#inputOtherDiseaseCheck').click( function() {
+	var thisCheck = $(this);
+	
+	if(thisCheck.is (':checked')) {
+		$('#inputOtherDiseaseText').attr("disabled", false);
+		$('#inputOtherDiseaseText').attr("required", true);
+	} else {
+		$('#inputOtherDiseaseText').attr("disabled", true);
+		$('#inputOtherDiseaseText').attr("required", false);
+	}
+});
+
 $('#inputPrivateUntil').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", false);
 	$('#inputPrivateUntilText').attr("required", true);
@@ -245,6 +520,7 @@ $('#inputPrivate').click( function() {
 	$('#inputPrivateUntilText').attr("disabled", true);
 	$('#inputPrivateUntilText').attr("required", false);
 });
+
 $('#submitGenome').click( function() {
 	var emptyInput = 0;
 	$('input[required]').each( function() {
@@ -263,4 +539,5 @@ $('#submitGenome').click( function() {
 		$('#genomeUploadForm').submit();
 	}
 });
+
 </script>

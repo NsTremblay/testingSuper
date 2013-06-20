@@ -32,11 +32,12 @@ will be updated to ensure consistency).
 2. Genodo entry in the db table (if one already exists, this value 
 will be updated to ensure consistency).
 3. Entries in the cvterm table for the terms mol_type, keywords, description, 
-finished, owner from the SOFP feature_property ontology. We only check for 
+finished, owner, comment from the SOFP feature_property ontology. We only check for 
 their existence. If missing, please install ontology through the Chado 
 installation scripts.
-4. Entries in the cvterm table for the terms serotype, strain, isolation_host,
-isolation_location, isolation_date.  The xref DB is set to Genodo.
+4. Entries in the cvterm table for the terms serotype, strain, isolation_host, 
+isolation_location, isolation_date, isolation_source, isolation_latlng, severity
+syndrome, isolation_age, pmid.  The xref DB is set to Genodo.
 
 =head1 AUTHOR
 
@@ -125,12 +126,12 @@ my $cv = $schema->resultset('Cv')->find({ name => 'feature_property' });
 
 unless($cv) {
 	croak "\n\nERROR: Cannot find the ontology feature_property. ".
-		" The SOFP feature_property ontology should have been loaded during the CHADO DB installation.";
+		" The SOFP feature_property ontology should have been loaded during the CHADO DB installation.\n";
 }
 
 my $cv_id = $cv->cv_id;
 
-my @sofp_terms = qw/mol_type keywords description finished owner/;
+my @sofp_terms = qw/mol_type keywords description finished owner comment/;
 foreach my $term (@sofp_terms) {
 	my $row = $schema->resultset('Cvterm')->find(
 		{
@@ -141,7 +142,7 @@ foreach my $term (@sofp_terms) {
 	
 	unless($row){
 		croak "\n\nERROR: the SOFP feature property term $term is missing from the cvterm table.".
-			" The SOFP feature_property ontology should have been loaded during the CHADO DB installation.";
+			" The SOFP feature_property ontology should have been loaded during the CHADO DB installation.\n";
 	}
 }
 
@@ -151,7 +152,7 @@ $cv = $schema->resultset('Cv')->find({ name => 'local' });
 
 unless($cv) {
 	croak "\n\nERROR: Cannot find the default ontology local. ".
-		" A local ontology should have been initialized during the CHADO DB installation.";
+		" A local ontology should have been initialized during the CHADO DB installation.\n";
 }
 
 $cv_id = $cv->cv_id;
@@ -159,7 +160,8 @@ $cv_id = $cv->cv_id;
 my $db_id = $schema->resultset('Db')->find({ name => $db_name })->db_id;
 
 
-my @local_terms = qw/serotype strain isolation_host isolation_location isolation_date/;
+my @local_terms = qw/serotype strain isolation_host isolation_location isolation_date isolation_latlng
+	syndrome severity isolation_source isolation_age pmid/;
 foreach my $term (@local_terms) {
 	
 	my $term_hash = {
@@ -176,7 +178,7 @@ foreach my $term (@local_terms) {
 	my $row = $schema->resultset('Cvterm')->find_or_new($term_hash, { key => 'cvterm_c1' });
 	
 	unless($row->in_storage) {
-		print "Adding local ontology term $term";
+		print "Adding local ontology term $term\n";
 		$row->insert;
 	}
 }

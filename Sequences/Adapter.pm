@@ -90,7 +90,13 @@ my %fp_types = (
 	isolation_host => 'local',
 	isolation_location => 'local',
 	isolation_date => 'local',
-	synonym => 'feature_property'
+	synonym => 'feature_property',
+	comment => 'feature_property',
+	isolation_source => 'local',
+	isolation_age => 'local',
+	isolation_latlng => 'local',
+	syndrome => 'local',
+	pmid     => 'local',
 );
 
 # Used in DB COPY statements
@@ -1546,17 +1552,30 @@ sub handle_reserved_properties {
       		next;
       	}
       	
-		# All property values are single value scalars (maybe in future allow some multiple values? like multiple aliases?)
-		
+		# All property values can be single value scalars or array ref of multiple values
+		# Rank is assigned based on a FIFO scheme
 		my $value = $fprops->{$tag};
-      	my $rank=0; # Since we only have a single instance of each attribute, rank is 0.
-      	
-      	# If this property is unique, add it.
-		if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank ]) ) {
-                                        	
-			$self->print_fprop($self->nextoid('featureprop'),$feature_id,$property_cvterm_id,$value,$rank);
-        	$self->nextoid('featureprop','++');
+		my @value_stack;
+		
+		if(ref $value eq 'ARRAY') {
+			@value_stack = @$value;
+		} else {
+			push @value_stack, $value;
 		}
+		
+      	my $rank=0;
+      	foreach my $value (@value_stack) {
+      	
+	      	# If this property is unique, add it.
+			if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank ]) ) {
+	                                        	
+				$self->print_fprop($self->nextoid('featureprop'),$feature_id,$property_cvterm_id,$value,$rank);
+	        	$self->nextoid('featureprop','++');
+	        	$rank++;
+			} else {
+				carp "Featureprop with type $property_cvterm_id and rank $rank already exists for this feature.\n";
+			}
+      	}
     }
 }
 

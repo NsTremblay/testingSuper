@@ -134,7 +134,6 @@ if($success) {
 my $now = strftime "%Y-%m-%d %H:%M:%S", localtime;
 $sql = qq/UPDATE tracker SET end_date = '$now' WHERE tracker_id = $tracking_id/;
 $dbh->do($sql);
-$update_step_sth->execute($next_step++);
 
 # Delete tmp files
 clean_up(@remove_tmp_files);
