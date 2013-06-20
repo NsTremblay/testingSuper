@@ -92,8 +92,7 @@ A pointer to the dbix::class::schema object used in Application
 =cut
 sub dbixSchema {
 	my $self = shift;
-	
-	$self->{_dbixSchema} = shift // return $self->{_dbixSchema};
+	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
 =head2 logger 

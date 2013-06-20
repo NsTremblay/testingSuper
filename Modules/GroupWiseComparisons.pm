@@ -35,10 +35,12 @@ package Modules::GroupWiseComparisons;
 use strict;
 use warnings;
 use FindBin;
-use lib 'FindBin::Bin/../';
+use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
+
+use Modules::GroupComparator;
 
 sub setup {
 	my $self=shift;
@@ -47,7 +49,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'group_wise_comparisons'=>'groupWiseComparisons'
+		'group_wise_comparisons'=>'groupWiseComparisons',
+		'group_compare_test' => '_getStrainInfo'
 		);
 }
 
@@ -71,9 +74,11 @@ Run mode for the group wise comparisons page
 
 sub groupWiseComparisons {
 	my $self = shift;
+
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $formDataRef = $formDataGenerator->getFormData();
+	#my $formDataRef = $formDataGenerator->getFormData();
+	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
@@ -81,12 +86,16 @@ sub groupWiseComparisons {
 	my @groupTwoStrainNames = $q->param("group2");
 
 	if(!(@groupOneStrainNames) && !(@groupTwoStrainNames)){
-		$template->param(FEATURES=>$formDataRef);
+		$template->param(FEATURES=>$pubDataRef);
 	}
 	else{
-		my $groupOneDataRef = $self->_getStrainInfo(\@groupOneStrainNames);
-		my $groupTwoDataRef = $self->_getStrainInfo(\@groupTwoStrainNames);                
-		$template->param(FEATURES=>$formDataRef);
+		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
+		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);                
+		$template->param(FEATURES=>$pubDataRef);
+		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
+		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
+		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);
+		$template->param(GROUP2SNPDATA=>$groupTwoSnpDataRef);
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
 	}
@@ -103,11 +112,22 @@ sub _getStrainInfo {
 	my $self = shift;
 	my $_groupedStrainNames = shift;
 
-	push (my @strainNames , @{$_groupedStrainNames}); 
+	#push (my @strainNames , @{$_groupedStrainNames}); 
 
-	my $ffwHandle = Modules::FastaFileWrite->new();
-	$ffwHandle->dbixSchema($self->dbixSchema);
-	$ffwHandle->writeStrainsToFile(\@strainNames);
+	#my $ffwHandle = Modules::FastaFileWrite->new();
+	#$ffwHandle->dbixSchema($self->dbixSchema);
+	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $formDataRef = $formDataGenerator->getFormData();
+
+	my $comparisonHandle = Modules::GroupComparator->new();
+	$comparisonHandle->dbixSchema($self->dbixSchema);
+	my $binaryDataRef = $comparisonHandle->getBinaryData($_groupedStrainNames);
+	my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
+
+	return ($binaryDataRef , $snpDataRef);
 }
 
 1;

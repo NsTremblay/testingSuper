@@ -233,7 +233,7 @@ use File::Basename;
 	}
 
 	sub hashConfigSettings {
-		my $configLocation = "$FindBin::Bin/../Modules/chado_upload_test.cfg";
+		my $configLocation = "$FindBin::Bin/../Modules/genodo.cfg";
 		open my $in, '<' , $configLocation or die "Cannot open $configLocation: $!\n";
 		my ($dbName , $dbUser , $dbPass);
 		while (my $confLine = <$in>) {

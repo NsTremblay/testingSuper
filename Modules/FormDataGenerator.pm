@@ -32,10 +32,13 @@ package Modules::FormDataGenerator;
 
 use strict;
 use warnings;
+use parent 'Modules::App_Super';
 use FindBin;
-use lib 'FindBin::Bin/../';
+use lib "$FindBin::Bin/../";
 use Log::Log4perl;
 use Carp;
+
+use JSON;
 
 #object creation
 sub new {
@@ -100,40 +103,95 @@ sub logger {
 
 =head2 getFormData
 
-Qeuries the database for form data and returns a array reference to a list of table row data.
+Queries the database to return list of genomes available to user.
+
+Method is used to populate forms with a list of public and
+private genomes.
 
 =cut
 
-sub getFormData {
-    my $self = shift;
-    my $features = $self->dbixSchema->resultset('Feature')->search(
-    {
-        type_id => '1569'
-        },
-        {   
-        select => [qw/me.uniquename/],
-        order_by    => {-asc => ['me.uniquename']}
-    }
-    );
-    my $formDataRef = $self->_hashFormData($features);
-    return $formDataRef;
-}
-
 # sub getFormData {
 #     my $self = shift;
-#     my $features = $self->dbixSchema->resultset('Featureprop')->search(
+#     my $features = $self->dbixSchema->resultset('Feature')->search(
 #     {
-#         name => 'genome_of'
+#         'type.name' => 'contig_collection'
+#         #'type.name' => 'human_readable_name'
 #         },
-#         {   join => ['type'],
-#         select => [qw/me.value type.name/],
-#         group_by => [qw/me.value type.name/],
-#         order_by    => {-asc => ['me.value']}
-#     }
-#     );
+#         {   
+#             join => ['type' , 'featureprops'],
+#             select => [qw/me.uniquename featureprops.value/],
+#             order_by    => {-asc => ['me.uniquename']}
+#         }
+#         );
 #     my $formDataRef = $self->_hashFormData($features);
 #     return $formDataRef;
 # }
+
+sub getFormData {
+    my $self = shift;
+    
+    # Return public genome names as list of hash-refs
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'type.name'      => 'contig_collection'
+        },
+        {
+            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            columns => [qw/feature_id uniquename type.name featureprops.value/],
+            join => ['type' , 'featureprops'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
+    
+    my @publicFormData = $genomes->all;
+    #my $publicFormData = $self->_hashFormData($genomes);
+
+
+    my $encodedText = $self->_getJSONFormat(\@publicFormData);
+    #print STDERR $encodedText . "\n";
+
+    # Get private list (or empty list)
+    my $privateFormData = $self->privateGenomes();
+    
+    # Return two lists
+    return(\@publicFormData, $privateFormData);
+    #return($publicFormData, $privateFormData);
+}
+
+sub privateGenomes {
+    my $self = shift;
+    
+    if($self->authen->is_authenticated) {
+        # user is logged in
+        
+        # Return private genome names as list of hash-refs
+        # Need to check view permissions for user
+        my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
+        {
+            'login.username' => $self->authen->username,
+            'type.name'      => 'contig_collection'
+            },
+            {
+                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                columns => [qw/feature_id uniquename type.name privatefeatureprops.value/],
+                join => [
+                { 'upload' => { 'permissions' => 'login'} },
+                'type',
+                'privatefeatureprops'
+                ]
+            }
+            );
+        
+        my @privateFormData = $genomes->all;
+        #my $privateFormData = $self->_hashFormData($genomes);
+        
+        return \@privateFormData;
+        #return $privateFormData;
+        
+        } else {
+            return [];
+        }
+    }
 
 =head2 _hashFormData
 
@@ -191,5 +249,106 @@ sub _hashGenomeUploadFormData {
     }
     return \@genomeUploadFormData;
 }
+
+=cut _getVirulenceFormData
+
+Queries the database for form data to be filled in the virluence factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub getVirulenceFormData {
+    my $self = shift;
+    my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'featureprops.value' => "Virulence Factor",
+        'type.name' => "gene"
+        },
+        {
+            #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            column  => [qw/feature_id type_id uniquename/],
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'uniquename'],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
+    #my $virulenceFormDataRef = $_virulenceFactorProperties->all;
+    my $encodedText = $self->_getJSONFormat($virulenceFormDataRef);
+    
+    return ($virulenceFormDataRef , $encodedText);
+}
+
+=cut _getAmrFormData
+
+Queries the database for form data to be filled in the amr factor form.
+Returns an array ref to form entry data.
+
+=cut
+
+sub getAmrFormData {
+    my $self = shift;
+    my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'featureprops.value' => "Antimicrobial Resistance",
+        'type.name' => "gene"
+        },
+        {
+            #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            column  => [qw/feature_id type_id uniquename/],
+            join        => ['featureprops' , 'type'],
+            # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
+            # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
+            order_by    => { -asc => ['uniquename'] }
+        }
+        );
+    my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
+    #my $amrFormDataRef = $_amrFactorProperties->all;
+    my $encodedText = $self->_getJSONFormat($amrFormDataRef);
+    return ($amrFormDataRef , $encodedText);
+}
+
+=cut _hashVirAmrFormData
+
+Inputs all column data into a hash table and returns a reference to the hash table.
+Note: the Cvterms must be defined when up-loading sequences to the database otherwise you'll get a NULL exception and the page wont load.
+i.e. You cannot just upload sequences into the db just into the Feature table without having any terms defined in the Featureprop table.
+i.e. Fasta files must have attributes tagged to them before uploading.
+
+=cut
+
+sub _hashVirAmrFormData {
+    my $self=shift;
+    my $_factorProperties = shift;
+
+    my @factors;
+    
+    while (my $fRow = $_factorProperties->next){
+        my %fRowData;
+        $fRowData{'FEATUREID'}=$fRow->feature_id;
+        $fRowData{'UNIQUENAME'}=$fRow->uniquename;
+        push(@factors, \%fRowData);
+    }
+    return \@factors;
+}
+
+=cut _getJSONFormat 
+
+Takes as input a hash ref and returns a UTF-8 encoded JSON string. 
+When passed to the browser this string is atuomatically recognized as JSON structure.
+
+=cut
+
+sub _getJSONFormat {
+    my $self=shift;
+    my $dataHashRef = shift;
+    my $json = JSON::XS->new->pretty(1);
+    my %jsonHash;
+    $jsonHash{'data'} = $dataHashRef;
+    my $_encodedText = $json->encode(\%jsonHash);
+    return $_encodedText;
+}
+
 
 1;
