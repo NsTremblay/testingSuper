@@ -153,7 +153,7 @@
 		}
 	}
 
-	var strainJson = <TMPL_VAR NAME=vJSON>;
+	var strainJson = <TMPL_VAR NAME=strainJSONData>;
 
 	$('#uniqueNameView').click(function () {
 		$('#strainListSelection').empty();
@@ -195,7 +195,7 @@
 		for (i=0 ; i<strainJson.data.length ; i++) {
 			var li = document.createElement("li");
 			var label = document.createElement("label");
-			var description = document.createTextNode(strainJson.data[i].feature_id);
+			var description = document.createTextNode(strainJson.data[i].featureprops.value);
 			var checkbox = document.createElement("input");
 
 			li.setAttribute("style","list-style:none");

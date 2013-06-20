@@ -146,13 +146,15 @@
 		var strainJson = <TMPL_VAR NAME=strainJSONData>;
 
 		$('#uniqueNameView').click(function () {
+
 			$('#strainListSelection').empty();
-			$('#group1').empty();
+			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
-			$('#group2').empty();
+			$('#group2 li').closest('li').remove();
 			$('#buttonRemoveGroup2').hide();
 
 			for (i=0 ; i<strainJson.data.length ; i++) {
+				
 				var li = document.createElement("li");
 				var label = document.createElement("label");
 				var description = document.createTextNode(strainJson.data[i].uniquename);
@@ -176,16 +178,17 @@
 		});
 
 		$('#commonNameView').click(function () {
+
 			$('#strainListSelection').empty();
-			$('#group1').empty();
+			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
-			$('#group2').empty();
+			$('#group2 li').closest('li').remove();
 			$('#buttonRemoveGroup2').hide();
 
 			for (i=0 ; i<strainJson.data.length ; i++) {
 				var li = document.createElement("li");
 				var label = document.createElement("label");
-				var description = document.createTextNode(strainJson.data[i].feature_id);
+				var description = document.createTextNode(strainJson.data[i].featureprops.value);
 				var checkbox = document.createElement("input");
 
 				li.setAttribute("style","list-style:none");

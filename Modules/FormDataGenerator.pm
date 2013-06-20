@@ -133,7 +133,7 @@ sub getFormData {
     # Return public genome names as list of hash-refs
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
     {
-        'type.name'      => 'contig_collection'
+        'type.name' =>  'contig_collection',
         },
         {
             result_class => 'DBIx::Class::ResultClass::HashRefInflator',
@@ -145,8 +145,7 @@ sub getFormData {
     
     my @publicFormData = $genomes->all;
     #my $publicFormData = $self->_hashFormData($genomes);
-
-
+   
     my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
     #print STDERR $encodedText . "\n";
 
