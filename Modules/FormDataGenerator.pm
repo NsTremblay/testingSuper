@@ -110,23 +110,6 @@ private genomes.
 
 =cut
 
-# sub getFormData {
-#     my $self = shift;
-#     my $features = $self->dbixSchema->resultset('Feature')->search(
-#     {
-#         'type.name' => 'contig_collection'
-#         #'type.name' => 'human_readable_name'
-#         },
-#         {   
-#             join => ['type' , 'featureprops'],
-#             select => [qw/me.uniquename featureprops.value/],
-#             order_by    => {-asc => ['me.uniquename']}
-#         }
-#         );
-#     my $formDataRef = $self->_hashFormData($features);
-#     return $formDataRef;
-# }
-
 sub getFormData {
     my $self = shift;
     
@@ -265,7 +248,7 @@ sub getVirulenceFormData {
         },
         {
             #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            column  => [qw/feature_id type_id uniquename/],
+            column  => [qw/feature_id type_id uniquename type.name featureprops.value/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.uniquename/],
             # as          => ['feature_id', 'type_id' , 'uniquename'],

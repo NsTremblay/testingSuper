@@ -77,10 +77,6 @@
 						<div style="margin:10px 0px 0px 0px">
 							<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
 							<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-
-							<!--Adding a tester button here for now-->
-							<button id="changeForm" type="button" class="btn btn-small">Demo</button>
-
 						</div>
 					</fieldset>
 				</form>
@@ -154,6 +150,7 @@
 	}
 
 	var strainJson = <TMPL_VAR NAME=strainJSONData>;
+	var Json = <TMPL_VAR NAME=vJSON>;
 
 	$('#uniqueNameView').click(function () {
 		$('#strainListSelection').empty();
