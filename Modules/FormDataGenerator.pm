@@ -147,14 +147,14 @@ sub getFormData {
     #my $publicFormData = $self->_hashFormData($genomes);
 
 
-    my $encodedText = $self->_getJSONFormat(\@publicFormData);
+    my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
     #print STDERR $encodedText . "\n";
 
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes();
     
     # Return two lists
-    return(\@publicFormData, $privateFormData);
+    return(\@publicFormData, $privateFormData , $pubEncodedText);
     #return($publicFormData, $privateFormData);
 }
 
