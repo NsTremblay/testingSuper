@@ -18,94 +18,114 @@
 
 			<div class="span8">
 
-				<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3;margin-right:5px">
-					<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
-				</div>
+				<ul id="strainInfoTabs" class="nav nav-tabs" style="display:none">
+					<li class="active"><a href="#phyloTreeTab" data-toggle="tab">Phylogenetic Tree</a></li>
+					<!--li><a href="#mapTab" data-toggle="tab">Map</a></li-->
+						<li><a href="#virAmrTab" data-toggle="tab">Virulence and AMR</a></li>
+					</ul>
 
-			</div>
+					<div class="tab-content">
 
-			<div class="row-fluid" id="strainInfoDiv" style="display:none;margin:10px 10px 10px 0px">
+						<div class="tab-pane active" id="phyloTreeTab">
+							<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3;margin-right:5px">
+								<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
+							</div>
+						</div>
 
-				<div class="span6" style="height:300px;overflow:auto;margin-top:10px">
-					<table class="table table-striped table-condensed">
-						<thead></thead>
-						<tr>
-							<th>Virulence Factors</th>
-						</tr>
-						<TMPL_LOOP NAME=VIRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
-					</table>
-				</div>
+						<!--div class="tab-pane" id="mapTab">
+							<div id="map_div" style="display:none;border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
+								<div id="map_canvas" style="height:300px"></div>
+							</div>
+						</div-->
 
-				<div class="span6" style="height:300px;overflow:auto;margin-top:10px">
-					<table class="table table-striped table-condensed">
-						<thead></thead>
-						<tr>
-							<th>AMR Genes</th>
-						</tr>
-						<TMPL_LOOP NAME=AMRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
-					</table>
+						<div class="tab-pane" id="virAmrTab">
+							<div class="row-fluid" id="strainInfoDiv" style="margin:10px 10px 10px 0px">
+
+								<div class="span6" style="height:300px;overflow:auto;margin-top:10px">
+									<table class="table table-striped table-condensed">
+										<thead></thead>
+										<tr>
+											<th>Virulence Factors</th>
+										</tr>
+										<TMPL_LOOP NAME=VIRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
+									</table>
+								</div>
+
+								<div class="span6" style="height:300px;overflow:auto;margin-top:10px">
+									<table class="table table-striped table-condensed">
+										<thead></thead>
+										<tr>
+											<th>AMR Genes</th>
+										</tr>
+										<TMPL_LOOP NAME=AMRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
+									</table>
+								</div>
+
+							</div>
+						</div>
+
+					</div>
+
 				</div>
 
 			</div>
 
 		</div>
 
-	</div>
+		<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
 
-	<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
+		<script>
 
-	<script>
+		var strainJson = <TMPL_VAR NAME=strainJSONData>;
 
-	var strainJson = <TMPL_VAR NAME=strainJSONData>;
+		$('#uniqueNameView').click(function () {
+			var availableTags = [];
+			$('#pubStrainList').empty();
+			for (i=0 ; i<strainJson.data.length ; i++) {
+				var opt = document.createElement("option");
+				var description = document.createTextNode(strainJson.data[i].uniquename);
+				opt.value = strainJson.data[i].uniquename;
+				opt.appendChild(description);
+				document.getElementById('pubStrainList').appendChild(opt);
 
-	$('#uniqueNameView').click(function () {
-		var availableTags = [];
-		$('#pubStrainList').empty();
-		for (i=0 ; i<strainJson.data.length ; i++) {
-			var opt = document.createElement("option");
-			var description = document.createTextNode(strainJson.data[i].uniquename);
-			opt.value = strainJson.data[i].uniquename;
-			opt.appendChild(description);
-			document.getElementById('pubStrainList').appendChild(opt);
-
-			availableTags.push( { label:strainJson.data[i].uniquename, value:strainJson.data[i].uniquename } );
-		}
-		$("#autoComp").autocomplete({
-			source: availableTags,
-			select: function( event, ui ) {
+				availableTags.push( { label:strainJson.data[i].uniquename, value:strainJson.data[i].uniquename } );
+			}
+			$("#autoComp").autocomplete({
+				source: availableTags,
+				select: function( event, ui ) {
 			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
 			            $("#autoComp_hidden").val( ui.item.value );
 			            return false;
 			        }
 			    });
-	});
+		});
 
-	$('#commonNameView').click(function () {
-		$('#pubStrainList').empty();
-		var availableTags = [];
-		for (i=0 ; i<strainJson.data.length ; i++) {
-			var opt = document.createElement("option");
-			var description = document.createTextNode(strainJson.data[i].featureprops.value);
-			opt.value = strainJson.data[i].uniquename;
-			opt.appendChild(description);
-			document.getElementById('pubStrainList').appendChild(opt);
+		$('#commonNameView').click(function () {
+			$('#pubStrainList').empty();
+			var availableTags = [];
+			for (i=0 ; i<strainJson.data.length ; i++) {
+				var opt = document.createElement("option");
+				var description = document.createTextNode(strainJson.data[i].featureprops.value);
+				opt.value = strainJson.data[i].uniquename;
+				opt.appendChild(description);
+				document.getElementById('pubStrainList').appendChild(opt);
 
-			availableTags.push( { label:strainJson.data[i].featureprops.value, value:strainJson.data[i].uniquename } );
-		}
-		$("#autoComp").autocomplete({
-			source: availableTags,
-			select: function( event, ui ) {
+				availableTags.push( { label:strainJson.data[i].featureprops.value, value:strainJson.data[i].uniquename } );
+			}
+			$("#autoComp").autocomplete({
+				source: availableTags,
+				select: function( event, ui ) {
 			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
 			            $("#autoComp_hidden").val( ui.item.value );
 			            return false;
 			        }
 			    });
-	});
+		});
 
-	</script>
+		</script>
 
-</body>
+	</body>
 
-<TMPL_INCLUDE NAME="footer.tmpl">
+	<TMPL_INCLUDE NAME="footer.tmpl">
 
-</html>
+	</html>

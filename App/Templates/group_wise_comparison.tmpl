@@ -26,12 +26,40 @@
 		</div>
 
 		<span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span>
-		<div id="multiStrain" class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
-			<div class="row-fluid">
-				<div id="svgCanvas" class="span6" style="padding:5px">
-					<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+		
+		<div class="tabbable tabs-left">
+			<ul class="nav nav-tabs">
+				<li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li>
+				<li><a href="#data" data-toggle="tab">Data</a></li>
+			</ul>
+			<div class="tab-content">
+				<div class="tab-pane active" id="mapTreeSelect">
+					<div class="tabbable">
+						<ul class="nav nav-tabs">
+							<li class="active"><a href="#treeSelect" data-toggle="tab">Select from Tree</a></li>
+							<li><a href="#mapSelect" data-toggle="tab">Select from Map</a></li>
+						</ul>
+					</div>
+
+					<div class="tab-content">
+						<div class="tab-pane active" id="treeSelect"></div>
+						<div id="svgCanvas" class="span6" style="padding:5px">
+							<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+						</div>
+						<div class="tab-pane" id="mapSelect">
+							<div class="span6" id="map_canvas" style="height:500px;padding:5px"></div>
+						</div>
+					</div>
+
 				</div>
-				<div class="span6" id="map_canvas" style="height:500px;padding:5px"></div>
+				<div class="tab-pane" id="data">
+					Put tabs for viewing returned data here.
+				</div>
+			</div>
+		</div>
+
+		<div id="multiStrain" class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
+			<div class="row-fluid">				
 			</div>
 		</div>
 		
@@ -211,6 +239,6 @@
 			}
 		});
 
-	</script>
+		</script>
 
-	</html>
+		</html>
