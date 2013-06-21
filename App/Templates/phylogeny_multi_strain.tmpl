@@ -1,8 +1,6 @@
 <script type="text/javascript" src="/App/Styling/js/d3.phylogram.js"></script>
 <script type="text/javascript" src="/App/Styling/js/newick.js"></script>
-<!--script type="text/javascript" src="/App/Styling/js/d3.v3/d3.v3.js"></script-->
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-
+<script type="text/javascript" src="/App/Styling/js/d3.v3/d3.v3.js"></script>
 
 <div>
   <h2>Phylogram</h2>
@@ -11,8 +9,11 @@
 
 <script>
 function loadTree() {
-  var newick = Newick.parse("(((Crotalus_oreganus_oreganus_cytochrome_b:0.00800,Crotalus_horridus_cytochrome_b:0.05866):0.04732,(Thamnophis_elegans_terrestris_cytochrome_b:0.00366,Thamnophis_atratus_cytochrome_b:0.00172):0.06255):0.00555,(Pituophis_catenifer_vertebralis_cytochrome_b:0.00552,Lampropeltis_getula_cytochrome_b:0.02035):0.05762,((Diadophis_punctatus_cytochrome_b:0.06486,Contia_tenuis_cytochrome_b:0.05342):0.01037,Hypsiglena_torquata_cytochrome_b:0.05346):0.00779);");
+  var newick = Newick.parse('(((Crotalus_oreganus_oreganus_cytochrome_b:0.00800,Crotalus_horridus_cytochrome_b:0.05866):0.04732,(Thamnophis_elegans_terrestris_cytochrome_b:0.00366,Thamnophis_atratus_cytochrome_b:0.00172):0.06255):0.00555,(Pituophis_catenifer_vertebralis_cytochrome_b:0.00552,Lampropeltis_getula_cytochrome_b:0.02035):0.05762,((Diadophis_punctatus_cytochrome_b:0.06486,Contia_tenuis_cytochrome_b:0.05342):0.01037,Hypsiglena_torquata_cytochrome_b:0.05346):0.00779);');
   var newickNodes = []
+
+  //var newickString = JSON.stringify(newick);
+  //document.getElementById('phylogram').innerHTML = JSON.stringify(newick);
 
   function buildNewickNodes(node, callback) {
     newickNodes.push(node);
