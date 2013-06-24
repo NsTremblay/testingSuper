@@ -28,83 +28,96 @@
 		<span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span>
 		
 		<div class="tabbable tabs-left">
+			
 			<ul class="nav nav-tabs">
 				<li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li>
-				<li><a href="#data" data-toggle="tab">Data</a></li>
+				<li id="groupWiseDataLink" style="display:none"><a href="#groupWiseData" data-toggle="tab">Data</a></li>
 			</ul>
+			
 			<div class="tab-content">
+				
 				<div class="tab-pane active" id="mapTreeSelect">
+					
 					<div class="tabbable">
+						
 						<ul class="nav nav-tabs">
-							<li class="active"><a href="#treeSelect" data-toggle="tab">Select from Tree</a></li>
-							<li><a href="#mapSelect" data-toggle="tab">Select from Map</a></li>
+							<li class="active"><a href="#mapSelect" data-toggle="tab">Select from Map</a></li>
+							<li><a href="#treeSelect" data-toggle="tab">Select from Tree</a></li>
 						</ul>
-					</div>
 
-					<div class="tab-content">
-						<div class="tab-pane active" id="treeSelect"></div>
-						<div id="svgCanvas" style="padding:5px">
-							<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+						<div class="tab-content">
+							
+							<div class="tab-pane active" id="mapSelect">
+								<div id="map_div" style="border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
+									<div id="map_canvas" style="height:300px"></div>
+								</div>
+							</div>
+
+							<div class="tab-pane" id="treeSelect">
+								<div id="svgCanvas" style="padding:5px">
+									<TMPL_INCLUDE NAME="phylogeny_multi_strain.tmpl">
+								</div>
+							</div>
+
 						</div>
-						<div class="tab-pane" id="mapSelect">
-							<div id="map_canvas" style="height:500px;padding:5px"></div>
-						</div>
-					</div>
 
-				</div>
-				<div class="tab-pane" id="data">
-					Put tabs for viewing returned data here.
-				</div>
-			</div>
-		</div>
-
-		<div id="multiStrain" class="container" style="background-color:#FFFFFF;min-height:560px;margin-top:5px">
-			<div class="row-fluid">				
-			</div>
-		</div>
-		
-		<div id="groupWiseComparisonDiv" style="display:none;margin:10px 0px 10px 0px">
-
-			<div class="row-fluid">
-				<h4 style="margin:10px">Binary Data</h5>
-					<div class="span5" style="margin:10px;height:300px;overflow:auto">
-						<table class="table table-striped table-condensed">
-							<thead>Group 1</thead>
-							<tr>
-								<th>Locus Name</th>
-								<th>Strains Present</th>
-								<th>Strains Absent</th>
-								<th>p-value</th>
-							</tr>
-							<TMPL_LOOP NAME=GROUP1BINARYDATA>
-							<tr><td><TMPL_VAR NAME=locusname>
-								<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
-								<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
-								<td>< 0.001</td>
-							</td></tr></TMPL_LOOP>
-						</table>
-					</div>
-
-					<div class="span5 pull-right" style="margin:10px;height:300px;overflow:auto">
-						<table class="table table-striped table-condensed">
-							<thead>Group 2</thead>
-							<tr>
-								<th>Locus Name</th>
-								<th>Strains Present</th>
-								<th>Strains Absent</th>
-								<th>p-value</th>
-							</tr>
-							<TMPL_LOOP NAME=GROUP2BINARYDATA>
-							<tr><td><TMPL_VAR NAME=locusname>
-								<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
-								<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
-								<td>< 0.001</td>
-							</td></tr></TMPL_LOOP>
-						</table>
 					</div>
 
 				</div>
 
+				<div class="tab-pane" id="groupWiseData">
+
+					<div class="tabbable">
+
+						<ul class="nav nav-tabs">
+							<li class="active"><a href="#binaryData" data-toggle="tab">Binary Data</a></li>
+							<li><a href="#snpData" data-toggle="tab">SNP Data</a></li>
+						</ul>
+
+						<div class="tab-content">
+							<div class="tab-pane active" id="binaryData">
+								<div class="row-fluid">
+									<h4 style="margin:10px">Binary Data</h5>
+										<div class="span5" style="margin:10px;height:300px;overflow:auto">
+											<table class="table table-striped table-condensed">
+												<thead>Group 1</thead>
+												<tr>
+													<th>Locus Name</th>
+													<th>Strains Present</th>
+													<th>Strains Absent</th>
+													<th>p-value</th>
+												</tr>
+												<TMPL_LOOP NAME=GROUP1BINARYDATA>
+												<tr><td><TMPL_VAR NAME=locusname>
+													<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
+													<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
+													<td>< 0.001</td>
+												</td></tr></TMPL_LOOP>
+											</table>
+										</div>
+
+										<div class="span5 pull-right" style="margin:10px;height:300px;overflow:auto">
+											<table class="table table-striped table-condensed">
+												<thead>Group 2</thead>
+												<tr>
+													<th>Locus Name</th>
+													<th>Strains Present</th>
+													<th>Strains Absent</th>
+													<th>p-value</th>
+												</tr>
+												<TMPL_LOOP NAME=GROUP2BINARYDATA>
+												<tr><td><TMPL_VAR NAME=locusname>
+													<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
+													<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
+													<td>< 0.001</td>
+												</td></tr></TMPL_LOOP>
+											</table>
+										</div>
+
+									</div>
+								</div>
+								<div class="tab-pane" id="snpData">
+									
 				<div class="row-fluid">
 					<h4 style="margin:10px">SNP Data</h5>
 						<div class="span5" style="margin:10px;height:300px;overflow:auto">
@@ -153,7 +166,14 @@
 					</div>
 
 				</div>
+								</div>
+							</div>
 
+						</div>
+
+					</div>
+
+				</div>
 			</div>
 
 			<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
@@ -162,7 +182,70 @@
 
 		<TMPL_INCLUDE NAME="footer.tmpl">
 
+		<script type="text/javascript">
+		function initialize() {
+
+			var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
+			var LatLng2 = new google.maps.LatLng(-15.6778, -47.4384);
+			var LatLng3 = new google.maps.LatLng(53.1142, 2.5771);
+			var LatLng4 = new google.maps.LatLng(22.3000, 114.1667);
+			var LatLng5 = new google.maps.LatLng(46.0000, 2.0000);
+			var LatLng6 = new google.maps.LatLng(0.4252, 36.7517);
+
+			var mapOptions = {	
+				center: LatLng1,
+				zoom: 1,
+				mapTypeId: google.maps.MapTypeId.ROADMAP
+			};
+
+			var map = new google.maps.Map(document.getElementById("map_canvas"),
+				mapOptions);
+
+			var marker = new google.maps.Marker({
+				position: LatLng1,
+				map: map
+			});
+
+			var marker = new google.maps.Marker({
+				position: LatLng2,
+				map: map
+			});
+
+			var marker = new google.maps.Marker({
+				position: LatLng3,
+				map: map
+			});
+
+			var marker = new google.maps.Marker({
+				position: LatLng4,
+				map: map
+			});
+
+			var marker = new google.maps.Marker({
+				position: LatLng5,
+				map: map
+			});
+
+			var marker = new google.maps.Marker({
+				position: LatLng6,
+				map: map
+			});
+		}
+
+		function displayMap() {
+			document.getElementById('map_canvas').style.display="block";
+			initialize();
+		}
+		</script>
+
 		<script>
+		$(document).ready(function(){
+			$('#mapSelect').click(function() {
+				$('#map_canvas').delay('700').fadeIn();
+				setTimeout(loadScript,1000);
+			}); 
+		});
+
 		$(function (){
 			$.widget("ui.tooltip" , $.ui.tooltip, {
 				options: {
@@ -185,7 +268,7 @@
 			$('#buttonRemoveGroup2').hide();
 
 			for (i=0 ; i<strainJson.data.length ; i++) {
-				
+
 				var li = document.createElement("li");
 				var label = document.createElement("label");
 				var description = document.createTextNode(strainJson.data[i].uniquename);
@@ -199,7 +282,7 @@
 				checkbox.id = "checkboxName";
 				checkbox.name = "multiStrainNames";
 				checkbox.value = strainJson.data[i].uniquename;
-				
+
 				label.appendChild(checkbox);
 				label.appendChild(description);
 				li.appendChild(label);
@@ -230,7 +313,7 @@
 				checkbox.id = "checkboxName";
 				checkbox.name = "multiStrainNames";
 				checkbox.value = strainJson.data[i].uniquename;
-				
+
 				label.appendChild(checkbox);
 				label.appendChild(description);
 				li.appendChild(label);
