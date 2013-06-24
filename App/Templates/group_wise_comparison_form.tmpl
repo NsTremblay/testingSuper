@@ -52,9 +52,7 @@
 </div>
 
 <script>
-//$("#compareUngrouped").click( function() {
-//	checkMSFields(strainListForm);
-//});
+
 $("#compareGrouped").click( function() {
 	checkGroupedFields(groupedForm);
 });
@@ -62,60 +60,6 @@ $("#compareGrouped").click( function() {
 
 <script type="text/javascript">
 
-function initialize() {
-
-	var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
-	var LatLng2 = new google.maps.LatLng(-15.6778, -47.4384);
-	var LatLng3 = new google.maps.LatLng(53.1142, 2.5771);
-	var LatLng4 = new google.maps.LatLng(22.3000, 114.1667);
-	var LatLng5 = new google.maps.LatLng(46.0000, 2.0000);
-	var LatLng6 = new google.maps.LatLng(0.4252, 36.7517);
-
-	var mapOptions = {	
-		center: LatLng1,
-		zoom: 1,
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-
-	var map = new google.maps.Map(document.getElementById("map_canvas"),
-		mapOptions);
-
-	var marker = new google.maps.Marker({
-		position: LatLng1,
-		map: map
-	});
-
-	var marker = new google.maps.Marker({
-		position: LatLng2,
-		map: map
-	});
-
-	var marker = new google.maps.Marker({
-		position: LatLng3,
-		map: map
-	});
-
-	var marker = new google.maps.Marker({
-		position: LatLng4,
-		map: map
-	});
-
-	var marker = new google.maps.Marker({
-		position: LatLng5,
-		map: map
-	});
-
-	var marker = new google.maps.Marker({
-		position: LatLng6,
-		map: map
-	});
-}
-
-function displayMap() {
-	document.getElementById('multiStrain').style.display="block";
-	document.getElementById('map_canvas').style.display="block";
-	initialize();
-}
 function checkMSFields(strainListForm) {
 	var selected = 0;
 
@@ -142,13 +86,13 @@ function checkMultiSeq() {
 	if ($('#validator').is(':empty')) {
 	}
 	else {
-		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseComparisonDiv').show("slow"));
-		$('#multiOption').show("slow");
+		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
 	}
 }
 function onLoadCheck() {
 	initialize();
 	checkMultiSeq();
+	loadTree();
 }
 function reload() {
 	location.reload();

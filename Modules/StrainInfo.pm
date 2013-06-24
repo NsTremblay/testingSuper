@@ -64,7 +64,7 @@ sub strain_info : StartRunmode {
 	
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
+	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();
 	
 #	my $logger = Log::Log4perl->get_logger();
 #	$logger->debug('USER: '.$self->authen->username);
@@ -80,6 +80,8 @@ my $privateStrainID = $q->param("privateSingleStrainID");
 
 	# Populate forms
 	$template->param(FEATURES => $pubDataRef);
+	$template->param(strainJSONData => $pubStrainJsonDataRef);
+	
 	if(@$priDataRef) {
 		# User has private data
 		$template->param(PRIVATE_DATA => 1);

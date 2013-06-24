@@ -78,7 +78,7 @@ sub groupWiseComparisons {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	#my $formDataRef = $formDataGenerator->getFormData();
-	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
+	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
@@ -87,11 +87,13 @@ sub groupWiseComparisons {
 
 	if(!(@groupOneStrainNames) && !(@groupTwoStrainNames)){
 		$template->param(FEATURES=>$pubDataRef);
+		$template->param(strainJSONData=>$strainJsonDataRef);
 	}
 	else{
 		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
 		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);                
 		$template->param(FEATURES=>$pubDataRef);
+		$template->param(strainJSONData=>$strainJsonDataRef);
 		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
 		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
 		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);

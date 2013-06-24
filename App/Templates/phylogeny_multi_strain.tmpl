@@ -1,13 +1,37 @@
-<!--div><embed type="image/svg+xml" src="/Phylogeny/NewickTrees/tree.svg" style="min-height:450px"/></div-->
-<div style="align:middle">
-<script type="text/javascript">
-var dataObject = { 
-	newick: '((gi|448819501|ref|NC_020227.1|:0.43930,(gi|449026620|gb|CP004076.1|:0.41909,(gi|444746817|gb|KC292503.1|:0.42152,(gi|448970754|emb|HF565446.1|:0.54194,(gi|448971276|emb|HF565445.2|:0.48242,(gi|406044385|gb|JX310866.1|:0.05963,(gi|406044393|gb|JX310868.1|:0.04731,gi|406044389|gb|JX310867.1|:0.05550)1.000:0.02814)1.000:0.38509)0.981:0.10286)1.000:0.11589)1.000:0.10377)1.000:0.09861)1.000:0.07802,gi|449026592|gb|CP004074.1|:0.39400,(gi|449026565|gb|CP004073.1|:0.45706,gi|448970234|emb|HE662694.1|:0.43460)1.000:0.07818);' 
-};
-phylocanvas = new Smits.PhyloCanvas(
-	dataObject,
-	"svgCanvas",
-	575, 500
-	);
-</script>
+<script type="text/javascript" src="/App/Styling/js/d3.phylogram.js"></script>
+<script type="text/javascript" src="/App/Styling/js/newick.js"></script>
+<!--script type="text/javascript" src="/App/Styling/js/d3.v3/d3.v3.js"></script-->
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+
+<div>
+  <h2>Phylogram</h2>
+  <div id='phylogram'></div>
 </div>
+
+<script>
+function loadTree() {
+  var newick = Newick.parse("(((Crotalus_oreganus_oreganus_cytochrome_b:0.00800,Crotalus_horridus_cytochrome_b:0.05866):0.04732,(Thamnophis_elegans_terrestris_cytochrome_b:0.00366,Thamnophis_atratus_cytochrome_b:0.00172):0.06255):0.00555,(Pituophis_catenifer_vertebralis_cytochrome_b:0.00552,Lampropeltis_getula_cytochrome_b:0.02035):0.05762,((Diadophis_punctatus_cytochrome_b:0.06486,Contia_tenuis_cytochrome_b:0.05342):0.01037,Hypsiglena_torquata_cytochrome_b:0.05346):0.00779);");
+  var newickNodes = []
+
+  function buildNewickNodes(node, callback) {
+    newickNodes.push(node);
+    if (node.branchset) {
+      for (var i=0; i < node.branchset.length; i++) {
+        buildNewickNodes(node.branchset[i]);
+      }
+    }
+  }
+  buildNewickNodes(newick);
+
+  d3.phylogram.buildRadial('#radialtree', newick, {
+    width: 400,
+    skipLabels: true
+  })
+
+  d3.phylogram.build('#phylogram', newick, {
+    width: 300,
+    height: 400
+  });
+}
+</script>
