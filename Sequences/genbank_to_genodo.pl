@@ -151,7 +151,7 @@ my %genbank_tags = (
 		priority => 1
 	},
 	keyword => {
-		cvterm => 'keyword',
+		cvterm => 'keywords',
 		priority => 0
 	},
 	mol_type => {

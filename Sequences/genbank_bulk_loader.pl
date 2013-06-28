@@ -196,6 +196,7 @@ foreach my $fasta_file (@fasta_files) {
                 "--fastafile $real_fasta_file",
                 "--configfile $CONFIGFILE",
                 "--propfile $genodo_file",
+                "--recreate_cache"  # Do this everytime, don't want to screw up names just because we forgot to sync the cache
 		);
 
        $cmd =  join(" ",@args);
