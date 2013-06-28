@@ -399,7 +399,16 @@ sub validate_genome_properties {
 	foreach my $type (keys %$hash) {
 		
 		if($valid_f_tags{$type}) {
-			$f{$type} = $hash->{$type};
+			if(ref $hash->{$type} eq 'ARRAY') {
+				# SOme scripts return every value as arrayref
+				# Feature values are always singletons, so this
+				# should be safe
+				# There is no logical option for multiple names
+				$f{$type} = pop @{$hash->{$type}}
+			} else {
+		
+				$f{$type} = $hash->{$type};
+			}
 			
 		} elsif($valid_fp_tags{$type}) {
 			$fp{$type} = $hash->{$type};

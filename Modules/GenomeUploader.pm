@@ -92,7 +92,9 @@ my $hostList = {
 	oaries      => 'Ovis aries (sheep)',
 	ggallus     => 'Gallus gallus (chicken)',
 	ocuniculus  => 'Oryctolagus cuniculus (rabbit)',
-	environment => 'Environmental Source',
+	clupus      => 'Canis lupus familiaris (dog)',
+ 	fcatus      => 'Felis catus (cat)',
+	environment => 'Environmental source',
 	other       => 'Other (fill in adjacent fields)',
 };
 
@@ -103,6 +105,8 @@ my $sourceCategory = {
 	mmusculus   => 'mammal',
 	oaries      => 'mammal',
 	ggallus     => 'bird',
+	clupus      => 'mammal',
+	fcatus      => 'mammal',
 	ocuniculus  => 'mammal',
 	environment => 'env',
 	other       => 'mammal'
@@ -115,7 +119,9 @@ my $sourceList = {
 		'colon'     => 'Colon',
 		'ileum'     => 'Ileum',
 		'cecum'     => 'Cecum',
+		'intestine' => 'Intestine',
 		'blood'     => 'Blood',
+		'liver'     => 'Liver',
 		'cerebrospinal_fluid' => 'Cerebrospinal fluid',
 		'other'     => 'Other (fill in adjacent fields)',
 	},
@@ -125,6 +131,8 @@ my $sourceList = {
 		'milk '     => 'Milk',
 		'meat'      => 'Meat',
 		'blood'     => 'Blood',
+		'liver'     => 'Liver',
+		'intestine' => 'Intestine',
 		'other'     => 'Other (fill in adjacent fields)',
 	},
 	bird => {
@@ -132,10 +140,11 @@ my $sourceList = {
 		'yolk'      => 'Yolk',
 		'meat'      => 'Meat',
 		'blood'     => 'Blood',
+		'liver'     => 'Liver',
 		'other'     => 'Other (fill in adjacent fields)',
 	},
 	env => {
-		'veggiefood'    => 'Vegitable-based food',
+		'veggiefood'    => 'Vegetable-based food',
 		'meatfood'      => 'Meat-based food',
 		'water'     => 'Water',
 		'other'     => 'Other (fill in adjacent fields)',
@@ -146,13 +155,15 @@ my $diseaseList = {
 	human => {
 		'gastroenteritis'     => 'Gastroenteritis',
 		'bloody_diarrhea'     => 'Bloody diarrhea',
-		'hus'                 => 'Haemolytic-uremic syndrome',
+		'hus'                 => 'Hemolytic-uremic syndrome',
 		'hc'                  => 'Hemorrhagic colitis',
-		'uti'                 => 'Urinary tract infection',
+		'uti'                 => 'Urinary tract infection (cystitis)',
 		'crohns'              => 'Crohn\'s Disease',
 		'uc'                  => 'Ulcerateive colitis',
 		'pneumonia'           => 'Pneumonia',
 		'meningitis'          => 'Meningitis',
+		'pyelonephritis'      => 'Pyelonephritis',
+		'bacteriuria'         => 'Bacteriuria',
 	},
 	mammal => {
 		'mastitis'            => 'Mastitis',
@@ -1677,5 +1688,7 @@ sub _uploadToDatabase {
     }
     closedir GFF;
 }
+
+
 
 1;
