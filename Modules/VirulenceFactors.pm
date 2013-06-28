@@ -76,7 +76,7 @@ sub virulenceFactors {
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
 	my ($amrFactorsRef , $amrJsonData) = $formDataGenerator->getAmrFormData();
-	my ($pubDataRef, $priDataRef) = $formDataGenerator->getFormData();
+	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
@@ -88,6 +88,7 @@ sub virulenceFactors {
 	$template->param(vJSON=>$vJsonData);
 
 	$template->param(STRAINLIST=>$pubDataRef);
+	$template->param(strainJSONData=>$pubStrainJsonDataRef);
 
 	$template->param(amrFACTORS=>$amrFactorsRef);
 	$template->param(amrJSON=>$amrJsonData);

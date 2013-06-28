@@ -77,10 +77,6 @@
 						<div style="margin:10px 0px 0px 0px">
 							<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
 							<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
-
-							<!--Adding a tester button here for now-->
-							<button id="changeForm" type="button" class="btn btn-small">Demo</button>
-
 						</div>
 					</fieldset>
 				</form>
@@ -153,16 +149,69 @@
 		}
 	}
 
-		//This is a demo of being able to switch lists in the virulence factor file.
-		var vJson = <TMPL_VAR NAME=vJSON>;
-		$('#changeForm').click(function () {
-			$('#vfList').empty();
-			$.each(vJson.data, function(FEATUREID, UNIQUENAME) {
-				$('#vfList').append($("<option></option>").attr("value", FEATUREID).text(FEATUREID));
-			});
-		});
-		</script>
-	</body>
-	<TMPL_INCLUDE NAME="footer.tmpl">
+	var strainJson = <TMPL_VAR NAME=strainJSONData>;
 
-	</html>
+	$('#uniqueNameView').click(function () {
+		$('#strainListSelection').empty();
+		$('#group1').empty();
+		$('#buttonRemoveGroup1').hide();
+		$('#group2').empty();
+		$('#buttonRemoveGroup2').hide();
+
+		for (i=0 ; i<strainJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(strainJson.data[i].uniquename);
+			var checkbox = document.createElement("input");
+
+			li.setAttribute("style","list-style:none");
+
+			label.className = "checkbox";
+
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = strainJson.data[i].uniquename;
+
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
+
+			document.getElementById('strainListSelection').appendChild(li);
+		}
+	});
+
+	$('#commonNameView').click(function () {
+		$('#strainListSelection').empty();
+		$('#group1').empty();
+		$('#buttonRemoveGroup1').hide();
+		$('#group2').empty();
+		$('#buttonRemoveGroup2').hide();
+
+		for (i=0 ; i<strainJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(strainJson.data[i].featureprops.value);
+			var checkbox = document.createElement("input");
+
+			li.setAttribute("style","list-style:none");
+
+			label.className = "checkbox";
+
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = strainJson.data[i].uniquename;
+
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
+
+			document.getElementById('strainListSelection').appendChild(li);
+		}
+	});
+	</script>
+</body>
+<TMPL_INCLUDE NAME="footer.tmpl">
+
+</html>

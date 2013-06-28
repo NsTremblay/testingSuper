@@ -110,30 +110,13 @@ private genomes.
 
 =cut
 
-# sub getFormData {
-#     my $self = shift;
-#     my $features = $self->dbixSchema->resultset('Feature')->search(
-#     {
-#         'type.name' => 'contig_collection'
-#         #'type.name' => 'human_readable_name'
-#         },
-#         {   
-#             join => ['type' , 'featureprops'],
-#             select => [qw/me.uniquename featureprops.value/],
-#             order_by    => {-asc => ['me.uniquename']}
-#         }
-#         );
-#     my $formDataRef = $self->_hashFormData($features);
-#     return $formDataRef;
-# }
-
 sub getFormData {
     my $self = shift;
     
     # Return public genome names as list of hash-refs
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
     {
-        'type.name'      => 'contig_collection'
+        'type.name' =>  'contig_collection',
         },
         {
             result_class => 'DBIx::Class::ResultClass::HashRefInflator',
@@ -145,16 +128,15 @@ sub getFormData {
     
     my @publicFormData = $genomes->all;
     #my $publicFormData = $self->_hashFormData($genomes);
-
-
-    my $encodedText = $self->_getJSONFormat(\@publicFormData);
+   
+    my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
     #print STDERR $encodedText . "\n";
 
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes();
     
     # Return two lists
-    return(\@publicFormData, $privateFormData);
+    return(\@publicFormData, $privateFormData , $pubEncodedText);
     #return($publicFormData, $privateFormData);
 }
 
@@ -266,7 +248,7 @@ sub getVirulenceFormData {
         },
         {
             #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            column  => [qw/feature_id type_id uniquename/],
+            column  => [qw/feature_id type_id uniquename type.name featureprops.value/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.uniquename/],
             # as          => ['feature_id', 'type_id' , 'uniquename'],
