@@ -38,6 +38,8 @@ use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
 
+use JSON;
+
 sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
@@ -45,7 +47,8 @@ sub setup {
 	$self->start_mode('default');
 	$self->run_modes(
 		'default'=>'default',
-		'stats'=>'Statistics'
+		'stats'=>'Statistics',
+		'ajax_test'=>'ajaxTest'
 		);
 }
 
@@ -71,6 +74,25 @@ sub Statistics {
 	my $self = shift;
 	my $template = $self->load_tmpl( 'statistics.tmpl' , die_on_bad_params=>0 );
 	return $template->output();
+}
+
+sub ajaxTest {
+	my $self = shift;
+	my $q = $self->query();
+	my $name = $q->param('name'); 
+	my $game = $q->param('game');
+
+	#my $coder = JSON::XS->new->utf8;
+ 	#my $perl_scalar = $coder->decode($input);
+
+	#print STDERR $perl_scalar;
+	#print STDERR $pretty_printed_unencoded;
+
+	my $rtnStr = "Your name is $name, your age is $game";
+
+	#my $rtnStr = "This doesnt work yet";
+
+	return $rtnStr;
 }
 
 1;
