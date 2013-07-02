@@ -37,7 +37,8 @@ sub dispatch_args {
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
                 '/statistics' =>    {app=>'Statistics' , rm=>'stats'},
                 '/group_compare_test/' => {app=>'GroupWiseComparisons', rm=>'group_compare_test'},
-                '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'}
+                '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'},
+                '/ajax_test' => {app=>'Statistics' , rm=>'ajax_test'}
   
         ],
     };
