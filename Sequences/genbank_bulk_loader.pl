@@ -119,6 +119,7 @@ open(LOG, ">$LOGFILE") or croak "Error: unable to open file $job_file ($!).\n";
 print LOG "# script: genbank_bulk_loader.pl\n# time: $timestamp\n\n";
 
 # Iterate through fasta/genbank file pairs loading them into DB
+my $first_file = 1;
 foreach my $fasta_file (@fasta_files) {
 	
 	my ($filename) = ($fasta_file =~ m/(\w+)(\.fasta)?$/);
@@ -195,9 +196,10 @@ foreach my $fasta_file (@fasta_files) {
         @args = ($command,
                 "--fastafile $real_fasta_file",
                 "--configfile $CONFIGFILE",
-                "--propfile $genodo_file",
-                "--recreate_cache"  # Do this everytime, don't want to screw up names just because we forgot to sync the cache
+                "--propfile $genodo_file",         
 		);
+		push @args, "--recreate_cache" if $first_file; # sync the cache the first time this is run
+		$first_file = 0;
 
        $cmd =  join(" ",@args);
 

@@ -6,8 +6,8 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 1. genodo_chado_schema.sql
 	Base Chado database. Only loaded with ontology data. Contains none of the additional tables created for genodo.
 
-2. genodo.sql
-	Current db snapshot. Contains up-to-date schema with all additional tables as well as base data (i.e. ontologies).
+2. genodo_full_schema.sql
+	Current db snapshot minus any genome data. Contains up-to-date schema with all additional tables as well as base data (i.e. ontologies).
 
 3. create_login_tables.sql
 	Schema for the login and sessions tables. Additions on top of base #1.
@@ -24,3 +24,11 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 
 7. create_deleted_upload_table.sql
 	Schema for the deleted_upload table (used to record uploaded genomes that have been deleted by the user). Additions on top of #6.
+
+8. data_tables.sql
+	Schema for the amr, vf and locus data. Additions on top of #7.
+
+9. ../genodo_add_db_urls.pl
+	Add urlprefix fields for common DBs. Additions on top of #8
+
+

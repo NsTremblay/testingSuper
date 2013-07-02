@@ -758,7 +758,7 @@ sub saveDbxref {
 	
 	$db = 'BioProject' if $db eq 'Project';
 	
-	$ver = 1 unless defined $ver;
+	$ver = '' unless defined $ver;
 	
 	my $dbref = {
 		db => $db,

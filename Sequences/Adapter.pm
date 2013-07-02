@@ -1621,8 +1621,8 @@ sub handle_dbxref {
     # Primary dbxref is first on list
     # primary dbxref_id stored in feature table and in feature_dbxref table
     # secondary dbxref_id stored only in feature_dbxref table
-    my @dbxrefs;
     croak 'Must define a primary dbxref before defining secondary dbxrefs.' unless $dbxhash_ref->{primary};
+    my @dbxrefs = ($dbxhash_ref->{primary});
     push @dbxrefs, @{$dbxhash_ref->{secondary}} if $dbxhash_ref->{secondary};
     my $primary_dbxref_id;
     
