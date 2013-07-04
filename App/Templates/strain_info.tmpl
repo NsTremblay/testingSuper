@@ -127,6 +127,8 @@
 
 		</div>
 
+		<div id="AJAXTestDiv"><h4>Ajax will return some text below:</h4></div>
+
 		<div id="validator" style="display:none"><TMPL_VAR NAME=VALIDATOR></div>
 
 		<script>
@@ -139,11 +141,11 @@
 			for (i=0 ; i<featureTableJson.data.length ; i++) {
 				var opt = document.createElement("option");
 				var description = document.createTextNode(featureTableJson.data[i].uniquename);
-				opt.value = featureTableJson.data[i].uniquename;
+				opt.value = featureTableJson.data[i].feature_id;
 				opt.appendChild(description);
 				document.getElementById('pubStrainList').appendChild(opt);
 
-				availableTags.push( { label:featureTableJson.data[i].uniquename, value:featureTableJson.data[i].uniquename } );
+				availableTags.push( { label:featureTableJson.data[i].uniquename, value:featureTableJson.data[i].feature_id } );
 			}
 			$("#autoComp").autocomplete({
 				source: availableTags,
@@ -161,11 +163,11 @@
 			for (i=0 ; i<featureTableJson.data.length ; i++) {
 				var opt = document.createElement("option");
 				var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
-				opt.value = featureTableJson.data[i].uniquename;
+				opt.value = featureTableJson.data[i].feature_id;
 				opt.appendChild(description);
 				document.getElementById('pubStrainList').appendChild(opt);
 
-				availableTags.push( { label:featureTableJson.data[i].dbxref.accession, value:featureTableJson.data[i].uniquename } );
+				availableTags.push( { label:featureTableJson.data[i].dbxref.accession, value:featureTableJson.data[i].feature_id } );
 			}
 			$("#autoComp").autocomplete({
 				source: availableTags,
@@ -175,6 +177,19 @@
 			            return false;
 			        }
 			    });
+		});
+
+		/*
+		The remainder of the data switches will require ajax calls to the server to update forms
+		*/
+		var featureIdList = [];
+
+		$(document).ready( function() {
+
+			for (i=0 ; i<featureTableJson.data.length ; i++) {
+				featureIdList.push(featureTableJson.data[i].feature_id);
+			}
+			//alert(featureIdList.length);
 		});
 
 		</script>

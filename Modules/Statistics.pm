@@ -85,9 +85,6 @@ sub ajaxTest {
 	#my $coder = JSON::XS->new->utf8;
  	#my $perl_scalar = $coder->decode($input);
 
-	#print STDERR $perl_scalar;
-	#print STDERR $pretty_printed_unencoded;
-
 	my $rtnStr = "Your name is $name, your age is $game";
 
 	#my $rtnStr = "This doesnt work yet";
