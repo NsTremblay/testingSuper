@@ -30,7 +30,7 @@
 	</script-->
 
 	<script>
-	$(document).ready( function(){
+/*	$(document).ready( function(){
 		$('#ajaxTestForm').submit( function(event) {
 			event.preventDefault();
 			var $form = $(this);
@@ -42,8 +42,19 @@
 				document.getElementById('AJAXTestDiv').innerHTML = data;
 			});	
 		});
+});*/
+
+$(document).ready( function(){
+	$('#hostSourceView').click( function(featureIdList) {
+		$.ajax({
+			url: "/ajax_test",
+			context: document.body
+		}).done(function (data) {
+			document.getElementById('AJAXTestDiv').innerHTML = data;
+		});
 	});
-	</script>
+});
+</script>
 
 
 </head>
@@ -110,9 +121,9 @@
 	<!--button type="button" onclick="testAjaxResponse()">Test AJAX</button-->
 	<div id="AJAXTestDiv"><h4>Ajax will return some text below:</h4></div>
 
-	</div>
+</div>
 
 
-	<TMPL_INCLUDE NAME="footer.tmpl">
+<TMPL_INCLUDE NAME="footer.tmpl">
 </body>
 </html>

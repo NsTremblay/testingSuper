@@ -6,70 +6,53 @@
 <body style="background-color:#796e6c">
 
 <script type="text/javascript">
-
-	var hostList = <TMPL_VAR json_hosts>;
 	
 	// Initialize the host list
 	$(document).ready( function() {
-	
-		var $el = $("#inputHost");
-		$el.empty(); // remove old options
-		
-		// Add hosts to drop down
-		$.each(hostList, function(key, value) {
-	  		$el.append($("<option></option>")
-	     	.attr("value", key).text(value));
-		});
 		
 		// Set default host and associated properties
 		<TMPL_IF selected_host>
 		
-			// Select host
-			var currHost = '<TMPL_var selected_host>';
-			alert(currHost);
-			$("#inputHost option[value="+currHost+"]").attr("selected", "selected");
+		// Select host
+		var currHost = '<TMPL_var selected_host>';
+		$("#inputHost option[value="+currHost+"]").prop("selected", true);
+		
+		hostChange(false);
+		
+		// Set default source if defined
+		<TMPL_IF selected_source>
+		var currSource = '<TMPL_VAR selected_source>';
+		$("#inputSource option[value="+currSource+"]").prop("selected", true);
+		
+		// Unhide other textbox if needed
+		if(currSource == 'other') {
+			$("#inputOtherSource").show();
+			$('#inputSourceName').attr("required", true);
+		}		
+		</TMPL_IF>
+		
+		<TMPL_IF selected_syndromes>
+		<TMPL_LOOP selected_syndromes>
+		$('input[name="g_syndrome"][value="<TMPL_VAR syndrome_value>"]').prop('checked', true);
+		</TMPL_LOOP>
+		</TMPL_IF>
 			
-			// If host is other, unhide the other textboxes
-			if(currHost == 'other') {
-				$("#inputOtherHost").show();
-				$('#inputHostName').attr("required", true);
-				$('#inputHostGenus').attr("required", true);
-				$('#inputHostSpecies').attr("required", true);
-			}
-			
-			// Select source
-			var cat = sourceCategories[currHost];
-			var $el = $("#inputSource");
-			$el.empty(); // remove old options
-			
-			$.each(sourceList[cat], function(key, value) {
-		  		$el.append($("<option></option>")
-		     	.attr("value", key).text(value));
-			});
-			
-			// Set default source if defined
-			<TMPL_IF selected_source>
-				
-				var currSource = '<TMPL_VAR selected_source>';
-				$("#inputSource option[value="+currSource+"]").attr("selected", "selected");
-				
-				// Unhide other textbox if needed
-				if(currSource == 'other') {
-					$("#inputOtherSource").show();
-					$('#inputSourceName').attr("required", true);
-				}
-				
-			<TMPL_ELSE>
-				$el.append($("<option></option>")
-				.attr("value","").attr("selected", "selected").text("--Select Source--"));
-				
-			</TMPL_IF>
-			
-				
-
+		</TMPL_IF>
+		
+		if($('input[name="g_other_syndrome_cb"]').is(':checked')) {
+			$('#inputOtherDiseaseText').prop("disabled", false);
+			$('#inputOtherDiseaseText').prop("required", true);
+		}	
+		
+		<TMPL_IF selected_release_date>
+		$('#inputPrivateUntilText').attr("disabled", false);
+		$('#inputPrivateUntilText').attr("required", true);
+		</TMPL_IF>
+		
+		<TMPL_IF selected_country>
+		$('#inputLocationCountry').bfhcountries({country: '<TMPL_VAR selected_country>'});
 		<TMPL_ELSE>
-			$el.append($("<option></option>")
-			.attr("value","").attr("selected", "selected").text("--Select Host--"));
+		$('#inputLocationCountry').bfhcountries();
 		</TMPL_IF>
 		
 		$("#inputGenomeName").focus();

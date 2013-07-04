@@ -36,7 +36,9 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 A contig_collection is the parent label used for a set of DNA sequences belonging to a 
 single project (which may be a WGS or a completed whole genome sequence). Global properties 
 such as strain, host etc are defined at the contig_collection level.  The contig_collection 
-properties are defined in a hash that is written to file using Data::Dumper.
+properties are defined in a hash that is written to file using Data::Dumper. Multiple values
+are permitted for any data type with the exception of name or uniquename.  Multiple values are
+passed as an array ref. The first item on the list is assigned rank 0, and so on.
 
 Each sequence in the fasta files is labelled as a contig (whether is its a chromosome or true contig). 
 The contig properties are obtained from the fasta file. Names for the contigs are obtained from 
@@ -57,8 +59,10 @@ as chromosome or plasmid.
 		isolation_source => 'Blood'
 		synonym => 'gamma',
 		isolation_date => '1999-03-13',
-		description => 'infection from someone\'s nasty hot tub',
+		description => 'Its a genome!!',
+		comment => 'infection from someone\'s nasty hot tub',
 		owner => 'kermit the frog',
+		isolation_age => 123.34,
 		finished => 'yes',
 		primary_dbxref => {
 			db => 'refseq',

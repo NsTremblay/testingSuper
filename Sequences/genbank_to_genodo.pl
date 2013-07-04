@@ -12,7 +12,6 @@ use Config::Simple;
 use POSIX qw(strftime);
 use Locale::Country;
 use Locale::SubCountry;
-use DateTime qw/today/;
 use GenodoDateTime;
 use FindBin;
 use lib "$FindBin::Bin/../";
@@ -494,7 +493,7 @@ if($feat_obj->has_tag('collection_date')) {
 			warn "***WARNING: unrecognized collection date format $v";
 			next;
 		}
-		warn "***WARNING: collection date is in the futuer" unless beforeToday($datetime);
+		warn "***WARNING: collection date is in the futuer" unless Sequences::GenodoDateTime::beforeToday($datetime);
 		
 		saveTag('collection_date', $datetime->date);
 	}
@@ -1022,20 +1021,3 @@ sub scanForKeywords {
 	return(@keywords);
 }
 
-=head2 beforeToday
-
-Check if date is prior to today
-
-=cut
-
-sub beforeToday {
-	my ($dt) = @_;
-
-	my $dt_target = DateTime->today();
-   
-    if( $dt && $dt_target && $dt <= $dt_target ) {
-        return 1;
-    } else {
-        return 0;
-    }
-}

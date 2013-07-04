@@ -115,16 +115,12 @@ my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 
 if($success) {
 	# Update step
-	$update_step_sth->execute($next_step++);
+	$update_step_sth->execute(++$next_step);
 } else {
 	my $err_msg = "Loading script failed\n $stderr";
 	handle_error($dbh, $tracking_id, $err_msg);
 	exit(1);
 }
-
-
-
-
 
 
 
