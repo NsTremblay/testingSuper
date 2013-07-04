@@ -62,7 +62,10 @@
 				<label class="control-label" for="inputHost">Isolation Host</label>
 				<div class="controls controls-row">
 					<select class="span3" name="g_host" id="inputHost" required>
-						<option value="Empty"></option>
+						<option value="" selected="selected">--Select Host--</option>
+						<TMPL_LOOP hosts>
+							<option value="<TMPL_VAR host_value>"><TMPL_VAR host_name></option>
+						</TMPL_LOOP>
 					</select>
 					<div id="inputOtherHost" style="display:none">
 						<input type="text" class="span2" style="margin-left:20px" name="g_host_name" id="inputHostName" placeholder="Common Name">
@@ -96,7 +99,7 @@
 					<div id="inputShowAge" style="display:none">
 						<input name="g_age" id="inputAge" class="input-mini" type="text"></input>
 						<label class="radio inline">
-							<input type="radio" name="g_age_unit" value="year" id="inputAgeUnitYears" checked="checked">
+							<input type="radio" name="g_age_unit" value="years" id="inputAgeUnitYears" checked="checked">
 								Years
 						</label>
 						<label class="radio inline">
@@ -109,6 +112,10 @@
 						</label>
 					</div>
 					<TMPL_VAR err_g_age>
+					<TMPL_VAR err_g_age_unit>
+					<div id="inputNoAge" style="display:none">
+						<span class="help-block" style="margin:10px"><em>Not Applicable</em></span>
+					</div>
 					<div id="inputHideAge">
 						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
 					</div>
@@ -118,10 +125,37 @@
 			<div class="control-group" style="padding-left:60px">
 				<label class="control-label">Associated Diseases and Symptoms</label>
 				<div class="controls">
-					<div id="inputDiseases" name="g_syndrome" style="width:500px;">
+					<div id="inputNoDiseases" style="width:500px;">
 						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
 					</div>
-					<div id="inputOtherDiseases" style="display:none">
+					<div id="inputHumanDiseases" style="width:500px; display:none">
+						<TMPL_LOOP human_syndromes>
+						<label class="checkbox inline">
+							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+							<TMPL_VAR syndrome_name>
+						</label>
+						</TMPL_LOOP>
+					</div>
+					<div id="inputMammalDiseases" style="width:500px; display:none">
+						<TMPL_LOOP mammal_syndromes>
+						<label class="checkbox inline">
+							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+							<TMPL_VAR syndrome_name>
+						</label>
+						</TMPL_LOOP>
+					</div>
+					<div id="inputBirdDiseases" style="width:500px; display:none">
+						<TMPL_LOOP bird_syndromes>
+						<label class="checkbox inline">
+							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+							<TMPL_VAR syndrome_name>
+						</label>
+						</TMPL_LOOP>
+					</div>
+					<div id="inputEnvDiseases" style="width:500px; display:none">
+						<span class="help-block" style="margin:10px"><em>Not applicable</em></span>
+					</div>
+					<div id="inputOtherDiseases" style="width:500px; display:none">
 						<label class="checkbox inline">
 							<input id="inputAsymptomatic" name="g_asymptomatic" type="checkbox"></input>
 							Asymptomatic
@@ -153,9 +187,9 @@
 							<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
 								<span class="help-block">Specify by name:</span>
 						</label>
-						<select class="input-medium bfh-countries" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
-						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" value="<TMPL_VAR g_location>" placeholder="State/Province/Region"/>
-						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity"  value="<TMPL_VAR g_location>" placeholder="City"/>
+						<select class="input-medium" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
+						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" value="<TMPL_VAR g_location_state>" placeholder="State/Province/Region"/>
+						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity"  value="<TMPL_VAR g_location_city>" placeholder="City"/>
 						<TMPL_VAR err_g_location_country>
 						<TMPL_VAR err_g_location_state>
 						<TMPL_VAR err_g_location_city>
@@ -219,7 +253,7 @@
 					</i>
 				</label>
 				<div class="controls">
-					<input type="text" id="inputGroupLabel" name="g_group" value="<TMPL_VAR g_group>">
+					<input type="text" id="inputGroupLabel" name="g_group" class="input-xlarge" value="<TMPL_VAR g_group>">
 						<TMPL_VAR err_g_group>
 				</div>
 			</div>
@@ -229,7 +263,7 @@
 					Additional Notes on Strain
 				</label>
 				<div class="controls">
-					<textarea rows=2 id="inputComments" name="g_comments" value="<TMPL_VAR g_comments>"></textarea>
+					<textarea rows=2 id="inputComments" name="g_comments" class="input-xlarge" value="<TMPL_VAR g_comments>"></textarea>
 						<TMPL_VAR err_g_comments>
 				</div>
 			</div>
@@ -239,7 +273,7 @@
 					Genome Description
 				</label>
 				<div class="controls">
-					<input type="text" id="inputDescription" name="g_description" value="<TMPL_VAR g_description>">
+					<input type="text" id="inputDescription" name="g_description" class="input-xlarge" value="<TMPL_VAR g_description>">
 						<TMPL_VAR err_g_description>
 				</div>
 			</div>
@@ -251,7 +285,7 @@
 					</i>
 				</label>
 				<div class="controls">
-					<input type="text" id="inputKeywords" name="g_keywords" value="<TMPL_VAR g_keywords>">
+					<input type="text" id="inputKeywords" name="g_keywords" class="input-xlarge" value="<TMPL_VAR g_keywords>">
 						<TMPL_VAR err_g_keywords>
 				</div>
 			</div>
@@ -261,7 +295,7 @@
 					Owner
 				</label>
 				<div class="controls">
-					<input type="text" id="inputOwner" name="g_owner" value="<TMPL_VAR g_owner>">
+					<input type="text" id="inputOwner" name="g_owner" class="input-xlarge" value="<TMPL_VAR g_owner>">
 						<TMPL_VAR err_g_owner>
 				</div>
 			</div>
@@ -271,7 +305,7 @@
 					Genome Alias
 				</label>
 				<div class="controls">
-					<input type="text" id="inputSynonym" name="g_synonym" value="<TMPL_VAR g_synonym>">
+					<input type="text" id="inputSynonym" name="g_synonym" class="input-xlarge" value="<TMPL_VAR g_synonym>">
 						<TMPL_VAR err_g_synonym>
 				</div>
 			</div>
@@ -301,7 +335,7 @@
 				</label>
 				<div class="controls">
 					<div>
-						<input type="text" id="inputRef" name="g_pmid" placeHolder="Pubmed ID" value="<TMPL_VAR g_pmid>"/>
+						<input type="text" id="inputRef" name="g_pmid" class="input-xlarge" placeHolder="Pubmed ID" value="<TMPL_VAR g_pmid>"/>
 						<TMPL_VAR err_g_pmid>
 					</div>
 				</div>
@@ -396,148 +430,180 @@
 		$('#inputLocationState').attr("disabled", false);
 		$('#inputLocationCity').attr("disabled", false);
 	});
-</script>
 
-<script type="text/javascript">
 
-var sourceCategories = <TMPL_VAR json_categories>;
-
-var sourceList = <TMPL_VAR json_sources>;
-
-var diseaseList = <TMPL_VAR json_diseases>;
-
-$('#inputHost').change ( function() {
-
-	if($(this).val() == 'other') {
-		$("#inputOtherHost").show();
-		$('#inputHostName').attr("required", true);
-		$('#inputHostGenus').attr("required", true);
-		$('#inputHostSpecies').attr("required", true);
-		
-	} else {
-		$("#inputOtherHost").hide();
-		$('#inputHostName').attr("required", false);
-		$('#inputHostGenus').attr("required", false);
-		$('#inputHostSpecies').attr("required", false);
-	}
-		
-	// Add new Source options for specified host
-	var $el = $("#inputSource");
-	$el.empty(); // remove old options
+	var sourceCategories = <TMPL_VAR json_categories>;
 	
-	var cat = sourceCategories[$(this).val()];
+	var sourceList = <TMPL_VAR json_sources>;
 	
-	$.each(sourceList[cat], function(key, value) {
-  		$el.append($("<option></option>")
-     	.attr("value", key).text(value));
+	$('#inputHost').change ( function() { hostChange(true); } );
+	
+	$('#inputSource').change ( function() {
+	
+		if($(this).val() == 'other') {
+			$("#inputOtherSource").show();
+			$('#inputSourceName').attr("required", true);
+		} else {
+			$("#inputOtherSource").hide();
+			$('#inputSourceName').attr("required", false);
+		}
+	
 	});
 	
-	// Set default to empty
-	$el.append($("<option></option>")
-		.attr("value","").attr("selected", "selected").text("--Select Source--"));
-		
-	// Diseases for specified host
-	var $el2 = $("#inputDiseases");
-	$el2.empty();
-	var hostDiseases = diseaseList[cat];
-	$.each(hostDiseases, function(key, value) {
-  		$el2.append($('<label class="checkbox inline"><input type="checkbox"></input>'+value+'</label>')
-     	.attr("value", key));
+	// Uncheck other symptoms if asymptomatic checked
+	$("#inputAsymptomatic").click(function() {
+		var thisCheck = $(this);
+	
+		if(thisCheck.is(':checked')) {
+			$("input:checked[name=g_syndrome]").each(function() {
+			 	$(this).prop('checked', false);
+			});
+		}
 	});
 	
-	var $el3 = $("#inputOtherDiseases");
-	$el3.show();
-		
-	if(cat != 'env') {
-	// Initialize age
+	// Uncheck asymptomatic if other symptoms checked
+	$("input[name=g_syndrome]").click(function() {
+		var asymCheck = $("#inputAsymptomatic");
 	
-		$("#inputShowAge").show();
-		$("#inputHideAge").hide();
-		
-	} else {
-	// Hide age
-		
-		$("#inputShowAge").hide();
-		$("#inputHideAge").show();
-	}
+		if(asymCheck.is(':checked') && $(this).is(':checked')) {
+			asymCheck.prop('checked', false);
+		}
+	});
 	
-});
-
-$('#inputSource').change ( function() {
-
-	if($(this).val() == 'other') {
-		$("#inputOtherSource").show();
-		$('#inputSourceName').attr("required", true);
-	} else {
-		$("#inputOtherSource").hide();
-		$('#inputSourceName').attr("required", false);
-	}
-
-});
-
-// Uncheck other symptoms if asymptomatic checked
-$("#inputAsymptomatic").click(function() {
-	var thisCheck = $(this);
-
-	if(thisCheck.is(':checked')) {
-		$("#inputDiseases input:checked").each(function() {
-		 	$(this).prop('checked', false);
+	$('#inputOtherDiseaseCheck').click( function() {
+		var thisCheck = $(this);
+		
+		if(thisCheck.is (':checked')) {
+			$('#inputOtherDiseaseText').attr("disabled", false);
+			$('#inputOtherDiseaseText').attr("required", true);
+		} else {
+			$('#inputOtherDiseaseText').attr("disabled", true);
+			$('#inputOtherDiseaseText').attr("required", false);
+		}
+	});
+	
+	$('#inputPrivateUntil').click( function() {
+		$('#inputPrivateUntilText').attr("disabled", false);
+		$('#inputPrivateUntilText').attr("required", true);
+		$('#inputPrivateUntilText').focus();
+	});
+	$('#inputPublic').click( function() {
+		$('#inputPrivateUntilText').attr("disabled", true);
+		$('#inputPrivateUntilText').attr("required", false);
+	});
+	$('#inputPrivate').click( function() {
+		$('#inputPrivateUntilText').attr("disabled", true);
+		$('#inputPrivateUntilText').attr("required", false);
+	});
+	
+	$('#submitGenome').click( function() {
+		var emptyInput = 0;
+		$('input[required]').each( function() {
+			if (!$(this).val()){
+				emptyInput++;
+				//alert('You must fill in the required fields');
+			}
+			else {
+			}
 		});
-	}
-});
-
-// Uncheck asymptomatic if other symptoms checked
-$("#inputDiseases").click(function() {
-	var asymCheck = $("#inputAsymptomatic");
-
-	if(asymCheck.is(':checked') && $('#inputDiseases input:checked').length > 0) {
-		asymCheck.prop('checked', false);
-	}
-});
-
-$('#inputOtherDiseaseCheck').click( function() {
-	var thisCheck = $(this);
-	
-	if(thisCheck.is (':checked')) {
-		$('#inputOtherDiseaseText').attr("disabled", false);
-		$('#inputOtherDiseaseText').attr("required", true);
-	} else {
-		$('#inputOtherDiseaseText').attr("disabled", true);
-		$('#inputOtherDiseaseText').attr("required", false);
-	}
-});
-
-$('#inputPrivateUntil').click( function() {
-	$('#inputPrivateUntilText').attr("disabled", false);
-	$('#inputPrivateUntilText').attr("required", true);
-	$('#inputPrivateUntilText').focus();
-});
-$('#inputPublic').click( function() {
-	$('#inputPrivateUntilText').attr("disabled", true);
-	$('#inputPrivateUntilText').attr("required", false);
-});
-$('#inputPrivate').click( function() {
-	$('#inputPrivateUntilText').attr("disabled", true);
-	$('#inputPrivateUntilText').attr("required", false);
-});
-
-$('#submitGenome').click( function() {
-	var emptyInput = 0;
-	$('input[required]').each( function() {
-		if (!$(this).val()){
-			emptyInput++;
-			//alert('You must fill in the required fields');
+		if (emptyInput > 0) {
+			alert('You must fill in the required fields');
 		}
-		else {
+		else{
+			$('.bar').show();
+			$('#genomeUploadForm').submit();
 		}
 	});
-	if (emptyInput > 0) {
-		alert('You must fill in the required fields');
+	
+	// Change form options for new host
+	function hostChange(clearExisting) {
+	
+		var host = $('#inputHost');
+		alert(clearExisting);
+	
+		// Host other
+		if(host.val() == 'other') {
+			$("#inputOtherHost").show();
+			$('#inputHostName').attr("required", true);
+			$('#inputHostGenus').attr("required", true);
+			$('#inputHostSpecies').attr("required", true);
+		} else {
+			$("#inputOtherHost").hide();
+			$('#inputHostName').attr("required", false);
+			$('#inputHostGenus').attr("required", false);
+			$('#inputHostSpecies').attr("required", false);
+		}
+			
+		// Show source options for specified host
+		var $el = $("#inputSource");
+		$el.empty(); // remove old options
+		
+		var cat = sourceCategories[host.val()];
+		
+		$.each(sourceList[cat], function(key, value) {
+	  		$el.append($("<option></option>")
+	     	.prop("value", key).text(value));
+		});
+		
+		// Set default to empty
+		$el.append($("<option></option>")
+			.prop("value","").prop("selected", "selected").text("--Select Source--"));
+			
+		// Diseases for specified host
+		// Clear current checks
+		$("input[name=g_syndrome]").prop('checked', false);
+		if(clearExisting) {
+			$("input[name=g_other_syndrome_cb]").prop('checked', false);
+			$("input[name=g_asymptomatic]").prop('checked', false);
+			$("input[name=g_other_syndrome]").val('').prop('required',false).prop('disabled',true);
+		}
+		if(cat == 'human') {
+			$("#inputNoDiseases").hide();
+			$("#inputHumanDiseases").show();
+			$("#inputMammalDiseases").hide();
+			$("#inputBirdDiseases").hide();
+			$("#inputEnvDiseases").hide();
+			$("#inputOtherDiseases").show();
+		} else if(cat == 'mammal') {
+			$("#inputNoDiseases").hide();
+			$("#inputHumanDiseases").hide();
+			$("#inputMammalDiseases").show();
+			$("#inputBirdDiseases").hide();
+			$("#inputEnvDiseases").hide();
+			$("#inputOtherDiseases").show();
+		} else if(cat == 'bird') {
+			$("#inputNoDiseases").hide();
+			$("#inputHumanDiseases").hide();
+			$("#inputMammalDiseases").hide();
+			$("#inputBirdDiseases").show();
+			$("#inputEnvDiseases").hide();
+			$("#inputOtherDiseases").show();
+		} else if(cat == 'env') {
+			$("#inputNoDiseases").hide();
+			$("#inputHumanDiseases").hide();
+			$("#inputMammalDiseases").hide();
+			$("#inputBirdDiseases").hide();
+			$("#inputEnvDiseases").show();
+			$("#inputOtherDiseases").hide();
+		} else {
+			$("#inputNoDiseases").show();
+			$("#inputHumanDiseases").hide();
+			$("#inputMammalDiseases").hide();
+			$("#inputBirdDiseases").hide();
+			$("#inputEnvDiseases").hide();
+			$("#inputOtherDiseases").hide();
+		}
+		
+		// Show age field for non-environmental hosts
+		if(cat != 'env') {
+			$("#inputNoAge").hide();
+			$("#inputShowAge").show();
+			$("#inputHideAge").hide();
+		} else {
+			$("#inputNoAge").show();
+			$("#inputShowAge").hide();
+			$("#inputHideAge").hide();
+		}
 	}
-	else{
-		$('.bar').show();
-		$('#genomeUploadForm').submit();
-	}
-});
 
 </script>

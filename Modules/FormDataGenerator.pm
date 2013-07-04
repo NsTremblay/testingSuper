@@ -32,12 +32,11 @@ package Modules::FormDataGenerator;
 
 use strict;
 use warnings;
-use parent 'Modules::App_Super';
+#use parent 'Modules::App_Super';
 use FindBin;
 use lib "$FindBin::Bin/../";
-use Log::Log4perl;
+use Log::Log4perl qw/get_logger/;
 use Carp;
-
 use JSON;
 
 #object creation
@@ -112,68 +111,83 @@ private genomes.
 
 sub getFormData {
     my $self = shift;
+    my $username = shift;
     
     # Return public genome names as list of hash-refs
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'type.name' =>  'contig_collection',
-        },
-        {
-            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            columns => [qw/feature_id uniquename type.name featureprops.value/],
-            join => ['type' , 'featureprops'],
-            order_by    => {-asc => ['me.uniquename']}
-        }
-        );
+	    {
+			'type.name' =>  'contig_collection',
+		},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		    columns => [qw/feature_id uniquename/],
+		    order_by    => {-asc => ['me.uniquename']},
+		    join => 'type'
+					
+		}
+	);
     
     my @publicFormData = $genomes->all;
-    #my $publicFormData = $self->_hashFormData($genomes);
-   
-    my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
-    #print STDERR $encodedText . "\n";
-
-    # Get private list (or empty list)
-    my $privateFormData = $self->privateGenomes();
     
-    # Return two lists
+    my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
+    
+    # Get private list (or empty list)
+    my $privateFormData = $self->privateGenomes($username);
+    
     return(\@publicFormData, $privateFormData , $pubEncodedText);
-    #return($publicFormData, $privateFormData);
+  
 }
 
 sub privateGenomes {
     my $self = shift;
+    my $username = shift;
     
-    if($self->authen->is_authenticated) {
+    if($username) {
         # user is logged in
         
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
         my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-        {
-            'login.username' => $self->authen->username,
-            'type.name'      => 'contig_collection'
-            },
-            {
-                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-                columns => [qw/feature_id uniquename type.name privatefeatureprops.value/],
-                join => [
-                { 'upload' => { 'permissions' => 'login'} },
-                'type',
-                'privatefeatureprops'
-                ]
-            }
-            );
+	        [
+	        	{
+	        		'login.username' => $username,
+	        		'type.name'      => 'contig_collection',
+				},
+				{
+	        		'upload.category'    => 'public',
+	        		'type.name'      => 'contig_collection',
+				},
+			],
+			{
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+				columns => [qw/feature_id uniquename/],
+				'+columns' => [qw/upload.category login.username/],
+				join => [
+					{ 'upload' => { 'permissions' => 'login'} },
+					'type'
+				]
+	                     
+			}
+		);
         
         my @privateFormData = $genomes->all;
-        #my $privateFormData = $self->_hashFormData($genomes);
         
-        return \@privateFormData;
-        #return $privateFormData;
-        
-        } else {
-            return [];
+        foreach my $row_hash (@privateFormData) {
+        	my $display_name = $row_hash->{uniquename};
+        	if($row_hash->{upload}->{category} eq 'public') {
+        		$display_name .= ' [Pub]';
+        	} else {
+        		$display_name .= ' [Pri]';
+        	}
+        	$row_hash->{displayname} = $display_name;
         }
-    }
+       
+        return \@privateFormData;
+      
+	} else {
+    	return [];
+	}
+}
 
 =head2 _hashFormData
 

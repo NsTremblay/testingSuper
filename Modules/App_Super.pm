@@ -245,6 +245,5 @@ sub render_login {
 	return $template->output();
 }
 
-
 1;
 

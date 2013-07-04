@@ -63,7 +63,7 @@ my %closed_names;
 map { chomp; if(m/^\w{4}$/) { $wgs_prefixes{$_} = 1 } else { $closed_names{$_} = 1 } } @tmp;
 
 # Download the WGS genbank files
-#downloadWGSGenomes($DIR, \%wgs_prefixes);
+downloadWGSGenomes($DIR, \%wgs_prefixes);
 
 # Download the completed genomes genbank files
 downloadClosedGenomes($DIR, \%closed_names);

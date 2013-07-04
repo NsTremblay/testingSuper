@@ -12,7 +12,7 @@ Modules::GenomeUploader
 
 =head1 ACKNOWLEDGMENTS
 
-Thank you to Dr. Chad Laing and Dr. Michael Whiteside, for all their assistance on this project
+Thank you to Dr. Chad Laing and Dr. Matthew Whiteside, for all their assistance on this project
 
 =head1 COPYRIGHT
 
@@ -22,9 +22,11 @@ This work is released under the GNU General Public License v3  http://www.gnu.or
 
 The most recent version of the code may be found at:
 
-=head1 AUTHOR
+=head1 AUTHORS
 
 Akiff Manji (akiff.manji@gmail.com)
+
+Matt Whiteside (mawhites@phac-aspc.gov.ca)
 
 =head1 Methods
 
@@ -45,13 +47,13 @@ use Carp qw/croak carp/;
 use CGI::Application::Plugin::ValidateRM;
 use CGI::Application::Plugin::AutoRunmode;
 use Data::FormValidator::Constraints qw(FV_length_between);
-use Data::FormValidator::Constraints::DateTime qw(to_datetime before_today after_today);
 use File::Temp;
 use File::Copy qw/copy/;
 use Proc::Daemon;
 use Data::Dumper;
 use DateTime qw(ymd);
 use JSON;
+use Sequences::GenodoDateTime;
 
 my $dbic;
 
@@ -182,25 +184,6 @@ my $diseaseList = {
 	}
 };
 
-my $ageList = {
-	human => {
-		
-	},
-	mammal => {
-		age1_preweened => 'Pre-weaned',
-		age2_postweened => 'Weaned',
-		age3_adult => 'Adult'
-	},
-	bird => {
-		age1_egg => 'Egg',
-		age2_chick => 'Chick',
-		age3_adult => 'Adult'
-	},
-	env => {
-	}
-};
-
-
 
 =head2 setup
 
@@ -212,8 +195,7 @@ sub setup {
     $dbic = $self->dbixSchema;
     
     $self->authen->protected_runmodes(
-		#qw/submit_genome upload_genome status list delete_genome edit_genome update_genome/
-		qw/upload_genome status list delete_genome edit_genome update_genome/
+		qw/submit_genome upload_genome status list delete_genome edit_genome update_genome/
 	);
     
     get_logger->info("Logger initialized in Modules::GenomeUploader");
@@ -234,12 +216,14 @@ sub submit_genome : Runmode {
     my $t = $self->load_tmpl ( 'genome_uploader.tmpl' , die_on_bad_params=>0 );
     
     # Populate the drop downs with valid options
+    # Hosts
+    my @hosts = map { { host_name => $hostList->{$_}, host_value => $_ } } keys %{$hostList};
+    $t->param(hosts => \@hosts);
+    
     my $json = JSON->new;
-    $t->param(json_hosts => $json->encode($hostList));
     $t->param(json_categories => $json->encode($sourceCategory));
     $t->param(json_sources => $json->encode($sourceList));
-    $t->param(json_diseases => $json->encode($diseaseList));
-    
+  
     # Ordered lists, so turn on json key sorting
     #my $json_ordered = $json->canonical(1);
     #$t->param(json_ages => $json_ordered->encode($ageList));
@@ -252,6 +236,12 @@ sub submit_genome : Runmode {
     $t->param(new_genome => 1); # Display new genome version of form
     $t->param(set_privacy => 1); # All new genomes must have privacy set
     
+    foreach my $category (qw/human mammal bird/) {
+    	my @syndromes = map { { syndrome_name => $diseaseList->{$category}{$_}, syndrome_value => $_ } } keys %{$diseaseList->{$category}};
+    	my $param = "$category\_syndromes";
+    	$t->param($param => \@syndromes);
+    }
+    
     $t->param(rm    => '/genome-uploader/upload_genome');
 	$t->param(title => 'Upload a genome');
 	
@@ -261,11 +251,14 @@ sub submit_genome : Runmode {
 		
 		# The HTML::FillInForm only partially completes the form
 		# Need to populate the javascript-generated fields
-		get_logger->debug("HOST: ".$self->query->param('g_host'));
 		$t->param(selected_host => $self->query->param('g_host'));
 		$t->param(selected_source => $self->query->param('g_source'));
+		$t->param(selected_release_date => $self->query->param('g_release_date'));
+		my @syndromes = $self->query->param('g_syndrome');
+		my @syndrome_list = map { { syndrome_value => $_ } } @syndromes;
+		$t->param(selected_syndromes => \@syndrome_list);
+		$t->param(selected_country => $self->query->param('g_location_country'));
 	}
-	
 	
 	return $t->output;
 }
@@ -281,24 +274,17 @@ sub upload_genome : Runmode {
     
     croak 'Cannot upload a genome unless logged in.' unless $self->authen->is_authenticated;
     
-    get_logger->debug('STARTING VALIDATION');
-    
     # Validate form and fasta file
 	my $results = $self->check_rm( 'submit_genome', $self->_dfv_submit_genome_rules )
 		|| return $self->check_rm_error_page;
 		
-	get_logger->debug('YEAR: ',$results->valid('g_date')->ymd);
-	return(0);
-		
 	# Everything is good to go, initiate a new job
-	
 	my $user = $self->dbixSchema->resultset('Login')->find( { username => $self->authen->username } );
 	
 	# Create job record in tracking table
 	# tracking_id is used as unique identifier for all files related to this job
 	my $tracking_row = $self->dbixSchema->resultset('Tracker')->create({ login_id => $user->login_id, step => 0});
 	my $tracking_id = $tracking_row->tracker_id;
-	
 	
 	# Prepare inputs for loading script
 	my $q = $self->query;
@@ -321,30 +307,98 @@ sub upload_genome : Runmode {
 		category => $results->valid('g_privacy'),
 		login_id => $user->login_id		
 	);
-	
 	if($results->valid('g_release_date')) {
 		$upload_params{'release_date'} = $results->valid('g_release_date')->ymd;
 	}
-	
 	if($results->valid('g_group')) {
 		$upload_params{'tag'} = $results->valid('g_group');
 	}
 	
 	# Genome properties
 	# required
+	my $host;
+	if($results->valid('g_host') eq 'other') {
+		$host = $results->valid('g_host_genus') . ' ' . $results->valid('g_host_species') . ' ('.
+			$results->valid('g_host_name').')';
+	} else {
+		$host = $hostList->{$results->valid('g_host')};
+		croak "Unrecognized host ".$results->valid('g_host') unless $host;
+	}
+	
+	my $host_category = $sourceCategory->{$results->valid('g_host')};
+	
+	my $source;
+	if($results->valid('g_source') eq 'other') {
+		$source = $results->valid('g_other_source');
+	} else {
+		$source = $sourceList->{ $host_category }->{ $results->valid('g_source') };
+		croak "Unrecognized source ".$results->valid('g_source')." for provided host ".$results->valid('g_host') unless $source;
+	}
+	
 	my %genome_params = (
 		uniquename => $results->valid('g_name'),
 		serotype => $results->valid('g_serotype'),
 		strain => $results->valid('g_strain'),
-		isolation_host => $results->valid('g_source'),
-		isolation_location => $results->valid('g_location'),
+		isolation_host => $host,
+		isolation_source => $source,
 		isolation_date => $results->valid('g_date')->ymd,
 		mol_type => $results->valid('g_mol_type')
 	);
 	
 	# optional
+	if($results->valid('g_location_method') eq 'name') {
+		my $country = $results->valid('g_location_country');
+		my $state = $results->valid('g_location_state');
+		my $city = $results->valid('g_location_city');
+		my $locale_xml = qq|<location><country>$country</country>|;
+	
+		$locale_xml .= qq|<state>$state</state>| if $state;
+		$locale_xml .= qq|<city>$city</city>| if $city;
+		$locale_xml .= q|</location>|;
+		
+		$genome_params{'isolation_location'} = $locale_xml;
+		
+		## CONVERT TO LAT LOG HERE??
+	} elsif($results->valid('g_location_method') eq 'map') {
+		$genome_params{'isolation_latlng'} = $results->valid('g_location_latlng')
+	}
+	
+	if($results->valid('g_syndrome')) {
+		my @syndrome_keys = $results->valid('g_syndrome');
+		my @syndromes;
+		foreach my $key (@syndrome_keys) {
+			my $syndrome = $diseaseList->{ $host_category }->{ $key };
+			croak "Unrecognized disease $key for provided host ".$results->valid('g_host') unless $syndrome;
+			push @syndromes, $syndrome;
+		}
+		$genome_params{'syndrome'} = \@syndromes;
+	} elsif($results->valid('g_asymptomatic')) {
+		$genome_params{'syndrome'} = ['Asymptomatic'];
+	}
+	
+	if($results->valid('g_other_syndrome_cb')) {
+		$genome_params{'syndrome'} ||= [];
+		push @{$genome_params{'syndrome'}}, $results->valid('g_other_syndrome');
+	}
+	
+	if($results->valid('g_age')) {
+		# Store everthing in day units
+		my $days = Sequences::GenodoDateTime::ageIn($results->valid('g_age'), $results->valid('g_age_unit'));
+		$genome_params{isolation_age} = $days;
+	}
+	
+	if($results->valid('g_pmid')) {
+		my @pmids = split(/,/, $results->valid('g_pmid'));
+		my @final_pmids = grep(s/^\s+|\s+$//g, @pmids);
+		$genome_params{pmid} = \@final_pmids;
+	}
+	
 	if($results->valid('g_description')) {
 		$genome_params{'description'} = $results->valid('g_description');
+	}
+	
+	if($results->valid('g_comment')) {
+		$genome_params{'comment'} = $results->valid('g_comment');
 	}
 	
 	if($results->valid('g_keywords')) {
@@ -385,7 +439,6 @@ sub upload_genome : Runmode {
 	
 	# Save arguments to main config file
 	my $optFile = $file_path . "genodo-options-$tracking_id.cfg";
-	#chmod 0644, $tmpfile;
 	my $opt = new Config::Simple(syntax => 'ini') or croak "Cannot create config object " . Config::Simple->error();
 	
 	# Save all options in config file
@@ -419,7 +472,7 @@ sub upload_genome : Runmode {
 	# Update job record
 	$tracking_row->pid($kid_pid);
 	$tracking_row->command($cmd);
-	$tracking_row->step(1);
+	$tracking_row->step(2); # Step 1 complete
 	$tracking_row->feature_name($results->valid('g_name'));
 	$tracking_row->update;
 	
@@ -449,11 +502,10 @@ sub status : Runmode {
     
     
     my $t = $self->load_tmpl ( 'genome_status.tmpl' , die_on_bad_params=>0 );
-    
     $t->param(tracking_id => $tracking_id);
     $t->param(feature_name => $tracker_row->feature_name);
     $t->param(start_date => _format_time($tracker_row->start_date));
-    $t->param(analysis_step => $analysis_steps[$tracker_row->step]);
+    $t->param(analysis_step => $analysis_steps[$tracker_row->step-1]);
     $t->param(current_step => $tracker_row->step);
     my $tot = scalar @analysis_steps;
     $t->param(total_steps => $tot);
@@ -1112,14 +1164,14 @@ sub _dfv_common_rules {
 	my $self = shift;
 	
 	return {
-		required           => [qw(g_name g_host g_source g_date g_location g_strain g_serotype g_mol_type g_locate_method)],
+		required           => [qw(g_name g_host g_source g_date g_strain g_serotype g_mol_type g_locate_method)],
 		optional           => [qw(g_description g_keywords g_owner g_synonym g_finished g_release_date g_dbxref_db 
 								  g_dbxref_acc g_dbxref_ver g_group g_pmid g_comment g_host_name g_host_genus g_host_species
 								  g_other_source g_location_country g_location_state g_location_city g_location_latlng
-								  g_severity g_age g_synrome g_other_syndrome_cb g_other_syndrome g_comment g_pmid)],
+								  g_age g_age_unit g_syndrome g_other_syndrome_cb g_other_syndrome g_comment g_pmid g_asymptomatic)],
 		dependency_groups  => {
-			dbxref_group => [qw(g_dbxref_db g_dbxref_acc)]
-			
+			dbxref_group => [qw(g_dbxref_db g_dbxref_acc)],
+			dbxref_group => [qw(g_host_name g_host_species g_host_genus)],
 		},
 		dependencies       => {
 			dbxref_ver => [qw(g_dbxref_db g_dbxref_acc)],
@@ -1130,40 +1182,26 @@ sub _dfv_common_rules {
 			g_source => { 'other' => [qw(g_other_source)] },
 			g_locate_method => { 'name' => [qw(g_location_country)] },
 			g_locate_method => { 'map' => [qw(g_location_latlng)] },
-			g_privacy => { 'release' => [qw/g_release_date/] }
+			g_privacy => { 'release' => [qw/g_release_date/] },
+			g_age => [qw(g_age_unit)]
+			
 		},
 		filters            => [qw(trim strip)],
 		field_filters      => {
 			g_finished     => sub { my $val = shift; $val =~ s/unknown//; return $val; } # unknown radio button is the equivalent of empty value
 		},
 		constraint_methods => {
-			g_date    => [
-				{
-					constraint_method => to_datetime('%Y'), # YYYY-MM-DD format
-					name => 'iso_date',
-				},
-				{
-					constraint_method => before_today('%Y'), # YYYY-MM-DD format
-					name => 'before_today'
-				}
-			],
-			g_release_date => [
-				{
-					constraint_method => to_datetime('%F'), # YYYY-MM-DD format
-					name => 'iso_date',
-				},
-				{
-					constraint_method => after_today('%F'), # YYYY-MM-DD format
-					name => 'after_today'
-				}
-				
-			],
+			g_date             => &_valid_past_date,
+			g_release_date     => &_valid_future_date,
 			g_finished         => qr/^yes|no$/,
 			g_mol_type         => qr/^wgs|genome|chromosome|plasmid|dna$/,
 			g_privacy          => qr/^public|private|release$/,
+			g_age_unit         => qr/^years|months|days$/,
+			g_age              => qr/^(?:\d+\.?|\.\d)\d*\z/,
 			g_dbxref_acc       => FV_length_between( 2, 255 ),
 			g_dbxref_db        => FV_length_between( 2, 255 ),
-			g_dbxref_ver       => qr/\d+/
+			g_dbxref_ver       => qr/\d+/,
+			g_asymptomatic     => \&_healthy_or_sick
 		},
 		msgs => {
 			format      => '<span class="help-inline"><span class="text-error"><strong>%s</strong></span></span>',
@@ -1171,15 +1209,14 @@ sub _dfv_common_rules {
 			prefix      => 'err_',
 			constraints => {
 				'length_between' => 'Too many or too few characters (max characters: 255)',
-				'iso_date'    => 'Invalid date (date format: YYYY-MM-DD)',
 				'genomename_does_not_exist' => 'A genome with that name already exists in database',
 				'valid_fasta_file' => 'Fasta file upload failed',
-				'after_today'  => 'Date must be in the future',
-				'before_today' => 'Date must be in the past'
+				'healthy_or_sick' => 'Cannot select both asymptomatic and diseases/symptomes',
+				'valid_future_date' => 'Invalid date',
+				'valid_past_date' => 'Invalid date'
 			}
 		},
-		untaint_constraint_fields => [qw/g_date g_release_date g_finished g_mol_type/],
-		validator_packages        => [qw/Data::FormValidator::Constraints::DateTime/]
+		untaint_constraint_fields => [qw/g_date g_release_date g_finished g_mol_type/]
 	};
 }
 
@@ -1273,7 +1310,6 @@ sub _new_genomename_does_not_exist {
 		my $exists = defined($pub_rv) || defined($pri_rv);
 	
 		return ( !$exists );
-		
 	}
 }
 
@@ -1312,7 +1348,7 @@ sub _valid_fasta_file {
 		my $too_short = 1000;
 		my $too_many_contigs = 10000;
 		eval {
-			
+			$dfv->{profile}{msgs} ||= {};
 			$seqio = Bio::SeqIO->new(-fh => $fh, -format => 'fasta');
 			my $num_contigs = 0;
 			while(my $seq = $seqio->next_seq) {
@@ -1325,7 +1361,6 @@ sub _valid_fasta_file {
 						get_logger->error($message);
 						
 						# Dynamically change the profile error message for valid_fasta_file
-						$dfv->{profile}{msgs} ||= {};
 						$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
 						
 					}
@@ -1340,7 +1375,6 @@ sub _valid_fasta_file {
 					get_logger->error($message);
 					
 					# Dynamically change the profile error message for valid_fasta_file
-					$dfv->{profile}{msgs} ||= {};
 					$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
 				}
 			}
@@ -1350,7 +1384,6 @@ sub _valid_fasta_file {
 				get_logger->error($message);
 				
 				# Dynamically change the profile error message for valid_fasta_file
-				$dfv->{profile}{msgs} ||= {};
 				$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
 			}
 			
@@ -1364,7 +1397,7 @@ sub _valid_fasta_file {
 	}
 }
 
-=head2 _valid_date
+=head2 _valid_future_date
 
 Check if date is in one of three valid formats:
 
@@ -1372,20 +1405,114 @@ Check if date is in one of three valid formats:
 2) YYYY-MM
 3) YYYY
 
+And is in the future
+
 Return DateTime obj.
 
 =cut
 
-sub _valid_date {
+sub _valid_future_date {
 	
 	return sub {
 		my $dfv = shift;
 		
-		$dfv->name_this('valid_date');
+		$dfv->name_this('valid_future_date');
+		$dfv->{profile}{msgs} ||= {};
 		
 		my $date = $dfv->get_current_constraint_value();
+		my $datetime;
 		
+		eval {
+			$datetime = Sequences::GenodoDateTime->parse_datetime($date);
+		};
+		if($@ || !$datetime) {
+			my $message = "Invalid date (date format: YYYY-MM-DD)";
+			get_logger->error($message);
+			
+			# Dynamically change the profile error message for valid_fasta_file
+			$dfv->{profile}{msgs}{constraints}{valid_future_date} = $message;
+			return();
+		}
+		if(Sequences::GenodoDateTime::beforeToday($datetime)) {
+			my $message = "Date must be in the future";
+			get_logger->error($message);
+			
+			# Dynamically change the profile error message for valid_fasta_file
+			$dfv->{profile}{msgs}{constraints}{valid_future_date} = $message;
+			return();
+		}
 		
+		return($datetime);
+	}
+}
+
+=head2 _valid_future_date
+
+Check if date is in one of three valid formats:
+
+1) YYYY-MM-DD
+2) YYYY-MM
+3) YYYY
+
+And is in the past
+
+Return DateTime obj.
+
+=cut
+
+sub _valid_past_date {
+	
+	return sub {
+		my $dfv = shift;
+		
+		$dfv->name_this('valid_past_date');
+		$dfv->{profile}{msgs} ||= {};
+		
+		my $date = $dfv->get_current_constraint_value();
+		my $datetime;
+		
+		eval {
+			$datetime = Sequences::GenodoDateTime->parse_datetime($date);
+		};
+		if($@ || !$datetime) {
+			my $message = "Invalid date (date format: YYYY-MM-DD)";
+			get_logger->error($message);
+			
+			# Dynamically change the profile error message for valid_fasta_file
+			$dfv->{profile}{msgs}{constraints}{valid_past_date} = $message;
+			return();
+		}
+		if(Sequences::GenodoDateTime::afterToday($datetime)) {
+			my $message = "Date must be in the past";
+			get_logger->error($message);
+			
+			# Dynamically change the profile error message for valid_fasta_file
+			$dfv->{profile}{msgs}{constraints}{valid_past_date} = $message;
+			return();
+		}
+		
+		return($datetime);
+	}
+}
+
+
+=head2 _healthy_or_sick
+
+If asymptomatic is checked, make sure no other symptoms are
+
+=cut
+
+sub _healthy_or_sick {
+	my ( $dfv, $is_asymptomatic ) = @_;
+
+	$dfv->name_this('healthy_or_sick');
+
+	if($is_asymptomatic) {
+		my $data = $dfv->get_filtered_data;
+		return(0) if $data->{g_syndromes};
+		return(1);
+	} else {
+		return(1);
 	}
 }
 
@@ -1417,278 +1544,278 @@ sub _strip_time {
 	return $1;
 }
 
-
-=head2 genomeUploader
-
-Run mode for the genome uploader package
-
 =cut
-
-sub genomeUploader {
-    my $self = shift;
-    my $template = $self->load_tmpl ( 'genome_uploader.tmpl' , die_on_bad_params=>0 );
-    return $template->output();
-}
-
-=head2
-
-Assigns all values to class functions
-
+	=head2 genomeUploader
+	
+	Run mode for the genome uploader package
+	
+	=cut
+	
+	sub genomeUploader {
+	    my $self = shift;
+	    my $template = $self->load_tmpl ( 'genome_uploader.tmpl' , die_on_bad_params=>0 );
+	    return $template->output();
+	}
+	
+	=head2
+	
+	Assigns all values to class functions
+	
+	=cut
+	
+	sub _initialize {
+	    my $self = shift;
+	    my $q = $self->query();
+	    my %fileTags = $q->Vars;
+	    my $genomeFile = 
+	    $self->_genomeFile($q->upload("genome_file"));
+	    $self->_genomeFileName($fileTags{'genome_file'});
+	    $self->_genomeName($fileTags{'genome_of'});
+	    $self->_uploadDir("$FindBin::Bin/../../Sequences/uploaderTemp");
+	    $self->_formInputs(\%fileTags);
+	}
+	
+	=head2
+	
+	Stores a genome file for the module
+	
+	=cut
+	
+	sub _genomeFile {
+	    my $self = shift;
+	    $self->{'_genomeFile'} = shift //return $self->{'_genomeFile'};
+	}
+	
+	=head2
+	
+	Stores a genome file name for the module
+	
+	=cut
+	
+	sub _genomeFileName {
+	    my $self = shift;
+	    $self->{'_genomeFileName'} = shift //return $self->{'_genomeFileName'};
+	}
+	
+	=head2
+	
+	Stores a genome name for the module
+	
+	=cut
+	
+	sub _genomeName {
+	    my $self = shift;
+	    $self->{'_genomeName'} = shift // return $self->{'_genomeName'};
+	}
+	
+	=head2
+	
+	Stores an upload directory for the module
+	
+	=cut
+	
+	sub _uploadDir {
+	    my $self = shift;
+	    $self->{'_uploadDir'} = shift // return $self->{'_uploadDir'};
+	}
+	
+	=head2
+	
+	Stores all inputs passed from the form
+	
+	=cut
+	
+	sub _formInputs {
+	    my $self = shift;
+	    $self->{'_formInputs'} = shift // return $self->{'_formInputs'};
+	}
+	
+	=head2 uploadGenome
+	
+	Run mode to upload a user genome.
+	
+	=cut
+	
+	sub uploadGenomeFile {
+	    my $self = shift;
+	
+	    $self->_initialize();
+	    $self->config_file("$FindBin::Bin/../../Modules/chado_upload_test.cfg");
+	
+	    system("mkdir -m 7777 " . $self->_uploadDir) == 0 or die $self->logger->info("System with args failed: $?");
+	    my $outHandle = IO::File->new('>' . $self->_uploadDir . "/" . $self->_genomeFileName) or die "$!";
+	
+	    my $buffer;
+	    my $FH = $self->_genomeFile->handle();
+	    my $bytesread = $FH->read( $buffer, 1024 );
+	    while ($bytesread) {
+	        $outHandle->print($buffer);
+	        $bytesread = $FH->read( $buffer, 1024 );
+	    }
+	
+	    $outHandle->close();
+	    $self->_processUploadGenome();
+	    $self->_aggregateGffs();
+	    $self->_uploadToDatabase(dbi => $self->config_param('db.dbi'),
+	        dbName => $self->config_param('db.name'),
+	        dbHost => $self->config_param('db.host'),
+	        dbPort => $self->config_param('db.port'),
+	        dbUser => $self->config_param('db.user'),
+	        dbPass => $self->config_param('db.pass'));
+	    system("rm -r " . $self->_uploadDir) == 0 or die $self->logger->info("System with args failed: $?");
+	    return $self->redirect('../strain_info');
+	
+	}
+	
+	=head2 _uploadToDatabase
+	
+	Helper method to upload genome to database
+	
+	=cut
+	
+	sub _processUploadGenome {
+	    my $self=shift;
+	    my $fileNumber = 0;
+	    my %fileTags = %{$self->_formInputs};
+	    my $atts = "";
+	    foreach my $key (keys %fileTags) {
+	        if (!($fileTags{$key})) {    
+	        }
+	        else {
+	            $atts = $atts . $key ."=" . $fileTags{$key} . ";";
+	        }
+	    }
+	    my $attributes = $atts . "Parent=" . $self->_genomeName;
+	
+	    system("mkdir -m 7777 " . $self->_uploadDir ."/fastaTemp") == 0 or die $self->logger->info("System with args failed: $?");
+	    system("mkdir -m 7777 " . $self->_uploadDir . "/gffsTemp") == 0 or die $self->logger->info("System with args failed: $?");
+	    system("mkdir -m 7777 " . $self->_uploadDir . "/gffsToUpload") == 0 or die $self->logger->info("System with args failed: $?");
+	
+	    my $in = Bio::SeqIO->new(-file => $self->_uploadDir . "/" . $self->_genomeFileName, -format => 'fasta');
+	
+	    while (my $seq = $in->next_seq()) {
+	        $fileNumber++;
+	        my $singleFileName = $seq->id;
+	        my $singleFastaHeader = Bio::SeqIO->new(-file => '>' . $self->_uploadDir . "/fastaTemp/$singleFileName.fasta" , -format => 'fasta') or die $self->logger->info("$!");
+	        $singleFastaHeader->write_seq($seq) or die $self->logger->info("$!");
+	        $self->_appendAttributes($singleFileName , $fileNumber , $attributes);
+	    }
+	}
+	
+	=head2 _appendAttributes
+	
+	Tags fasta files with attributes and converts them to .gff files
+	
+	=cut
+	
+	sub _appendAttributes {
+	    my ($self , $_singleFileName , $_fileNumber , $_attributes) = @_;
+	    my $appendArgs = "gmod_fasta2gff3.pl --type contig --attributes \"$_attributes\" --fasta_dir " . $self->_uploadDir . "/fastaTemp/ --gfffilename " . $self->_uploadDir . "/gffsTemp/out$_fileNumber.gff";
+	    system($appendArgs) == 0 or die $self->logger->info("System failed with $appendArgs: $?");
+	    $self->logger->info("System executed $appendArgs with value: $?");
+	    unlink $self->_uploadDir . "/fastaTemp/directory.index";
+	    unlink $self->_uploadDir . "/fastaTemp/$_singleFileName.fasta";
+	}
+	
+	=head2 _aggregateGffs
+	
+	Aggregates temp gff files into a single file and appends the parent name.
+	
+	=cut
+	
+	sub _aggregateGffs {
+	    my $self = shift;
+	    my $gffsTempDir = $self->_uploadDir . "/gffsTemp";
+	    opendir (TEMP , $self->_uploadDir . "/gffsTemp") or die "cannot open directory , $!\n";
+	    while (my $file = readdir TEMP)
+	    {
+	        $self->_writeOutFile($file);
+	        unlink $self->_uploadDir . "/gffsTemp/$file"; 
+	    }
+	    $self->_mergeFiles();
+	    closedir TEMP;
+	}
+	
+	=head2 _writeOutFile
+	
+	Helper function to _aggregateGffs(). Writes out single gff files into a single gff file to be uploaded
+	
+	=cut
+	
+	sub _writeOutFile {
+	    my ($self, $file) = @_;
+	    open my $in , '<' , $self->_uploadDir . "/gffsTemp/$file" or die "Can't write to the file: $!";
+	    open my $outTags , '>>' , $self->_uploadDir . "/gffsToUpload/tempTagFile" or die "Can't write to the file: $!";
+	    open my $outSeqs , '>>' , $self->_uploadDir . "/gffsToUpload/tempSeqFile" or die "Can't write to the file: $!";
+	
+	    while (<$in>) {
+	        if ($. == 3) {
+	            print $outTags $_;
+	        }
+	        if ($. == 5 || $. == 6){
+	            print $outSeqs $_;
+	        }
+	        else{
+	        }
+	    }
+	    close $outTags;
+	    close $outSeqs;
+	}
+	
+	=head2 _mergeFiles
+	
+	Helper function to _aggregateGffs(). Writes out single gff files into a single gff file to be uploaded
+	
+	=cut
+	
+	sub _mergeFiles {
+	    my $self = shift;
+	    if ($self->_uploadDir . "/gffsToUpload/tempTagFile" && $self->_uploadDir . "/gffsToUploadtempSeqFile") {
+	        my $outFileName = "out" . $self->_genomeName . ".gff";
+	        open my $inTagFile , '<', $self->_uploadDir . "/gffsToUpload/tempTagFile" or die "Can't read file: $!";
+	        open my $inSeqFile , '<', $self->_uploadDir . "/gffsToUpload/tempSeqFile" or die "Can't read file: $!";
+	        open my $out , '>>', $self->_uploadDir . "/gffsToUpload/$outFileName";
+	
+	        print $out $self->_genomeName . "	.	contig_collection	.	.	.	.	.	ID=" . $self->_genomeName . ";Name=" . $self->_genomeName . "\n";
+	        while (my $line = <$inTagFile>) {
+	            print $out $line;
+	        }
+	        close $inTagFile;
+	        print $out "##FASTA\n";
+	        while (my $line = <$inSeqFile>) {
+	            print $out $line;
+	        }
+	        close $inSeqFile;
+	        close $out;
+	        unlink $self->_uploadDir . "/gffsToUpload/tempTagFile";
+	        unlink $self->_uploadDir . "/gffsToUpload/tempSeqFile";
+	    }
+	    else {
+	    }
+	}
+	
+	=head2 _uploadToDataBase
+	
+	Uploads the aggregated gff file to the database.
+	
+	=cut
+	
+	sub _uploadToDatabase {
+	    my $self = shift;
+	    my %paramsRef = @_;
+	    opendir (GFF, $self->_uploadDir . "/gffsToUpload") or die "Can't open directory, $!\n";
+	    while (my $gffFile = readdir GFF) {
+	        if ($gffFile eq "." || $gffFile eq "..") {
+	        }
+	        else {
+	            my $dbArgs = "gmod_bulk_load_gff3.pl --dbname " . $paramsRef{'dbName'} . " --dbuser " . $paramsRef{'dbUser'} . " --dbPass " . $paramsRef{'dbPass'} . " --organism \"Escherichia coli\" --gfffile " . $self->_uploadDir . "/gffsToUpload/$gffFile --random_tmp_dir";
+	            system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
+	            $self->logger->info("System executed $dbArgs with value: $?");
+	        }
+	    }
+	    closedir GFF;
+	}
 =cut
-
-sub _initialize {
-    my $self = shift;
-    my $q = $self->query();
-    my %fileTags = $q->Vars;
-    my $genomeFile = 
-    $self->_genomeFile($q->upload("genome_file"));
-    $self->_genomeFileName($fileTags{'genome_file'});
-    $self->_genomeName($fileTags{'genome_of'});
-    $self->_uploadDir("$FindBin::Bin/../../Sequences/uploaderTemp");
-    $self->_formInputs(\%fileTags);
-}
-
-=head2
-
-Stores a genome file for the module
-
-=cut
-
-sub _genomeFile {
-    my $self = shift;
-    $self->{'_genomeFile'} = shift //return $self->{'_genomeFile'};
-}
-
-=head2
-
-Stores a genome file name for the module
-
-=cut
-
-sub _genomeFileName {
-    my $self = shift;
-    $self->{'_genomeFileName'} = shift //return $self->{'_genomeFileName'};
-}
-
-=head2
-
-Stores a genome name for the module
-
-=cut
-
-sub _genomeName {
-    my $self = shift;
-    $self->{'_genomeName'} = shift // return $self->{'_genomeName'};
-}
-
-=head2
-
-Stores an upload directory for the module
-
-=cut
-
-sub _uploadDir {
-    my $self = shift;
-    $self->{'_uploadDir'} = shift // return $self->{'_uploadDir'};
-}
-
-=head2
-
-Stores all inputs passed from the form
-
-=cut
-
-sub _formInputs {
-    my $self = shift;
-    $self->{'_formInputs'} = shift // return $self->{'_formInputs'};
-}
-
-=head2 uploadGenome
-
-Run mode to upload a user genome.
-
-=cut
-
-sub uploadGenomeFile {
-    my $self = shift;
-
-    $self->_initialize();
-    $self->config_file("$FindBin::Bin/../../Modules/chado_upload_test.cfg");
-
-    system("mkdir -m 7777 " . $self->_uploadDir) == 0 or die $self->logger->info("System with args failed: $?");
-    my $outHandle = IO::File->new('>' . $self->_uploadDir . "/" . $self->_genomeFileName) or die "$!";
-
-    my $buffer;
-    my $FH = $self->_genomeFile->handle();
-    my $bytesread = $FH->read( $buffer, 1024 );
-    while ($bytesread) {
-        $outHandle->print($buffer);
-        $bytesread = $FH->read( $buffer, 1024 );
-    }
-
-    $outHandle->close();
-    $self->_processUploadGenome();
-    $self->_aggregateGffs();
-    $self->_uploadToDatabase(dbi => $self->config_param('db.dbi'),
-        dbName => $self->config_param('db.name'),
-        dbHost => $self->config_param('db.host'),
-        dbPort => $self->config_param('db.port'),
-        dbUser => $self->config_param('db.user'),
-        dbPass => $self->config_param('db.pass'));
-    system("rm -r " . $self->_uploadDir) == 0 or die $self->logger->info("System with args failed: $?");
-    return $self->redirect('../strain_info');
-
-}
-
-=head2 _uploadToDatabase
-
-Helper method to upload genome to database
-
-=cut
-
-sub _processUploadGenome {
-    my $self=shift;
-    my $fileNumber = 0;
-    my %fileTags = %{$self->_formInputs};
-    my $atts = "";
-    foreach my $key (keys %fileTags) {
-        if (!($fileTags{$key})) {    
-        }
-        else {
-            $atts = $atts . $key ."=" . $fileTags{$key} . ";";
-        }
-    }
-    my $attributes = $atts . "Parent=" . $self->_genomeName;
-
-    system("mkdir -m 7777 " . $self->_uploadDir ."/fastaTemp") == 0 or die $self->logger->info("System with args failed: $?");
-    system("mkdir -m 7777 " . $self->_uploadDir . "/gffsTemp") == 0 or die $self->logger->info("System with args failed: $?");
-    system("mkdir -m 7777 " . $self->_uploadDir . "/gffsToUpload") == 0 or die $self->logger->info("System with args failed: $?");
-
-    my $in = Bio::SeqIO->new(-file => $self->_uploadDir . "/" . $self->_genomeFileName, -format => 'fasta');
-
-    while (my $seq = $in->next_seq()) {
-        $fileNumber++;
-        my $singleFileName = $seq->id;
-        my $singleFastaHeader = Bio::SeqIO->new(-file => '>' . $self->_uploadDir . "/fastaTemp/$singleFileName.fasta" , -format => 'fasta') or die $self->logger->info("$!");
-        $singleFastaHeader->write_seq($seq) or die $self->logger->info("$!");
-        $self->_appendAttributes($singleFileName , $fileNumber , $attributes);
-    }
-}
-
-=head2 _appendAttributes
-
-Tags fasta files with attributes and converts them to .gff files
-
-=cut
-
-sub _appendAttributes {
-    my ($self , $_singleFileName , $_fileNumber , $_attributes) = @_;
-    my $appendArgs = "gmod_fasta2gff3.pl --type contig --attributes \"$_attributes\" --fasta_dir " . $self->_uploadDir . "/fastaTemp/ --gfffilename " . $self->_uploadDir . "/gffsTemp/out$_fileNumber.gff";
-    system($appendArgs) == 0 or die $self->logger->info("System failed with $appendArgs: $?");
-    $self->logger->info("System executed $appendArgs with value: $?");
-    unlink $self->_uploadDir . "/fastaTemp/directory.index";
-    unlink $self->_uploadDir . "/fastaTemp/$_singleFileName.fasta";
-}
-
-=head2 _aggregateGffs
-
-Aggregates temp gff files into a single file and appends the parent name.
-
-=cut
-
-sub _aggregateGffs {
-    my $self = shift;
-    my $gffsTempDir = $self->_uploadDir . "/gffsTemp";
-    opendir (TEMP , $self->_uploadDir . "/gffsTemp") or die "cannot open directory , $!\n";
-    while (my $file = readdir TEMP)
-    {
-        $self->_writeOutFile($file);
-        unlink $self->_uploadDir . "/gffsTemp/$file"; 
-    }
-    $self->_mergeFiles();
-    closedir TEMP;
-}
-
-=head2 _writeOutFile
-
-Helper function to _aggregateGffs(). Writes out single gff files into a single gff file to be uploaded
-
-=cut
-
-sub _writeOutFile {
-    my ($self, $file) = @_;
-    open my $in , '<' , $self->_uploadDir . "/gffsTemp/$file" or die "Can't write to the file: $!";
-    open my $outTags , '>>' , $self->_uploadDir . "/gffsToUpload/tempTagFile" or die "Can't write to the file: $!";
-    open my $outSeqs , '>>' , $self->_uploadDir . "/gffsToUpload/tempSeqFile" or die "Can't write to the file: $!";
-
-    while (<$in>) {
-        if ($. == 3) {
-            print $outTags $_;
-        }
-        if ($. == 5 || $. == 6){
-            print $outSeqs $_;
-        }
-        else{
-        }
-    }
-    close $outTags;
-    close $outSeqs;
-}
-
-=head2 _mergeFiles
-
-Helper function to _aggregateGffs(). Writes out single gff files into a single gff file to be uploaded
-
-=cut
-
-sub _mergeFiles {
-    my $self = shift;
-    if ($self->_uploadDir . "/gffsToUpload/tempTagFile" && $self->_uploadDir . "/gffsToUploadtempSeqFile") {
-        my $outFileName = "out" . $self->_genomeName . ".gff";
-        open my $inTagFile , '<', $self->_uploadDir . "/gffsToUpload/tempTagFile" or die "Can't read file: $!";
-        open my $inSeqFile , '<', $self->_uploadDir . "/gffsToUpload/tempSeqFile" or die "Can't read file: $!";
-        open my $out , '>>', $self->_uploadDir . "/gffsToUpload/$outFileName";
-
-        print $out $self->_genomeName . "	.	contig_collection	.	.	.	.	.	ID=" . $self->_genomeName . ";Name=" . $self->_genomeName . "\n";
-        while (my $line = <$inTagFile>) {
-            print $out $line;
-        }
-        close $inTagFile;
-        print $out "##FASTA\n";
-        while (my $line = <$inSeqFile>) {
-            print $out $line;
-        }
-        close $inSeqFile;
-        close $out;
-        unlink $self->_uploadDir . "/gffsToUpload/tempTagFile";
-        unlink $self->_uploadDir . "/gffsToUpload/tempSeqFile";
-    }
-    else {
-    }
-}
-
-=head2 _uploadToDataBase
-
-Uploads the aggregated gff file to the database.
-
-=cut
-
-sub _uploadToDatabase {
-    my $self = shift;
-    my %paramsRef = @_;
-    opendir (GFF, $self->_uploadDir . "/gffsToUpload") or die "Can't open directory, $!\n";
-    while (my $gffFile = readdir GFF) {
-        if ($gffFile eq "." || $gffFile eq "..") {
-        }
-        else {
-            my $dbArgs = "gmod_bulk_load_gff3.pl --dbname " . $paramsRef{'dbName'} . " --dbuser " . $paramsRef{'dbUser'} . " --dbPass " . $paramsRef{'dbPass'} . " --organism \"Escherichia coli\" --gfffile " . $self->_uploadDir . "/gffsToUpload/$gffFile --random_tmp_dir";
-            system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
-            $self->logger->info("System executed $dbArgs with value: $?");
-        }
-    }
-    closedir GFF;
-}
-
 
 
 1;

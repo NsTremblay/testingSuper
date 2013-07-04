@@ -2,7 +2,7 @@
 	<div style="border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
 		<form id="strainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
-				<span class="help-block">View single strain information by typing in the search box. You will see suggested strains in the database. You can also select from the drop down list below</span>
+				<span class="help-block">View single genome information by typing in the search box. You will see suggested genomes in the database. You can also select from the drop down list below</span>
 				<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 				<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 				<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
@@ -18,7 +18,7 @@
 				</style>
 				<script>
 				$(function() {
-					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=UNIQUENAME>" } , </TMPL_LOOP> ]
+					var availableTags = [ <TMPL_LOOP NAME=FEATURES> { label:"<TMPL_VAR NAME=UNIQUENAME>", value:"<TMPL_VAR NAME=FEATURE_ID>" } , </TMPL_LOOP> ]
 					$("#autoComp").autocomplete({
 						source: availableTags,
 						select: function( event, ui ) {
@@ -30,7 +30,7 @@
 			    });
 				});
 				</script>
-				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a strain" name="singleStrainName"></input>
+				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="singleStrainName"></input>
 				<input id="autoComp_hidden" type="hidden" name="singleStrainID"/>
 				<div>
 					<button id="sSSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
@@ -41,14 +41,14 @@
 		</form>
 		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
-				<span style="color:#796e6c">Select a strain from the list:</span>
+				<span style="color:#796e6c">Select a genome from the list:</span>
 				<select id="pubStrainList" class="span12" style="margin:10px 0px 0px 0px" name="singleStrainID">
 					<TMPL_LOOP NAME=FEATURES>
-					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
+					<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=UNIQUENAME></option>
 					</TMPL_LOOP>
 				</select>
 				<div style="margin:10px 0px 0px 0px">
-					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
 				<!--hr-->
@@ -58,14 +58,17 @@
 		<TMPL_IF PRIVATE_DATA>
 		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
-				<span style="color:#796e6c">Or select from your uploaded strains:</span>
+				<p style="color:#796e6c">Or select from user submitted genomes:<br>
+				<span style="padding-left:20px"><small>[Pri] private</small></span>
+				<span style="padding-left:20px"><small>[Pub] public</small></span>
+				</p>
 				<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
 					<TMPL_LOOP NAME=PRIVATE_FEATURES>
-					<option value='<TMPL_VAR NAME=UNIQUENAME>'><TMPL_VAR NAME=UNIQUENAME></option>
+					<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=DISPLAYNAME></option>
 					</TMPL_LOOP>
 				</select>
 				<div style="margin:10px 0px 0px 0px">
-					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Strain Info</button>
+					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
 				<!--hr-->
