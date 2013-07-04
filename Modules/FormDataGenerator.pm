@@ -120,8 +120,8 @@ sub getFormData {
         },
         {
             result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            columns => [qw/feature_id uniquename type.name featureprops.value/],
-            join => ['type' , 'featureprops'],
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
             order_by    => {-asc => ['me.uniquename']}
         }
         );
@@ -331,6 +331,5 @@ sub _getJSONFormat {
     my $_encodedText = $json->encode(\%jsonHash);
     return $_encodedText;
 }
-
 
 1;
