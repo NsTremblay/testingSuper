@@ -75,19 +75,19 @@
 
 		<script>
 
-		var strainJson = <TMPL_VAR NAME=strainJSONData>;
+		var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
 
-		$('#uniqueNameView').click(function () {
-			var availableTags = [];
+		$('#commonNameView').click(function () {
 			$('#pubStrainList').empty();
-			for (i=0 ; i<strainJson.data.length ; i++) {
+			var availableTags = [];
+			for (i=0 ; i<featureTableJson.data.length ; i++) {
 				var opt = document.createElement("option");
-				var description = document.createTextNode(strainJson.data[i].uniquename);
-				opt.value = strainJson.data[i].uniquename;
+				var description = document.createTextNode(featureTableJson.data[i].uniquename);
+				opt.value = featureTableJson.data[i].uniquename;
 				opt.appendChild(description);
 				document.getElementById('pubStrainList').appendChild(opt);
 
-				availableTags.push( { label:strainJson.data[i].uniquename, value:strainJson.data[i].uniquename } );
+				availableTags.push( { label:featureTableJson.data[i].uniquename, value:featureTableJson.data[i].uniquename } );
 			}
 			$("#autoComp").autocomplete({
 				source: availableTags,
@@ -99,17 +99,17 @@
 			    });
 		});
 
-		$('#commonNameView').click(function () {
-			$('#pubStrainList').empty();
+		$('#accessionNumberView').click(function () {
 			var availableTags = [];
-			for (i=0 ; i<strainJson.data.length ; i++) {
+			$('#pubStrainList').empty();
+			for (i=0 ; i<featureTableJson.data.length ; i++) {
 				var opt = document.createElement("option");
-				var description = document.createTextNode(strainJson.data[i].featureprops.value);
-				opt.value = strainJson.data[i].uniquename;
+				var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
+				opt.value = featureTableJson.data[i].uniquename;
 				opt.appendChild(description);
 				document.getElementById('pubStrainList').appendChild(opt);
 
-				availableTags.push( { label:strainJson.data[i].featureprops.value, value:strainJson.data[i].uniquename } );
+				availableTags.push( { label:featureTableJson.data[i].dbxref.accession, value:featureTableJson.data[i].uniquename } );
 			}
 			$("#autoComp").autocomplete({
 				source: availableTags,
