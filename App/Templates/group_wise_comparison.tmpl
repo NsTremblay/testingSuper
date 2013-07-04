@@ -254,39 +254,7 @@
 			$('a').tooltip();
 		});
 
-		var strainJson = <TMPL_VAR NAME=strainJSONData>;
-
-		$('#uniqueNameView').click(function () {
-
-			$('#strainListSelection').empty();
-			$('#group1 li').closest('li').remove();
-			$('#buttonRemoveGroup1').hide();
-			$('#group2 li').closest('li').remove();
-			$('#buttonRemoveGroup2').hide();
-
-			for (i=0 ; i<strainJson.data.length ; i++) {
-
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(strainJson.data[i].uniquename);
-				var checkbox = document.createElement("input");
-
-				li.setAttribute("style","list-style:none");
-
-				label.className = "checkbox";
-
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = strainJson.data[i].uniquename;
-
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
-
-				document.getElementById('strainListSelection').appendChild(li);
-			}
-		});
+		var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
 
 		$('#commonNameView').click(function () {
 
@@ -296,10 +264,10 @@
 			$('#group2 li').closest('li').remove();
 			$('#buttonRemoveGroup2').hide();
 
-			for (i=0 ; i<strainJson.data.length ; i++) {
+			for (i=0 ; i<featureTableJson.data.length ; i++) {
 				var li = document.createElement("li");
 				var label = document.createElement("label");
-				var description = document.createTextNode(strainJson.data[i].featureprops.value);
+				var description = document.createTextNode(featureTableJson.data[i].name);
 				var checkbox = document.createElement("input");
 
 				li.setAttribute("style","list-style:none");
@@ -309,7 +277,44 @@
 				checkbox.type = "checkbox";
 				checkbox.id = "checkboxName";
 				checkbox.name = "multiStrainNames";
-				checkbox.value = strainJson.data[i].uniquename;
+				checkbox.value = featureTableJson.data[i].uniquename;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('strainListSelection').appendChild(li);
+			}
+		});
+
+		/*
+		Need to change this to return accession number
+		*/
+
+		$('#accessionNumberView').click(function () {
+
+			$('#strainListSelection').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			for (i=0 ; i<featureTableJson.data.length ; i++) {
+
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = featureTableJson.data[i].uniquename;
 
 				label.appendChild(checkbox);
 				label.appendChild(description);
