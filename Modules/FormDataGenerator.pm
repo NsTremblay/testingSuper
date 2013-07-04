@@ -32,11 +32,11 @@ package Modules::FormDataGenerator;
 
 use strict;
 use warnings;
-#use parent 'Modules::App_Super';
 use FindBin;
 use lib "$FindBin::Bin/../";
 use Log::Log4perl qw/get_logger/;
 use Carp;
+
 use JSON;
 
 #object creation
@@ -115,17 +115,16 @@ sub getFormData {
     
     # Return public genome names as list of hash-refs
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
-	    {
-			'type.name' =>  'contig_collection',
-		},
-		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-		    columns => [qw/feature_id uniquename/],
-		    order_by    => {-asc => ['me.uniquename']},
-		    join => 'type'
-					
-		}
-	);
+    {
+        'type.name' =>  'contig_collection',
+        },
+        {
+            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
     
     my @publicFormData = $genomes->all;
     
@@ -134,6 +133,7 @@ sub getFormData {
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes($username);
     
+
     return(\@publicFormData, $privateFormData , $pubEncodedText);
   
 }
@@ -171,6 +171,7 @@ sub privateGenomes {
 		);
         
         my @privateFormData = $genomes->all;
+ 
         
         foreach my $row_hash (@privateFormData) {
         	my $display_name = $row_hash->{uniquename};
