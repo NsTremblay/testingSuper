@@ -149,19 +149,19 @@
 		}
 	}
 
-	var strainJson = <TMPL_VAR NAME=strainJSONData>;
+	var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
 
-	$('#uniqueNameView').click(function () {
+	$('#commonNameView').click(function () {
 		$('#strainListSelection').empty();
 		$('#group1').empty();
 		$('#buttonRemoveGroup1').hide();
 		$('#group2').empty();
 		$('#buttonRemoveGroup2').hide();
 
-		for (i=0 ; i<strainJson.data.length ; i++) {
+		for (i=0 ; i<featureTableJson.data.length ; i++) {
 			var li = document.createElement("li");
 			var label = document.createElement("label");
-			var description = document.createTextNode(strainJson.data[i].uniquename);
+			var description = document.createTextNode(featureTableJson.data[i].uniquename);
 			var checkbox = document.createElement("input");
 
 			li.setAttribute("style","list-style:none");
@@ -171,7 +171,7 @@
 			checkbox.type = "checkbox";
 			checkbox.id = "checkboxName";
 			checkbox.name = "multiStrainNames";
-			checkbox.value = strainJson.data[i].uniquename;
+			checkbox.value = featureTableJson.data[i].uniquename;
 
 			label.appendChild(checkbox);
 			label.appendChild(description);
@@ -181,17 +181,18 @@
 		}
 	});
 
-	$('#commonNameView').click(function () {
+
+	$('#accessionNumberView').click(function () {
 		$('#strainListSelection').empty();
 		$('#group1').empty();
 		$('#buttonRemoveGroup1').hide();
 		$('#group2').empty();
 		$('#buttonRemoveGroup2').hide();
 
-		for (i=0 ; i<strainJson.data.length ; i++) {
+		for (i=0 ; i<featureTableJson.data.length ; i++) {
 			var li = document.createElement("li");
 			var label = document.createElement("label");
-			var description = document.createTextNode(strainJson.data[i].featureprops.value);
+			var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
 			var checkbox = document.createElement("input");
 
 			li.setAttribute("style","list-style:none");
@@ -201,7 +202,7 @@
 			checkbox.type = "checkbox";
 			checkbox.id = "checkboxName";
 			checkbox.name = "multiStrainNames";
-			checkbox.value = strainJson.data[i].uniquename;
+			checkbox.value = featureTableJson.data[i].uniquename;
 
 			label.appendChild(checkbox);
 			label.appendChild(description);
