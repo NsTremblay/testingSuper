@@ -347,5 +347,44 @@ sub _getJSONFormat {
     return $_encodedText;
 }
 
+=cut dataViewHostSource
+
+Returns a list of the Host Sources for the 'Host Source' data view
+
+=cut
+
+sub dataViewHostSource {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    # loop through the db and get all the strains that have a host source stored
+    # if they dont then store the string n/a.
+    # make sure to also store the associated feature_id with them
+
+    my @hostSourceNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_host"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %hostSourceName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $hostSourceName{'value'} = "N/A";
+        }
+        else {
+            $hostSourceName{'value'} = $dataRow->value;
+        }
+        $hostSourceName{'feature_id'} = $_pubStrainId;
+        push(@hostSourceNames , \%hostSourceName);
+    }
+    my $hostSourceJson = $self->_getJSONFormat(\@hostSourceNames);
+    return $hostSourceJson;
+}
 
 1;

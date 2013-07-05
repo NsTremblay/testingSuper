@@ -43,6 +43,8 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 
+use JSON;
+
 # Featureprops
 # hash: name => cv
 my %fp_types = (
@@ -178,8 +180,10 @@ sub strain_info : StartRunmode {
 		$template->param(PRIVATE_DATA => 0);
 	}
 
-	my $validator = "Return Success";
-	$template->param(VALIDATOR=>$validator);
+	#We dont really need this anymore
+	#my $validator = "Return Success";
+	#$template->param(VALIDATOR=>$validator);
+
 	return $template->output();
 }
 
@@ -341,5 +345,23 @@ sub _getAmrData {
 	}
 	return \@amrData;
 }
+
+sub host_source_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $hostSourceHashRef = $formDataGenerator->dataViewHostSource(\@publicIdList);
+
+	return $hostSourceHashRef;
+}
+
+
 
 1;
