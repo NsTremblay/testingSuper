@@ -118,16 +118,11 @@
 			return true;
 		}
 	}
-	function checkSingleSeq() {
-		if ($('#validator').is(':empty')) {
-		}
-		else {
-			$('#svgCanvas').show("slow", displayMap(), $('#strainInfoTabs').show("slow"));
-		}
-	}
+
 	function onLoadCheck() {
 		initialize();
-		checkSingleSeq();
+		$('#svgCanvas').show("slow", $('#strainInfoTabs').show("slow"));
 	}
+	
 	</script>
 </div>
