@@ -201,8 +201,7 @@
 					//context: document.body
 				}).done(function (returned_data) {
 					var hostSourceTableJsonString = returned_data;
-					var jsonObj = 'hostSourceTableJsonString';
-					var hostSourceTableJson = $.parseJSON(jsonObj);
+					var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 					console.log(hostSourceTableJson);
 					var availableTags = [];
 					$('#pubStrainList').empty();
