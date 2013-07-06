@@ -200,7 +200,8 @@
 					data: { public_id_list: featureIdList }
 					//context: document.body
 				}).done(function (returned_data) {
-					var hostSourceTableJson = returned_data;
+					var hostSourceTableJsonString = returned_data;
+					var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 					console.log(hostSourceTableJson);
 					var availableTags = [];
 					$('#pubStrainList').empty();
