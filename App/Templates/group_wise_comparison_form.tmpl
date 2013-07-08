@@ -8,7 +8,7 @@
 			<div style="padding:10px">
 				<fieldset>
 					<span class="help-block">Select on one or strains to compare them and view metadata</span>
-					<ul id="strainListSelection" style="padding:0px;margin:0px">
+					<ul id="pubStrainList" style="padding:0px;margin:0px">
 						<TMPL_LOOP NAME=FEATURES>
 						<li style="list-style:none">
 							<label class="checkbox">
@@ -114,7 +114,7 @@ function checkGroup1Fields() {
 		return false;
 	}
 	else {
-		var checkedOneOption = $('#strainListSelection li :checked').closest('li');
+		var checkedOneOption = $('#pubStrainList li :checked').closest('li');
 		checkedOneOption.clone().appendTo('#group1');
 		checkedOneOption.remove();
 		unCheckAllBoxes();
@@ -140,7 +140,7 @@ function checkGroup2Fields() {
 		return false;
 	}
 	else {
-		var checkedTwoOption = $('#strainListSelection li :checked').closest('li');
+		var checkedTwoOption = $('#pubStrainList li :checked').closest('li');
 		checkedTwoOption.clone().appendTo('#group2');
 		checkedTwoOption.remove();
 		unCheckAllBoxes();
@@ -166,7 +166,7 @@ function removeGroup1() {
 		return false;
 	}
 	else {
-		$('#group1 li :checked').closest('li').appendTo('#strainListSelection');
+		$('#group1 li :checked').closest('li').appendTo('#pubStrainList');
 		unCheckAllBoxes();
 		if ($('#group1 li').length == 0) {
 			$('#buttonRemoveGroup1').hide();
@@ -193,7 +193,7 @@ function removeGroup2() {
 		return false;
 	}
 	else {
-		$('#group2 li :checked').closest('li').appendTo('#strainListSelection');
+		$('#group2 li :checked').closest('li').appendTo('#pubStrainList');
 		unCheckAllBoxes();
 		if ($('#group2 li').length == 0) {
 			$('#buttonRemoveGroup2').hide();

@@ -258,7 +258,7 @@
 
 		$('#commonNameView').click(function () {
 
-			$('#strainListSelection').empty();
+			$('#pubStrainList').empty();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -283,13 +283,13 @@
 				label.appendChild(description);
 				li.appendChild(label);
 
-				document.getElementById('strainListSelection').appendChild(li);
+				document.getElementById('pubStrainList').appendChild(li);
 			}
 		});
 
 		$('#accessionNumberView').click(function () {
 
-			$('#strainListSelection').empty();
+			$('#pubStrainList').empty();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -316,31 +316,225 @@
 				label.appendChild(description);
 				li.appendChild(label);
 
-				document.getElementById('strainListSelection').appendChild(li);
+				document.getElementById('pubStrainList').appendChild(li);
 			}
 		});
 
-		/*
-		The remainder of the data switches will require ajax calls to the server to update forms
-		*/
-
-		var featureIdList = [];
-
-		$(document).ready( function() {
-			for (i=0 ; i<featureTableJson.data.length ; i++) {
-				featureIdList.push(featureTableJson.data[i].feature_id);
-			}
-		});
 /*
-		$('#hostSourceView').click( function(featureIdList) {
-			$.ajax({
-				url: "/ajax_test",
-				context: document.body
-			}).done(function(data) {
-				document.getElementById('AJAXTestDiv').innerHMTL = data;
-			});
-		});*/
+The remainder of the data switches will require ajax calls to the server to update forms
+*/
 
-		</script>
+$(document).ready( function(){
+	var featureIdList = "";
+	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
+		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
+	}
 
-		</html>
+	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
+
+	$('#isolationHostView').click( function() {
+		$.ajax({
+			type: "POST",
+			url: "/host_source_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			$('#pubStrainList').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = hostSourceTableJson.data[i].feature_id;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('pubStrainList').appendChild(li);
+			}
+		});
+});
+
+	$('#isolationSourceView').click( function() {
+		$.ajax({
+			type: "POST",
+			url: "/isolation_source_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			$('#pubStrainList').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = hostSourceTableJson.data[i].feature_id;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('pubStrainList').appendChild(li);
+			}
+		});
+});
+
+	$('#serotypeView').click( function() {
+		$.ajax({
+			type: "POST",
+			url: "/serotype_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			$('#pubStrainList').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = hostSourceTableJson.data[i].feature_id;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('pubStrainList').appendChild(li);
+			}
+		});
+});
+
+	$('#isolationDateView').click( function() {
+		$.ajax({
+			type: "POST",
+			url: "/isolation_date_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			$('#pubStrainList').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = hostSourceTableJson.data[i].feature_id;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('pubStrainList').appendChild(li);
+			}
+		});
+});
+
+
+		$('#isolationLocationView').click( function() {
+		$.ajax({
+			type: "POST",
+			url: "/isolation_location_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			$('#pubStrainList').empty();
+			$('#group1 li').closest('li').remove();
+			$('#buttonRemoveGroup1').hide();
+			$('#group2 li').closest('li').remove();
+			$('#buttonRemoveGroup2').hide();
+
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var li = document.createElement("li");
+				var label = document.createElement("label");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+
+				var checkbox = document.createElement("input");
+
+				li.setAttribute("style","list-style:none");
+
+				label.className = "checkbox";
+
+				checkbox.type = "checkbox";
+				checkbox.id = "checkboxName";
+				checkbox.name = "multiStrainNames";
+				checkbox.value = hostSourceTableJson.data[i].feature_id;
+
+				label.appendChild(checkbox);
+				label.appendChild(description);
+				li.appendChild(label);
+
+				document.getElementById('pubStrainList').appendChild(li);
+			}
+		});
+});
+
+});
+
+	</script>
+
+	</html>

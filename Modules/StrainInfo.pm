@@ -346,6 +346,22 @@ sub _getAmrData {
 	return \@amrData;
 }
 
+sub serotype_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $serotypeHashRef = $formDataGenerator->dataViewSerotype(\@publicIdList);
+
+	return $serotypeHashRef;
+}
+
 sub host_source_form : Runmode {
 	my $self = shift;
 	my $q = $self->query();
@@ -357,9 +373,57 @@ sub host_source_form : Runmode {
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $hostSourceHashRef = $formDataGenerator->dataViewHostSource(\@publicIdList);
+	my $isolationHostHashRef = $formDataGenerator->dataViewIsolationHost(\@publicIdList);
 
-	return $hostSourceHashRef;
+	return $isolationHostHashRef;
+}
+
+sub isolation_source_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $isolationSourceHashRef = $formDataGenerator->dataViewIsolationSource(\@publicIdList);
+
+	return $isolationSourceHashRef;
+}
+
+sub isolation_date_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $isolationDateHashRef = $formDataGenerator->dataViewIsolationDate(\@publicIdList);
+
+	return $isolationDateHashRef;
+}
+
+sub isolation_location_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $isolationLocationHashRef = $formDataGenerator->dataViewIsolationLocation(\@publicIdList);
+
+	return $isolationLocationHashRef;
 }
 
 

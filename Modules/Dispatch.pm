@@ -39,7 +39,11 @@ sub dispatch_args {
                 '/group_compare_test/' => {app=>'GroupWiseComparisons', rm=>'group_compare_test'},
                 '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'},
                 '/ajax_test' => {app=>'Statistics' , rm=>'ajax_test'},
-                '/host_source_form' => {app=>'StrainInfo' , rm=>'host_source_form'}
+                '/host_source_form' => {app=>'StrainInfo' , rm=>'host_source_form'},
+                '/isolation_source_form' => {app=>'StrainInfo' , rm=>'isolation_source_form'},
+                '/serotype_form' => {app=>'StrainInfo' , rm=>'serotype_form'},
+                '/isolation_date_form' => {app=>'StrainInfo' , rm=>'isolation_date_form'},
+                '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'}
   
         ],
     };

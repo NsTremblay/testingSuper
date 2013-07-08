@@ -347,22 +347,49 @@ sub _getJSONFormat {
     return $_encodedText;
 }
 
+sub dataViewSerotype {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @serotypeNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "serotype"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %serotypeName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $serotypeName{'value'} = "N/A";
+        }
+        else {
+            $serotypeName{'value'} = $dataRow->value;
+        }
+        $serotypeName{'feature_id'} = $_pubStrainId;
+        push(@serotypeNames , \%serotypeName);
+    }
+    my $serotypeJson = $self->_getJSONFormat(\@serotypeNames);
+    return $serotypeJson;
+}
+
+
 =cut dataViewHostSource
 
 Returns a list of the Host Sources for the 'Host Source' data view
 
 =cut
 
-sub dataViewHostSource {
+sub dataViewIsolationHost {
     my $self=shift;
     my $publicIdList=shift;
     my @publicFeautureIds = @{$publicIdList};
 
-    # loop through the db and get all the strains that have a host source stored
-    # if they dont then store the string n/a.
-    # make sure to also store the associated feature_id with them
-
-    my @hostSourceNames;
+    my @isolationHostNames;
     my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
         {'type.name' => "isolation_host"},
         {
@@ -372,19 +399,111 @@ sub dataViewHostSource {
         );
 
     foreach my $_pubStrainId (@publicFeautureIds) {
-        my %hostSourceName;
+        my %isolationHostName;
         my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
         if (!$dataRow) {
-            $hostSourceName{'value'} = "N/A";
+            $isolationHostName{'value'} = "N/A";
         }
         else {
-            $hostSourceName{'value'} = $dataRow->value;
+            $isolationHostName{'value'} = $dataRow->value;
         }
-        $hostSourceName{'feature_id'} = $_pubStrainId;
-        push(@hostSourceNames , \%hostSourceName);
+        $isolationHostName{'feature_id'} = $_pubStrainId;
+        push(@isolationHostNames , \%isolationHostName);
     }
-    my $hostSourceJson = $self->_getJSONFormat(\@hostSourceNames);
-    return $hostSourceJson;
+    my $isolationHostJson = $self->_getJSONFormat(\@isolationHostNames);
+    return $isolationHostJson;
 }
+
+sub dataViewIsolationSource {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationSourceNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_source"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationSourceName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationSourceName{'value'} = "N/A";
+        }
+        else {
+            $isolationSourceName{'value'} = $dataRow->value;
+        }
+        $isolationSourceName{'feature_id'} = $_pubStrainId;
+        push(@isolationSourceNames , \%isolationSourceName);
+    }
+    my $isolationSourceJson = $self->_getJSONFormat(\@isolationSourceNames);
+    return $isolationSourceJson;
+}
+
+sub dataViewIsolationDate {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationDateNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_date"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationDate;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationDate{'value'} = "N/A";
+        }
+        else {
+            $isolationDate{'value'} = $dataRow->value;
+        }
+        $isolationDate{'feature_id'} = $_pubStrainId;
+        push(@isolationDateNames , \%isolationDate);
+    }
+    my $isolationDateJson = $self->_getJSONFormat(\@isolationDateNames);
+    return $isolationDateJson;
+}
+
+
+sub dataViewIsolationLocation {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationLocationNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_location"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationLocation;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationLocation{'value'} = "N/A";
+        }
+        else {
+            $isolationLocation{'value'} = $dataRow->value;
+        }
+        $isolationLocation{'feature_id'} = $_pubStrainId;
+        push(@isolationLocationNames , \%isolationLocation);
+    }
+    my $isolationLocationJson = $self->_getJSONFormat(\@isolationLocationNames);
+    return $isolationLocationJson;
+}
+
 
 1;
