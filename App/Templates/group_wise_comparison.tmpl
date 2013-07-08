@@ -333,6 +333,8 @@ $(document).ready( function(){
 	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
 
 	$('#isolationHostView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/host_source_form",
@@ -350,7 +352,7 @@ $(document).ready( function(){
 			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
 				var li = document.createElement("li");
 				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);	
 
 				var checkbox = document.createElement("input");
 
@@ -373,6 +375,8 @@ $(document).ready( function(){
 });
 
 	$('#isolationSourceView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/isolation_source_form",
@@ -413,6 +417,8 @@ $(document).ready( function(){
 });
 
 	$('#serotypeView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/serotype_form",
@@ -453,6 +459,8 @@ $(document).ready( function(){
 });
 
 	$('#isolationDateView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/isolation_date_form",
@@ -493,7 +501,9 @@ $(document).ready( function(){
 });
 
 
-		$('#isolationLocationView').click( function() {
+	$('#isolationLocationView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/isolation_location_form",

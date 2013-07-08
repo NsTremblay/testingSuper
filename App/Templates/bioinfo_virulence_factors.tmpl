@@ -222,6 +222,8 @@ $(document).ready( function(){
 	console.log(featureIdList);
 
 	$('#isolationHostView').click( function() {
+		$('#pubStrainList').empty();
+		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
 			url: "/host_source_form",
@@ -257,149 +259,157 @@ $(document).ready( function(){
 		});
 	});
 
-	$('#isolationSourceView').click( function() {
-		$.ajax({
-			type: "POST",
-			url: "/isolation_source_form",
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			$('#pubStrainList').empty();
+$('#isolationSourceView').click( function() {
+	$('#pubStrainList').empty();
+	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
+	$.ajax({
+		type: "POST",
+		url: "/isolation_source_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		$('#pubStrainList').empty();
 
-			var hostSourceTableJsonString = returned_data;
-			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
-			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
 
-				var checkbox = document.createElement("input");
+			var checkbox = document.createElement("input");
 
-				li.setAttribute("style","list-style:none");
+			li.setAttribute("style","list-style:none");
 
-				label.className = "checkbox";
+			label.className = "checkbox";
 
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = hostSourceTableJson.data[i].feature_id;
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = hostSourceTableJson.data[i].feature_id;
 
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
 
-				document.getElementById('pubStrainList').appendChild(li);
-			}
-		});
+			document.getElementById('pubStrainList').appendChild(li);
+		}
 	});
+});
 
-	$('#serotypeView').click( function() {
-		$.ajax({
-			type: "POST",
-			url: "/serotype_form",
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			$('#pubStrainList').empty();
+$('#serotypeView').click( function() {
+	$('#pubStrainList').empty();
+	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
+	$.ajax({
+		type: "POST",
+		url: "/serotype_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		$('#pubStrainList').empty();
 
-			var hostSourceTableJsonString = returned_data;
-			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
-			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
 
-				var checkbox = document.createElement("input");
+			var checkbox = document.createElement("input");
 
-				li.setAttribute("style","list-style:none");
+			li.setAttribute("style","list-style:none");
 
-				label.className = "checkbox";
+			label.className = "checkbox";
 
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = hostSourceTableJson.data[i].feature_id;
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = hostSourceTableJson.data[i].feature_id;
 
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
 
-				document.getElementById('pubStrainList').appendChild(li);
-			}
-		});
+			document.getElementById('pubStrainList').appendChild(li);
+		}
 	});
+});
 
-	$('#isolationDateView').click( function() {
-		$.ajax({
-			type: "POST",
-			url: "/isolation_date_form",
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			$('#pubStrainList').empty();
+$('#isolationDateView').click( function() {
+	$('#pubStrainList').empty();
+	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
+	$.ajax({
+		type: "POST",
+		url: "/isolation_date_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		$('#pubStrainList').empty();
 
-			var hostSourceTableJsonString = returned_data;
-			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
-			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
 
-				var checkbox = document.createElement("input");
+			var checkbox = document.createElement("input");
 
-				li.setAttribute("style","list-style:none");
+			li.setAttribute("style","list-style:none");
 
-				label.className = "checkbox";
+			label.className = "checkbox";
 
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = hostSourceTableJson.data[i].feature_id;
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = hostSourceTableJson.data[i].feature_id;
 
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
 
-				document.getElementById('pubStrainList').appendChild(li);
-			}
-		});
+			document.getElementById('pubStrainList').appendChild(li);
+		}
 	});
+});
 
-	$('#isolationLocaationView').click( function() {
-		$.ajax({
-			type: "POST",
-			url: "/isolation_location_form",
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			$('#pubStrainList').empty();
+$('#isolationLocationView').click( function() {
+	$('#pubStrainList').empty();
+	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
+	$.ajax({
+		type: "POST",
+		url: "/isolation_location_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		$('#pubStrainList').empty();
 
-			var hostSourceTableJsonString = returned_data;
-			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
-			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var li = document.createElement("li");
+			var label = document.createElement("label");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
 
-				var checkbox = document.createElement("input");
+			var checkbox = document.createElement("input");
 
-				li.setAttribute("style","list-style:none");
+			li.setAttribute("style","list-style:none");
 
-				label.className = "checkbox";
+			label.className = "checkbox";
 
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = hostSourceTableJson.data[i].feature_id;
+			checkbox.type = "checkbox";
+			checkbox.id = "checkboxName";
+			checkbox.name = "multiStrainNames";
+			checkbox.value = hostSourceTableJson.data[i].feature_id;
 
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
+			label.appendChild(checkbox);
+			label.appendChild(description);
+			li.appendChild(label);
 
-				document.getElementById('pubStrainList').appendChild(li);
-			}
-		});
+			document.getElementById('pubStrainList').appendChild(li);
+		}
 	});
+});
 
 
 });
