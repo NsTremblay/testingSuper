@@ -127,8 +127,6 @@
 
 			</div>
 
-			<div id="AJAXTestDiv"><h4>Ajax will return some text below:</h4></div>
-
 			<script>
 			var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
 
@@ -147,11 +145,11 @@
 				$("#autoComp").autocomplete({
 					source: availableTags,
 					select: function( event, ui ) {
-			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
-			            $("#autoComp_hidden").val( ui.item.value );
-			            return false;
-			        }
-			    });
+						$("#autoComp").val( ui.item.label );
+						$("#autoComp_hidden").val( ui.item.value );
+						return false;
+					}
+				});
 			});
 
 			$('#accessionNumberView').click(function () {
@@ -169,62 +167,217 @@
 				$("#autoComp").autocomplete({
 					source: availableTags,
 					select: function( event, ui ) {
-			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
-			            $("#autoComp_hidden").val( ui.item.value );
-			            return false;
-			        }
-			    });
-			});
-
-		/*
-		The remainder of the data switches will require ajax calls to the server to update forms
-		*/
-
-		 //var featureIdList = ["a","b","c","d","e"];
-
-		 $(document).ready( function(){
-		 	var featureIdList = "";
-		 	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
-		 		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
-				//featureIdList.push(featureTableJson.data[i].feature_id);
-			}
-
-			featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
-
-			console.log(featureIdList);
-
-			$('#hostSourceView').click( function() {
-				$.ajax({
-					type: "POST",
-					url: "/host_source_form",
-					data: { public_id_list: featureIdList }
-					//context: document.body
-				}).done(function (returned_data) {
-					var hostSourceTableJsonString = returned_data;
-					var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-					console.log(hostSourceTableJson);
-					var availableTags = [];
-					$('#pubStrainList').empty();
-					
-					for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-						var opt = document.createElement("option");
-						var description = document.createTextNode(hostSourceTableJson.data[i].value);
-						opt.value = hostSourceTableJson.data[i].feature_id;
-						opt.appendChild(description);
-						document.getElementById('pubStrainList').appendChild(opt);
-
-						availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+						$("#autoComp").val( ui.item.label );
+						$("#autoComp_hidden").val( ui.item.value );
+						return false;
 					}
-					$("#autoComp").autocomplete({
-						source: availableTags,
-						select: function( event, ui ) {
-			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
-			            $("#autoComp_hidden").val( ui.item.value );
-			            return false;
-			        }
-			    });
 				});
 			});
+
+/*
+The remainder of the data switches will require ajax calls to the server to update forms
+*/
+
+$(document).ready( function(){
+	var featureIdList = "";
+	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
+		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
+	}
+
+	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
+
+	console.log(featureIdList);
+
+	$('#isolationHostView').click( function() {
+		$('#pubStrainInfoDropdown').hide();
+		$('#pubStrainInfoSearch').hide();
+		$('#strainInfoProgressbar').show()
+		$.ajax({
+			type: "POST",
+			url: "/host_source_form",
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			var hostSourceTableJsonString = returned_data;
+			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+			console.log(hostSourceTableJson);
+			var availableTags = [];
+			$('#pubStrainList').empty();
+			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+				var opt = document.createElement("option");
+				var description = document.createTextNode(hostSourceTableJson.data[i].value);
+				opt.value = hostSourceTableJson.data[i].feature_id;
+				opt.appendChild(description);
+				document.getElementById('pubStrainList').appendChild(opt);
+
+				availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+			}
+			$("#autoComp").autocomplete({
+				source: availableTags,
+				select: function( event, ui ) {
+					$("#autoComp").val( ui.item.label );
+					$("#autoComp_hidden").val( ui.item.value );
+					return false;
+				}
+			});
+			$('#pubStrainInfoDropdown').show();
+			$('#pubStrainInfoSearch').show();
+			$('#strainInfoProgressbar').hide()
+		});
+});
+
+
+$('#isolationSourceView').click( function() {
+	$('#pubStrainInfoDropdown').hide();
+	$('#pubStrainInfoSearch').hide();
+	$('#strainInfoProgressbar').show()
+	$.ajax({
+		type: "POST",
+		url: "/isolation_source_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		console.log(hostSourceTableJson);
+		var availableTags = [];
+		$('#pubStrainList').empty();
+
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
+			opt.value = hostSourceTableJson.data[i].feature_id;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+				$("#autoComp").val( ui.item.label );
+				$("#autoComp_hidden").val( ui.item.value );
+				return false;
+			}
+		});
+		$('#pubStrainInfoDropdown').show();
+		$('#pubStrainInfoSearch').show();
+		$('#strainInfoProgressbar').hide()
+	});
+});
+
+$('#serotypeView').click( function() {
+	$('#pubStrainInfoDropdown').hide();
+	$('#pubStrainInfoSearch').hide();
+	$('#strainInfoProgressbar').show()
+	$.ajax({
+		type: "POST",
+		url: "/serotype_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		console.log(hostSourceTableJson);
+		var availableTags = [];
+		$('#pubStrainList').empty();
+
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
+			opt.value = hostSourceTableJson.data[i].feature_id;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+				$("#autoComp").val( ui.item.label );
+				$("#autoComp_hidden").val( ui.item.value );
+				return false;
+			}
+		});
+		$('#pubStrainInfoDropdown').show();
+		$('#pubStrainInfoSearch').show();
+		$('#strainInfoProgressbar').hide()
+	});
+});
+
+$('#isolationDateView').click( function() {
+	$('#pubStrainInfoDropdown').hide();
+	$('#pubStrainInfoSearch').hide();
+	$('#strainInfoProgressbar').show()
+	$.ajax({
+		type: "POST",
+		url: "/isolation_date_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		console.log(hostSourceTableJson);
+		var availableTags = [];
+		$('#pubStrainList').empty();
+
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
+			opt.value = hostSourceTableJson.data[i].feature_id;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+				$("#autoComp").val( ui.item.label );
+				$("#autoComp_hidden").val( ui.item.value );
+				return false;
+			}
+		});
+		$('#pubStrainInfoDropdown').show();
+		$('#pubStrainInfoSearch').show();
+		$('#strainInfoProgressbar').hide()
+	});
+});
+
+$('#isolationLocationView').click( function() {
+	$('#pubStrainInfoDropdown').hide();
+	$('#pubStrainInfoSearch').hide();
+	$('#strainInfoProgressbar').show()
+	$.ajax({
+		type: "POST",
+		url: "/isolation_location_form",
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		var hostSourceTableJsonString = returned_data;
+		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
+		console.log(hostSourceTableJson);
+		var availableTags = [];
+		$('#pubStrainList').empty();
+
+		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
+			var opt = document.createElement("option");
+			var description = document.createTextNode(hostSourceTableJson.data[i].value);
+			opt.value = hostSourceTableJson.data[i].feature_id;
+			opt.appendChild(description);
+			document.getElementById('pubStrainList').appendChild(opt);
+
+			availableTags.push( { label:hostSourceTableJson.data[i].value, value:hostSourceTableJson.data[i].feature_id } );
+		}
+		$("#autoComp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+				$("#autoComp").val( ui.item.label );
+				$("#autoComp_hidden").val( ui.item.value );
+				return false;
+			}
+		});
+		$('#pubStrainInfoDropdown').show();
+		$('#pubStrainInfoSearch').show();
+		$('#strainInfoProgressbar').hide()
+	});
+});
+
 });
 
 
