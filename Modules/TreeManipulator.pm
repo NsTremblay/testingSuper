@@ -73,6 +73,10 @@ sub _pruneTree {
         my $self=shift;
         my $namesArrayRef=shift;
 
+        my $timeStamp = localtime(time);
+		$timeStamp =~ s/ /_/g;
+		$timeStamp =~ s/:/_/g;
+
         $self->outputTree($self->outputDirectory . 'tree.svg');
 
         my $systemLine;
@@ -107,11 +111,8 @@ sub _getNearestClades {
 	$self->outputTree("temp$timeStamp.svg");
 	$self->cssFile("css$timeStamp.map");
 
-	
 	#Make a css.map file for each tree
-
 	#Need to iterate through the pub_common_name.map file to find the right tag
-
 	open my $in, '<' , $self->outputDirectory . 'pub_common_names.map';
 	my $tagLabel;
 	while (<$in>) {
@@ -125,7 +126,6 @@ sub _getNearestClades {
 			$tagLabel = $strainID;
 		}
 	}
-	print STDERR $tagLabel;
 
 	open my $out, '>' , $self->outputDirectory . $self->cssFile();
 	print $out 'font-style:italic;stroke:red; I ' . $tagLabel;

@@ -139,8 +139,8 @@ sub getFormData {
     my $privateFormData = $self->privateGenomes($username);
 
     #One time use.
-    $self->_getNameMap();
-    $self->_getAccessionMap();
+    #$self->_getNameMap();
+    #$self->_getAccessionMap();
     
     return(\@publicFormData, $privateFormData , $pubEncodedText);
 }
@@ -514,7 +514,6 @@ sub dataViewIsolationLocation {
 
 sub _getNameMap {
     my $self=shift;
-    #my $timestamp = localtime(time);
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
     {
         'type.name' =>  'contig_collection',
