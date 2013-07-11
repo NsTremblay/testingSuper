@@ -334,6 +334,7 @@ $(document).ready( function(){
 
 	$('#isolationHostView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -341,6 +342,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
+			$('#strainListForm span').show();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -376,6 +378,7 @@ $(document).ready( function(){
 
 	$('#isolationSourceView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -383,6 +386,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
+			$('#strainListForm span').show();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -418,6 +422,7 @@ $(document).ready( function(){
 
 	$('#serotypeView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -425,6 +430,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
+			$('#strainListForm span').show();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -460,6 +466,7 @@ $(document).ready( function(){
 
 	$('#isolationDateView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -467,6 +474,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
+			$('#strainListForm span').show();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
@@ -503,6 +511,7 @@ $(document).ready( function(){
 
 	$('#isolationLocationView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -510,6 +519,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
+			$('#strainListForm span').show();
 			$('#group1 li').closest('li').remove();
 			$('#buttonRemoveGroup1').hide();
 			$('#group2 li').closest('li').remove();
