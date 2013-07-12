@@ -223,6 +223,7 @@ $(document).ready( function(){
 
 	$('#isolationHostView').click( function() {
 		$('#pubStrainList').empty();
+		$('#strainListForm span').hide();
 		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 		$.ajax({
 			type: "POST",
@@ -230,7 +231,7 @@ $(document).ready( function(){
 			data: { public_id_list: featureIdList }
 		}).done(function (returned_data) {
 			$('#pubStrainList').empty();
-
+			$('#strainListForm span').show();
 			var hostSourceTableJsonString = returned_data;
 			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
@@ -261,6 +262,7 @@ $(document).ready( function(){
 
 $('#isolationSourceView').click( function() {
 	$('#pubStrainList').empty();
+	$('#strainListForm span').hide();
 	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 	$.ajax({
 		type: "POST",
@@ -268,7 +270,7 @@ $('#isolationSourceView').click( function() {
 		data: { public_id_list: featureIdList }
 	}).done(function (returned_data) {
 		$('#pubStrainList').empty();
-
+		$('#strainListForm span').show();
 		var hostSourceTableJsonString = returned_data;
 		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
@@ -299,6 +301,7 @@ $('#isolationSourceView').click( function() {
 
 $('#serotypeView').click( function() {
 	$('#pubStrainList').empty();
+	$('#strainListForm span').hide();
 	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 	$.ajax({
 		type: "POST",
@@ -306,7 +309,7 @@ $('#serotypeView').click( function() {
 		data: { public_id_list: featureIdList }
 	}).done(function (returned_data) {
 		$('#pubStrainList').empty();
-
+		$('#strainListForm span').show();
 		var hostSourceTableJsonString = returned_data;
 		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
@@ -337,6 +340,7 @@ $('#serotypeView').click( function() {
 
 $('#isolationDateView').click( function() {
 	$('#pubStrainList').empty();
+	$('#strainListForm span').hide();
 	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 	$.ajax({
 		type: "POST",
@@ -344,7 +348,7 @@ $('#isolationDateView').click( function() {
 		data: { public_id_list: featureIdList }
 	}).done(function (returned_data) {
 		$('#pubStrainList').empty();
-
+		$('#strainListForm span').show();
 		var hostSourceTableJsonString = returned_data;
 		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 
@@ -375,6 +379,7 @@ $('#isolationDateView').click( function() {
 
 $('#isolationLocationView').click( function() {
 	$('#pubStrainList').empty();
+	$('#strainListForm span').hide();
 	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
 	$.ajax({
 		type: "POST",
@@ -382,7 +387,7 @@ $('#isolationLocationView').click( function() {
 		data: { public_id_list: featureIdList }
 	}).done(function (returned_data) {
 		$('#pubStrainList').empty();
-
+		$('#strainListForm span').show();
 		var hostSourceTableJsonString = returned_data;
 		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
 

@@ -39,6 +39,11 @@ use Carp;
 
 use JSON;
 
+#One time use
+use IO::File;
+use IO::Dir;
+umask 0000;
+
 #object creation
 sub new {
 	my ($class) = shift;
@@ -132,10 +137,12 @@ sub getFormData {
     
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes($username);
-    
 
+    #One time use.
+    #$self->_getNameMap();
+    #$self->_getAccessionMap();
+    
     return(\@publicFormData, $privateFormData , $pubEncodedText);
-  
 }
 
 sub privateGenomes {
@@ -148,47 +155,47 @@ sub privateGenomes {
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
         my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-	        [
-	        	{
-	        		'login.username' => $username,
-	        		'type.name'      => 'contig_collection',
-				},
-				{
-	        		'upload.category'    => 'public',
-	        		'type.name'      => 'contig_collection',
-				},
-			],
-			{
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-				columns => [qw/feature_id uniquename/],
-				'+columns' => [qw/upload.category login.username/],
-				join => [
-					{ 'upload' => { 'permissions' => 'login'} },
-					'type'
-				]
-	                     
-			}
-		);
+           [
+           {
+             'login.username' => $username,
+             'type.name'      => 'contig_collection',
+             },
+             {
+                 'upload.category'    => 'public',
+                 'type.name'      => 'contig_collection',
+                 },
+                 ],
+                 {
+                    result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                    columns => [qw/feature_id uniquename/],
+                    '+columns' => [qw/upload.category login.username/],
+                    join => [
+                    { 'upload' => { 'permissions' => 'login'} },
+                    'type'
+                    ]
+
+                }
+                );
         
         my @privateFormData = $genomes->all;
- 
+
         
         foreach my $row_hash (@privateFormData) {
         	my $display_name = $row_hash->{uniquename};
         	if($row_hash->{upload}->{category} eq 'public') {
         		$display_name .= ' [Pub]';
-        	} else {
-        		$display_name .= ' [Pri]';
-        	}
-        	$row_hash->{displayname} = $display_name;
-        }
-       
-        return \@privateFormData;
-      
-	} else {
-    	return [];
-	}
-}
+               } else {
+                  $display_name .= ' [Pri]';
+              }
+              $row_hash->{displayname} = $display_name;
+          }
+
+          return \@privateFormData;
+
+          } else {
+           return [];
+       }
+   }
 
 =head2 _hashFormData
 
@@ -505,5 +512,61 @@ sub dataViewIsolationLocation {
     return $isolationLocationJson;
 }
 
+sub _getNameMap {
+    my $self=shift;
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'type.name' =>  'contig_collection',
+        },
+        {
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
+
+    my $outDirectoryName = "../../Phylogeny/NewickTrees/";
+    my $outFile = "pub_common_names.map";
+    open(OUT, '>' . "$outDirectoryName" . "$outFile") or die "$!";
+
+    while (my $featureRow = $genomes->next) {
+        my $editedFeatureName = $featureRow->name;  
+        $editedFeatureName =~ s/:/_/g;
+        $editedFeatureName =~ s/\(/_/g;
+        $editedFeatureName =~ s/\)/_/g;
+        $editedFeatureName =~ s/ /_/g;
+        print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n");
+    }
+    close(OUT);
+}
+
+sub _getAccessionMap {
+    my $self=shift;
+
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'type.name' =>  'contig_collection',
+        },
+        {
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
+
+    my $outDirectoryName = "../../Phylogeny/NewickTrees/";
+    my $outFile = "pub_accession.map";
+    open(OUT, '>' . "$outDirectoryName" . "$outFile") or die "$!";
+
+    while (my $featureRow = $genomes->next) {
+        my $editedFeatureName = $featureRow->dbxref->accession;  
+        $editedFeatureName =~ s/:/_/g;
+        $editedFeatureName =~ s/\(/_/g;
+        $editedFeatureName =~ s/\)/_/g;
+        $editedFeatureName =~ s/ /_/g;
+        print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n");
+    }
+    close(OUT);
+}
 
 1;

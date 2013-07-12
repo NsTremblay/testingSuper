@@ -37,8 +37,8 @@
 					<TMPL_INCLUDE NAME="strain_info_overview_tab.tmpl">
 
 					<div class="tab-pane" id="phyloTreeTab">
-						<div id="svgCanvas" style="display:none;border-width:1px;border-style:solid;border-color:#d3d3d3;margin-right:5px">
-							<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
+						<div id="svgCanvas" style="padding:5px">
+							<TMPL_INCLUDE NAME="phylogeny_strain_info.tmpl">
 						</div>
 					</div>
 
@@ -379,7 +379,6 @@ $('#isolationLocationView').click( function() {
 });
 
 });
-
 
 </script>
 
