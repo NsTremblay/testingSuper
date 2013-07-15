@@ -41,6 +41,8 @@ use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 
 use Modules::GroupComparator;
+use Modules::TreeManipulator;
+use IO::File;
 
 sub setup {
 	my $self=shift;
@@ -91,13 +93,22 @@ sub groupWiseComparisons {
 	}
 	else{
 		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
-		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);                
+		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);
+		my @phyloList = (@groupOneStrainNames, @groupTwoStrainNames);
+
+		#Append "public_to all the items in phylo list so the labels can be identified in the tree"
+		foreach my $phyloLabel (@phyloList) {
+			$phyloLabel = "public_" . $phyloLabel;
+		}
+
+		my $groupWiseTreeRef = $self->_getGroupWisePhylo(\@phyloList);                
 		$template->param(FEATURES=>$pubDataRef);
 		$template->param(strainJSONData=>$strainJsonDataRef);
 		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
 		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
 		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);
 		$template->param(GROUP2SNPDATA=>$groupTwoSnpDataRef);
+		$template->param(GROUPPHYLOTREE=>$groupWiseTreeRef);
 		my $validator = "Return Success";
 		$template->param(VALIDATOR=>$validator);
 	}
@@ -130,6 +141,27 @@ sub _getStrainInfo {
 	my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
 	return ($binaryDataRef , $snpDataRef);
+}
+
+sub _getGroupWisePhylo {
+	my $self = shift;
+	my $_phyloList = shift;
+	my $groupWiseTreeRef;
+
+	#Create a new instance of tree manipulator and call the _getNearestClades function
+	my $groupWiseTreeMaker = Modules::TreeManipulator->new();
+	$groupWiseTreeMaker->inputDirectory("../../Phylogeny/NewickTrees/");
+	$groupWiseTreeMaker->newickFile("example_tree");
+	$groupWiseTreeMaker->_pruneTree($_phyloList);
+	my $groupWiseTreeFile = $groupWiseTreeMaker->outputDirectory() . $groupWiseTreeMaker->outputTree();
+	open my $in, '<' , $groupWiseTreeFile or die "Cant write to the $groupWiseTreeFile: $!";
+	while (<$in>) {
+		$groupWiseTreeRef .= $_;
+	}
+	my $systemLine = 'rm -r ' . $groupWiseTreeFile;
+	system($systemLine);
+
+	return $groupWiseTreeRef;
 }
 
 1;

@@ -70,33 +70,28 @@ sub cssFile {
 
 #This method was adapted from the Salmonella Serotyper Platform
 sub _pruneTree {
-        my $self=shift;
-        my $namesArrayRef=shift;
+	my $self=shift;
+	my $namesArrayRef=shift;
 
-        my $timeStamp = localtime(time);
-		$timeStamp =~ s/ /_/g;
-		$timeStamp =~ s/:/_/g;
+	my $timeStamp = localtime(time);
+	$timeStamp =~ s/ /_/g;
+	$timeStamp =~ s/:/_/g;
 
-        $self->outputTree($self->outputDirectory . 'tree.svg');
+	$self->outputDirectory("../../Phylogeny/NewickTrees/");
+	$self->outputTree("tempGroup$timeStamp.svg");
 
-        my $systemLine;
-        if($namesArrayRef->[0]){
-                #remove the names
-                $systemLine = 'nw_prune ' . $self->newickFile . ' ';
-
-                foreach my $name(@{$namesArrayRef}){
-                        $systemLine .=$name . ' ';
-                }
-
-                $systemLine .= '| nw_topology - ';
-        }
-        else{
-                $systemLine= 'nw_topology ' . $self->newickFile . ' ';
-        }
-
-        $systemLine .= '| nw_order -c a - | nw_display -s -S -W 0 -w 300 -v 145 -i "font-size:0" -b "font-size:0" -l "font-size:0" - > ' . $self->outputTree;
-
-        system($systemLine);
+	my $systemLine;
+	if($namesArrayRef->[0]){
+		$systemLine = 'nw_prune -v ' . $self->inputDirectory() . $self->newickFile() . ' ';
+		foreach my $name(@{$namesArrayRef}){
+			$systemLine .=$name . ' ';
+		}
+	}
+	else{
+	}
+	$systemLine .= ' | nw_rename - ' . $self->inputDirectory() . 'pub_common_names.map';
+	$systemLine .= '| nw_display -sS -w 900 -b \'opacity:0\' - > ' . $self->outputDirectory() . $self->outputTree();
+	system($systemLine);
 }
 
 sub _getNearestClades {
