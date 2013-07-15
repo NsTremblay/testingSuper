@@ -90,9 +90,13 @@ function checkMultiSeq() {
 	}
 }
 function onLoadCheck() {
-	initialize();
+	var script = document.createElement('script');
+	script.type = 'text/javascript';
+	script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true&' +
+	'callback=initialize';
+	document.body.appendChild(script);
 	checkMultiSeq();
-	loadTree();
+	lo1adTree();
 }
 function reload() {
 	location.reload();
