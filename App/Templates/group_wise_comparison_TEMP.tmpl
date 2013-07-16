@@ -149,21 +149,28 @@
 
 </html>
 
-<script>
+<script type="text/javascript">
 /*Global variables set here*/
 google.maps.visualRefresh = true;
 
-var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
-
-var isolationLocationJson;
+var FEATURE_TABLE_JSON = <TMPL_VAR NAME=strainJSONData>;
+/* 
+Back lists that will get called to the client after page has loaded.
+These remain as global constants.
+*/
+var ISOLATION_LOCATION_JSON = {};
+var SEROTYPE_JSON = {};
+var ISOLATION_HOST_JSON = {};
+var ISOLATION_SOURCE_JSON = {};
+var ISOLATION_DATE_JSON = {};
 
 //List of public feature ids used to get data for view switching 
 var featureIdList = "";
 $(document).ready(function() {
-	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
-		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
+	for (i=0 ; i<FEATURE_TABLE_JSON.data.length-1 ; i++) {
+		featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[i].feature_id) + ",";
 	}
-	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
+	featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[FEATURE_TABLE_JSON.data.length-1].feature_id);
 });
 
 /*Functions set here*/
@@ -172,16 +179,14 @@ function onLoadCheck() {
 	checkGroupWiseValidator();
 }
 
+
 //Will initialize the map and grab all of the lists needed for form switching.
 function initialize() {
-	$.ajax({
-		type: "POST",
-		url: "/isolation_location_form",
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {;
-		isolationLocationJson = $.parseJSON(returned_data);
-		console.log(isolationLocationJson);
-	});
+	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON);
+	getBackList("/serotype_form" , SEROTYPE_JSON);
+	getBackList("/host_source_form" , ISOLATION_HOST_JSON);
+	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON);
+	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON);
 
 	var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
 
@@ -202,4 +207,74 @@ function checkGroupWiseValidator() {
 		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
 	}
 }
+
+function getBackList(urlName,formType) {
+	$.ajax({
+		type: "POST",
+		url: urlName,
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		console.log(returned_data);
+		formType.json = $.parseJSON(returned_data);
+	});
+}
+
+/*
+The next functions are for switching form views:
+*/
+
+$('#commonNameView').click(function () {
+	changeListView(FEATURE_TABLE_JSON.json);
+});
+$('#accessionNumberView').click(function () {
+	changeListView(FEATURE_TABLE_JSON.json);
+});
+$('#isolationHostView').click(function () {
+	changeListView(ISOLATION_HOST_JSON.json);
+});
+$('#isolationSourceView').click(function () {
+	changeListView(ISOLATION_SOURCE_JSON.json);
+});
+$('#serotypeView').click(function () {
+	changeListView(SEROTYPE_JSON.json);
+});
+$('#isolationDateView').click(function () {
+	changeListView(ISOLATION_DATE_JSON.json);
+});
+$('#isolationLocationView').click(function () {
+	changeListView(ISOLATION_LOCATION_JSON.json);
+});
+
+function changeListView(jsonList) {
+	$('#pubStrainList').empty();
+	$('#strainListForm span').show();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<jsonList.data.length ; i++) {
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(jsonList.data[i].value);	
+
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = jsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
+
 </script>
