@@ -36,7 +36,7 @@
 			<div class="control-group">
 				<label class="control-label" for="inputGenomeName">Genome Name</label>
 				<div class="controls">
-					<input type="text" name="g_name" id="inputGenomeName" value="<TMPL_VAR g_name>" required>
+					<input type="text" name="g_name" id="inputGenomeName" required>
 						<TMPL_VAR err_g_name>
 				</div>
 			</div>
@@ -44,7 +44,7 @@
 			<div class="control-group">
 				<label class="control-label" for="inputStrain">Strain</label>
 				<div class="controls">
-					<input type="text" name="g_strain" id="inputStrain" value="<TMPL_VAR g_strain>" required>
+					<input type="text" name="g_strain" id="inputStrain" required>
 						<TMPL_VAR err_g_strain>
 				</div>
 			</div>
@@ -52,7 +52,7 @@
 			<div class="control-group">
 				<label class="control-label" for="inputSerotype">Serotype</label>
 				<div class="controls">
-					<input type="text" name="g_serotype" id="inputSerotype" value="<TMPL_VAR g_serotype>" required>
+					<input type="text" name="g_serotype" id="inputSerotype" required>
 						<TMPL_VAR err_g_serotype>
 				</div>
 			</div>
@@ -157,11 +157,11 @@
 					</div>
 					<div id="inputOtherDiseases" style="width:500px; display:none">
 						<label class="checkbox inline">
-							<input id="inputAsymptomatic" name="g_asymptomatic" type="checkbox"></input>
+							<input id="inputAsymptomatic" name="g_asymptomatic" value="asymptomatic" type="checkbox"></input>
 							Asymptomatic
 						</label>
 						<label class="checkbox inline">
-							<input id="inputOtherDiseaseCheck" name="g_other_syndrome_cb" type="checkbox"></input>
+							<input id="inputOtherDiseaseCheck" name="g_other_syndrome_cb" value="other" type="checkbox"></input>
 							Other:
 						</label>
 						<input id="inputOtherDiseaseText" name="g_other_syndrome" type="text" class="input-medium" disabled></input>
@@ -174,7 +174,7 @@
 			<div class="control-group">
 				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
 				<div class="controls">
-					<input type="text" class="input-medium" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" value="<TMPL_VAR g_date>" required>						
+					<input type="text" class="input-medium" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" required>						
 						<TMPL_VAR err_g_date>
 				</div>
 			</div>
@@ -188,8 +188,8 @@
 								<span class="help-block">Specify by name:</span>
 						</label>
 						<select class="input-medium" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
-						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" value="<TMPL_VAR g_location_state>" placeholder="State/Province/Region"/>
-						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity"  value="<TMPL_VAR g_location_city>" placeholder="City"/>
+						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
+						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity" placeholder="City"/>
 						<TMPL_VAR err_g_location_country>
 						<TMPL_VAR err_g_location_state>
 						<TMPL_VAR err_g_location_city>
@@ -221,7 +221,7 @@
 					<label class="radio">
 						<input type="radio" name="g_privacy" value="release" id="inputPrivateUntil" <TMPL_IF g_release>checked</TMPL_IF>>
 						Private Until
-						<input type="text" class="input-medium" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD" value="<TMPL_VAR g_release_date>">
+						<input type="text" class="input-medium" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD">
 					</label>
 					<TMPL_VAR err_g_privacy>
 					<TMPL_VAR err_g_release_date>
@@ -253,7 +253,7 @@
 					</i>
 				</label>
 				<div class="controls">
-					<input type="text" id="inputGroupLabel" name="g_group" class="input-xlarge" value="<TMPL_VAR g_group>">
+					<input type="text" id="inputGroupLabel" name="g_group" class="input-xlarge">
 						<TMPL_VAR err_g_group>
 				</div>
 			</div>
@@ -263,7 +263,7 @@
 					Additional Notes on Strain
 				</label>
 				<div class="controls">
-					<textarea rows=2 id="inputComments" name="g_comments" class="input-xlarge" value="<TMPL_VAR g_comments>"></textarea>
+					<textarea rows=2 id="inputComments" name="g_comments" class="input-xlarge"> </textarea>
 						<TMPL_VAR err_g_comments>
 				</div>
 			</div>
@@ -273,7 +273,7 @@
 					Genome Description
 				</label>
 				<div class="controls">
-					<input type="text" id="inputDescription" name="g_description" class="input-xlarge" value="<TMPL_VAR g_description>">
+					<input type="text" id="inputDescription" name="g_description" class="input-xlarge" >
 						<TMPL_VAR err_g_description>
 				</div>
 			</div>
@@ -285,7 +285,7 @@
 					</i>
 				</label>
 				<div class="controls">
-					<input type="text" id="inputKeywords" name="g_keywords" class="input-xlarge" value="<TMPL_VAR g_keywords>">
+					<input type="text" id="inputKeywords" name="g_keywords" class="input-xlarge" >
 						<TMPL_VAR err_g_keywords>
 				</div>
 			</div>
@@ -295,7 +295,7 @@
 					Owner
 				</label>
 				<div class="controls">
-					<input type="text" id="inputOwner" name="g_owner" class="input-xlarge" value="<TMPL_VAR g_owner>">
+					<input type="text" id="inputOwner" name="g_owner" class="input-xlarge" >
 						<TMPL_VAR err_g_owner>
 				</div>
 			</div>
@@ -305,7 +305,7 @@
 					Genome Alias
 				</label>
 				<div class="controls">
-					<input type="text" id="inputSynonym" name="g_synonym" class="input-xlarge" value="<TMPL_VAR g_synonym>">
+					<input type="text" id="inputSynonym" name="g_synonym" class="input-xlarge" >
 						<TMPL_VAR err_g_synonym>
 				</div>
 			</div>
@@ -316,9 +316,9 @@
 				</label>
 				<div class="controls">
 					<div>
-						<input type="text" class="input-medium" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" value="<TMPL_VAR g_dbxref_db>"/>
-						<input type="text" class="input-medium" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" value="<TMPL_VAR g_dbxref_acc>"/>
-						<input type="text" class="input-mini" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" value="<TMPL_VAR g_dbxref_ver>"/>
+						<input type="text" class="input-medium" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" />
+						<input type="text" class="input-medium" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" />
+						<input type="text" class="input-mini" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" />
 					
 						<TMPL_VAR err_g_dbxref_db>
 						<TMPL_VAR err_g_dbxref_acc>
@@ -335,7 +335,7 @@
 				</label>
 				<div class="controls">
 					<div>
-						<input type="text" id="inputRef" name="g_pmid" class="input-xlarge" placeHolder="Pubmed ID" value="<TMPL_VAR g_pmid>"/>
+						<input type="text" id="inputRef" name="g_pmid" class="input-xlarge" placeHolder="Pubmed ID" />
 						<TMPL_VAR err_g_pmid>
 					</div>
 				</div>

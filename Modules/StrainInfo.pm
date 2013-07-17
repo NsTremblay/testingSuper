@@ -448,7 +448,7 @@ sub _createStrainInfoPhylo {
 
 	#Create a new instance of tree manipulator and call the _getNearestClades function
 	my $strainInfoTreeMaker = Modules::TreeManipulator->new();
-	$strainInfoTreeMaker->inputDirectory("../../Phylogeny/NewickTrees/");
+	$strainInfoTreeMaker->inputDirectory("$FindBin::Bin/../../Phylogeny/NewickTrees/");
 	$strainInfoTreeMaker->newickFile("example_tree");
 	$strainInfoTreeMaker->_getNearestClades($strainID);
 	
