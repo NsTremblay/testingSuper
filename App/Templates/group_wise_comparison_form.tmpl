@@ -8,11 +8,11 @@
 			<div style="padding:10px">
 				<fieldset>
 					<span class="help-block">Select on one or strains to compare them and view metadata</span>
-					<ul id="strainListSelection" style="padding:0px;margin:0px">
+					<ul id="pubStrainList" style="padding:0px;margin:0px">
 						<TMPL_LOOP NAME=FEATURES>
 						<li style="list-style:none">
 							<label class="checkbox">
-								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
 							</label>
 						</li>
 						</TMPL_LOOP>
@@ -52,252 +52,185 @@
 </div>
 
 <script>
-var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
 
-$('#commonNameView').click(function () {
-
-	$('#strainListSelection').empty();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
-
-	for (i=0 ; i<featureTableJson.data.length ; i++) {
-		var li = document.createElement("li");
-		var label = document.createElement("label");
-		var description = document.createTextNode(featureTableJson.data[i].name);
-		var checkbox = document.createElement("input");
-
-		li.setAttribute("style","list-style:none");
-
-		label.className = "checkbox";
-
-		checkbox.type = "checkbox";
-		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
-		checkbox.value = featureTableJson.data[i].uniquename;
-
-		label.appendChild(checkbox);
-		label.appendChild(description);
-		li.appendChild(label);
-
-		document.getElementById('strainListSelection').appendChild(li);
-	}
+$("#compareGrouped").click( function() {
+	checkGroupedFields(groupedForm);
 });
+</script>
 
-		/*
-		Need to change this to return accession number
-		*/
+<script type="text/javascript">
 
-		$('#accessionNumberView').click(function () {
+function checkMSFields(strainListForm) {
+	var selected = 0;
 
-			$('#strainListSelection').empty();
-			$('#group1 li').closest('li').remove();
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("You must make a valid selection");
+		return false;
+	}
+	else {
+		$('#strainListForm').submit();
+		return true;
+	}
+}
+function checkMultiSeq() {
+	if ($('#validator').is(':empty')) {
+	}
+	else {
+		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
+	}
+}
+function onLoadCheck() {
+	var script = document.createElement('script');
+	script.type = 'text/javascript';
+	script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true&' +
+	'callback=initialize';
+	document.body.appendChild(script);
+	checkMultiSeq();
+	lo1adTree();
+}
+function reload() {
+	location.reload();
+}
+function checkGroup1Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 1");
+		return false;
+	}
+	else {
+		var checkedOneOption = $('#pubStrainList li :checked').closest('li');
+		checkedOneOption.clone().appendTo('#group1');
+		checkedOneOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup1').show();
+		return true;
+	}
+}
+function checkGroup2Fields() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
+		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to add to Group 2");
+		return false;
+	}
+	else {
+		var checkedTwoOption = $('#pubStrainList li :checked').closest('li');
+		checkedTwoOption.clone().appendTo('#group2');
+		checkedTwoOption.remove();
+		unCheckAllBoxes();
+		changeGroupName();
+		$('#buttonRemoveGroup2').show();
+		return true;
+	}
+}
+function removeGroup1() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group1').getElementsByTagName('input').length){
+		if (document.getElementById('group1').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 1");
+		return false;
+	}
+	else {
+		$('#group1 li :checked').closest('li').appendTo('#pubStrainList');
+		unCheckAllBoxes();
+		if ($('#group1 li').length == 0) {
 			$('#buttonRemoveGroup1').hide();
-			$('#group2 li').closest('li').remove();
+		}
+		else{
+		}
+		return true;
+	}
+}
+function removeGroup2() {
+	var selected = 0;
+	var i = 0;
+	while (i < document.getElementById('group2').getElementsByTagName('input').length){
+		if (document.getElementById('group2').getElementsByTagName('input')[i].checked == true) {
+			selected++;
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
+	if (selected == 0) {
+		alert("Nothing to remove from Group 2");
+		return false;
+	}
+	else {
+		$('#group2 li :checked').closest('li').appendTo('#pubStrainList');
+		unCheckAllBoxes();
+		if ($('#group2 li').length == 0) {
 			$('#buttonRemoveGroup2').hide();
-
-			for (i=0 ; i<featureTableJson.data.length ; i++) {
-
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
-
-				var checkbox = document.createElement("input");
-
-				li.setAttribute("style","list-style:none");
-
-				label.className = "checkbox";
-
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = featureTableJson.data[i].uniquename;
-
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
-
-				document.getElementById('strainListSelection').appendChild(li);
-			}
+		}
+		else{
+		}
+		return true;
+	}
+}
+function unCheckAllBoxes() {
+	$('input[type=checkbox]').each(function() 
+	{ 
+		this.checked = false; 
+	}); 
+}
+function changeGroupName() {
+	$('#group1 input[type=checkbox]').attr("name", "group1");
+	$('#group2 input[type=checkbox]').attr("name", "group2");
+}
+function checkGroupedFields(groupedForm) {
+	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+		alert('No groups to be compared');
+	}
+	else {
+		$('#group1 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
 		});
-
-
-
-		$("#compareGrouped").click( function() {
-			checkGroupedFields(groupedForm);
+		$('#group2 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
 		});
-		</script>
-
-		<script type="text/javascript">
-
-		function checkMSFields(strainListForm) {
-			var selected = 0;
-
-			var i = 0;
-			while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
-				if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
-					selected++;
-					i++;
-				}
-				else {
-					i++;
-				}
-			}
-			if (selected == 0) {
-				alert("You must make a valid selection");
-				return false;
-			}
-			else {
-				$('#strainListForm').submit();
-				return true;
-			}
-		}
-		function checkMultiSeq() {
-			if ($('#validator').is(':empty')) {
-			}
-			else {
-				$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
-			}
-		}
-		function onLoadCheck() {
-			initialize();
-			checkMultiSeq();
-			loadTree();
-		}
-		function reload() {
-			location.reload();
-		}
-		function checkGroup1Fields() {
-			var selected = 0;
-			var i = 0;
-			while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
-				if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
-					selected++;
-					i++;
-				}
-				else {
-					i++;
-				}
-			}
-			if (selected == 0) {
-				alert("Nothing to add to Group 1");
-				return false;
-			}
-			else {
-				var checkedOneOption = $('#strainListSelection li :checked').closest('li');
-				checkedOneOption.clone().appendTo('#group1');
-				checkedOneOption.remove();
-				unCheckAllBoxes();
-				changeGroupName();
-				$('#buttonRemoveGroup1').show();
-				return true;
-			}
-		}
-		function checkGroup2Fields() {
-			var selected = 0;
-			var i = 0;
-			while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
-				if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
-					selected++;
-					i++;
-				}
-				else {
-					i++;
-				}
-			}
-			if (selected == 0) {
-				alert("Nothing to add to Group 2");
-				return false;
-			}
-			else {
-				var checkedTwoOption = $('#strainListSelection li :checked').closest('li');
-				checkedTwoOption.clone().appendTo('#group2');
-				checkedTwoOption.remove();
-				unCheckAllBoxes();
-				changeGroupName();
-				$('#buttonRemoveGroup2').show();
-				return true;
-			}
-		}
-		function removeGroup1() {
-			var selected = 0;
-			var i = 0;
-			while (i < document.getElementById('group1').getElementsByTagName('input').length){
-				if (document.getElementById('group1').getElementsByTagName('input')[i].checked == true) {
-					selected++;
-					i++;
-				}
-				else {
-					i++;
-				}
-			}
-			if (selected == 0) {
-				alert("Nothing to remove from Group 1");
-				return false;
-			}
-			else {
-				$('#group1 li :checked').closest('li').appendTo('#strainListSelection');
-				unCheckAllBoxes();
-				if ($('#group1 li').length == 0) {
-					$('#buttonRemoveGroup1').hide();
-				}
-				else{
-				}
-				return true;
-			}
-		}
-		function removeGroup2() {
-			var selected = 0;
-			var i = 0;
-			while (i < document.getElementById('group2').getElementsByTagName('input').length){
-				if (document.getElementById('group2').getElementsByTagName('input')[i].checked == true) {
-					selected++;
-					i++;
-				}
-				else {
-					i++;
-				}
-			}
-			if (selected == 0) {
-				alert("Nothing to remove from Group 2");
-				return false;
-			}
-			else {
-				$('#group2 li :checked').closest('li').appendTo('#strainListSelection');
-				unCheckAllBoxes();
-				if ($('#group2 li').length == 0) {
-					$('#buttonRemoveGroup2').hide();
-				}
-				else{
-				}
-				return true;
-			}
-		}
-		function unCheckAllBoxes() {
-			$('input[type=checkbox]').each(function() 
-			{ 
-				this.checked = false; 
-			}); 
-		}
-		function changeGroupName() {
-			$('#group1 input[type=checkbox]').attr("name", "group1");
-			$('#group2 input[type=checkbox]').attr("name", "group2");
-		}
-		function checkGroupedFields(groupedForm) {
-			if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
-				alert('No groups to be compared');
-			}
-			else {
-				$('#group1 input[type=checkbox]').each(function()
-				{
-					this.checked = true;
-				});
-				$('#group2 input[type=checkbox]').each(function()
-				{
-					this.checked = true;
-				});
-				$('#groupedForm').submit();
-			}
-		}
-		</script>
+		$('#groupedForm').submit();
+	}
+}
+</script>

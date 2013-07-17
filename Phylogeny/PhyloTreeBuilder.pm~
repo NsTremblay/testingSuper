@@ -40,7 +40,7 @@ sub _initialize {
 
 #Methods
 
-#Makes a system call to create the tree and output is as an SVG file.
+#Makes a system call to create the tree and ooutput is as an SVG file.
 sub createTree {
 	my $self = shift;
 	#Specify -s for an SVG tree and also an output name.

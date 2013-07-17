@@ -43,6 +43,9 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 
+use Modules::TreeManipulator;
+use IO::File;
+
 # Featureprops
 # hash: name => cv
 my %fp_types = (
@@ -63,7 +66,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-);
+	);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -91,7 +94,7 @@ Run mode for the sinle strain page
 
 sub strain_info : StartRunmode {
 	my $self = shift;
-	
+
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	
@@ -102,11 +105,17 @@ sub strain_info : StartRunmode {
 	my $q = $self->query();
 	my $strainID = $q->param("singleStrainID");
 	my $privateStrainID = $q->param("privateSingleStrainID");
-	
+
+	#Code block for trees (may need to be changed later)
+	my $publicTreeStrainID;
+	my $privateTreeStrainID;
+	my $strainInfoTreeRef;
+	#Resume rest of code
+
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
-		
+
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
@@ -119,8 +128,14 @@ sub strain_info : StartRunmode {
 
 		my $strainAmrDataRef = $self->_getAmrData($strainID);
 		$template->param(AMRDATA=>$strainAmrDataRef);
-		
-	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+
+		#Code block for public trees (may need to change this)
+		$publicTreeStrainID = "public_".$strainID;
+		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
+		$template->param(PHYLOTREE=>$strainInfoTreeRef);
+		#Resume rest of code
+
+		} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
 		my $confirm_access = 0;
@@ -148,23 +163,27 @@ sub strain_info : StartRunmode {
 		$template->param('username' => $username);
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-		} else {
-			$template->param('privacy' => $privacy_category);
-		}
-		
-		
-		my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
-		$template->param(VIRDATA=>$strainVirDataRef);
+			} else {
+				$template->param('privacy' => $privacy_category);
+			}
+			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
+			$template->param(VIRDATA=>$strainVirDataRef);
 
-		my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
-		$template->param(AMRDATA=>$strainAmrDataRef);
-		
-	} else {
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
-			die_on_bad_params=>0 );
-		$template->param('strainData' => 0);
-	}
-	
+			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
+			$template->param(AMRDATA=>$strainAmrDataRef);
+
+			#Code block for private trees (may need to change this)
+			$privateTreeStrainID = "private_".$privateStrainID;
+			$strainInfoTreeRef = $self->_createStrainInfoPhylo($privateTreeStrainID);
+			$template->param(PHYLOTREE=>$strainInfoTreeRef);
+			#Resume rest of code
+
+			} else {
+				$template = $self->load_tmpl( 'strain_info.tmpl' ,
+					die_on_bad_params=>0 );
+				$template->param('strainData' => 0);
+			}
+
 	# Populate forms
 	$template->param(FEATURES => $pubDataRef);
 	$template->param(strainJSONData => $pubStrainJsonDataRef);
@@ -174,14 +193,11 @@ sub strain_info : StartRunmode {
 		$template->param(PRIVATE_DATA => 1);
 		$template->param(PRIVATE_FEATURES => $priDataRef);
 		
-	} else {
-		$template->param(PRIVATE_DATA => 0);
+		} else {
+			$template->param(PRIVATE_DATA => 0);
+		}
+		return $template->output();
 	}
-
-	my $validator = "Return Success";
-	$template->param(VALIDATOR=>$validator);
-	return $template->output();
-}
 
 
 =head2 _getStrainInfo
@@ -210,17 +226,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-		{
-			"me.feature_id" => $strainID
+	{
+		"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-				{ 'dbxref' => 'db' },
-				{ $featureprop_rel_name => 'type' },
+			{ 'dbxref' => 'db' },
+			{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-	);
+		);
 	
 	# Create hash
 	my %feature_hash;
@@ -241,14 +257,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-		{
-			feature_id => $feature->feature_id
+	{
+		feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-	);
+		);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -340,6 +356,112 @@ sub _getAmrData {
 		
 	}
 	return \@amrData;
+}
+
+#These will need to be abstracted to remove redundancy
+sub serotype_form : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $publicIdList = $q->param("public_id_list");
+	$publicIdList =~ s/"//g;
+	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+ 	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+ 	my $serotypeHashRef = $formDataGenerator->dataViewSerotype(\@publicIdList);
+
+ 	return $serotypeHashRef;
+ }
+
+ sub host_source_form : Runmode {
+ 	my $self = shift;
+ 	my $q = $self->query();
+ 	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+ 	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+ 	my $isolationHostHashRef = $formDataGenerator->dataViewIsolationHost(\@publicIdList);
+
+ 	return $isolationHostHashRef;
+ }
+
+ sub isolation_source_form : Runmode {
+ 	my $self = shift;
+ 	my $q = $self->query();
+ 	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+ 	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+ 	my $isolationSourceHashRef = $formDataGenerator->dataViewIsolationSource(\@publicIdList);
+
+ 	return $isolationSourceHashRef;
+ }
+
+ sub isolation_date_form : Runmode {
+ 	my $self = shift;
+ 	my $q = $self->query();
+ 	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+ 	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+ 	my $isolationDateHashRef = $formDataGenerator->dataViewIsolationDate(\@publicIdList);
+
+ 	return $isolationDateHashRef;
+ }
+
+ sub isolation_location_form : Runmode {
+ 	my $self = shift;
+ 	my $q = $self->query();
+ 	my $publicIdList = $q->param("public_id_list");
+ 	$publicIdList =~ s/"//g;
+ 	my @publicIdList = split(/,/ , $publicIdList);
+ 	#make a call to the form data generator to populate
+ 	# the list and return the hash-ref.
+
+ 	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+ 	my $isolationLocationHashRef = $formDataGenerator->dataViewIsolationLocation(\@publicIdList);
+
+ 	return $isolationLocationHashRef;
+ }
+
+#Methods for getting tree
+
+sub _createStrainInfoPhylo {
+	my $self = shift;
+	my $strainID = shift;
+	my $strainInfoTreeRef;
+
+	#Create a new instance of tree manipulator and call the _getNearestClades function
+	my $strainInfoTreeMaker = Modules::TreeManipulator->new();
+	$strainInfoTreeMaker->inputDirectory("$FindBin::Bin/../../Phylogeny/NewickTrees/");
+	$strainInfoTreeMaker->newickFile("example_tree");
+	$strainInfoTreeMaker->_getNearestClades($strainID);
+	
+	my $strainInfoTreeFile = $strainInfoTreeMaker->outputDirectory() . $strainInfoTreeMaker->outputTree();
+	my $strainInfoCssFile = $strainInfoTreeMaker->outputDirectory() . $strainInfoTreeMaker->cssFile();
+	open my $in, '<' , $strainInfoTreeFile or die "Cant write to the $strainInfoTreeFile: $!";
+	while (<$in>) {
+		$strainInfoTreeRef .= $_;
+	}
+	my $systemLine = 'rm -r ' . $strainInfoTreeFile . ' | rm -r ' . $strainInfoCssFile;
+	system($systemLine);
+
+	return $strainInfoTreeRef;
 }
 
 1;

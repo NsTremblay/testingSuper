@@ -39,6 +39,11 @@ use Carp;
 
 use JSON;
 
+#One time use
+use IO::File;
+use IO::Dir;
+umask 0000;
+
 #object creation
 sub new {
 	my ($class) = shift;
@@ -132,10 +137,12 @@ sub getFormData {
     
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes($username);
-    
 
+    #One time use.
+    #$self->_getNameMap();
+    #$self->_getAccessionMap();
+    
     return(\@publicFormData, $privateFormData , $pubEncodedText);
-  
 }
 
 sub privateGenomes {
@@ -148,47 +155,47 @@ sub privateGenomes {
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
         my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-	        [
-	        	{
-	        		'login.username' => $username,
-	        		'type.name'      => 'contig_collection',
-				},
-				{
-	        		'upload.category'    => 'public',
-	        		'type.name'      => 'contig_collection',
-				},
-			],
-			{
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-				columns => [qw/feature_id uniquename/],
-				'+columns' => [qw/upload.category login.username/],
-				join => [
-					{ 'upload' => { 'permissions' => 'login'} },
-					'type'
-				]
-	                     
-			}
-		);
+           [
+           {
+             'login.username' => $username,
+             'type.name'      => 'contig_collection',
+             },
+             {
+                 'upload.category'    => 'public',
+                 'type.name'      => 'contig_collection',
+                 },
+                 ],
+                 {
+                    result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                    columns => [qw/feature_id uniquename/],
+                    '+columns' => [qw/upload.category login.username/],
+                    join => [
+                    { 'upload' => { 'permissions' => 'login'} },
+                    'type'
+                    ]
+
+                }
+                );
         
         my @privateFormData = $genomes->all;
- 
+
         
         foreach my $row_hash (@privateFormData) {
         	my $display_name = $row_hash->{uniquename};
         	if($row_hash->{upload}->{category} eq 'public') {
         		$display_name .= ' [Pub]';
-        	} else {
-        		$display_name .= ' [Pri]';
-        	}
-        	$row_hash->{displayname} = $display_name;
-        }
-       
-        return \@privateFormData;
-      
-	} else {
-    	return [];
-	}
-}
+               } else {
+                  $display_name .= ' [Pri]';
+              }
+              $row_hash->{displayname} = $display_name;
+          }
+
+          return \@privateFormData;
+
+          } else {
+           return [];
+       }
+   }
 
 =head2 _hashFormData
 
@@ -347,5 +354,219 @@ sub _getJSONFormat {
     return $_encodedText;
 }
 
+sub dataViewSerotype {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @serotypeNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "serotype"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %serotypeName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $serotypeName{'value'} = "N/A";
+        }
+        else {
+            $serotypeName{'value'} = $dataRow->value;
+        }
+        $serotypeName{'feature_id'} = $_pubStrainId;
+        push(@serotypeNames , \%serotypeName);
+    }
+    my $serotypeJson = $self->_getJSONFormat(\@serotypeNames);
+    return $serotypeJson;
+}
+
+
+=cut dataViewHostSource
+
+Returns a list of the Host Sources for the 'Host Source' data view
+
+=cut
+
+sub dataViewIsolationHost {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationHostNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_host"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationHostName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationHostName{'value'} = "N/A";
+        }
+        else {
+            $isolationHostName{'value'} = $dataRow->value;
+        }
+        $isolationHostName{'feature_id'} = $_pubStrainId;
+        push(@isolationHostNames , \%isolationHostName);
+    }
+    my $isolationHostJson = $self->_getJSONFormat(\@isolationHostNames);
+    return $isolationHostJson;
+}
+
+sub dataViewIsolationSource {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationSourceNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_source"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationSourceName;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationSourceName{'value'} = "N/A";
+        }
+        else {
+            $isolationSourceName{'value'} = $dataRow->value;
+        }
+        $isolationSourceName{'feature_id'} = $_pubStrainId;
+        push(@isolationSourceNames , \%isolationSourceName);
+    }
+    my $isolationSourceJson = $self->_getJSONFormat(\@isolationSourceNames);
+    return $isolationSourceJson;
+}
+
+sub dataViewIsolationDate {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationDateNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_date"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationDate;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationDate{'value'} = "N/A";
+        }
+        else {
+            $isolationDate{'value'} = $dataRow->value;
+        }
+        $isolationDate{'feature_id'} = $_pubStrainId;
+        push(@isolationDateNames , \%isolationDate);
+    }
+    my $isolationDateJson = $self->_getJSONFormat(\@isolationDateNames);
+    return $isolationDateJson;
+}
+
+
+sub dataViewIsolationLocation {
+    my $self=shift;
+    my $publicIdList=shift;
+    my @publicFeautureIds = @{$publicIdList};
+
+    my @isolationLocationNames;
+    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => "isolation_location"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+
+    foreach my $_pubStrainId (@publicFeautureIds) {
+        my %isolationLocation;
+        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
+        if (!$dataRow) {
+            $isolationLocation{'value'} = "N/A";
+        }
+        else {
+            $isolationLocation{'value'} = $dataRow->value;
+        }
+        $isolationLocation{'feature_id'} = $_pubStrainId;
+        push(@isolationLocationNames , \%isolationLocation);
+    }
+    my $isolationLocationJson = $self->_getJSONFormat(\@isolationLocationNames);
+    return $isolationLocationJson;
+}
+
+sub _getNameMap {
+    my $self=shift;
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'type.name' =>  'contig_collection',
+        },
+        {
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
+
+    my $outDirectoryName = "../../Phylogeny/NewickTrees/";
+    my $outFile = "pub_common_names.map";
+    open(OUT, '>' . "$outDirectoryName" . "$outFile") or die "$!";
+
+    while (my $featureRow = $genomes->next) {
+        my $editedFeatureName = $featureRow->name;  
+        $editedFeatureName =~ s/:/_/g;
+        $editedFeatureName =~ s/\(/_/g;
+        $editedFeatureName =~ s/\)/_/g;
+        $editedFeatureName =~ s/ /_/g;
+        print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n");
+    }
+    close(OUT);
+}
+
+sub _getAccessionMap {
+    my $self=shift;
+
+    my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    {
+        'type.name' =>  'contig_collection',
+        },
+        {
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+        );
+
+    my $outDirectoryName = "../../Phylogeny/NewickTrees/";
+    my $outFile = "pub_accession.map";
+    open(OUT, '>' . "$outDirectoryName" . "$outFile") or die "$!";
+
+    while (my $featureRow = $genomes->next) {
+        my $editedFeatureName = $featureRow->dbxref->accession;  
+        $editedFeatureName =~ s/:/_/g;
+        $editedFeatureName =~ s/\(/_/g;
+        $editedFeatureName =~ s/\)/_/g;
+        $editedFeatureName =~ s/ /_/g;
+        print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n");
+    }
+    close(OUT);
+}
 
 1;

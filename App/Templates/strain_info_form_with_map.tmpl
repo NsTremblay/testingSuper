@@ -1,6 +1,6 @@
 <div class="span4" class="row-fluid">
 	<div style="border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
-		<form id="strainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+		<form id="pubStrainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				<span class="help-block">View single genome information by typing in the search box. You will see suggested genomes in the database. You can also select from the drop down list below</span>
 				<script src="/App/Styling/js/jquery-1.9.1.js"></script>
@@ -39,7 +39,12 @@
 				<!--hr-->
 			</fieldset>
 		</form>
-		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+
+		<div id="strainInfoProgressbar" class="progress progress-striped active" style="display:none">
+			<div class="bar" style="width:100%;">Updating...</div>
+		</div>
+
+		<form id="pubStrainInfoDropdown" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				<span style="color:#796e6c">Select a genome from the list:</span>
 				<select id="pubStrainList" class="span12" style="margin:10px 0px 0px 0px" name="singleStrainID">
@@ -118,16 +123,11 @@
 			return true;
 		}
 	}
-	function checkSingleSeq() {
-		if ($('#validator').is(':empty')) {
-		}
-		else {
-			$('#svgCanvas').show("slow", displayMap(), $('#strainInfoTabs').show("slow"));
-		}
-	}
+
 	function onLoadCheck() {
 		initialize();
-		checkSingleSeq();
+		$('#strainInfoTabs').show("slow");
 	}
+	
 	</script>
 </div>
