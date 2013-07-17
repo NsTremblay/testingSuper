@@ -33,7 +33,7 @@
 				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="singleStrainName"></input>
 				<input id="autoComp_hidden" type="hidden" name="singleStrainID"/>
 				<div>
-					<button id="sSSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
+					<button id="strainInfoSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
 				<!--hr-->
@@ -88,8 +88,8 @@
 	</div>
 
 	<script>
-	$('#sSSearchButton').click(function(){
-		checkSSFields(strainInfoSearch);
+	$('#strainInfoSearchButton').click(function(){
+		checkSIFields(pubStrainInfoSearch);
 	});
 	</script>
 	<script type="text/javascript">
@@ -113,13 +113,13 @@
 		document.getElementById('map_div').style.display="block";
 		initialize();
 	}
-	function checkSSFields(strainInfoSearch) {
-		if (strainInfoSearch.singleStrainID.value == "") {
+	function checkSIFields(pubStrainInfoSearch) {
+		if (pubStrainInfoSearch.singleStrainID.value == "") {
 			alert("You must enter a valid search term.");
 			return false;
 		}
 		else {
-			$('#strainInfoSearch').submit();
+			$('#pubStrainInfoSearch').submit();
 			return true;
 		}
 	}

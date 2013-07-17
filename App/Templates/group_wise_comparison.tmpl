@@ -187,6 +187,7 @@ function initialize() {
 	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
 	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView');
 	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView');
+	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
 
 	var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
 
@@ -319,7 +320,7 @@ function changeListView(jsonList) {
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var li = document.createElement("li");
 		var label = document.createElement("label");
-		var description = document.createTextNode(jsonList.data[i].value);	
+		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);	
 
 		var checkbox = document.createElement("input");
 

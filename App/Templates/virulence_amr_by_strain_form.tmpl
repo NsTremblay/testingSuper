@@ -8,82 +8,80 @@
 		</ul>
 		<div class="tab-content">
 			<!--div class="row-fluid"-->
-				<div id="tab1" class="span4 tab-pane active" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-					<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
-						<div style="padding:10px">
-							<fieldset>
-								<span class="help-block">Select on one or more strains</span>
-								<ul id="pubStrainList" style="padding:0px;margin:0px">
-									<TMPL_LOOP NAME=STRAINLIST>
-									<li style="list-style:none">
-										<label class="checkbox">
-											<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
-										</label>
-									</li>
-									</TMPL_LOOP>
-								</ul>
-							</fieldset>
-							<!--/form-->
-						</div>
+			<div id="tab1" class="span4 tab-pane active" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+				<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
+					<div style="padding:10px">
+						<fieldset>
+							<span class="help-block">Select on one or more strains</span>
+							<ul id="pubStrainList" style="padding:0px;margin:0px">
+								<TMPL_LOOP NAME=STRAINLIST>
+								<li style="list-style:none">
+									<label class="checkbox">
+										<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+									</label>
+								</li>
+								</TMPL_LOOP>
+							</ul>
+						</fieldset>
+						<!--/form-->
 					</div>
+				</div>
 
-					<div id="tab2" class="span4 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-						<!--form id="virulenceListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded"-->
-						<div style="padding:10px">
-							<fieldset>
-								<span class="help-block">Select on one or more virulence factors</span>
-								<ul id="strainListSelection" style="padding:0px;margin:0px">
-									<TMPL_LOOP NAME=vFACTORS>
-									<li style="list-style:none">
-										<label class="checkbox">
-											<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedVirulence"><TMPL_VAR NAME=UNIQUENAME></input>
-										</label>
-									</li>
-									</TMPL_LOOP>
-								</ul>
-							</fieldset>
-							<!--/form-->
-						</div>
+				<div id="tab2" class="span4 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+					<!--form id="virulenceListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded"-->
+					<div style="padding:10px">
+						<fieldset>
+							<span class="help-block">Select on one or more virulence factors</span>
+							<ul id="strainListSelection" style="padding:0px;margin:0px">
+								<TMPL_LOOP NAME=vFACTORS>
+								<li style="list-style:none">
+									<label class="checkbox">
+										<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedVirulence"><TMPL_VAR NAME=UNIQUENAME></input>
+									</label>
+								</li>
+								</TMPL_LOOP>
+							</ul>
+						</fieldset>
+						<!--/form-->
 					</div>
+				</div>
 
-					<div id="tab3" class="span4 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-						<!--form id="amrListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded"-->
-						<div style="padding:10px">
-							<fieldset>
-								<span class="help-block">Select on one or more amr genes</span>
-								<ul id="strainListSelection" style="padding:0px;margin:0px">
-									<TMPL_LOOP NAME=amrFACTORS>
-									<li style="list-style:none">
-										<label class="checkbox">
-											<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
-										</label>
-									</li>
-									</TMPL_LOOP>
-								</ul>
-							</fieldset>
-						</form>
-					</div>
+				<div id="tab3" class="span4 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+					<!--form id="amrListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded"-->
+					<div style="padding:10px">
+						<fieldset>
+							<span class="help-block">Select on one or more amr genes</span>
+							<ul id="strainListSelection" style="padding:0px;margin:0px">
+								<TMPL_LOOP NAME=amrFACTORS>
+								<li style="list-style:none">
+									<label class="checkbox">
+										<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
+									</label>
+								</li>
+								</TMPL_LOOP>
+							</ul>
+						</fieldset>
+					</form>
+				</div>
 				<!--/div-->
 
 			</div>
 		</div>
-
 	</div>
-
-	<div class="row-fluid" style="margin:10px 0px 0px 10px">
-		<button id="compareSelections" class="btn btn-primary span3" type="button"><i class="icon-th icon-white"></i> Compared Selections</button>
-	</div>
-
-	<script>
-	$('#compareSelections').click( function() {
-		compareSelections();
-	});
-	</script>
-
-	<script type="text/javascript">
-	function compareSelections() {
-		$('#strainListForm').submit();
-	}
-	</script>
-
 </div>
+
+<div class="row-fluid" style="margin:10px 0px 0px 10px">
+	<button id="compareSelections" class="btn btn-primary span3" type="button"><i class="icon-th icon-white"></i> Compared Selections</button>
+</div>
+
+<script type="text/javascript">
+
+$('#compareSelections').click( function() {
+	compareSelections();
+});
+
+function compareSelections() {
+	$('#strainListForm').submit();
+}
+
+</script>
