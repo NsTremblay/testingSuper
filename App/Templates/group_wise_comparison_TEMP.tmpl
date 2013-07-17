@@ -182,11 +182,11 @@ function onLoadCheck() {
 //Will initialize the map and grab all of the lists needed for form switching.
 function initialize() {
 	checkGroupWiseValidator();
-	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON);
-	getBackList("/serotype_form" , SEROTYPE_JSON);
-	getBackList("/host_source_form" , ISOLATION_HOST_JSON);
-	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON);
-	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON);
+	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
+	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
+	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
+	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView');
+	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView');
 
 	var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
 
@@ -208,14 +208,14 @@ function checkGroupWiseValidator() {
 	}
 }
 
-function getBackList(urlName,formType) {
+function getBackList(urlName,formType,labelId,radioId) {
 	$.ajax({
 		type: "POST",
 		url: urlName,
 		data: { public_id_list: featureIdList }
 	}).done(function (returned_data) {
-		console.log(returned_data);
 		formType.json = $.parseJSON(returned_data);
+		$('#'+radioId).attr('disabled',false);
 	});
 }
 
@@ -224,10 +224,10 @@ The next functions are for switching form views:
 */
 
 $('#commonNameView').click(function () {
-	changeListView(FEATURE_TABLE_JSON.json);
+	showCommonNames(FEATURE_TABLE_JSON);
 });
 $('#accessionNumberView').click(function () {
-	changeListView(FEATURE_TABLE_JSON.json);
+	showAccessionNumbers(FEATURE_TABLE_JSON);
 });
 $('#isolationHostView').click(function () {
 	changeListView(ISOLATION_HOST_JSON.json);
@@ -244,6 +244,69 @@ $('#isolationDateView').click(function () {
 $('#isolationLocationView').click(function () {
 	changeListView(ISOLATION_LOCATION_JSON.json);
 });
+
+function showCommonNames(featureJsonList) {
+	$('#pubStrainList').empty();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<featureJsonList.data.length ; i++) {
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(featureJsonList.data[i].name);
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = featureJsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
+
+function showAccessionNumbers(featureJsonList) {
+
+	$('#pubStrainList').empty();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<featureJsonList.data.length ; i++) {
+
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(featureJsonList.data[i].dbxref.accession);
+
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = featureJsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
 
 function changeListView(jsonList) {
 	$('#pubStrainList').empty();
