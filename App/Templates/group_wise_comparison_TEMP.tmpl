@@ -176,12 +176,12 @@ $(document).ready(function() {
 /*Functions set here*/
 function onLoadCheck() {
 	initialize();
-	checkGroupWiseValidator();
 }
 
 
 //Will initialize the map and grab all of the lists needed for form switching.
 function initialize() {
+	checkGroupWiseValidator();
 	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON);
 	getBackList("/serotype_form" , SEROTYPE_JSON);
 	getBackList("/host_source_form" , ISOLATION_HOST_JSON);
@@ -204,7 +204,7 @@ function checkGroupWiseValidator() {
 	if ($('#validator').is(':empty')) {
 	}
 	else {
-		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
+		$('#svgCanvas').show("slow", $('#groupWiseDataLink').show("slow"));
 	}
 }
 
