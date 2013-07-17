@@ -81,7 +81,7 @@ sub groupWiseComparisons {
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	#my $formDataRef = $formDataGenerator->getFormData();
 	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
+	my $template = $self->load_tmpl( 'group_wise_comparison_TEMP.tmpl' , die_on_bad_params=>0 );
 	
 	my $q = $self->query();
 	my @groupOneStrainNames = $q->param("group1");

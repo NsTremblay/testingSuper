@@ -177,59 +177,42 @@
 		<TMPL_INCLUDE NAME="footer.tmpl">
 
 		<script type="text/javascript">
+		var featureIdList = "";
+		$(document).ready(function() {
+			for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
+				featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
+			}
+
+			featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
+		});
+
+		
+
 		function initialize() {
+			$.ajax({
+				type: "POST",
+				url: "/isolation_location_form",
+				data: { public_id_list: featureIdList }
+			}).done(function (returned_data) {
+				console.log(returned_data);
+			});
 
 			var LatLng1 = new google.maps.LatLng(49.134890, -122.901435);
-			var LatLng2 = new google.maps.LatLng(-15.6778, -47.4384);
-			var LatLng3 = new google.maps.LatLng(53.1142, 2.5771);
-			var LatLng4 = new google.maps.LatLng(22.3000, 114.1667);
-			var LatLng5 = new google.maps.LatLng(46.0000, 2.0000);
-			var LatLng6 = new google.maps.LatLng(0.4252, 36.7517);
 
 			var mapOptions = {	
 				center: LatLng1,
-				zoom: 1,
+				zoom: 2,
 				mapTypeId: google.maps.MapTypeId.ROADMAP
 			};
 
 			var map = new google.maps.Map(document.getElementById("map_canvas"),
 				mapOptions);
-
-			var marker = new google.maps.Marker({
-				position: LatLng1,
-				map: map
-			});
-
-			var marker = new google.maps.Marker({
-				position: LatLng2,
-				map: map
-			});
-
-			var marker = new google.maps.Marker({
-				position: LatLng3,
-				map: map
-			});
-
-			var marker = new google.maps.Marker({
-				position: LatLng4,
-				map: map
-			});
-
-			var marker = new google.maps.Marker({
-				position: LatLng5,
-				map: map
-			});
-
-			var marker = new google.maps.Marker({
-				position: LatLng6,
-				map: map
-			});
 		}
 
-		function displayMap() {
+		/*function displayMap() {
 			document.getElementById('map_canvas').style.display="block";
 			initialize();
-		}
+		}*/
 		</script>
 
 		<script>
@@ -322,13 +305,6 @@ The remainder of the data switches will require ajax calls to the server to upda
 */
 
 $(document).ready( function(){
-	var featureIdList = "";
-	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
-		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
-	}
-
-	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
-
 	$('#isolationHostView').click( function() {
 		$('#pubStrainList').empty();
 		$('#strainListForm span').hide();
