@@ -12,7 +12,7 @@
 						<TMPL_LOOP NAME=FEATURES>
 						<li style="list-style:none">
 							<label class="checkbox">
-								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="multiStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
+								<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="groupWiseStrainNames"><TMPL_VAR NAME=UNIQUENAME></input>
 							</label>
 						</li>
 						</TMPL_LOOP>
@@ -52,55 +52,6 @@
 </div>
 
 <script>
-
-$("#compareGrouped").click( function() {
-	checkGroupedFields(groupedForm);
-});
-</script>
-
-<script type="text/javascript">
-
-function checkMSFields(strainListForm) {
-	var selected = 0;
-
-	var i = 0;
-	while (i < document.getElementById('strainListForm').getElementsByTagName('input').length){
-		if (document.getElementById('strainListForm').getElementsByTagName('input')[i].checked == true) {
-			selected++;
-			i++;
-		}
-		else {
-			i++;
-		}
-	}
-	if (selected == 0) {
-		alert("You must make a valid selection");
-		return false;
-	}
-	else {
-		$('#strainListForm').submit();
-		return true;
-	}
-}
-function checkMultiSeq() {
-	if ($('#validator').is(':empty')) {
-	}
-	else {
-		$('#svgCanvas').show("slow", displayMap(), $('#groupWiseDataLink').show("slow"));
-	}
-}
-function onLoadCheck() {
-	var script = document.createElement('script');
-	script.type = 'text/javascript';
-	script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true&' +
-	'callback=initialize';
-	document.body.appendChild(script);
-	checkMultiSeq();
-	lo1adTree();
-}
-function reload() {
-	location.reload();
-}
 function checkGroup1Fields() {
 	var selected = 0;
 	var i = 0;
@@ -151,6 +102,35 @@ function checkGroup2Fields() {
 		changeGroupName();
 		$('#buttonRemoveGroup2').show();
 		return true;
+	}
+}
+function unCheckAllBoxes() {
+	$('input[type=checkbox]').each(function() 
+	{ 
+		this.checked = false; 
+	}); 
+}
+function changeGroupName() {
+	$('#group1 input[type=checkbox]').attr("name", "group1");
+	$('#group2 input[type=checkbox]').attr("name", "group2");
+}
+$("#compareGrouped").click( function() {
+	checkGroupedFields(groupedForm);
+});
+function checkGroupedFields(groupedForm) {
+	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+		alert('No groups to be compared');
+	}
+	else {
+		$('#group1 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#group2 input[type=checkbox]').each(function()
+		{
+			this.checked = true;
+		});
+		$('#groupedForm').submit();
 	}
 }
 function removeGroup1() {
@@ -207,30 +187,7 @@ function removeGroup2() {
 		return true;
 	}
 }
-function unCheckAllBoxes() {
-	$('input[type=checkbox]').each(function() 
-	{ 
-		this.checked = false; 
-	}); 
-}
-function changeGroupName() {
-	$('#group1 input[type=checkbox]').attr("name", "group1");
-	$('#group2 input[type=checkbox]').attr("name", "group2");
-}
-function checkGroupedFields(groupedForm) {
-	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
-		alert('No groups to be compared');
-	}
-	else {
-		$('#group1 input[type=checkbox]').each(function()
-		{
-			this.checked = true;
-		});
-		$('#group2 input[type=checkbox]').each(function()
-		{
-			this.checked = true;
-		});
-		$('#groupedForm').submit();
-	}
+function reload() {
+	location.reload();
 }
 </script>
