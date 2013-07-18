@@ -9,7 +9,7 @@
 <script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
 <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 
-<body onload="checkValidator()" style="background-color:#796e6c">
+<body onload="onLoadCheck()" style="background-color:#796e6c">
 
 	<div class="container" style="background-color:#FFFFFF">
 
@@ -136,291 +136,192 @@
 		</div>
 
 	</div>
-
-	<script type="text/javascript">
-	function checkValidator() {
-		if ($('#amrvalidator').is(':empty') && $('#vfvalidator').is(':empty')) {
-		}
-		else if (!($('#vfvalidator').is(':empty'))){
-			$('#VFMetaInfo').show("slow");
-		}
-		else {
-			$('#AMRMetaInfo').show("slow");
-		}
-	}
-
-	var featureTableJson = <TMPL_VAR NAME=strainJSONData>;
-
-	$('#commonNameView').click(function () {
-
-		$('#pubStrainList').empty();
-
-		for (i=0 ; i<featureTableJson.data.length ; i++) {
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(featureTableJson.data[i].name);
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = featureTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-
-	$('#accessionNumberView').click(function () {
-
-		$('#pubStrainList').empty();
-
-		for (i=0 ; i<featureTableJson.data.length ; i++) {
-
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
-
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = featureTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-
-/*
-The remainder of the data switches will require ajax calls to the server to update forms
-*/
-
-$(document).ready( function(){
-	var featureIdList = "";
-	for (i=0 ; i<featureTableJson.data.length-1 ; i++) {
-		featureIdList = featureIdList + String(featureTableJson.data[i].feature_id) + ",";
-	}
-
-	featureIdList = featureIdList + String(featureTableJson.data[featureTableJson.data.length-1].feature_id);
-
-	console.log(featureIdList);
-
-	$('#isolationHostView').click( function() {
-		$('#pubStrainList').empty();
-		$('#strainListForm span').hide();
-		$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
-		$.ajax({
-			type: "POST",
-			url: "/host_source_form",
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			$('#pubStrainList').empty();
-			$('#strainListForm span').show();
-			var hostSourceTableJsonString = returned_data;
-			var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-
-			for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-				var li = document.createElement("li");
-				var label = document.createElement("label");
-				var description = document.createTextNode(hostSourceTableJson.data[i].value);
-
-				var checkbox = document.createElement("input");
-
-				li.setAttribute("style","list-style:none");
-
-				label.className = "checkbox";
-
-				checkbox.type = "checkbox";
-				checkbox.id = "checkboxName";
-				checkbox.name = "multiStrainNames";
-				checkbox.value = hostSourceTableJson.data[i].feature_id;
-
-				label.appendChild(checkbox);
-				label.appendChild(description);
-				li.appendChild(label);
-
-				document.getElementById('pubStrainList').appendChild(li);
-			}
-		});
-	});
-
-$('#isolationSourceView').click( function() {
-	$('#pubStrainList').empty();
-	$('#strainListForm span').hide();
-	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
-	$.ajax({
-		type: "POST",
-		url: "/isolation_source_form",
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		$('#pubStrainList').empty();
-		$('#strainListForm span').show();
-		var hostSourceTableJsonString = returned_data;
-		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-
-		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(hostSourceTableJson.data[i].value);
-
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = hostSourceTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-});
-
-$('#serotypeView').click( function() {
-	$('#pubStrainList').empty();
-	$('#strainListForm span').hide();
-	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
-	$.ajax({
-		type: "POST",
-		url: "/serotype_form",
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		$('#pubStrainList').empty();
-		$('#strainListForm span').show();
-		var hostSourceTableJsonString = returned_data;
-		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-
-		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(hostSourceTableJson.data[i].value);
-
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = hostSourceTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-});
-
-$('#isolationDateView').click( function() {
-	$('#pubStrainList').empty();
-	$('#strainListForm span').hide();
-	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
-	$.ajax({
-		type: "POST",
-		url: "/isolation_date_form",
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		$('#pubStrainList').empty();
-		$('#strainListForm span').show();
-		var hostSourceTableJsonString = returned_data;
-		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-
-		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(hostSourceTableJson.data[i].value);
-
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = hostSourceTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-});
-
-$('#isolationLocationView').click( function() {
-	$('#pubStrainList').empty();
-	$('#strainListForm span').hide();
-	$('#pubStrainList').append('<div class="progress progress-striped active"><div class="bar" style="width: 100%;">Updating...</div></div>');
-	$.ajax({
-		type: "POST",
-		url: "/isolation_location_form",
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		$('#pubStrainList').empty();
-		$('#strainListForm span').show();
-		var hostSourceTableJsonString = returned_data;
-		var hostSourceTableJson = $.parseJSON(hostSourceTableJsonString);
-
-		for (i=0 ; i<hostSourceTableJson.data.length ; i++) {
-			var li = document.createElement("li");
-			var label = document.createElement("label");
-			var description = document.createTextNode(hostSourceTableJson.data[i].value);
-
-			var checkbox = document.createElement("input");
-
-			li.setAttribute("style","list-style:none");
-
-			label.className = "checkbox";
-
-			checkbox.type = "checkbox";
-			checkbox.id = "checkboxName";
-			checkbox.name = "multiStrainNames";
-			checkbox.value = hostSourceTableJson.data[i].feature_id;
-
-			label.appendChild(checkbox);
-			label.appendChild(description);
-			li.appendChild(label);
-
-			document.getElementById('pubStrainList').appendChild(li);
-		}
-	});
-});
-
-
-});
-
-</script>
 </body>
 <TMPL_INCLUDE NAME="footer.tmpl">
 
 </html>
+
+<script type="text/javascript">
+
+var FEATURE_TABLE_JSON = <TMPL_VAR NAME=strainJSONData>;
+/* 
+Back lists that will get called to the client after page has loaded.
+These remain as global constants.
+*/
+var ISOLATION_LOCATION_JSON = {};
+var SEROTYPE_JSON = {};
+var ISOLATION_HOST_JSON = {};
+var ISOLATION_SOURCE_JSON = {};
+var ISOLATION_DATE_JSON = {};
+
+//List of public feature ids used to get data for view switching 
+var featureIdList = "";
+$(document).ready(function() {
+	for (i=0 ; i<FEATURE_TABLE_JSON.data.length-1 ; i++) {
+		featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[i].feature_id) + ",";
+	}
+	featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[FEATURE_TABLE_JSON.data.length-1].feature_id);
+});
+
+/*Functions set here*/
+function onLoadCheck() {
+	initialize();
+}
+
+
+//Will initialize the map and grab all of the lists needed for form switching.
+function initialize() {
+	checkVARValidator();
+	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
+	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
+	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
+	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView');
+	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView');
+	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
+}
+
+function checkVARValidator() {
+	if ($('#amrvalidator').is(':empty') && $('#vfvalidator').is(':empty')) {
+	}
+	else if (!($('#vfvalidator').is(':empty'))){
+		$('#VFMetaInfo').show("slow");
+	}
+	else {
+		$('#AMRMetaInfo').show("slow");
+	}
+}
+
+function getBackList(urlName,formType,labelId,radioId) {
+	$.ajax({
+		type: "POST",
+		url: urlName,
+		data: { public_id_list: featureIdList }
+	}).done(function (returned_data) {
+		formType.json = $.parseJSON(returned_data);
+		$('#'+radioId).attr('disabled',false);
+	});
+}
+
+/*
+The next functions are for switching form views:
+*/
+
+$('#commonNameView').click(function () {
+	showCommonNames(FEATURE_TABLE_JSON);
+});
+$('#accessionNumberView').click(function () {
+	showAccessionNumbers(FEATURE_TABLE_JSON);
+});
+$('#isolationHostView').click(function () {
+	changeListView(ISOLATION_HOST_JSON.json);
+});
+$('#isolationSourceView').click(function () {
+	changeListView(ISOLATION_SOURCE_JSON.json);
+});
+$('#serotypeView').click(function () {
+	changeListView(SEROTYPE_JSON.json);
+});
+$('#isolationDateView').click(function () {
+	changeListView(ISOLATION_DATE_JSON.json);
+});
+$('#isolationLocationView').click(function () {
+	changeListView(ISOLATION_LOCATION_JSON.json);
+});
+
+function showCommonNames(featureJsonList) {
+	$('#pubStrainList').empty();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<featureJsonList.data.length ; i++) {
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(featureJsonList.data[i].name);
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = featureJsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
+
+function showAccessionNumbers(featureJsonList) {
+
+	$('#pubStrainList').empty();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<featureJsonList.data.length ; i++) {
+
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(featureJsonList.data[i].dbxref.accession);
+
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = featureJsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
+
+function changeListView(jsonList) {
+	$('#pubStrainList').empty();
+	$('#strainListForm span').show();
+	$('#group1 li').closest('li').remove();
+	$('#buttonRemoveGroup1').hide();
+	$('#group2 li').closest('li').remove();
+	$('#buttonRemoveGroup2').hide();
+
+	for (i=0 ; i<jsonList.data.length ; i++) {
+		var li = document.createElement("li");
+		var label = document.createElement("label");
+		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);	
+
+		var checkbox = document.createElement("input");
+
+		li.setAttribute("style","list-style:none");
+
+		label.className = "checkbox";
+
+		checkbox.type = "checkbox";
+		checkbox.id = "checkboxName";
+		checkbox.name = "multiStrainNames";
+		checkbox.value = jsonList.data[i].feature_id;
+
+		label.appendChild(checkbox);
+		label.appendChild(description);
+		li.appendChild(label);
+
+		document.getElementById('pubStrainList').appendChild(li);
+	}
+}
+
+</script>
+
