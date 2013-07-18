@@ -199,6 +199,8 @@ function getBackList(urlName,formType,labelId,radioId) {
 	}).done(function (returned_data) {
 		formType.json = $.parseJSON(returned_data);
 		$('#'+radioId).attr('disabled',false);
+		$('#'+labelId+'Loading').hide();
+		$('#'+labelId).show();
 	});
 }
 
