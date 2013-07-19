@@ -109,7 +109,7 @@ use File::Basename;
 		sub appendAttributes {
 			my $attHeaders = shift;
 			my $attributes = getAtrributes($attHeaders);
-			my $args = "gmod_fasta2gff3.pl" . " $VFfileName" . " --type gene" . " --attributes " . "\"$attributes\"" . " --fasta_dir VFfastaTemp " . "--gfffilename VFgffsTemp/tempout$VFNumber.gff";
+			my $args = "gmod_fasta2gff3.pl" . " $VFfileName" . " --type virulence_factor" . " --attributes " . "\"$attributes\"" . " --fasta_dir VFfastaTemp " . "--gfffilename VFgffsTemp/tempout$VFNumber.gff";
 			system($args) == 0 or die "System with $args failed: $? \n";
 			printf "System executed $args with value %d\n", $? >> 8;
 			#my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff" . " --remove_lock";
