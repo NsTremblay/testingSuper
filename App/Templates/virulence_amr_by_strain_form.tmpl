@@ -18,28 +18,28 @@
 							<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
 								<div style="padding:10px">
 									<fieldset>
-										<span class="help-block">Select on one or more strains</span>
-										<ul id="pubStrainList" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=STRAINLIST>
-											<li style="list-style:none">
-												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
-												</label>
-											</li>
-											</TMPL_LOOP>
-										</ul>
-									</fieldset>
-								</div>
-							</div>
-							<div id="amrSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-								<div style="padding:10px">
-									<fieldset>
 										<span class="help-block">Select on one or more virulence factors</span>
 										<ul id="strainListSelection" style="padding:0px;margin:0px">
 											<TMPL_LOOP NAME=vFACTORS>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedVirulence"><TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedVirulence"><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
+												</label>
+											</li>
+											</TMPL_LOOP>
+										</ul>
+									</fieldset>								
+								</div>
+							</div>
+							<div id="amrSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+								<div style="padding:10px">
+									<fieldset>
+										<span class="help-block">Select on one or more amr genes</span>
+										<ul id="strainListSelection" style="padding:0px;margin:0px">
+											<TMPL_LOOP NAME=amrFACTORS>
+											<li style="list-style:none">
+												<label class="checkbox">
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedAmr"><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>
@@ -50,12 +50,12 @@
 							<div id="strainSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
-										<span class="help-block">Select on one or more amr genes</span>
-										<ul id="strainListSelection" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=amrFACTORS>
+										<span class="help-block">Select on one or more strains</span>
+										<ul id="pubStrainList" style="padding:0px;margin:0px">
+											<TMPL_LOOP NAME=STRAINLIST>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedStrains"<TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>
@@ -122,7 +122,7 @@
 								<h5>Select a VF from the list:</h5>
 								<select id="vfList" class="span12" name="VFName">
 									<TMPL_LOOP NAME=vFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
@@ -157,7 +157,7 @@
 								<h5>Select an AMR gene from the list:</h5>
 								<select class="span12" name="AMRName">
 									<TMPL_LOOP NAME=amrFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">

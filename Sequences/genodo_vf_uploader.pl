@@ -68,7 +68,7 @@ use File::Basename;
 		sub parseHeader {
 			my $_seqHeader = shift;
 			my %_seqHeaders;
-			if ($_seqHeader =~ /([a-z]*[A-Z]*[0-9]*)\s\([\w\d\W\D]*\)/ ) {
+			if ($_seqHeader =~ /[^\[]([a-z]*[A-Z]*[0-9]*)\s\([\w\d\W\D]*\)[^\]]/ ) {
 				my $name = $1;
 				my $uniquename = $1;
 				$_seqHeaders{'NAME'} = $name;
