@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 =pod
 
@@ -10,7 +10,7 @@ Modules::VirulenceFactors
 
 =head1 ACKNOWLEDGMENTS
 
-Thank you to Dr. Chad Laing and Dr. Michael Whiteside, for all their assistance on this project
+Thank you to Dr. Chad Laing and Dr. Matthew Whiteside, for all their assistance on this project
 
 =head1 COPYRIGHT
 

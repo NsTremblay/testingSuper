@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 package Modules::Dispatch;
 
 # mod_rewrite alters the PATH_INFO by turning it into a file system path,
