@@ -3,127 +3,14 @@
 <head>
 	<TMPL_INCLUDE NAME="header.tmpl">
 	<script type="text/javascript" src="/App/Styling/js/d3.v3/d3.v3.min.js" ></script>
-
-	<!--script>
-	function testAjaxResponse() {
-		var xmlhttp;
-		if (window.XMLHttpRequest)
-  		{// code for IE7+, Firefox, Chrome, Opera, Safari
-  			xmlhttp=new XMLHttpRequest();
-  			alert('XMLHttpRequest initialized');
-  		}
-  		else
- 		 {// code for IE6, IE5
- 		 	xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
- 		 }
-
- 		 xmlhttp.onreadystatechange = function () {
- 		 	if (xmlhttp.readyState==4 && xmlhttp.status==200) {
- 		 		//alert('onreadystatechange returned:' + xmlhttp.responseText);
- 		 		document.getElementById('AJAXTestDiv').innerHTML = xmlhttp.responseText;
- 		 	}
- 		 }
-			//Ajax code here
-			xmlhttp.open("POST","/ajax_test", true);
-			xmlhttp.send();
-		}
-	</script-->
-
-	<script>
-/*	$(document).ready( function(){
-		$('#ajaxTestForm').submit( function(event) {
-			event.preventDefault();
-			var $form = $(this);
-			var serializedData = $form.serialize();
-			url = $form.attr('action');
-			//alert(serializedData);
-			var posting = $.post(url,  {name : $('#ajaxTestForm input[name="name"]').val(),  game : $('#ajaxTestForm input[name="game"]').val()});
-			posting.done(function (data) {
-				document.getElementById('AJAXTestDiv').innerHTML = data;
-			});	
-		});
-});*/
-
-$(document).ready( function(){
-	$('#hostSourceView').click( function(featureIdList) {
-		$.ajax({
-			url: "/ajax_test",
-			context: document.body
-		}).done(function (data) {
-			document.getElementById('AJAXTestDiv').innerHTML = data;
-		});
-	});
-});
-</script>
-
-
 </head>
-
 <body style="background-color:#796e6c">
 	<TMPL_INCLUDE NAME="nav_bar.tmpl">
-
 	<div class="container" style="background-color:#FFFFFF">
-
 		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
 			<h1>Statistics</h1>
 		</div>
-
-		<p>Output some general statistics here</p>
-
-		<h6>d3 Example</h6>
-
-		<div id="viz"></div>
-
-		<!--script>
-
-		var dataset = [5, 10, 15, 20 , 25];   
-		var w = 500;
-		var h = 100;
-		var svg = d3.select("#viz").append("svg")
-		.attr("width" , w)
-		.attr("height" , h);
-
-		var circles = svg.selectAll("circle")
-		.data(dataset)
-		.enter()
-		.append("circle");
-
-		circles.attr("cx", function (d, i) {
-			return (i * 50) + 25;
-		})
-		.attr("cy" , h/2)
-		.attr("r" , function(d){
-			return d;
-		})
-		.attr("fill", "lavender")
-		.attr("stroke", "purple")
-		.attr("stroke-width", function(d) {
-			return d/4;
-		});
-
-	</script-->
-	<form class="form" action="/ajax_test" id="ajaxTestForm" methos="post">
-		<div class="control-group">
-			<label class="control-label" for="inputEmail">Name</label>
-			<div class="controls">
-				<input type="text" id="inputName" placeholder="Name" name="name">
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label" for="inputPassword">Age</label>
-			<div class="controls">
-				<input type="text" id="inputGame" placeholder="Game" name="game">
-			</div>
-		</div>
-		<button id="buttonTest" type="submit">Test AJAX Form</button>
-	</form>
-
-	<!--button type="button" onclick="testAjaxResponse()">Test AJAX</button-->
-	<div id="AJAXTestDiv"><h4>Ajax will return some text below:</h4></div>
-
-</div>
-
-
-<TMPL_INCLUDE NAME="footer.tmpl">
+	</div>
+	<TMPL_INCLUDE NAME="footer.tmpl">
 </body>
 </html>

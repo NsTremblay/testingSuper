@@ -161,7 +161,7 @@ my $db_id = $schema->resultset('Db')->find({ name => $db_name })->db_id;
 
 
 my @local_terms = qw/serotype strain isolation_host isolation_location isolation_date isolation_latlng
-	syndrome severity isolation_source isolation_age pmid/;
+	syndrome severity isolation_source isolation_age pmid virulence_factor antimicrobial_resistance_gene/;
 foreach my $term (@local_terms) {
 	
 	my $term_hash = {

@@ -208,6 +208,9 @@ sub _getVFMetaInfo {
 		elsif ($vFMetaRow->type->name eq "uniquename"){
 			$vFMetaRowData{'vFTERMNAME'}="Unique Name";
 		}
+		elsif ($vFMetaRow->type->name eq "biological_process"){
+			$vFMetaRowData{'vFTERMNAME'}="Biological Process";
+		}
 		else {
 			$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
 		}
