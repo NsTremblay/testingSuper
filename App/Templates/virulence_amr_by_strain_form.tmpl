@@ -136,7 +136,6 @@
 						<div class="row-fluid">
 							<div id="VFMetaInfo" style="display:none">
 								<h5><u>Virulence Factor Meta Info</u></h5>
-								<small><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small>
 							</div>
 							<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vfVALIDATOR></div>
 						</div>
@@ -184,7 +183,6 @@
 </div>
 
 
-
 <script type="text/javascript">
 
 $('#compareSelections').click( function() {
@@ -195,8 +193,9 @@ function compareSelections() {
 	$('#strainListForm').submit();
 }
 
-
 $(showVFMetaInfo).click( function(e){
+	$('#VFMetaInfo').empty();
+	$('#VFMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:80px 0px 0px 20px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
 	e.preventDefault();
 	$.post("/vf_meta_info", $("#showVFMetaInfoForm").serialize(),  
 		function(data){
