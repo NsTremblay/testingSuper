@@ -52,10 +52,10 @@
 									<fieldset>
 										<span class="help-block">Select on one or more strains</span>
 										<ul id="pubStrainList" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=STRAINLIST>
+											<TMPL_LOOP NAME=FEATURES>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedStrains"<TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>

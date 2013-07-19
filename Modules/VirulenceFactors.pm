@@ -36,6 +36,7 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
+use CGI::Application::Plugin::AutoRunmode;
 
 use Log::Log4perl;
 use Carp;
@@ -44,24 +45,6 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
 	$logger->info("Logger initialized in Modules::VirulenceFactors");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'virulence_factors'=>'virulenceFactors',
-		'virulence_amr_by_strain'=>'virulenceAmrByStrain'
-		);
-}
-
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
 }
 
 =head2 virulenceFactors
@@ -70,7 +53,7 @@ Run mode for the virulence factor page
 
 =cut
 
-sub virulenceFactors {
+sub virulence_factors : StartRunmode {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
@@ -87,7 +70,7 @@ sub virulenceFactors {
 	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(vJSON=>$vJsonData);
 
-	$template->param(STRAINLIST=>$pubDataRef);
+	$template->param(FEATURES=>$pubDataRef);
 	$template->param(strainJSONData=>$pubStrainJsonDataRef);
 
 	$template->param(amrFACTORS=>$amrFactorsRef);
@@ -136,7 +119,7 @@ sub virulenceAmrByStrain {
 	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(vJSON=>$vJsonData);
 	
-	$template->param(STRAINLIST=>$pubDataRef);
+	$template->param(FEATURES=>$pubDataRef);
 
 	$template->param(amrFACTORS=>$amrFactorsRef);
 	$template->param(amrJSON=>$amrJsonData);
