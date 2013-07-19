@@ -117,7 +117,7 @@
 							biological information about each virulence factor.
 						</p>
 						<hr/>
-						<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
+						<form class="form" action="/vf_meta_info/" method="post" enctype="application/x-www-form-urlencoded">
 							<fieldset>
 								<h5>Select a VF from the list:</h5>
 								<select id="vfList" class="span12" name="VFName">
@@ -126,7 +126,7 @@
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
-									<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
+									<button id="showVFMetaInfo" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
 									<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 								</div>
 							</fieldset>
@@ -161,7 +161,7 @@
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
-									<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
+									<button id="showAMRMetaInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
 									<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 								</div>
 							</fieldset>
@@ -197,5 +197,12 @@ $('#compareSelections').click( function() {
 function compareSelections() {
 	$('#strainListForm').submit();
 }
+
+$('#showVFMetaInfo').click( function() {
+$.ajax({
+	type: "POST",
+	url: "/vf_meta_info",
+}).
+});
 
 </script>

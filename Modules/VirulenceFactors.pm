@@ -36,7 +36,8 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
-use CGI::Application::Plugin::AutoRunmode;
+use HTML::Template::HashWrapper;
+use CGI::Application::Plugin::AutoRunmode;;
 
 use Log::Log4perl;
 use Carp;
@@ -200,6 +201,29 @@ sub _getVFMetaInfo {
 		push(@vFMetaData, \%vFMetaRowData);
 	}
 	return \@vFMetaData;
+}
+
+sub vf_meta_info : Runmode {
+	my $self = shift;
+	my $_vFFeatureId = shift;
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+
+	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+		{'me.feature_id' => $_vFFeatureId},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			join		=> ['type' , 'feature'],
+			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			order_by	=> { -asc => ['type.name'] }
+		}
+		);
+
+	my $vfMetaInfoJsonRef = formDataGenerator->_getJSONFormat($_virulenceFactorMetaProperties);
+	return $vfMetaInfoJsonRef;
 }
 
 =head2 _getAMRMetaInfo
