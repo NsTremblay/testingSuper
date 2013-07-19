@@ -117,7 +117,7 @@
 							biological information about each virulence factor.
 						</p>
 						<hr/>
-						<form class="form" action="/vf_meta_info/" method="post" enctype="application/x-www-form-urlencoded">
+						<form class="form" action="/vf_meta_info" method="post" enctype="application/x-www-form-urlencoded">
 							<fieldset>
 								<h5>Select a VF from the list:</h5>
 								<select id="vfList" class="span12" name="VFName">
@@ -201,7 +201,7 @@ function compareSelections() {
 $('#showVFMetaInfo').click( function() {
 	$.ajax({
 		type: "POST",
-		url: "/vf_meta_info"
+		url: "/vf_meta_info",
 	}).done( function (returned_data){
 		console.log(returned_data);
 	});

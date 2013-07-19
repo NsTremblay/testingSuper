@@ -206,13 +206,9 @@ sub _getVFMetaInfo {
 sub vf_meta_info : Runmode {
 	my $self = shift;
 	my $q = $self->query();
-	my $vfFeatureId = $q->param("VFName");
-	my $amrFeatureId = $q->param("AMRName");
+	my $_vFFeatureId = $q->param("VFName");
 
-	print STDERR "................." . $vfFeatureId . "..............";
-
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
+	print STDERR "................. " . $_vFFeatureId . " ..............";
 
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
 		{'me.feature_id' => $_vFFeatureId},
@@ -226,6 +222,7 @@ sub vf_meta_info : Runmode {
 		}
 		);
 
+	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $vfMetaInfoJsonRef = formDataGenerator->_getJSONFormat($_virulenceFactorMetaProperties);
 	return $vfMetaInfoJsonRef;
 }
