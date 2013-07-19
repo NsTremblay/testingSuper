@@ -208,22 +208,21 @@ sub vf_meta_info : Runmode {
 	my $q = $self->query();
 	my $_vFFeatureId = $q->param("VFName");
 
-	print STDERR "................. " . $_vFFeatureId . " ..............";
-
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
 		{'me.feature_id' => $_vFFeatureId},
 		{
 			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 			join		=> ['type' , 'feature'],
-			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+			select		=> [ qw/feature_id me.value type.name feature.uniquename/],
+			as 			=> ['me.feature_id' , 'value' , 'term_name' , 'uniquename'],
+			group_by 	=> [ qw/me.feature_id me.value type.name feature.uniquename/ ],
 			order_by	=> { -asc => ['type.name'] }
 		}
 		);
 
+	my @virMetaData = $_virulenceFactorMetaProperties->all;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
-	my $vfMetaInfoJsonRef = formDataGenerator->_getJSONFormat($_virulenceFactorMetaProperties);
+	my $vfMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@virMetaData);
 	return $vfMetaInfoJsonRef;
 }
 
