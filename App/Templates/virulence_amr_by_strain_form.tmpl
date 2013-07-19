@@ -199,10 +199,12 @@ function compareSelections() {
 }
 
 $('#showVFMetaInfo').click( function() {
-$.ajax({
-	type: "POST",
-	url: "/vf_meta_info",
-}).
+	$.ajax({
+		type: "POST",
+		url: "/vf_meta_info"
+	}).done( function (returned_data){
+		console.log(returned_data);
+	});
 });
 
 </script>

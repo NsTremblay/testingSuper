@@ -205,7 +205,11 @@ sub _getVFMetaInfo {
 
 sub vf_meta_info : Runmode {
 	my $self = shift;
-	my $_vFFeatureId = shift;
+	my $q = $self->query();
+	my $vfFeatureId = $q->param("VFName");
+	my $amrFeatureId = $q->param("AMRName");
+
+	print STDERR "................." . $vfFeatureId . "..............";
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
