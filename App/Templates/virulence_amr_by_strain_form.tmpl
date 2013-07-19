@@ -18,28 +18,28 @@
 							<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
 								<div style="padding:10px">
 									<fieldset>
-										<span class="help-block">Select on one or more strains</span>
-										<ul id="pubStrainList" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=STRAINLIST>
-											<li style="list-style:none">
-												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
-												</label>
-											</li>
-											</TMPL_LOOP>
-										</ul>
-									</fieldset>
-								</div>
-							</div>
-							<div id="amrSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-								<div style="padding:10px">
-									<fieldset>
 										<span class="help-block">Select on one or more virulence factors</span>
 										<ul id="strainListSelection" style="padding:0px;margin:0px">
 											<TMPL_LOOP NAME=vFACTORS>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedVirulence"><TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedVirulence"><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
+												</label>
+											</li>
+											</TMPL_LOOP>
+										</ul>
+									</fieldset>								
+								</div>
+							</div>
+							<div id="amrSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+								<div style="padding:10px">
+									<fieldset>
+										<span class="help-block">Select on one or more amr genes</span>
+										<ul id="strainListSelection" style="padding:0px;margin:0px">
+											<TMPL_LOOP NAME=amrFACTORS>
+											<li style="list-style:none">
+												<label class="checkbox">
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedAmr"><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>
@@ -50,12 +50,12 @@
 							<div id="strainSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
-										<span class="help-block">Select on one or more amr genes</span>
-										<ul id="strainListSelection" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=amrFACTORS>
+										<span class="help-block">Select on one or more strains</span>
+										<ul id="pubStrainList" style="padding:0px;margin:0px">
+											<TMPL_LOOP NAME=FEATURES>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=UNIQUENAME>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>
@@ -112,34 +112,31 @@
 			</div>
 			<div class="tab-pane" id="virInfo">
 				<div class="row-fluid">
-					<div class="span5">
+					<div class="span5" style="padding:10px 0px 0px 0px">
 						<p> Here you will find information about all virluence factors in the database. This is mostly to provide general
 							biological information about each virulence factor.
 						</p>
 						<hr/>
-						<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
+						<form class="form" id="showVFMetaInfoForm" action="/vf_meta_info" method="post" enctype="application/x-www-form-urlencoded">
 							<fieldset>
 								<h5>Select a VF from the list:</h5>
 								<select id="vfList" class="span12" name="VFName">
 									<TMPL_LOOP NAME=vFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
-									<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
+									<button id="showVFMetaInfo" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Meta Info</button>
 									<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 								</div>
 							</fieldset>
 						</form>
 					</div>
-					<div class="span6">
+					<div class="span5">
 						<div class="row-fluid">
 							<div id="VFMetaInfo" style="display:none">
 								<h5><u>Virulence Factor Meta Info</u></h5>
-								<TMPL_LOOP NAME=vFMETAINFO>
-								<TMPL_VAR NAME=vFUNIQUENAME>
-								<strong><TMPL_VAR NAME=vFTERMNAME></strong> : <TMPL_VAR NAME=vFTERMVALUE> <br>
-								</TMPL_LOOP>
+								<small><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small>
 							</div>
 							<div id="vfvalidator" style="display:none"><TMPL_VAR NAME=vfVALIDATOR></div>
 						</div>
@@ -148,7 +145,7 @@
 			</div>
 			<div class="tab-pane" id="amrInfo">
 				<div class="row-fluid">
-					<div class="span5">
+					<div class="span5" style="padding:10px 0px 0px 0px">
 						<p> Here you will find information about all AMR factors in the database. This is mostly to provide general biological information about each AMR factor.
 						</p>
 						<hr/>
@@ -157,17 +154,17 @@
 								<h5>Select an AMR gene from the list:</h5>
 								<select class="span12" name="AMRName">
 									<TMPL_LOOP NAME=amrFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
+									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
-									<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
+									<button id="showAMRMetaInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
 									<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 								</div>
 							</fieldset>
 						</form>
 					</div>
-					<div class="span6">
+					<div class="span5">
 						<div class="row-fluid">
 							<div id="AMRMetaInfo" style="display:none">
 								<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>
@@ -197,5 +194,18 @@ $('#compareSelections').click( function() {
 function compareSelections() {
 	$('#strainListForm').submit();
 }
+
+
+$(showVFMetaInfo).click( function(e){
+	e.preventDefault();
+	$.post("/vf_meta_info", $("#showVFMetaInfoForm").serialize(),  
+		function(data){
+			$('#VFMetaInfo').empty();
+			$('#VFMetaInfo').append('<h5><u>Virulence Factor Meta Info</u></h5>');
+			for (var i = 0; i < data.data.length; i++) {
+				$('#VFMetaInfo').append('<strong>' + data.data[i].term_name + '</strong>: ' + data.data[i].value + '</br>');
+			}
+		}, "json" , $('#VFMetaInfo').show());
+});
 
 </script>

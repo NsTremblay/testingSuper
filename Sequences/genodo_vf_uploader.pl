@@ -60,25 +60,29 @@ use File::Basename;
 				$out = Bio::SeqIO->new(-file => '>' . "VFfastaTemp/$VFfileName" , -format => 'fasta') or die "$!\n";
 				$out->write_seq($seq) or die "$!\n";
 				my $seqHeader = $seq->desc();
-				my $attributeHeaders = parseHeader($seqHeader);
+				my $seqId = $seq->id();
+				my $attributeHeaders = parseHeader($seqId , $seqHeader);
 				appendAttributes($attributeHeaders , $VFfileName);
 			}
 		}
 
 		sub parseHeader {
+			my $_seqId = shift;
 			my $_seqHeader = shift;
+			my $_seqTag = "$_seqId $_seqHeader";
 			my %_seqHeaders;
-			if ($_seqHeader =~ /([a-z]*[A-Z]*[0-9]*)\s\([\w\d\W\D]*\)/ ) {
-				my $name = $1;
-				my $uniquename = $1;
+			if ($_seqTag =~ m/^(R\d{6})\s([\w\d\/]+)/) {
+				my $name = $2;
+				my $virulence_id = $1;
+				$_seqHeaders{'VIRULENCE_ID'} = $virulence_id;
 				$_seqHeaders{'NAME'} = $name;
-				$_seqHeaders{'UNIQUENAME'} = $uniquename;
+				$_seqHeaders{'UNIQUENAME'} = $name;
 			}
-			if ($_seqHeader =~ /(\()([\w\d\]*_?[\w\d]*)(\))/) {
+			if ($_seqTag =~ m/(\()([\w\d\]*_?[\w\d]*)(\))/) {
 				my $uniquename = $2;
 				$_seqHeaders{'UNIQUENAME'} = $uniquename;
 			}
-			if ($_seqHeader =~ /\[(Escherichia coli)\s(str\.)\s([\w\d\W\D]*)\s(\()([\w\d\W\D]*)(\))\]/){
+			if ($_seqTag =~ m/\[(Escherichia coli)\s(str\.)\s([\w\d\W\D]*)\s(\()([\w\d\W\D]*)(\))\]/){
 				my $organism = $1;
 				$_seqHeaders{'ORGANISM'} = $organism;
 				my $strain = $3;
@@ -86,11 +90,11 @@ use File::Basename;
 				my $comment = $5;
 				$_seqHeaders{'COMMENT'} = $comment;
 			}
-			if ($_seqHeader =~ /\s\-\s([w\d\W\D]*)\s(\[)/) {
+			if ($_seqTag =~ m/\s\-\s([w\d\W\D]*)\s(\[)/) {
 				my $desc = $1;
 				$_seqHeaders{'DESCRIPTION'} = $desc;
 			}
-			if ($_seqHeader =~ /(str\.)\s([\w\d\W\D]*)\s(\()([\w\d\W\D]*)(\))\s(plasmid)\s(.*)\]/) {
+			if ($_seqTag =~ m/(str\.)\s([\w\d\W\D]*)\s(\()([\w\d\W\D]*)(\))\s(plasmid)\s(.*)\]/) {
 				my $plasmid = $7;
 				my $strain = $2;
 				$_seqHeaders{'MOLTYPE'} = "plasmid";
@@ -103,6 +107,11 @@ use File::Basename;
 				$_seqHeaders{'PLASMID'} = "none";
 			}
 			$_seqHeaders{'KEYWORDS'} = "Virulence Factor";
+
+			foreach my $key (keys %_seqHeaders) {
+				print "$key: " . $_seqHeaders{$key} . "\n";
+			}
+
 			return \%_seqHeaders;
 		}
 
@@ -116,7 +125,7 @@ use File::Basename;
 
 			my $args = "gmod_fasta2gff3.pl" . " $VFfileName" . " --type gene" . " --attributes " . "\"$attributes\"" . " --fasta_dir VFfastaTemp " . "--gfffilename VFgffsTemp/tempout$VFNumber.gff";
 			system($args) == 0 or die "System with $args failed: $? \n";
-			printf "System executed $args with value %d\n", $? >> 8;
+			#printf "System executed $args with value %d\n", $? >> 8;
 			open my $in, '<' , "$outFile" or die "Can't read $VFfileName: $!";
 			open my $out, '>' , "VFgffsTemp/new_tempout$VFNumber.gff";
 			#Files need to be fixed before uploading
@@ -160,7 +169,8 @@ use File::Basename;
 				($_attHeaders->{STRAIN} eq "")) 
 			{
 				print "Name: " . $_attHeaders->{NAME} . "\n";
-				print "Virulence ID: " . $_attHeaders->{UNIQUENAME} . "\n";
+				print "Virulence ID: " . $_attHeaders->{VIRULENCE_ID} . "\n";
+				print "uniquename: " . $_attHeaders->{UNIQUENAME} . "\n";
 				print "Description: " . $_attHeaders->{DESCRIPTION} . "\n";
 				print "Keywords: " . $_attHeaders->{KEYWORDS} . "\n";
 				print "Mol_Type: " . $_attHeaders->{MOLTYPE} . "\n";
@@ -172,7 +182,8 @@ use File::Basename;
 			}
 			else {
 				my $_attributes = "name=".$_attHeaders->{NAME} . ";".
-				"virulence_id=". $_attHeaders->{UNIQUENAME} . ";".
+				"uniquename=". $_attHeaders->{UNIQUENAME} . ";".
+				"virulence_id=". $_attHeaders->{VIRULENCE_ID} . ";".
 				"description=". $_attHeaders->{DESCRIPTION} . ";".
 				"keywords=". $_attHeaders->{KEYWORDS} . ";".
 				"mol_type=". $_attHeaders->{MOLTYPE} . ";".
@@ -180,7 +191,6 @@ use File::Basename;
 				"organism=". $_attHeaders->{ORGANISM} . ";".
 				"strain=". $_attHeaders->{STRAIN} . ";" .
 				"biological_process=pathogenesis";
-
 				print "Header parsed succesfully! \n";
 				return $_attributes;
 			}

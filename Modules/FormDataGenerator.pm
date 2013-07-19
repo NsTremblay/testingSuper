@@ -271,11 +271,11 @@ sub getVirulenceFormData {
         },
         {
             #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            column  => [qw/feature_id type_id uniquename type.name featureprops.value/],
+            column  => [qw/feature_id type_id me.name uniquename type.name featureprops.value/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.uniquename/],
             # as          => ['feature_id', 'type_id' , 'uniquename'],
-            order_by    => { -asc => ['uniquename'] }
+            order_by    => { -asc => ['name'] }
         }
         );
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
@@ -301,11 +301,11 @@ sub getAmrFormData {
         },
         {
             #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            column  => [qw/feature_id type_id uniquename/],
+            column  => [qw/feature_id type_id name uniquename/],
             join        => ['featureprops' , 'type'],
             # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
             # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
-            order_by    => { -asc => ['uniquename'] }
+            order_by    => { -asc => ['name'] }
         }
         );
     my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
@@ -332,6 +332,7 @@ sub _hashVirAmrFormData {
     while (my $fRow = $_factorProperties->next){
         my %fRowData;
         $fRowData{'FEATUREID'}=$fRow->feature_id;
+        $fRowData{'NAME'}=$fRow->name;
         $fRowData{'UNIQUENAME'}=$fRow->uniquename;
         push(@factors, \%fRowData);
     }
