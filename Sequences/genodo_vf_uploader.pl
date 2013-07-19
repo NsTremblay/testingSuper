@@ -15,8 +15,8 @@ use File::Basename;
 	# >R008730 sfaC (ECP_0291) - fimbrial transcription regulator protein FaeA [Escherichia coli str. 536 (UPEC)]
 
 	# This should incorporate the tags:
-		# ID: R008730 <-- This will automatically be tagged into the gfffile.
-		# Name: R008730 <-- This will automatically be tagged into the gfffile.
+		# Name: sfaC
+		# Uniquename: ECP_0291
 
 		#It will also be tagged with the type_id of pathogenesis in the feature table.
 
@@ -61,7 +61,7 @@ use File::Basename;
 				$out->write_seq($seq) or die "$!\n";
 				my $seqHeader = $seq->desc();
 				my $attributeHeaders = parseHeader($seqHeader);
-				appendAttributes($attributeHeaders);
+				appendAttributes($attributeHeaders , $VFfileName);
 			}
 		}
 
@@ -108,14 +108,42 @@ use File::Basename;
 
 		sub appendAttributes {
 			my $attHeaders = shift;
+			my $VFfileName = shift;
 			my $attributes = getAtrributes($attHeaders);
+			my $inSeq = Bio::SeqIO->new(-file => "VFfastaTemp/$VFfileName" , -format => 'fasta');
+
+			my $outFile = "VFgffsTemp/tempout$VFNumber.gff";
+
 			my $args = "gmod_fasta2gff3.pl" . " $VFfileName" . " --type gene" . " --attributes " . "\"$attributes\"" . " --fasta_dir VFfastaTemp " . "--gfffilename VFgffsTemp/tempout$VFNumber.gff";
 			system($args) == 0 or die "System with $args failed: $? \n";
 			printf "System executed $args with value %d\n", $? >> 8;
-			#my $dbArgs = "gmod_bulk_load_gff3.pl --dbname chado_db_test --dbuser postgres --dbpass postgres --organism \"Escherichia coli\" --gfffile out.gff" . " --remove_lock";
-			#system($dbArgs) == 0 or die "System failed with $dbArgs: $? \n";
-			#printf "System executed $dbArgs with value %d\n", $? >> 8;
+			open my $in, '<' , "$outFile" or die "Can't read $VFfileName: $!";
+			open my $out, '>' , "VFgffsTemp/new_tempout$VFNumber.gff";
+			#Files need to be fixed before uploading
+			while(<$in>) {
+				my $tag;
+				if ($. == 1 || $. == 2 || $. == 4 || $. == 6) {
+					print $out $_;
+				}
+				if ($. == 3) {
+					if ($_ =~ /(\t.\t(gene)\t([\d]*)\t([\d]*)\t.\t.\t.\t)/) {
+						$tag = $1;
+					}
+					else {
+						die "$!";
+					}
+					print $out $attHeaders->{UNIQUENAME}.$tag."ID=".$attHeaders->{UNIQUENAME}.";Name=".$attHeaders->{NAME}.";$attributes\n";
+				}
+				if ($. == 5){
+					print $out ">".$attHeaders->{UNIQUENAME}."\n";
+				}
+				else {
+				}
+			}
+			close $in;
+			close $out;
 			unlink "VFfastaTemp/$VFfileName";
+			unlink "$outFile";
 			unlink "VFfastaTemp/directory.index";
 		}
 
@@ -132,7 +160,7 @@ use File::Basename;
 				($_attHeaders->{STRAIN} eq "")) 
 			{
 				print "Name: " . $_attHeaders->{NAME} . "\n";
-				print "Uniquanme: " . $_attHeaders->{UNIQUENAME} . "\n";
+				print "Virulence ID: " . $_attHeaders->{UNIQUENAME} . "\n";
 				print "Description: " . $_attHeaders->{DESCRIPTION} . "\n";
 				print "Keywords: " . $_attHeaders->{KEYWORDS} . "\n";
 				print "Mol_Type: " . $_attHeaders->{MOLTYPE} . "\n";
@@ -144,7 +172,7 @@ use File::Basename;
 			}
 			else {
 				my $_attributes = "name=".$_attHeaders->{NAME} . ";".
-				"uniquename=". $_attHeaders->{UNIQUENAME} . ";".
+				"virulence_id=". $_attHeaders->{UNIQUENAME} . ";".
 				"description=". $_attHeaders->{DESCRIPTION} . ";".
 				"keywords=". $_attHeaders->{KEYWORDS} . ";".
 				"mol_type=". $_attHeaders->{MOLTYPE} . ";".
@@ -233,7 +261,7 @@ use File::Basename;
 	}
 
 	sub hashConfigSettings {
-		my $configLocation = "$FindBin::Bin/../Modules/chado_db_test.cfg";
+		my $configLocation = "$FindBin::Bin/../Modules/genodo.cfg";
 		open my $in, '<' , $configLocation or die "Cannot open $configLocation: $!\n";
 		my ($dbName , $dbUser , $dbPass);
 		while (my $confLine = <$in>) {
