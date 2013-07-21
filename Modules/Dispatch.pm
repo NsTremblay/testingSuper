@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 package Modules::Dispatch;
 
 # mod_rewrite alters the PATH_INFO by turning it into a file system path,
@@ -43,7 +43,8 @@ sub dispatch_args {
                 '/isolation_source_form' => {app=>'StrainInfo' , rm=>'isolation_source_form'},
                 '/serotype_form' => {app=>'StrainInfo' , rm=>'serotype_form'},
                 '/isolation_date_form' => {app=>'StrainInfo' , rm=>'isolation_date_form'},
-                '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'}
+                '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'},
+                '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'}
   
         ],
     };

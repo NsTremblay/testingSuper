@@ -22,12 +22,11 @@
 					$("#autoComp").autocomplete({
 						source: availableTags,
 						select: function( event, ui ) {
-			            $("#autoComp").val( ui.item.label ); // Display the label, but set the hidden input to the value
-			            $("#autoComp_hidden").val( ui.item.value );
-			            return false;
-			        }
-
-			    });
+							$("#autoComp").val( ui.item.label );
+							$("#autoComp_hidden").val( ui.item.value );
+							return false;
+						}
+					});
 				});
 				</script>
 				<input id="autoComp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="singleStrainName"></input>
@@ -36,14 +35,12 @@
 					<button id="strainInfoSearchButton" type="button" class="btn btn-small btn-success" value="Submit"><i class="icon-search icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
-				<!--hr-->
 			</fieldset>
 		</form>
 
 		<div id="strainInfoProgressbar" class="progress progress-striped active" style="display:none">
 			<div class="bar" style="width:100%;">Updating...</div>
 		</div>
-
 		<form id="pubStrainInfoDropdown" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				<span style="color:#796e6c">Select a genome from the list:</span>
@@ -56,7 +53,6 @@
 					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
-				<!--hr-->
 			</fieldset>
 		</form>
 		
@@ -64,8 +60,8 @@
 		<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				<p style="color:#796e6c">Or select from user submitted genomes:<br>
-				<span style="padding-left:20px"><small>[Pri] private</small></span>
-				<span style="padding-left:20px"><small>[Pub] public</small></span>
+					<span style="padding-left:20px"><small>[Pri] private</small></span>
+					<span style="padding-left:20px"><small>[Pub] public</small></span>
 				</p>
 				<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
 					<TMPL_LOOP NAME=PRIVATE_FEATURES>
@@ -76,58 +72,28 @@
 					<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Search</button>
 					<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 				</div>
-				<!--hr-->
 			</fieldset>
 		</form>
 		</TMPL_IF>
 
 	</div>
-
-	<div id="map_div" style="display:none;border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
-		<div id="map_canvas" style="height:300px"></div>
-	</div>
-
-	<script>
-	$('#strainInfoSearchButton').click(function(){
-		checkSIFields(pubStrainInfoSearch);
-	});
-	</script>
-	<script type="text/javascript">
-	function initialize() {
-		var myLatlng = new google.maps.LatLng(-25.363882,131.044922);
-		var mapOptions = {
-			center: myLatlng,
-			zoom: 4,
-			mapTypeId: google.maps.MapTypeId.ROADMAP
-		};
-		var map = new google.maps.Map(document.getElementById("map_canvas"),
-			mapOptions);
-		
-		var marker = new google.maps.Marker({
-			position: myLatlng,
-			map: map,
-			title: '<TMPL_LOOP NAME=METADATA><TMPL_VAR NAME=UNIQUENAME></TMPL_LOOP>'
-		});
-	}
-	function displayMap() {
-		document.getElementById('map_div').style.display="block";
-		initialize();
-	}
-	function checkSIFields(pubStrainInfoSearch) {
-		if (pubStrainInfoSearch.singleStrainID.value == "") {
-			alert("You must enter a valid search term.");
-			return false;
-		}
-		else {
-			$('#pubStrainInfoSearch').submit();
-			return true;
-		}
-	}
-
-	function onLoadCheck() {
-		initialize();
-		$('#strainInfoTabs').show("slow");
-	}
-	
-	</script>
 </div>
+
+<script type="text/javascript">
+
+$('#strainInfoSearchButton').click(function(){
+	checkSIFields(pubStrainInfoSearch);
+});
+
+function checkSIFields(pubStrainInfoSearch) {
+	if (pubStrainInfoSearch.singleStrainID.value == "") {
+		alert("You must enter a valid search term.");
+		return false;
+	}
+	else {
+		$('#pubStrainInfoSearch').submit();
+		return true;
+	}
+}
+
+</script>
