@@ -139,7 +139,7 @@ sub _writeFastaSeqToFile {
 	my $_VFID = shift;	
 	my $headerFile = $row->feature_id;
 	open(OUT, '>' . "$OUTPUTDIR/$tempFolder/$tempSingleHeaders/$headerFile") or croak "$!";
-	print(OUT "> " . "$VFTag" . "_" . $row->feature_id . "|" . $row->uniquename . "|" . $row->name . "\n" . $row->residues) or croak "$!";
+	print(OUT ">" . "$VFTag" . "_" . $row->feature_id . "|" . $row->uniquename . "|" . $row->name . "\n" . $row->residues . "\n") or croak "$!";
 	close(OUT);
 	#print "Writing out sequence for " . $row->subject->name . "\n";
 }
