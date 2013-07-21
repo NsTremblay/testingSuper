@@ -31,4 +31,5 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 9. ../genodo_add_db_urls.pl
 	Add urlprefix fields for common DBs. Additions on top of #8
 
-
+10. ../genodo_add_aro.sh
+	Add antimicrobial resistance ontology to database using chadoXML file aro_obo_text.xml and DBIx::DBStag.
