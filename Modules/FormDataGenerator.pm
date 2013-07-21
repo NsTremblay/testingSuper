@@ -296,13 +296,12 @@ sub getAmrFormData {
     my $self = shift;
     my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
     {
-        'featureprops.value' => "Antimicrobial Resistance",
-        'type.name' => "gene"
+        'type.name' => "antimicrobial_resistance_gene"
         },
         {
             #result_class => 'DBIx::Class::ResultClass::HashRefInflator',
             column  => [qw/feature_id type_id name uniquename/],
-            join        => ['featureprops' , 'type'],
+            join        => ['type'],
             # select      => [ qw/me.feature_id me.type_id me.value feature.uniquename/],
             # as          => ['feature_id', 'type_id' , 'value', 'uniquename'],
             order_by    => { -asc => ['name'] }
