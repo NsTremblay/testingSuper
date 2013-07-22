@@ -44,7 +44,8 @@ sub dispatch_args {
                 '/serotype_form' => {app=>'StrainInfo' , rm=>'serotype_form'},
                 '/isolation_date_form' => {app=>'StrainInfo' , rm=>'isolation_date_form'},
                 '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'},
-                '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'}
+                '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'},
+                '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'}
   
         ],
     };

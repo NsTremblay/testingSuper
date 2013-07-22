@@ -272,6 +272,28 @@ sub _getAMRMetaInfo {
 	return \@amrMetaData;
 }
 
+sub amr_meta_info : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $_amrFeatureId = $q->param("AMRName");
+
+	my $_amrMetaProperties = $self->dbixSchema->resultset('FeatureCvterm')->search(
+		{'me.feature_id' => $_amrFeatureId},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			join		=> ['cvterm' , 'feature'],
+			select		=> [ qw/feature_id cvterm.name cvterm.definition feature.uniquename/],
+			as 			=> ['me.feature_id' , 'term_name' , 'term_definition' , 'uniquename'],
+			order_by	=> { -asc => ['cvterm.name'] }
+		}
+		);
+
+	my @amrMetaData = $_amrMetaProperties->all;
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@amrMetaData);
+	return $amrMetaInfoJsonRef;
+}
+
 sub _getVirulenceByStrain {
 	my $self = shift;
 	my $_selectedStrainNames = shift;

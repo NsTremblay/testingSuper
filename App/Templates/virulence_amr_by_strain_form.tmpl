@@ -148,7 +148,7 @@
 						<p> Here you will find information about all AMR factors in the database. This is mostly to provide general biological information about each AMR factor.
 						</p>
 						<hr/>
-						<form class="form" action="/virulence_factors/" method="post" enctype="application/x-www-form-urlencoded">
+						<form class="form" id="showAMRMetaInfoForm" action="/amr_meta_info/" method="post" enctype="application/x-www-form-urlencoded">
 							<fieldset>
 								<h5>Select an AMR gene from the list:</h5>
 								<select class="span12" name="AMRName">
@@ -157,7 +157,7 @@
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
-									<button id="showAMRMetaInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
+									<button id="showAMRMetaInfo" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Factor Meta Info</button>
 									<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel"><i class="icon-remove icon-white"></i> Cancel</button>
 								</div>
 							</fieldset>
@@ -205,6 +205,21 @@ $(showVFMetaInfo).click( function(e){
 				$('#VFMetaInfo').append('<strong>' + data.data[i].term_name + '</strong>: ' + data.data[i].value + '</br>');
 			}
 		}, "json" , $('#VFMetaInfo').show());
+});
+
+$(showAMRMetaInfo).click( function(e){
+	$('#AMRMetaInfo').empty();
+	$('#AMRMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:80px 0px 0px 20px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
+	e.preventDefault();
+	$.post("/amr_meta_info", $("#showAMRMetaInfoForm").serialize(),  
+		function(data){
+			console.log(data);
+			$('#AMRMetaInfo').empty();
+			$('#AMRMetaInfo').append('<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>');
+			for (var i = 0; i < data.data.length; i++) {
+				$('#AMRMetaInfo').append('<strong>' + data.data[i].term_name + '</strong><br />'  + data.data[i].term_definition + '</br>');
+			}
+		}, "json" , $('#AMRMetaInfo').show());
 });
 
 </script>
