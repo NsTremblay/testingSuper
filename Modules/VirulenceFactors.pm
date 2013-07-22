@@ -145,63 +145,63 @@ Returns an array reference containing the virulence factor meta info
 
 =cut
 
-sub _getVFMetaInfo {
-	my $self = shift;
-	my $_vFFeatureId = shift;
+# sub _getVFMetaInfo {
+# 	my $self = shift;
+# 	my $_vFFeatureId = shift;
 
-	my @vFMetaData;
+# 	my @vFMetaData;
 
-	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{'me.feature_id' => $_vFFeatureId},
-		{
-			join		=> ['type' , 'feature'],
-			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by	=> { -asc => ['type.name'] }
-		}
-		);
+# 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+# 		{'me.feature_id' => $_vFFeatureId},
+# 		{
+# 			join		=> ['type' , 'feature'],
+# 			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+# 			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+# 			order_by	=> { -asc => ['type.name'] }
+# 		}
+# 		);
 
-	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
-		#Initialize a hash structure to store column data
-		my %vFMetaRowData;
-		$vFMetaRowData{'vFFEATUREID'}=$vFMetaRow->feature_id;
-		$vFMetaRowData{'vFUNIQUENAME'}=$vFMetaRow->feature->uniquename;
-		$vFMetaRowData{'vFTERMVALUE'}=$vFMetaRow->value;
-		if ($vFMetaRow->type->name eq "description") {
-			$vFMetaRowData{'vFTERMNAME'}="Description";
-		}
-		elsif ($vFMetaRow->type->name eq "keywords"){
-			$vFMetaRowData{'vFTERMNAME'}="Keyword";
-		}
-		elsif ($vFMetaRow->type->name eq "mol_type"){
-			$vFMetaRowData{'vFTERMNAME'}="Molecular Type";
-		}
-		elsif ($vFMetaRow->type->name eq "name"){
-			$vFMetaRowData{'vFTERMNAME'}="Factor Name";
-		}
-		elsif ($vFMetaRow->type->name eq "organism"){
-			$vFMetaRowData{'vFTERMNAME'}="Organism";
-		}
-		elsif ($vFMetaRow->type->name eq "plasmid"){
-			$vFMetaRowData{'vFTERMNAME'}="Plasmid name";
-		}
-		elsif ($vFMetaRow->type->name eq "strain"){
-			$vFMetaRowData{'vFTERMNAME'}="Strain";
-		}
-		elsif ($vFMetaRow->type->name eq "uniquename"){
-			$vFMetaRowData{'vFTERMNAME'}="Unique Name";
-		}
-		elsif ($vFMetaRow->type->name eq "biological_process"){
-			$vFMetaRowData{'vFTERMNAME'}="Biological Process";
-		}
-		else {
-			$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
-		}
-		push(@vFMetaData, \%vFMetaRowData);
-	}
-	return \@vFMetaData;
-}
+# 	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
+# 		#Initialize a hash structure to store column data
+# 		my %vFMetaRowData;
+# 		$vFMetaRowData{'vFFEATUREID'}=$vFMetaRow->feature_id;
+# 		$vFMetaRowData{'vFUNIQUENAME'}=$vFMetaRow->feature->uniquename;
+# 		$vFMetaRowData{'vFTERMVALUE'}=$vFMetaRow->value;
+# 		if ($vFMetaRow->type->name eq "description") {
+# 			$vFMetaRowData{'vFTERMNAME'}="Description";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "keywords"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Keyword";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "mol_type"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Molecular Type";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "name"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Factor Name";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "organism"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Organism";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "plasmid"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Plasmid name";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "strain"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Strain";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "uniquename"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Unique Name";
+# 		}
+# 		elsif ($vFMetaRow->type->name eq "biological_process"){
+# 			$vFMetaRowData{'vFTERMNAME'}="Biological Process";
+# 		}
+# 		else {
+# 			$vFMetaRowData{'vFTERMNAME'}=$vFMetaRow->type->name;
+# 		}
+# 		push(@vFMetaData, \%vFMetaRowData);
+# 	}
+# 	return \@vFMetaData;
+# }
 
 sub vf_meta_info : Runmode {
 	my $self = shift;
@@ -233,58 +233,58 @@ Returns an array reference containing the virulence factor meta info.
 
 =cut
 
-sub _getAMRMetaInfo {
-	my $self = shift;
-	my $_amrFeatureId = shift;
+# sub _getAMRMetaInfo {
+# 	my $self = shift;
+# 	my $_amrFeatureId = shift;
 
-	my @amrMetaData;
+# 	my @amrMetaData;
 
-	my $_amrFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
-		{'me.feature_id' => $_amrFeatureId},
-		{
-			join		=> ['type' , 'feature'],
-			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
-			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
-			order_by	=> { -asc => ['type.name'] }
-		}
-		);
+# 	my $_amrFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
+# 		{'me.feature_id' => $_amrFeatureId},
+# 		{
+# 			join		=> ['type' , 'feature'],
+# 			select		=> [ qw/feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/],
+# 			as 			=> ['me.feature_id', 'type_id' , 'value' , 'cvterm_id', 'term_name' , 'uniquename'],
+# 			group_by 	=> [ qw/me.feature_id me.type_id me.value type.cvterm_id type.name feature.uniquename/ ],
+# 			order_by	=> { -asc => ['type.name'] }
+# 		}
+# 		);
 
-	while (my $amrMetaRow = $_amrFactorMetaProperties->next) {
-		my %amrMetaRowData;
-		$amrMetaRowData{'amrFEATUREID'} = $amrMetaRow->feature_id;
-		$amrMetaRowData{'amrUNIQUENAME'} = $amrMetaRow->feature->uniquename;
-		$amrMetaRowData{'amrTERMVALUE'} = $amrMetaRow->value;
-		if ($amrMetaRow->type->name eq "description") {
-			$amrMetaRowData{'amrTERMNAME'}="Description";
-		}
-		elsif ($amrMetaRow->type->name eq "organism"){
-			$amrMetaRowData{'amrTERMNAME'}="Organism";
-		}
-		elsif ($amrMetaRow->type->name eq "keywords"){
-			$amrMetaRowData{'amrTERMNAME'}="Keyword";
-		}
-		else {
-			$amrMetaRowData{'amrTERMNAME'}=$amrMetaRow->type->name;
-		}
-		push(@amrMetaData , \%amrMetaRowData);
-	}
-	return \@amrMetaData;
-}
+# 	while (my $amrMetaRow = $_amrFactorMetaProperties->next) {
+# 		my %amrMetaRowData;
+# 		$amrMetaRowData{'amrFEATUREID'} = $amrMetaRow->feature_id;
+# 		$amrMetaRowData{'amrUNIQUENAME'} = $amrMetaRow->feature->uniquename;
+# 		$amrMetaRowData{'amrTERMVALUE'} = $amrMetaRow->value;
+# 		if ($amrMetaRow->type->name eq "description") {
+# 			$amrMetaRowData{'amrTERMNAME'}="Description";
+# 		}
+# 		elsif ($amrMetaRow->type->name eq "organism"){
+# 			$amrMetaRowData{'amrTERMNAME'}="Organism";
+# 		}
+# 		elsif ($amrMetaRow->type->name eq "keywords"){
+# 			$amrMetaRowData{'amrTERMNAME'}="Keyword";
+# 		}
+# 		else {
+# 			$amrMetaRowData{'amrTERMNAME'}=$amrMetaRow->type->name;
+# 		}
+# 		push(@amrMetaData , \%amrMetaRowData);
+# 	}
+# 	return \@amrMetaData;
+# }
 
 sub amr_meta_info : Runmode {
 	my $self = shift;
 	my $q = $self->query();
 	my $_amrFeatureId = $q->param("AMRName");
 
-	my $_amrMetaProperties = $self->dbixSchema->resultset('FeatureCvterm')->search(
-		{'me.feature_id' => $_amrFeatureId},
+	my $_amrMetaProperties = $self->dbixSchema->resultset('Cvterm')->search(
+		{'featureprops.feature_id' => $_amrFeatureId},
 		{
 			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			join		=> ['cvterm' , 'feature'],
-			select		=> [ qw/feature_id cvterm.name cvterm.definition feature.uniquename/],
-			as 			=> ['me.feature_id' , 'term_name' , 'term_definition' , 'uniquename'],
-			order_by	=> { -asc => ['cvterm.name'] }
+			join		=> ['featureprops' , 'feature_cvterms' , 'features'],
+			select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
+			as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
+			order_by	=> { -asc => ['me.name'] }
 		}
 		);
 

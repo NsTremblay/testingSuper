@@ -217,7 +217,7 @@ $(showAMRMetaInfo).click( function(e){
 			$('#AMRMetaInfo').empty();
 			$('#AMRMetaInfo').append('<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>');
 			for (var i = 0; i < data.data.length; i++) {
-				$('#AMRMetaInfo').append('<strong>' + data.data[i].term_name + '</strong><br />'  + data.data[i].term_definition + '</br>');
+				$('#AMRMetaInfo').append('<strong>' + data.data[i].term_name + '</strong>: '  + data.data[i].value + '</br>');
 			}
 		}, "json" , $('#AMRMetaInfo').show());
 });
