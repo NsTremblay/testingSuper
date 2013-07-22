@@ -219,14 +219,14 @@ function showCommonNames(featureJsonList) {
 function showAccessionNumbers(featureJsonList) {
 	var availableTags = [];
 	$('#pubStrainList').empty();
-	for (i=0 ; i<featureTableJson.data.length ; i++) {
+	for (i=0 ; i<featureJsonList.data.length ; i++) {
 		var opt = document.createElement("option");
-		var description = document.createTextNode(featureTableJson.data[i].dbxref.accession);
-		opt.value = featureTableJson.data[i].feature_id;
+		var description = document.createTextNode(featureJsonList.data[i].dbxref.accession);
+		opt.value = featureJsonList.data[i].feature_id;
 		opt.appendChild(description);
 		document.getElementById('pubStrainList').appendChild(opt);
 
-		availableTags.push( { label:featureTableJson.data[i].dbxref.accession, value:featureTableJson.data[i].feature_id } );
+		availableTags.push( { label:featureJsonList.data[i].dbxref.accession, value:featureJsonList.data[i].feature_id } );
 	}
 	$("#autoComp").autocomplete({
 		source: availableTags,
@@ -247,12 +247,12 @@ function changeListView(jsonList) {
 
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var opt = document.createElement("option");
-		var description = document.createTextNode(jsonList.data[i].value);
+		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);
 		opt.value = jsonList.data[i].feature_id;
 		opt.appendChild(description);
 		document.getElementById('pubStrainList').appendChild(opt);
 
-		availableTags.push( { label:jsonList.data[i].value, value:jsonList.data[i].feature_id } );
+		availableTags.push( { label:jsonList.data[i].common_name + ' - ' + jsonList.data[i].value, value:jsonList.data[i].feature_id } );
 	}
 	$("#autoComp").autocomplete({
 		source: availableTags,
