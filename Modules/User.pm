@@ -13,7 +13,12 @@ use CGI::Application::Plugin::AutoRunmode;
 use Data::FormValidator::Constraints qw(email FV_eq_with FV_length_between);
 use Digest::MD5 qw(md5_base64);
 use Log::Log4perl qw/get_logger/;
-use Mail::Sendmail;
+#use Mail::Sendmail;
+#use Email::Send::SMTP::Gmail;
+use Email::Simple;
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP::TLS;
+
 
 #my $sl = Modules::App_Super::script_location();
 #Log::Log4perl->init($sl."/logger.conf");
@@ -292,45 +297,33 @@ sub email_password : RunMode {
 	  or croak "Unable to update password for user $username ($!).\n";
 
 	# Send email with new password to user
-	require Mail::Sendmail;
-
-	my %mail = (
-		From           => 'test@test.org',
-		To             => $user_rs->email,
-		Subject        => 'Password reset',
-		'content-type' => "text/html;\n\n",
-		Message        => '<html>Your new password is <b>'
-		  . $new_password . '</b>'
-		  . '<br>You may want to change your password to something more memorable after you log in'
-		  . '</html>'
+	
+	my $transport = Email::Sender::Transport::SMTP::TLS->new(
+	    host     => 'smtp.gmail.com',
+	    port     => 587,
+	    username => $self->config_param('mail.address'),
+	    password => $self->config_param('mail.pass'),
 	);
+	
+	my $message = Email::Simple->create(
+	    header => [
+	        From           => $self->config_param('mail.address'),
+	        To             => $user_rs->email,
+	        Subject        => 'SuperPhy password reset',
+	        'Content-Type' => 'text/html'
+	    ],
+	    body => '<html>Your new password is: <b>'
+		  . $new_password . '</b>'
+		  . '<br><br>You may want to change your password to something more memorable after you log in.'
+		  . '<br><br>SuperPhy Team.'
+		  . '</html>',
+	);
+	
+	sendmail( $message, {transport => $transport} );
 
-	if ( $ENV{HTTP_HOST} =~ /184\.64\.136\.138/ ) {
-		$self->session->param( status =>
-'<strong>Heads Up!</strong> A new password has been sent to your email address: '
-			  . $user_rs->email
-			  . '.<br/>Since you are on the testing site, the email won\'t '
-			  . ' <br/>be sent, so here is the new password: '
-			  . $new_password );
-
-	}
-	else {
-		if ( !Mail::Sendmail::sendmail(%mail) ) {
-
-			# Email failed, revert to old password
-			$user_rs->password($existing_password);
-			$user_rs->update
-			  or croak "Unable to restore password for user $username ($!).\n";
-
-			my $err = $Mail::Sendmail::error;
-			croak
-"Unable to send new password to $username. Password not reset ($err).";
-		}
-
-		$self->session->param( status =>
-'<strong>Check your Email!</strong> A new password has been sent to your email address.'
-		);
-	}
+	$self->session->param( status =>
+		'<strong>Check your Email!</strong> A new password has been sent to your email address.'
+	);
 
 	$self->redirect( $self->home_page );
 }
