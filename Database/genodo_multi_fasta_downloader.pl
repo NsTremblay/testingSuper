@@ -172,7 +172,7 @@ sub _writeFastaSeqToFile {
 	my $_collectionID = shift;	
 	my $headerFile = $row->subject->feature_id;
 	open(OUT, '>' . "$OUTPUTDIR/$tempFolder/$tempSingleHeaders/$headerFile") or croak "$!";
-	print(OUT ">" . "$pubPriTag" . "_" . $row->subject->feature_id . " $pubPriTag" . "_" . "$_collectionID" . "\n" . $row->subject->residues . "\n") or croak "$!";
+	print(OUT '>lcl|' . $pubPriTag . '_' . $_collectionID . '|' . $pubPriTag . "_" . $row->subject->feature_id . "\n" . $row->subject->residues . "\n") or croak "$!";
 	close(OUT);
 	#print "Writing out sequence for " . $row->subject->name . "\n";
 }
