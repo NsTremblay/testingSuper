@@ -114,7 +114,11 @@ function changeGroupName() {
 	$('#group1 input[type=checkbox]').attr("name", "group1");
 	$('#group2 input[type=checkbox]').attr("name", "group2");
 }
-$("#compareGrouped").click( function() {
+$("#compareGrouped").click( function(e) {
+	e.preventDefault();
+	$('#svgCanvas').hide();
+	$('#groupWiseDataLink').hide();
+	$('#groupWiseData').hide();
 	checkGroupedFields(groupedForm);
 });
 function checkGroupedFields(groupedForm) {
@@ -130,7 +134,15 @@ function checkGroupedFields(groupedForm) {
 		{
 			this.checked = true;
 		});
-		$('#groupedForm').submit();
+		console.log($('#group1 input').serialize() + '&' + $('#group2 input').serialize());
+		$.post("/group_wise_info/" , ($('#group1 input').serialize() + '&' + $('#group2 input').serialize()),
+			function(data) {
+				$('#svgCanvas').empty();
+				$('#svgCanvas').append('<div style="align:middle">'+data.data[4]+'</div>');
+				$('#svgCanvas').show("slow");
+				$('#groupWiseDataLink').show("slow");
+				$('#groupWiseData').show();
+			} , "json");
 	}
 }
 function removeGroup1() {

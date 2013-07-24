@@ -178,10 +178,8 @@ function onLoadCheck() {
 	initialize();
 }
 
-
 //Will initialize the map and grab all of the lists needed for form switching.
 function initialize() {
-	checkGroupWiseValidator();
 	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
 	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
 	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
@@ -199,16 +197,6 @@ function initialize() {
 
 	var map = new google.maps.Map(document.getElementById("map_canvas"),
 		mapOptions);
-}
-
-function checkGroupWiseValidator() {
-	if ($('#validator').is(':empty')) {
-	}
-	else {
-		$('#svgCanvas').show("slow");
-		$('#groupWiseDataLink').show("slow");
-		$('#groupWiseData').show();
-	}
 }
 
 function getBackList(urlName,formType,labelId,radioId) {
