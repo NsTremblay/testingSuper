@@ -37,6 +37,7 @@ use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
+use Math::Round 'nlowmult';
 
 use JSON;
 
@@ -72,24 +73,53 @@ Run mode for the statistics page
 
 sub Statistics {
 	my $self = shift;
+	my $timeStamp = localtime(time);
 	my $template = $self->load_tmpl( 'statistics.tmpl' , die_on_bad_params=>0 );
+
+	my $genomeCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'contig_collection'},
+		{
+			columns => [qw/feature_id/],
+			join => ['type']
+		}
+		);
+	
+	my $amrGeneCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'antimicrobial_resistance_gene'},
+		{
+			columns => [qw/feature_id/],
+			join => ['type']
+		}
+		);
+
+	my $virFactorGeneCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'gene', 'featureprops.value' => "Virulence Factor"},
+		{
+			column  => [qw/feature_id/],
+			join        => ['featureprops' , 'type']
+		}
+		);
+
+	my $totalBasesCount = $self->dbixSchema->resultset('Feature')->search(
+		{},
+		{
+			columns => [qw/seqlen/],
+			join => ['type']
+		}
+		);
+	my $totalBases = 0;
+	while (my $seqlenRow = $totalBasesCount->next) {
+		$totalBases = ($totalBases + $seqlenRow->seqlen); 
+	}
+	$totalBases = nlowmult( 0.01, ($totalBases/1000000000)); #in billion bases
+
+	$template->param(GENOMECOUNT=>$genomeCount);
+	$template->param(AMRGENECOUNT=>$amrGeneCount);
+	$template->param(VIRFACTORCOUNT=>$virFactorGeneCount);
+	$template->param(BASECOUNT=>$totalBases);
+	$template->param(TIMESTAMP=>$timeStamp);
+
 	return $template->output();
-}
-
-sub ajaxTest {
-	my $self = shift;
-	my $q = $self->query();
-	my $name = $q->param('name'); 
-	my $game = $q->param('game');
-
-	#my $coder = JSON::XS->new->utf8;
- 	#my $perl_scalar = $coder->decode($input);
-
-	my $rtnStr = "Your name is $name, your age is $game";
-
-	#my $rtnStr = "This doesnt work yet";
-
-	return $rtnStr;
 }
 
 1;
