@@ -83,7 +83,7 @@ Run mode for selected virulence and amr by strain
 
 =cut
 
-sub virulence_amr_by_strain :Runmode {
+sub virulence_amr_by_strain : Runmode {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
