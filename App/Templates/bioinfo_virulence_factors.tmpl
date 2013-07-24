@@ -118,10 +118,6 @@ $('#isolationLocationView').click(function () {
 
 function showCommonNames(featureJsonList) {
 	$('#pubStrainList').empty();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<featureJsonList.data.length ; i++) {
 		var li = document.createElement("li");
@@ -135,8 +131,9 @@ function showCommonNames(featureJsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = featureJsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);
@@ -147,12 +144,7 @@ function showCommonNames(featureJsonList) {
 }
 
 function showAccessionNumbers(featureJsonList) {
-
 	$('#pubStrainList').empty();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<featureJsonList.data.length ; i++) {
 
@@ -168,8 +160,9 @@ function showAccessionNumbers(featureJsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = featureJsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);
@@ -181,11 +174,6 @@ function showAccessionNumbers(featureJsonList) {
 
 function changeListView(jsonList) {
 	$('#pubStrainList').empty();
-	$('#strainListForm span').show();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var li = document.createElement("li");
@@ -200,8 +188,9 @@ function changeListView(jsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = jsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);

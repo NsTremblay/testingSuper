@@ -93,6 +93,10 @@ sub virulence_amr_by_strain : Runmode {
 	my @selectedVirulenceFactors = $q->param("selectedVirulence");
 	my @selectedAmrGenes = $q->param("selectedAmr");
 
+	foreach my $strain (@selectedStrainNames) {
+		print STDERR $strain . "\n";
+	}
+
 	#my ($vfByStrainJSONref , $amrByStrainJSONref , $strainTableNamesJSONref);
 	my $virAmrByStrainJSONref;
 	my ($vfByStrainRef , $amrByStrainRef , $strainTableNamesRef); 

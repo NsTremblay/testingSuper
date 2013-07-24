@@ -55,7 +55,7 @@
 											<TMPL_LOOP NAME=FEATURES>
 											<li style="list-style:none">
 												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATURE_ID>' name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
+													<input id="checkboxName" class="checkbox" type="checkbox" value="<TMPL_VAR NAME=FEATURE_ID>" name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
 												</label>
 											</li>
 											</TMPL_LOOP>
@@ -211,8 +211,8 @@ $('#compareSelections').click( function(e) {
 		$('#virByStrain h4').empty();
 		$('#virByStrainTable').empty();
 		$('#amrByStrain h4').empty();
-		$('#amrByStrainTable').empty();
-		$.post("/virulence_amr_by_strain/", $('#strainListForm').serialize(), 
+		$('#amrByStrainTable').empty();;
+		$.post("/virulence_amr_by_strain/", ($('#virListSelection input').serialize() + '&' + $('#amrListSelection input').serialize() + '&' + $('#pubStrainList input').serialize()), 
 			function(data){
 				if (data == "") {
 					$('#wheel-loader').hide();
