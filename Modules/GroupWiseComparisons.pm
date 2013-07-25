@@ -39,6 +39,8 @@ use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
+use HTML::Template::HashWrapper;
+use CGI::Application::Plugin::AutoRunmode;;
 
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
@@ -48,24 +50,6 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
 	$logger->info("Logger initialized in Modules::GroupWiseComparisons");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'group_wise_comparisons'=>'groupWiseComparisons',
-		'group_compare_test' => '_getStrainInfo'
-		);
-}
-
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
 }
 
 =head2 groupWiseComparisons
@@ -74,7 +58,7 @@ Run mode for the group wise comparisons page
 
 =cut
 
-sub groupWiseComparisons {
+sub group_wise_comparisons : StartRunmode{
 	my $self = shift;
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
@@ -82,14 +66,21 @@ sub groupWiseComparisons {
 	#my $formDataRef = $formDataGenerator->getFormData();
 	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
-	
+	$template->param(FEATURES=>$pubDataRef);
+	$template->param(strainJSONData=>$strainJsonDataRef);
+	return $template->output();
+}
+
+sub group_wise_info : Runmode {
+
+	my $self=shift;
+	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $q = $self->query();
 	my @groupOneStrainNames = $q->param("group1");
 	my @groupTwoStrainNames = $q->param("group2");
 
 	if(!(@groupOneStrainNames) && !(@groupTwoStrainNames)){
-		$template->param(FEATURES=>$pubDataRef);
-		$template->param(strainJSONData=>$strainJsonDataRef);
+		return $formDataGenerator->_getJSONFormat("");
 	}
 	else{
 		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
@@ -101,18 +92,12 @@ sub groupWiseComparisons {
 			$phyloLabel = "public_" . $phyloLabel;
 		}
 
-		my $groupWiseTreeRef = $self->_getGroupWisePhylo(\@phyloList);                
-		$template->param(FEATURES=>$pubDataRef);
-		$template->param(strainJSONData=>$strainJsonDataRef);
-		$template->param(GROUP1BINARYDATA=>$groupOneBinaryDataRef);
-		$template->param(GROUP1SNPDATA=>$groupOneSnpDataRef);
-		$template->param(GROUP2BINARYDATA=>$groupTwoBinaryDataRef);
-		$template->param(GROUP2SNPDATA=>$groupTwoSnpDataRef);
-		$template->param(GROUPPHYLOTREE=>$groupWiseTreeRef);
-		my $validator = "Return Success";
-		$template->param(VALIDATOR=>$validator);
+		my $groupWiseTreeRef = $self->_getGroupWisePhylo(\@phyloList);
+		my @arr;
+		push (@arr, $groupOneBinaryDataRef, $groupOneSnpDataRef, $groupTwoBinaryDataRef, $groupTwoSnpDataRef, $groupWiseTreeRef);
+		my $groupWiseDataJSONref = $formDataGenerator->_getJSONFormat(\@arr);
+		return $groupWiseDataJSONref;
 	}
-	return $template->output();
 }
 
 =head2 _getStrainInfo

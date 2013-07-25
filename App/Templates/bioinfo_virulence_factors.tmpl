@@ -21,6 +21,8 @@
 
 		<TMPL_INCLUDE NAME="virulence_amr_by_strain_form.tmpl">
 
+		<div id="wheel-loader" style="margin:0px 0px 30px 0px;display:none" align="middle"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>
+
 	</div>
 </body>
 <TMPL_INCLUDE NAME="footer.tmpl">
@@ -118,10 +120,6 @@ $('#isolationLocationView').click(function () {
 
 function showCommonNames(featureJsonList) {
 	$('#pubStrainList').empty();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<featureJsonList.data.length ; i++) {
 		var li = document.createElement("li");
@@ -135,8 +133,9 @@ function showCommonNames(featureJsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = featureJsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);
@@ -147,12 +146,7 @@ function showCommonNames(featureJsonList) {
 }
 
 function showAccessionNumbers(featureJsonList) {
-
 	$('#pubStrainList').empty();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<featureJsonList.data.length ; i++) {
 
@@ -168,8 +162,9 @@ function showAccessionNumbers(featureJsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = featureJsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);
@@ -181,11 +176,6 @@ function showAccessionNumbers(featureJsonList) {
 
 function changeListView(jsonList) {
 	$('#pubStrainList').empty();
-	$('#strainListForm span').show();
-	$('#group1 li').closest('li').remove();
-	$('#buttonRemoveGroup1').hide();
-	$('#group2 li').closest('li').remove();
-	$('#buttonRemoveGroup2').hide();
 
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var li = document.createElement("li");
@@ -200,8 +190,9 @@ function changeListView(jsonList) {
 
 		checkbox.type = "checkbox";
 		checkbox.id = "checkboxName";
-		checkbox.name = "multiStrainNames";
+		checkbox.name = "selectedStrains";
 		checkbox.value = jsonList.data[i].feature_id;
+		checkbox.className = "checkbox";
 
 		label.appendChild(checkbox);
 		label.appendChild(description);
