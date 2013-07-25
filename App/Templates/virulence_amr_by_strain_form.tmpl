@@ -133,7 +133,7 @@
 								<h5>Select an AMR gene from the list:</h5>
 								<select class="span12" name="AMRName">
 									<TMPL_LOOP NAME=amrFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
+									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
 									</TMPL_LOOP>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
@@ -143,9 +143,9 @@
 							</fieldset>
 						</form>
 					</div>
-					<div class="span5">
+					<div class="span6">
 						<div class="row-fluid">
-							<div id="AMRMetaInfo" style="display:none">
+							<div id="AMRMetaInfo" style="display:none;">
 								<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>
 								<TMPL_LOOP NAME=amrMETAINFO>
 								<TMPL_VAR NAME=amrUNIQUENAME>
@@ -283,12 +283,56 @@ $('#showAMRMetaInfo').click( function(e){
 	$('#AMRMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:80px 0px 0px 20px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
 	e.preventDefault();
 	$.post("/amr_meta_info", $("#showAMRMetaInfoForm").serialize(),  
-		function(data){
+		function(amr){
 			$('#AMRMetaInfo').empty();
-			$('#AMRMetaInfo').append('<h5><u>Antimicrobial Resistance Gene Meta Info</u></h5>');
-			for (var i = 0; i < data.data.length; i++) {
-				$('#AMRMetaInfo').append('<strong>' + data.data[i].term_name + '</strong>: '  + data.data[i].value + '</br>');
+			
+			var amrhtml = 
+				'<div class="span3"><span class="muted", style="margin-left:20px;">AMR Gene: </span></div>'+
+				'<div class="span9"><h4>'+amr.data.name+'</h4></div>';
+			
+			if(amr.data.synonyms.length > 0) {
+				amrhtml += 
+				'<div class="span3"><span class="muted" style="padding-left:20px;">Synonyms: </span></div>';
+				amrhtml += '<div class="span9">';
+				for(var i = 0; i < amr.data.synonyms.length; i++) {
+					amrhtml += '<span style="padding-left:10px">'+amr.data.synonyms[i]+'</span>';
+				}
+				amrhtml += '</div>';
 			}
+			
+			$('#AMRMetaInfo').append(amrhtml);
+			
+			if(amr.data.descriptions.length > 0) {
+			
+				var defhtml =
+					'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Description</strong></span></div>'+
+					'<div class="span12"><ol>';
+				
+				for(var j = 0; j < amr.data.descriptions.length; j++) {
+					defhtml += '<li style="padding-left:10px">'+amr.data.descriptions[j]+'</li>'
+				}
+				
+				defhtml += '</ol></div>';
+				$('#AMRMetaInfo').append(defhtml);
+			}
+			
+			if(amr.data.aro_terms.length > 0) {
+			
+				var arohtml =
+					'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Antimicrobial Resistance Ontology Annotations</strong></span></div>'+
+					'<div class="span12"><ol>';
+				
+				for(var j = 0; j < amr.data.aro_terms.length; j++) {
+					arohtml += '<li style="padding-left:10px"><strong>'+amr.data.aro_terms[j].accession+' '+amr.data.aro_terms[j].term_name+
+					'</strong><br>'+amr.data.aro_terms[j].term_defn+'</li>'
+				}
+				
+				arohtml += '</ol></div>';
+				$('#AMRMetaInfo').append(arohtml);
+			}
+			
+			//$('#AMRMetaInfo').append('</div>');
+			 
 		}, "json" , $('#AMRMetaInfo').show());
 });
 
