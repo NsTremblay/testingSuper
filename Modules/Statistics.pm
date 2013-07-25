@@ -38,6 +38,8 @@ use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
 use Math::Round 'nlowmult';
+use HTML::Template::HashWrapper;
+use CGI::Application::Plugin::AutoRunmode;;
 
 use JSON;
 
@@ -45,24 +47,6 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
 	$logger->info("Logger initialized in Modules::VirulenceFactors");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'stats'=>'Statistics',
-		'ajax_test'=>'ajaxTest'
-		);
-}
-
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
 }
 
 =head2 Statistics
@@ -71,7 +55,7 @@ Run mode for the statistics page
 
 =cut
 
-sub Statistics {
+sub stats : StartRunmode {
 	my $self = shift;
 	my $timeStamp = localtime(time);
 	my $template = $self->load_tmpl( 'statistics.tmpl' , die_on_bad_params=>0 );
