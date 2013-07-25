@@ -16,15 +16,17 @@
 		
 		<div><TMPL_INCLUDE NAME="group_wise_comparison_form.tmpl"></div>
 		
-		<span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span>
+		<!--span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span-->
+
+		<div id="wheel-loader" style="margin:30px 0px 0px 0px;display:none" align="middle"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>
 		
 		<div class="tabbable tabs-left">
 			<ul class="nav nav-tabs">
-				<li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li>
-				<li id="groupWiseDataLink" style="display:none"><a href="#groupWiseData" data-toggle="tab">Data</a></li>
+				<!--li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li-->
+				<li class="active" id="groupWiseDataLink" style="display:none"><a href="#groupWiseData" data-toggle="tab">Data</a></li>
 			</ul>
 			<div class="tab-content">
-				<div class="tab-pane active" id="mapTreeSelect">
+				<!--div class="tab-pane active" id="mapTreeSelect">
 					<div class="tabbable">
 						<ul class="nav nav-tabs">
 							<li class="active"><a href="#mapSelect" data-toggle="tab">Select from Map</a></li>
@@ -35,8 +37,8 @@
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane" id="groupWiseData">
+				</div-->
+				<div class="tab-pane active" id="groupWiseData" style="display:none">
 					<div class="tabbable">
 						<ul class="nav nav-tabs">
 							<li class="active"><a href="#binaryData" data-toggle="tab">Binary Data</a></li>
@@ -133,7 +135,6 @@
 
 							<div class="tab-pane" id="groupWisePhyloTree">
 								<div id="svgCanvas" style="padding:5px">
-									<TMPL_INCLUDE NAME="phylogeny_group_wise_comparisons.tmpl">
 								</div>
 							</div>
 						</div>
@@ -178,10 +179,8 @@ function onLoadCheck() {
 	initialize();
 }
 
-
 //Will initialize the map and grab all of the lists needed for form switching.
 function initialize() {
-	checkGroupWiseValidator();
 	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
 	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
 	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
@@ -199,14 +198,6 @@ function initialize() {
 
 	var map = new google.maps.Map(document.getElementById("map_canvas"),
 		mapOptions);
-}
-
-function checkGroupWiseValidator() {
-	if ($('#validator').is(':empty')) {
-	}
-	else {
-		$('#svgCanvas').show("slow", $('#groupWiseDataLink').show("slow"));
-	}
 }
 
 function getBackList(urlName,formType,labelId,radioId) {
