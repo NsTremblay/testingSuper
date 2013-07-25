@@ -116,10 +116,6 @@ function changeGroupName() {
 }
 $("#compareGrouped").click( function(e) {
 	e.preventDefault();
-	$('#svgCanvas').hide();
-	$('#groupWiseDataLink').hide("slow");
-	$('#groupWiseData').hide("slow");
-	$('#wheel-loader').show();
 	checkGroupedFields(groupedForm);
 });
 function checkGroupedFields(groupedForm) {
@@ -127,6 +123,10 @@ function checkGroupedFields(groupedForm) {
 		alert('No groups to be compared');
 	}
 	else {
+		$('#svgCanvas').hide();
+		$('#groupWiseDataLink').hide("slow");
+		$('#groupWiseData').hide("slow");
+		$('#wheel-loader').show();
 		$('#group1 input[type=checkbox]').each(function()
 		{
 			this.checked = true;
@@ -135,7 +135,6 @@ function checkGroupedFields(groupedForm) {
 		{
 			this.checked = true;
 		});
-		console.log($('#group1 input').serialize() + '&' + $('#group2 input').serialize());
 		$.post("/group_wise_info/" , ($('#group1 input').serialize() + '&' + $('#group2 input').serialize()),
 			function(data) {
 				$('#wheel-loader').hide();

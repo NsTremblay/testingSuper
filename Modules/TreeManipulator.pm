@@ -90,7 +90,7 @@ sub _pruneTree {
 	else{
 	}
 	$systemLine .= ' | nw_rename - ' . $self->inputDirectory() . 'pub_common_names.map';
-	$systemLine .= '| nw_display -sS -w 900 -b \'opacity:0\' - > ' . $self->outputDirectory() . $self->outputTree();
+	$systemLine .= '| nw_display -sS -w 900 -i \'opacity:0\' -b \'opacity:0\' - > ' . $self->outputDirectory() . $self->outputTree();
 	system($systemLine);
 }
 
@@ -126,9 +126,9 @@ sub _getNearestClades {
 	print $out 'font-style:italic;stroke:red; I ' . $tagLabel;
 	close $out;
 
-	my $systemLine = 'nw_clade -c 3 ' . $self->inputDirectory() . $self->newickFile() . ' ' . $strainID;
+	my $systemLine = 'nw_clade -c 2 ' . $self->inputDirectory() . $self->newickFile() . ' ' . $strainID;
 	$systemLine .= ' | nw_rename - ' . $self->inputDirectory() . 'pub_common_names.map';
-	$systemLine .= ' | nw_display -sS -w 700 -b \'opacity:0\' -c '. $self->outputDirectory() . $self->cssFile() .' - > ' . $self->outputDirectory() . $self->outputTree();
+	$systemLine .= ' | nw_display -sS -w 700 -i \'opacity:0\' -b \'opacity:0\' -c '. $self->outputDirectory() . $self->cssFile() .' - > ' . $self->outputDirectory() . $self->outputTree();
 
 	system($systemLine);
 }

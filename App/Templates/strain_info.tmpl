@@ -249,12 +249,12 @@ function changeListView(jsonList) {
 
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var opt = document.createElement("option");
-		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);
+		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);
 		opt.value = jsonList.data[i].feature_id;
 		opt.appendChild(description);
 		document.getElementById('pubStrainList').appendChild(opt);
 
-		availableTags.push( { label:jsonList.data[i].common_name + ' - ' + jsonList.data[i].value, value:jsonList.data[i].feature_id } );
+		availableTags.push( { label:jsonList.data[i].value + ' - ' + jsonList.data[i].common_name, value:jsonList.data[i].feature_id } );
 	}
 	$("#autoComp").autocomplete({
 		source: availableTags,

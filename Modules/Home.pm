@@ -38,6 +38,8 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
+use HTML::Template::HashWrapper;
+use CGI::Application::Plugin::AutoRunmode;;
 
 =head2 setup
 
@@ -50,23 +52,6 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl::get_logger();
 	$logger->info("Logger initialized in Modules::Home");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'home'=>'home'
-		);
-}
-
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
 }
 
 =head2 home
@@ -75,13 +60,37 @@ Run mode for the home page.
 
 =cut
 
-sub home {
+sub home : StartRunmode{
 	my $self = shift;
-	#my $formDataGenerator = Modules::FormDataGenerator->new();
-	#$formDataGenerator->dbixSchema($self->dbixSchema);
-	#my $formDataRef = $formDataGenerator->getFormData();
 	my $template = $self->load_tmpl( 'home.tmpl' , die_on_bad_params=>0 );
-	#$template->param(FORMDATA=>$formDataRef);
+
+	my $genomeCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'contig_collection'},
+		{
+			columns => [qw/feature_id/],
+			join => ['type']
+		}
+		);
+	
+	my $amrGeneCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'antimicrobial_resistance_gene'},
+		{
+			columns => [qw/feature_id/],
+			join => ['type']
+		}
+		);
+
+	my $virFactorGeneCount = $self->dbixSchema->resultset('Feature')->count(
+		{'type.name' =>  'gene', 'featureprops.value' => "Virulence Factor"},
+		{
+			column  => [qw/feature_id/],
+			join        => ['featureprops' , 'type']
+		}
+		);
+
+	$template->param(GENOMECOUNT=>$genomeCount);
+	$template->param(AMRGENECOUNT=>$amrGeneCount);
+	$template->param(VIRFACTORCOUNT=>$virFactorGeneCount);
 	return $template->output();
 }
 
