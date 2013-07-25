@@ -17,6 +17,8 @@
 		<div><TMPL_INCLUDE NAME="group_wise_comparison_form.tmpl"></div>
 		
 		<!--span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span-->
+
+		<div id="wheel-loader" style="margin:30px 0px 0px 0px;display:none" align="middle"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>
 		
 		<div class="tabbable tabs-left">
 			<ul class="nav nav-tabs">
@@ -133,7 +135,6 @@
 
 							<div class="tab-pane" id="groupWisePhyloTree">
 								<div id="svgCanvas" style="padding:5px">
-									<TMPL_INCLUDE NAME="phylogeny_group_wise_comparisons.tmpl">
 								</div>
 							</div>
 						</div>

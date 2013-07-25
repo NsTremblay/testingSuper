@@ -27,7 +27,7 @@
 		<button id="buttonGroup2" class="btn btn-primary span12" type="button" onclick="checkGroup2Fields()"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 		<button id="compareGrouped" class="btn btn-primary span12" type="button" value="Submit"><i class="icon-th icon-white"></i> Compare Grouped</button>
 		<!--button id="compareUngrouped" class="btn btn-primary span12" type="button" value="Submit"><i class="icon-th-list icon-white"></i> Compare Ungrouped</button-->
-		<button id="groupWiseReload" class="btn btn-primary span12" type="button"><i class="icon-refresh icon-white"></i> Refresh</button>
+		<button id="groupWiseReload" class="btn btn-primary span12" type="button" value="Reload"><i class="icon-refresh icon-white"></i> Refresh</button>
 	</div>
 
 	<form id="groupedForm" class="form" method="post" action="/group_wise_comparisons/" enctype="application/x-www-form-urlencoded">
@@ -117,8 +117,9 @@ function changeGroupName() {
 $("#compareGrouped").click( function(e) {
 	e.preventDefault();
 	$('#svgCanvas').hide();
-	$('#groupWiseDataLink').hide();
-	$('#groupWiseData').hide();
+	$('#groupWiseDataLink').hide("slow");
+	$('#groupWiseData').hide("slow");
+	$('#wheel-loader').show();
 	checkGroupedFields(groupedForm);
 });
 function checkGroupedFields(groupedForm) {
@@ -137,11 +138,13 @@ function checkGroupedFields(groupedForm) {
 		console.log($('#group1 input').serialize() + '&' + $('#group2 input').serialize());
 		$.post("/group_wise_info/" , ($('#group1 input').serialize() + '&' + $('#group2 input').serialize()),
 			function(data) {
+				$('#wheel-loader').hide();
 				$('#svgCanvas').empty();
 				$('#svgCanvas').append('<div style="align:middle">'+data.data[4]+'</div>');
 				$('#svgCanvas').show("slow");
 				$('#groupWiseDataLink').show("slow");
 				$('#groupWiseData').show();
+				unCheckAllBoxes();
 			} , "json");
 	}
 }
@@ -200,6 +203,6 @@ function removeGroup2() {
 	}
 }
 $('#groupWiseReload').click( function() {
-	location.reload();
+	$('#commonNameView').trigger("click");
 });
 </script>
