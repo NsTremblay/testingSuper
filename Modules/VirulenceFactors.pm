@@ -165,8 +165,7 @@ sub _getVirulenceByStrain {
 
 	my @_selectedStrainNames = @{$_selectedStrainNames};
 	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
-
-	my @strainTableNames;
+	
 	my @unprunedTableNames;
 	my @virulenceTableData;
 
