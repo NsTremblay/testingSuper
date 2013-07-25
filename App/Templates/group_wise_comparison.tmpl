@@ -16,15 +16,15 @@
 		
 		<div><TMPL_INCLUDE NAME="group_wise_comparison_form.tmpl"></div>
 		
-		<span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span>
+		<!--span class="help-block" style="padding:10px">Soon you will be able to select groups of strains from the map or the phylogenetic tree, but they are both shown here for reference as to what the site will look like</span-->
 		
 		<div class="tabbable tabs-left">
 			<ul class="nav nav-tabs">
-				<li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li>
-				<li id="groupWiseDataLink" style="display:none"><a href="#groupWiseData" data-toggle="tab">Data</a></li>
+				<!--li class="active"><a href="#mapTreeSelect" data-toggle="tab">Strain Selections</a></li-->
+				<li class="active" id="groupWiseDataLink" style="display:none"><a href="#groupWiseData" data-toggle="tab">Data</a></li>
 			</ul>
 			<div class="tab-content">
-				<div class="tab-pane active" id="mapTreeSelect">
+				<!--div class="tab-pane active" id="mapTreeSelect">
 					<div class="tabbable">
 						<ul class="nav nav-tabs">
 							<li class="active"><a href="#mapSelect" data-toggle="tab">Select from Map</a></li>
@@ -35,8 +35,8 @@
 							</div>
 						</div>
 					</div>
-				</div>
-				<div class="tab-pane" id="groupWiseData">
+				</div-->
+				<div class="tab-pane active" id="groupWiseData" style="display:none">
 					<div class="tabbable">
 						<ul class="nav nav-tabs">
 							<li class="active"><a href="#binaryData" data-toggle="tab">Binary Data</a></li>
@@ -205,7 +205,9 @@ function checkGroupWiseValidator() {
 	if ($('#validator').is(':empty')) {
 	}
 	else {
-		$('#svgCanvas').show("slow", $('#groupWiseDataLink').show("slow"));
+		$('#svgCanvas').show("slow");
+		$('#groupWiseDataLink').show("slow");
+		$('#groupWiseData').show();
 	}
 }
 
