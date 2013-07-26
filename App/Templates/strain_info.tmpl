@@ -47,7 +47,7 @@
 									<tr>
 										<th>Virulence Factors</th>
 									</tr>
-									<TMPL_LOOP NAME=VIRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
+									<TMPL_LOOP NAME=VIRDATA><tr><td><a href="#"><TMPL_VAR NAME=data></a></td></tr></TMPL_LOOP>
 								</table>
 							</div>
 							<div class="span6" style="height:300px;overflow:auto;margin-top:10px">
@@ -56,7 +56,7 @@
 									<tr>
 										<th>AMR Genes</th>
 									</tr>
-									<TMPL_LOOP NAME=AMRDATA><tr><td><TMPL_VAR NAME=data></td></tr></TMPL_LOOP>
+									<TMPL_LOOP NAME=AMRDATA><tr><td><a href="#"><TMPL_VAR NAME=data></a></td></tr></TMPL_LOOP>
 								</table>
 							</div>
 						</div>
@@ -260,12 +260,12 @@ function changeListView(jsonList) {
 	
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var opt = document.createElement("option");
-		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);
+		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);
 		opt.value = jsonList.data[i].feature_id;
 		opt.appendChild(description);
 		document.getElementById('pubStrainList').appendChild(opt);
 
-		availableTags.push( { label:jsonList.data[i].common_name + ' - ' + jsonList.data[i].value, value:jsonList.data[i].feature_id } );
+		availableTags.push( { label:jsonList.data[i].value + ' - ' + jsonList.data[i].common_name, value:jsonList.data[i].feature_id } );
 	}
 	
 	$("#autoComp").autocomplete({

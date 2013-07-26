@@ -50,87 +50,31 @@
 								<div class="row-fluid">
 									<h4 style="margin:10px">Binary Data</h4>
 									<div class="span5" style="margin:10px;height:300px;overflow:auto">
-										<table class="table table-striped table-condensed">
-											<thead>Group 1</thead>
-											<tr>
-												<th>Locus Name</th>
-												<th>Strains Present</th>
-												<th>Strains Absent</th>
-												<th>p-value</th>
-											</tr>
-											<TMPL_LOOP NAME=GROUP1BINARYDATA>
-											<tr><td><TMPL_VAR NAME=locusname>
-												<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
-												<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
-												<td>< 0.001</td>
-											</td></tr></TMPL_LOOP>
+										<span class="help-block">Group 1</span>
+										<table id="binaryTableGroup1" class="table table-striped table-condensed">
 										</table>
 									</div>
 									<div class="span5 pull-right" style="margin:10px;height:300px;overflow:auto">
-										<table class="table table-striped table-condensed">
-											<thead>Group 2</thead>
-											<tr>
-												<th>Locus Name</th>
-												<th>Strains Present</th>
-												<th>Strains Absent</th>
-												<th>p-value</th>
-											</tr>
-											<TMPL_LOOP NAME=GROUP2BINARYDATA>
-											<tr><td><TMPL_VAR NAME=locusname>
-												<td><a id="strainsPresent" title="Strains: <TMPL_LOOP NAME=present><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=present_count></a></td>
-												<td><a id ="strainsAbsent" title="Strains: <TMPL_LOOP NAME=absent><a><TMPL_VAR NAME=strain></a> </TMPL_LOOP>"><TMPL_VAR NAME=absent_count></a></td>
-												<td>< 0.001</td>
-											</td></tr></TMPL_LOOP>
+										<span class="help-block">Group 2</span>
+										<table id="binaryTableGroup2" class="table table-striped table-condensed">
 										</table>
 									</div>
-								</div>
+								</div> 
 							</div>
 							<div class="tab-pane" id="snpData">
 								<div class="row-fluid">
 									<h4 style="margin:10px">SNP Data</h4>
 									<div class="span5" style="margin:10px;height:300px;overflow:auto">
-										<table class="table table-striped table-condensed">
-											<thead>Group 1</thead>
-											<tr>
-												<th>Locus Name</th>
-												<th>A</th>
-												<th>T</th>
-												<th>C</th>
-												<th>G</th>
-												<th>p-value</th>
-											</tr>
-											<TMPL_LOOP NAME=GROUP1SNPDATA>
-											<tr><td><TMPL_VAR NAME=locusname>
-												<td><a id="adeninePresent" title="Strains: <TMPL_LOOP NAME=adenine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=adenine_count></a></td>
-												<td><a id="thymidinePresent" title="Strains: <TMPL_LOOP NAME=thymidine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=thymidine_count></a></td>
-												<td><a id="cytosinePresent" title="Strains: <TMPL_LOOP NAME=cytosine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=cytosine_count></a></td>
-												<td><a id="guaninePresent" title="Strains: <TMPL_LOOP NAME=guanine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=guanine_count></a></td>
-												<td>< 0.001</td>
-											</td></tr></TMPL_LOOP>
+										<span class="help-block">Group 1</span>
+										<table id="snpTableGroup1" class="table table-striped table-condensed">
 										</table>
 									</div>
 									<div class="span5 pull-right" style="margin:10px;height:300px;overflow:auto">
-										<table class="table table-striped table-condensed">
-											<thead>Group 2</thead>
-											<tr>
-												<th>Locus Name</th>
-												<th>A</th>
-												<th>T</th>
-												<th>C</th>
-												<th>G</th>
-												<th>p-value</th>
-											</tr>
-											<TMPL_LOOP NAME=GROUP2SNPDATA>
-											<tr><td><TMPL_VAR NAME=locusname>
-												<td><a id="adeninePresent" title="Strains: <TMPL_LOOP NAME=adenine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=adenine_count></a></td>
-												<td><a id="thymidinePresent" title="Strains: <TMPL_LOOP NAME=thymidine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=thymidine_count></a></td>
-												<td><a id="cytosinePresent" title="Strains: <TMPL_LOOP NAME=cytosine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=cytosine_count></a></td>
-												<td><a id="guaninePresent" title="Strains: <TMPL_LOOP NAME=guanine><TMPL_VAR NAME=strain> </TMPL_LOOP>"><TMPL_VAR NAME=guanine_count></a></td>
-												<td>< 0.001</td>
-											</td></tr></TMPL_LOOP>
+										<span class="help-block">Group 2</span>
+										<table id="snpTableGroup2" class="table table-striped table-condensed">
 										</table>
 									</div>
-								</div>
+								</div> 
 							</div>
 
 							<div class="tab-pane" id="groupWisePhyloTree">
@@ -313,7 +257,7 @@ function changeListView(jsonList) {
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var li = document.createElement("li");
 		var label = document.createElement("label");
-		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);	
+		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);	
 
 		var checkbox = document.createElement("input");
 

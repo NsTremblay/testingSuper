@@ -180,7 +180,7 @@ function changeListView(jsonList) {
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var li = document.createElement("li");
 		var label = document.createElement("label");
-		var description = document.createTextNode(jsonList.data[i].common_name + ' - ' + jsonList.data[i].value);	
+		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);	
 
 		var checkbox = document.createElement("input");
 

@@ -38,6 +38,8 @@ use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
 use Math::Round 'nlowmult';
+use HTML::Template::HashWrapper;
+use CGI::Application::Plugin::AutoRunmode;;
 
 use JSON;
 
@@ -45,24 +47,6 @@ sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
 	$logger->info("Logger initialized in Modules::VirulenceFactors");
-	$self->start_mode('default');
-	$self->run_modes(
-		'default'=>'default',
-		'stats'=>'Statistics',
-		'ajax_test'=>'ajaxTest'
-		);
-}
-
-=head2 default
-
-Default start mode. Must be decalared or CGI:Application will die. 
-
-=cut
-
-sub default {
-	my $self = shift;
-	my $template = $self->load_tmpl ( 'hello.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
 }
 
 =head2 Statistics
@@ -71,7 +55,7 @@ Run mode for the statistics page
 
 =cut
 
-sub Statistics {
+sub stats : StartRunmode {
 	my $self = shift;
 	my $timeStamp = localtime(time);
 	my $template = $self->load_tmpl( 'statistics.tmpl' , die_on_bad_params=>0 );
@@ -100,6 +84,20 @@ sub Statistics {
 		}
 		);
 
+	my $lociCount = $self->dbixSchema->resultset('DataLociName')->count(
+		{},
+		{
+			column  => [qw/locus_name/],
+		}
+		);
+
+	my $snpCount = $self->dbixSchema->resultset('DataSnpName')->count(
+		{},
+		{
+			column  => [qw/snp_name/],
+		}
+		);
+
 	my $totalBasesCount = $self->dbixSchema->resultset('Feature')->search(
 		{},
 		{
@@ -117,6 +115,8 @@ sub Statistics {
 	$template->param(AMRGENECOUNT=>$amrGeneCount);
 	$template->param(VIRFACTORCOUNT=>$virFactorGeneCount);
 	$template->param(BASECOUNT=>$totalBases);
+	$template->param(LOCICOUNT=>$lociCount);
+	$template->param(SNPCOUNT=>$lociCount);
 	$template->param(TIMESTAMP=>$timeStamp);
 
 	return $template->output();
