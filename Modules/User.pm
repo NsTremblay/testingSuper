@@ -13,8 +13,6 @@ use CGI::Application::Plugin::AutoRunmode;
 use Data::FormValidator::Constraints qw(email FV_eq_with FV_length_between);
 use Digest::MD5 qw(md5_base64);
 use Log::Log4perl qw/get_logger/;
-#use Mail::Sendmail;
-#use Email::Send::SMTP::Gmail;
 use Email::Simple;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
