@@ -121,7 +121,7 @@ BEGIN;
 CREATE TABLE data_loci_names
 (
   serial_id serial NOT NULL,
-  locus_name varchar(50),
+  locus_name character varying(50),
   CONSTRAINT data_loci_names_pkey PRIMARY KEY (serial_id)
 )
 WITH (
@@ -130,8 +130,44 @@ WITH (
 ALTER TABLE data_loci_names
   OWNER TO postgres;
 
-CREATE index locus_name ON data_loci_names
-(locus_name);
+-- Index: locus_name
+
+-- DROP INDEX locus_name;
+
+CREATE INDEX locus_name
+  ON data_loci_names
+  USING btree
+  (locus_name COLLATE pg_catalog."default");
 
 COMMIT;
+
+BEGIN;
+
+-- Table: data_snp_names
+
+-- DROP TABLE data_snp_names;
+
+CREATE TABLE data_snp_names
+(
+  serial_id serial NOT NULL,
+  snp_name character varying(50),
+  CONSTRAINT data_snp_names_pkey PRIMARY KEY (serial_id)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE data_snp_names
+  OWNER TO postgres;
+
+-- Index: snp_name
+
+-- DROP INDEX snp_name;
+
+CREATE INDEX snp_name
+  ON data_snp_names
+  USING btree
+  (snp_name COLLATE pg_catalog."default");
+
+COMMIT;
+
 
