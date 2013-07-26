@@ -78,7 +78,7 @@
 							<table id="amrByStrainTable" class="table table-striped table-condensed">
 							</table>
 						</div>
-						<div id="legend" style="display:none"><span class="help-block">Legend:</span> <i class="icon-ok"></i> : Present; <i class="icon-remove"></i> : Absent; <strong>n/a</strong> : Data not avaliable</div> 
+						<div id="legend" style="display:none"><span class="help-block">Legend:</span> <i class="icon-ok"></i> : Present; <i class="icon-remove"></i> : Absent</div>
 
 					</div>
 				</div>
@@ -231,11 +231,8 @@ $('#compareSelections').click( function(e) {
 					if (data.data[1].virulence[i].presence_absence[j].value == 1) {
 						$('#virByStrainTable tbody').append('<td><i class="icon-ok"></i></td>');
 					}
-					else if (data.data[1].virulence[i].presence_absence[j].value == 0) {
-						$('#virByStrainTable tbody').append('<td><i class="icon-remove"></td>');
-					}
 					else {
-						$('#virByStrainTable tbody').append('<td>'+data.data[1].virulence[i].presence_absence[j].value+'</td>');
+						$('#virByStrainTable tbody').append('<td><i class="icon-remove"></td>');
 					}
 				};
 				$('#virByStrainTable tbody').append('</tr>');
@@ -258,11 +255,8 @@ $('#compareSelections').click( function(e) {
 					if (data.data[2].amr[i].presence_absence[j].value == 1) {
 						$('#amrByStrainTable tbody').append('<td><i class="icon-ok"></td>');
 					}
-					else if (data.data[2].amr[i].presence_absence[j].value == 0) {
-						$('#amrByStrainTable tbody').append('<td><i class="icon-remove"></td>');
-					}
 					else {
-						$('#amrByStrainTable tbody').append('<td>'+data.data[2].amr[i].presence_absence[j].value+'</td>');
+						$('#amrByStrainTable tbody').append('<td><i class="icon-remove"></td>');
 					}
 				};
 				$('#amrByStrainTable tbody').append('</tr>');
