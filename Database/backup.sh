@@ -54,7 +54,7 @@ function perform_backups()
  
 	echo "Plain backup of $DATABASE"
 
-	if ! pg_dump -Fp -h "$HOSTNAME" -U "$USERNAME" "$DATABASE" | gzip > $FINAL_BACKUP_DIR"$DATABASE".sql.gz.in_progress; then
+	if ! pg_dump -Fp -h "$HOSTNAME" -U "$USERNAME" --password "$PASSWORD" "$DATABASE" | gzip > $FINAL_BACKUP_DIR"$DATABASE".sql.gz.in_progress; then
 		echo "[!!ERROR!!] Failed to produce plain backup database $DATABASE"
 	else
 		mv $FINAL_BACKUP_DIR"$DATABASE".sql.gz.in_progress $FINAL_BACKUP_DIR"$DATABASE".sql.gz
