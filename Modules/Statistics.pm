@@ -84,6 +84,20 @@ sub stats : StartRunmode {
 		}
 		);
 
+	my $lociCount = $self->dbixSchema->resultset('DataLociName')->count(
+		{},
+		{
+			column  => [qw/locus_name/],
+		}
+		);
+
+	my $snpCount = $self->dbixSchema->resultset('DataSnpName')->count(
+		{},
+		{
+			column  => [qw/snp_name/],
+		}
+		);
+
 	my $totalBasesCount = $self->dbixSchema->resultset('Feature')->search(
 		{},
 		{
@@ -101,6 +115,8 @@ sub stats : StartRunmode {
 	$template->param(AMRGENECOUNT=>$amrGeneCount);
 	$template->param(VIRFACTORCOUNT=>$virFactorGeneCount);
 	$template->param(BASECOUNT=>$totalBases);
+	$template->param(LOCICOUNT=>$lociCount);
+	$template->param(SNPCOUNT=>$lociCount);
 	$template->param(TIMESTAMP=>$timeStamp);
 
 	return $template->output();
