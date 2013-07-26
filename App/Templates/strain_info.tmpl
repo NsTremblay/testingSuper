@@ -149,25 +149,36 @@ function onLoadCheck() {
 }
 
 function initialize() {
-	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
-	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
-	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
-	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView');
-	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView');
-	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
+
+	getPublicList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView', 'genodo_serotype');
+	getPublicList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView', 'genodo_isolation_host');
+	getPublicList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView', 'genodo_isolation_source');
+	getPublicList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView', 'genodo_isolation_date');
+	getPublicList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView', 'genodo_isolation_location');
+
 }
 
-function getBackList(urlName,formType,labelId,radioId) {
-	$.ajax({
-		type: "POST",
-		url: urlName,
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		formType.json = $.parseJSON(returned_data);
+function getPublicList(urlName,formType,labelId,radioId,typeName) {
+
+	if(sessionStorage[typeName]  == null) {
+		// Get list from server and save in local storage
+		$.ajax({
+			type: "POST",
+			url: urlName,
+			data: { public_id_list: featureIdList }
+		}).done(function (returned_data) {
+			sessionStorage[typeName] = returned_data;
+			formType.json = $.parseJSON(returned_data);
+			$('#'+radioId).attr('disabled',false);
+			$('#'+labelId+'Loading').hide();
+			$('#'+labelId).show();
+		});
+	} else {
+		formType.json = $.parseJSON(sessionStorage[typeName]);
 		$('#'+radioId).attr('disabled',false);
 		$('#'+labelId+'Loading').hide();
 		$('#'+labelId).show();
-	});
+	}
 }
 
 /*
@@ -246,7 +257,7 @@ function changeListView(jsonList) {
 	$('#strainInfoProgressbar').show()
 	var availableTags = [];
 	$('#pubStrainList').empty();
-
+	
 	for (i=0 ; i<jsonList.data.length ; i++) {
 		var opt = document.createElement("option");
 		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);
@@ -256,6 +267,7 @@ function changeListView(jsonList) {
 
 		availableTags.push( { label:jsonList.data[i].value + ' - ' + jsonList.data[i].common_name, value:jsonList.data[i].feature_id } );
 	}
+	
 	$("#autoComp").autocomplete({
 		source: availableTags,
 		select: function( event, ui ) {
@@ -264,6 +276,7 @@ function changeListView(jsonList) {
 			return false;
 		}
 	});
+	
 	$('#pubStrainInfoDropdown').show();
 	$('#pubStrainInfoSearch').show();
 	$('#strainInfoProgressbar').hide()

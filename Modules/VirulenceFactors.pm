@@ -37,9 +37,8 @@ use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use HTML::Template::HashWrapper;
-use CGI::Application::Plugin::AutoRunmode;;
-
-use Log::Log4perl;
+use CGI::Application::Plugin::AutoRunmode;
+use Log::Log4perl qw/get_logger/;
 use Carp;
 
 sub setup {
@@ -141,21 +140,74 @@ sub amr_meta_info : Runmode {
 	my $q = $self->query();
 	my $_amrFeatureId = $q->param("AMRName");
 
-	my $_amrMetaProperties = $self->dbixSchema->resultset('Cvterm')->search(
-		{'featureprops.feature_id' => $_amrFeatureId},
+#	my $_amrMetaProperties = $self->dbixSchema->resultset('Cvterm')->search(
+#		{'featureprops.feature_id' => $_amrFeatureId},
+#		{
+#			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+#			join		=> ['featureprops' , 'feature_cvterms' , 'features'],
+#			select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
+#			as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
+#			order_by	=> { -asc => ['me.name'] }
+#		}
+#	);
+	
+	my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
 		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			join		=> ['featureprops' , 'feature_cvterms' , 'features'],
-			select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
-			as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
+			'me.feature_id' => $_amrFeatureId
+		},
+		{
+			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			join => [
+				'type',
+				{ featureprops => 'type' },
+				{ feature_cvterms => { cvterm => 'dbxref'}}
+			],
+			#select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
+			#as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
 			order_by	=> { -asc => ['me.name'] }
 		}
-		);
-
-	my @amrMetaData = $_amrMetaProperties->all;
+	);
+	
+	
+	my $frow = $feature_rs->first;
+	die "Error: feature $_amrFeatureId is not of antimicrobial resistance gene type (feature type: ".$frow->type->name.").\n" unless $frow->type->name eq 'antimicrobial_resistance_gene';
+	
+	my @desc;
+	my @syn;
+	my @aro;
+	
+	my $fp_rs = $frow->featureprops;
+	
+	while(my $fprow = $fp_rs->next) {
+		if($fprow->type->name eq 'description') {
+			push @desc, $fprow->value;
+		} elsif($fprow->type->name eq 'synonym') {
+			push @syn, $fprow->value;
+		}
+	}
+	
+	my $fc_rs = $frow->feature_cvterms;
+	
+	while(my $fcrow = $fc_rs->next) {
+		my $aro_entry = {
+			accession => 'ARO:'.$fcrow->cvterm->dbxref->accession,
+			term_name => $fcrow->cvterm->name,
+			term_defn => $fcrow->cvterm->definition
+		};
+		push @aro, $aro_entry;
+	}
+	
+	my %data_hash = (
+		name => $frow->uniquename,
+		descriptions  => \@desc,
+		synonyms     => \@syn,
+		aro_terms    => \@aro
+	);
+	
 	my $formDataGenerator = Modules::FormDataGenerator->new();
-	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@amrMetaData);
+	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\%data_hash);
 	return $amrMetaInfoJsonRef;
+
 }
 
 sub _getVirulenceByStrain {
@@ -165,8 +217,7 @@ sub _getVirulenceByStrain {
 
 	my @_selectedStrainNames = @{$_selectedStrainNames};
 	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
-
-	my @strainTableNames;
+	
 	my @unprunedTableNames;
 	my @virulenceTableData;
 
@@ -220,7 +271,6 @@ sub _getAmrByStrain {
 	my @_selectedStrainNames = @{$_selectedStrainNames};
 	my @_selectedAmrFactors = @{$_selectedAmrFactors};
 
-	my @strainTableNames;
 	my @unprunedTableNames;
 	my @amrTableData;
 
