@@ -155,12 +155,12 @@ my $limit;
 my $totalRowCount = scalar(@strainTemp) * scalar(@locusTemp);
 
 #Added a limit for the number of loci to upload strictly for testing purposes
-if (scalar(@locusTemp) > 3000000) {
-	$limit = 1501;
-}
-else {
-	$limit = scalar(@locusTemp);
-}
+# if (scalar(@locusTemp) > 3000000) {
+# 	$limit = 1501;
+# }
+# else {
+# 	$limit = scalar(@locusTemp);
+# }
 
 print $totalRowCount . " rows to be inserted\n";
 
@@ -169,9 +169,26 @@ my $outfile = "$INPUTDATATYPE" . "_data_out_temp";
 
 print "Processing $INPUTFILE and preparing for insert into " . $inputDataType{$INPUTDATATYPE} . "\n";
 my $rowCount = 0;
+for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
+	#Start at i=1 becuase the first strain starts at index 1 
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
+		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
+		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
+			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
+			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
+		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
+		$rowCount++;
+		if ($rowCount % 100000 == 0) {
+			print "$rowCount out of $totalRowCount rows inserted into table\n";
+		}
+		else{
+		}
+	}
+}
+
 # for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 # 	#Start at i=1 becuase the first strain starts at index 1 
-# 	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
+# 	for (my $j = 0; $j < $limit ; $j++) {
 # 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 # 		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
 # 		$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
@@ -186,23 +203,6 @@ my $rowCount = 0;
 # 	}
 # }
 
-for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
-	#Start at i=1 becuase the first strain starts at index 1 
-	for (my $j = 0; $j < $limit ; $j++) {
-		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
-		$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
-		$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
-		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
-		$rowCount++;
-		if ($rowCount % 100000 == 0) {
-			print "$rowCount out of $totalRowCount rows inserted into table\n";
-		}
-		else{
-		}
-	}
-}
-
 if ($INPUTDATATYPE eq 'binary') {
 	for (my $j = 0; $j < $limit ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
@@ -211,7 +211,7 @@ if ($INPUTDATATYPE eq 'binary') {
 	}
 }
 elsif ($INPUTDATATYPE eq 'snp'){
-		for (my $j = 0; $j < $limit ; $j++) {
+	for (my $j = 0; $j < $limit ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 		my %nameRow = ('snp_name' => $parsedHeader);
 		my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
@@ -251,13 +251,15 @@ sub parseHeader {
 		}
 	}
 	#SNP Data
-	else {
+	elsif ($_inputDataType eq "snp") {
 		if ($oldHeader =~ /^(snp_)([\w\d]*)/) {
 			$newHeader = $2;
 		}
 		else {
 			croak "Not a valid snp name, exiting\n";
 		}
+	}
+	else{
 	}
 	return $newHeader;
 }
