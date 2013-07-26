@@ -73,7 +73,12 @@ sub cgiapp_init {
 		],
 		POST_LOGIN_URL            => $self->home_page,
 		LOGOUT_URL                => $self->home_page,
-		RENDER_LOGIN              => \&render_login
+		RENDER_LOGIN              => \&render_login,
+		LOGIN_FORM                => {
+			REMEMBERUSER_OPTION     => 1,
+			REMEMBERUSER_COOKIENAME => 'SUPERPHYAUTHENTOKEN'
+		}
+		
 	);
 	
 	
@@ -222,6 +227,7 @@ sub script_location {
 	
 	return $SCRIPT_LOCATION;
 }
+
 =head2 logger
 
 =cut
@@ -238,10 +244,21 @@ Create HTML for login form
 =cut
 sub render_login {
 	my $self = shift;
-
+	
 	my $template = $self->load_tmpl('login_form.tmpl', die_on_bad_params => 0);
 	$template->param( destination => $self->home_page );
-
+	
+	if ( my $attempts = $self->authen->login_attempts ) {
+		my $message = "Invalid username or password<br />(login attempt $attempts)";
+		$template->param( invalid_password => $message);
+    }
+	
+	my $config = $self->authen->_config;
+	if($config->{LOGIN_FORM}->{REMEMBERUSER_OPTION}) {
+		my $username_value = $self->authen->_detaint_username($self->authen->username, $config->{LOGIN_FORM}->{REMEMBERUSER_COOKIENAME});
+		$template->param( username => $username_value );
+	}
+	
 	return $template->output();
 }
 

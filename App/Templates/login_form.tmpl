@@ -53,16 +53,18 @@
 </head>
 
 
-<body onload="onLoadCheck()" style="background-color:#796e6c">
+<body style="background-color:#796e6c">
 	
 
 <form class="form-signin" name="loginform" method="post" action="">
   <div class="login">
     <h3 class="form-signin-heading">Please sign in</h3>
+    <TMPL_IF invalid_password>
+    <div class="text-error" style="margin:10px 10px 20px 10px"><strong><TMPL_VAR invalid_password></strong></div>
+    </TMPL_IF>
    
-     
       <fieldset>
-        <input id="authen_loginfield" class="input-block-level" tabindex="1" type="text" placeHolder="Username" name="authen_username" size="20" value="" /><br />
+        <input id="authen_loginfield" class="input-block-level" tabindex="1" type="text" placeHolder="Username" name="authen_username" size="20" value="<TMPL_VAR username>" /><br />
         <input id="authen_passwordfield" class="input-block-level" tabindex="2" type="password" placeHolder="Password" name="authen_password" size="20" /><br />
         <label for="authen_rememberuser" class="checkbox inline"><input id="authen_rememberuserfield" tabindex="3" type="checkbox" name="authen_rememberuser" value="1" />Remember username<label/>
       </fieldset>
@@ -79,6 +81,14 @@
   	<input type="hidden" name="destination" value="<TMPL_VAR destination>" />
   	<input type="hidden" name="rm" value="login" />
 </form>
+
+<script type="text/javascript" language="JavaScript">
+	<TMPL_IF username>
+	document.loginform.authen_username.select();
+	<TMPL_ELSE>
+	document.loginform.authen_username.focus();
+	</TMPL_IF>
+</script>
 
 </body>
 </html>
