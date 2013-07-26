@@ -71,21 +71,14 @@
 						</div>
 						<div id="virByStrain" class="row-fluid" style="max-height:500px;overflow:auto;margin:20px 0px 0px 0px;display:none">
 							<table id="virByStrainTable" class="table table-striped table-condensed">
-								<thead>
-								</thead>
-								<tbody>
-								</tbody>
 							</table>
 						</div>
 
 						<div id="amrByStrain" class="row-fluid" style="max-height:500px;overflow:auto;margin:20px 0px 0px 0px;display:none">
 							<table id="amrByStrainTable" class="table table-striped table-condensed">
-								<thead>
-								</thead>
-								<tbody>
-								</tbody>
 							</table>
 						</div>
+						<div id="legend" style="display:none"><span class="help-block">Legend:</span> <i class="icon-ok"></i> : Present; <i class="icon-remove"></i> : Absent; <strong>n/a</strong> : Data not avaliable</div> 
 
 					</div>
 				</div>
@@ -206,6 +199,7 @@ $('#compareSelections').click( function(e) {
 		e.preventDefault();
 		$('#amrByStrain').hide("slow");
 		$('#virByStrain').hide("slow");
+		$('#legend').hide("slow");
 		$('#wheel-loader').show();
 		$('#virByStrain h4').empty();
 		$('#virByStrainTable').empty();
@@ -234,7 +228,15 @@ $('#compareSelections').click( function(e) {
 				$('#virByStrainTable tbody').append('<tr>');
 				$('#virByStrainTable tbody').append('<td>'+data.data[1].virulence[i].gene_name+'</td>');
 				for (var j = 0; j < data.data[1].virulence[i].presence_absence.length; j++) {
-					$('#virByStrainTable tbody').append('<td>'+data.data[1].virulence[i].presence_absence[j].value+'</td>');
+					if (data.data[1].virulence[i].presence_absence[j].value == 1) {
+						$('#virByStrainTable tbody').append('<td><i class="icon-ok"></i></td>');
+					}
+					else if (data.data[1].virulence[i].presence_absence[j].value == 0) {
+						$('#virByStrainTable tbody').append('<td><i class="icon-remove"></td>');
+					}
+					else {
+						$('#virByStrainTable tbody').append('<td>'+data.data[1].virulence[i].presence_absence[j].value+'</td>');
+					}
 				};
 				$('#virByStrainTable tbody').append('</tr>');
 			};
@@ -253,10 +255,19 @@ $('#compareSelections').click( function(e) {
 				$('#amrByStrainTable tbody').append('<tr>');
 				$('#amrByStrainTable tbody').append('<td>'+data.data[2].amr[i].gene_name+'</td>');
 				for (var j = 0; j < data.data[2].amr[i].presence_absence.length; j++) {
-					$('#amrByStrainTable tbody').append('<td>'+data.data[2].amr[i].presence_absence[j].value+'</td>');
+					if (data.data[2].amr[i].presence_absence[j].value == 1) {
+						$('#amrByStrainTable tbody').append('<td><i class="icon-ok"></td>');
+					}
+					else if (data.data[2].amr[i].presence_absence[j].value == 0) {
+						$('#amrByStrainTable tbody').append('<td><i class="icon-remove"></td>');
+					}
+					else {
+						$('#amrByStrainTable tbody').append('<td>'+data.data[2].amr[i].presence_absence[j].value+'</td>');
+					}
 				};
 				$('#amrByStrainTable tbody').append('</tr>');
 			};
+			$('#legend').show("slow");
 			$('#virByStrain').show("slow");
 			$('#amrByStrain').show("slow");
 		}							

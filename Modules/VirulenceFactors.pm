@@ -238,9 +238,9 @@ sub _getVirulenceByStrain {
 		foreach my $strainName (@_selectedStrainNames) {
 			my %strainName;
 			my %data;
-			my $presenceAbsenceValue = "Unknown";
+			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByVirGene->search(
-				{'strain' => "$strainName"},
+				{'strain' => "public_".$strainName},
 				{
 					column => [qw/strain gene_name presence_absence/]
 				}
@@ -291,9 +291,9 @@ sub _getAmrByStrain {
 		foreach my $strainName (@_selectedStrainNames) {
 			my %strainName;
 			my %data;
-			my $presenceAbsenceValue = "Unknown";
+			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByAmrGene->search(
-				{'strain' => "$strainName"},
+				{'strain' => "public_".$strainName},
 				{
 					column => [qw/strain gene_name presence_absence/]
 				}

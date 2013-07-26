@@ -311,7 +311,7 @@ sub _getVirulenceData {
 	my $virCount = 0;
 
 	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
-		{'me.strain' => "$strainID"},
+		{'me.strain' => "public_".$strainID},
 		{
 			column => [qw/me.strain me.gene_name me.presence_absence/]
 		}
@@ -320,7 +320,7 @@ sub _getVirulenceData {
 	while (my $virulenceDataRow = $virulenceData->next) {
 		my %virRow;
 		if ($virulenceDataRow->presence_absence == 1) {
-			$virRow{'data'} = $virulenceDataRow->gene_name;
+			$virRow{'data'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_name})->uniquename;
 			push (@virulenceData, \%virRow);
 		}
 		else {
@@ -339,7 +339,7 @@ sub _getAmrData {
 	my $amrCount = 0;
 
 	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
-		{'me.strain' => "$strainID"},
+		{'me.strain' => "public_".$strainID},
 		{
 			column => [qw/me.strain me.gene_name me.presence_absence/]
 		}
@@ -348,7 +348,7 @@ sub _getAmrData {
 	while (my $amrDataRow = $amrData->next) {
 		my %amrRow;
 		if ($amrDataRow->presence_absence == 1) {
-			$amrRow{'data'} = $amrDataRow->gene_name;
+			$amrRow{'data'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_name})->uniquename;
 			push (@amrData , \%amrRow);
 		}
 		else {
