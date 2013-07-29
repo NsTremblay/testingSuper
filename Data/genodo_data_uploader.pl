@@ -184,22 +184,6 @@ for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 		else{
 		}
 	}
-	if ($INPUTDATATYPE eq 'binary') {
-		for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-			my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-			my %nameRow = ('locus_name' => $parsedHeader);
-			my $insertRow = $schema->resultset('DataLociName')->create(\%nameRow) or croak "Could not  insert row\n";
-		}
-	}
-	elsif ($INPUTDATATYPE eq 'snp'){
-		for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-			my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-			my %nameRow = ('snp_name' => $parsedHeader);
-			my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
-		}
-	}
-	else {
-	}
 }
 
 # for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
@@ -219,7 +203,22 @@ for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 # 	}
 # }
 
-
+if ($INPUTDATATYPE eq 'binary') {
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
+		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
+		my %nameRow = ('locus_name' => $parsedHeader);
+		my $insertRow = $schema->resultset('DataLociName')->create(\%nameRow) or croak "Could not  insert row\n";
+	}
+}
+elsif ($INPUTDATATYPE eq 'snp'){
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
+		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
+		my %nameRow = ('snp_name' => $parsedHeader);
+		my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
+	}
+}
+else {
+}
 
 print "All rows successfully updated\n";
 
