@@ -148,7 +148,7 @@ while (<$datafile2>) {
 }
 
 my @rowDelimTable;
-my $locusCount = 0;
+my $locusCount = 0000000;
 my $strainCount = 0;
 my $limit;
 
@@ -243,12 +243,13 @@ sub parseHeader {
 		}
 	}
 	elsif  ($_inputDataType eq "binary") {
-		if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
-			$newHeader = $2;
-		}
-		else {
-			croak "Not a valid locus name, exiting\n";
-		}
+		$newHeader = "locus_" . $locusCount++;
+		# if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
+		# 	$newHeader = $2;
+		# }
+		# else {
+		# 	croak "Not a valid locus name, exiting\n";
+		# }
 	}
 	#SNP Data
 	elsif ($_inputDataType eq "snp") {
