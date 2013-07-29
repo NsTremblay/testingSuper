@@ -168,23 +168,23 @@ my $outfolder = "data_out_temp";
 my $outfile = "$INPUTDATATYPE" . "_data_out_temp";
 
 print "Processing $INPUTFILE and preparing for insert into " . $inputDataType{$INPUTDATATYPE} . "\n";
-my $rowCount = 0;
-for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
-	#Start at i=1 becuase the first strain starts at index 1 
-	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
-			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
-			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
-		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
-		$rowCount++;
-		if ($rowCount % 100000 == 0) {
-			print "$rowCount out of $totalRowCount rows inserted into table\n";
-		}
-		else{
-		}
-	}
-}
+# my $rowCount = 0;
+# for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
+# 	#Start at i=1 becuase the first strain starts at index 1 
+# 	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
+# 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
+# 		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
+# 			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
+# 			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
+# 		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
+# 		$rowCount++;
+# 		if ($rowCount % 100000 == 0) {
+# 			print "$rowCount out of $totalRowCount rows inserted into table\n";
+# 		}
+# 		else{
+# 		}
+# 	}
+# }
 
 # for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 # 	#Start at i=1 becuase the first strain starts at index 1 
@@ -204,14 +204,20 @@ for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 # }
 
 if ($INPUTDATATYPE eq 'binary') {
-	for (my $j = 0; $j < $limit ; $j++) {
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 		my %nameRow = ('locus_name' => $parsedHeader);
 		my $insertRow = $schema->resultset('DataLociName')->create(\%nameRow) or croak "Could not  insert row\n";
+				$rowCount++;
+		if ($rowCount % 100000 == 0) {
+			print "$rowCount out of $totalRowCount rows inserted into DataLociName\n";
+		}
+		else{
+		}
 	}
 }
 elsif ($INPUTDATATYPE eq 'snp'){
-	for (my $j = 0; $j < $limit ; $j++) {
+	for (my $j = 0; $j < $scalar(@locusTemp) ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 		my %nameRow = ('snp_name' => $parsedHeader);
 		my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
@@ -243,7 +249,7 @@ sub parseHeader {
 		}
 	}
 	elsif  ($_inputDataType eq "binary") {
-		$newHeader = "locus_" . $locusCount++;
+		$newHeader = "locus_" . ++$locusCount;
 		# if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
 		# 	$newHeader = $2;
 		# }
