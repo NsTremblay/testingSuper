@@ -148,7 +148,7 @@ while (<$datafile2>) {
 }
 
 my @rowDelimTable;
-my $locusCount = 0;
+my $locusCount = 0000000;
 my $strainCount = 0;
 my $limit;
 
@@ -204,14 +204,14 @@ for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
 # }
 
 if ($INPUTDATATYPE eq 'binary') {
-	for (my $j = 0; $j < $limit ; $j++) {
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 		my %nameRow = ('locus_name' => $parsedHeader);
 		my $insertRow = $schema->resultset('DataLociName')->create(\%nameRow) or croak "Could not  insert row\n";
 	}
 }
 elsif ($INPUTDATATYPE eq 'snp'){
-	for (my $j = 0; $j < $limit ; $j++) {
+	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
 		my %nameRow = ('snp_name' => $parsedHeader);
 		my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
@@ -243,12 +243,13 @@ sub parseHeader {
 		}
 	}
 	elsif  ($_inputDataType eq "binary") {
-		if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
-			$newHeader = $2;
-		}
-		else {
-			croak "Not a valid locus name, exiting\n";
-		}
+		$newHeader = "locus_" . ++$locusCount;
+		# if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
+		# 	$newHeader = $2;
+		# }
+		# else {
+		# 	croak "Not a valid locus name, exiting\n";
+		# }
 	}
 	#SNP Data
 	elsif ($_inputDataType eq "snp") {

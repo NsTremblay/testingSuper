@@ -116,20 +116,72 @@ sub vf_meta_info : Runmode {
 	my $self = shift;
 	my $q = $self->query();
 	my $_vFFeatureId = $q->param("VFName");
+	my @virMetaData;
 
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
 		{'me.feature_id' => $_vFFeatureId},
 		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 			join		=> ['type' , 'feature'],
-			select		=> [ qw/feature_id me.value type.name feature.uniquename/],
-			as 			=> ['me.feature_id' , 'value' , 'term_name' , 'uniquename'],
-			group_by 	=> [ qw/me.feature_id me.value type.name feature.uniquename/ ],
+			columns		=> [ qw/feature_id me.value type.name feature.uniquename feature.name/],
 			order_by	=> { -asc => ['type.name'] }
 		}
 		);
 
-	my @virMetaData = $_virulenceFactorMetaProperties->all;
+	my $vFMetaFirstRow = $_virulenceFactorMetaProperties->first;
+	my %vFMetaFirst;
+
+	$vFMetaFirst{'feature_id'} = $vFMetaFirstRow->feature->feature_id;
+	$vFMetaFirst{'uniquename'} = $vFMetaFirstRow->feature->uniquename;
+	$vFMetaFirst{'gene_name'} = $vFMetaFirstRow->feature->name;
+
+	push(@virMetaData , \%vFMetaFirst);
+
+	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
+		#Initialize a hash structure to store column data
+		my %vFMetaRowData;
+		if ($vFMetaRow->type->name eq "description") {
+			$vFMetaRowData{'term_name'}="Description";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "keywords"){
+			$vFMetaRowData{'term_name'}="Type";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "mol_type"){
+			$vFMetaRowData{'term_name'}="Molecular Type";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "name"){
+			$vFMetaRowData{'term_name'}="Factor Name";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "organism"){
+			$vFMetaRowData{'term_name'}="Organism";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "plasmid"){
+			$vFMetaRowData{'term_name'}="Plasmid name";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "strain"){
+			$vFMetaRowData{'term_name'}="Strain";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "uniquename"){
+			$vFMetaRowData{'term_name'}="Unique Name";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		elsif ($vFMetaRow->type->name eq "virulence_id"){
+			$vFMetaRowData{'term_name'}="Virulence ID";
+			$vFMetaRowData{'value'}=$vFMetaRow->value;
+		}
+		else {
+		}
+		push(@virMetaData, \%vFMetaRowData);
+	}
+
+	#my @virMetaData = $_virulenceFactorMetaProperties->all;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $vfMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@virMetaData);
 	return $vfMetaInfoJsonRef;
@@ -150,37 +202,37 @@ sub amr_meta_info : Runmode {
 #			order_by	=> { -asc => ['me.name'] }
 #		}
 #	);
-	
-	my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
-		{
-			'me.feature_id' => $_amrFeatureId
-		},
-		{
+
+my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
+{
+	'me.feature_id' => $_amrFeatureId
+	},
+	{
 			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 			join => [
-				'type',
-				{ featureprops => 'type' },
-				{ feature_cvterms => { cvterm => 'dbxref'}}
+			'type',
+			{ featureprops => 'type' },
+			{ feature_cvterms => { cvterm => 'dbxref'}}
 			],
 			#select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
 			#as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
 			order_by	=> { -asc => ['me.name'] }
 		}
-	);
-	
-	
-	my $frow = $feature_rs->first;
-	die "Error: feature $_amrFeatureId is not of antimicrobial resistance gene type (feature type: ".$frow->type->name.").\n" unless $frow->type->name eq 'antimicrobial_resistance_gene';
-	
-	my @desc;
-	my @syn;
-	my @aro;
-	
-	my $fp_rs = $frow->featureprops;
-	
-	while(my $fprow = $fp_rs->next) {
-		if($fprow->type->name eq 'description') {
-			push @desc, $fprow->value;
+		);
+
+
+my $frow = $feature_rs->first;
+die "Error: feature $_amrFeatureId is not of antimicrobial resistance gene type (feature type: ".$frow->type->name.").\n" unless $frow->type->name eq 'antimicrobial_resistance_gene';
+
+my @desc;
+my @syn;
+my @aro;
+
+my $fp_rs = $frow->featureprops;
+
+while(my $fprow = $fp_rs->next) {
+	if($fprow->type->name eq 'description') {
+		push @desc, $fprow->value;
 		} elsif($fprow->type->name eq 'synonym') {
 			push @syn, $fprow->value;
 		}
@@ -202,7 +254,7 @@ sub amr_meta_info : Runmode {
 		descriptions  => \@desc,
 		synonyms     => \@syn,
 		aro_terms    => \@aro
-	);
+		);
 	
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\%data_hash);
