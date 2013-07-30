@@ -131,8 +131,8 @@ sub strain_info : StartRunmode {
 
 		#Code block for public trees (may need to change this)
 		$publicTreeStrainID = "public_".$strainID;
-		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
-		$template->param(PHYLOTREE=>$strainInfoTreeRef);
+		#$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
+		#$template->param(PHYLOTREE=>$strainInfoTreeRef);
 		#Resume rest of code
 
 		} elsif(defined $privateStrainID && $privateStrainID ne "") {
@@ -290,6 +290,13 @@ sub _getStrainInfo {
 	}
 	
 	$feature_hash{references} = 1 if defined($feature_hash{owners}) || defined($feature_hash{pmids});
+	
+	if(defined($feature_hash{pmids})) {
+		my $pmid_list = '"'.join(',', (map {$_->{pmid}} @{$feature_hash{pmids}})).'"';
+		get_logger->debug("<$pmid_list>");
+		$feature_hash{pmid_list} = $pmid_list;
+		delete $feature_hash{pmids};
+	}
 	
 	# Convert age to proper units
 	if(defined $feature_hash{isolation_ages}) {

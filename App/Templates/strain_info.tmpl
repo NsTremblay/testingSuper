@@ -80,17 +80,16 @@
 						<hr>
 						</TMPL_IF>
 
-						<TMPL_IF pmids>
+						<TMPL_IF pmid_list>
 						<div class="row-fluid">
 							<div class="span11">
 								<span class="muted">Pubmed References: </span>
 							</div>
-							<div class="span11">
-								<ol>
-									<TMPL_LOOP pmids>
-									<li><TMPL_VAR pmid></li>
-									</TMPL_LOOP>
-								</ol>
+							
+							<div id="pmid_results" class="span11">
+							</div>
+							<div id="pmid_error" style="display:none">
+								Error occurred retrieving pubmed summaries.
 							</div>
 						</div>
 						</TMPL_IF>
@@ -134,13 +133,44 @@ var ISOLATION_HOST_JSON = {};
 var ISOLATION_SOURCE_JSON = {};
 var ISOLATION_DATE_JSON = {};
 
-//List of public feature ids used to get data for view switching 
+//pubmed IDs for Entrez search
+var pmidList = "";
+<TMPL_IF pmid_list>
+pmidList = <TMPL_VAR pmid_list>;
+</TMPL_IF>
+
+//List of public feature ids used to get data for view switching
+
 var featureIdList = "";
 $(document).ready(function() {
 	for (i=0 ; i<FEATURE_TABLE_JSON.data.length-1 ; i++) {
 		featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[i].feature_id) + ",";
 	}
 	featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[FEATURE_TABLE_JSON.data.length-1].feature_id);
+	
+	if(pmidList != "") {
+		entrezArgs = {'apikey' : '847d6279e0c5c435df1bd425c1628778',
+		              'db'     : 'pubmed',
+		              'id'     : pmidList
+		             };
+		             
+		$.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
+			if(data.entrezajax.error) {
+				$('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
+			}
+			$.each(data.result, function(i, item) {
+				var author_list = '';
+				for(var i = 0; i < item.AuthorList.length; i ++) {
+					if(i != 0) {
+						author_list += ', ';
+					}
+					author_list += item.AuthorList[i];
+				}
+				var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
+				$("<div/>").html(html).appendTo('#pmid_results');
+			});
+		});
+	}
 });
 
 function onLoadCheck() {
