@@ -61,12 +61,12 @@
 	
 </script>
 
-	<TMPL_INCLUDE NAME="nav_bar.tmpl">
+	<TMPL_INCLUDE NAME="nav_bar_genome_uploader.tmpl">
 
 	<div class="container" style="background-color:#FFFFFF">
 		
 		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
-			<h1><TMPL_IF new_genome>Upload a Genome<TMPL_ELSE>Modify Genome Attributes</TMPL_IF></h1>
+			<h1><TMPL_IF new_genome><h1><span>UPLOAD A </span> <span style="color:#d41616">GENOME</span></h1><TMPL_ELSE><h1><span>MODIFY GENOME</span> <span style="color:#d41616">ATTRIBUTES</span></h1></TMPL_IF></h1>
 		</div>
 
 		<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">
