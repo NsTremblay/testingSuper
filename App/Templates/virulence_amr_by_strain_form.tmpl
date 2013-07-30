@@ -9,9 +9,9 @@
 			<div class="tab-pane active" id="virAmrStrainSelect">
 				<div class="tabbable">
 					<ul class="nav nav-tabs">
-						<li class="active"><a href="#virSelect" data-toggle="tab">Select Virulence Factors</a></li>
-						<li><a href="#amrSelect" data-toggle="tab">Select AMR genes</a></li>
-						<li><a href="#strainSelect" data-toggle="tab">Select Strains</a></li>
+						<li id="virSelectTab" class="active"><a href="#virSelect" data-toggle="tab">Select Virulence Factors</a></li>
+						<li id="amrSelectTab"><a href="#amrSelect" data-toggle="tab">Select AMR genes</a></li>
+						<li id="strainSelectTab"><a href="#strainSelect" data-toggle="tab">Select Strains</a></li>
 					</ul>
 					<div class="tab-content">
 						<div id="virSelect" class="span9 tab-pane active" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
@@ -274,12 +274,15 @@ $('#showVFMetaInfo').click( function(e){
 	$('#VFMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:80px 0px 0px 20px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
 	e.preventDefault();
 	$.post("/vf_meta_info", $("#showVFMetaInfoForm").serialize(),  
-		function(data){
+		function(vir){
 			$('#VFMetaInfo').empty();
-			$('#VFMetaInfo').append('<h5><u>Virulence Factor Meta Info</u></h5>');
-			for (var i = 0; i < data.data.length; i++) {
-				$('#VFMetaInfo').append('<strong>' + data.data[i].term_name + '</strong>: ' + data.data[i].value + '</br>');
+			$('#VFMetaInfo').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
+				'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
+
+			for (var i = 1; i < vir.data.length; i++) {
+				$('#VFMetaInfo').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
 			}
+
 		}, "json" , $('#VFMetaInfo').show());
 });
 
@@ -292,8 +295,8 @@ $('#showAMRMetaInfo').click( function(e){
 			$('#AMRMetaInfo').empty();
 			
 			var amrhtml = 
-				'<div class="span3"><span class="muted", style="margin-left:20px;">AMR Gene: </span></div>'+
-				'<div class="span9"><h4>'+amr.data.name+'</h4></div>';
+			'<div class="span3"><span class="muted", style="margin-left:20px;">AMR Gene: </span></div>'+
+			'<div class="span9"><h4>'+amr.data.name+'</h4></div>';
 			
 			if(amr.data.synonyms.length > 0) {
 				amrhtml += 
@@ -308,10 +311,10 @@ $('#showAMRMetaInfo').click( function(e){
 			$('#AMRMetaInfo').append(amrhtml);
 			
 			if(amr.data.descriptions.length > 0) {
-			
+
 				var defhtml =
-					'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Description</strong></span></div>'+
-					'<div class="span12"><ol>';
+				'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Description</strong></span></div>'+
+				'<div class="span12"><ol>';
 				
 				for(var j = 0; j < amr.data.descriptions.length; j++) {
 					defhtml += '<li style="padding-left:10px">'+amr.data.descriptions[j]+'</li>'
@@ -322,10 +325,10 @@ $('#showAMRMetaInfo').click( function(e){
 			}
 			
 			if(amr.data.aro_terms.length > 0) {
-			
+
 				var arohtml =
-					'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Antimicrobial Resistance Ontology Annotations</strong></span></div>'+
-					'<div class="span12"><ol>';
+				'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Antimicrobial Resistance Ontology Annotations</strong></span></div>'+
+				'<div class="span12"><ol>';
 				
 				for(var j = 0; j < amr.data.aro_terms.length; j++) {
 					arohtml += '<li style="padding-left:10px"><strong>'+amr.data.aro_terms[j].accession+' '+amr.data.aro_terms[j].term_name+
@@ -337,7 +340,7 @@ $('#showAMRMetaInfo').click( function(e){
 			}
 			
 			//$('#AMRMetaInfo').append('</div>');
-			 
+
 		}, "json" , $('#AMRMetaInfo').show());
 });
 
