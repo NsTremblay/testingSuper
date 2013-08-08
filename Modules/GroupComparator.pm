@@ -116,11 +116,11 @@ sub getBinaryData {
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
 			if ($rawBinaryDataRow->presence_absence == 1) {
-				push ($locus[0]->{'present'} , {strain =>  $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'present'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'present_count'}++;
 			}
 			elsif ($rawBinaryDataRow->presence_absence == 0) {
-				push ($locus[0]->{'absent'} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'absent'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'absent_count'}++;
 			}
 			else {
@@ -176,19 +176,19 @@ sub getSnpData {
 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
 			if ($rawBinaryDataRow->snp eq 'A') {
-				push ($locus[0]->{'adenine'} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'adenine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'adenine_count'}++;
 			}
 			elsif ($rawBinaryDataRow->snp eq 'T') {
-				push ($locus[0]->{'thymidine'} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'thymidine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'thymidine_count'}++;
 			}
 			elsif ($rawBinaryDataRow->snp eq 'C') {
-				push ($locus[0]->{'cytosine'} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'cytosine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'cytosine_count'}++;
 			}
 			elsif ($rawBinaryDataRow->snp eq 'G') {
-				push ($locus[0]->{'guanine'} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+				push (@{$locus[0]->{'guanine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
 				$locus[0]->{'guanine_count'}++;
 			}
 			else {
