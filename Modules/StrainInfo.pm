@@ -131,8 +131,8 @@ sub strain_info : StartRunmode {
 
 		#Code block for public trees (may need to change this)
 		$publicTreeStrainID = "public_".$strainID;
-		#$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
-		#$template->param(PHYLOTREE=>$strainInfoTreeRef);
+		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
+		$template->param(PHYLOTREE=>$strainInfoTreeRef);
 		#Resume rest of code
 
 		} elsif(defined $privateStrainID && $privateStrainID ne "") {
