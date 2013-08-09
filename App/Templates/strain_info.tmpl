@@ -23,6 +23,9 @@
 					<li class="active"><a href="#overviewTab" data-toggle="tab">Overview</a></li>
 					<li><a href="#phyloTreeTab" data-toggle="tab">Phylogenetic Tree</a></li>
 					<li><a href="#virAmrTab" data-toggle="tab">Virulence and AMR</a></li>
+					<TMPL_IF NAME=LOCATION>
+					<li><a href="#mapTab" data-toggle="tab">Map</a></li>
+					</TMPL_IF>
 					<TMPL_IF references>
 					<li><a href="#refTab" data-toggle="tab">References</a></li>
 					</TMPL_IF>
@@ -38,6 +41,10 @@
 						<div id="svgCanvas" style="padding:5px">
 							<TMPL_INCLUDE NAME="phylogeny_strain_info.tmpl">
 						</div>
+					</div>
+
+					<div class="tab-pane" id="mapTab">
+						<div id="map-canvas" style="height:300px;padding:10px"></div>
 					</div>
 
 					<div class="tab-pane" id="virAmrTab">
@@ -117,6 +124,9 @@
 				</div>
 			</div>
 			</TMPL_IF>
+
+			<div class="tab-pane" id="strainInfoMapTab">
+			</div>
 			
 		</div>
 	</div>
@@ -229,33 +239,79 @@ $(document).ready(function() {
 	
 	if(pmidList != "") {
 		entrezArgs = {'apikey' : '847d6279e0c5c435df1bd425c1628778',
-		              'db'     : 'pubmed',
-		              'id'     : pmidList
-		             };
-		             
-		$.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
-			if(data.entrezajax.error) {
-				$('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
-			}
-			$.each(data.result, function(i, item) {
-				var author_list = '';
-				for(var i = 0; i < item.AuthorList.length; i ++) {
-					if(i != 0) {
-						author_list += ', ';
-					}
-					author_list += item.AuthorList[i];
+		'db'     : 'pubmed',
+		'id'     : pmidList
+	};
+
+	$.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
+		if(data.entrezajax.error) {
+			$('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
+		}
+		$.each(data.result, function(i, item) {
+			var author_list = '';
+			for(var i = 0; i < item.AuthorList.length; i ++) {
+				if(i != 0) {
+					author_list += ', ';
 				}
-				var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
-				$("<div/>").html(html).appendTo('#pmid_results');
-			});
+				author_list += item.AuthorList[i];
+			}
+			var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
+			$("<div/>").html(html).appendTo('#pmid_results');
 		});
-	}
+	});
+}
 });
 
 function onLoadCheck() {
+	//initializeMap();
 	$('#strainInfoTabs').show("slow");
 	initialize();
 }
+
+var map;
+var geocoder;
+
+function initializeMap() {
+	geocoder = new google.maps.Geocoder();
+	var mapOptions = {
+		zoom: 4,
+		center: new google.maps.LatLng(-0.000, 0.000),
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById('map-canvas'),
+		mapOptions);
+	codeAddress();
+	//var currCenter = map.getCenter();
+	google.maps.event.trigger(map, "resize");
+	//map.setZoom( map.getZoom() );
+	//map.setCenter(currCenter);
+}
+
+function codeAddress() {
+	var address = '<TMPL_VAR NAME=strainLocation>';
+	geocoder.geocode( { 'address': address}, function(results, status) {
+		if (status == google.maps.GeocoderStatus.OK) {
+			map.setCenter(results[0].geometry.location);
+			var marker = new google.maps.Marker({
+				map: map,
+				position: results[0].geometry.location,
+				animation: google.maps.Animation.DROP,
+				title: '<TMPL_VAR NAME=strainLocation>'
+			});
+		} else {
+			alert('Google maps not available at this time');
+			console.log("Geocode not successful: " + status);
+		}
+	});
+}
+
+$('a[href="#mapTab"]').click( function(){
+	setTimeout("initializeMap()", 0);
+	//initializeMap(); 
+});
+
+
+//google.maps.event.addDomListener(window, 'load', initializeMap);
 
 function initialize() {
 

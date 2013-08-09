@@ -129,6 +129,11 @@ sub strain_info : StartRunmode {
 		my $strainAmrDataRef = $self->_getAmrData($strainID);
 		$template->param(AMRDATA=>$strainAmrDataRef);
 
+
+		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
+		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
+
+
 		#Code block for public trees (may need to change this)
 		$publicTreeStrainID = "public_".$strainID;
 		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
@@ -171,6 +176,9 @@ sub strain_info : StartRunmode {
 
 			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
 			$template->param(AMRDATA=>$strainAmrDataRef);
+
+			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
+			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
 
 			#Code block for private trees (may need to change this)
 			$privateTreeStrainID = "private_".$privateStrainID;
@@ -367,6 +375,31 @@ sub _getAmrData {
 		
 	}
 	return \@amrData;
+}
+
+sub _getStrainLocation {
+	my $self = shift;
+	my $strainID = shift;
+    my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+    my %strainLocation;
+    $strainLocation{'presence'} = 0;
+    while (my $location = $locationFeatureProps->next) {
+    	$strainLocation{'presence'} = 1;
+    	my $locValue = $location->value;
+    	$locValue =~ s/<location>//;
+    	$locValue =~ s/<\/location>//;
+    	$locValue =~ s/<country>//;
+    	$locValue =~ s/<\/country>//;
+    	print STDERR $locValue . "\n";
+    	$strainLocation{'location'} = $locValue;
+    }
+    return \%strainLocation;
 }
 
 #These will need to be abstracted to remove redundancy
