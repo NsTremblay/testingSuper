@@ -273,18 +273,16 @@ var geocoder;
 
 function initializeMap() {
 	geocoder = new google.maps.Geocoder();
+	codeAddress();
 	var mapOptions = {
-		zoom: 4,
-		center: new google.maps.LatLng(-0.000, 0.000),
+		zoom: 3,
+		zoomControl: true,
+		streetViewControl: false,
+		//center: new google.maps.LatLng(-0.000, 0.000),
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
 	map = new google.maps.Map(document.getElementById('map-canvas'),
 		mapOptions);
-	codeAddress();
-	//var currCenter = map.getCenter();
-	google.maps.event.trigger(map, "resize");
-	//map.setZoom( map.getZoom() );
-	//map.setCenter(currCenter);
 }
 
 function codeAddress() {
@@ -446,6 +444,5 @@ function changeListView(jsonList) {
 	$('#pubStrainInfoSearch').show();
 	$('#strainInfoProgressbar').hide()
 }
-
 
 </script>

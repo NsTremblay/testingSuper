@@ -44,7 +44,8 @@ sub dispatch_args {
                 '/isolation_date_form' => {app=>'StrainInfo' , rm=>'isolation_date_form'},
                 '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'},
                 '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'},
-                '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'}
+                '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'},
+                '/map_example' => {app=>'MapExample',  rm=>'map_example'}
   
         ],
     };
