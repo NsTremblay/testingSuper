@@ -9,6 +9,8 @@ use lib "$FindBin::Bin/..";
 use IO::File;
 use Log::Log4perl qw(:easy);
 use Carp;
+use Data::Dumper;
+use JSON;
 
 sub new {
 	my ($class) = shift;
@@ -132,5 +134,7 @@ sub _getNearestClades {
 
 	system($systemLine);
 }
+
+
 
 1;

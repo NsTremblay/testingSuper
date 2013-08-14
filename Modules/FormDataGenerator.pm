@@ -10,7 +10,7 @@ Modules::FormDataGenerator
 
 =head1 ACKNOWLEDGMENTS
 
-Thank you to Dr. Chad Laing and Dr. Michael Whiteside, for all their assistance on this project
+Thank you to Dr. Chad Laing and Dr. Matt Whiteside, for all their assistance on this project
 
 =head1 COPYRIGHT
 
@@ -34,9 +34,9 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
-use Log::Log4perl qw/get_logger/;
+use Log::Log4perl qw/get_logger :easy/;
 use Carp;
-
+use Time::HiRes qw( gettimeofday tv_interval );
 use JSON;
 
 #One time use
@@ -120,21 +120,9 @@ sub getFormData {
     my $username = shift;
     
     # Return public genome names as list of hash-refs
-    my $genomes = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'type.name' =>  'contig_collection',
-        },
-        {
-            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-            columns => [qw/feature_id uniquename name dbxref.accession/],
-            join => ['type' , 'dbxref'],
-            order_by    => {-asc => ['me.uniquename']}
-        }
-        );
+    my $publicFormData = $self->publicGenomes();
     
-    my @publicFormData = $genomes->all;
-    
-    my $pubEncodedText = $self->_getJSONFormat(\@publicFormData);
+    my $pubEncodedText = $self->_getJSONFormat($publicFormData);
     
     # Get private list (or empty list)
     my $privateFormData = $self->privateGenomes($username);
@@ -143,7 +131,27 @@ sub getFormData {
     #$self->_getNameMap();
     #$self->_getAccessionMap();
     
-    return(\@publicFormData, $privateFormData , $pubEncodedText);
+    return($publicFormData, $privateFormData , $pubEncodedText);
+}
+
+sub publicGenomes {
+	my $self = shift;
+	
+	my $genomes = $self->dbixSchema->resultset('Feature')->search(
+    	{
+        	'type.name' =>  'contig_collection',
+        },
+        {
+            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+            columns => [qw/feature_id uniquename name dbxref.accession/],
+            join => ['type' , 'dbxref'],
+            order_by    => {-asc => ['me.uniquename']}
+        }
+	);
+    
+    my @publicFormData = $genomes->all;
+    
+    return \@publicFormData;
 }
 
 sub privateGenomes {
@@ -155,48 +163,72 @@ sub privateGenomes {
         
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
-        my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-         [
-         {
-           'login.username' => $username,
-           'type.name'      => 'contig_collection',
-           },
-           {
-               'upload.category'    => 'public',
-               'type.name'      => 'contig_collection',
-               },
-               ],
-               {
+		my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
+        	[
+         		{
+					'login.username' => $username,
+					'type.name'      => 'contig_collection',
+           		},
+           		{
+					'upload.category'    => 'public',
+					'type.name'      => 'contig_collection',
+				},
+			],
+			{
                 result_class => 'DBIx::Class::ResultClass::HashRefInflator',
                 columns => [qw/feature_id uniquename/],
                 '+columns' => [qw/upload.category login.username/],
                 join => [
-                { 'upload' => { 'permissions' => 'login'} },
-                'type'
+					{ 'upload' => { 'permissions' => 'login'} },
+					'type'
                 ]
 
             }
-            );
+		);
         
         my @privateFormData = $genomes->all;
 
-        
         foreach my $row_hash (@privateFormData) {
-        	my $display_name = $row_hash->{uniquename};
-        	if($row_hash->{upload}->{category} eq 'public') {
+			my $display_name = $row_hash->{uniquename};
+			if($row_hash->{upload}->{category} eq 'public') {
         		$display_name .= ' [Pub]';
-             } else {
-              $display_name .= ' [Pri]';
-          }
-          $row_hash->{displayname} = $display_name;
-      }
+			} else {
+				$display_name .= ' [Pri]';
+			}
+			$row_hash->{displayname} = $display_name;
+		}
 
-      return \@privateFormData;
+		return \@privateFormData;
 
-      } else {
-         return [];
-     }
- }
+	} else {
+		# Return user-uploaded public genome names as list of hash-refs
+		my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
+           	{
+				'upload.category'    => 'public',
+				'type.name'      => 'contig_collection',
+			},
+			{
+                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+                columns => [qw/feature_id uniquename/],
+                join => [
+					{ 'upload' => 'permissions' },
+					'type'
+                ]
+
+            }
+		);
+        
+        my @privateFormData = $genomes->all;
+
+        foreach my $row_hash (@privateFormData) {
+			my $display_name = $row_hash->{uniquename};
+		
+			$row_hash->{displayname} = $display_name . ' [Pub]';
+		}
+
+		return \@privateFormData;
+	}
+}
 
 =head2 _hashFormData
 
@@ -497,5 +529,211 @@ print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n
 }
 close(OUT);
 }
+
+
+=head2 genomeInfo
+
+Returns list of ALL genomes (and associated meta-data) for
+a given user. If user is undef, returns all genomes in Feature 
+table and genomes in PrivateFeature table visable to public.
+
+Returns as json string.
+
+=cut
+
+sub genomeInfo {
+	my $self = shift;
+	my $username = shift;
+	
+	# Get pre-queried public feature table data
+	my $meta_rs = $self->dbixSchema->resultset("Meta")->search(
+		{
+			name => 'public'	
+		},
+		{
+			columns => ['data_string']
+		}
+	);
+	
+	my $public_json;
+	if(my $row = $meta_rs->first) {
+		$public_json = $row->data_string;
+	} else {
+		my $public_genome_info = $self->_runGenomeQuery(1);
+		$public_json = encode_json($public_genome_info);
+	}
+	
+	my $private_json;
+	if($username) {
+		# Get user private genomes
+		
+		my $private_genome_info = $self->_runGenomeQuery(0, $username);
+		$private_json = encode_json($private_genome_info);
+		
+	} else {
+		# Get user public genomes
+		
+		my $meta_rs = $self->dbixSchema->resultset("Meta")->search(
+			{
+				name => 'upublic'	
+			},
+			{
+				columns => ['data_string']
+			}
+		);
+	
+		if(my $row = $meta_rs->first) {
+			$private_json = $row->data_string;
+		} else {
+			my $private_genome_info = $self->_runGenomeQuery(0);
+			$private_json = encode_json($private_genome_info);	
+		}
+	}
+	
+	return($public_json, $private_json);
+}
+
+sub _runGenomeQuery {
+	my ($self, $public, $username) = @_;
+	
+	my %fp_types = (
+		serotype            => 1,
+		strain              => 1,
+		isolation_host      => 1,
+		isolation_source    => 1,
+		isolation_location  => 1,
+		isolation_latlng    => 1,
+		isolation_date      => 1,
+	);
+	
+	my $feature_table_name = 'Feature';
+	my $featureprop_rel_name = 'featureprops';
+	my $order_name = 'featureprops.rank';
+	my $query = {
+		'type.name'      => 'contig_collection',
+		'type_2.name'      => { '-in' => [ keys %fp_types ] }
+    };
+    my $join = 'type';
+	
+	# Query data in private tables
+	unless($public) {
+		$feature_table_name = 'PrivateFeature';
+		$featureprop_rel_name = 'private_featureprops';
+		$order_name = 'private_featureprops.rank';
+		if($username) {
+			$query = [
+				{
+					'login.username'     => $username,
+					'type.name'          => 'contig_collection',
+					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+			    },
+			    {
+					'upload.category'    => 'public',
+					'type.name'          => 'contig_collection',
+					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+			    }
+		    ];
+		} else {
+			$query = {
+				'upload.category'    => 'public',
+				'type.name'          => 'contig_collection',
+				'type_2.name'        => { '-in' => [ keys %fp_types ] }
+		    };
+		}
+		$join = [ 
+			'type',
+			{ 'upload' => { 'permissions' => 'login'} }
+		];
+	}
+	
+	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
+		$query,	
+		{
+			join => $join,
+			prefetch => [
+				{ 'dbxref' => 'db' },
+				{ $featureprop_rel_name => 'type' },
+			],
+			order_by => $order_name
+		}
+	);
+	
+	# Create hash from all results
+	my %genome_info;
+	
+	while(my $feature = $feature_rs->next) {
+		my %feature_hash;
+		
+		# Feature data
+		$feature_hash{uniquename} = $feature->uniquename;
+		if($feature->dbxref) {
+			my $version = $feature->dbxref->version;
+			$feature_hash{primary_dbxref} = $feature->dbxref->db->name . ': ' . $feature->dbxref->accession;
+			$feature_hash{primary_dbxref} .= '.' . $version if $version && $version ne '';
+		}
+		
+		# Featureprop data
+		my $featureprops = $feature->$featureprop_rel_name;
+		
+		while(my $fp = $featureprops->next) {
+			my $type = $fp->type->name;
+		
+			$feature_hash{$type} = [] unless defined $feature_hash{$type};
+			push @{$feature_hash{$type}}, $fp->value;
+		}
+		
+		my $k = ($public) ? 'public_' : 'private_';
+		
+		$k .= $feature->feature_id;
+		
+		$genome_info{$k} = \%feature_hash;
+	}
+	
+	return(\%genome_info);
+}
+
+=head2 loadMetaData
+
+To save time, all public meta data (which is fairly static)
+is queried once and then converted to json.  This json string 
+is stored in the meta table.
+
+=cut
+
+sub loadMetaData {
+	my $self = shift;
+	
+	my $public_genomes = $self->_runGenomeQuery(1);	
+	my $user_public_genomes = $self->_runGenomeQuery(0);
+	
+	my $pub_json = encode_json($public_genomes);
+	my $usr_json = encode_json($user_public_genomes);
+	
+	$self->dbixSchema->resultset('Meta')->update_or_create(
+		{
+			name             => 'public',
+			format           => 'json',
+			data_string      => $pub_json,
+			timelastmodified => \'now()'
+		},
+		{
+			key => 'meta_c1'
+		}
+	);
+	
+	$self->dbixSchema->resultset('Meta')->update_or_create(
+		{
+			name             => 'upublic',
+			format           => 'json',
+			data_string      => $usr_json,
+			timelastmodified => \'now()'
+		},
+		{
+			key => 'meta_c1'
+		}
+	);
+	
+}
+
 
 1;

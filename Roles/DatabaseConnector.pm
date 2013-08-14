@@ -52,6 +52,18 @@ sub dbixSchema{
 	return($self->{_dbixSchema});
 }
 
+=head2 dbixSchema
+
+Set the dbix::class::schema object.
+
+=cut
+sub setDbix {
+	my $self = shift;
+	my $dbix_handle = shift;
+	
+	$self->{_dbixSchema} = $dbix_handle;
+}
+
 =head2 dbh
 
 Return the DBI dbh from the dbix::class::schema object.

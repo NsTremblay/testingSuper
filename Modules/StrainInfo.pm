@@ -42,9 +42,10 @@ use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
-
+use Phylogeny::Tree;
 use Modules::TreeManipulator;
 use IO::File;
+use JSON;
 
 # Featureprops
 # hash: name => cv
@@ -94,6 +95,8 @@ Run mode for the sinle strain page
 
 sub strain_info : StartRunmode {
 	my $self = shift;
+	
+	die "ERROR: DBIX NOT DEFINED!!!\n" unless $self->dbixSchema;
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
@@ -103,8 +106,19 @@ sub strain_info : StartRunmode {
 	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData($username);
 
 	my $q = $self->query();
+	
 	my $strainID = $q->param("singleStrainID");
 	my $privateStrainID = $q->param("privateSingleStrainID");
+	my $feature = $q->param("genome");
+	if($feature && $feature ne "") {
+		if($feature =~ m/^public_(\d+)/) {
+			$strainID = $1;
+		} elsif($feature =~ m/^private_(\d+)/) {
+			$privateStrainID = $1;
+		} else {
+			die "Error: invalid genome ID: $feature.";
+		}
+	}
 
 	#Code block for trees (may need to be changed later)
 	my $publicTreeStrainID;
@@ -200,6 +214,109 @@ sub strain_info : StartRunmode {
 	}
 
 
+=head2 search
+
+
+
+=cut
+sub search : Runmode {
+	my $self = shift;
+	
+	my $fdg = Modules::FormDataGenerator->new();
+	$fdg->dbixSchema($self->dbixSchema);
+	
+	my $username = $self->authen->username;
+	my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
+	
+	#my $pub_json = encode_json($pub);
+	#my $pvt_json = encode_json($pvt);
+	
+	my $template = $self->load_tmpl( 'strain_search.tmpl' , die_on_bad_params => 0);
+	
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
+	# Phylogenetic tree
+	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+	
+	if($self->authen->is_authenticated) {
+		# User is logged in
+		
+		# To get finer control over the genome queries, i do them here and not use the 
+		# FormDataGenerator methods
+		
+		my $genome_rs = $self->dbixSchema()->resultset('PrivateFeature')->search(
+        	[
+         		{
+					'login.username' => $username,
+					'type.name'      => 'contig_collection',
+           		},
+           		{
+					'upload.category'    => 'public',
+					'type.name'      => 'contig_collection',
+				},
+			],
+			{
+                columns => [qw/feature_id uniquename/],
+                '+columns' => [qw/upload.category login.username/],
+                join => [
+					{ 'upload' => { 'permissions' => 'login'} },
+					'type'
+                ]
+            }
+		);
+		
+		# If the user does not have any private genomes, we do not need to prune tree
+		
+		if($genome_rs->find( [ { 'upload.category' => 'private' }, { 'upload.category' => 'release' } ])) {
+			# User has access to private genomes
+			# Prune tree based on visable genomes
+			
+			my %visable_nodes;
+			
+			my $public_genomes = $fdg->publicGenomes();
+			
+			foreach my $g (@$public_genomes) {
+				$visable_nodes{$g->{feature_id}} = $g->{uniquename};
+			}
+			
+			$genome_rs->reset;
+			
+			while (my $g = $genome_rs->next) {
+				$visable_nodes{$g->feature_id} = $g->uniquename;
+			}
+			
+			my $tree_string = $tree->userTree(\%visable_nodes);
+			
+			$template->param(tree_json => $tree_string);
+		
+		} else {
+			# No private genomes
+			# Return public tree
+			
+			$template->param(tree_json => $tree->publicTree);
+		}
+		
+	} else {
+		# Anonymous user
+		# Return public tree
+		
+		$template->param(tree_json => $tree->publicTree);
+	}
+	
+	
+	
+	# Map
+	
+	# Meta
+	
+	
+	return $template->output();
+	
+} 
+
+
+
 =head2 _getStrainInfo
 
 Takes in a strain name paramer and queries it against the appropriate table.
@@ -226,17 +343,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-	{
-		"me.feature_id" => $strainID
+		{
+			"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-			{ 'dbxref' => 'db' },
-			{ $featureprop_rel_name => 'type' },
+				{ 'dbxref' => 'db' },
+				{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-		);
+	);
 	
 	# Create hash
 	my %feature_hash;
@@ -257,14 +374,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-	{
-		feature_id => $feature->feature_id
+		{
+			feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-		);
+	);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -308,6 +425,8 @@ sub _getStrainInfo {
 	
 	return(\%feature_hash);
 }
+
+
 
 sub _getVirulenceData {
 	my $self = shift;
