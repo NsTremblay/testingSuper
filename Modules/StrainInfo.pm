@@ -143,10 +143,15 @@ sub strain_info : StartRunmode {
 		my $strainAmrDataRef = $self->_getAmrData($strainID);
 		$template->param(AMRDATA=>$strainAmrDataRef);
 
+
+		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
+		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
+
+
 		#Code block for public trees (may need to change this)
 		$publicTreeStrainID = "public_".$strainID;
-		#$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
-		#$template->param(PHYLOTREE=>$strainInfoTreeRef);
+		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
+		$template->param(PHYLOTREE=>$strainInfoTreeRef);
 		#Resume rest of code
 
 		} elsif(defined $privateStrainID && $privateStrainID ne "") {
@@ -185,6 +190,9 @@ sub strain_info : StartRunmode {
 
 			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
 			$template->param(AMRDATA=>$strainAmrDataRef);
+
+			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
+			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
 
 			#Code block for private trees (may need to change this)
 			$privateTreeStrainID = "private_".$privateStrainID;
@@ -432,6 +440,7 @@ sub _getVirulenceData {
 	my $self = shift;
 	my $strainID = shift;
 	my $virulence_table_name = 'RawVirulenceData';
+	my $formDataGenerator = Modules::FormDataGenerator->new();
 
 	my @virulenceData;
 	my $virCount = 0;
@@ -446,7 +455,8 @@ sub _getVirulenceData {
 	while (my $virulenceDataRow = $virulenceData->next) {
 		my %virRow;
 		if ($virulenceDataRow->presence_absence == 1) {
-			$virRow{'data'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_name})->uniquename;
+			$virRow{'gene_name'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_name})->uniquename;
+			$virRow{'feature_id'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_name})->feature_id;
 			push (@virulenceData, \%virRow);
 		}
 		else {
@@ -460,6 +470,7 @@ sub _getAmrData {
 	my $self = shift;
 	my $strainID = shift;
 	my $amr_table_name = 'RawAmrData';
+	my $formDataGenerator = Modules::FormDataGenerator->new();
 
 	my @amrData;
 	my $amrCount = 0;
@@ -474,7 +485,8 @@ sub _getAmrData {
 	while (my $amrDataRow = $amrData->next) {
 		my %amrRow;
 		if ($amrDataRow->presence_absence == 1) {
-			$amrRow{'data'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_name})->uniquename;
+			$amrRow{'gene_name'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_name})->uniquename;
+			$amrRow{'feature_id'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_name})->feature_id;
 			push (@amrData , \%amrRow);
 		}
 		else {
@@ -482,6 +494,31 @@ sub _getAmrData {
 		
 	}
 	return \@amrData;
+}
+
+sub _getStrainLocation {
+	my $self = shift;
+	my $strainID = shift;
+    my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+        {'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
+        {
+            column  => [qw/me.feature_id me.value type.name/],
+            join        => ['type']
+        }
+        );
+    my %strainLocation;
+    $strainLocation{'presence'} = 0;
+    while (my $location = $locationFeatureProps->next) {
+    	$strainLocation{'presence'} = 1;
+    	my $locValue = $location->value;
+    	$locValue =~ s/<location>//;
+    	$locValue =~ s/<\/location>//;
+    	$locValue =~ s/<country>//;
+    	$locValue =~ s/<\/country>//;
+    	print STDERR $locValue . "\n";
+    	$strainLocation{'location'} = $locValue;
+    }
+    return \%strainLocation;
 }
 
 #These will need to be abstracted to remove redundancy
