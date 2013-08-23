@@ -30,6 +30,30 @@ $0 - Updates all locations in genodo db with lat long coordinates.
 A one time use script to update all the locations currently in genodo with latlong coordinates.
 User must provide connection parameters for the database in the form of a config file.
 
+The script will access Googles geocoding service using the named locations in the database.
+
+The geocoder returns a nunmber of coordinates. The script stores the center coordinates along
+with the viewport (boundary) coordinates.
+
+Center coordinates will be stored with the tag: 
+
+<coordinates>
+	<center>
+		<lat>XX.XXX</lat>
+		<lng>XX.XXX</lng>
+	</center>
+	<viewport>
+		<southwest>
+			<lat>XX.XXX</lat>
+			<lng>XX.XXX</lng>
+		</southwest>
+		<northeast>
+			<lat>XX.XXX</lat>
+			<lng>XX.XXX<lng>
+		</northeast>
+	</viewport>
+</coordinates>
+
 =head1 AUTHOR
 
 Akiff Manji
@@ -63,7 +87,7 @@ $dbsource . ';port=' . $DBPORT if $DBPORT;
 my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS) or croak "Could not connect to database.";
 
 # Need to first pull all the strains that have location data.
-# Store the featureprop_id in a table so that they can be updated easily.
+# Store the feature_id and featureprop_id in a table so that they can be updated easily.
 my @locationList;
 
 my $locationFeaturePropCount = $schema->resultset('Featureprop')->count({'type.name' => 'isolation_location'},{column  => [qw/me.feature_id me.value type.name/],join => ['type']});
@@ -74,7 +98,7 @@ sleep(2);
 my $locationFeatureProps = $schema->resultset('Featureprop')->search(
 	{'type.name' => 'isolation_location'},
 	{
-		column  => [qw/me.feature_id me.value type.name/],
+		column  => [qw/me.feature_id me.value type.name me.featureprop_id/],
 		join        => ['type']
 	}
 	);
@@ -84,7 +108,8 @@ my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
 
 while (my $locationRow = $locationFeatureProps->next) {
 	my %location;
-	my $locationFeatureId = $locationRow->featureprop_id;
+	my $locationFeaturepropId = $locationRow->featureprop_id;
+	my $locationFeatureId = $locationRow->feature_id;
 	my $markedUpLocation = $locationRow->value;
 
 	## Need to parse out <markup></markup> tags for geocoding.
@@ -95,7 +120,8 @@ while (my $locationRow = $locationFeatureProps->next) {
 	$noMarkupLocation =~ s/, //;
 	#print $noMarkupLocation . "\n";
 
-	$location{'featureprop_id'} = $locationFeatureId;
+	$location{'feature_id'} = $locationFeatureId;
+	$location{'featureprop_id'} = $locationFeaturepropId;
 	$location{'location'} = $noMarkupLocation;
 	push(@locationList , \%location);
 }
@@ -103,33 +129,44 @@ while (my $locationRow = $locationFeatureProps->next) {
 print "\t...Ready to convert " . scalar(@locationList) . " locations to lat long coordinates\n";
 
 #List that will store already generated latlongs so that duplicate geocoding calls are not made.
-my %coordinates;
+my @coordinates;
 
 foreach my $locationToConvert (@locationList) {
-	#First check to see if the location exists in the list.
 	print "Converting " . $locationToConvert->{'location'} . " to coordinates\n";
-	#Need to change this next line;
-	my %foundCoordinate = (grep $_ eq $locationToConvert->{'location'} , %coordinates);
-	if (!%foundCoordinate) {
-		print "\tCalling geocoder\n";
+	my @foundCoordinate = (grep $_->{location} eq $locationToConvert->{'location'} , @coordinates);
+	if (!@foundCoordinate) {
+		print "\tCalling geocoder...\n";
 		my $latlong = $googleGeocoder->geocode(location => $locationToConvert->{'location'});
-		#print %{$latlong->{geometry}->{location}}->{lat} . "\n";
-		#print %{$latlong->{geometry}->{location}}->{lng} . "\n";
-		#print %{$latlong->{geometry}->{viewport}->{southwest}}->{lat} . "\n";
-		#print %{$latlong->{geometry}->{viewport}->{southwest}}->{lng} . "\n";
-		#print %{$latlong->{geometry}->{viewport}->{northeast}}->{lat} . "\n";
-		#print %{$latlong->{geometry}->{viewport}->{northeast}}->{lng} . "\n";
-		#$newCoordinate{$locationToConvert->{'location'}} = $latlong;
-		$coordinates{$locationToConvert->{'location'}} = $latlong;
-		print scalar(keys %coordinates) . "\n";
+		print "\tFound coordinates " . %{$latlong->{geometry}->{location}}->{lat} . "," . %{$latlong->{geometry}->{location}}->{lng} . "\n";
+		my %location;
+		$location{'location'} = $locationToConvert->{'location'};
+		$location{'coordinates'} = $latlong;
+		push(@coordinates , \%location);
+		#Let the geocode function sleep for 2 seconds before the next call, because Google rate-limits the number of calls that can be done and will return an error.
+		print "\t...done\n";
 		sleep(2);
+		my @newCoordinate;
+		push(@newCoordinate, \%location);
+		updateDBLocation(\@newCoordinate , $locationToConvert);
 	}
 	else{
-		#print %{$foundCoordinate{$locationToConvert->{'location'}}}->{geometry}->{location}->{lat} . "\n";
-		#print %{$foundCoordinate{$locationToConvert->{'location'}}}->{geometry}->{location}->{lng} . "\n";
+		print "\tFound coordinates " . %{$foundCoordinate[0]->{coordinates}->{geometry}->{location}}->{lat} . "," . %{$foundCoordinate[0]->{coordinates}->{geometry}->{location}}->{lng} . "\n";
+		updateDBLocation(\@foundCoordinate , $locationToConvert);
 	}
 }
 
-#Let the geocode function sleep for 2 seconds before the next call,
-#because Google rate-limits the number of calls that can be done and will return an error.
-#sleep(2);
+sub updateDBLocation {
+	my $_coordinates = shift;
+	my @_coordinates = @{$_coordinates};
+	my $_locationToConvert = shift;
+
+	print "\tAdding coordinates for " . $_locationToConvert->{'location'} . " to $DBNAME\n";
+
+	my $locationRowToUpdate = $schema->resultset('Featureprop')->find({'me.featureprop_id' => $_locationToConvert->{'featureprop_id'}} , {'me.feature_id' => $_locationToConvert->{'feature_id'}});
+	my $row  = $locationRowToUpdate->value;
+	$row .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."<lng></northeast></viewport></coordinates>";
+	my %newRow = ('value' => $row);
+	$locationRowToUpdate->update(\%newRow) or croak "Could not update row\n";
+}
+
+print "...DONE\n";
