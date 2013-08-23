@@ -392,11 +392,6 @@ sub _getStrainLocation {
     while (my $location = $locationFeatureProps->next) {
     	$strainLocation{'presence'} = 1;
     	my $locValue = $location->value;
-    	$locValue =~ s/<location>//;
-    	$locValue =~ s/<\/location>//;
-    	$locValue =~ s/<country>//;
-    	$locValue =~ s/<\/country>//;
-    	print STDERR $locValue . "\n";
     	$strainLocation{'location'} = $locValue;
     }
     return \%strainLocation;

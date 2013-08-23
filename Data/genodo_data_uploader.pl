@@ -217,7 +217,6 @@ sub addBinaryData {
 		for (my $j = 0; $j < scalar(@seqFeatureTemp) ; $j++) {
 			my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
 			my %newRow = (
-				#$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader, #locus name
 				inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $schema->resultset('Loci')->find({'locus_name' => $parsedHeader})->locus_id;
 				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $seqFeatureTemp[$j][$i], #presence/absence value
 				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column4} => $genomeTemp[$i], #genome name

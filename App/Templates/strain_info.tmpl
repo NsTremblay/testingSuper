@@ -287,19 +287,30 @@ function initializeMap() {
 
 function codeAddress() {
 	var address = '<TMPL_VAR NAME=strainLocation>';
-	geocoder.geocode( { 'address': address}, function(results, status) {
-		if (status == google.maps.GeocoderStatus.OK) {
-			map.setCenter(results[0].geometry.location);
-			var marker = new google.maps.Marker({
-				map: map,
-				position: results[0].geometry.location,
-				animation: google.maps.Animation.DROP,
-				title: '<TMPL_VAR NAME=strainLocation>'
-			});
-		} else {
-			alert('Google maps not available at this time');
-			console.log("Geocode not successful: " + status);
-		}
+	var locationName = address.match(/<location>[\w\d\W\D]*<\/location>/)[0];
+	locationName = locationName.replace(/<location>/, '');
+	locationName = locationName.replace(/<\/location>/, '');
+	locationName = locationName.replace(/<[\/]+[\w\d]*>/g, '');
+	locationName = locationName.replace(/<[\w\d]*>/g, ', ');
+	locationName = locationName.replace(/, /, '');
+
+	var locationCoordinates = address.match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+	var locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
+	var locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
+	locationCenterLat = locationCenterLat.replace(/<\/lat>/, '');
+	var locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
+	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
+
+	var LatLng = new google.maps.LatLng(parseFloat(locationCenterLat) , parseFloat(locationCenterLng) , false);
+
+	map.setCenter(LatLng);
+	var marker = new google.maps.Marker({
+		map: map,
+		position: LatLng,
+		animation: google.maps.Animation.DROP,
+		title: locationName
 	});
 }
 
