@@ -8,28 +8,37 @@
 		<TMPL_INCLUDE NAME="nav_bar.tmpl">
 		<div class="container" style="background-color:#FFFFFF">
 			<!--For Demo Purposes Only-->
-			<div class="tab-pane" id="mapTab">
-				<div class="span8">
-					<form class="form-inline">
-						<fieldset>
-							<legend>Map for Genome Uploader</legend>
-							<span class="help-block">Search for a location (such as a City or Country) then click on a specific area of the map to place a marker with specific LatLong coordinates.</span>
-							<input id="location" class="span7" type="text" placeholder="Search for a location">
-							<button type="button" class="btn" onclick="codeAddress()">Search</button>
-						</fieldset>
-					</form>
-					<div id="coordinates"></div>
-					<div id="map-canvas" style="height:300px;padding:10px"></div>
-					</div>
-				</div>
-
+			<div class="span8" style="margin:10px">
+				<form class="form-inline">
+					<fieldset>
+						<legend>Map for Genome Uploader</legend>
+						<span class="help-block">Search for a location (such as a City or Country) then click on a specific area of the map to place a marker with specific LatLong coordinates.</span>
+						<input id="location" class="span7" type="text" placeholder="Search for a location">
+						<button type="button" class="btn" onclick="codeAddress()">Search</button>
+					</fieldset>
+				</form>
+				<div id="coordinates"></div>
+				<div id="map-canvas" style="height:300px;padding:10px"></div>
 			</div>
-			<TMPL_INCLUDE NAME="footer_stats.tmpl">
-		</body>
-		</html>
+			<div class="span8" style="margin:10px">
+				<form class="form-inline">
+					<fieldset>
+						<legend>Multi Selection Map</legend>
+						<span class="help-block">Select multiple strains from the map. As you zoom in and out and pan accross the map the list of markers will change.</span>
+						<input id="location" class="span7" type="text" placeholder="Search for a location">
+						<button type="button" class="btn" onclick="codeAddress()">Search</button>
+					</fieldset>
+				</form>
+				<div id="multi-map-canvas" style="height:300px;padding:10px"></div>
+			</div>
 
-		<!--For Demo Purposes Only-->
-		<script type="text/javascript">
+		</div>
+		<TMPL_INCLUDE NAME="footer_stats.tmpl">
+	</body>
+	</html>
+
+	<!--For Demo Purposes Only-->
+	<script type="text/javascript">
 	//This disables the enter key from submitting the form to an empty url
 	$(function(){
 		$("#location").keypress(function(e){
@@ -41,8 +50,10 @@
 	});
 
 	var map;
+	var multiMap;
 	var marker;
 	var geocoder;
+
 	google.maps.event.addDomListener(window, 'load', initialize);
 
 	function initialize() {
@@ -55,8 +66,27 @@
 		};
 		map = new google.maps.Map(document.getElementById("map-canvas"),
 			mapOptions);
+
+		multiMap = new google.maps.Map(document.getElementById("multi-map-canvas"),
+			mapOptions);
+
 		google.maps.event.addListener(map, 'click', function(event) {
 			addMarker(event.latLng);
+		});
+
+		$.post('map_multi_markers/', function(data) {
+			var markerList = JSON.parse(data);
+			for (var i = 0; i < markerList.data.length; i++) {
+				var centerLatLng = new google.maps.LatLng(markerList.data[i].center.lat, markerList.data[i].center.lng);
+				var multiMarker = new google.maps.Marker({
+					map: multiMap,
+					position: centerLatLng,
+					animation: google.maps.Animation.DROP,
+					title: markerList.data[i].location,
+					feature_id: markerList.data[i].feature_id
+				});
+			}
+
 		});
 	}
 

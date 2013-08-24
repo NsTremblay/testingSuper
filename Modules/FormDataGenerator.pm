@@ -432,7 +432,6 @@ sub publicDataViewList {
             #Need to parse out tags for location data
             if ($searchParam eq "isolation_location") {
                 my $markedUpLocation = $1 if $dataRow->value =~ /(<location>[\w\d\W\D]*<\/location>)/;
-                print STDERR $markedUpLocation . "\n";
                 my $noMarkupLocation = $markedUpLocation;
                 $noMarkupLocation =~ s/(<[\/]*location>)//g;
                 $noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
