@@ -402,7 +402,7 @@ sub publicDataViewList {
     my @publicFeautureIds = @{$publicIdList};
 
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
-        {
+    {
         'type.name' =>  'contig_collection',
         },
         {
@@ -429,7 +429,20 @@ sub publicDataViewList {
             $dataView{'value'} = "N/A";
         }
         else {
-            $dataView{'value'} = $dataRow->value;
+            #Need to parse out tags for location data
+            if ($searchParam eq "isolation_location") {
+                my $markedUpLocation = $1 if $dataRow->value =~ /(<location>[\w\d\W\D]*<\/location>)/;
+                print STDERR $markedUpLocation . "\n";
+                my $noMarkupLocation = $markedUpLocation;
+                $noMarkupLocation =~ s/(<[\/]*location>)//g;
+                $noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
+                $noMarkupLocation =~ s/<[\w\d]*>/, /g;
+                $noMarkupLocation =~ s/, //;
+                $dataView{'value'} = $noMarkupLocation;
+            }
+            else {
+                $dataView{'value'} = $dataRow->value;
+            }
         }
         my $featureRow = $genomes->find({'me.feature_id' => "$_pubStrainId"});
         $dataView{'feature_id'} = $featureRow->feature_id;

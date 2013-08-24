@@ -269,24 +269,15 @@ function onLoadCheck() {
 }
 
 var map;
-var geocoder;
 
 function initializeMap() {
-	geocoder = new google.maps.Geocoder();
 	codeAddress();
-	var mapOptions = {
-		zoom: 3,
-		zoomControl: true,
-		streetViewControl: false,
-		//center: new google.maps.LatLng(-0.000, 0.000),
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-	map = new google.maps.Map(document.getElementById('map-canvas'),
-		mapOptions);
 }
 
 function codeAddress() {
 	var address = '<TMPL_VAR NAME=strainLocation>';
+
+	//Parses the location name for the marker title
 	var locationName = address.match(/<location>[\w\d\W\D]*<\/location>/)[0];
 	locationName = locationName.replace(/<location>/, '');
 	locationName = locationName.replace(/<\/location>/, '');
@@ -295,6 +286,8 @@ function codeAddress() {
 	locationName = locationName.replace(/, /, '');
 
 	var locationCoordinates = address.match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+
+	//Parses out the center LatLong point
 	var locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
 	var locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
 	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
@@ -303,12 +296,43 @@ function codeAddress() {
 	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
 	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
 
-	var LatLng = new google.maps.LatLng(parseFloat(locationCenterLat) , parseFloat(locationCenterLng) , false);
+	//Parses out boundary LatLongs
+	var locationViewportSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
+	var locationViewportSWLat = locationViewportSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	var locationViewportSWLng = locationViewportSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationViewportSWLat = locationViewportSWLat.replace(/<lat>/, '');
+	locationViewportSWLat = locationViewportSWLat.replace(/<\/lat>/, '');
+	locationViewportSWLng = locationViewportSWLng.replace(/<lng>/, '');
+	locationViewportSWLng = locationViewportSWLng.replace(/<\/lng>/, '');
 
-	map.setCenter(LatLng);
+	var locationViewportNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
+	var locationViewportNELat = locationViewportNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	var locationViewportNELng = locationViewportNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationViewportNELat = locationViewportNELat.replace(/<lat>/, '');
+	locationViewportNELat = locationViewportNELat.replace(/<\/lat>/, '');
+	locationViewportNELng = locationViewportNELng.replace(/<lng>/, '');
+	locationViewportNELng = locationViewportNELng.replace(/<\/lng>/, '');
+
+	var centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
+	var swLatLng = new google.maps.LatLng(locationViewportSWLat, locationViewportSWLng);
+	var neLatLng = new google.maps.LatLng(locationViewportNELat, locationViewportNELng);
+	var markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
+
+	var mapOptions = {
+		zoom: 3,
+		zoomControl: true,
+		streetViewControl: false,
+		center: centerLatLng,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById('map-canvas'),
+		mapOptions);
+
+	map.fitBounds(markerBounds);
+
 	var marker = new google.maps.Marker({
 		map: map,
-		position: LatLng,
+		position: centerLatLng,
 		animation: google.maps.Animation.DROP,
 		title: locationName
 	});

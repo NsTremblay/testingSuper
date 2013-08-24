@@ -164,7 +164,7 @@ sub updateDBLocation {
 
 	my $locationRowToUpdate = $schema->resultset('Featureprop')->find({'me.featureprop_id' => $_locationToConvert->{'featureprop_id'}} , {'me.feature_id' => $_locationToConvert->{'feature_id'}});
 	my $row  = $locationRowToUpdate->value;
-	$row .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."<lng></northeast></viewport></coordinates>";
+	$row .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."</lng></northeast></viewport></coordinates>";
 	my %newRow = ('value' => $row);
 	$locationRowToUpdate->update(\%newRow) or croak "Could not update row\n";
 }
