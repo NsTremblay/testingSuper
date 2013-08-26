@@ -70,8 +70,6 @@
 	var multiMarkers = [];
 	var geocoder;
 
-	google.maps.event.addDomListener(window, 'load', initialize);
-
 	function initialize() {
 		geocoder = new google.maps.Geocoder();
 		var mapOptions = {
@@ -101,12 +99,25 @@
 					//animation: google.maps.Animation.DROP,
 					title: markerList.data[i].location,
 					feature_id: markerList.data[i].feature_id,
+					genome_name: markerList.data[i].genome_name
 				});
 				multiMarkers.push(multiMarker);
 			}
 			var mcOptions = {gridSize: 50, maxZoom: 15};
 			var mc = new MarkerClusterer(multiMap, multiMarkers, mcOptions);
 			populateMultiStrainList(markerList);
+		});
+
+		google.maps.event.addListener(multiMap, 'bounds_changed', function() {
+			var visibleMarkers = [];
+			for (var i = 0; i < multiMarkers.length; i++) {
+				if(multiMap.getBounds().contains(multiMarkers[i].getPosition())){
+					visibleMarkers.push(multiMarkers[i]);
+				}
+				else{
+				}
+			}
+			updateSelectionList(visibleMarkers);
 		});
 	}
 
@@ -156,5 +167,14 @@
 			$('#multiMapStrainList li').append('<label class="checkbox"><input id="checkboxName" class="checkbox" type="checkbox" value='+markerList.data[i].feature_id+' name="groupWiseStrainNames">'+markerList.data[i].location+' - '+markerList.data[i].genome_name+'</input></label>');
 		}
 	}
+
+	function updateSelectionList(visibleMarkers) {
+		$('#multiMapStrainList li').empty()
+		for (var i = 0; i < visibleMarkers.length; i++) {
+			$('#multiMapStrainList li').append('<label class="checkbox"><input id="checkboxName" class="checkbox" type="checkbox" value='+visibleMarkers[i].feature_id+' name="groupWiseStrainNames">'+visibleMarkers[i].title+' - '+visibleMarkers[i].genome_name+'</input></label>');
+		}
+	}
+
+	google.maps.event.addDomListener(window, 'load', initialize);
 
 	</script>
