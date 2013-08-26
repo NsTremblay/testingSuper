@@ -59,6 +59,11 @@ Run mode for the map_example page
 sub map_example : StartRunmode {
 	my $self = shift;
 	my $template = $self->load_tmpl( 'map_example.tmpl' , die_on_bad_params=>0 );
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+ 	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
+	$template->param(FEATURES=>$pubDataRef);
+
 	return $template->output();
 }
 
@@ -68,14 +73,16 @@ sub map_multi_markers : Runmode {
 	my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
 		{'type.name' => 'isolation_location'},
 		{
-			column  => [qw/me.feature_id me.value type.name/],
-			join        => ['type']
+			column  => [qw/me.feature_id me.value type.name feature.name/],
+			join        => ['type' , 'feature'],
+			order_by => ['me.value']
 		}
 		);
 	while (my $locationRow = $locationFeatureProps->next) {
 		my %newLocation;
 
 		$newLocation{'feature_id'} = $locationRow->feature_id;
+		$newLocation{'genome_name'} = $locationRow->feature->name;
 
 		#Parse out location name
 		my $markedUpLocation = $1 if $locationRow->value =~ /(<location>[\w\d\W\D]*<\/location>)/;

@@ -2,7 +2,7 @@
 	<html>
 	<head>
 		<TMPL_INCLUDE NAME="header.tmpl">
-		<script type="text/javascript" src="/App/Styling/js/d3.v3/d3.v3.min.js" ></script>
+		<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
 	</head>
 	<body style="background-color:#796e6c">
 		<TMPL_INCLUDE NAME="nav_bar.tmpl">
@@ -20,16 +20,31 @@
 				<div id="coordinates"></div>
 				<div id="map-canvas" style="height:300px;padding:10px"></div>
 			</div>
-			<div class="span8" style="margin:10px">
+			<div style="margin:10px">
 				<form class="form-inline">
 					<fieldset>
 						<legend>Multi Selection Map</legend>
 						<span class="help-block">Select multiple strains from the map. As you zoom in and out and pan accross the map the list of markers will change.</span>
-						<input id="location" class="span7" type="text" placeholder="Search for a location">
-						<button type="button" class="btn" onclick="codeAddress()">Search</button>
+						<input id="multiMaplocation" class="span7" type="text" placeholder="Search for a location">
+						<button type="button" class="btn" onclick="codeMultiMapAddress()">Search</button>
 					</fieldset>
 				</form>
-				<div id="multi-map-canvas" style="height:300px;padding:10px"></div>
+				<div class="row-fluid">
+					<div class="span8" id="multi-map-canvas" style="height:300px;padding:10px"></div>
+					<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:300px;overflow:auto">
+						<form id="strainListForm" class="form" action="/group_wise_comparisons/" method="post" enctype="application/x-www-form-urlencoded">
+							<div style="padding:10px">
+								<fieldset>
+									<span class="help-block"></span>
+									<ul id="multiMapStrainList" style="padding:0px;margin:0px">
+										<li style="list-style:none">
+										</li>
+									</ul>
+								</fieldset>
+							</form>
+						</div>
+					</div>
+				</div>
 			</div>
 
 		</div>
@@ -52,6 +67,7 @@
 	var map;
 	var multiMap;
 	var marker;
+	var multiMarkers = [];
 	var geocoder;
 
 	google.maps.event.addDomListener(window, 'load', initialize);
@@ -64,6 +80,7 @@
 			streetViewControl: false,
 			mapTypeId: google.maps.MapTypeId.ROADMAP
 		};
+
 		map = new google.maps.Map(document.getElementById("map-canvas"),
 			mapOptions);
 
@@ -74,19 +91,22 @@
 			addMarker(event.latLng);
 		});
 
-		$.post('map_multi_markers/', function(data) {
+		$.post('/map_multi_markers', function(data) {
 			var markerList = JSON.parse(data);
 			for (var i = 0; i < markerList.data.length; i++) {
 				var centerLatLng = new google.maps.LatLng(markerList.data[i].center.lat, markerList.data[i].center.lng);
 				var multiMarker = new google.maps.Marker({
 					map: multiMap,
 					position: centerLatLng,
-					animation: google.maps.Animation.DROP,
+					//animation: google.maps.Animation.DROP,
 					title: markerList.data[i].location,
-					feature_id: markerList.data[i].feature_id
+					feature_id: markerList.data[i].feature_id,
 				});
+				multiMarkers.push(multiMarker);
 			}
-
+			var mcOptions = {gridSize: 50, maxZoom: 15};
+			var mc = new MarkerClusterer(multiMap, multiMarkers, mcOptions);
+			populateMultiStrainList(markerList);
 		});
 	}
 
@@ -116,6 +136,25 @@
 				alert('Location ' + document.getElementById('location').value + ' could not be found. Please enter a proper location');
 			}
 		});
+	}
+
+	function codeMultiMapAddress() {
+		var address = document.getElementById('multiMaplocation').value;
+		geocoder.geocode( { 'address': address}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				multiMap.setCenter(results[0].geometry.location);
+				multiMap.fitBounds(results[0].geometry.viewport);
+			}
+			else {
+				alert('Location ' + document.getElementById('location').value + ' could not be found. Please enter a proper location');
+			}
+		});
+	}
+
+	function populateMultiStrainList(markerList) {
+		for (var i = 0; i < markerList.data.length; i++) {
+			$('#multiMapStrainList li').append('<label class="checkbox"><input id="checkboxName" class="checkbox" type="checkbox" value='+markerList.data[i].feature_id+' name="groupWiseStrainNames">'+markerList.data[i].location+' - '+markerList.data[i].genome_name+'</input></label>');
+		}
 	}
 
 	</script>
