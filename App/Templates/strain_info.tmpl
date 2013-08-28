@@ -1,7 +1,20 @@
 <!DOCTYPE html>
 <html>
 
-<TMPL_INCLUDE NAME="header.tmpl">
+
+
+<head>
+	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
+	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
+	
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
+
+</head>
 
 <TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
 
@@ -18,7 +31,7 @@
 			<TMPL_INCLUDE NAME="strain_info_form.tmpl">
 
 			<TMPL_IF strainData>
-			<div class="span8">
+			<div class="span7">
 				<ul id="strainInfoTabs" class="nav nav-tabs" style="display:none">
 					<li class="active"><a href="#overviewTab" data-toggle="tab">Overview</a></li>
 					<li><a href="#phyloTreeTab" data-toggle="tab">Phylogenetic Tree</a></li>
@@ -38,9 +51,11 @@
 					<TMPL_INCLUDE NAME="strain_info_overview_tab.tmpl">
 
 					<div class="tab-pane" id="phyloTreeTab">
-						<div id="svgCanvas" style="padding:5px">
-							<TMPL_INCLUDE NAME="phylogeny_strain_info.tmpl">
-						</div>
+						<script>
+							var smallTreeWindow = true;
+							var centreOnSelectedNode = true;
+						</script>
+						<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
 					</div>
 
 					<div class="tab-pane" id="mapTab">
@@ -139,7 +154,6 @@
 
 <script type="text/javascript">
 
-
 function showVFMetaInfo(tag) {
 	$('#VFMetaInfo').empty();
 	$('#VFMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:10px 0px 0px 0px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
@@ -211,16 +225,6 @@ function showAMRMetaInfo(tag) {
 		}, "json" , $('#AMRMetaInfo').show());
 }
 
-var FEATURE_TABLE_JSON = <TMPL_VAR NAME=strainJSONData>;
-/* 
-Back lists that will get called to the client after page has loaded.
-These remain as global constants.
-*/
-var ISOLATION_LOCATION_JSON = {};
-var SEROTYPE_JSON = {};
-var ISOLATION_HOST_JSON = {};
-var ISOLATION_SOURCE_JSON = {};
-var ISOLATION_DATE_JSON = {};
 
 //pubmed IDs for Entrez search
 var pmidList = "";
@@ -228,44 +232,37 @@ var pmidList = "";
 pmidList = <TMPL_VAR pmid_list>;
 </TMPL_IF>
 
-//List of public feature ids used to get data for view switching
-
-var featureIdList = "";
 $(document).ready(function() {
-	for (i=0 ; i<FEATURE_TABLE_JSON.data.length-1 ; i++) {
-		featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[i].feature_id) + ",";
-	}
-	featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[FEATURE_TABLE_JSON.data.length-1].feature_id);
 	
 	if(pmidList != "") {
-		entrezArgs = {'apikey' : '847d6279e0c5c435df1bd425c1628778',
-		'db'     : 'pubmed',
-		'id'     : pmidList
-	};
+		var entrezArgs = {
+			'apikey' : '847d6279e0c5c435df1bd425c1628778',
+			'db'     : 'pubmed',
+			'id'     : pmidList
+		};
 
-	$.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
-		if(data.entrezajax.error) {
-			$('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
-		}
-		$.each(data.result, function(i, item) {
-			var author_list = '';
-			for(var i = 0; i < item.AuthorList.length; i ++) {
-				if(i != 0) {
-					author_list += ', ';
-				}
-				author_list += item.AuthorList[i];
+		$.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
+			if(data.entrezajax.error) {
+				$('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
 			}
-			var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
-			$("<div/>").html(html).appendTo('#pmid_results');
+			$.each(data.result, function(i, item) {
+				var author_list = '';
+				for(var i = 0; i < item.AuthorList.length; i ++) {
+					if(i != 0) {
+						author_list += ', ';
+					}
+					author_list += item.AuthorList[i];
+				}
+				var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
+				$("<div/>").html(html).appendTo('#pmid_results');
+			});
 		});
-	});
-}
+	}
 });
 
 function onLoadCheck() {
 	//initializeMap();
 	$('#strainInfoTabs').show("slow");
-	initialize();
 }
 
 var map;
@@ -313,139 +310,6 @@ $('a[href="#mapTab"]').click( function(){
 
 //google.maps.event.addDomListener(window, 'load', initializeMap);
 
-function initialize() {
-
-	getPublicList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView', 'genodo_serotype');
-	getPublicList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView', 'genodo_isolation_host');
-	getPublicList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView', 'genodo_isolation_source');
-	getPublicList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView', 'genodo_isolation_date');
-	getPublicList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView', 'genodo_isolation_location');
-
-}
-
-function getPublicList(urlName,formType,labelId,radioId,typeName) {
-
-	if(sessionStorage[typeName]  == null) {
-		// Get list from server and save in local storage
-		$.ajax({
-			type: "POST",
-			url: urlName,
-			data: { public_id_list: featureIdList }
-		}).done(function (returned_data) {
-			sessionStorage[typeName] = returned_data;
-			formType.json = $.parseJSON(returned_data);
-			$('#'+radioId).attr('disabled',false);
-			$('#'+labelId+'Loading').hide();
-			$('#'+labelId).show();
-		});
-	} else {
-		formType.json = $.parseJSON(sessionStorage[typeName]);
-		$('#'+radioId).attr('disabled',false);
-		$('#'+labelId+'Loading').hide();
-		$('#'+labelId).show();
-	}
-}
-
-/*
-The next functions are for switching form views:
-*/
-
-$('#commonNameView').click(function () {
-	showCommonNames(FEATURE_TABLE_JSON);
-});
-$('#accessionNumberView').click(function () {
-	showAccessionNumbers(FEATURE_TABLE_JSON);
-});
-$('#isolationHostView').click(function () {
-	changeListView(ISOLATION_HOST_JSON.json);
-});
-$('#isolationSourceView').click(function () {
-	changeListView(ISOLATION_SOURCE_JSON.json);
-});
-$('#serotypeView').click(function () {
-	changeListView(SEROTYPE_JSON.json);
-});
-$('#isolationDateView').click(function () {
-	changeListView(ISOLATION_DATE_JSON.json);
-});
-$('#isolationLocationView').click(function () {
-	changeListView(ISOLATION_LOCATION_JSON.json);
-});
-
-function showCommonNames(featureJsonList) {
-	$('#pubStrainList').empty();
-	var availableTags = [];
-	for (i=0 ; i<featureJsonList.data.length ; i++) {
-		var opt = document.createElement("option");
-		var description = document.createTextNode(featureJsonList.data[i].uniquename);
-		opt.value = featureJsonList.data[i].feature_id;
-		opt.appendChild(description);
-		document.getElementById('pubStrainList').appendChild(opt);
-
-		availableTags.push( { label:featureJsonList.data[i].uniquename, value:featureJsonList.data[i].feature_id } );
-	}
-	$("#autoComp").autocomplete({
-		source: availableTags,
-		select: function( event, ui ) {
-			$("#autoComp").val( ui.item.label );
-			$("#autoComp_hidden").val( ui.item.value );
-			return false;
-		}
-	});
-}
-
-function showAccessionNumbers(featureJsonList) {
-	var availableTags = [];
-	$('#pubStrainList').empty();
-	for (i=0 ; i<featureJsonList.data.length ; i++) {
-		var opt = document.createElement("option");
-		var description = document.createTextNode(featureJsonList.data[i].dbxref.accession);
-		opt.value = featureJsonList.data[i].feature_id;
-		opt.appendChild(description);
-		document.getElementById('pubStrainList').appendChild(opt);
-
-		availableTags.push( { label:featureJsonList.data[i].dbxref.accession, value:featureJsonList.data[i].feature_id } );
-	}
-	$("#autoComp").autocomplete({
-		source: availableTags,
-		select: function( event, ui ) {
-			$("#autoComp").val( ui.item.label );
-			$("#autoComp_hidden").val( ui.item.value );
-			return false;
-		}
-	});
-}
-
-function changeListView(jsonList) {
-	$('#pubStrainInfoDropdown').hide();
-	$('#pubStrainInfoSearch').hide();
-	$('#strainInfoProgressbar').show()
-	var availableTags = [];
-	$('#pubStrainList').empty();
-	
-	for (i=0 ; i<jsonList.data.length ; i++) {
-		var opt = document.createElement("option");
-		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);
-		opt.value = jsonList.data[i].feature_id;
-		opt.appendChild(description);
-		document.getElementById('pubStrainList').appendChild(opt);
-
-		availableTags.push( { label:jsonList.data[i].value + ' - ' + jsonList.data[i].common_name, value:jsonList.data[i].feature_id } );
-	}
-	
-	$("#autoComp").autocomplete({
-		source: availableTags,
-		select: function( event, ui ) {
-			$("#autoComp").val( ui.item.label );
-			$("#autoComp_hidden").val( ui.item.value );
-			return false;
-		}
-	});
-	
-	$('#pubStrainInfoDropdown').show();
-	$('#pubStrainInfoSearch').show();
-	$('#strainInfoProgressbar').hide()
-}
 
 
 </script>

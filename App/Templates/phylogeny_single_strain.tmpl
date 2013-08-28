@@ -1,14 +1,10 @@
 <div style="margin: 10px 10px 10px 10px;">
-	<div class="span12">
-		<p>Select a genome by clicking on a node in the phylogenetic tree.  
-		</p>
-	</div>
 	
 	<div id="dialog-genome-select" title="Retrieve selected genome?">
 		<p>Would you like to retrieve the genome information for this selected genome?</p>
 	</div>
 	
-	<div class="span4 offset1" id="legend" style="padding: 10px;">
+	<div class="span6" id="legend">
 		<p>Phylogenetic tree functions</p>
 		
 		<script type="text/javascript">
@@ -16,16 +12,16 @@
 		</script>
 	</div>
 	
-	<div class="span4">
+	<div class="span6">
 		<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#tree-meta-display">
 			<i class=" icon-eye-open icon-white"></i>
 			<span class="caret"></span>
 		</button>
 		
 		<div id="tree-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-			<form class="form-horizontal" style="padding:5px 5px 0 5px;">
+			<div style="padding: 10px">Change meta-data displayed in tree:</div>
+			<form class="form-horizontal" style="padding:0px 5px 0 20px;">
 		    <fieldset>		    	
-				<div style="padding:5px;">Change meta-data displayed in form:</div>
 				<label>
 					<input class="tree-meta" type="checkbox" name="tree-meta-option" value="name"> Name 
 				</label>
@@ -60,6 +56,6 @@
 		root = <TMPL_VAR tree_json>;
 		root.x0 = height / 2;
 		root.y0 = 0;
-		update(root);
+		update(root, centreOnSelectedNode);
 	</script>
 </div>

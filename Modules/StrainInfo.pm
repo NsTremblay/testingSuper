@@ -67,7 +67,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-	);
+);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -89,24 +89,25 @@ sub setup {
 
 =head2 strain_info
 
-Run mode for the sinle strain page
+Run mode for the single strain page
 
 =cut
 
 sub strain_info : StartRunmode {
 	my $self = shift;
 	
-	die "ERROR: DBIX NOT DEFINED!!!\n" unless $self->dbixSchema;
-
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	
-	my $username;
-	$username = $self->authen->username if $self->authen->is_authenticated;
-	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData($username);
-
+	my $username = $self->authen->username;
+	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
+	# Check if user is requesting genome info
 	my $q = $self->query();
 	
+	# Need to replace these param checks with a single genome request.
 	my $strainID = $q->param("singleStrainID");
 	my $privateStrainID = $q->param("privateSingleStrainID");
 	my $feature = $q->param("genome");
@@ -120,12 +121,6 @@ sub strain_info : StartRunmode {
 		}
 	}
 
-	#Code block for trees (may need to be changed later)
-	my $publicTreeStrainID;
-	my $privateTreeStrainID;
-	my $strainInfoTreeRef;
-	#Resume rest of code
-
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
@@ -137,36 +132,26 @@ sub strain_info : StartRunmode {
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 1);
 		
-		my $strainVirDataRef = $self->_getVirulenceData($strainID);
-		$template->param(VIRDATA=>$strainVirDataRef);
+		# Get phylogenetic tree
+		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+		$template->param(tree_json => $tree->nodeTree($feature));
+		
+#		my $strainVirDataRef = $self->_getVirulenceData($strainID);
+#		$template->param(VIRDATA=>$strainVirDataRef);
+#
+#		my $strainAmrDataRef = $self->_getAmrData($strainID);
+#		$template->param(AMRDATA=>$strainAmrDataRef);
+#
+#		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
+#		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
 
-		my $strainAmrDataRef = $self->_getAmrData($strainID);
-		$template->param(AMRDATA=>$strainAmrDataRef);
 
-
-		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
-		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
-
-
-		#Code block for public trees (may need to change this)
-		$publicTreeStrainID = "public_".$strainID;
-		$strainInfoTreeRef = $self->_createStrainInfoPhylo($publicTreeStrainID);
-		$template->param(PHYLOTREE=>$strainInfoTreeRef);
-		#Resume rest of code
-
-		} elsif(defined $privateStrainID && $privateStrainID ne "") {
+	} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
-		my $confirm_access = 0;
-		my $privacy_category;
-		foreach my $genome (@$priDataRef) {
-			if($genome->{feature_id} eq $privateStrainID) {
-				$confirm_access = 1;
-				$privacy_category = $genome->{upload}->{category};
-			}
-		}
+		my $privacy_category = $formDataGenerator->verifyAccess($username, $privateStrainID);
 		
-		unless($confirm_access) {
+		unless($privacy_category) {
 			# User requested strain that they do not have permission to view
 			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genome ID: '.$privateStrainID );
 			return $self->redirect( $self->home_page );
@@ -177,35 +162,36 @@ sub strain_info : StartRunmode {
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
 			associate => HTML::Template::HashWrapper->new( $strainInfoRef ),
 			die_on_bad_params=>0 );
+			
 		$template->param('strainData' => 1);
 		$template->param('privateGenome' => 1);
 		$template->param('username' => $username);
+		
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-			} else {
-				$template->param('privacy' => $privacy_category);
-			}
-			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
-			$template->param(VIRDATA=>$strainVirDataRef);
+		} else {
+			$template->param('privacy' => $privacy_category);
+		}
+#			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
+#			$template->param(VIRDATA=>$strainVirDataRef);
+#
+#			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
+#			$template->param(AMRDATA=>$strainAmrDataRef);
+#
+#			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
+#			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
 
-			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
-			$template->param(AMRDATA=>$strainAmrDataRef);
+	} else {
+		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+			die_on_bad_params=>0 );
+		$template->param('strainData' => 0);
+	}
+	
+	# Populate forms
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
 
-			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
-			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
-
-			#Code block for private trees (may need to change this)
-			$privateTreeStrainID = "private_".$privateStrainID;
-			$strainInfoTreeRef = $self->_createStrainInfoPhylo($privateTreeStrainID);
-			$template->param(PHYLOTREE=>$strainInfoTreeRef);
-			#Resume rest of code
-
-			} else {
-				$template = $self->load_tmpl( 'strain_info.tmpl' ,
-					die_on_bad_params=>0 );
-				$template->param('strainData' => 0);
-			}
-
+=cut
 	# Populate forms
 	$template->param(FEATURES => $pubDataRef);
 	$template->param(strainJSONData => $pubStrainJsonDataRef);
@@ -218,8 +204,9 @@ sub strain_info : StartRunmode {
 		} else {
 			$template->param(PRIVATE_DATA => 0);
 		}
-		return $template->output();
-	}
+=cut
+	return $template->output();
+}
 
 
 =head2 search
@@ -285,16 +272,16 @@ sub search : Runmode {
 			my $public_genomes = $fdg->publicGenomes();
 			
 			foreach my $g (@$public_genomes) {
-				$visable_nodes{$g->{feature_id}} = $g->{uniquename};
+				$visable_nodes{'public_'.$g->{feature_id}} = $g->{uniquename};
 			}
 			
 			$genome_rs->reset;
 			
 			while (my $g = $genome_rs->next) {
-				$visable_nodes{$g->feature_id} = $g->uniquename;
+				$visable_nodes{'private_'.$g->feature_id} = $g->uniquename;
 			}
 			
-			my $tree_string = $tree->userTree(\%visable_nodes);
+			my $tree_string = $tree->fullTree(\%visable_nodes);
 			
 			$template->param(tree_json => $tree_string);
 		
@@ -302,14 +289,14 @@ sub search : Runmode {
 			# No private genomes
 			# Return public tree
 			
-			$template->param(tree_json => $tree->publicTree);
+			$template->param(tree_json => $tree->fullTree);
 		}
 		
 	} else {
 		# Anonymous user
 		# Return public tree
 		
-		$template->param(tree_json => $tree->publicTree);
+		$template->param(tree_json => $tree->fullTree);
 	}
 	
 	

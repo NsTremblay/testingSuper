@@ -10,32 +10,7 @@
 	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
 	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
 	
-	<script>
-		var public_genomes = <TMPL_VAR public_genomes>;
-		var private_genomes = <TMPL_VAR private_genomes>;
-	</script>
-	<script>
-		$(function() {
-			$( "#dialog-genome-select" ).dialog({
-				autoOpen: false,
-				resizable: false,
-				height:180,
-				modal: true,
-				buttons: {
-					"Submit": function() {
-						var form = $('<form action="/strain_info/" method="post">' +
-						  '<input type="text" name="genome" value="' + $( this ).data('genome') + '" />' +
-						  '</form>');
-						$( 'body' ).append(form);
-						$( form ).submit();
-				},
-				Cancel: function() {
-					$( this ).dialog( "close" );
-					}
-				}
-			});
-		});
-	</script>
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
 	
 </head>
 
@@ -61,68 +36,15 @@
 		<div class="tab-content">
 			
 			<div class="tab-pane active" id="phylo_search_tab">
-				<div style="margin: 10px 10px 10px 10px;">
-					<div class="span12">
-						<p >Select a genome by clicking on a node in the phylogenetic tree.  
-						</p>
-						<div id="dialog-genome-select" title="Retrieve selected genome?">
-							<p>Would you like to retrieve genome information for this selected genome?</p>
-						</div>
-					</div>
-					<div class="span7">
-						<form class="form-horizontal" style="padding: 10px; margin: 40px 10px 10px 10px">
-					    <fieldset>
-					    	<div class="control-group">
-					    	<label class="control-label">Select data displayed in phylogenetic tree:</label>
-					    	<div class="controls">
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="name"> Name
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="accession"> Accession #
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="strain"> Strain
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="serotype"> Serotype
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="isolation_host"> Isolation Host
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="isolation_source"> Isolation Source
-							    </label>
-							    <label class="checkbox inline">
-							    <input type="checkbox" name="view_options" value="isolation_date"> Isolation Date
-							    </label>
-							</div>
-							</div>											    	
-						    <button id="update_view" class="btn">Update</button>					   						    
-					    </fieldset>
-					    </form>
-					</div>
-					<div class="span4" id="legend" style="padding: 10px;">
-						<p>Phylogenetic tree functions</p>
-						<script src="/App/Styling/js/genodo_tree_functions.js"></script>
-						<script type="text/javascript">
-							legend();
-						</script>
-					</div>
-						
+				<div class="span12" style="padding:0 0 40px 0">
+					<p>Select a genome by clicking on a node in the phylogenetic tree.  
+					</p>
 				</div>
-				
-				<div id="vis" class="span12">
-					<script src="/App/Styling/js/genodo_tree_functions.js"></script>
-					<script src="/App/Styling/js/genodo_single_strain_tree_zoom.js"></script>
-					<script type="text/javascript">
-						
-						root = <TMPL_VAR tree_json>;
-						root.x0 = height / 2;
-    					root.y0 = 0;
-						update(root);
-					</script>
-				</div>
+				<script>
+					var smallTreeWindow = false;
+					var centreOnSelectedNode = false;
+				</script>
+				<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
 			</div>
 			
 			<div class="tab-pane" id="map_search_tab">

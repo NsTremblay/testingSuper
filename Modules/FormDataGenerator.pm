@@ -606,20 +606,30 @@ sub _runGenomeQuery {
 		isolation_date      => 1,
 	);
 	
+	# Table and relationship names
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
-	my $order_name = 'featureprops.rank';
+	my $order_name = { '-asc' => ['feature.uniquename', 'featureprops.rank'] };
+	unless($public) {
+		$feature_table_name = 'PrivateFeature';
+		$featureprop_rel_name = 'private_featureprops';
+		$order_name = { '-asc' => ['private_feature.uniquename', 'private_featureprops.rank'] };
+	}
+	
+	# Query
 	my $query = {
 		'type.name'      => 'contig_collection',
 		'type_2.name'      => { '-in' => [ keys %fp_types ] }
     };
     my $join = 'type';
+    my $prefetch = [
+		{ 'dbxref' => 'db' },
+		{ $featureprop_rel_name => 'type' },
+	];
 	
 	# Query data in private tables
 	unless($public) {
-		$feature_table_name = 'PrivateFeature';
-		$featureprop_rel_name = 'private_featureprops';
-		$order_name = 'private_featureprops.rank';
+		
 		if($username) {
 			$query = [
 				{
@@ -633,6 +643,8 @@ sub _runGenomeQuery {
 					'type_2.name'        => { '-in' => [ keys %fp_types ] }
 			    }
 		    ];
+		    
+		    push @$prefetch, 'upload';
 		} else {
 			$query = {
 				'upload.category'    => 'public',
@@ -640,20 +652,15 @@ sub _runGenomeQuery {
 				'type_2.name'        => { '-in' => [ keys %fp_types ] }
 		    };
 		}
-		$join = [ 
-			'type',
-			{ 'upload' => { 'permissions' => 'login'} }
-		];
+		
+		push @$join, { 'upload' => { 'permissions' => 'login'} };
 	}
 	
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
 		$query,	
 		{
 			join => $join,
-			prefetch => [
-				{ 'dbxref' => 'db' },
-				{ $featureprop_rel_name => 'type' },
-			],
+			prefetch => $prefetch,
 			order_by => $order_name
 		}
 	);
@@ -670,6 +677,26 @@ sub _runGenomeQuery {
 			my $version = $feature->dbxref->version;
 			$feature_hash{primary_dbxref} = $feature->dbxref->db->name . ': ' . $feature->dbxref->accession;
 			$feature_hash{primary_dbxref} .= '.' . $version if $version && $version ne '';
+		}
+		
+		unless($public) {
+			# Display name
+			
+			if($username) {
+				# User logged in and may have some private genomes
+				my $displayname = $feature_hash{uniquename};
+				
+				if($feature->upload->category eq 'public') {
+					$feature_hash{displayname} = $displayname . ' [Pub]';
+				} else {
+					$feature_hash{displayname} = ' [Pri]';
+				}
+				
+			} else {
+				# User not logged in, all user genomes must be public
+				my $displayname = $feature_hash{uniquename};
+				$feature_hash{displayname} = $displayname . ' [Pub]';
+			}
 		}
 		
 		# Featureprop data
@@ -733,6 +760,43 @@ sub loadMetaData {
 		}
 	);
 	
+}
+
+=cut verifyAccess
+
+Confirm that user can view provided user-uploaded genome.
+
+Returns false if user does not have view access or returns the genome
+privacy setting if true (i.e. public, private or release).
+
+=cut
+
+sub verifyAccess {
+	my ($self, $username, $feature_id) = @_;
+	
+	my $genome = $self->dbixSchema->resultset('PrivateFeature')->search(
+		[
+         	{
+				'login.username' => $username,
+				'feature_id' => $feature_id
+           	},
+           	{
+				'upload.category'    => 'public',
+				'feature_id' => $feature_id
+			},
+		],
+		{     
+		    columns => [qw/feature_id/],
+		    '+columns' => [qw/upload.category/],
+		    join => { 'upload' => { 'permissions' => 'login'} },
+		}
+	);
+	
+	if(my $feature = $genome->first) {
+		return $feature->upload->category;
+	} else {
+		return 0;
+	}
 }
 
 

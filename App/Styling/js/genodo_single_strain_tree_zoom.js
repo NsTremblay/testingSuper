@@ -1,13 +1,22 @@
 /**
  * Phylogenetic tree with single select setting
- * 
- * ZOOOM
+ *
  *
  */
 
+var w, h;
+
+if(smallTreeWindow == true) {
+	w = 500,
+	h = 800;
+} else {
+	w = 960,
+	h = 1400;
+}
+
 var margin = {top: 20, right: 180, bottom: 20, left: 20},
-    width = 960 - margin.right - margin.left,
-    height = 2000 - margin.top - margin.bottom;
+    width = w - margin.right - margin.left,
+    height = h - margin.top - margin.bottom;
 
 var xzoom = d3.scale.linear().domain([0, width]).range([0, width]),
 yzoom = d3.scale.linear().domain([0, height]).range([0, height]);
@@ -30,18 +39,8 @@ var vis = wrap.append("g")
 
 wrap.call(d3.behavior.zoom().x(xzoom).y(yzoom).scaleExtent([1,8]).on("zoom",zoomed));
 
-var root = null,
-visableData = ['name'];
-
-// Set up event for view options button
-$("#update_view").click(function(event) {
-	event.preventDefault();
-	
-	visibleData = [];
-	$("input[name='view_options']:checked").each( function(i, e) { visibleData.push( $( e ).val() ); });
-	modifyLabels(visibleData);
-
-	return false;
-});
+var maskedNodes = {};  // A dictionary object for keeping track of masked nodes
+var selectedNodes = {}; // A dictionary object for keeping track of selected nodes
+var nodes;  // A pointer to the nodes created by the cluster call
 
 

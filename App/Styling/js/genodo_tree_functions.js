@@ -93,7 +93,7 @@ function selectNode(d, i, source) {
 		d.selected = true;
 		vis.selectAll("g#node"+i+".node")
 			.select("circle")
-			.style("fill", "darkgrey");
+			.style("fill", "lightsteelblue");
 	}
 		
 	if(d.children && d.depth != 0) {
@@ -103,6 +103,72 @@ function selectNode(d, i, source) {
 		});
 	}
 }
+
+//Event handler for a clicked leaf node
+function selectLeafNode(id, name, label, clickOn) {
+	
+	// If check not specified, toggle value
+	if(!clickOn) {
+		if(selectedNodes[id]) {
+			clickOn = 'uncheck';
+		} else {
+			clickOn = 'check';
+		}
+	}
+	
+	if(clickOn == 'check') {
+		selectedNodes[id] = true;
+		vis.selectAll("g#node"+id+".node")
+			.select("circle")
+			.style("fill", "lightsteelblue");
+	} else {
+		if(selectedNodes[id]) {
+			delete selectedNodes[id];
+		}
+		
+		vis.selectAll("g#node"+id+".node")
+			.select("circle")
+			.style("fill", "#fff");
+		
+	}
+			
+	updateSelectedList(id, name, label, clickOn);
+}
+
+function updateSelectedList(node_id, genome_id, label, checked) {
+	
+	var selectedList = $('#tree-selected-genomes');
+	
+	if(checked == 'check') {
+		// Add checked genome
+		var newItem = selectedList.append(
+		    	'<li>'+
+				'<label class="checkbox" for="tree-genome'+node_id+'"><input id="tree-genome'+node_id+'" type="hidden" value="'+genome_id+'" name="genomes-in-tree"/>'+label+
+				'  <a href="#" title="delete" class="treeGenomeDelete"><span style="font-size: small">[x]</span></a>'+
+				'</label>'+			
+				'</li>'
+			);
+		
+		// Register click event
+		newItem.find('a').click(function (event) {
+			event.preventDefault();
+			
+		    deleteInList(node_id);
+		    
+		    return false;
+		});
+	} else {
+		// Remove unchecked genome
+		selectedList.find('#tree-genome'+node_id).closest('li').remove();
+	}
+}
+
+// User is deleting a genome from the tree list and not by clicking in a tree node
+function deleteInList(id) {
+	
+		selectLeafNode(id, null, null, 'uncheck');
+}
+
 
 // Change node name in selectedGenome div when clicked
 function selectSingleNode(d) {
@@ -117,7 +183,8 @@ function selectSingleNode(d) {
 }
 
 //Redraw tree after user selects to expand/collapse node
-function expandCollapse(d, el) {
+function expandCollapse(d, el, centerOnFocus, multiSelect) {
+	
 	if (d.children) {
 		d._children = d.children;
 		d.children = null;
@@ -126,7 +193,7 @@ function expandCollapse(d, el) {
 		d._children = null;
 	}
 	
-	update(d);
+	update(d, centerOnFocus, multiSelect);
 	
 	if(d.children) {
 		// Hide label when the node is clicked
@@ -138,18 +205,34 @@ function expandCollapse(d, el) {
 }
 
 //Redraw tree after user selects to expand/collapse node
-function update(source) {
+function update(source, centerOnFocus, multiSelect) {
+	
+	if(typeof centerOnFocus === 'undefined') {
+		centerOnFocus = false;
+	}
+	
+	if(typeof multiSelect === 'undefined') {
+		multiSelect = false;
+	}
 	
 	var branch_scale_factor_y = 7;
 	var branch_scale_factor_x = 1.5;
 	
 	// Re-compute tree
-	var nodes = cluster.nodes(root);
+	//var nodes = cluster.nodes(root);
+	nodes = cluster.nodes(root);
 	
 	// Scale branch lengths
 	nodes.forEach(function (d) { d.y = d.sum_length * branch_scale_factor_y; d.x = d.x * branch_scale_factor_x; });
 	
 	// Shift tree to make room for new level if expansion
+	
+	// If centerOnFocus == true, use focus node to position tree
+	if(centerOnFocus == true) {
+		source = nodes.filter(function(d) { return d.focus; } )[0];
+		source.x0 = height / 2;
+		source.y0 = 0;
+	}
 	var yshift = null;
 	var xshift1 = null;
 	var xshift2 = null;
@@ -163,6 +246,18 @@ function update(source) {
 			xshift1 = maxx - height;
 		
 		var minx = d3.min(source.children, function(d) { return d.x; });
+		if(minx < 0)
+			xshift2 = minx+2;
+	} else {
+		var maxy = source.y;
+		if(maxy > width)
+			yshift = maxy - width;
+		
+		var maxx = source.x;
+		if(maxx > height)
+			xshift1 = maxx - height;
+		
+		var minx = source.y;
 		if(minx < 0)
 			xshift2 = minx+2;
 	}
@@ -184,7 +279,7 @@ function update(source) {
 	    	d.x = d.x+xshift2;
 		});
 	}
-	
+    
 	// Get all nodes and assign ID #'s
 	var node = vis.selectAll("g.node")
     	.data(nodes, function(d) { return d.id || (d.id = ++i); });
@@ -225,14 +320,27 @@ function update(source) {
 		.attr("id", function(d) { return "node"+d.id })
 		.attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; });
     
-    var leaves = nodeEnter.filter(function(d) { return d.leaf })
-		.append("circle")
+    var leaves = nodeEnter.filter(function(d) { return d.leaf; });
+    
+    leaves.append("circle")
 		.attr("r", 1e-6)
-		.style("fill", "#fff");
+		.style("fill", function(d) { return d.selected ? "lightsteelblue" : "#fff"; });
 	
-	leaves.on("click", selectSingleNode);
+    if(multiSelect) {
+    	leaves.on("click", function(d) { selectLeafNode(d.id, d.name, d.label); } );
+    } else {
+    	leaves.on("click", selectSingleNode);
+    }
+    
+    // Remove click response and change formatting of masked nodes.
+    var masked = leaves.filter(function(d) { return maskedNodes[d.name]; })
+    	.classed('maskedNode', true);
+  
+    masked.on("click", null);
+    
+    masked.select("circle")
+		.style("fill", "grey");
 	
-	//nodeEnter.filter(function(d) { return !d.children })
 	nodeEnter
 		.append("text")
 		.attr("dx", ".6em")
@@ -246,6 +354,16 @@ function update(source) {
 		})
 		.style("fill-opacity", 1e-6);
 	
+	var focusNode = nodeEnter.filter(function(d) { return d.focus; } );
+	
+	focusNode
+    	.select("circle")
+		.attr('id', 'focusNodeCircle');
+
+	focusNode
+		.select("text")
+		.attr('id', 'focusNodeText');
+	
 	var cmdBox = nodeEnter.filter(function(n) { return !n.leaf })
 		.append("rect")
 		.attr("width", 1e-6)
@@ -254,7 +372,7 @@ function update(source) {
 		.attr("x", -14)
 		.style("fill", "#fff");
 	
-	cmdBox.on("click", function(d) { expandCollapse(d, this.parentNode); } );
+	cmdBox.on("click", function(d) { expandCollapse(d, this.parentNode, centerOnFocus, multiSelect); } );
 	
 	var nodeUpdate = node.transition()
     	.duration(duration)
@@ -271,7 +389,7 @@ function update(source) {
 	    .attr("width", 8)
 		.attr("height",8)
 	    .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
-
+    
     // Transition exiting ndoes to the parent's new position.
     var nodeExit = node.exit().transition()
         .duration(duration)
@@ -397,7 +515,7 @@ function transform(d) {
 function legend() {
 	var m = {top: 10, right: 10, bottom: 10, left: 10},
 	w = 310 - m.right - m.left,
-	h = 140 - m.top - m.bottom;
+	h = 100 - m.top - m.bottom;
     
 	var legend = d3.select("#legend").append("svg")
 		.attr("width", w)
@@ -412,7 +530,7 @@ function legend() {
 		.attr("transform", function(d) { return "translate(10,10)"; });
 	
 	circ.append("circle")	
-		.attr("r", 8);
+		.attr("r", 5);
 	
 	circ.append("text")
 		.attr("dx", "1em")
@@ -422,13 +540,13 @@ function legend() {
 	
 	var rec = canvas.append("g")
 		.attr("class", "legend")
-		.attr("transform", function(d) { return "translate(10,43)"; });
+		.attr("transform", function(d) { return "translate(150,15)"; });
 	
 	rec.append("rect")
-		.attr("width", 14)
-		.attr("height",14)
-		.attr("y", -14)
-		.attr("x", -7)
+		.attr("width", 10)
+		.attr("height",10)
+		.attr("y", -10)
+		.attr("x", -5)
 		.attr("fill", "#fff")
 	
 	rec.append("text")
@@ -439,13 +557,13 @@ function legend() {
 		
 	var rec = canvas.append("g")
 		.attr("class", "legend")
-		.attr("transform", function(d) { return "translate(10,70)"; });
+		.attr("transform", function(d) { return "translate(10,40)"; });
 	
 	rec.append("rect")
-		.attr("width", 14)
-		.attr("height",14)
-		.attr("y", -14)
-		.attr("x", -7)
+		.attr("width", 10)
+		.attr("height",10)
+		.attr("y", -10)
+		.attr("x", -5)
 		.attr("fill", "lightsteelblue")
 	
 	rec.append("text")
@@ -456,7 +574,7 @@ function legend() {
 		
 	var rec = canvas.append("g")
 		.attr("class", "legend")
-		.attr("transform", function(d) { return "translate(10,100)"; });
+		.attr("transform", function(d) { return "translate(10,63)"; });
 	
 	rec.append("text")
 		.attr("y", 0)
@@ -466,4 +584,47 @@ function legend() {
 		.attr("text-anchor", "start")
 		.text("Click and drag to pan / Mouse wheel to zoom");
 
+}
+
+// masking Node changes its format and stops any click events
+function maskNode(nodeName, turnOn) {
+	
+	var foundNode = nodes.filter(function(d) { return d.name == nodeName; });
+	
+	if(foundNode.length == 1) {
+		// Node is in current view, update its format
+		var node = foundNode[0];
+		
+		if(turnOn) {
+			// Add mask
+			var el = vis.selectAll("g#node"+node.id+".node")
+				.classed("maskedNode", true);
+			
+			el.on("click", null );
+			
+			el.select("circle")
+				.style("fill", "grey");
+			
+		} else {
+			// Restore to normal node
+			var el = vis.selectAll("g#node"+node.id+".node")
+				.classed("maskedNode", false);
+			
+			el.on("click", function() { selectLeafNode(node.id, node.name, node.label); } );
+			
+			el.select("circle")
+				.style("fill", function() { return node.selected ? "lightsteelblue" : "#fff"; });
+			
+		}
+	}
+		
+	// Update masked node list
+	if(turnOn) {
+		maskedNodes[nodeName] = true;
+	} else {
+		if(maskedNodes[nodeName]) {
+			delete maskedNodes[nodeName];
+		}
+	}
+	
 }

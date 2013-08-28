@@ -37,6 +37,7 @@ use Modules::FormDataGenerator;
 
 # Globals
 my $visable_nodes; # temporary pointer to list of nodes to keep when pruning by recursion
+my $short_circuit = 0; # boolean to stop subsequent recursion function calls
 
 =head2 new
 
@@ -120,13 +121,28 @@ sub loadTree {
 	# Prune private genomes from tree
 	my $public_tree = $self->pruneTree($ptree, $public_list, 1);
 	
+	# Save perl copy for instances where we need to do some editing
+	my $ptree_string2 = Data::Dumper->Dump([$public_tree], ['tree']);
+	
+	$self->dbixSchema->resultset('Tree')->update_or_create(
+		{
+			name             => 'perlpub',
+			format           => 'perl',
+			tree_string      => $ptree_string2,
+			timelastmodified => \'now()'
+		},
+		{
+			key => 'tree_c1'
+		}
+	);
+	
 	# Convert to json
 	my $jtree_string = encode_json($public_tree);
 	
 	# Save in DB
 	$self->dbixSchema->resultset('Tree')->update_or_create(
 		{
-			name             => 'public',
+			name             => 'jsonpub',
 			format           => 'json',
 			tree_string      => $jtree_string,
 			timelastmodified => \'now()'
@@ -140,7 +156,9 @@ sub loadTree {
 
 =head2 pruneTree
 
- 
+	Trim non-visable nodes. Collapse nodes above certain depth.
+	In the D3 tree library, to collapse a node, the children array is
+	renamed to _children.
 
 =cut
 
@@ -243,6 +261,7 @@ sub _pruneNodeRecursive {
 		
 	} else {
 		# Leaf node
+		
 		croak "Leaf node with no defined name at depth $depth.\n" unless $node->{name};
 		if(my $label = $visable_nodes->{$node->{name}}) {
 			# Add a label to the leaf node
@@ -254,8 +273,58 @@ sub _pruneNodeRecursive {
 			$record->{depth} = $depth;
 			$record->{'length'} = $node->{'length'};
 			return ($node, $record);
-		} else {	
+		} else {
+			
 			return;
+		}
+	}
+	
+}
+
+=head2 blowUpPath
+
+Expand nodes along path from target leaf node
+to root.
+
+=cut
+
+sub blowUpPath {
+	my ($curr, $target, $path) = @_;
+	
+	get_logger->debug('TYPE ', ref $curr);
+	get_logger->debug('CURRENT node ', $curr->{label});
+	
+	# Children in collapsed or expanded nodes
+	my @children;
+	if($curr->{children}) {
+		@children = @{$curr->{children}};
+	} elsif($curr->{_children}) {
+		@children = @{$curr->{_children}}
+	}
+	
+	if(@children && !$short_circuit) {
+		my @new_path = @$path;
+		push @new_path, $curr;
+		
+		foreach my $child (@children) {
+			blowUpPath($child, $target, \@new_path);
+		}
+		
+	} else {
+		# Is this the leaf node we are looking for?
+		if($curr->{name} eq $target) {
+			# Exand nodes along path to root
+			
+			$curr->{focus} = 1; # Change style of node
+			
+			$short_circuit = 1; # Stop future recursion calls
+			
+			foreach my $path_node (@$path) {
+				if($path_node->{_children}) {
+					$path_node->{children} = $path_node->{_children};
+					delete $path_node->{_children};
+				}
+			}
 		}
 	}
 	
@@ -265,6 +334,8 @@ sub _pruneNodeRecursive {
 =head2 userTree
 
 Return json string of phylogenetic visable to user
+
+Input is a hash of valid feature_IDs.
 
 =cut
 
@@ -293,7 +364,7 @@ sub publicTree {
 	
 	my $tree_rs = $self->dbixSchema->resultset("Tree")->search(
 		{
-			name => 'public'	
+			name => 'jsonpub'	
 		},
 		{
 			columns => ['tree_string']
@@ -303,7 +374,7 @@ sub publicTree {
 	return $tree_rs->first->tree_string;	
 }
 
-=head2 publicTree
+=head2 globalTree
 
 Return perl data-structure phylogenetic containing all nodes (INCLUDING PRIVATE!!)
 
@@ -328,6 +399,90 @@ sub globalTree {
 	eval $tree_rs->first->tree_string;
 	
 	return $tree;	
+}
+
+=head2 perlPublicTree
+
+Return perl data-structure phylogenetic containing only public genomes
+
+Returns a perl hash-ref and not a string.
+
+=cut
+sub perlPublicTree {
+	my $self = shift;
+	
+	my $tree_rs = $self->dbixSchema->resultset("Tree")->search(
+		{
+			name => 'perlpub'	
+		},
+		{
+			columns => ['tree_string']
+		}
+	);
+	
+	# Tree hash is saved as $tree in Data::Dumper string
+	my $tree;
+	
+	eval $tree_rs->first->tree_string;
+	
+	return $tree;	
+}
+
+=head2 fullTree
+
+Returns json string representing "broad" view of tree.
+
+Nodes are all collapsed above a certain depth.
+
+=cut
+sub fullTree {
+	my ($self, $visable) = @_;
+	
+	if($visable) {
+		return $self->userTree($visable);
+	} else {
+		return $self->publicTree();
+	}
+}
+
+=head2 nodeTree
+
+Returns json string representing "narrow" view of tree.
+
+Nodes are all collapsed above a certain depth except for nodes 
+along path to leaf node matching $node.
+
+=cut
+sub nodeTree {
+	my ($self, $node, $visable) = @_;
+	
+	if($visable) {
+		# User has private genomes
+		my $ptree = $self->globalTree;
+	
+		# Remove genomes not visable to user
+		my $tree = $self->pruneTree($ptree, $visable);
+		
+		# Exand nodes along path to target leaf node
+		blowUpPath($tree, $node, []);
+		
+		# Convert to json
+		my $jtree_string = encode_json($tree);
+		
+		return $jtree_string;
+		
+	} else {
+		# User can only view public genomes
+		my $tree = $self->perlPublicTree;
+	
+		# Exand nodes along path to target leaf node
+		blowUpPath($tree, $node, []);
+		
+		# Convert to json
+		my $jtree_string = encode_json($tree);
+		
+		return $jtree_string;
+	}
 }
 
 =cut newick_to_perl
@@ -421,6 +576,7 @@ sub visableGenomes {
 		$visable{'private_'.$nodename->{feature_id}} = $nodename->{uniquename}; 
 	}
 	
+
 	return \%visable;
 }
 
