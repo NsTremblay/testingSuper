@@ -29,7 +29,8 @@ $0 - Processes teb delmited output files from analysis for uploading to the db.
 =head1 COMMAND-LINE OPTIONS
 
  --input_file         Specify a tab delimited input file.
- --data_type         Specify type of input (virulence, amr, binary, snp)
+ --data_type          Specify type of input (virulence, amr, binary, snp)
+ --db_name 			  Specify the database name to upload data to
 
 =head1 DESCRIPTION
 
@@ -54,15 +55,17 @@ Akiff Manji
 #	2					2						1/0
 #	3					2						1/0
 
-my ($INPUTFILE , $INPUTDATATYPE);
+my ($INPUTFILE , $INPUTDATATYPE, $DBNAME);
 
 GetOptions(
 	'input_file=s'	=> \$INPUTFILE,
 	'data_type=s'	=> \$INPUTDATATYPE,
+	'db_name=s'		=> \$DBNAME
 	) or ( system( 'pod2text', $0 ), exit -1 );
 
 croak "Missing argument. You must supply an input data file.\n" . system ('pod2text', $0) unless $INPUTFILE;
 croak "Missing argument. You must supply an input data type (virulence, amr, binary, snp).\n" . system ('pod2text', $0) unless $INPUTDATATYPE;
+croak "Missing argument. You must supply the database name.\n" . system ('pod2text', $0) unless $DBNAME;
 
 my %inputDataType = ('virulence' => "RawVirulenceData", 'amr' => "RawAmrData", 'snp' => "SnpsGenotype", 'binary' => "LociGenotype");
 
@@ -107,6 +110,10 @@ my %inputDataTypeColumnNames = (
 					}
 				}
 				);
+
+# unless ($ENV{USER} eq 'postgres') {
+# 	die "User \'postgres\' must be logged in. You are currently logged in as: " . $ENV{USER} . "\n";
+# }
 
 open my $datafile , '<' , $INPUTFILE;
 
@@ -158,7 +165,6 @@ my $outfolder = "$FindBin::Bin/";
 open my $outNameFile , '>' , "$INPUTDATATYPE" . "_processed_names.txt";
 open my $outDataFile , '>' , "$INPUTDATATYPE" . "_processed_data.txt";
 
-
 #Change this method below
 if ($INPUTDATATYPE eq 'binary') {
 	#Need to store the locus names first in the Loci (loci) table
@@ -168,7 +174,8 @@ if ($INPUTDATATYPE eq 'binary') {
 		print $outNameFile $locusCount . "\t" . $parsedHeader . "\n";
 		writeOutBinaryData($locusCount);
 	}
-	print "/t...DONE\n";
+	print "\t...Adding loci to database\n";
+	copyDataToDb();
 }
 elsif ($INPUTDATATYPE eq 'snp'){
 	#Need to store the snp names first in the Snp (snps) table
@@ -176,13 +183,15 @@ elsif ($INPUTDATATYPE eq 'snp'){
 	for (my $j = 0; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
 		print $outNameFile $snpCount . "\t" . $parsedHeader . "\n";
-		#writeOutSnpData($snpCount);
+		writeOutSnpData($snpCount);
 	}
-		print "/t...DONE\n";
+		print "\t...Adding snps to database\n";
+		copyDataToDb();
 }
 else {
 	#Data is either for virulence or amr genes
-	print "/t...DONE\n";
+	#Need to implement this
+	print "\t...Adding data to database\n";
 }
 
 close $outNameFile;
@@ -202,6 +211,14 @@ sub writeOutBinaryData {
 
 sub writeOutSnpData {
 	my $_snpCount = shift;
+		for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
+		print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . $seqFeatureTemp[$_snpCount][$i] . "\n";
+	}
+	if ($_snpCount % 1000 == 0) {
+		print "$_snpCount out of " . scalar(@seqFeatureTemp) . " snps completed\n";
+	}
+	else {
+	}
 }
 
 sub parseHeader {
@@ -247,4 +264,8 @@ sub parseHeader {
 	else{
 	}
 	return $newHeader;
+}
+
+sub copyDataToDb {
+	print "psql -v outnamefile=$INPUTDATATYPE"."_processed_data.txt -v outdatafile=$INPUTDATATYPE"."_processed_data.txt < $DBNAME genodo_data_to_db.sql\n";
 }
