@@ -41,15 +41,16 @@ use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;;
-
+use Phylogeny::Tree;
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
 use IO::File;
+use Log::Log4perl qw'get_logger';
 
 sub setup {
 	my $self=shift;
-	my $logger = Log::Log4perl->get_logger();
-	$logger->info("Logger initialized in Modules::GroupWiseComparisons");
+	
+	get_logger()->info("Logger initialized in Modules::GroupWiseComparisons");
 }
 
 =head2 groupWiseComparisons
@@ -58,16 +59,38 @@ Run mode for the group wise comparisons page
 
 =cut
 
-sub group_wise_comparisons : StartRunmode{
+sub group_wise_comparisons : StartRunmode {
 	my $self = shift;
-
+	my $errs = shift;
+	
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
+	
+	my $username = $self->authen->username;
+	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
+	
 	#my $formDataRef = $formDataGenerator->getFormData();
-	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
-	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
-	$template->param(FEATURES=>$pubDataRef);
-	$template->param(strainJSONData=>$strainJsonDataRef);
+	#my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
+	
+	my $template = $self->load_tmpl( 'group_wise_comparison_form.tmpl' , die_on_bad_params=>0 );
+	
+	#$template->param(FEATURES=>$pubDataRef);
+	#$template->param(strainJSONData=>$strainJsonDataRef);
+	
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
+	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+	$template->param(tree_json => $tree->fullTree());
+	
+	if($errs) {
+		$template->param(comparison_failed => $errs);
+	}
+	
+	
 	return $template->output();
 }
 
@@ -99,6 +122,22 @@ sub group_wise_info : Runmode {
 		return $groupWiseDataJSONref;
 	}
 }
+
+sub comparison : Runmode {
+	my $self = shift;
+	
+	my $q = $self->query();
+	my @group1 = $q->param("comparison-group1-genome");
+	my @group2 = $q->param("comparison-group2-genome");
+
+	if(!@group1 && !@group2){
+		return $self->group_wise_comparisons('one or more groups were empty');
+	} else {
+		return '<!DOCTYPE html><html><body><p>FUTURE GROUPWISE RESULTS PAGE</p></body></html>';
+	}
+	
+}
+
 
 =head2 _getStrainInfo
 

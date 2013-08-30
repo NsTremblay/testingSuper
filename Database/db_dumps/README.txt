@@ -33,3 +33,9 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 
 10. ../genodo_add_aro.sh
 	Add antimicrobial resistance ontology to database using chadoXML file aro_obo_text.xml and DBIx::DBStag.
+	
+11. create_tree_table.sql
+	Schema for storing tree strings. Additions on top of 10.
+	
+11. create_meta_table.sql
+	Schema for storing meta data json strings. Additions on top of 11.
