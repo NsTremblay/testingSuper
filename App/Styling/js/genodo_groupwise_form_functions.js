@@ -57,7 +57,7 @@ function buildMetaForm(el, tab) {
 // Update and reload various forms with new meta data
 function updateMeta(tab, visableData) {
 	// Default is to display just the name
-	if(typeof visableData === 'undefined') {
+	if(typeof visableData === 'undefined' || visableData.length == 0) {
 		visableData = ['name'];
 	}
 

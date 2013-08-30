@@ -429,7 +429,7 @@ function submitSelection() {
 //to be defined.
 function modifyLabels(vdata) {
 	
-	vdata = typeof vdata !== 'undefined' ? vdata : ['name'];
+	vdata = (typeof vdata !== 'undefined' || vData.length == 0) ? vdata : ['name'];
 	
 	visableData = vdata;
 	
