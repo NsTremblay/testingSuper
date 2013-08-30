@@ -609,11 +609,11 @@ sub _runGenomeQuery {
 	# Table and relationship names
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
-	my $order_name = { '-asc' => ['feature.uniquename', 'featureprops.rank'] };
+	my $order_name = { '-asc' => ['featureprops.rank'] };
 	unless($public) {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
-		$order_name = { '-asc' => ['private_feature.uniquename', 'private_featureprops.rank'] };
+		$order_name = { '-asc' => ['private_featureprops.rank'] };
 	}
 	
 	# Query
@@ -621,7 +621,7 @@ sub _runGenomeQuery {
 		'type.name'      => 'contig_collection',
 		'type_2.name'      => { '-in' => [ keys %fp_types ] }
     };
-    my $join = 'type';
+    my $join = ['type'];
     my $prefetch = [
 		{ 'dbxref' => 'db' },
 		{ $featureprop_rel_name => 'type' },
