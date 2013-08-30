@@ -268,12 +268,11 @@ sub parseHeader {
 }
 
 sub copyLociDataToDb {
-	my $sysline =  "psql -v outnamefile=\'$FindBin::Bin/$INPUTDATATYPE"."_processed_names.txt\' -v outdatafile=\'$FindBin::Bin/$INPUTDATATYPE"."_processed_data.txt"."\'";
-	$sysline .= " -v nametable=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{table}->{tableName} -v datatable=$inputDataType{$INPUTDATATYPE}";
-	$sysline .= " -v nametablecolid=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{table}->{column1} -v nametablecolname=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{table}->{column2}";
-	$sysline .= " -v datatablecolid=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column2} -v datatablegenotype=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column3} -v datatablefeatureid=$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column4}";
-	$sysline.= " $DBNAME < genodo_loci_data_to_db.sql";
-	system($sysline) == 0 or die "$!\n";
+	open my $lociSQLFile , '>' , "$INPUTDATATYPE" . "_db.sql" or croak "Can't write to file: $!";
+	print $lociSQLFile "BEGIN;\n"."COPY loci (locus_id, locus_name) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_names.txt\';\n"."COMMIT;\n"."BEGIN;\n"."COPY loci_genotypes (feature_id, locus_id, locus_genotype) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_data.txt\';\n"."COMMIT;";
+	my $sysline = "psql $DBNAME < $FindBin::Bin/$INPUTDATATYPE"."_db.sql";
+	system($sysline) == 0 or croak "$!\n";
+	unlink "$INPUTDATATYPE" . "_db.sql";
 }
 
 unlink "$INPUTDATATYPE" . "_processed_names.txt";
