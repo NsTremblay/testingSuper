@@ -202,11 +202,11 @@ var bsSearchFields = {
 };
 
 // Results get set to global variable 
-function buildBSForm() {
+function buildBSForm(groupwise) {
 	
 	// Create first search field (no operators)
 	var form1 = $('<fieldset></fieldset>').appendTo('#attr-search-form');
-	form1.append('<div style="padding: 0px 0 0 10px"><p>Specify genome attribute search fields and keywords:</p></div>');
+	form1.append('<div><p>Specify search fields and keywords:</p></div>');
 	
 	var field1 = $('<div class="controls controls-row" style="padding-left: 20px;"></div>').appendTo(form1);
 	addBSFieldDropDown(field1, 1);
@@ -226,7 +226,7 @@ function buildBSForm() {
 	}
 	
 	var form2 = $('<fieldset></fieldset>').appendTo('#attr-search-form');
-	form2.append('<div style="padding: 30px 0 0 10px"><p>Limit results by isolation date:</p></div>');
+	form2.append('<div style="padding: 30px 0 0 0"><p>Limit results by isolation date:</p></div>');
 	
 	for(var k=1; k<3; k++) {
 		var field2 = $('<div class="controls controls-row"></div>').appendTo(form2);
@@ -247,7 +247,7 @@ function buildBSForm() {
 	$('#attr-search-form').submit(function(event) {
 		event.preventDefault;
 		
-		submitSearch();
+		submitSearch(groupwise);
 		
 		return false;
 	});
@@ -408,7 +408,7 @@ function getBSInput() {
 }
 
 // Methods for changing meta data displayed in results window
-function updateAttrMeta(visableData, set) {
+function updateAttrMeta(visableData, set, groupwise) {
 	// Default is to display just the name
 	if(typeof visableData === 'undefined' || visableData.length == 0) {
 		visableData = ['name'];
@@ -421,13 +421,38 @@ function updateAttrMeta(visableData, set) {
 	var display = $('#attr-search-display')
 	display.empty();
 	
-	$.each( set, function(feature_id, feature_obj) {
-		var lab = metaLabel(feature_obj, visableData);
+	if(groupwise) {
+		// Add results, only activating those which are not part of a group
+		var genomesInGroups = groupsList();
 		
-		display.append(function() { 
-			return attrListItem(feature_id, lab); 
+		$.each( set, function(feature_id, feature_obj) {
+			var lab = metaLabel(feature_obj, visableData);
+			
+			if(genomesInGroups.indexOf(feature_id) != -1) {
+				// dead, already in group
+				display.append(function() { 
+					return attrListGroupItem(feature_id, lab, false); 
+				});
+			} else {
+				// live
+				display.append(function() { 
+					return attrListGroupItem(feature_id, lab, true); 
+				});
+			}
 		});
-	});
+		
+	} else {
+		// Add results with appropriate function bindings
+		$.each( set, function(feature_id, feature_obj) {
+			var lab = metaLabel(feature_obj, visableData);
+			
+			display.append(function() { 
+				return attrListItem(feature_id, lab); 
+			});
+		});
+	}
+	
+	
 	 
 }
 
@@ -477,19 +502,38 @@ function attrListItem(id, label) {
 		'</li>';
 }
 
+function attrListGroupItem(id, label, alive) {
+	
+	if(alive) {
+		return '<li>'+
+			'<label class="checkbox" for="'+id+'">'+
+			'<input class="checkbox" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'</label>'+
+			'</li>';
+	} else {
+		return '<li>'+
+			'<label class="checkbox selected-attr-genome" for="'+id+'">'+
+			'<input class="checkbox selected-attr-genome" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'</label>'+
+			'</li>';
+	}
+	
+	
+}
+
 function updateBSResultStatus(set, status) {
 	
 	if(status) {
 		$('#attr-search-result-total').text(status);
 	} else {
 		var tot = Object.keys(set).length;
-		$('#attr-search-result-total').text(tot+' results found.');
+		$('#attr-search-result-total').text(tot+' result(s) found.');
 	}
 }
 
 
 // User clicked submit, run a search and update results display
-function submitSearch() {
+function submitSearch(groupwise) {
 	
 	// Clear old results
 	attr_search_result = {};
@@ -505,7 +549,7 @@ function submitSearch() {
 		// Post new results
 		var visibleData = [];
 		$('input[name="attr-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-		updateAttrMeta(visableData, res);
+		updateAttrMeta(visableData, res, groupwise);
 
 		updateBSResultStatus(res, false);
 		attr_search_result = res; // Save result as global

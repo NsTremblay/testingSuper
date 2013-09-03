@@ -1,7 +1,7 @@
 
 <div class="row-fluid">
 	<div class="span12">
-		<div style="padding:10px 0 10px 10px">
+		<div style="padding:10px 0 10px 0">
 			<p>Search for genomes that have specified genomic attributes. Retrieve detailed information for a genome returned by the query.
 			</p>
 		</div>
@@ -14,15 +14,21 @@
 			<hr/>
 		</div>
 	</div>
-	<div style="padding:20px 20px 20px 20px;">
+	<div style="padding:20px 20px 20px 0;">
 		<div class="span12">
 			<form id="attr-search-form"></form>
 		</div>
 	</div>
 	
 	<script type="text/javascript">
-		buildBSForm();
+		<TMPL_IF groupwise>
+		var groupwise = true;
+		<TMPL_ELSE>
+		var groupwise = false;
+		</TMPL_IF>
+		buildBSForm(groupwise);
 		var attr_search_result = {}; // Global variable that stores result from current search
+		
 	</script>
 </div>
 
@@ -38,14 +44,24 @@
 			<span id="attr-search-result-total" class="help-block"></span>
 			<ul id="attr-search-display"></ul>
 		</div>
+		<TMPL_IF groupwise>
+			<div class="span6">
+				<div class="btn-group btn-group-vertical" style="margin:0 20px 40px 20px; display:inline-block;">					
+					<button id="buttonMetaGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+					<button id="buttonMetaGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>						
+				</div>
+			</div>
+		</TMPL_IF>
+		
 		<div class="span4">
-			<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#attr-meta-display">
+			
+			<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#attr-meta-display" style="margin-left: 10px">
 				<i class=" icon-eye-open icon-white"></i>
 				<span class="caret"></span>
 			</button>
 			
-			<div id="attr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-				<div style="padding: 10px">Change meta-data displayed in result box:</div>
+			<div id="attr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:20px;">
+				<div style="padding: 10px">Change meta-data displayed in Results window:</div>
 				<form style="padding:0px 5px 0 20px;">
 			    <fieldset>		    	
 					<label>
@@ -75,12 +91,13 @@
 			</div>
 		</div>
 		<script type="text/javascript">
+			
 			$('#update-attr-meta').click(function(event) {
 				event.preventDefault;
 				
 				var visibleData = [];
 				$('input[name="attr-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-				updateAttrMeta(visibleData, attr_search_result);
+				updateAttrMeta(visibleData, attr_search_result, groupwise);
 				
 				return false;
 			});
