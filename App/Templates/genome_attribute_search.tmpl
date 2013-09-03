@@ -2,8 +2,14 @@
 <div class="row-fluid">
 	<div class="span12">
 		<div style="padding:10px 0 10px 0">
+			<TMPL_IF groupwise>
+			<p>Search for genomes that have specified genomic attributes. Add genomes returned by the query to a comparison group.
+			</p>
+			<TMPL_ELSE>
 			<p>Search for genomes that have specified genomic attributes. Retrieve detailed information for a genome returned by the query.
 			</p>
+			</TMPL_IF>
+			
 		</div>
 	</div>
 </div>
