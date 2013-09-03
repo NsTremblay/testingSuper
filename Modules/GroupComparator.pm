@@ -40,6 +40,9 @@ use parent 'Modules::App_Super';
 use Log::Log4perl;
 use Carp;
 use List::MoreUtils qw(indexes);
+use List::MoreUtils qw(natatime);
+use Parallel::ForkManager;
+use POSIX;
 
 sub new {
 	my ($class) = shift;
@@ -79,56 +82,95 @@ sub dbixSchema {
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
-sub getBinaryData {
-	my $self = shift;
+# sub getBinaryData {
+# 	my $self = shift;	my $lociDataTable = $self->dbixSchema->resultset('LociGenotype')->search(
+		# {feature_id => $genomeIds},
+		# {
+		# 	join => ['locus'],
+		# 	column => [qw/locus_id/]
+		# }
+		# );
 
-	#For demo purposes we will query the first three strains from the data tables.
-	my $strainIds = shift;
-	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
-	#foreach my $strainId (@{$strainIds}) {
-	#The real strain id's will be passed as array refs;
-	my @lociData;
-	#my @locusNames;
-	my $locusNameTable = $self->dbixSchema->resultset('DataLociName')->search(
-		{},
+# 	#For demo purposes we will query the first three strains from the data tables.
+# 	my $strainIds = shift;
+# 	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
+# 	#foreach my $strainId (@{$strainIds}) {
+# 	#The real strain id's will be passed as array refs;
+# 	my @lociData;
+# 	#my @locusNames;
+# 	my $locusNameTable = $self->dbixSchema->resultset('DataLociName')->search(
+# 		{},
+# 		{
+# 			column => [qw/me.locus_name/]
+# 		}
+# 		);
+# 	while (my $locusNameRow = $locusNameTable->next) {
+# 		my %locus;
+# 		my @present;
+# 		my @absent;
+# 		$locus{'locusname'} = $locusNameRow->locus_name;
+# 		$locus{'present'} = \@present;
+# 		$locus{'present_count'} = 0;
+# 		$locus{'absent'} = \@absent;
+# 		$locus{'absent_count'} = 0;
+# 		push (@lociData , \%locus); 
+# 	}
+# 	foreach my $strainId (@{$strainIds}) {
+# 		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
+# 			{strain => "public_".$strainId},
+# 			{
+# 				column => [qw/me.strain me.locus_name me.presence_absence/]
+# 			}
+# 			);
+# 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
+# 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
+# 			if ($rawBinaryDataRow->presence_absence == 1) {
+# 				push (@{$locus[0]->{'present'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+# 				$locus[0]->{'present_count'}++;
+# 			}
+# 			elsif ($rawBinaryDataRow->presence_absence == 0) {
+# 				push (@{$locus[0]->{'absent'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
+# 				$locus[0]->{'absent_count'}++;
+# 			}
+# 			else {
+# 			}		
+# 			#push (@locusNames , $rawBinaryDataRow->locus_name);
+# 		}
+# 	}
+# 	return \@lociData;
+# }
+
+sub getBinaryData {
+	BEGIN { our $start_run = time(); }
+	my $self = shift;
+	my $genomeIds = shift;
+
+	my @lociNames = $self->dbixSchema->resultset('Loci')->all();
+	my $totalLocusCount = scalar(@lociNames);
+
+	print STDERR $totalLocusCount . "\n";
+
+	my $numberOfCores = 3;
+	#Split the number of loci into $numberOfCores sub arrays
+	#Using natatime need to specify how big each subarray is
+
+	print STDERR ceil($totalLocusCount/$numberOfCores) . "\n";
+
+	my $lociDataTable = $self->dbixSchema->resultset('LociGenotype')->search(
+		{feature_id => $genomeIds},
 		{
-			column => [qw/me.locus_name/]
+			join => ['locus'],
+			column => [qw/locus_id/]
 		}
 		);
-	while (my $locusNameRow = $locusNameTable->next) {
-		my %locus;
-		my @present;
-		my @absent;
-		$locus{'locusname'} = $locusNameRow->locus_name;
-		$locus{'present'} = \@present;
-		$locus{'present_count'} = 0;
-		$locus{'absent'} = \@absent;
-		$locus{'absent_count'} = 0;
-		push (@lociData , \%locus); 
-	}
-	foreach my $strainId (@{$strainIds}) {
-		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
-			{strain => "public_".$strainId},
-			{
-				column => [qw/me.strain me.locus_name me.presence_absence/]
-			}
-			);
-		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
-			if ($rawBinaryDataRow->presence_absence == 1) {
-				push (@{$locus[0]->{'present'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'present_count'}++;
-			}
-			elsif ($rawBinaryDataRow->presence_absence == 0) {
-				push (@{$locus[0]->{'absent'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'absent_count'}++;
-			}
-			else {
-			}		
-			#push (@locusNames , $rawBinaryDataRow->locus_name);
-		}
-	}
-	return \@lociData;
+	#foreach my $locusName (@lociNames) {
+	#	my $locusCount = $lociDataTable->count({'me.locus_id' => $locusName->locus_id , 'me.locus_genotype' => 1},{column => [qw/locus_genotype/]});
+		#print STDERR $locusCount . "\n";
+	#}
+
+	my $end_run = time();
+	my $run_time = $end_run - our $start_run;
+	print STDERR "Job took $run_time seconds\n"
 }
 
 sub getSnpData {

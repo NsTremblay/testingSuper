@@ -131,6 +131,19 @@
 		});
 		marker.setTitle(marker.getPosition().toString());
 		map.panTo(marker.getPosition());
+
+		geocoder.geocode({'latLng': marker.getPosition()}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				if (results) {
+					console.log(results)
+				} else {
+					alert('No results found');
+				}
+			} else {
+				alert('Geocoder failed due to: ' + status);
+			}
+		});
+
 		//Show coordinates for demo
 		$('#coordinates').empty();
 		$('#coordinates').append('<p>Marker Coordinates: '+marker.getPosition().toString()+'</p>')

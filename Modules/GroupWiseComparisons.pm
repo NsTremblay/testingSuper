@@ -75,7 +75,7 @@ sub group_wise_comparisons : StartRunmode {
 	#my $formDataRef = $formDataGenerator->getFormData();
 	#my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
 	
-	my $template = $self->load_tmpl( 'group_wise_comparison_form.tmpl' , die_on_bad_params=>0 );
+	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
 	
 	#$template->param(FEATURES=>$pubDataRef);
 	#$template->param(strainJSONData=>$strainJsonDataRef);
@@ -133,9 +133,11 @@ sub comparison : Runmode {
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
 	} else {
-		return '<!DOCTYPE html><html><body><p>FUTURE GROUPWISE RESULTS PAGE</p></body></html>';
-	}
-	
+		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
+		#Need to return the data from the group comparator module
+		my $binaryDataRef = $self->_getStrainInfo(\@group1);
+		return $template->output();
+	} 
 }
 
 
@@ -162,9 +164,10 @@ sub _getStrainInfo {
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
 	my $binaryDataRef = $comparisonHandle->getBinaryData($_groupedStrainNames);
-	my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
+	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
-	return ($binaryDataRef , $snpDataRef);
+	#return ($binaryDataRef , $snpDataRef);
+	return $binaryDataRef;
 }
 
 sub _getGroupWisePhylo {
