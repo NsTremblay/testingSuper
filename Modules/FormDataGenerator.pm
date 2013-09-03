@@ -661,7 +661,7 @@ sub _runGenomeQuery {
 		{
 			join => $join,
 			prefetch => $prefetch,
-			order_by => $order_name
+			#order_by => $order_name
 		}
 	);
 	
