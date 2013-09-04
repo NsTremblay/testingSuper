@@ -37,6 +37,7 @@ use warnings;
 use FindBin;
 use lib 'FindBin::Bin/../';
 use parent 'Modules::App_Super';
+use Modules::FET;
 use Log::Log4perl;
 use Carp;
 use List::MoreUtils qw(indexes);
@@ -143,30 +144,38 @@ sub dbixSchema {
 sub getBinaryData {
 	BEGIN { our $start_run = time(); }
 	my $self = shift;
-	my $genomeIds = shift;
+	my $group1GenomeIds = shift;
+	my $group2GenomeIds = shift;
 
-	my @lociNames = $self->dbixSchema->resultset('Loci')->all();
-	my $totalLocusCount = scalar(@lociNames);
-
-	print STDERR $totalLocusCount . "\n";
-
-	my $numberOfCores = 3;
-	#Split the number of loci into $numberOfCores sub arrays
-	#Using natatime need to specify how big each subarray is
-
-	print STDERR ceil($totalLocusCount/$numberOfCores) . "\n";
-
-	my $lociDataTable = $self->dbixSchema->resultset('LociGenotype')->search(
-		{feature_id => $genomeIds},
+	my $group1lociDataTable = $self->dbixSchema->resultset('Loci')->search(
+		{feature_id => $group1GenomeIds},
 		{
-			join => ['locus'],
-			column => [qw/locus_id/]
+			join => ['loci_genotypes'],
+			select => ['me.locus_id', {count => 'loci_genotypes.locus_genotype_id'}],
+			as => ['id', 'loci_count'],
+			group_by => [qw/me.locus_id/],
+			order_by => [qw/me.locus_id/]
 		}
 		);
-	#foreach my $locusName (@lociNames) {
-	#	my $locusCount = $lociDataTable->count({'me.locus_id' => $locusName->locus_id , 'me.locus_genotype' => 1},{column => [qw/locus_genotype/]});
-		#print STDERR $locusCount . "\n";
-	#}
+
+	my $group2lociDataTable = $self->dbixSchema->resultset('Loci')->search(
+		{feature_id => $group2GenomeIds},
+		{
+			join => ['loci_genotypes'],
+			select => ['me.locus_id', {count => 'loci_genotypes.locus_genotype_id'}],
+			as => ['id', 'loci_count'],
+			group_by => [qw/me.locus_id/],
+			order_by => [qw/me.locus_id/]
+		}
+		);
+
+	my @group1Loci = $group1lociDataTable->all;
+	my @group2Loci = $group2lociDataTable->all;
+
+	my $fet = Modules::FET->new();
+	$fet->group1($group1GenomeIds);
+	$fet->group2($group2GenomeIds);
+	$fet->run(\@group1Loci , \@group2Loci , '1');
 
 	my $end_run = time();
 	my $run_time = $end_run - our $start_run;

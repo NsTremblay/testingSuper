@@ -135,7 +135,7 @@ sub comparison : Runmode {
 	} else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
 		#Need to return the data from the group comparator module
-		my $binaryDataRef = $self->_getStrainInfo(\@group1);
+		my $binaryFETResults = $self->_getStrainInfo(\@group1 , \@group2);
 		return $template->output();
 	} 
 }
@@ -149,7 +149,8 @@ Writes out user selected fasta files for PanSeq analysis.
 
 sub _getStrainInfo {
 	my $self = shift;
-	my $_groupedStrainNames = shift;
+	my $_group1StrainNames = shift;
+	my $_group2StrainNames = shift;
 
 	#push (my @strainNames , @{$_groupedStrainNames}); 
 
@@ -163,11 +164,11 @@ sub _getStrainInfo {
 
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my $binaryDataRef = $comparisonHandle->getBinaryData($_groupedStrainNames);
+	my $_binaryFETResults = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
 	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
 	#return ($binaryDataRef , $snpDataRef);
-	return $binaryDataRef;
+	return ($_binaryFETResults);
 }
 
 sub _getGroupWisePhylo {
