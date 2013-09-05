@@ -135,7 +135,11 @@ sub comparison : Runmode {
 	} else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
 		#Need to return the data from the group comparator module
-		my $binaryFETResults = $self->_getStrainInfo(\@group1 , \@group2);
+		my ($binaryFETResults , $numSigResults , $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
+		$template->param(binaryFETResults => $binaryFETResults);
+		$template->param(numSigResults => $numSigResults);
+		$template->param(totalResults => scalar(@{$binaryFETResults}));
+		$template->param(runTime => $runTime);
 		return $template->output();
 	} 
 }
@@ -164,11 +168,11 @@ sub _getStrainInfo {
 
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my $_binaryFETResults = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
+	my ($_binaryFETResults , $_numSigResults , $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
 	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
 	#return ($binaryDataRef , $snpDataRef);
-	return ($_binaryFETResults);
+	return ($_binaryFETResults , $_numSigResults , $_runTime);
 }
 
 sub _getGroupWisePhylo {

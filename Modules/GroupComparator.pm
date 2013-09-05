@@ -83,64 +83,6 @@ sub dbixSchema {
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
-# sub getBinaryData {
-# 	my $self = shift;	my $lociDataTable = $self->dbixSchema->resultset('LociGenotype')->search(
-		# {feature_id => $genomeIds},
-		# {
-		# 	join => ['locus'],
-		# 	column => [qw/locus_id/]
-		# }
-		# );
-
-# 	#For demo purposes we will query the first three strains from the data tables.
-# 	my $strainIds = shift;
-# 	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
-# 	#foreach my $strainId (@{$strainIds}) {
-# 	#The real strain id's will be passed as array refs;
-# 	my @lociData;
-# 	#my @locusNames;
-# 	my $locusNameTable = $self->dbixSchema->resultset('DataLociName')->search(
-# 		{},
-# 		{
-# 			column => [qw/me.locus_name/]
-# 		}
-# 		);
-# 	while (my $locusNameRow = $locusNameTable->next) {
-# 		my %locus;
-# 		my @present;
-# 		my @absent;
-# 		$locus{'locusname'} = $locusNameRow->locus_name;
-# 		$locus{'present'} = \@present;
-# 		$locus{'present_count'} = 0;
-# 		$locus{'absent'} = \@absent;
-# 		$locus{'absent_count'} = 0;
-# 		push (@lociData , \%locus); 
-# 	}
-# 	foreach my $strainId (@{$strainIds}) {
-# 		my $rawBinaryData = $self->dbixSchema->resultset('RawBinaryData')->search(
-# 			{strain => "public_".$strainId},
-# 			{
-# 				column => [qw/me.strain me.locus_name me.presence_absence/]
-# 			}
-# 			);
-# 		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-# 			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
-# 			if ($rawBinaryDataRow->presence_absence == 1) {
-# 				push (@{$locus[0]->{'present'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-# 				$locus[0]->{'present_count'}++;
-# 			}
-# 			elsif ($rawBinaryDataRow->presence_absence == 0) {
-# 				push (@{$locus[0]->{'absent'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-# 				$locus[0]->{'absent_count'}++;
-# 			}
-# 			else {
-# 			}		
-# 			#push (@locusNames , $rawBinaryDataRow->locus_name);
-# 		}
-# 	}
-# 	return \@lociData;
-# }
-
 sub getBinaryData {
 	BEGIN { our $start_run = time(); }
 	my $self = shift;
@@ -178,11 +120,13 @@ sub getBinaryData {
 	$fet->group1Loci(\@group1Loci);
 	$fet->group2Loci(\@group2Loci);
 	$fet->testChar('1');
-	$fet->run();
+	my ($binaryData , $numSig) = $fet->run();
 
 	my $end_run = time();
 	my $run_time = $end_run - our $start_run;
-	print STDERR "Job took $run_time seconds\n"
+	#print STDERR "Job took $run_time seconds\n"
+
+	return ($binaryData, $numSig , $run_time);
 }
 
 sub getSnpData {

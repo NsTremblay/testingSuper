@@ -186,11 +186,6 @@ sub testChar {
 	$self->{'_testChar'} = shift // return $self->{'_testChar'};
 }
 
-sub _resultHash{
-	my $self=shift;
-	$self->{'__resultHash'}=shift // return $self->{'__resultHash'};
-}
-
 sub _memoize{
 	my $self=shift;
 	$self->{'__memoize'}=shift // return $self->{'__memoize'};
@@ -222,7 +217,6 @@ sub _initialize{
 
 	#initialize data structures
 	$self->_memoize({});
-	$self->_resultHash({});
 
 	return 1;
 }
@@ -260,14 +254,14 @@ sub _countGroup{
 	#This needs to be changed
 	my $self=shift;
 	my $groupList=shift;
-	my $groupLoci=shift;
+	my $groupLociPosCount=shift;
 
 	#do the counts
 	my %countHash;
 	$countHash{'pos'}=0;
 	$countHash{'neg'}=0;
 
-	$countHash{'pos'}=$groupLoci->get_column('loci_count');
+	$countHash{'pos'}=$groupLociPosCount;
 	$countHash{'neg'}=(scalar(@$groupList) - $countHash{'pos'});
 
 	return \%countHash; 
@@ -275,59 +269,52 @@ sub _countGroup{
 
 sub _processLine{
 	my $self=shift;
-	my $group1Row=shift;
-	my $group2Row=shift;
+	my $group1PosCount=shift;
+	my $group2PosCount=shift;
 	my $_testChar=shift;
 	
 	#Gets the counts for each group
-	my $group1Counts = $self->_countGroup($self->group1, $group1Row);
-	my $group2Counts = $self->_countGroup($self->group2, $group2Row);
+	my $group1Counts = $self->_countGroup($self->group1, $group1PosCount);
+	my $group2Counts = $self->_countGroup($self->group2, $group2PosCount);
 
-	print STDERR $group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'} . "\n";
+	#run the FET using the current values if not in _memoize
+	my $memoizeString = join('_', $group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'});
 
-	# #run the FET using the current values if not in _memoize
-	# my $memoizeString = join('_', $group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'});
+	#$self->logger->debug('memoizeString: ' . $memoizeString);
 
-	# #$self->logger->debug('memoizeString: ' . $memoizeString);
+	my $pValue;	
+	if(defined $self->_memoize->{$memoizeString}){
+		$pValue = $self->_memoize->{$memoizeString};
+	}
+	else{
+		#get pValue
+		#add to memoize
+		#add reverse to memoize as it is the same eg fet(1,4,8,11) == fet(8,11,1,4)
+		$pValue = $self->_getPValue($group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'});
+		$self->_memoize->{$memoizeString}=$pValue;
 
-	# my $pValue;	
-	# if(defined $self->_memoize->{$memoizeString}){
-	# 	$pValue = $self->_memoize->{$memoizeString};
-	# }
-	# else{
-	# 	#get pValue
-	# 	#add to memoize
-	# 	#add reverse to memoize as it is the same eg fet(1,4,8,11) == fet(8,11,1,4)
-	# 	$pValue = $self->_getPValue($group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'});
-	# 	$self->_memoize->{$memoizeString}=$pValue;
+		my $memoizeString2 = join('_', $group1Counts->{'pos'}, $group1Counts->{'neg'}, $group2Counts->{'pos'}, $group2Counts->{'neg'});
+		$self->_memoize->{$memoizeString2} = $pValue;
+	}
 
-	# 	my $memoizeString2 = join('_', $group2Counts->{'pos'}, $group2Counts->{'neg'}, $group1Counts->{'pos'}, $group1Counts->{'neg'});
-	# 	$self->_memoize->{$memoizeString2} = $pValue;
-	# }
-
-	# #add to result hash
-	# $self->_resultHash->{$locusName}->{$testChar}=$pValue;
-
-	# return 1;
+	return ($pValue , $group1Counts , $group2Counts);
 }
 
-sub _printResultsToFile{
-	my $self=shift;
+# sub _printResultsToFile{
+# 	my $self=shift;
 
-	my %outputHash;
-	foreach my $locus(keys %{$self->_resultHash}){
-		foreach my $testChar(keys %{$self->_resultHash->{$locus}}){
-			$outputHash{$locus . "\t" . $testChar} = $self->_resultHash->{$locus}->{$testChar};
-		}
-	}
-
-	 #sort new hash by value but output the key
-	 foreach my $output(sort{$outputHash{$a} <=> $outputHash{$b}} keys %outputHash){
-	 	$self->printOut($output . "\t" . $outputHash{$output} . "\n");
-	 }
-
-	 return 1;
-	}
+# 	my %outputHash;
+# 	foreach my $locus(keys %{$self->_resultHash}){
+# 		foreach my $testChar(keys %{$self->_resultHash->{$locus}}){
+# 			$outputHash{$locus . "\t" . $testChar} = $self->_resultHash->{$locus}->{$testChar};
+# 		}
+# 	}
+# 	 #sort new hash by value but output the key
+# 	 foreach my $output(sort{$outputHash{$a} <=> $outputHash{$b}} keys %outputHash){
+# 	 	$self->printOut($output . "\t" . $outputHash{$output} . "\n");
+# 	 }
+# 	 return 1;
+# 	}
 
 	sub run{
 		my $self=shift;
@@ -337,18 +324,36 @@ sub _printResultsToFile{
 			exit(1);
 		}
 
+		my @results;
 		my $listSize = scalar(@{$self->group1Loci});
 
-		for (my $i = 0; $i < $listSize; $i++) {
-			#$self->_processLine($self->group1Loci->[$i], $self->group2Loci->[$i] , $self->testChar);
+		my $sigpValueCount = $listSize;
 
-			print STDERR $self->group1Loci->[$i]->get_column('loci_count') . "\t" .  $self->group2Loci->[$i]->get_column('loci_count') . "\t" . $self->testChar . "\n";
+		for (my $i = 0; $i < $listSize; $i++) {
+			my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Loci->[$i]->get_column('loci_count'), $self->group2Loci->[$i]->get_column('loci_count') , $self->testChar);
+			
+			if ($_pValue > 0.0500) {
+				$sigpValueCount--;
+			}
+
+			my %rowResult;
+			#create a new hash row with results
+			$rowResult{'locus_id'} = $self->group1Loci->[$i]->get_column('id');
+			$rowResult{'group1Present'} = $_group1Counts->{'pos'};
+			$rowResult{'group1Absent'} = $_group1Counts->{'neg'};
+			$rowResult{'group2Present'} = $_group2Counts->{'pos'};
+			$rowResult{'group2Absent'} = $_group2Counts->{'neg'};
+			$rowResult{'pvalue'} = $_pValue;
+
+			push(@results , \%rowResult);
 		}
 
 	#The following will be changed to store everything in a hashref and return the hashref
 	#$self->_printResultsToFile();
 
-	#return 1;
+	my @sortedResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @results);
+
+	return (\@sortedResults , $sigpValueCount);
 }
 
 
