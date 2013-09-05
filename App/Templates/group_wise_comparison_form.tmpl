@@ -2,13 +2,14 @@
 <html>
 
 <head>
+
+	<<TMPL_INCLUDE NAME="header.tmpl">>
+
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
-	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
 	
 	<script>
 	var public_genomes = <TMPL_VAR public_genomes>;
@@ -38,6 +39,8 @@
 	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
 	
 </head>
+
+<TMPL_INCLUDE NAME="nav_bar_group_wise.tmpl">
 
 <body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
@@ -211,6 +214,8 @@
 	</div>
 
 </body>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
 </html>
 
 <script>
