@@ -151,7 +151,7 @@ sub getBinaryData {
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {count => 'loci_genotypes.locus_genotype_id'}],
+			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
 			as => ['id', 'loci_count'],
 			group_by => [qw/me.locus_id/],
 			order_by => [qw/me.locus_id/]
@@ -162,7 +162,7 @@ sub getBinaryData {
 		{feature_id => $group2GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {count => 'loci_genotypes.locus_genotype_id'}],
+			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
 			as => ['id', 'loci_count'],
 			group_by => [qw/me.locus_id/],
 			order_by => [qw/me.locus_id/]
@@ -175,7 +175,10 @@ sub getBinaryData {
 	my $fet = Modules::FET->new();
 	$fet->group1($group1GenomeIds);
 	$fet->group2($group2GenomeIds);
-	$fet->run(\@group1Loci , \@group2Loci , '1');
+	$fet->group1Loci(\@group1Loci);
+	$fet->group2Loci(\@group2Loci);
+	$fet->testChar('1');
+	$fet->run();
 
 	my $end_run = time();
 	my $run_time = $end_run - our $start_run;

@@ -11,7 +11,7 @@ Stats::FET - Returns FET p-value between two groups being compared for a particu
 
 	my $fet = Stats::FET->new();
 
-	$fet->run(\@group1List, \@group1Loci , \@group2List , \@group2Loci , $test4Char);
+	$fet->run();
 
 
 =head1 DESCRIPTION
@@ -160,14 +160,30 @@ sub new {
 	return $self;
 }
 
+#Get/Set methods for storing groups and loci
 sub group1 {
 	my $self = shift;
 	$self->{'_group1'} = shift // return $self->{'_group1'};
 }
 
+sub group1Loci {
+	my $self = shift;
+	$self->{'_group1Loci'} = shift // return $self->{'_group1Loci'};
+}
+
 sub group2 {
 	my $self = shift;
 	$self->{'_group2'} = shift // return $self->{'_group2'};
+}
+
+sub group2Loci {
+	my $self = shift;
+	$self->{'_group2Loci'} = shift // return $self->{'_group2Loci'};
+}
+
+sub testChar {
+	my $self = shift;
+	$self->{'_testChar'} = shift // return $self->{'_testChar'};
 }
 
 sub _resultHash{
@@ -315,19 +331,18 @@ sub _printResultsToFile{
 
 	sub run{
 		my $self=shift;
-		my $_group1Loci=shift;
-		my $_group2Loci=shift;
-		my $_testChar=shift;
 
-		unless(scalar(@$_group1Loci) == scalar(@$_group2Loci)) {
+		unless(scalar(@{$self->group1Loci}) == scalar(@{$self->group2Loci})) {
 			$self->logger->error("Sizes of loci lists for group1 and group2 must be the same");
 			exit(1);
 		}
 
-		my $listSize = scalar(@$_group1Loci);
+		my $listSize = scalar(@{$self->group1Loci});
 
 		for (my $i = 0; $i < $listSize; $i++) {
-			$self->_processLine($_group1Loci->[$i], $_group2Loci->[$i] , $_testChar);
+			#$self->_processLine($self->group1Loci->[$i], $self->group2Loci->[$i] , $self->testChar);
+
+			print STDERR $self->group1Loci->[$i]->get_column('loci_count') . "\t" .  $self->group2Loci->[$i]->get_column('loci_count') . "\t" . $self->testChar . "\n";
 		}
 
 	#The following will be changed to store everything in a hashref and return the hashref
