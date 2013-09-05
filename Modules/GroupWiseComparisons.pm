@@ -80,6 +80,7 @@ sub group_wise_comparisons : StartRunmode {
 	#$template->param(FEATURES=>$pubDataRef);
 	#$template->param(strainJSONData=>$strainJsonDataRef);
 	
+	$template->param(groupwise => 1);
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 	
@@ -89,7 +90,6 @@ sub group_wise_comparisons : StartRunmode {
 	if($errs) {
 		$template->param(comparison_failed => $errs);
 	}
-	
 	
 	return $template->output();
 }

@@ -57,7 +57,7 @@ function buildMetaForm(el, tab) {
 // Update and reload various forms with new meta data
 function updateMeta(tab, visableData) {
 	// Default is to display just the name
-	if(typeof visableData === 'undefined') {
+	if(typeof visableData === 'undefined' || visableData.length == 0) {
 		visableData = ['name'];
 	}
 
@@ -187,6 +187,7 @@ function updateSelected(genome_id, selected) {
 	// Change drop-down list
 	selectInList(genome_id, selected);
 	maskNode(genome_id, selected);
+	selectInAttrSearch(genome_id, selected);
 }
 
 // These functions alter genome format after its selected
@@ -194,4 +195,52 @@ function updateSelected(genome_id, selected) {
 function selectInList(genome, selected) {
 	$('#pubStrainList label[for="'+genome+'"]').toggleClass('listSelected', selected);
 	$('#pubStrainList input[value="'+genome+'"]').toggleClass('listSelected', selected);
+}
+
+//select in attribute search form
+function selectInAttrSearch(genome, selected) {
+	if(genome in attr_search_result) {
+		$('#attr-search-display label[for="'+genome+'"]').toggleClass('selected-attr-genome', selected);
+		$('#attr-search-display input[value="'+genome+'"]').toggleClass('selected-attr-genome', selected);
+	}
+}
+
+// returns list of genome_ids already added to group1 or 2.
+function groupsList() {
+	
+	var glist = [];
+	
+	$.each( $('input[name="comparison-group1-genome"]'), function(i, e) {
+		glist.push( $( e ).val() );
+	});
+	
+	$.each( $('input[name="comparison-group2-genome"]'), function(i, e) {
+		glist.push( $( e ).val() );
+	});
+	
+	return glist;
+}
+
+
+// Add genomes to a group list for the checkbox-style forms
+function submitGenomes(inputName, group) {
+	var genomeList = {};
+	var checked = $('input[name="'+inputName+'"]:checked');
+	checked.each( function(i, e) { 
+		var id = $( e ).val(); 
+		var genome_data;
+		if(/^public_/.test(id)) {
+			genome_data = public_genomes[id]
+		} else {
+			genome_data = private_genomes[id]
+		}
+		if(typeof genome_data === 'undefined') {
+			return "Unrecognized genome";
+		}
+		var lab = genome_data.uniquename;
+		genomeList[id] = lab;
+		$( e ).prop("checked", false);
+	});
+	
+	addToGroup(group, genomeList);
 }
