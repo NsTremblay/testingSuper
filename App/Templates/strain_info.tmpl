@@ -1,20 +1,17 @@
 <!DOCTYPE html>
 <html>
 
+	<TMPL_INCLUDE NAME="header.tmpl">
 
-
-<head>
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
-	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
+
+
 	
 	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-
-</head>
 
 <TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
 
@@ -341,7 +338,7 @@ $('a[href="#mapTab"]').click( function(){
 });
 
 
-//google.maps.event.addDomListener(window, 'load', initializeMap);
+google.maps.event.addDomListener(window, 'load', initializeMap);
 
 
 </script>
