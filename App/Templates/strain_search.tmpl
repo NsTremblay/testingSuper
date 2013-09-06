@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html>
 
-<head>
-	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
-	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
-	
-	<script src="/App/Styling/js/genodo_boolean_search.js"></script>
-	
-	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
-	
-</head>
+<TMPL_INCLUDE NAME="header.tmpl"> 
+
+<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+
+<script src="/App/Styling/js/genodo_boolean_search.js"></script>
+
+<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
+<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
 
 <TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
 
@@ -44,27 +41,23 @@
 				<div class="row-fluid">
 					<div class="span12">
 						<div style="padding:10px 0 40px 0">
-						<p>Select a genome by clicking on a node in the phylogenetic tree.  
-						</p>
+							<p>Select a genome by clicking on a node in the phylogenetic tree.  
+							</p>
 						</div>
 					</div>
 				</div>
-					
+				
 				<script>
-					var smallTreeWindow = false;
-					var centreOnSelectedNode = false;
+				var smallTreeWindow = false;
+				var centreOnSelectedNode = false;
 				</script>
 				
 				<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
-					
+				
 			</div>
 			
 			<div class="tab-pane" id="map_search_tab">
-				<div class="row-fluid">
-					<div class="span12">
-					Tab 2
-					</div>
-				</div>
+				<TMPL_INCLUDE NAME="advanced_map_selector.tmpl">
 			</div>
 			
 			<div class="tab-pane" id="meta_search_tab">
