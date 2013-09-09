@@ -9,7 +9,7 @@ visableData = ['name'];
 
 <div style="margin:10px">
 	<p style="margin-bottom: 40px">
-		Select advancedple strains from the map. As you zoom in and out and pan accross the map the list of markers on the right will change.
+		Select strains from the map. As you zoom in and out and pan accross the map the list of markers on the right will change.
 	</p>
 	<div style="padding: 0 10px 0 10px">
 		<hr/>
@@ -103,22 +103,19 @@ $(function(){
 });
 
 var advancedMap;
+//Cluster list array is required by MarkerClusterer to cluster markers together on map (i.e It does not accept an object)
 var clusterList = [];
+//advancedMarkers object for all markers visible or not
 var advancedMarkers = {};
+//visibleMarkers list of markers currently in viewport
+var visibleMarkers = {};
 var geocoder;
 
 function initialize() {
-	geocoder = new google.maps.Geocoder();
+	//Initializes all globals then loads map
 
-	var mapOptions = {
-		center: new google.maps.LatLng(-0.000, 0.000),
-		zoom: 1,
-		smaptViewControl: false,
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-
-	advancedMap = new google.maps.Map(document.getElementById("advanced-map-canvas"),
-		mapOptions);
+	//Need to locations alphanumerically
+	var sortedPublicLocations = [];
 
 	$.each( public_genomes, function(feature_id, feature_obj) {
 		if (feature_obj.isolation_location && feature_obj.isolation_location != "") {
@@ -131,18 +128,30 @@ function initialize() {
 				feature_id: feature_id,
 				uniquename: feature_obj.uniquename
 			});
-			advancedMarkers[feature_id] = advancedMarker;
-			clusterList.push(advancedMarker);
+			sortedPublicLocations.push(advancedMarker);
 		}
 		else{
 		}
 	});	
 
-	var mcOptions = {gridSize: 50, maxZoom: 15};
-	var mc = new MarkerClusterer(advancedMap, clusterList, mcOptions);
+	sortedPublicLocations.sort(function(a,b){
+		if(a.title < b.title) return -1;
+		if(a.title > b.title) return 1;
+		return 0;
+	});
+
+	//Create final marker objects and lists sorted alphanumerically
+	for (var i = 0; i < sortedPublicLocations.length; i++) {
+		var advancedMarker = sortedPublicLocations[i];
+		advancedMarkers[advancedMarker.feature_id] = advancedMarker;
+		clusterList.push(advancedMarker);
+	};
+
+	//Set initial visibleMarkers to all markers in view
+	visibleMarkers = advancedMarkers;
 
 	// Populate forms
-	updateMeta('advancedLocationInit');
+	updateMapMeta('advancedLocationInit');
 
 	reLoadMap();
 
@@ -163,10 +172,10 @@ function reLoadMap() {
 
 	var mcOptions = {gridSize: 50, maxZoom: 15};
 	var mc = new MarkerClusterer(advancedMap, clusterList, mcOptions)
-	updateMeta('advancedLocationList');
+	updateMapMeta('advancedLocationList');
 
 	google.maps.event.addListener(advancedMap, 'bounds_changed', function() {
-		var visibleMarkers = {};
+		visibleMarkers = {};
 
 		$.each( advancedMarkers, function(feature_id , marker) {
 			if(advancedMap.getBounds().contains(marker.getPosition())){
@@ -193,16 +202,7 @@ function codeAdvancedMapAddress() {
 }
 
 function updateSelectionList(visibleMarkers) {
-	$('#advancedMapStrainList li').empty();
-		$.each( visibleMarkers, function(feature_id, marker) {
-			var locationTitle = visibleMarkers[feature_id].title;
-			var lab = metaLabel(marker, visableData);
-			$('#advancedMapStrainList').append(
-				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+locationTitle+' - '+lab+'</label>'+								
-				'</li>'
-				);
-		});	
+	updateMapMeta('advancedLocationList', visableData);
 }
 
 function parseLocation(location_obj) {
@@ -257,30 +257,27 @@ function parseLocation(location_obj) {
 	return markerObj;
 }
 
-// Update and reload various forms with new meta data
-function updateMeta(tab, visableData) {
-	// Default is to display just the name
-	if(typeof visableData === 'undefined' || visableData.length == 0) {
-		visableData = ['name'];
+function updateMapMeta(tab, visibleData) {
+	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
+		visibleData = ['name'];
 	}
-
 	if(tab == 'advancedLocationList' || tab == 'advancedLocationInit') {
 		//This needs to be changed to account for public and private data
-		var dropDown = $('#advancedMapStrainList')
+		var dropDown = $('#advancedMapStrainList');
 		dropDown.empty();
 		
-		$.each( public_location_genomes, function(feature_id, feature_obj) {
+		$.each( visibleMarkers, function(feature_id, feature_obj) {
 			var locationTitle = advancedMarkers[feature_id].title;
-			var lab = metaLabel(feature_obj, visableData);
+			var lab = metaLabel(public_location_genomes[feature_id], visibleData);
 			
 			dropDown.append(
 				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+locationTitle+' - '+lab+'</label>'+								
+				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="'+locationTitle+" - "+lab+'" onclick="selectCheckbox(this)"/>'+locationTitle+' - '+lab+'</label>'+								
 				'</li>'
 				);
 		});	
 	}
-}
+} 
 
 // Create labels for a genome with required meta data
 function metaLabel(feature, vdata) {
@@ -320,12 +317,50 @@ function metaLabel(feature, vdata) {
 	return label.join('|');
 }
 
-
 google.maps.event.addDomListener(window, 'load', initialize);
 
 $('a[href="#map_search_tab"]').click( function(){
 	setTimeout("reLoadMap()", 0);
 	//initializeMap(); 
+});
+
+$('#update-map-meta').click(function(event) {
+	event.preventDefault();
+	visableData = [];
+	$('input[name="map-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
+	updateMapMeta('advancedLocationList', visableData);
+	return false;
+});
+
+
+function selectCheckbox(box) {
+	$("#dialog-genome-select")
+	.text('Would you like to retrieve genome information for the selected genome: '+box.name+'?')
+	.data('genome', box.value)
+	.dialog('open', this.box);
+}
+
+$(function() {
+	// Displayed when user clicks genome
+	$( "#dialog-genome-select" ).dialog({
+		autoOpen: false,
+		resizable: false,
+		height:180,
+		modal: true,
+		buttons: {
+			"Submit": function() {
+				var form = $('<form action="/strain_info/" method="post">' +
+					'<input type="text" name="genome" value="' + $( this ).data('genome') + '" />' +
+					'</form>');
+				$( 'body' ).append(form);
+				$( form ).submit();
+			},
+			Cancel: function() {
+				$('#advancedMapStrainList').find('input[type=checkbox]:checked').removeAttr('checked');
+				$( this ).dialog( "close" );
+			}
+		}
+	});
 });
 
 </script>
