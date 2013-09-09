@@ -59,7 +59,7 @@ visableData = ['name'];
 				</div>
 			</td>
 		</tr>
-		<tr>
+		<tr colspan="2">
 			<td>
 				<div class="span7">			
 					<form class="form-inline">
@@ -69,20 +69,20 @@ visableData = ['name'];
 						</fieldset>
 					</form>
 				</div>
+			</td>
+		</tr>
+		<tr>
+			<td>
 				<div class="span7" id="advanced-map-canvas" style="height:300px"></div>
 			</td>
-			<td style="position:relative">
-				<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;height:300px;overflow:auto;position:absolute;bottom:0;left:0">
-					<form id="strainListForm" class="form" action="/group_wise_comparisons/" method="post" enctype="application/x-www-form-urlencoded">
-						<div style="padding:10px">
-							<fieldset>
-								<span class="help-block"></span>
-								<ul id="advancedMapStrainList" style="padding:0px;margin:0px">
-									<li style="list-style:none">
-									</li>
-								</ul>
-							</fieldset>
-						</form>
+			<td>
+				<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;height:300px;overflow:auto">
+					<div style="padding:10px">
+						<span class="help-block"></span>
+						<ul id="advancedMapStrainList" style="padding:0px;margin:0px">
+							<li style="list-style:none">
+							</li>
+						</ul>
 					</div>
 				</div>
 			</td>
@@ -184,7 +184,7 @@ function reLoadMap() {
 			else{
 			}
 		});
-		updateSelectionList(visibleMarkers);
+		updateSelectionList();
 	});
 }
 
@@ -201,7 +201,7 @@ function codeAdvancedMapAddress() {
 	});
 }
 
-function updateSelectionList(visibleMarkers) {
+function updateSelectionList() {
 	updateMapMeta('advancedLocationList', visableData);
 }
 

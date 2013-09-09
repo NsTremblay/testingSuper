@@ -310,6 +310,22 @@ $('#buttonMetaGroup2').click(function(event) {
 	return false;
 });
 
+$('#buttonMapGroup1').click(function(event) {
+	event.preventDefault();
+	
+	submitGenomes('genomes-in-map-search',1);
+	
+	return false;
+});
+
+$('#buttonMapGroup2').click(function(event) {
+	event.preventDefault();
+	
+	submitGenomes('genomes-in-map-search',2);
+	
+	return false;
+});
+
 $('#buttonRemoveGroup2').click(function(event) {
 	event.preventDefault();
 	
