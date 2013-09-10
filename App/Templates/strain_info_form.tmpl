@@ -57,7 +57,7 @@
 		<form id="pubStrainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 			<fieldset>
 				
-				<input id="strain-autocomp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="genome"></input>
+				<input id="strain-autocomp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="genomeName"></input>
 				<input id="strain-autocomp-hidden" type="hidden" name="genome"/>
 				<div>
 					<button id="strainInfoSearchButton" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-search icon-white"></i> Search</button>
@@ -206,7 +206,7 @@ $('#strainInfoSearchButton').click(function(){
 });
 
 function checkSIFields(pubStrainInfoSearch) {
-	if (pubStrainInfoSearch.singleStrainID.value == "") {
+	if (pubStrainInfoSearch.genome.value == "") {
 		alert("You must enter a valid search term.");
 		return false;
 	}

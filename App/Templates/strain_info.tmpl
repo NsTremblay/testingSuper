@@ -1,20 +1,15 @@
 <!DOCTYPE html>
 <html>
 
+<TMPL_INCLUDE NAME="header.tmpl">
 
+<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
 
-<head>
-	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-	<link media="screen" href="/App/Styling/css/bootstrap.css" type="text/css" rel="stylesheet">
-	<link media="screen" href="/App/Styling/css/bootstrap-responsive.css" type="text/css" rel="stylesheet">
-	
-	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-
-</head>
+<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
 
 <TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
 
@@ -52,8 +47,8 @@
 
 					<div class="tab-pane" id="phyloTreeTab">
 						<script>
-							var smallTreeWindow = true;
-							var centreOnSelectedNode = true;
+						var smallTreeWindow = true;
+						var centreOnSelectedNode = true;
 						</script>
 						<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
 					</div>
@@ -266,39 +261,72 @@ function onLoadCheck() {
 }
 
 var map;
-var geocoder;
 
 function initializeMap() {
-	geocoder = new google.maps.Geocoder();
-	var mapOptions = {
-		zoom: 4,
-		center: new google.maps.LatLng(-0.000, 0.000),
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-	map = new google.maps.Map(document.getElementById('map-canvas'),
-		mapOptions);
 	codeAddress();
-	//var currCenter = map.getCenter();
-	google.maps.event.trigger(map, "resize");
-	//map.setZoom( map.getZoom() );
-	//map.setCenter(currCenter);
 }
 
 function codeAddress() {
 	var address = '<TMPL_VAR NAME=strainLocation>';
-	geocoder.geocode( { 'address': address}, function(results, status) {
-		if (status == google.maps.GeocoderStatus.OK) {
-			map.setCenter(results[0].geometry.location);
-			var marker = new google.maps.Marker({
-				map: map,
-				position: results[0].geometry.location,
-				animation: google.maps.Animation.DROP,
-				title: '<TMPL_VAR NAME=strainLocation>'
-			});
-		} else {
-			alert('Google maps not available at this time');
-			console.log("Geocode not successful: " + status);
-		}
+
+	//Parses the location name for the marker title
+	var locationName = address.match(/<location>[\w\d\W\D]*<\/location>/)[0];
+	locationName = locationName.replace(/<location>/, '');
+	locationName = locationName.replace(/<\/location>/, '');
+	locationName = locationName.replace(/<[\/]+[\w\d]*>/g, '');
+	locationName = locationName.replace(/<[\w\d]*>/g, ', ');
+	locationName = locationName.replace(/, /, '');
+
+	var locationCoordinates = address.match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+
+	//Parses out the center LatLong point
+	var locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
+	var locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
+	locationCenterLat = locationCenterLat.replace(/<\/lat>/, '');
+	var locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
+	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
+
+	//Parses out boundary LatLongs
+	var locationViewportSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
+	var locationViewportSWLat = locationViewportSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	var locationViewportSWLng = locationViewportSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationViewportSWLat = locationViewportSWLat.replace(/<lat>/, '');
+	locationViewportSWLat = locationViewportSWLat.replace(/<\/lat>/, '');
+	locationViewportSWLng = locationViewportSWLng.replace(/<lng>/, '');
+	locationViewportSWLng = locationViewportSWLng.replace(/<\/lng>/, '');
+
+	var locationViewportNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
+	var locationViewportNELat = locationViewportNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	var locationViewportNELng = locationViewportNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	locationViewportNELat = locationViewportNELat.replace(/<lat>/, '');
+	locationViewportNELat = locationViewportNELat.replace(/<\/lat>/, '');
+	locationViewportNELng = locationViewportNELng.replace(/<lng>/, '');
+	locationViewportNELng = locationViewportNELng.replace(/<\/lng>/, '');
+
+	var centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
+	var swLatLng = new google.maps.LatLng(locationViewportSWLat, locationViewportSWLng);
+	var neLatLng = new google.maps.LatLng(locationViewportNELat, locationViewportNELng);
+	var markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
+
+	var mapOptions = {
+		zoom: 3,
+		zoomControl: true,
+		streetViewControl: false,
+		center: centerLatLng,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+	map = new google.maps.Map(document.getElementById('map-canvas'),
+		mapOptions);
+
+	map.fitBounds(markerBounds);
+
+	var marker = new google.maps.Marker({
+		map: map,
+		position: centerLatLng,
+		animation: google.maps.Animation.DROP,
+		title: locationName
 	});
 }
 
@@ -308,8 +336,7 @@ $('a[href="#mapTab"]').click( function(){
 });
 
 
-//google.maps.event.addDomListener(window, 'load', initializeMap);
-
+google.maps.event.addDomListener(window, 'load', initializeMap);
 
 
 </script>

@@ -7,22 +7,55 @@
 
 <script src="/App/Styling/js/jquery-1.9.1.js"></script>
 <script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
-<script type="text/javascript" src="App/Styling/js/intro.js"></script>
+<script type="text/javascript" src="/App/Styling/js/intro.js"></script>
 <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
-<link rel="stylesheet" href="App/Styling/css/introjs.css">
+<link rel="stylesheet" href="/App/Styling/css/introjs.css">
 
-<body onload="onLoadCheck()" style="background-color:#796e6c">
+<body onload="updateVFAMRMeta()" style="background-color:#796e6c">
 
 	<div class="container" style="background-color:#FFFFFF">
-
-		<!--div align="right" class="bs-docs-sidenav affix" data-spy="affix" data-offset="10" id="jsonTest"></div-->
 
 		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
 			<h1><span>VIRULENCE & AMR</span> <span style="color:#d41616">INFORMATION</span></h1>
 		</div>
 
-		<span class="help-block" style="margin:0px 10px 20px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left. <!--a class="btn btn-small" href="javascript:void(0);" onclick="startIntro();">Show me how</a--></span>
+		<span class="help-block" style="margin:0px 10px 0px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left. <a class="btn btn-small" href="javascript:void(0);" onclick="startIntro();">Show me how</a></span>
 
+		<div style="padding:20px">
+			<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#vf-amr-meta-display">
+				<i class=" icon-eye-open icon-white"></i>
+				<span class="caret"></span>
+			</button>
+			<div id="vf-amr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
+				<div style="padding: 10px">Change meta-data displayed in genome list:</div>
+				<form class="form-horizontal" style="padding:0px 5px 0 20px;">
+					<fieldset>		    	
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="name"> Name 
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="accession"> Accession # 
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="strain"> Strain
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="serotype"> Serotype
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_host"> Isolation Host
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_source"> Isolation Source 
+						</label>
+						<label>
+							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_date"> Isolation Date
+						</label>														   			   						   
+					</fieldset>
+					<button id="update-vf-amr-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
+				</form>
+			</div>
+		</div>
 
 		<TMPL_INCLUDE NAME="virulence_amr_by_strain_form.tmpl">
 
@@ -40,192 +73,83 @@ function startIntro(){
 	intro.setOptions({
 		steps: [
 		{
-			element: '#virSelect',
-			intro: "Select 1 or more virulence factors from the list above by clicking the check boxes."
+			element: '#virSelectTab',
+			intro: "Select 1 or more virulence factors from the list below by clicking the check boxes."
 		},
 		{
-			element: '#amrSelect',
-			intro: "Select 1 or more antimicrobial resistance genes from the list above by clicking the check boxes.",
+			element: '#amrSelectTab',
+			intro: "Select this tab to view a list of antimicrobial resistance genes. Select 1 or more of these antimicrobial resistance genes from the list by clicking the check boxes.",
 		},
 		{
-			element: '#strainSelect',
-			intro: "Select 1 or more E. coli strains from the list above by clicking the check boxes.",
-		}
+			element: '#strainSelectTab',
+			intro: "Select this tab to view a list of E. coli genomes. Select 1 or more of these E. coli genomes from the list above by clicking the check boxes.",
+		},
 		]
 	});
 	intro.start();
 }
 
+$('#update-vf-amr-meta').click(function(event) {
+	event.preventDefault();
+	visableData = [];
+	$('input[name="vf-amr-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
+	updateVFAMRMeta(visableData);
+	return false;
+});
 
-var FEATURE_TABLE_JSON = <TMPL_VAR NAME=strainJSONData>;
-/* 
-Back lists that will get called to the client after page has loaded.
-These remain as global constants.
-*/
-var ISOLATION_LOCATION_JSON = {};
-var SEROTYPE_JSON = {};
-var ISOLATION_HOST_JSON = {};
-var ISOLATION_SOURCE_JSON = {};
-var ISOLATION_DATE_JSON = {};
-
-//List of public feature ids used to get data for view switching 
-var featureIdList = "";
-$(document).ready(function() {
-	for (i=0 ; i<FEATURE_TABLE_JSON.data.length-1 ; i++) {
-		featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[i].feature_id) + ",";
+function updateVFAMRMeta(visibleData) {
+	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
+		visibleData = ['name'];
 	}
-	featureIdList = featureIdList + String(FEATURE_TABLE_JSON.data[FEATURE_TABLE_JSON.data.length-1].feature_id);
-});
+		//This needs to be changed to account for public and private data
+		var dropDown = $('#pubStrainList');
+		dropDown.empty();
+		$.each( public_genomes, function(feature_id, feature_obj) {
+			var lab = metaLabel(public_genomes[feature_id], visibleData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
+				'</li>'
+				);
+		});	
+	} 
 
-/*Functions set here*/
-function onLoadCheck() {
-	initialize();
-}
-
-
-//Will initialize the map and grab all of the lists needed for form switching.
-function initialize() {
-	checkVARValidator();
-	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
-	getBackList("/serotype_form" , SEROTYPE_JSON, 'serotypeViewLabel', 'serotypeView');
-	getBackList("/host_source_form" , ISOLATION_HOST_JSON, 'isolationHostLabel', 'isolationHostView');
-	getBackList("/isolation_source_form" , ISOLATION_SOURCE_JSON, 'isolationSourceLabel', 'isolationSourceView');
-	getBackList("/isolation_date_form" , ISOLATION_DATE_JSON, 'isolationDateLabel', 'isolationDateView');
-	getBackList('/isolation_location_form' , ISOLATION_LOCATION_JSON, 'isolationLocationLabel', 'isolationLocationView');
-}
-
-function checkVARValidator() {
-	if ($('#amrvalidator').is(':empty') && $('#vfvalidator').is(':empty')) {
+// Create labels for a genome with required meta data
+function metaLabel(feature, vdata) {
+	var label = [];
+	if(vdata.indexOf('name') != -1) {
+		label.push(feature.uniquename);
 	}
-	else if (!($('#vfvalidator').is(':empty'))){
-		$('#VFMetaInfo').show("slow");
+	
+	if(vdata.indexOf('accession') != -1) {
+		if(typeof feature.primary_dbxref !== 'undefined') {
+			label.push(feature.primary_dbxref);
+		} else {
+			label.push('NA');
+		}
 	}
-	else {
-		$('#AMRMetaInfo').show("slow");
+	
+	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
+	for(var i=0; i<metaDataTypes.length; i++) {
+		var x = metaDataTypes[i];
+		
+		if(vdata.indexOf(x) != -1) {
+			
+			if(typeof feature[x] !== 'undefined') {
+				var sublabel = [];
+				
+				for(var j=0; j<feature[x].length; j++) {
+					sublabel.push(feature[x][j]);
+				}
+				
+				var sublabel_string = sublabel.join();
+				label.push(sublabel_string);
+			} else {
+				label.push('NA');
+			}
+		}
 	}
-}
-
-function getBackList(urlName,formType,labelId,radioId) {
-	$.ajax({
-		type: "POST",
-		url: urlName,
-		data: { public_id_list: featureIdList }
-	}).done(function (returned_data) {
-		formType.json = $.parseJSON(returned_data);
-		$('#'+radioId).attr('disabled',false);
-		$('#'+labelId+'Loading').hide();
-		$('#'+labelId).show();
-	});
-}
-
-/*
-The next functions are for switching form views:
-*/
-
-$('#commonNameView').click(function () {
-	showCommonNames(FEATURE_TABLE_JSON);
-});
-$('#accessionNumberView').click(function () {
-	showAccessionNumbers(FEATURE_TABLE_JSON);
-});
-$('#isolationHostView').click(function () {
-	changeListView(ISOLATION_HOST_JSON.json);
-});
-$('#isolationSourceView').click(function () {
-	changeListView(ISOLATION_SOURCE_JSON.json);
-});
-$('#serotypeView').click(function () {
-	changeListView(SEROTYPE_JSON.json);
-});
-$('#isolationDateView').click(function () {
-	changeListView(ISOLATION_DATE_JSON.json);
-});
-$('#isolationLocationView').click(function () {
-	changeListView(ISOLATION_LOCATION_JSON.json);
-});
-
-function showCommonNames(featureJsonList) {
-	$('#pubStrainList').empty();
-
-	for (i=0 ; i<featureJsonList.data.length ; i++) {
-		var li = document.createElement("li");
-		var label = document.createElement("label");
-		var description = document.createTextNode(featureJsonList.data[i].name);
-		var checkbox = document.createElement("input");
-
-		li.setAttribute("style","list-style:none");
-
-		label.className = "checkbox";
-
-		checkbox.type = "checkbox";
-		checkbox.id = "checkboxName";
-		checkbox.name = "selectedStrains";
-		checkbox.value = featureJsonList.data[i].feature_id;
-		checkbox.className = "checkbox";
-
-		label.appendChild(checkbox);
-		label.appendChild(description);
-		li.appendChild(label);
-
-		document.getElementById('pubStrainList').appendChild(li);
-	}
-}
-
-function showAccessionNumbers(featureJsonList) {
-	$('#pubStrainList').empty();
-
-	for (i=0 ; i<featureJsonList.data.length ; i++) {
-
-		var li = document.createElement("li");
-		var label = document.createElement("label");
-		var description = document.createTextNode(featureJsonList.data[i].dbxref.accession);
-
-		var checkbox = document.createElement("input");
-
-		li.setAttribute("style","list-style:none");
-
-		label.className = "checkbox";
-
-		checkbox.type = "checkbox";
-		checkbox.id = "checkboxName";
-		checkbox.name = "selectedStrains";
-		checkbox.value = featureJsonList.data[i].feature_id;
-		checkbox.className = "checkbox";
-
-		label.appendChild(checkbox);
-		label.appendChild(description);
-		li.appendChild(label);
-
-		document.getElementById('pubStrainList').appendChild(li);
-	}
-}
-
-function changeListView(jsonList) {
-	$('#pubStrainList').empty();
-
-	for (i=0 ; i<jsonList.data.length ; i++) {
-		var li = document.createElement("li");
-		var label = document.createElement("label");
-		var description = document.createTextNode(jsonList.data[i].value + ' - ' + jsonList.data[i].common_name);	
-
-		var checkbox = document.createElement("input");
-
-		li.setAttribute("style","list-style:none");
-
-		label.className = "checkbox";
-
-		checkbox.type = "checkbox";
-		checkbox.id = "checkboxName";
-		checkbox.name = "selectedStrains";
-		checkbox.value = jsonList.data[i].feature_id;
-		checkbox.className = "checkbox";
-
-		label.appendChild(checkbox);
-		label.appendChild(description);
-		li.appendChild(label);
-
-		document.getElementById('pubStrainList').appendChild(li);
-	}
+	return label.join('|');
 }
 
 </script>

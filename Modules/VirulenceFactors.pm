@@ -65,6 +65,17 @@ sub virulence_factors : StartRunmode {
 
 	my $q = $self->query();
 
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	
+	my $username = $self->authen->username;
+	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
 	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(vJSON=>$vJsonData);
 
@@ -268,6 +279,11 @@ sub _getVirulenceByStrain {
 	my $_selectedVirulenceFactors = shift;
 
 	my @_selectedStrainNames = @{$_selectedStrainNames};
+
+	foreach my $name (@_selectedStrainNames) {
+		print STDERR  $name	. "\t";
+	}
+
 	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
 	
 	my @unprunedTableNames;
@@ -299,6 +315,9 @@ sub _getVirulenceByStrain {
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {
 				$presenceAbsenceValue = $_dataRow->presence_absence;
+			}
+			if ($strainName =~ /^(public_)/) {
+				$strainName =~ s/(public_)//;
 			}
 			$strainName{'strain_name'} = $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainName})->uniquename;
 			push (@unprunedTableNames , \%strainName);
@@ -352,6 +371,9 @@ sub _getAmrByStrain {
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {
 				$presenceAbsenceValue = $_dataRow->presence_absence;
+			}
+			if ($strainName =~ /^(public_)/) {
+				$strainName =~ s/(public_)//;
 			}
 			$strainName{'strain_name'} = $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainName})->uniquename;
 			push (@unprunedTableNames , \%strainName);

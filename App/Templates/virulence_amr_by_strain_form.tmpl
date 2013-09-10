@@ -1,3 +1,9 @@
+<script>
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+visableData = ['name'];
+</script>
+
 <div class="container" style="padding-bottom:10px">
 	<div class="tabbable tabs-left">
 		<ul class="nav nav-tabs">
@@ -10,8 +16,8 @@
 				<div class="tabbable">
 					<ul class="nav nav-tabs">
 						<li id="virSelectTab" class="active"><a href="#virSelect" data-toggle="tab">Select Virulence Factors</a></li>
-						<li id="amrSelectTab"><a href="#amrSelect" data-toggle="tab">Select AMR genes</a></li>
-						<li id="strainSelectTab"><a href="#strainSelect" data-toggle="tab">Select Strains</a></li>
+						<li id="amrSelectTab"><a href="#amrSelect" data-toggle="tab">Select AMR Genes</a></li>
+						<li id="strainSelectTab"><a href="#strainSelect" data-toggle="tab">Select Genomes</a></li>
 					</ul>
 					<div class="tab-content">
 						<div id="virSelect" class="span9 tab-pane active" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
