@@ -80,16 +80,25 @@ function updateMeta(tab, visableData) {
 		//Do something here about that
 		var dropDown = $('#multiMapStrainList');
 		dropDown.empty();
+
+		var strainsAlreadyInGroups = groupsList();
 		
 		$.each( visibleMarkers, function(feature_id, feature_obj) {
 			var locationTitle = multiMarkers[feature_id].title;
 			var lab = metaLabel(public_location_genomes[feature_id], visableData);
 			dropDown.append(
 				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search"/>'+locationTitle+' - '+lab+'</label>'+								
+				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+locationTitle+' - '+lab+'</label>'+								
 				'</li>'
 				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInMapSearch(feature_id, true);
+			}
+			else {
+				selectInMapSearch(feature_id, false);
+			}
 		});	
+
 	}
 	
 }
@@ -137,7 +146,7 @@ function metaLabel(feature, vdata) {
 function addToGroup(groupNum, genomeList) {
 	
 	for(var genome in genomeList) {
-		
+
 		var label = genomeList[genome];
 		
 		if($('input[name="comparison-group1-genome"][value="'+genome+'"]').length) {
@@ -201,6 +210,7 @@ function updateSelected(genome_id, selected) {
 	selectInList(genome_id, selected);
 	maskNode(genome_id, selected);
 	selectInAttrSearch(genome_id, selected);
+	selectInMapSearch(genome_id, selected);
 }
 
 // These functions alter genome format after its selected
@@ -216,6 +226,11 @@ function selectInAttrSearch(genome, selected) {
 		$('#attr-search-display label[for="'+genome+'"]').toggleClass('selected-attr-genome', selected);
 		$('#attr-search-display input[value="'+genome+'"]').toggleClass('selected-attr-genome', selected);
 	}
+}
+
+function selectInMapSearch(genome, selected) {
+	$('#multiMapStrainList label[for="map_'+genome+'"]').toggleClass('listSelected', selected);
+	$('#multiMapStrainList input[value="'+genome+'"]').toggleClass('listSelected', selected);
 }
 
 // returns list of genome_ids already added to group1 or 2.

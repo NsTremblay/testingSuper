@@ -50,16 +50,12 @@ var private_location_genomes = {};
 			</td>
 			<td>
 				<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;height:300px;overflow:auto">
-					<form id="strainListForm" class="form" action="/group_wise_comparisons/" method="post" enctype="application/x-www-form-urlencoded">
-						<div style="padding:10px">
-							<fieldset>
-								<span class="help-block"></span>
-								<ul id="multiMapStrainList" style="padding:0px;margin:0px">
-									<li style="list-style:none">
-									</li>
-								</ul>
-							</fieldset>
-						</form>
+					<div style="padding:10px">
+						<span class="help-block"></span>
+						<ul id="multiMapStrainList" style="padding:0px;margin:0px">
+							<li style="list-style:none">
+							</li>
+						</ul>
 					</div>
 				</div>
 			</td>
@@ -71,7 +67,7 @@ var private_location_genomes = {};
 
 //This disables the enter key from submitting the form to an empty url
 $(function(){
-	$("#multiMaplocation").keypress(function(e){
+	$("#multiMapLocation").keypress(function(e){
 		var k=e.keyCode || e.which;
 		if(k==13){
 			e.preventDefault();
