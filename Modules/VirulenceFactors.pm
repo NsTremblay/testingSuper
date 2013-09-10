@@ -293,10 +293,10 @@ sub _getVirulenceByStrain {
 
 	foreach my $virGeneName (@_selectedVirulenceFactors) {
 		my $_dataTableByVirGene = $_dataTable->search(
-			{'gene_name' => "$virGeneName"},
+			{'gene_id' => "$virGeneName"},
 			{
-				select => [qw/me.strain me.gene_name me.presence_absence/],
-				as 	=> ['strain', 'gene_name', 'presence_absence']
+				select => [qw/me.genome_id me.gene_id me.presence_absence/],
+				as 	=> ['genome_id', 'gene_id', 'presence_absence']
 			}
 			);
 
@@ -308,9 +308,9 @@ sub _getVirulenceByStrain {
 			my %data;
 			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByVirGene->search(
-				{'strain' => "public_".$strainName},
+				{'genome_id' => "public_".$strainName},
 				{
-					column => [qw/strain gene_name presence_absence/]
+					column => [qw/genome_id gene_id presence_absence/]
 				}
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {
@@ -349,10 +349,10 @@ sub _getAmrByStrain {
 
 	foreach my $amrGeneName (@_selectedAmrFactors) {
 		my $_dataTableByAmrGene = $_dataTable->search(
-			{'gene_name' => "$amrGeneName"},
+			{'gene_id' => "$amrGeneName"},
 			{
-				select => [qw/me.strain me.gene_name me.presence_absence/],
-				as 	=> ['strain', 'gene_name', 'presence_absence']
+				select => [qw/me.genome_id me.gene_id me.presence_absence/],
+				as 	=> ['genome_id', 'gene_id', 'presence_absence']
 			}
 			);
 
@@ -364,9 +364,9 @@ sub _getAmrByStrain {
 			my %data;
 			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByAmrGene->search(
-				{'strain' => "public_".$strainName},
+				{'genome_id' => "public_".$strainName},
 				{
-					column => [qw/strain gene_name presence_absence/]
+					column => [qw/strain gene_id presence_absence/]
 				}
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {
