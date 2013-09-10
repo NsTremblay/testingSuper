@@ -136,14 +136,14 @@ sub strain_info : StartRunmode {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		$template->param(tree_json => $tree->nodeTree($feature));
 		
-#		my $strainVirDataRef = $self->_getVirulenceData($strainID);
-#		$template->param(VIRDATA=>$strainVirDataRef);
-#
-#		my $strainAmrDataRef = $self->_getAmrData($strainID);
-#		$template->param(AMRDATA=>$strainAmrDataRef);
-#
-#		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
-#		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
+		my $strainVirDataRef = $self->_getVirulenceData($strainID);
+		$template->param(VIRDATA=>$strainVirDataRef);
+
+		my $strainAmrDataRef = $self->_getAmrData($strainID);
+		$template->param(AMRDATA=>$strainAmrDataRef);
+
+		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
+		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
 
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
@@ -172,14 +172,14 @@ sub strain_info : StartRunmode {
 		} else {
 			$template->param('privacy' => $privacy_category);
 		}
-#			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
-#			$template->param(VIRDATA=>$strainVirDataRef);
-#
-#			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
-#			$template->param(AMRDATA=>$strainAmrDataRef);
-#
-#			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
-#			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
+			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
+			$template->param(VIRDATA=>$strainVirDataRef);
+
+			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
+			$template->param(AMRDATA=>$strainAmrDataRef);
+
+			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
+			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
 
 	} else {
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
@@ -498,11 +498,6 @@ sub _getStrainLocation {
     while (my $location = $locationFeatureProps->next) {
     	$strainLocation{'presence'} = 1;
     	my $locValue = $location->value;
-    	$locValue =~ s/<location>//;
-    	$locValue =~ s/<\/location>//;
-    	$locValue =~ s/<country>//;
-    	$locValue =~ s/<\/country>//;
-    	print STDERR $locValue . "\n";
     	$strainLocation{'location'} = $locValue;
     }
     return \%strainLocation;

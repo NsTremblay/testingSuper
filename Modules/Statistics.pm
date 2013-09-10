@@ -46,7 +46,7 @@ use JSON;
 sub setup {
 	my $self=shift;
 	my $logger = Log::Log4perl->get_logger();
-	$logger->info("Logger initialized in Modules::VirulenceFactors");
+	$logger->info("Logger initialized in Modules::Statistics");
 }
 
 =head2 Statistics

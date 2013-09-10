@@ -85,7 +85,7 @@ $dbsource . ';port=' . $DBPORT if $DBPORT;
 
 my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS) or croak "Could not connect to database.";
 
-my %inputDataType = ('virulence' => "RawVirulenceData", 'amr' => "RawAmrData", 'snp' => "RawSnpData", 'binary' => "RawBinaryData");
+my %inputDataType = ('virulence' => "RawVirulenceData", 'amr' => "RawAmrData", 'snp' => "SnpsGenotype", 'binary' => "LociGenotype");
 
 my %inputDataTypeColumnNames = (
 	'RawVirulenceData' => 
@@ -100,24 +100,42 @@ my %inputDataTypeColumnNames = (
 			column2 => 'gene_name',
 			column3 => 'presence_absence'
 			},
-			'RawBinaryData' => 
+			'LociGenotype' => 
 			{
-				column1 => 'strain',           
-				column2 =>'locus_name',
-				column3 =>'presence_absence'
+				column1 => 'locus_genotype_id',           
+				column2 => 'locus_id',
+				column3 => 'locus_genotype',
+				column4 => 'feature_id',
+				loci => {
+					tableName => 'Loci',
+					column1 => 'locus_id',
+					column2 => 'locus_name'
+				}
 				},
-				'RawSnpData' => 
+				'SnpsGenotype' => 
 				{
-					column1 => 'strain',           
-					column2 => 'locus_name',
-					column3 => 'snp'
+					column1 => 'snp_genotype_id',           
+					column2 => 'snp_id',
+					A => 'snp_a',
+					T => 'snp_t',
+					C => 'snp_c',
+					G => 'snp_g',
+					column3 => 'feature_id',
+					snps => {
+						tableName => 'Snp',
+						column1 => 'snp_id',
+						column2 => 'snp_name'
+					}
 				}
 				);
 
 open my $datafile , '<' , $INPUTFILE;
 
-my @firstFileRow; #Number of columns with strain data
-my @firstFileColumn; # Number of columns with strain data 
+#The first row contains all the genome names/id
+my @firstFileRow; #Number of columns with genome data
+
+#The first column will contain gene/snp/locus names/id
+my @firstFileColumn; # Number of columns with gene/snp/locus data (referred to as a seqFeature)
 
 while (<$datafile>) {
 	if ($. == 1) {
@@ -129,8 +147,8 @@ while (<$datafile>) {
 	}
 }
 
-my @strainTemp = @firstFileRow;
-my @locusTemp = @firstFileColumn;
+my @genomeTemp = @firstFileRow;
+my @seqFeatureTemp = @firstFileColumn;
 
 open my $datafile2 , '<' , $INPUTFILE;
 
@@ -138,10 +156,10 @@ while (<$datafile2>) {
 	$_ =~ s/\R//g;
 	my @tempRow = split(/\t/, $_);
 	if ($. == 1) {
-		@strainTemp = @tempRow;
+		@genomeTemp = @tempRow;
 	}
 	elsif ($. > 1) {
-		push (@locusTemp , \@tempRow);
+		push (@seqFeatureTemp , \@tempRow);
 	}
 	else {
 	}
@@ -149,75 +167,89 @@ while (<$datafile2>) {
 
 my @rowDelimTable;
 my $locusCount = 0000000;
+my $snpCount = 0000000;
 my $strainCount = 0;
-my $limit;
 
-my $totalRowCount = scalar(@strainTemp) * scalar(@locusTemp);
+#The following provides a total count of rows to be inserted (Not very necessary, but good to have to inform the user)
 
-#Added a limit for the number of loci to upload strictly for testing purposes
-# if (scalar(@locusTemp) > 3000000) {
-# 	$limit = 1501;
-# }
-# else {
-# 	$limit = scalar(@locusTemp);
-# }
+my $totalRowCount = scalar(@genomeTemp) * scalar(@seqFeatureTemp);
 
 print $totalRowCount . " rows to be inserted\n";
 
 my $outfolder = "data_out_temp";
 my $outfile = "$INPUTDATATYPE" . "_data_out_temp";
 
-print "Processing $INPUTFILE and preparing for insert into " . $inputDataType{$INPUTDATATYPE} . "\n";
-my $rowCount = 0;
-for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
-	#Start at i=1 becuase the first strain starts at index 1 
-	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
-			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
-			$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
-		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
-		$rowCount++;
-		if ($rowCount % 100000 == 0) {
-			print "$rowCount out of $totalRowCount rows inserted into table\n";
-		}
-		else{
-		}
-	}
-}
-
-# for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
-# 	#Start at i=1 becuase the first strain starts at index 1 
-# 	for (my $j = 0; $j < $limit ; $j++) {
-# 		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-# 		my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column1} => $strainTemp[$i],
-# 		$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column2} => $parsedHeader,
-# 		$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{column3} => $locusTemp[$j][$i]);
-# 		my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
-# 		$rowCount++;
-# 		if ($rowCount % 100000 == 0) {
-# 			print "$rowCount out of $totalRowCount rows inserted into table\n";
-# 		}
-# 		else{
-# 		}
-# 	}
-# }
+print "Processing $INPUTFILE and preparing for database insert\n";
 
 if ($INPUTDATATYPE eq 'binary') {
-	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-		my %nameRow = ('locus_name' => $parsedHeader);
-		my $insertRow = $schema->resultset('DataLociName')->create(\%nameRow) or croak "Could not  insert row\n";
+	#Need to store the locus names first in the Loci (loci) table
+	for (my $j = 0; $j < scalar(@seqFeatureTemp) ; $j++) {
+		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
+		my %nameRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{loci}->{column2} => $parsedHeader);
+		my $insertRow = $schema->resultset($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{loci}{tableName})->create(\%nameRow) or croak "Could not  insert row\n";
+		$locusCount++;
 	}
+	print $locusCount . " loci have been entered into " . $inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{loci}->{tableName} . "\n";
+	print "Preparing to insert data into " . $inputDataType{$INPUTDATATYPE} . "\n";
+	addBinaryData();
 }
 elsif ($INPUTDATATYPE eq 'snp'){
-	for (my $j = 0; $j < scalar(@locusTemp) ; $j++) {
-		my $parsedHeader = parseHeader($locusTemp[$j][0], $INPUTDATATYPE);
-		my %nameRow = ('snp_name' => $parsedHeader);
-		my $insertRow = $schema->resultset('DataSnpName')->create(\%nameRow) or croak "Could not  insert row\n";
+	#Need to store the snp names first in the Snp (snps) table
+	for (my $j = 0; $j < scalar(@seqFeatureTemp) ; $j++) {
+		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
+		my %nameRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{snps}->{column2} => $parsedHeader);
+		my $insertRow = $schema->resultset($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}{snps}->{tableName})->create(\%nameRow) or croak "Could not  insert row\n";
+		$snpCount++;
 	}
+	print $snpCount . " snps have been entered into " . $inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{snps}->{tableName} . "\n";
+	print "Preparing to insert data into " . $inputDataType{$INPUTDATATYPE} . "\n";
+	addData();
 }
 else {
+	#Data is either for virulence or amr genes
+	addData();
+}
+
+sub addBinaryData {
+	my $rowCount = 0;
+	for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
+		#Start at i=1 becuase the first strain starts at index 1 
+		for (my $j = 0; $j < scalar(@seqFeatureTemp) ; $j++) {
+			my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
+			my %newRow = (
+				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column2} => $schema->resultset('Loci')->find({'locus_name' => $parsedHeader})->locus_id,
+				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column3} => $seqFeatureTemp[$j][$i], #presence/absence value
+				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column4} => $genomeTemp[$i], #genome name
+				);
+			my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
+			$rowCount++;
+			if ($rowCount % 100000 == 0) {
+				print "$rowCount out of $totalRowCount rows inserted into table\n";
+			}
+			else{
+			}
+		}
+	}
+}
+
+sub addData {
+	my $rowCount = 0;
+	for (my $i = 1 ; $i < scalar(@firstFileRow) ; $i++) {
+		#Start at i=1 becuase the first strain starts at index 1 
+		for (my $j = 0; $j < scalar(@seqFeatureTemp) ; $j++) {
+			my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
+			my %newRow = ($inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column1} => $genomeTemp[$i],
+				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column2} => $parsedHeader,
+				$inputDataTypeColumnNames{$inputDataType{$INPUTDATATYPE}}->{column3} => $seqFeatureTemp[$j][$i]);
+			my $insertRow = $schema->resultset($inputDataType{$INPUTDATATYPE})->create(\%newRow) or croak "Could not  insert row\n";
+			$rowCount++;
+			if ($rowCount % 100000 == 0) {
+				print "$rowCount out of $totalRowCount rows inserted into table\n";
+			}
+			else{
+			}
+		}
+	}
 }
 
 print "All rows successfully updated\n";
@@ -242,8 +274,9 @@ sub parseHeader {
 			croak "Not a valid amr feature_id, exiting\n";
 		}
 	}
+	#Locus ID
 	elsif  ($_inputDataType eq "binary") {
-		$newHeader = "locus_" . ++$locusCount;
+		$newHeader = $oldHeader;
 		# if ($oldHeader =~ /^(locus_)([\w\d]*)/) {
 		# 	$newHeader = $2;
 		# }
@@ -253,12 +286,13 @@ sub parseHeader {
 	}
 	#SNP Data
 	elsif ($_inputDataType eq "snp") {
-		if ($oldHeader =~ /^(snp_)([\w\d]*)/) {
-			$newHeader = $2;
-		}
-		else {
-			croak "Not a valid snp name, exiting\n";
-		}
+		$newHeader = $oldHeader;
+		# if ($oldHeader =~ /^(snp_)([\w\d]*)/) {
+		# 	$newHeader = $2;
+		# }
+		# else {
+		# 	croak "Not a valid snp name, exiting\n";
+		# }
 	}
 	else{
 	}

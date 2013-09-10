@@ -1,0 +1,193 @@
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<TMPL_INCLUDE NAME="header.tmpl">
+		<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	</head>
+	<body style="background-color:#796e6c">
+		<TMPL_INCLUDE NAME="nav_bar.tmpl">
+		<div class="container" style="background-color:#FFFFFF">
+			<!--For Demo Purposes Only-->
+			<div class="span8" style="margin:10px">
+				<form class="form-inline">
+					<fieldset>
+						<legend>Map for Genome Uploader</legend>
+						<span class="help-block">Search for a location (such as a City or Country) then click on a specific area of the map to place a marker with specific LatLong coordinates.</span>
+						<input id="location" class="span7" type="text" placeholder="Search for a location">
+						<button type="button" class="btn" onclick="codeAddress()">Search</button>
+					</fieldset>
+				</form>
+				<div id="coordinates"></div>
+				<div id="map-canvas" style="height:300px;padding:10px"></div>
+			</div>
+			<div style="margin:10px">
+				<form class="form-inline">
+					<fieldset>
+						<legend>Multi Selection Map</legend>
+						<span class="help-block">Select multiple strains from the map. As you zoom in and out and pan accross the map the list of markers will change.</span>
+						<input id="multiMaplocation" class="span7" type="text" placeholder="Search for a location">
+						<button type="button" class="btn" onclick="codeMultiMapAddress()">Search</button>
+					</fieldset>
+				</form>
+				<div class="row-fluid">
+					<div class="span8" id="multi-map-canvas" style="height:300px;padding:10px"></div>
+					<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:300px;overflow:auto">
+						<form id="strainListForm" class="form" action="/group_wise_comparisons/" method="post" enctype="application/x-www-form-urlencoded">
+							<div style="padding:10px">
+								<fieldset>
+									<span class="help-block"></span>
+									<ul id="multiMapStrainList" style="padding:0px;margin:0px">
+										<li style="list-style:none">
+										</li>
+									</ul>
+								</fieldset>
+							</form>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+		<TMPL_INCLUDE NAME="footer_stats.tmpl">
+	</body>
+	</html>
+
+	<!--For Demo Purposes Only-->
+	<script type="text/javascript">
+	//This disables the enter key from submitting the form to an empty url
+	$(function(){
+		$("#location").keypress(function(e){
+			var k=e.keyCode || e.which;
+			if(k==13){
+				e.preventDefault();
+			}
+		});
+	});
+
+	var map;
+	var multiMap;
+	var marker;
+	var multiMarkers = [];
+	var geocoder;
+
+	function initialize() {
+		geocoder = new google.maps.Geocoder();
+		var mapOptions = {
+			center: new google.maps.LatLng(-0.000, 0.000),
+			zoom: 1,
+			streetViewControl: false,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		};
+
+		map = new google.maps.Map(document.getElementById("map-canvas"),
+			mapOptions);
+
+		multiMap = new google.maps.Map(document.getElementById("multi-map-canvas"),
+			mapOptions);
+
+		google.maps.event.addListener(map, 'click', function(event) {
+			addMarker(event.latLng);
+		});
+
+		$.post('/map_multi_markers', function(data) {
+			var markerList = JSON.parse(data);
+			for (var i = 0; i < markerList.data.length; i++) {
+				var centerLatLng = new google.maps.LatLng(markerList.data[i].center.lat, markerList.data[i].center.lng);
+				var multiMarker = new google.maps.Marker({
+					map: multiMap,
+					position: centerLatLng,
+					//animation: google.maps.Animation.DROP,
+					title: markerList.data[i].location,
+					feature_id: markerList.data[i].feature_id,
+					genome_name: markerList.data[i].genome_name
+				});
+				multiMarkers.push(multiMarker);
+			}
+			var mcOptions = {gridSize: 50, maxZoom: 15};
+			var mc = new MarkerClusterer(multiMap, multiMarkers, mcOptions);
+			populateMultiStrainList(markerList);
+		});
+
+		google.maps.event.addListener(multiMap, 'bounds_changed', function() {
+			var visibleMarkers = [];
+			for (var i = 0; i < multiMarkers.length; i++) {
+				if(multiMap.getBounds().contains(multiMarkers[i].getPosition())){
+					visibleMarkers.push(multiMarkers[i]);
+				}
+				else{
+				}
+			}
+			updateSelectionList(visibleMarkers);
+		});
+	}
+
+	function addMarker(location) {
+		if (marker) {
+			marker.setMap(null);
+		}
+		marker = new google.maps.Marker({
+			position: location,
+			map: map,
+		});
+		marker.setTitle(marker.getPosition().toString());
+		map.panTo(marker.getPosition());
+
+		geocoder.geocode({'latLng': marker.getPosition()}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				if (results) {
+					console.log(results)
+				} else {
+					alert('No results found');
+				}
+			} else {
+				alert('Geocoder failed due to: ' + status);
+			}
+		});
+
+		//Show coordinates for demo
+		$('#coordinates').empty();
+		$('#coordinates').append('<p>Marker Coordinates: '+marker.getPosition().toString()+'</p>')
+	}
+
+	function codeAddress() {
+		var address = document.getElementById('location').value;
+		geocoder.geocode( { 'address': address}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				map.setCenter(results[0].geometry.location);
+				map.fitBounds(results[0].geometry.viewport);
+			}
+			else {
+				alert('Location ' + document.getElementById('location').value + ' could not be found. Please enter a proper location');
+			}
+		});
+	}
+
+	function codeMultiMapAddress() {
+		var address = document.getElementById('multiMaplocation').value;
+		geocoder.geocode( { 'address': address}, function(results, status) {
+			if (status == google.maps.GeocoderStatus.OK) {
+				multiMap.setCenter(results[0].geometry.location);
+				multiMap.fitBounds(results[0].geometry.viewport);
+			}
+			else {
+				alert('Location ' + document.getElementById('location').value + ' could not be found. Please enter a proper location');
+			}
+		});
+	}
+
+	function populateMultiStrainList(markerList) {
+		for (var i = 0; i < markerList.data.length; i++) {
+			$('#multiMapStrainList li').append('<label class="checkbox"><input id="checkboxName" class="checkbox" type="checkbox" value='+markerList.data[i].feature_id+' name="groupWiseStrainNames">'+markerList.data[i].location+' - '+markerList.data[i].genome_name+'</input></label>');
+		}
+	}
+
+	function updateSelectionList(visibleMarkers) {
+		$('#multiMapStrainList li').empty()
+		for (var i = 0; i < visibleMarkers.length; i++) {
+			$('#multiMapStrainList li').append('<label class="checkbox"><input id="checkboxName" class="checkbox" type="checkbox" value='+visibleMarkers[i].feature_id+' name="groupWiseStrainNames">'+visibleMarkers[i].title+' - '+visibleMarkers[i].genome_name+'</input></label>');
+		}
+	}
+
+	google.maps.event.addDomListener(window, 'load', initialize);
+
+	</script>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<TMPL_INCLUDE NAME="header.tmpl">
+
+<body>
+	<h1>GROUPWISE RESULTS PAGE</h1>
+
+	<span class="help-block">
+		Total analysis time was : <TMPL_VAR NAME="runTime"> seconds.
+	</span>
+
+	<span class="help-block">There were a total of <TMPL_VAR NAME="numSigResults"> significant differences detected from <TMPL_VAR NAME="totalResults"> total comaprisons.</span>
+
+	<table class="table table-condensed">
+		<caption><h3>Binary FET Results</h3></caption>
+		<thead>
+			<tr>
+				<th>Locus ID</th>
+				<th>Group 1 Present</th>
+				<th>Group 1 Absent </th>
+				<th>Group 2 Present</th>
+				<th>Group 2 Absent</th>
+				<th>p-value</th>
+			</tr>
+		</thead>
+		<tbody>
+			<TMPL_LOOP NAME="binaryFETResults">
+			<tr>
+				<td><TMPL_VAR NAME="locus_id"></td>
+				<td><TMPL_VAR NAME="group1Present"></td>
+				<td><TMPL_VAR NAME="group1Absent"></td>
+				<td><TMPL_VAR NAME="group2Present"></td>
+				<td><TMPL_VAR NAME="group2Absent"></td>
+				<td><TMPL_VAR NAME="pvalue"></td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+	</table>
+</body>
+</html>

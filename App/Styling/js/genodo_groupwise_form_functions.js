@@ -3,43 +3,43 @@
  * 
  * Copyright (c) Matt Whiteside 2013.
  *
-**/
+ **/
 
-function buildMetaForm(el, tab) {
-	
-	var validTabs = ['list', 'tree', 'map'];
-	var formLabels = ['drop-down list', 'tree', 'map'];
-	
-	var i = validTabs.indexOf(tab);
-	if(i == -1) {
-		alert('unknown tab name');
-		return('false');
-	}
-	
+ function buildMetaForm(el, tab) {
+
+ 	var validTabs = ['list', 'tree', 'map'];
+ 	var formLabels = ['drop-down list', 'tree', 'map'];
+
+ 	var i = validTabs.indexOf(tab);
+ 	if(i == -1) {
+ 		alert('unknown tab name');
+ 		return('false');
+ 	}
+
 	// Build form
 	var form_html = '<div style="display: inline-block;">'+	
-		'<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#'+tab+'-meta-display">'+
-		'<i class=" icon-eye-open icon-white"></i>'+
-		'<span class="caret"></span>'+
-		'</button>'+
-		'<div id="'+tab+'-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">'+
-		'<div style="padding:10px;">Change meta-data displayed in '+formLabels[i]+':</div>'+
-		'<form class="form-horizontal" style="padding:0px 5px 0 20px;">'+
-		'<fieldset>'+		    	
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="name"> Name </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="accession"> Accession # </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="strain"> Strain </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="serotype"> Serotype </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_host"> Isolation Host </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_source"> Isolation Source </label>'+
-		'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_date"> Isolation Date </label>'+														   			   						   
-	    '</fieldset>'+
-	    '<button id="update-'+tab+'-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>'+
-	    '</form>'+
-		'</div>'+
-		'</div>'+
-		'</div>'+
-		'</div>';
+	'<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#'+tab+'-meta-display">'+
+	'<i class=" icon-eye-open icon-white"></i>'+
+	'<span class="caret"></span>'+
+	'</button>'+
+	'<div id="'+tab+'-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">'+
+	'<div style="padding:10px;">Change meta-data displayed in '+formLabels[i]+':</div>'+
+	'<form class="form-horizontal" style="padding:0px 5px 0 20px;">'+
+	'<fieldset>'+		    	
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="name"> Name </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="accession"> Accession # </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="strain"> Strain </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="serotype"> Serotype </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_host"> Isolation Host </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_source"> Isolation Source </label>'+
+	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_date"> Isolation Date </label>'+														   			   						   
+	'</fieldset>'+
+	'<button id="update-'+tab+'-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>'+
+	'</form>'+
+	'</div>'+
+	'</div>'+
+	'</div>'+
+	'</div>';
 	
 	$(el).append(form_html);
 	
@@ -60,7 +60,6 @@ function updateMeta(tab, visableData) {
 	if(typeof visableData === 'undefined' || visableData.length == 0) {
 		visableData = ['name'];
 	}
-
 	if(tab == 'list' || tab == 'init') {
 		var dropDown = $('#pubStrainList')
 		dropDown.empty();
@@ -69,14 +68,37 @@ function updateMeta(tab, visableData) {
 			var lab = metaLabel(feature_obj, visableData);
 			
 			dropDown.append(
-	        	'<li>'+
+				'<li>'+
 				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+								
 				'</li>'
-			);
+				);
 		});
 	} else if(tab == 'tree') {
-		
 		modifyLabels(visableData);
+
+	} else if (tab == 'map') {
+		//Do something here about that
+		var dropDown = $('#multiMapStrainList');
+		dropDown.empty();
+
+		var strainsAlreadyInGroups = groupsList();
+		
+		$.each( visibleMarkers, function(feature_id, feature_obj) {
+			var locationTitle = multiMarkers[feature_id].title;
+			var lab = metaLabel(public_location_genomes[feature_id], visableData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+locationTitle+' - '+lab+'</label>'+								
+				'</li>'
+				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInMapSearch(feature_id, true);
+			}
+			else {
+				selectInMapSearch(feature_id, false);
+			}
+		});	
+
 	}
 	
 }
@@ -124,7 +146,7 @@ function metaLabel(feature, vdata) {
 function addToGroup(groupNum, genomeList) {
 	
 	for(var genome in genomeList) {
-		
+
 		var label = genomeList[genome];
 		
 		if($('input[name="comparison-group1-genome"][value="'+genome+'"]').length) {
@@ -139,7 +161,7 @@ function addToGroup(groupNum, genomeList) {
 			}
 		} else {
 			// Newly added genome
-	
+
 			// Add to group
 			$('#comparison-group'+groupNum+' fieldset').append(
 				'<li class="comparison-group-item" style="list-style:none">'+
@@ -147,7 +169,7 @@ function addToGroup(groupNum, genomeList) {
 				'<input class="checkbox" type="checkbox" value="'+genome+'" name="comparison-group'+groupNum+'-genome"/>'+label+
 				'</label>'+
 				'</li>'
-			);
+				);
 
 			// Change format of selected genomes
 			updateSelected(genome, true);
@@ -174,7 +196,7 @@ function removeFromGroup(groupNum) {
 		updateSelected($( e ).val(), false); 
 		$( e ).closest('li').remove(); 
 	});
-		
+
 	// Hide remove button if list empty
 	if($('input[name="comparison-group'+groupNum+'-genome"]').length == 0) {
 		$('#buttonRemoveGroup'+groupNum).hide();
@@ -188,6 +210,7 @@ function updateSelected(genome_id, selected) {
 	selectInList(genome_id, selected);
 	maskNode(genome_id, selected);
 	selectInAttrSearch(genome_id, selected);
+	selectInMapSearch(genome_id, selected);
 }
 
 // These functions alter genome format after its selected
@@ -203,6 +226,11 @@ function selectInAttrSearch(genome, selected) {
 		$('#attr-search-display label[for="'+genome+'"]').toggleClass('selected-attr-genome', selected);
 		$('#attr-search-display input[value="'+genome+'"]').toggleClass('selected-attr-genome', selected);
 	}
+}
+
+function selectInMapSearch(genome, selected) {
+	$('#multiMapStrainList label[for="map_'+genome+'"]').toggleClass('listSelected', selected);
+	$('#multiMapStrainList input[value="'+genome+'"]').toggleClass('listSelected', selected);
 }
 
 // returns list of genome_ids already added to group1 or 2.
