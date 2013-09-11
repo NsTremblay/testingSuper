@@ -1,6 +1,8 @@
 <script>
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
+var virulence_factors = <TMPL_VAR NAME=vFACTORS>;
+var amr_genes = <TMPL_VAR NAME=amrFACTORS>;
 visableData = ['name'];
 </script>
 
@@ -20,54 +22,128 @@ visableData = ['name'];
 						<li id="strainSelectTab"><a href="#strainSelect" data-toggle="tab">Select Genomes</a></li>
 					</ul>
 					<div class="tab-content">
-						<div id="virSelect" class="span9 tab-pane active" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-							<form id="strainListForm" class="form" action="/virulence_amr_by_strain/" method="post" enctype="application/x-www-form-urlencoded">
+
+						<div id="virSelect" class="span9 tab-pane active">
+							<table>
+								<tbody>
+									<tr>
+										<td><div class="span4"></div></td>
+										<td>
+											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list">
+										</td>
+										<td>
+											<div class="span2">
+												<label class="checkbox" for="select-all-virulence">
+													<input id="select-all-virulence" type="checkbox"> Select All 
+												</label>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
 										<span class="help-block">Select on one or more virulence factors</span>
 										<ul id="virListSelection" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=vFACTORS>
-											<li style="list-style:none">
-												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedVirulence"><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></input>
-												</label>
-											</li>
-											</TMPL_LOOP>
 										</ul>
 									</fieldset>								
 								</div>
 							</div>
-							<div id="amrSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+						</div>
+
+						<div div id="amrSelect" class="span9 tab-pane">
+							<table>
+								<tbody>
+									<tr>
+										<td><div class="span4"></div></td>
+										<td>
+											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list">
+										</td>
+										<td>
+											<div class="span2">
+												<label class="checkbox" for="select-all-amr">
+													<input id="select-all-amr" type="checkbox"> Select All 
+												</label>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+							<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
 										<span class="help-block">Select on one or more amr genes</span>
 										<ul id="amrListSelection" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=amrFACTORS>
-											<li style="list-style:none">
-												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value='<TMPL_VAR NAME=FEATUREID>' name="selectedAmr"><TMPL_VAR NAME=UNIQUENAME></input>
-												</label>
-											</li>
-											</TMPL_LOOP>
 										</ul>
 									</fieldset>
 								</div>
 							</div>
-							<div id="strainSelect" class="span9 tab-pane" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+						</div>
+
+						<div id="strainSelect" class="span9 tab-pane">
+							<table>
+								<tbody>
+									<tr>
+										<td>
+											<div class="span4">
+												<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#vf-amr-meta-display">
+													<i class=" icon-eye-open icon-white"></i>
+													<span class="caret"></span>
+												</button>
+												<div id="vf-amr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
+													<div style="padding: 10px">Change meta-data displayed in genome list:</div>
+													<form class="form-horizontal" style="padding:0px 5px 0 20px;">
+														<fieldset>		    	
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="name"> Name 
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="accession"> Accession # 
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="strain"> Strain
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="serotype"> Serotype
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_host"> Isolation Host
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_source"> Isolation Source 
+															</label>
+															<label>
+																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_date"> Isolation Date
+															</label>	   						
+														</fieldset>
+														<button id="update-vf-amr-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
+													</form>
+												</div>
+											</div>
+										</td>
+										<td>
+											<input id="strain-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
+										</td>
+										<td>
+											<div class="span2">
+												<label class="checkbox" for="select-all-genomes">
+													<input id="select-all-genomes" type="checkbox"> Select All 
+												</label>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+
+							<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
 										<span class="help-block">Select on one or more strains</span>
 										<ul id="pubStrainList" style="padding:0px;margin:0px">
-											<TMPL_LOOP NAME=FEATURES>
-											<li style="list-style:none">
-												<label class="checkbox">
-													<input id="checkboxName" class="checkbox" type="checkbox" value="<TMPL_VAR NAME=FEATURE_ID>" name="selectedStrains"><TMPL_VAR NAME=UNIQUENAME></input>
-												</label>
-											</li>
-											</TMPL_LOOP>
 										</ul>
 									</fieldset>
-								</form>
+								</div>
 							</div>
 						</div>
 
@@ -100,9 +176,13 @@ visableData = ['name'];
 							<fieldset>
 								<h5>Select a VF from the list:</h5>
 								<select id="vfList" class="span12" name="VFName">
-									<TMPL_LOOP NAME=vFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=NAME> - <TMPL_VAR NAME=UNIQUENAME></option>
-									</TMPL_LOOP>
+									<script>
+									$.each(virulence_factors, function(vir_id, vir_obj) {
+										$('#vfList').append(
+											'<option value='+vir_obj.feature_id+'>'+vir_obj.uniquename+'</option>'
+											);
+									});
+									</script>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
 									<button id="showVFMetaInfo" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> Virulence Factor Info</button>
@@ -130,10 +210,14 @@ visableData = ['name'];
 						<form class="form" id="showAMRMetaInfoForm" action="/amr_meta_info/" method="post" enctype="application/x-www-form-urlencoded">
 							<fieldset>
 								<h5>Select an AMR gene from the list:</h5>
-								<select class="span12" name="AMRName">
-									<TMPL_LOOP NAME=amrFACTORS>
-									<option value='<TMPL_VAR NAME=FEATUREID>'><TMPL_VAR NAME=UNIQUENAME></option>
-									</TMPL_LOOP>
+								<select id="amrList" class="span12" name="AMRName">
+									<script>
+									$.each(amr_genes, function(amr_id, amr_obj) {
+										$('#amrList').append(
+											'<option value='+amr_obj.feature_id+'>'+amr_obj.uniquename+'</option>'
+											);
+									});
+									</script>
 								</select>
 								<div style="margin:10px 0px 0px 0px">
 									<button id="showAMRMetaInfo" type="button" class="btn btn-small btn-primary" value="Submit"><i class="icon-info-sign icon-white"></i> AMR Gene Info</button>
@@ -146,10 +230,6 @@ visableData = ['name'];
 						<div class="row-fluid">
 							<div id="AMRMetaInfo" style="display:none;">
 								<h5><u>Antimicrobial Resistance Gene Info</u></h5>
-								<TMPL_LOOP NAME=amrMETAINFO>
-								<TMPL_VAR NAME=amrUNIQUENAME>
-								<strong><TMPL_VAR NAME=amrTERMNAME></strong> : <TMPL_VAR NAME=amrTERMVALUE> <br>
-								</TMPL_LOOP>
 							</div>
 							<div id="amrvalidator" style="display:none"><TMPL_VAR NAME=amrVALIDATOR></div>
 						</div>
@@ -350,16 +430,47 @@ $('#showAMRMetaInfo').click( function(e){
 		}, "json" , $('#AMRMetaInfo').show());
 });
 
-/*$('#refreshCompareSelections').click( function(){
-	unCheckAllBoxes();
-});*/
 
+$('#select-all-virulence').click( function() {
+	var vir = $('input[name="selectedVirulence"]');
+	if ($('#select-all-virulence').is(':checked')) {
+		vir.prop("checked", true);
+	}
+	else {
+		vir.prop("checked", false);
+	}
+});
 
-function unCheckAllBoxes() {
-	$('.tabbable input[type=checkbox]').each(function() 
-	{ 
-		this.checked = false; 
-	}); 
-}
+$('#select-all-amr').click( function() {
+	var amr = $('input[name="selectedAmr"]');
+	if ($('#select-all-amr').is(':checked')) {
+		amr.prop("checked", true);
+	}
+	else {
+		amr.prop("checked", false);
+	}
+});
+
+$('#select-all-genomes').click( function() {
+	var genomes = $('input[name="selectedStrains"]');
+	if ($('#select-all-genomes').is(':checked')) {
+		genomes.prop("checked", true);
+	}
+	else {
+		genomes.prop("checked", false);
+	}
+});
+
+$('#virulence-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#virulence-autocomplete').val().toLowerCase();
+	$.each(virulence_factors, function(vir_id, vir_obj) {
+		var name = vir_obj.name.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[vir_id] = vir_obj;
+		}
+	});
+	appendFilteredList(filteredList , '#virListSelection')
+});
 
 </script>

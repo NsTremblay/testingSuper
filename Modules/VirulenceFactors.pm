@@ -57,17 +57,14 @@ sub virulence_factors : StartRunmode {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
-	my ($amrFactorsRef , $amrJsonData) = $formDataGenerator->getAmrFormData();
+	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
 	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	
 	my $username = $self->authen->username;
 	
 	# Retrieve form data
@@ -76,14 +73,11 @@ sub virulence_factors : StartRunmode {
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 	
-	$template->param(vFACTORS=>$vFactorsRef);
-	$template->param(vJSON=>$vJsonData);
-
 	$template->param(FEATURES=>$pubDataRef);
 	$template->param(strainJSONData=>$pubStrainJsonDataRef);
 
+	$template->param(vFACTORS=>$vFactorsRef);
 	$template->param(amrFACTORS=>$amrFactorsRef);
-	$template->param(amrJSON=>$amrJsonData);
 	return $template->output();
 }
 
@@ -279,10 +273,6 @@ sub _getVirulenceByStrain {
 	my $_selectedVirulenceFactors = shift;
 
 	my @_selectedStrainNames = @{$_selectedStrainNames};
-
-	foreach my $name (@_selectedStrainNames) {
-		print STDERR  $name	. "\t";
-	}
 
 	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
 	

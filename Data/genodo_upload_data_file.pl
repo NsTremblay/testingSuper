@@ -72,15 +72,15 @@ my %inputDataType = ('virulence' => "RawVirulenceData", 'amr' => "RawAmrData", '
 my %inputDataTypeColumnNames = (
 	'RawVirulenceData' => 
 	{
-		column1 => 'strain', 
-		column2 => 'gene_name',
-		column3 => 'presence_absence'
+		column2 => 'genome_id', 
+		column3 => 'gene_id',
+		column4 => 'presence_absence'
 		},
 		'RawAmrData' => 
 		{
-			column1 => 'strain', 
-			column2 => 'gene_name',
-			column3 => 'presence_absence'
+			column2 => 'genome_id', 
+			column3 => 'gene_id',
+			column4 => 'presence_absence'
 			},
 			'LociGenotype' => 
 			{
@@ -191,7 +191,12 @@ elsif ($INPUTDATATYPE eq 'snp'){
 else {
 	#Data is either for virulence or amr genes
 	#Need to implement this
+	for (my $j = 0 ; $j < scalar(@seqFeatureTemp) ; $j++) {
+		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
+		writeOutVIRAMRData($parsedHeader);
+	}
 	print "\t...Adding data to database\n";
+	#TODO
 }
 
 close $outNameFile;
@@ -220,6 +225,12 @@ sub writeOutSnpData {
 	}
 	else {
 	}
+}
+
+sub writeOutVIRAMRData {
+	##Need to pass the data line too
+	my $_parsedHeader = shift;
+	#TODO
 }
 
 sub parseHeader {
