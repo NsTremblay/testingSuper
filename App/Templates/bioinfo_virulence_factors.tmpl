@@ -19,7 +19,7 @@
 			<h1><span>VIRULENCE & AMR</span> <span style="color:#d41616">INFORMATION</span></h1>
 		</div>
 
-		<span class="help-block" style="margin:0px 10px 20px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left. <a class="btn btn-small" href="javascript:void(0);" onclick="startIntro();">Show me how</a></span>
+		<span class="help-block" style="margin:0px 10px 20px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left.</span>
 
 		<TMPL_INCLUDE NAME="virulence_amr_by_strain_form.tmpl">
 
@@ -33,6 +33,7 @@
 
 <script type="text/javascript">
 function startIntro(){
+
 	var intro = introJs();
 	intro.setOptions({
 		steps: [

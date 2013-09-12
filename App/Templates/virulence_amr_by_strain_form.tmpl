@@ -10,7 +10,7 @@ genomeLabels = {};
 <div class="container" style="padding-bottom:10px">
 	<div class="tabbable tabs-left">
 		<ul class="nav nav-tabs">
-			<li class="active"><a href="#virAmrStrainSelect" data-toggle="tab">Select VIR/AMR/Strain</a></li>
+			<li id="virAmrSelectLink" class="active"><a href="#virAmrStrainSelect" data-toggle="tab">Select VIR/AMR/Strain</a></li>
 			<li id="virInfoLink"><a href="#virInfo" data-toggle="tab">Virulence Factor Info</a></li>
 			<li id="amrInfoLink"><a href="#amrInfo" data-toggle="tab">AMR Gene Info</a></li>
 		</ul>
@@ -18,6 +18,7 @@ genomeLabels = {};
 			<div class="tab-pane active" id="virAmrStrainSelect">
 				<div class="tabbable">
 					<ul class="nav nav-tabs">
+						<li id="amrInfoLink"><a href="javascript:void(0);" onclick="startIntro()" data-toggle="tooltip" title="Show me how"><i i class="icon-info-sign"></i></a></li>
 						<li id="virSelectTab" class="active"><a href="#virSelect" data-toggle="tab">Select Virulence Factors</a></li>
 						<li id="amrSelectTab"><a href="#amrSelect" data-toggle="tab">Select AMR Genes</a></li>
 						<li id="strainSelectTab"><a href="#strainSelect" data-toggle="tab">Select Genomes</a></li>
@@ -180,7 +181,7 @@ genomeLabels = {};
 									<script>
 									$.each(virulence_factors, function(vir_id, vir_obj) {
 										$('#vfList').append(
-											'<option value='+vir_obj.feature_id+'>'+vir_obj.uniquename+'</option>'
+											'<option value='+vir_obj.feature_id+'>'+vir_obj.name+' - '+vir_obj.uniquename+'</option>'
 											);
 									});
 									</script>
@@ -215,7 +216,7 @@ genomeLabels = {};
 									<script>
 									$.each(amr_genes, function(amr_id, amr_obj) {
 										$('#amrList').append(
-											'<option value='+amr_obj.feature_id+'>'+amr_obj.uniquename+'</option>'
+											'<option value='+amr_obj.feature_id+'>'+amr_obj.name+' - '+amr_obj.uniquename+'</option>'
 											);
 									});
 									</script>
@@ -273,14 +274,13 @@ $('#compareSelections').click( function(e) {
 		else{
 		}
 	});
-	if (virListChecked == 0) {
-		alert('You must select at least 1 Virulence Factor');
+	if (virListChecked == 0 && amrListChecked == 0) {
+		alert('You must select at least 1 Virulence Factor or AMR Gene');
+		return 0;
 	}
-	else if (amrListChecked == 0) {
-		alert('You must select at least 1 AMR Gene');
-	}
-	else if (strainListChecked == 0) {
+	if (strainListChecked == 0) {
 		alert('You must select at least 1 Strain');
+		return 0;
 	}
 	else {
 		e.preventDefault();
@@ -299,6 +299,8 @@ $('#compareSelections').click( function(e) {
 					alert("Error, please try again later");
 				}
 				else {
+
+					if (data.data[1] != "") {	
 			//virulence table
 			$('#wheel-loader').hide();
 			$('#virByStrain h4').empty();
@@ -307,8 +309,8 @@ $('#compareSelections').click( function(e) {
 			//append the table head
 			$('#virByStrainTable').append('<thead></thead><tbody></tbody>');
 			$('#virByStrainTable thead').append('<td></td>');
-			for (var i = 0; i < data.data[0].strain.length; i++) {
-				$('#virByStrainTable thead').append('<td>'+data.data[0].strain[i].strain_name+'</td>');
+			for (var i = 0; i < data.data[0].virStrains.length; i++) {
+				$('#virByStrainTable thead').append('<td>'+data.data[0].virStrains[i].strain_name+'</td>');
 			};
 			//append the table body
 			for (var i = 0; i < data.data[1].virulence.length; i++) {
@@ -323,16 +325,19 @@ $('#compareSelections').click( function(e) {
 					}
 				};
 				$('#virByStrainTable tbody').append('</tr>');
-			};
+			}
+		}
+		if (data.data[2] != "") {
 			//amr table
+			$('#wheel-loader').hide();
 			$('#amrByStrain h4').empty();
 			$('#amrByStrainTable').empty();
 			$('#amrByStrain').prepend('<h4 style="margin:10px">AMR</h4>');
 			//append the table head
 			$('#amrByStrainTable').append('<thead></thead><tbody></tbody>');
 			$('#amrByStrainTable thead').append('<td></td>');
-			for (var i = 0; i < data.data[0].strain.length; i++) {
-				$('#amrByStrainTable thead').append('<td>'+data.data[0].strain[i].strain_name+'</td>');
+			for (var i = 0; i < data.data[0].amrStrains.length; i++) {
+				$('#amrByStrainTable thead').append('<td>'+data.data[0].amrStrains[i].strain_name+'</td>');
 			};
 			//append the table body
 			for (var i = 0; i < data.data[2].amr.length; i++) {
@@ -347,12 +352,13 @@ $('#compareSelections').click( function(e) {
 					}
 				};
 				$('#amrByStrainTable tbody').append('</tr>');
-			};
-			$('#legend').show("slow");
-			$('#virByStrain').show("slow");
-			$('#amrByStrain').show("slow");
-		}							
-	}, "json");
+			}
+		}
+		$('#legend').show("slow");
+		$('#virByStrain').show("slow");
+		$('#amrByStrain').show("slow");
+	}							
+}, "json");
 }
 });
 

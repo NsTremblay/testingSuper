@@ -63,7 +63,6 @@ function updateMeta(tab, visableData) {
 	if(tab == 'list' || tab == 'init') {
 		var dropDown = $('#pubStrainList')
 		dropDown.empty();
-		
 		$.each( public_genomes, function(feature_id, feature_obj) {
 			var lab = metaLabel(feature_obj, visableData);
 			

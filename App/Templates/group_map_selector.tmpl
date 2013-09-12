@@ -43,6 +43,13 @@ var private_location_genomes = {};
 					</form>
 				</div>
 			</td>
+			<td>
+				<div class="span4">
+					<label class="checkbox" for="select-all-map">
+						<input id="select-all-map" type="checkbox"> Select All 
+					</label>
+				</div>
+			</td>
 		</tr>
 		<tr>
 			<td>
@@ -238,6 +245,16 @@ google.maps.event.addDomListener(window, 'load', initialize);
 $('a[href="#map_search_tab"]').click( function(){
 	setTimeout("reLoadMap()", 0);
 	//initializeMap(); 
+});
+
+$('#select-all-map').click( function() {
+	var map = $('input[name="genomes-in-map-search"]');
+	if ($('#select-all-map').is(':checked')) {
+		map.prop("checked", true);
+	}
+	else {
+		map.prop("checked", false);
+	}
 });
 
 </script>
