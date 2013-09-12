@@ -4,6 +4,7 @@ var private_genomes = <TMPL_VAR private_genomes>;
 var virulence_factors = <TMPL_VAR NAME=vFACTORS>;
 var amr_genes = <TMPL_VAR NAME=amrFACTORS>;
 visableData = ['name'];
+genomeLabels = {};
 </script>
 
 <div class="container" style="padding-bottom:10px">
@@ -470,7 +471,32 @@ $('#virulence-autocomplete').keyup( function() {
 			filteredList[vir_id] = vir_obj;
 		}
 	});
-	appendFilteredList(filteredList , '#virListSelection')
+	appendFilteredList(filteredList , 'virulence')
+});
+
+$('#amr-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#amr-autocomplete').val().toLowerCase();
+	$.each(amr_genes, function(amr_id, amr_obj) {
+		var name = amr_obj.name.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[amr_id] = amr_obj;
+		}
+	});
+	appendFilteredList(filteredList , 'amr')
+});
+
+$('#strain-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#strain-autocomplete').val().toLowerCase();
+	$.each(genomeLabels, function(feature_id, label) {
+		//want it to look up the label instead
+		var name = label.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[feature_id] = public_genomes[feature_id];
+		}
+	});
+	appendFilteredList(filteredList , 'genome');
 });
 
 </script>

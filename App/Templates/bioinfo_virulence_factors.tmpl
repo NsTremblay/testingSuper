@@ -77,8 +77,10 @@ function updateVFAMRMeta(list , visibleData) {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList');
 		dropDown.empty();
+		genomeLabels = {};
 		$.each( public_genomes, function(feature_id, genome_obj) {
 			var lab = metaLabel(public_genomes[feature_id], visibleData);
+			genomeLabels[feature_id] = lab;
 			dropDown.append(
 				'<li style="list-style-type:none">'+
 				'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
@@ -111,16 +113,41 @@ function updateVFAMRMeta(list , visibleData) {
 
 } 
 
-function appendFilteredList(obj , dropDownList) {
-	var dropDown = $(dropDownList);
-	dropDown.empty();
-	$.each (obj, function(amr_id, amr_obj) {
-		dropDown.append(
-			'<li style="list-style-type:none">'+
-			'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedVir"/>'+amr_obj.name+' - '+amr_obj.uniquename+'</label>'+
-			'</li>'
-			);
-	});
+function appendFilteredList(obj , list) {
+	if (list == 'virulence') {
+		var dropDown = $('#virListSelection');
+		dropDown.empty();
+		$.each (obj, function(obj_id, obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence"/>'+obj.name+' - '+obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+	else if (list == 'amr') {
+		var dropDown = $('#amrListSelection');
+		dropDown.empty();
+		$.each (obj, function(obj_id, obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr"/>'+obj.name+' - '+obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+	else {
+		var dropDown = $('#pubStrainList');
+		dropDown.empty();
+		$.each( obj, function(feature_id, genome_obj) {
+			var lab = metaLabel(obj[feature_id], visableData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
+				'</li>'
+				);
+		});
+	}
 }
 
 // Create labels for a genome with required meta data
