@@ -60,17 +60,27 @@ function updateMeta(tab, visableData) {
 	if(typeof visableData === 'undefined' || visableData.length == 0) {
 		visableData = ['name'];
 	}
+	var strainsAlreadyInGroups = groupsList();
 	if(tab == 'list' || tab == 'init') {
 		var dropDown = $('#pubStrainList')
 		dropDown.empty();
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+		var currentLabels = genomeLabels;
+		genomeLabels = {};
 		$.each( public_genomes, function(feature_id, feature_obj) {
 			var lab = metaLabel(feature_obj, visableData);
-			
+			genomeLabels[feature_id] = lab;
 			dropDown.append(
 				'<li>'+
 				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+								
 				'</li>'
 				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInList(feature_id, true);
+			}
+			else {
+				selectInList(feature_id, false);
+			}
 		});
 	} else if(tab == 'tree') {
 		modifyLabels(visableData);
@@ -79,8 +89,7 @@ function updateMeta(tab, visableData) {
 		//Do something here about that
 		var dropDown = $('#multiMapStrainList');
 		dropDown.empty();
-
-		var strainsAlreadyInGroups = groupsList();
+		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
 		
 		$.each( visibleMarkers, function(feature_id, feature_obj) {
 			var locationTitle = multiMarkers[feature_id].title;
@@ -204,7 +213,6 @@ function removeFromGroup(groupNum) {
 }
 
 function updateSelected(genome_id, selected) {
-	
 	// Change drop-down list
 	selectInList(genome_id, selected);
 	maskNode(genome_id, selected);

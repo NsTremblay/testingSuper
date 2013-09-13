@@ -10,14 +10,15 @@
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-	
+
 	<script>
 	var public_genomes = <TMPL_VAR public_genomes>;
 	var private_genomes = <TMPL_VAR private_genomes>;
 	var root = null,
 	visableData = ['name'];
+	genomeLabels = {}
 	</script>
-	
+
 	<style type="text/css">
 	#pubStrainList li, #tree-selected-genomes li {
 		list-style:none;
@@ -39,13 +40,13 @@
 		display:none;
 	}
 	</style>
-	
+
 	<script src="/App/Styling/js/genodo_tree_functions.js"></script>
 	<script src="/App/Styling/js/genodo_groupwise_form_functions.js"></script>
 	<script src="/App/Styling/js/genodo_boolean_search.js"></script>
-	
+
 	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
-	
+
 </head>
 
 <TMPL_INCLUDE NAME="nav_bar_group_wise.tmpl">
@@ -111,6 +112,24 @@
 			<div class="tab-content">
 
 				<div class="tab-pane active" id="list_search_tab">
+
+					<table>
+						<tbody>
+							<tr>
+								<td>
+									<input id="strain-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
+								</td>
+								<td>
+									<div class="span2">
+										<label class="checkbox" for="select-all-genomes">
+											<input id="select-all-genomes" type="checkbox"> Select All 
+										</label>
+									</div>
+								</td>
+							</tr>
+						</tbody>
+					</table>
+
 					<div class="row-fluid">
 						<div class="span6" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:440px;overflow:auto">
 
@@ -140,6 +159,9 @@
 
 						</div>
 					</div>
+
+
+
 				</div>
 
 				<div class="tab-pane" id="phylo_search_tab">
@@ -227,29 +249,29 @@
 
 $(function() {
 
-	// Populate forms
-	updateMeta('init');
+// Populate forms
+updateMeta('init');
 });
 
 $('#buttonGroup1').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-list',1);
-	
+
 	return false;
 });
 
 $('#buttonGroup2').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-list',2);
-	
+
 	return false;
 });
 
 $('#buttonTreeGroup1').click(function(event) {
 	event.preventDefault();
-	
+
 	var genomeList = {};
 	var checked = $("input[name='genomes-in-tree']");
 	checked.each( function(i, e) { 
@@ -267,17 +289,17 @@ $('#buttonTreeGroup1').click(function(event) {
 		genomeList[id] = lab; 
 
 	});
-	
+
 	addToGroup(1, genomeList);
-	
+
 	$("#tree-selected-genomes").empty();
-	
+
 	return false;
 });
 
 $('#buttonTreeGroup2').click(function(event) {
 	event.preventDefault();
-	
+
 	var genomeList = {};
 	var checked = $("input[name='genomes-in-tree']");
 	checked.each( function(i, e) { 
@@ -294,146 +316,196 @@ $('#buttonTreeGroup2').click(function(event) {
 		var lab = genome_data.uniquename;
 		genomeList[id] = lab;
 	});
-	
+
 	addToGroup(2, genomeList);
-	
+
 	$("#tree-selected-genomes").empty();
-	
+
 	return false;
 });
 
 $('#buttonMetaGroup1').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-attr-search',1);
-	
+	$('#select-all-attr-search-display').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
+
 	return false;
 });
 
 $('#buttonMetaGroup2').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-attr-search',2);
-	
+	$('#select-all-attr-search-display').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
+
 	return false;
 });
 
 $('#buttonMapGroup1').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-map-search',1);
-	
+	$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
+
 	return false;
 });
 
 $('#buttonMapGroup2').click(function(event) {
 	event.preventDefault();
-	
+
 	submitGenomes('genomes-in-map-search',2);
-	
+	$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
+
 	return false;
 });
 
 $('#buttonRemoveGroup2').click(function(event) {
 	event.preventDefault();
-	
+
 	removeFromGroup(2);
-	
+
 	return false;
 });
 
 $('#buttonRemoveGroup1').click(function(event) {
 	event.preventDefault();
-	
+
 	removeFromGroup(1);
-	
+
 	return false;
 });
 
 
 $('#compareGrouped').click( function(e) {
 	e.preventDefault();
-	
+
 	$('#groupedForm').submit();
 });
 
 $('#groupedForm').submit( function(e) {
-	// Check both groups contain 1+ genomes
-	var grp1 = $('input[name="comparison-group1-genome"]');
-	if(grp1.length < 1) {
-		alert('Group 1 currently empty')
-		return false;
-	}
-	
-	var grp2 = $('input[name="comparison-group2-genome"]');
-	if(grp2.length < 1) {
-		alert('Group 2 currently empty')
-		return false;
-	}
-	
-	// Prepare inputs
-	grp1.prop("checked", true);
-	grp2.prop("checked", true);
-	
-	// submit form
-	return true;
+// Check both groups contain 1+ genomes
+var grp1 = $('input[name="comparison-group1-genome"]');
+if(grp1.length < 1) {
+	alert('Group 1 currently empty')
+	return false;
+}
+
+var grp2 = $('input[name="comparison-group2-genome"]');
+if(grp2.length < 1) {
+	alert('Group 2 currently empty')
+	return false;
+}
+
+// Prepare inputs
+grp1.prop("checked", true);
+grp2.prop("checked", true);
+
+// submit form
+return true;
 });
 
-/*
-function checkGroupedFields(groupedForm) {
-	if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
-		alert('No groups to be compared');
+$('#select-all-genomes').click( function() {
+	var genomes = $('input[name="genomes-in-list"]');
+	if ($('#select-all-genomes').is(':checked')) {
+		genomes.prop("checked", true);
 	}
 	else {
-		$('#svgCanvas').hide();
-		$('#groupWiseDataLink').hide("slow");
-		$('#groupWiseData').hide("slow");
-		$('#wheel-loader').show();
-		$('#group1 input[type=checkbox]').each(function()
-		{
-			this.checked = true;
-		});
-		$('#group2 input[type=checkbox]').each(function()
-		{
-			this.checked = true;
-		});
-		$('#binaryTableGroup1').empty();
-		$('#binaryTableGroup2').empty();
-		$('#snpTableGroup1').empty();
-		$('#snpTableGroup2').empty();
-		$.post("/group_wise_info/" , ($('#group1 input').serialize() + '&' + $('#group2 input').serialize()),
-			function(data) {
-				$('#wheel-loader').hide();
-				//Append binary table head for group1 and 2
-				$('#binaryTableGroup1').prepend('<thead>Group 1</thead><tr><th>Locus ID</th><th>Strains Present</th><th>Strains Absent</th><th>p-value</th></tr>');
-				//Append binary table body
-				for (var i = 0; i < data.data[0].length; i++) {
-					$('#binaryTableGroup1').append('<tr><td>'+data.data[0][i].locusname+'</td><td>'+data.data[0][i].present_count+'</td><td>'+data.data[0][i].absent_count+'</td><td>< 0.001</td></tr>');
-				};
-				$('#binaryTableGroup2').prepend('<thead>Group 2</thead><tr><th>Locus ID</th><th>Strains Present</th><th>Strains Absent</th><th>p-value</th></tr>');
-				//Append binary table body
-				for (var i = 0; i < data.data[2].length; i++) {
-					$('#binaryTableGroup2').append('<tr><td>'+data.data[2][i].locusname+'</td><td>'+data.data[2][i].present_count+'</td><td>'+data.data[2][i].absent_count+'</td><td>< 0.001</td></tr>');
-				};
-				//Append snp table head
-				$('#snpTableGroup1').append('<thead>Group 1</thead><tr><th>SNP ID</th><th>A</th><th>T</th><th>C</th><th>G</th><th>p-value</th></tr>');
-				for (var i = 0; i < data.data[1].length; i++) {
-					$('#snpTableGroup1').append('<tr><td>'+data.data[1][i].locusname+'</td><td>'+data.data[1][i].adenine_count+'</td><td>'+data.data[1][i].thymidine_count+'</td><td>'+data.data[1][i].cytosine_count+'</td><td>'+data.data[1][i].guanine_count+'</td><td>< 0.001</td></tr>');
-				}
-				//Append snp table body
-				$('#snpTableGroup2').append('<thead>Group 2</thead><tr><th>SNP ID</th><th>A</th><th>T</th><th>C</th><th>G</th><th>p-value</th></tr>');
-				for (var i = 0; i < data.data[3].length; i++) {
-					$('#snpTableGroup2').append('<tr><td>'+data.data[3][i].locusname+'</td><td>'+data.data[3][i].adenine_count+'</td><td>'+data.data[3][i].thymidine_count+'</td><td>'+data.data[3][i].cytosine_count+'</td><td>'+data.data[3][i].guanine_count+'</td><td>< 0.001</td></tr>');
-				}
-				$('#svgCanvas').empty();
-				$('#svgCanvas').append('<div style="align:middle">'+data.data[4]+'</div>');
-				$('#svgCanvas').show("slow");
-				$('#groupWiseDataLink').show("slow");
-				$('#groupWiseData').show();
-				unCheckAllBoxes();
-
-			} , "json");
+		genomes.prop("checked", false);
 	}
+});
+
+$('#strain-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#strain-autocomplete').val().toLowerCase();
+	$.each(genomeLabels, function(feature_id, label) {
+		//want it to look up the label instead
+		var name = label.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[feature_id] = public_genomes[feature_id];
+		}
+	});
+	appendFilteredList(filteredList , 'genome');
+});
+
+
+function appendFilteredList(obj , list) {
+	var dropDown = $('#pubStrainList');
+	var strainsAlreadyInGroups = groupsList();
+	dropDown.empty();
+	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+	var visibleData = [];
+	$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
+	$.each( obj, function(feature_id, genome_obj) {
+		var lab = metaLabel(obj[feature_id], visibleData);
+		dropDown.append(
+			'<li style="list-style-type:none">'+
+			'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+
+			'</li>'
+			);
+		if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+			selectInList(feature_id, true);
+		}
+		else {
+			selectInList(feature_id, false);
+		}
+	});
+}
+/*
+function checkGroupedFields(groupedForm) {
+if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
+	alert('No groups to be compared');
+}
+else {
+	$('#svgCanvas').hide();
+	$('#groupWiseDataLink').hide("slow");
+	$('#groupWiseData').hide("slow");
+	$('#wheel-loader').show();
+	$('#group1 input[type=checkbox]').each(function()
+	{
+		this.checked = true;
+	});
+	$('#group2 input[type=checkbox]').each(function()
+	{
+		this.checked = true;
+	});
+	$('#binaryTableGroup1').empty();
+	$('#binaryTableGroup2').empty();
+	$('#snpTableGroup1').empty();
+	$('#snpTableGroup2').empty();
+	$.post("/group_wise_info/" , ($('#group1 input').serialize() + '&' + $('#group2 input').serialize()),
+		function(data) {
+			$('#wheel-loader').hide();
+			//Append binary table head for group1 and 2
+			$('#binaryTableGroup1').prepend('<thead>Group 1</thead><tr><th>Locus ID</th><th>Strains Present</th><th>Strains Absent</th><th>p-value</th></tr>');
+			//Append binary table body
+			for (var i = 0; i < data.data[0].length; i++) {
+				$('#binaryTableGroup1').append('<tr><td>'+data.data[0][i].locusname+'</td><td>'+data.data[0][i].present_count+'</td><td>'+data.data[0][i].absent_count+'</td><td>< 0.001</td></tr>');
+			};
+			$('#binaryTableGroup2').prepend('<thead>Group 2</thead><tr><th>Locus ID</th><th>Strains Present</th><th>Strains Absent</th><th>p-value</th></tr>');
+			//Append binary table body
+			for (var i = 0; i < data.data[2].length; i++) {
+				$('#binaryTableGroup2').append('<tr><td>'+data.data[2][i].locusname+'</td><td>'+data.data[2][i].present_count+'</td><td>'+data.data[2][i].absent_count+'</td><td>< 0.001</td></tr>');
+			};
+			//Append snp table head
+			$('#snpTableGroup1').append('<thead>Group 1</thead><tr><th>SNP ID</th><th>A</th><th>T</th><th>C</th><th>G</th><th>p-value</th></tr>');
+			for (var i = 0; i < data.data[1].length; i++) {
+				$('#snpTableGroup1').append('<tr><td>'+data.data[1][i].locusname+'</td><td>'+data.data[1][i].adenine_count+'</td><td>'+data.data[1][i].thymidine_count+'</td><td>'+data.data[1][i].cytosine_count+'</td><td>'+data.data[1][i].guanine_count+'</td><td>< 0.001</td></tr>');
+			}
+			//Append snp table body
+			$('#snpTableGroup2').append('<thead>Group 2</thead><tr><th>SNP ID</th><th>A</th><th>T</th><th>C</th><th>G</th><th>p-value</th></tr>');
+			for (var i = 0; i < data.data[3].length; i++) {
+				$('#snpTableGroup2').append('<tr><td>'+data.data[3][i].locusname+'</td><td>'+data.data[3][i].adenine_count+'</td><td>'+data.data[3][i].thymidine_count+'</td><td>'+data.data[3][i].cytosine_count+'</td><td>'+data.data[3][i].guanine_count+'</td><td>< 0.001</td></tr>');
+			}
+			$('#svgCanvas').empty();
+			$('#svgCanvas').append('<div style="align:middle">'+data.data[4]+'</div>');
+			$('#svgCanvas').show("slow");
+			$('#groupWiseDataLink').show("slow");
+			$('#groupWiseData').show();
+			unCheckAllBoxes();
+
+		} , "json");
+}
 }
 */
 </script>

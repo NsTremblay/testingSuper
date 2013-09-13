@@ -78,6 +78,7 @@ function updateVFAMRMeta(list , visibleData) {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList');
 		dropDown.empty();
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
 		$.each( public_genomes, function(feature_id, genome_obj) {
 			var lab = metaLabel(public_genomes[feature_id], visibleData);
@@ -92,6 +93,7 @@ function updateVFAMRMeta(list , visibleData) {
 	else if (list == "virulence") {
 		var dropDown = $('#virListSelection');
 		dropDown.empty();
+		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
 		$.each (virulence_factors, function(vir_id, vir_obj) {
 			dropDown.append(
 				'<li style="list-style-type:none">'+
@@ -103,6 +105,7 @@ function updateVFAMRMeta(list , visibleData) {
 	else if (list == "amr"){
 		var dropDown = $('#amrListSelection');
 		dropDown.empty();
+		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
 		$.each (amr_genes, function(amr_id, amr_obj) {
 			dropDown.append(
 				'<li style="list-style-type:none">'+
@@ -118,6 +121,7 @@ function appendFilteredList(obj , list) {
 	if (list == 'virulence') {
 		var dropDown = $('#virListSelection');
 		dropDown.empty();
+		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
 		$.each (obj, function(obj_id, obj) {
 			dropDown.append(
 				'<li style="list-style-type:none">'+
@@ -129,6 +133,7 @@ function appendFilteredList(obj , list) {
 	else if (list == 'amr') {
 		var dropDown = $('#amrListSelection');
 		dropDown.empty();
+		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
 		$.each (obj, function(obj_id, obj) {
 			dropDown.append(
 				'<li style="list-style-type:none">'+
@@ -140,6 +145,7 @@ function appendFilteredList(obj , list) {
 	else {
 		var dropDown = $('#pubStrainList');
 		dropDown.empty();
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		$.each( obj, function(feature_id, genome_obj) {
 			var lab = metaLabel(obj[feature_id], visableData);
 			dropDown.append(
