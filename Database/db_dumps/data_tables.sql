@@ -7,10 +7,13 @@ BEGIN;
 CREATE TABLE raw_virulence_data
 (
   serial_id serial NOT NULL,
-  strain text,
-  gene_name text,
-  presence_absence text,
-  CONSTRAINT raw_virulence_data_pkey PRIMARY KEY (serial_id)
+  genome_id character varying NOT NULL,
+  gene_id integer NOT NULL,
+  presence_absence integer NOT NULL DEFAULT 0,
+  CONSTRAINT raw_virulence_data_pkey PRIMARY KEY (serial_id),
+  CONSTRAINT raw_virulence_data_feature_id_fkey FOREIGN KEY (gene_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
@@ -18,11 +21,12 @@ WITH (
 ALTER TABLE raw_virulence_data
   OWNER TO postgres;
 
-CREATE index raw_virulence_strain ON raw_virulence_data
-(strain);
 
-CREATE index raw_virulence_locus ON raw_virulence_data
-(gene_name);
+CREATE index raw_virulence_genome_id ON raw_virulence_data
+(genome_id);
+
+CREATE index raw_virulence_gene_id ON raw_virulence_data
+(gene_id);
 
 COMMIT;
 
@@ -35,22 +39,27 @@ BEGIN;
 CREATE TABLE raw_amr_data
 (
   serial_id serial NOT NULL,
-  strain text,
-  gene_name text,
-  presence_absence text,
-  CONSTRAINT raw_amr_data_pkey PRIMARY KEY (serial_id)
+  genome_id character varying NOT NULL, -- ID of the genome that constains the current gene
+  gene_id integer NOT NULL, -- Is  a foreign key to feature_id the feature tabe
+  presence_absence integer NOT NULL DEFAULT 0,
+  CONSTRAINT raw_amr_data_pkey PRIMARY KEY (serial_id),
+  CONSTRAINT raw_amr_feature_id_fkey FOREIGN KEY (gene_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
 );
 ALTER TABLE raw_amr_data
   OWNER TO postgres;
+COMMENT ON COLUMN raw_amr_data.genome_id IS 'ID of the genome that constains the current gene';
+COMMENT ON COLUMN raw_amr_data.gene_id IS 'Is  a foreign key to feature_id the feature tabe';
 
-CREATE index raw_amr_strain ON raw_amr_data
-(strain);
+CREATE index raw_amr_genome_id ON raw_amr_data
+(genome_id);
 
-CREATE index raw_amr_gene ON raw_amr_data
-(gene_name);
+CREATE index raw_amr_gene_id ON raw_amr_data
+(gene_id);
 
 COMMIT;
 

@@ -257,6 +257,7 @@ $('#buttonGroup1').click(function(event) {
 	event.preventDefault();
 
 	submitGenomes('genomes-in-list',1);
+	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 
 	return false;
 });
@@ -265,6 +266,7 @@ $('#buttonGroup2').click(function(event) {
 	event.preventDefault();
 
 	submitGenomes('genomes-in-list',2);
+	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 
 	return false;
 });
