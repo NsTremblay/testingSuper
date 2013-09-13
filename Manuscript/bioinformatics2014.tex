@@ -22,11 +22,13 @@
 
 \title{SuperPhy: A Resource for Integrated Phylogenetic and Epidemiological Analysis of Pathogens}
 
-\author{\authorname{Matthew D. Whiteside\sup{1}, Chad Laing\sup{1}, Akiff Manji\sup{1} and Victor P.J. Gannon\sup{1}}
+\author{\authorname{Matthew D. Whiteside\sup{1*}, Chad R. Laing\sup{1*}, Akiff Manji\sup{1} and Victor P.J. Gannon\sup{1}}
 \affiliation{\sup{1} Laboratory for Foodborne Zoonoses, Public Health Agency of Canada, Lethbridge, AB, Canada Canada}
-\email{{mawhites, chad.r.laing, ??akiff??, vic.gannon}@phac-aspc.gov.ca}}
+\email{\{mawhites, chad.r.laing, akiff.manji, vic.gannon\}@phac-aspc.gov.ca}
+\ \
+$^{*}$ These authors contributed equally to the writing of this manuscript.}
 
-\keywords{Population Genomics, Epidemiology, Phylogeny, Bacterial Pathogenesis}
+\keywords{Bioinformatics, Computational Biology, Population Genomics, Epidemiology, Phylogeny, Bacterial Pathogenesis}
 
 \abstract{The abstract should summarize the contents of the paper and should contain at least 70 and at most 200 words. The text must be set to 9-point font size.}
 
@@ -37,8 +39,7 @@
 
 \noindent Centralized massively parallel nucleic acid sequencing has led to an exponential increase in genomic data generation that threatens to outpace advances in data storage and analysis \cite{kahn_future_2011,teeling_current_2012}. In addition, distributed bench-top sequencing platforms such as the IonTorrent and MiSeq promise to provide point of care / investigation capabilities with near-real time generation of genomic data \cite{loman_performance_2012}. This capability will allow the research community to rapidly disseminate data, especially where decisions may be time-critical; e.g., in clinical medicine and epidemiological investigations. Better algorithms, more powerful analytical tools and state-of-the art infrastructure are needed to analyze these datasets, store the raw and computed data, and provide the essential biological information to a wide range of end-users in readily understandable and useful formats, including those with little or no training in bioinformatics.
 
-Efforts to simplify bioinformatics workflows such as Taverna \cite{lanzen_taverna_2008} and Galaxy \cite{goecks_galaxy:_2010} have been created, and provide an effective means for users to create bioinformatics workflows. However, data is not integrated with these tools, requiring transfer of genomic sequences from public or private databases, the re-computation of analyses and the inability to compare thousands of genomes. Likewise, online repositories of genomic sequence data such as the National Center for Biotechnology Information (\url{http://www.ncbi.nlm.nih.gov/}) and the Genomes Online Database (\url{http://www.genomesonline.org/}) 
-provide a wealth of data, but are decoupled from an efficient analysis platform. Storage and computational analyses of thousands of genomes have moved beyond the standard desktop computer, and even with more memory, efficient methodologies and algorithms, servers storing and analyzing thousands of genomic sequences require leading-edge hardware, and the ability to scale in order to meet the computational requirements of these data.
+Efforts to simplify bioinformatics workflows such as Taverna \cite{lanzen_taverna_2008} and Galaxy \cite{goecks_galaxy:_2010} have been created, and provide an effective means for users to create bioinformatics workflows. However, data is not integrated with these tools, requiring transfer of genomic sequences from public or private databases, the re-computation of analyses and the inability to compare thousands of genomes. Likewise, online repositories of genomic sequence data such as the National Center for Biotechnology Information (\url{http://www.ncbi.nlm.nih.gov/}) and the Genomes Online Database (\url{http://www.genomesonline.org/}) provide a wealth of data, but are decoupled from an efficient analysis platform. Storage and computational analyses of thousands of genomes have moved beyond the standard desktop computer, and even with more memory, efficient methodologies and algorithms, servers storing and analyzing thousands of genomic sequences require leading-edge hardware, and the ability to scale in order to meet the computational requirements of these data.
 
 Only recently have platforms emerged that attempt to provide both large-scale data storage and analyses. In human genomics, the Genomes Management Application has been built for human Mendelian disorders, and provides >1600 human exomes along with tools for collaborative visualization and analyses \cite{gonzalez_genomes_2013}. For microbiology, MicroScope provides pre-computed analyses of >1100 publicly available closed and annotated genomes based on protein coding sequences and allows users to add post-genomics data from transcriptomics and mutant experiments to aid in the understanding of gene functions \cite{vallenet_microscope--integrated_2012}. Other platforms are organism specific, such as Sybil, for the comparative analyses of \textit{Streptococcus pneumoniae} based on blastp searches \cite{riley_using_2012}.
 
@@ -77,10 +78,11 @@ A second analysis identifies virulence and anti-microbial drug resistance determ
 
 Global phylogenetic trees in SuperPhy are used in the results displays to show the phylogenetic position of a genome and also in the query forms, to allow users to select genomes based on tree location. A maximum-likelihood phylogenetic tree is constructed for all \textit{E. coli} genomes in the database using FastTree v2.1 \cite{price_fasttree_2010}. The tree is built from a multiple sequence alignment of the conserved core genome regions among all genomes, but is dynamically pruned based on user-selection to show specific genomes. The phylogenetic tree is displayed graphically using the D\sup{3} javascript library \cite{bostock2011d3}. The graphical interface was designed to be interactive; providing the ability to pan, zoom and expand, collapse or select tree nodes.
 
-
 \subsubsection{Assigning Stx Subtypes}
 
-Not sure if this will be completed in time.
+The alleles for the A and B subunits from both \textit{stx1} and \textit{stx2} were collected in an analogous manner to the alleles for the virulence and AMR genes among all database strains, using as input the \textit{stx1} and \textit{stx2} subunit alleles from \textit{E. coli} strain O157:H7 Sakai ??need to check this??. A phylogenetic tree of all database strains based on each of \textit{stx1} and \textit{stx2} was created, and clades specific to a Shiga-toxin subtype were identified based on the scheme presented by Scheutz et al. (2012) \cite{scheutz_multicenter_2012}. Identification of Shiga-toxin subtype is therefore done through membership in pre-defined clades; those strains that fell outside of known sub-type clades were marked as unknown.
+
+SuperPhy also allows the comparison of alleles among Shiga-toxin genes by displaying the multiple-sequence alignment for the user-selected strains. Users can then scroll through the alignment, where polymorphisms are highlighted for easy identification of differences.
 
 \subsection{Meta-data}
 
@@ -123,7 +125,7 @@ Meta-data is invaluable in the biological interpretation of genome sequence data
   \hline
   Keywords &  & General keywords to characterize genome\\
   \hline
-  Finished &  & Indicates complete genome sequence \\
+  Finished &  & Indicates closed genome sequence \\
   \hline
   Owner &  & Source laboratory \\
   \hline
@@ -151,6 +153,9 @@ users can choose to display one or more of several types of meta-data in the for
   %\vspace{-0.1cm}
 \end{figure*}
 
+\subsection{Map}
+SuperPhy presents a unique map tool, which uses Google Maps JavaScript API v3 (\url{https://developers.google.com/maps/documentation/javascript/}). It allows users to select \textit{E.coli} genomes captured from various locations across the world. Users are initially presented with an overview of the world map along with a selectable list of all genomes in the SuperPhy database that have available location data. As users zoom in/out and/or pan across the map to a particular location, the list of selectable genomes changes to reflect those genomes in the current viewport of the map. This allows for users to refine the list of genomes on the map to a particular location of their choice. Users can additionally search for a location using the included search feature above the map. The map will automatically center on the location of interest and the selectable genome list will update to reflect any available genomes within the area.  
+
 \subsection{Groupwise Comparisons of the Distribution of SNPs and Loci}
 
 The \textit{E. coli} pan-genome is highly variable, with approximately 80\% of an individual genome comprised of variable, accessory genes from those present in the pan-genome \cite{lukjancenko_comparison_2010}. To help correlate phenotype and genotype, SuperPhy provides the ability to compare between groups the presence or absence of pan-genome loci, as well as the distribution of SNPs within shared genome regions. A single consolidated pan-genome is computed from the individual genomes in the SuperPhy database. To identify group-specific or group-dominant genome regions or SNPs, the groupwise comparison function of SuperPhy allows users to select genomes in two comparison groups and returns the set of nucleotide variations or genome regions that are statistically enriched in one group compared to the other. Enrichment is determined by the Fisher's Exact test as implemented in the R statistical language \cite{R_manual}.
@@ -160,6 +165,30 @@ The \textit{E. coli} pan-genome is highly variable, with approximately 80\% of a
 
 Identifying and evaluating risk factors is a central goal of SuperPhy. To this aim, SuperPhy provides the ability to examine the distribution of the presence or absence of virulence and AMR markers in the genomes.  Pre-defined sets of characterized virulence factors and antimicrobial resistance genes were collected and examined for their presence among all individual genomes \cite{mcarthur2012card,chen2012vfdb,chen2005vfdb}. Users can query multiple specific markers in targeted genomes. The sequences of identified VF and AMR gene alleles in the individual genomes are stored in the database, as are the multiple sequence alignments of the alleles present in each individual strain. This allows the sequence-comparison among user selected strains to be displayed on the fly. 
 
+\section{\uppercase{Example Use Cases}}
+\label{sec:cases}
+\subsection{Time Critical Genomic Analyses}
+Example: A clinician has just received a bacterial isolate from a patient with gastrointestinal illness and would like to know the risk to the patient (how severe and what sort of illness is associated with the strain), the risk to the community (have these bacteria been isolated from other patients; is this an outbreak?) and possible treatment or prevention options. In order for the information to be to useful, the bacterial isolate must be characterized as soon as possible. The genome sequence is determined in the hospital using a distributed sequencing platform such as the MiSeq or IonTorrent and uploaded to SuperPhy. In a manner of minutes she is presented with a summary of the strain for known virulence or AMR determinants, any novel genomic regions, the phylogenetic positioning of the new isolate and closely related strains, and their geographical distribution. This clinician also has the opportunity to add the new strain to the public database, or mark it as private, or restricted for a limited time, in which case it will be processed by the platform but only visible to her user account.
+
+In the current genomics landscape, it is impossible to perform the above analyses in the time required to make effective decisions. Results of this sort are usually historical and of no immediate clinical value. The same analysis would require knowledge of a number of bioinformatics programs, a local collection of strains to run the comparison against, a collection of virulence and anti-microbial factors, and a means of identifying unique genomic elements.
+
+The entire process would take days and the knowledge gained would not be immediately available to others. With our novel integration of the data and computational approaches, the analyses can be performed in minutes, a summary generated, and both the genome and
+information about that genome stored and available for other users, saving duplication of analyses and increasing the value of the computational platform.
+
+\subsection{Identification of Genomic Novelty Informing Phenotype}
+Examples: 1)An epidemiologist has identified a pathogen responsible for high levels of severe illness and wishes to identify genomic regions that are present in the pathogen but absent among closely related strains not implicated in human disease; 2) An agricultural researcher wishes to identify genomic elements statistically associated with \textit{E. coli} strains that are shed from cattle more frequently and in higher amounts than other \textit{E. coli} found in the bovine gastrointestinal tract; 3) A researcher in the oil industry wishes to identify novel genes in a bacterial strain that has been shown to break down hydrocarbons at a rate greater than other bacteria; 4) An  environmental scientist wishes to identify genomic regions that allows one group of bacteria from a species to persist in an environment that is toxic to other groups of bacteria of the same species.
+
+As the SuperPhy computational tools are tightly coupled with the underlying data, all metadata (source, host, severity of illness, etc.) are immediately available for determining phenotypic groups that can be compared at the genomic level. Additionally, the spatial distribution of genomic sequences is displayed in map form, allowing the user to `zoom-in' and graphically select a region of interest. The presence / absence of all genomic regions and single-nucleotide polymorphisms among shared genomic regions is also pre-computed, enabling the identification of genomic regions that are statistically different between groups, be they based on severity of illness, host, or geographical location.
+
+The results are then made available for download and the analysis saved in the platform for others to use if desired by the user.
+
+\subsection{Discovery Research}
+Example: A genomics researcher has obtained the assembled contigs from an Illumina sequencing run, generating 200 novel genomic sequences in an underrepresented bacterial species responsible for infrequent but severe cases of human disease. He wishes to quickly identify the phylogenetic relationships among these bacteria and all previously sequenced genomes, as well as to identify virulence and AMR genes, and novel genomic regions present in the strains with respect to closely related genomic sequences. The researcher simply uploads his sequences to SuperPhy, after which the new strains are placed on the phylogenetic tree of all strains, and the presence of any known virulence / AMR genes is determined. Lastly, the 200 new strains are compared to the pre-computed genomics database, where any novel genomic regions are identified for the researcher.
+
+\section{Collaboration and Community Benefit}
+\label{sec:collaboration}
+There are currently similar projects underway world-wide with a similar goal: to provide a platform for comparative genomic epidemiology \cite{kupferschmidt_outbreak_2011}. The transfer of strains across international borders can be time consuming or impossible, whereas the exchange of genome sequence information can happen as soon as it becomes available. These international efforts with common goals should at the minimum provide data in a format that allows for it to be easily shared and understood among the various platforms. The value to the community of users of this shared computational resource increases as the number of users contribute data to it, which in turn makes the platform more attractive to use and contribute to.
+
 \section{\uppercase{Availability}}
 \label{sec:availability}
 
@@ -168,7 +197,7 @@ The website is available at http://lfz.corefacility.ca/superphy/. The software c
 \section{\uppercase{Conclusions}}
 \label{sec:conclusion}
 
-\noindent SuperPhy is a broadly accessible, integrated platform for comparative genomic data storage and analyses. It provides near-real time analysis of thousands of genomic sequences using novel computational approaches with results that are understandable and useful to a wide community of researchers. The web-interface to this computational platform obviates the need for command-line skills, or a particular computer environment. As additional members of the research community use the platform, the number of genomic sequences stored and analyzed will increase, adding further value to the platform, which will in turn attract more users. SuperPhy provides data outputs that serve a wide community of users, with translation of the genomic data into biologically relevant reports, useful to researchers in a variety of disciplines.
+\noindent SuperPhy is a broadly accessible, integrated platform for the phylogenetic and epidemiological analyses of bacterial genome data. It provides near-real time analyses of thousands of genomic sequences using novel computational approaches with results that are understandable and useful to a wide community, including those in clinical medicine, epidemiology and population genomics. The web-interface to this computational platform obviates the need for command-line skills, or a particular computer environment. As additional members of the research community use the platform, the number of genomic sequences stored and analyzed will increase, adding further value to the platform, and in turn attracting more users. Genomic platforms such as SuperPhy will become increasingly important in transforming raw genomic data into a format suitable the development of a world-wide real-time surveillance and analyses network for bacterial pathogens.
 
 \section*{\uppercase{Acknowledgements}}
 
