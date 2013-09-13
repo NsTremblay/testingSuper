@@ -28,16 +28,16 @@
 		<div class="row-fluid">
 			<div class="span12">
 				<ul id="strain_search_tabs" class="nav nav-tabs">
-					<li class="active"><a href="#phylo_search_tab" data-toggle="tab">Phylogenetic Tree</a></li>
+					<li class="active"><a href="#meta_search_tab" data-toggle="tab">Genome Attributes</a></li>
+					<li><a href="#phylo_search_tab" data-toggle="tab">Phylogenetic Tree</a></li>
 					<li><a href="#map_search_tab" data-toggle="tab">Map</a></li>
-					<li><a href="#meta_search_tab" data-toggle="tab">Genome Attributes</a></li>
 				</ul>
 			</div>
 		</div>
 		
 		<div class="tab-content">
 			
-			<div class="tab-pane active" id="phylo_search_tab">
+			<div class="tab-pane" id="phylo_search_tab">
 				<div class="row-fluid">
 					<div class="span12">
 						<div style="padding:10px 0 40px 0">
@@ -60,7 +60,7 @@
 				<TMPL_INCLUDE NAME="advanced_map_selector.tmpl">
 			</div>
 			
-			<div class="tab-pane" id="meta_search_tab">
+			<div class="tab-pane active" id="meta_search_tab">
 				<TMPL_INCLUDE NAME="genome_attribute_search.tmpl">
 			</div>
 			

@@ -88,7 +88,7 @@ sub home : StartRunmode{
 		}
 		);
 
-	my $lociCount = $self->dbixSchema->resultset('DataLociName')->count(
+	my $lociCount = $self->dbixSchema->resultset('Loci')->count(
 		{},
 		{
 			column  => [qw/locus_name/],

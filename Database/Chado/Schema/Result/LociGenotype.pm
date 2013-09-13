@@ -30,6 +30,14 @@ __PACKAGE__->table("loci_genotypes");
   is_nullable: 0
   sequence: 'loci_genotypes_locus_genotype_id_seq'
 
+=head2 feature_id
+
+  data_type: 'text'
+  is_nullable: 0
+  original: {data_type => "varchar"}
+
+Strain ID
+
 =head2 locus_id
 
   data_type: 'integer'
@@ -46,14 +54,6 @@ Stores a locus ID from the loci table
 
 Presence absence value for each locus for each strain. Will have a value either 0 or 1. Default is 0.
 
-=head2 feature_id
-
-  data_type: 'text'
-  is_nullable: 0
-  original: {data_type => "varchar"}
-
-Strain ID
-
 =cut
 
 __PACKAGE__->add_columns(
@@ -64,16 +64,16 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "loci_genotypes_locus_genotype_id_seq",
   },
-  "locus_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "locus_genotype",
-  { data_type => "integer", default_value => 0, is_nullable => 0 },
   "feature_id",
   {
     data_type   => "text",
     is_nullable => 0,
     original    => { data_type => "varchar" },
   },
+  "locus_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "locus_genotype",
+  { data_type => "integer", default_value => 0, is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -106,8 +106,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-21 15:24:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:QLCP730KBJB2Un8euElakg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 14:32:56
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/FJvVcu024JoTLOM6i/8cA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
