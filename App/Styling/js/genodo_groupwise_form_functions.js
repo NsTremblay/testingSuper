@@ -65,7 +65,6 @@ function updateMeta(tab, visableData) {
 		var dropDown = $('#pubStrainList')
 		dropDown.empty();
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-		var currentLabels = genomeLabels;
 		genomeLabels = {};
 		$.each( public_genomes, function(feature_id, feature_obj) {
 			var lab = metaLabel(feature_obj, visableData);

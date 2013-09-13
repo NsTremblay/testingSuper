@@ -436,6 +436,9 @@ function appendFilteredList(obj , list) {
 	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 	var visibleData = [];
 	$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
+	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
+		visibleData = ['name'];
+	}
 	$.each( obj, function(feature_id, genome_obj) {
 		var lab = metaLabel(obj[feature_id], visibleData);
 		dropDown.append(
