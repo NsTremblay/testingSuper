@@ -145,6 +145,11 @@ function appendFilteredList(obj , list) {
 	else {
 		var dropDown = $('#pubStrainList');
 		dropDown.empty();
+		var visibleData = [];
+		$('input[name="list-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
+		if(typeof visableData === 'undefined' || visableData.length == 0) {
+			visableData = ['name'];
+		}
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		$.each( obj, function(feature_id, genome_obj) {
 			var lab = metaLabel(obj[feature_id], visableData);

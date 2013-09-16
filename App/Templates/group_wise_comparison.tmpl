@@ -437,7 +437,7 @@ function appendFilteredList(obj , list) {
 	dropDown.empty();
 	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 	var visibleData = [];
-	$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
+	$('input[name="vf-amr-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}

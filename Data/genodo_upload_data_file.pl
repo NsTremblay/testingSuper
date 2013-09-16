@@ -154,6 +154,9 @@ while (<$datafile2>) {
 my @rowDelimTable;
 my $locusCount = 0000000;
 my $snpCount = 0000000;
+my $viramrCount = 0000000;
+
+my $lineCount = 0;
 
 print scalar(@genomeTemp) . " genomes \n";
 print scalar(@seqFeatureTemp) . " sequence features (Loci, Snp, etc...)\n";
@@ -161,9 +164,13 @@ print scalar(@seqFeatureTemp) . " sequence features (Loci, Snp, etc...)\n";
 print "Processing $INPUTFILE\n";
 
 #Opens a file handler to write data out to
+
+#This is only for snp and loci data. Virulence and Amr do not need an additional name file
 my $outfolder = "$FindBin::Bin/";
 open my $outNameFile , '>' , "$INPUTDATATYPE" . "_processed_names.txt" or croak "Can't write to file: $!";
 open my $outDataFile , '>' , "$INPUTDATATYPE" . "_processed_data.txt" or croak "Can't write to file: $!";
+# Create a different file handle for VIR/AMR
+open my $outVirAMrDataFile , '>' , "$INPUTDATATYPE" . "_processed_viramr_data.txt" or croak "Can't write to file: $!";
 
 #Change this method below
 if ($INPUTDATATYPE eq 'binary') {
@@ -179,28 +186,30 @@ if ($INPUTDATATYPE eq 'binary') {
 }
 elsif ($INPUTDATATYPE eq 'snp'){
 	#Need to store the snp names first in the Snp (snps) table
-	$snpCount++;
 	for (my $j = 0; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
+		$snpCount++;
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
 		print $outNameFile $snpCount . "\t" . $parsedHeader . "\n";
 		writeOutSnpData($snpCount);
 	}
-		print "\t...Adding snps to database\n";
-		copySnpDataToDb();
+	print "\t...Adding snps to database\n";
+	copySnpDataToDb();
 }
 else {
 	#Data is either for virulence or amr genes
-	#Need to implement this
-	for (my $j = 0 ; $j < scalar(@seqFeatureTemp) ; $j++) {
+	for (my $j = 0 ; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
+		$viramrCount++;
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
-		writeOutVIRAMRData($parsedHeader);
+		writeOutVIRAMRData($parsedHeader , $viramrCount);
 	}
 	print "\t...Adding data to database\n";
-	#TODO
+	print $lineCount . "\n";
+	copyVirAmrDataToDb();
 }
 
 close $outNameFile;
 close $outDataFile;
+close $outVirAMrDataFile;
 
 sub writeOutBinaryData {
 	my $_locusCount = shift;
@@ -214,10 +223,10 @@ sub writeOutBinaryData {
 	}
 }
 
-#Change this method to account for the added cols
 sub writeOutSnpData {
+	#Change this method to account for the added cols TODO
 	my $_snpCount = shift;
-		for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
+	for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
 		print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . $seqFeatureTemp[$_snpCount][$i] . "\n";
 	}
 	if ($_snpCount % 1000 == 0) {
@@ -228,9 +237,17 @@ sub writeOutSnpData {
 }
 
 sub writeOutVIRAMRData {
-	##Need to pass the data line too
 	my $_parsedHeader = shift;
-	#TODO
+	my $_viramrCount = shift;
+	for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
+		print $outVirAMrDataFile $genomeTemp[$i] . "\t" . $_parsedHeader . "\t" . $seqFeatureTemp[$_viramrCount][$i] . "\n";
+		$lineCount++;
+	}
+	if ($_viramrCount % 100 == 0) {
+		print "$_viramrCount out of " . scalar(@seqFeatureTemp) . " VF/AMR genes completed\n";
+	}
+	else {
+	}
 }
 
 sub parseHeader {
@@ -242,7 +259,9 @@ sub parseHeader {
 			$newHeader = $3;
 		}
 		else{
-			croak "Not a valid virulence feature_id, exiting\n";
+			#croak "Not a valid virulence feature_id, exiting\n";
+			print "Emptyheader: " . $oldHeader . "\n";
+			next;
 		}
 	}
 	elsif ($_inputDataType eq "amr") {
@@ -250,7 +269,9 @@ sub parseHeader {
 			$newHeader = $3;
 		}
 		else {
-			croak "Not a valid amr feature_id, exiting\n";
+			#croak "Not a valid amr feature_id, exiting\n";
+			print "Emptyheader: " . $oldHeader . "\n";
+			next;
 		}
 	}
 	#Locus ID
@@ -281,12 +302,30 @@ sub parseHeader {
 sub copyLociDataToDb {
 	open my $lociSQLFile , '>' , "$INPUTDATATYPE" . "_db.sql" or croak "Can't write to file: $!";
 	print $lociSQLFile "BEGIN;\n"."COPY loci (locus_id, locus_name) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_names.txt\';\n"."COMMIT;\n"."BEGIN;\n"."COPY loci_genotypes (feature_id, locus_id, locus_genotype) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_data.txt\';\n"."COMMIT;";
+	close $lociSQLFile;
 	my $sysline = "psql $DBNAME < $FindBin::Bin/$INPUTDATATYPE"."_db.sql";
 	system($sysline) == 0 or croak "$!\n";
 	unlink "$INPUTDATATYPE" . "_db.sql";
 }
 
-unlink "$INPUTDATATYPE" . "_processed_names.txt";
-unlink "$INPUTDATATYPE" . "_processed_data.txt"
+sub copySnpDataToDb {
+	open my $snpsSQLFile , '>' , "$INPUTDATATYPE" . "_db.sql" or croak "Can't write to file: $!";
+	#print out to the sql file TODO
+	close $snpsSQLFile;
+	my $sysline = "psql $DBNAME < $FindBin::Bin/$INPUTDATATYPE"."_db.sql";
+	system($sysline) == 0 or croak "$!\n";
+	unlink "$INPUTDATATYPE" . "_db.sql";	
+}
 
-#Need to add a method for snp data
+sub copyVirAmrDataToDb {
+	open my $viramrSQLFile , '>' , "$INPUTDATATYPE" . "_db.sql" or croak "Can't write to file: $!";
+	print $viramrSQLFile "BEGIN;\n"."COPY ".$inputDataType{$INPUTDATATYPE}." (genome_id, gene_id, presence_absence) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_viramr_data.txt\';\n"."COMMIT;";
+	close $viramrSQLFile;
+	my $sysline = "psql $DBNAME < $FindBin::Bin/$INPUTDATATYPE"."_db.sql";
+	system($sysline) == 0 or croak "$!\n";
+	unlink "$INPUTDATATYPE" . "_db.sql";	
+}
+
+unlink "$INPUTDATATYPE" . "_processed_names.txt";
+unlink "$INPUTDATATYPE" . "_processed_data.txt";
+unlink "$INPUTDATATYPE" . "_processed_viramr_data.txt";
