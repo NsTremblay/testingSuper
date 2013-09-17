@@ -32,7 +32,7 @@ $^{*}$ These authors contributed equally to the writing of this manuscript.}
 \keywords{Bioinformatics, Computational Biology, Population Genomics, Epidemiology, Phylogeny, Bacterial Pathogenesis}
 
 \abstract{
-The advance in DNA sequencing has created new opportunities in fields such as clinical medicine and epidemiology to perform real-time surveillance and analyses of bacterial pathogens. To realize these opportunities, new analytical tools and infrastructure are needed to analyze genomic datasets, store the data, and provide the essential biological information to end-users. We have implemented an online whole-genome analyses platform, with coupled data, called SuperPhy (http://lfz.corefacility.ca/superphy). It comprises 1021 closed and draft \textit{E. coli} genome sequences downloaded from GenBank. To perform genomic comparisons, SuperPhy uses our pan-genomics analysis software Panseq to efficiently perform large-scale genomic comparisons, the Fisher's exact test to identify sub-group specific loci, and FastTree to create maximum-likelihood trees. SuperPhy uses the Chado relational database schema for Postgres 9.2 and facilitates the upload of genomes for both private and public use. Analyses include: 1) time critical genomic comparisons of clinical isolates, identification of virulence and antimicrobial resistance genes \textit{in silico}, 2) associations between specific genotypes and phenotypic metadata (e.g., geospatial distribution, host, source); 3) identification of group-specific genomic markers (presence/absence of specific genomic regions, and single-nucleotide polymorphisms) in bacterial populations, and the ability to manipulate the display of phylogenetic trees and identify statistically significant clade-specific markers.}
+The advance in DNA sequencing has created new opportunities in fields such as clinical medicine and epidemiology to perform real-time surveillance and analyses of bacterial pathogens. To realize these opportunities, new analytical tools and infrastructure are needed to analyze genomic datasets, store the data, and provide the essential biological information to end-users. We have implemented an online whole-genome analyses platform, with coupled data, called SuperPhy (http://lfz.corefacility.ca/superphy). It comprises 1021 closed and draft \textit{E. coli} genome sequences downloaded from GenBank. To perform genomic comparisons, SuperPhy uses our pan-genomics analysis software Panseq to efficiently perform large-scale genomic comparisons, the Fisher's exact test to identify sub-group specific loci, and FastTree to create maximum-likelihood trees. SuperPhy uses the Chado relational database schema for Postgres 9.2 and  facilitates the upload of genomes for both private and public use. Analyses include: 1) time critical genomic comparisons of clinical isolates, identification of virulence and antimicrobial resistance genes \textit{in silico}, 2) associations between specific genotypes and phenotypic metadata (e.g., geospatial distribution, host, source); 3) identification of group-specific genomic markers (presence/absence of specific genomic regions, and single-nucleotide polymorphisms) in bacterial populations, and the ability to manipulate the display of phylogenetic trees and identify statistically significant clade-specific markers.}
 
 \onecolumn \maketitle \normalsize \vfill
 
@@ -91,7 +91,7 @@ Global phylogenetic trees in SuperPhy are used in the results displays to show t
 
 \subsubsection{Assigning Stx Subtypes}
 
-The alleles for the A and B subunits from both \textit{stx1} and \textit{stx2} were collected in an analogous manner to the alleles for the virulence and AMR genes among all database strains, using as input the \textit{stx1} and \textit{stx2} subunit alleles from \textit{E. coli} strain O157:H7 Sakai. A phylogenetic tree of all database strains based on each of \textit{stx1} and \textit{stx2} was created, and clades specific to a Shiga-toxin subtype were identified based on the scheme presented by Scheutz et al. (2012) \cite{scheutz_multicenter_2012}. Identification of Shiga-toxin subtype is therefore done through membership in pre-defined clades; those strains that fell outside of known sub-type clades were marked as unknown.
+The alleles for the A and B subunits from both \textit{stx1} and \textit{stx2} were collected in an analogous manner to the alleles for the virulence and AMR genes among all database strains, using as input the \textit{stx1} and \textit{stx2} subunit alleles from \textit{E. coli} strain O157:H7 Sakai ??need to check this??. A phylogenetic tree of all database strains based on each of \textit{stx1} and \textit{stx2} was created, and clades specific to a Shiga-toxin subtype were identified based on the scheme presented by Scheutz et al. (2012) \cite{scheutz_multicenter_2012}. Identification of Shiga-toxin subtype is therefore done through membership in pre-defined clades; those strains that fell outside of known sub-type clades were marked as unknown.
 
 SuperPhy also allows the comparison of alleles among Shiga-toxin genes by displaying the multiple-sequence alignment for the user-selected strains. Users can then scroll through the alignment, where polymorphisms are highlighted for easy identification of differences.
 
@@ -99,46 +99,48 @@ SuperPhy also allows the comparison of alleles among Shiga-toxin genes by displa
 
 Meta-data is invaluable in the biological interpretation of genome sequence data, but to maximize its usefulness, meta-data must be standardized. We developed in SuperPhy a predefined set of meta-data fields and permissible values. The meta-data types capture the key bacterial isolate attributes that characterize \textit{E. coli} infections. User compliance with these meta-data standards is aided by using context-dependent drop-down fields in the genome upload form. Selecting one of the fields will alter the available options in other fields (for example, selecting \textit{H. sapiens} as the host species will change the isolation sources and disease options that the user can select).  However, we also find it necessary to allow users to optionally define values for certain meta-data types such as the diseases and symptoms associated with an isolate. Table \ref{tab:metadata} shows the meta-data types employed in SuperPhy.
 
-\begin{table*}[t]
-\caption{Genome meta-data captured in the SuperPhy database.}
+\begin{table*}[t!h]
+\caption{Genome meta-data captured in the SuperPhy database. The meta-data values for genome O103:H25 Str. NIPH-11060424 are included as an example. N/A indicates the value was not defined or is not applicable to the SuperPhy genome project type.}
 \label{tab:metadata} \centering
-\begin{tabular}{|l|c|p{6cm}|}
+\begin{tabular}{|l|c|p{4.9cm}|p{5.6cm}|}
   \hline
-  \textbf{Field} & \textbf{Required} & \textbf{Description} \\
+  \textbf{Field} & \textbf{Required} & \textbf{Description} & \textbf{Example} \\
   \hline
-  Name &  \checkmark & Genome name\\
+  Name &  \checkmark & Genome name & O103:H25 Str. NIPH-11060424 \\
   \hline
-  Host & \checkmark & Species that was source of isolate \\
+  Host & \checkmark & Species that was source of isolate & Homo sapiens (human) \\
   \hline
-  Source & \checkmark & Source tissue or material for isolate \\
+  Source & \checkmark & Source tissue or material for isolate & Stool \\
   \hline
-  Serotype & \checkmark & Antigen type designation \\
+  Serotype & \checkmark & Antigen type designation & O103:H25 \\
   \hline
-  Strain & \checkmark & Organism subtype \\
+  Strain & \checkmark & Organism subtype & NIPH-11060424 \\
   \hline
-  Date & \checkmark & Date isolate was obtained \\
+  Date & \checkmark & Date isolate was obtained & 2006-01-01 \\
   \hline
-  Molecular type & \checkmark & Chromosome, plasmid or contig \\
+  Molecular type & \checkmark & Chromosome, plasmid or contig & N/A \\
   \hline
-  Location &  & Location isolate was obtained from \\
+  Genome type & \checkmark & Status of genome sequencing & WGS \\
   \hline
-  Syndrome &  & Associated diseases or symptoms \\
+  Location &  & Location isolate was obtained from & Norway\\
   \hline
-  Age &  & Host age \\
+  Syndrome &  & Associated diseases or symptoms & Hemolytic-uremic syndrome \\
   \hline
-  PMID &  & Pubmed IDs of associated articles \\
+  Age &  & Host age & N/A \\
   \hline
-  External ID &  & External DB accessions \\
+  PMID &  & Pubmed IDs of associated articles & PMID:22403614 \\
   \hline
-  Description &  & Genome description \\
+  External ID &  & External DB accessions &   BioProject: 74417, genbank: AGSG00000000.1, taxon: 1101440 \\
   \hline
-  Comments &  & Free-form comments by submitter  \\
+  Description &  & Genome description & Escherichia coli O103:H25 str. NIPH-11060424, whole genome shotgun sequencing project. \\
   \hline
-  Keywords &  & General keywords to characterize genome\\
+  Comments &  & Free-form comments by submitter & The Escherichia coli O103:H25 str. NIPH-11060424 whole genome shotgun (WGS) project has the project accession AGSG00000000. This version of the project (01) has the accession number AGSG01000000, and consists of sequences AGSG01000001-AGSG01000491. Assembly Date :: NOV-2006 Assembly Method :: Newbler v. 1.0 Genome Coverage :: 20x Sequencing Technology :: Roche-454 \\
   \hline
-  Finished &  & Indicates closed genome sequence \\
+  Keywords &  & Keywords to characterize genome & N/A \\
   \hline
-  Owner &  & Source laboratory \\
+  Closed &  & Indicates closed genome sequence & no \\
+  \hline
+  Owner &  & Source laboratory & Lindback,T., L'Abee-Lund,T.M. and Bohlin,J.. Submitted (14-OCT-2011) Dep of Food safety and Infection Biology, Norwegian School of Veterinary Science, Ullevalsveien 72, Oslo, Oslo 0033, Norway \\
   \hline
 \end{tabular}
 \end{table*}
@@ -158,7 +160,7 @@ users can choose to display one or more of several types of meta-data in the for
 \begin{figure*}[t]
   \vspace{-0.2cm}
   \centering
-   {\includegraphics[width=16cm]{superphy_forms_lores.pdf}}
+   {\includegraphics[width=16cm]{superphy_forms.pdf}}
   \caption{Advanced search function in SuperPhy. Genome information can be queried by (A) interactive phylogenetic tree (B) world map or (C) boolean search of user-specified fields and keywords.}
   \label{fig:search}
   %\vspace{-0.1cm}
