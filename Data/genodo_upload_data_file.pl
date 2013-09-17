@@ -67,49 +67,7 @@ croak "Missing argument. You must supply an input data file.\n" . system ('pod2t
 croak "Missing argument. You must supply an input data type (virulence, amr, binary, snp).\n" . system ('pod2text', $0) unless $INPUTDATATYPE;
 croak "Missing argument. You must supply the database name.\n" . system ('pod2text', $0) unless $DBNAME;
 
-my %inputDataType = ('virulence' => "RawVirulenceData", 'amr' => "RawAmrData", 'snp' => "SnpsGenotype", 'binary' => "LociGenotype");
-
-my %inputDataTypeColumnNames = (
-	'RawVirulenceData' => 
-	{
-		column2 => 'genome_id', 
-		column3 => 'gene_id',
-		column4 => 'presence_absence'
-		},
-		'RawAmrData' => 
-		{
-			column2 => 'genome_id', 
-			column3 => 'gene_id',
-			column4 => 'presence_absence'
-			},
-			'LociGenotype' => 
-			{
-				column1 => 'locus_genotype_id',           
-				column2 => 'locus_id',
-				column3 => 'locus_genotype',
-				column4 => 'feature_id',
-				table => {
-					tableName => 'Loci',
-					column1 => 'locus_id',
-					column2 => 'locus_name'
-				}
-				},
-				'SnpsGenotype' => 
-				{
-					column1 => 'snp_genotype_id',           
-					column2 => 'snp_id',
-					A => 'snp_a',
-					T => 'snp_t',
-					C => 'snp_c',
-					G => 'snp_g',
-					column3 => 'feature_id',
-					table => {
-						tableName => 'Snp',
-						column1 => 'snp_id',
-						column2 => 'snp_name'
-					}
-				}
-				);
+my %inputDataType = ('virulence' => "raw_virulence_data", 'amr' => "raw_amr_data");
 
 unless ($ENV{USER} eq 'postgres') {
 	die "User \'postgres\' must be logged in. You are currently logged in as: " . $ENV{USER} . "\n";

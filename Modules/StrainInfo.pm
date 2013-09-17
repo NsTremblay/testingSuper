@@ -67,7 +67,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-);
+	);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -114,15 +114,15 @@ sub strain_info : StartRunmode {
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
-		} elsif($feature =~ m/^private_(\d+)/) {
-			$privateStrainID = $1;
-		} else {
-			die "Error: invalid genome ID: $feature.";
-		}
-	}
+			} elsif($feature =~ m/^private_(\d+)/) {
+				$privateStrainID = $1;
+				} else {
+					die "Error: invalid genome ID: $feature.";
+				}
+			}
 
-	my $template;
-	if(defined $strainID && $strainID ne "") {
+			my $template;
+			if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
 
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
@@ -146,7 +146,7 @@ sub strain_info : StartRunmode {
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
 
 
-	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
 		my $privacy_category = $formDataGenerator->verifyAccess($username, $privateStrainID);
@@ -162,16 +162,16 @@ sub strain_info : StartRunmode {
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
 			associate => HTML::Template::HashWrapper->new( $strainInfoRef ),
 			die_on_bad_params=>0 );
-			
+
 		$template->param('strainData' => 1);
 		$template->param('privateGenome' => 1);
 		$template->param('username' => $username);
 		
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-		} else {
-			$template->param('privacy' => $privacy_category);
-		}
+			} else {
+				$template->param('privacy' => $privacy_category);
+			}
 			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
 			$template->param(VIRDATA=>$strainVirDataRef);
 
@@ -181,12 +181,12 @@ sub strain_info : StartRunmode {
 			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
 			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
 
-	} else {
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
-			die_on_bad_params=>0 );
-		$template->param('strainData' => 0);
-	}
-	
+			} else {
+				$template = $self->load_tmpl( 'strain_info.tmpl' ,
+					die_on_bad_params=>0 );
+				$template->param('strainData' => 0);
+			}
+
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
@@ -208,10 +208,7 @@ sub strain_info : StartRunmode {
 	return $template->output();
 }
 
-
 =head2 search
-
-
 
 =cut
 sub search : Runmode {
@@ -241,25 +238,25 @@ sub search : Runmode {
 		# FormDataGenerator methods
 		
 		my $genome_rs = $self->dbixSchema()->resultset('PrivateFeature')->search(
-        	[
-         		{
-					'login.username' => $username,
-					'type.name'      => 'contig_collection',
-           		},
-           		{
+			[
+			{
+				'login.username' => $username,
+				'type.name'      => 'contig_collection',
+				},
+				{
 					'upload.category'    => 'public',
 					'type.name'      => 'contig_collection',
-				},
-			],
-			{
-                columns => [qw/feature_id uniquename/],
-                '+columns' => [qw/upload.category login.username/],
-                join => [
-					{ 'upload' => { 'permissions' => 'login'} },
-					'type'
-                ]
-            }
-		);
+					},
+					],
+					{
+						columns => [qw/feature_id uniquename/],
+						'+columns' => [qw/upload.category login.username/],
+						join => [
+						{ 'upload' => { 'permissions' => 'login'} },
+						'type'
+						]
+					}
+					);
 		
 		# If the user does not have any private genomes, we do not need to prune tree
 		
@@ -284,15 +281,15 @@ sub search : Runmode {
 			my $tree_string = $tree->fullTree(\%visable_nodes);
 			
 			$template->param(tree_json => $tree_string);
-		
-		} else {
+
+			} else {
 			# No private genomes
 			# Return public tree
 			
 			$template->param(tree_json => $tree->fullTree);
 		}
 		
-	} else {
+		} else {
 		# Anonymous user
 		# Return public tree
 		
@@ -309,8 +306,6 @@ sub search : Runmode {
 	return $template->output();
 	
 } 
-
-
 
 =head2 _getStrainInfo
 
@@ -338,17 +333,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-		{
-			"me.feature_id" => $strainID
+	{
+		"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-				{ 'dbxref' => 'db' },
-				{ $featureprop_rel_name => 'type' },
+			{ 'dbxref' => 'db' },
+			{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-	);
+		);
 	
 	# Create hash
 	my %feature_hash;
@@ -369,14 +364,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-		{
-			feature_id => $feature->feature_id
+	{
+		feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-	);
+		);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -421,8 +416,6 @@ sub _getStrainInfo {
 	return(\%feature_hash);
 }
 
-
-
 sub _getVirulenceData {
 	my $self = shift;
 	my $strainID = shift;
@@ -433,22 +426,18 @@ sub _getVirulenceData {
 	my $virCount = 0;
 
 	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
-		{'me.genome_id' => "public_".$strainID},
+		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
 		{
-			column => [qw/me.strain me.gene_name me.presence_absence/]
+			join => ['gene'],
+			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
 		}
 		);
 
 	while (my $virulenceDataRow = $virulenceData->next) {
 		my %virRow;
-		if ($virulenceDataRow->presence_absence == 1) {
-			$virRow{'gene_name'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_id})->uniquename;
-			$virRow{'feature_id'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $virulenceDataRow->gene_id})->feature_id;
-			push (@virulenceData, \%virRow);
-		}
-		else {
-		}
-		
+		$virRow{'gene_name'} = $virulenceDataRow->gene->uniquename;
+		$virRow{'feature_id'} = $virulenceDataRow->gene->feature_id;
+		push (@virulenceData, \%virRow);
 	}
 	return \@virulenceData;
 }
@@ -463,22 +452,18 @@ sub _getAmrData {
 	my $amrCount = 0;
 
 	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
-		{'me.genome_id' => "public_".$strainID},
+		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
 		{
-			column => [qw/me.strain me.gene_name me.presence_absence/]
+			join => ['gene'],
+			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
 		}
 		);
 
 	while (my $amrDataRow = $amrData->next) {
 		my %amrRow;
-		if ($amrDataRow->presence_absence == 1) {
-			$amrRow{'gene_name'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_id})->uniquename;
-			$amrRow{'feature_id'} = $self->dbixSchema->resultset('Feature')->find({feature_id => $amrDataRow->gene_id})->feature_id;
-			push (@amrData , \%amrRow);
-		}
-		else {
-		}
-		
+		$amrRow{'gene_name'} = $amrDataRow->gene->uniquename;
+		$amrRow{'feature_id'} = $amrDataRow->gene->feature_id;
+		push (@amrData , \%amrRow);
 	}
 	return \@amrData;
 }
@@ -486,21 +471,21 @@ sub _getAmrData {
 sub _getStrainLocation {
 	my $self = shift;
 	my $strainID = shift;
-    my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
-        {'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
-        {
-            column  => [qw/me.feature_id me.value type.name/],
-            join        => ['type']
-        }
-        );
-    my %strainLocation;
-    $strainLocation{'presence'} = 0;
-    while (my $location = $locationFeatureProps->next) {
-    	$strainLocation{'presence'} = 1;
-    	my $locValue = $location->value;
-    	$strainLocation{'location'} = $locValue;
-    }
-    return \%strainLocation;
+	my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
+		{
+			column  => [qw/me.feature_id me.value type.name/],
+			join        => ['type']
+		}
+		);
+	my %strainLocation;
+	$strainLocation{'presence'} = 0;
+	while (my $location = $locationFeatureProps->next) {
+		$strainLocation{'presence'} = 1;
+		my $locValue = $location->value;
+		$strainLocation{'location'} = $locValue;
+	}
+	return \%strainLocation;
 }
 
 #These will need to be abstracted to remove redundancy

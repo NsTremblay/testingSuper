@@ -43,7 +43,7 @@ use Carp;
 use List::MoreUtils qw(indexes);
 use List::MoreUtils qw(natatime);
 use Parallel::ForkManager;
-use POSIX;
+use Time::HiRes;
 
 sub new {
 	my ($class) = shift;
@@ -84,7 +84,7 @@ sub dbixSchema {
 }
 
 sub getBinaryData {
-	BEGIN { our $start_run = time(); }
+	my $start = Time::HiRes::gettimeofday();
 	my $self = shift;
 	my $group1GenomeIds = shift;
 	my $group2GenomeIds = shift;
@@ -122,8 +122,8 @@ sub getBinaryData {
 	$fet->testChar('1');
 	my ($binaryData , $numSig) = $fet->run();
 
-	my $end_run = time();
-	my $run_time = $end_run - our $start_run;
+	my $end = Time::HiRes::gettimeofday();
+	my $run_time = $end - $start;
 	#print STDERR "Job took $run_time seconds\n"
 
 	return ($binaryData, $numSig , $run_time);
