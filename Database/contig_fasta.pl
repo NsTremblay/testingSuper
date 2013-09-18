@@ -73,7 +73,8 @@ my $contig_rs = $schema->resultset('Feature')->search(
 	},
 	{
 		column  => [qw/feature_id uniquename residues/],
-		prefect
+		'+select' => [qw/feature_relationship_subjects.object_id/],
+		'+as' => [qw/object_id/],
 		join    => [
 			'type',
 			{'feature_relationship_subjects' => 'type'}
@@ -87,7 +88,7 @@ my $tot = $contig_rs->count;
 open(my $out, ">", $OUTPUT) or die "Error: unable to write to file $OUTPUT ($!)\n";
 
 while (my $contig = $contig_rs->next) {
-	print $out '>' . 'public_' . $contig->feature_id . '|' . 'public_' . $contig->feature_relationship_subjects->object_id . "\n" . $contig->residues . "\n\n";
+	print $out '>' . 'public_' . $contig->feature_id . '|' . 'public_' . $contig->get_column('object_id') . "\n" . $contig->residues . "\n\n";
 	print "$i contigs of $tot\n" if $i % 10;
 }
 
