@@ -129,17 +129,22 @@ sub comparison : Runmode {
 	my $q = $self->query();
 	my @group1 = $q->param("comparison-group1-genome");
 	my @group2 = $q->param("comparison-group2-genome");
+	my $email = $q->param("email-results");
+
+	print STDERR $email . "\n";
 
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
-	} else {
+	} 
+	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
 		#Need to return the data from the group comparator module
-		my ($binaryFETResults , $numSigResults , $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
+		my ($binaryFETResults , $numSigResults , $fileLink,  $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
 		$template->param(binaryFETResults => $binaryFETResults);
 		$template->param(numSigResults => $numSigResults);
 		$template->param(totalResults => scalar(@{$binaryFETResults}));
 		$template->param(runTime => $runTime);
+		$template->param(fileLink => $fileLink);
 		return $template->output();
 	} 
 }
@@ -156,8 +161,6 @@ sub _getStrainInfo {
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
 
-	#push (my @strainNames , @{$_groupedStrainNames}); 
-
 	#my $ffwHandle = Modules::FastaFileWrite->new();
 	#$ffwHandle->dbixSchema($self->dbixSchema);
 	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
@@ -168,11 +171,11 @@ sub _getStrainInfo {
 
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my ($_binaryFETResults , $_numSigResults , $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
+	my ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
 	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
 
 	#return ($binaryDataRef , $snpDataRef);
-	return ($_binaryFETResults , $_numSigResults , $_runTime);
+	return ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime);
 }
 
 sub _getGroupWisePhylo {

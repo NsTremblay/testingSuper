@@ -148,6 +148,7 @@ use warnings;
 use strict;
 use Carp;
 use IO::File;
+use File::Temp;
 use Statistics::R;
 use Log::Log4perl;
 
@@ -199,6 +200,16 @@ sub logger{
 sub _R{
 	my $self=shift;
 	$self->{'__R'}=shift // return $self->{'__R'};
+}
+
+sub tempFile {
+	my $self = shift;
+	$self->{'_tempFile'} = shift // return $self->{'_tempFile'};
+}
+
+sub tempObject {
+	my $self = shift;
+	$self->{'_tempObject'} = shift // return $self->{'_tempObject'};
 }
 
 #methods
@@ -300,43 +311,48 @@ sub _processLine{
 	return ($pValue , $group1Counts , $group2Counts);
 }
 
-# sub _printResultsToFile{
-# 	my $self=shift;
+sub _printResultsToFile{
+ 	my $self=shift;
+ 	my $outputHash = shift;
 
-# 	my %outputHash;
-# 	foreach my $locus(keys %{$self->_resultHash}){
-# 		foreach my $testChar(keys %{$self->_resultHash->{$locus}}){
-# 			$outputHash{$locus . "\t" . $testChar} = $self->_resultHash->{$locus}->{$testChar};
-# 		}
-# 	}
-# 	 #sort new hash by value but output the key
-# 	 foreach my $output(sort{$outputHash{$a} <=> $outputHash{$b}} keys %outputHash){
-# 	 	$self->printOut($output . "\t" . $outputHash{$output} . "\n");
-# 	 }
-# 	 return 1;
-# 	}
+ 	my $tmpFH = $self->tempObject;
+ 	print $tmpFH $outputHash->{locus_id} . "\t" . $outputHash->{'group1Present'} . "\t" . $outputHash->{'group1Absent'} . "\t" . $outputHash->{'group2Present'} . "\t" . $outputHash->{'group2Absent'} . "\t" . $outputHash->{'pvalue'} . "\n";
+ 	return 1;
+}
 
-	sub run{
-		my $self=shift;
+sub run{
+	my $self=shift;
 
-		unless(scalar(@{$self->group1Loci}) == scalar(@{$self->group2Loci})) {
-			$self->logger->error("Sizes of loci lists for group1 and group2 must be the same");
-			exit(1);
+	unless(scalar(@{$self->group1Loci}) == scalar(@{$self->group2Loci})) {
+		$self->logger->error("Sizes of loci lists for group1 and group2 must be the same");
+		exit(1);
+	}
+
+	#Create a new tempObject and store it as a global;
+	my $tmp = File::Temp->new(	TEMPLATE => 'data_XXXXX',
+								DIR => '/genodo/group_wise_data_temp/',
+								SUFFIX => '.txt',
+								UNLINK => 0);
+
+	#write out column headers to the tmpfile
+
+	print $tmp "Locus ID \t Group 1 Present \t Group 1 Absent \t Group 2 Present \t Group 2 Absent \t p-value \n";
+
+	$self->tempObject($tmp);
+
+	my @results;
+	my $listSize = scalar(@{$self->group1Loci});
+
+	my $sigpValueCount = $listSize;
+
+	for (my $i = 0; $i < $listSize; $i++) {
+		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Loci->[$i]->get_column('loci_count'), $self->group2Loci->[$i]->get_column('loci_count') , $self->testChar);
+
+		if ($_pValue > 0.0500) {
+			$sigpValueCount--;
 		}
 
-		my @results;
-		my $listSize = scalar(@{$self->group1Loci});
-
-		my $sigpValueCount = $listSize;
-
-		for (my $i = 0; $i < $listSize; $i++) {
-			my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Loci->[$i]->get_column('loci_count'), $self->group2Loci->[$i]->get_column('loci_count') , $self->testChar);
-			
-			if ($_pValue > 0.0500) {
-				$sigpValueCount--;
-			}
-
-			my %rowResult;
+		my %rowResult;
 			#create a new hash row with results
 			$rowResult{'locus_id'} = $self->group1Loci->[$i]->get_column('id');
 			$rowResult{'group1Present'} = $_group1Counts->{'pos'};
@@ -345,15 +361,17 @@ sub _processLine{
 			$rowResult{'group2Absent'} = $_group2Counts->{'neg'};
 			$rowResult{'pvalue'} = $_pValue;
 
+			$self->_printResultsToFile(\%rowResult);
+
 			push(@results , \%rowResult);
 		}
 
-	#The following will be changed to store everything in a hashref and return the hashref
-	#$self->_printResultsToFile();
+	my $file_name = $self->tempObject()->filename;
+	$file_name =~ s/\/genodo\/group_wise_data_temp\///;
 
 	my @sortedResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @results);
 
-	return (\@sortedResults , $sigpValueCount);
+	return (\@sortedResults , $sigpValueCount , $file_name);
 }
 
 

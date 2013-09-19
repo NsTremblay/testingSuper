@@ -42,6 +42,7 @@ use Log::Log4perl;
 use Carp;
 use List::MoreUtils qw(indexes);
 use List::MoreUtils qw(natatime);
+use Math::Round 'nlowmult';
 use Parallel::ForkManager;
 use Time::HiRes;
 
@@ -120,16 +121,16 @@ sub getBinaryData {
 	$fet->group1Loci(\@group1Loci);
 	$fet->group2Loci(\@group2Loci);
 	$fet->testChar('1');
-	my ($binaryData , $numSig) = $fet->run();
+	my ($binaryData , $numSig , $fileLink) = $fet->run();
 
 	my $end = Time::HiRes::gettimeofday();
-	my $run_time = $end - $start;
-	#print STDERR "Job took $run_time seconds\n"
+	my $run_time = nlowmult( 0.01, $end - $start);
 
-	return ($binaryData, $numSig , $run_time);
+	return ($binaryData, $numSig , $fileLink ,$run_time);
 }
 
 sub getSnpData {
+	#This sub needs to be changed
 	my $self = shift;
 	#For demo purposes we will query the first three strains from the data tables.
 	my $strainIds = shift;

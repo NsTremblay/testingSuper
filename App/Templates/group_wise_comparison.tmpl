@@ -76,7 +76,6 @@
 							</div>
 							<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
 						</div>
-
 						<div class="span4" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;max-height:400px">
 							<div id="comparison-group2" style="max-height:350px;overflow:auto">
 								<fieldset>
@@ -85,9 +84,36 @@
 							</div>
 							<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
 						</div>
+
+						<div class="span1">
+							<a id="email-results-modal" href="#emailResultsModal" data-toggle="modal"></a>
+							<input class="checkbox" name="email-results" value="1" type="checkbox"/>
+							<input type="text" id="user-email" name="user-email"/>
+							<input type="text" id="user-email-confirmed" name="user-email-confirmed"/>
+						</div>
+
+						<div id="emailResultsModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+								<p>Please enter a valid email address. You will be notified with your resutls when they are ready.</p>
+							</div>
+							<div class="modal-body">
+								<form class="form-horizontal">
+									<div id="modal-warning"></div>
+									<label class="control-label" for="modal-user-email">Email: </label><input id="modal-user-email" name="modal-user-email" type="email" required/>
+									<label class="control-label" for="modal-user-email-confirmed">Confirm Email: </label><input id="modal-user-email-confirmed" name="modal-user-email-confirmed" type="email" required/>
+								</form>
+							</div>
+							<div class="modal-footer">
+								<button id="modal-email-results" class="btn btn-primary" type="button">Submit</button>
+								<button class="btn btn-danger" data-dismiss="modal" aria-hidden="true">Cancel</button>
+							</div>
+						</div>
+
 					</form>
 				</div>
 			</div>
+
 
 			<div class="row-fluid">
 				<div class="span4 offset1">
@@ -399,6 +425,12 @@ if(grp2.length < 1) {
 	return false;
 }
 
+if (grp1.length > 20 || grp2.length > 20) {
+	$('input[name="email-results"]').prop("checked", true);
+	$('#email-results-modal').click();
+	return false;
+}
+
 // Prepare inputs
 grp1.prop("checked", true);
 grp2.prop("checked", true);
@@ -456,6 +488,28 @@ function appendFilteredList(obj , list) {
 		}
 	});
 }
+
+$('#modal-email-results').click( function(e) {
+	e.preventDefault();
+	var user_email = $('input[name="modal-user-email"]');
+	var user_email_confirmed = $('input[name="modal-user-email-confirmed"]');
+	$('#modal-warning').empty();
+	if (user_email.val() == "" || user_email_confirmed.val() == "") {
+		$('#modal-warning').append('<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>Fill in all fields of the form.</div>');
+		return 0;
+	}
+	if (user_email.val() != user_email_confirmed.val()) {
+		$('#modal-warning').append('<div class="alert alert-error"><button type="button" class="close" data-dismiss="alert">&times;</button>Email addresses do not match</div>');
+		return 0;
+	}
+	else {
+		//Need an email valiator
+		$('input[name="user-email"]').val(user_email.val());
+		$('input[name="user-email-confirmed"]').val(user_email_confirmed.val());
+		return 0;
+	}
+});
+
 /*
 function checkGroupedFields(groupedForm) {
 if ($('#group1 li').length == 0 && $('#group2 li').length == 0) {
