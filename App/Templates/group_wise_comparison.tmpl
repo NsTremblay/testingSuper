@@ -85,17 +85,17 @@
 							<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
 						</div>
 
-						<div class="span1">
+						<div class="span1" style="display:none">
 							<a id="email-results-modal" href="#emailResultsModal" data-toggle="modal"></a>
 							<input class="checkbox" name="email-results" value="1" type="checkbox"/>
-							<input type="text" id="user-email" name="user-email"/>
-							<input type="text" id="user-email-confirmed" name="user-email-confirmed"/>
+							<input type="email" id="user-email" name="user-email"/>
+							<input type="email" id="user-email-confirmed" name="user-email-confirmed"/>
 						</div>
 
 						<div id="emailResultsModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
 							<div class="modal-header">
 								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
-								<p>Please enter a valid email address. You will be notified with your resutls when they are ready.</p>
+								<p>Please enter a valid email address. You will be notified with your results when they are ready.</p>
 							</div>
 							<div class="modal-body">
 								<form class="form-horizontal">
@@ -418,19 +418,15 @@ if(grp1.length < 1) {
 	alert('Group 1 currently empty')
 	return false;
 }
-
 var grp2 = $('input[name="comparison-group2-genome"]');
 if(grp2.length < 1) {
 	alert('Group 2 currently empty')
 	return false;
 }
-
-if (grp1.length > 20 || grp2.length > 20) {
-	$('input[name="email-results"]').prop("checked", true);
+if ((grp1.length > 20 || grp2.length > 20) && !($('input[name="email-results"]').is(':checked'))) {
 	$('#email-results-modal').click();
 	return false;
 }
-
 // Prepare inputs
 grp1.prop("checked", true);
 grp2.prop("checked", true);
@@ -503,10 +499,10 @@ $('#modal-email-results').click( function(e) {
 		return 0;
 	}
 	else {
-		//Need an email valiator
 		$('input[name="user-email"]').val(user_email.val());
 		$('input[name="user-email-confirmed"]').val(user_email_confirmed.val());
-		return 0;
+		$('input[name="email-results"]').prop("checked", true);
+		$('#groupedForm').submit();
 	}
 });
 

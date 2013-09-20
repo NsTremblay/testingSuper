@@ -45,6 +45,9 @@ use List::MoreUtils qw(natatime);
 use Math::Round 'nlowmult';
 use Parallel::ForkManager;
 use Time::HiRes;
+use Email::Simple;
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP::TLS;
 
 sub new {
 	my ($class) = shift;
@@ -82,6 +85,39 @@ sub logger {
 sub dbixSchema {
 	my $self = shift;
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
+}
+
+sub configLocation {
+	my $self = shift;
+	$self->{'_configLocation'} = shift // return $self->{'_configLocation'};
+}
+
+sub testEmailToUser {
+	my $self = shift;
+	my $_user_email = shift;
+	$self->config_file($self->configLocation);
+	
+	my $transport = Email::Sender::Transport::SMTP::TLS->new(
+	    host     => 'smtp.gmail.com',
+	    port     => 587,
+	    username => $self->config_param('mail.address'),
+	    password => $self->config_param('mail.pass'),
+	);
+	
+	my $message = Email::Simple->create(
+	    header => [
+	        From           => $self->config_param('mail.address'),
+	        To             => $_user_email,
+	        Subject        => 'SuperPhy password reset',
+	        'Content-Type' => 'text/html'
+	    ],
+	    body => '<html>'
+		  . '<br><br>This is a test. Do not reply to this.'
+		  . '<br><br>SuperPhy Team.'
+		  . '</html>',
+	);
+	
+	sendmail( $message, {transport => $transport} );
 }
 
 sub getBinaryData {
@@ -124,7 +160,7 @@ sub getBinaryData {
 	my ($binaryData , $numSig , $fileLink) = $fet->run();
 
 	my $end = Time::HiRes::gettimeofday();
-	my $run_time = nlowmult( 0.01, $end - $start);
+	my $run_time = nlowmult(0.01, $end - $start);
 
 	return ($binaryData, $numSig , $fileLink ,$run_time);
 }

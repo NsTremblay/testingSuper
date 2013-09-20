@@ -45,6 +45,7 @@ use Phylogeny::Tree;
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
 use IO::File;
+use Data::FormValidator::Constraints (qw/valid_email/);
 use Log::Log4perl qw'get_logger';
 
 sub setup {
@@ -131,14 +132,29 @@ sub comparison : Runmode {
 	my @group2 = $q->param("comparison-group2-genome");
 	my $email = $q->param("email-results");
 
-	print STDERR $email . "\n";
-
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
-	} 
+	}
+	elsif ($email) {
+		my $user_email = $q->param("user-email");
+		my $user_email_confirmed = $q->param("user-email-confirmed");
+		if (($user_email eq $user_email_confirmed) && (valid_email($user_email))) {
+			my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
+			## Testing the email function
+			my $comparisonHandle = Modules::GroupComparator->new();
+			$comparisonHandle->dbixSchema($self->dbixSchema);
+			$comparisonHandle->configLocation($self->config_file);
+			$comparisonHandle->testEmailToUser($user_email);
+			##
+			$template->param(email_address=>$user_email);
+			return $template->output();
+		}
+		else {
+			return $self->group_wise_comparisons('invalid email address was entered');
+		}
+	}
 	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		#Need to return the data from the group comparator module
 		my ($binaryFETResults , $numSigResults , $fileLink,  $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
 		$template->param(binaryFETResults => $binaryFETResults);
 		$template->param(numSigResults => $numSigResults);
@@ -173,7 +189,6 @@ sub _getStrainInfo {
 	$comparisonHandle->dbixSchema($self->dbixSchema);
 	my ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
 	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
-
 	#return ($binaryDataRef , $snpDataRef);
 	return ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime);
 }
