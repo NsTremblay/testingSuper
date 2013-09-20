@@ -36,7 +36,6 @@ sub dispatch_args {
                 '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
                 '/statistics' =>    {app=>'Statistics' , rm=>'stats'},
-                '/group_wise_info/' => {app=>'GroupWiseComparisons', rm=>'group_wise_info'},
                 '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'},
                 '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'},
                 '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'},

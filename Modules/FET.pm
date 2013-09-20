@@ -312,12 +312,12 @@ sub _processLine{
 }
 
 sub _printResultsToFile{
- 	my $self=shift;
- 	my $outputHash = shift;
+	my $self=shift;
+	my $outputHash = shift;
 
- 	my $tmpFH = $self->tempObject;
- 	print $tmpFH $outputHash->{locus_id} . "\t" . $outputHash->{'group1Present'} . "\t" . $outputHash->{'group1Absent'} . "\t" . $outputHash->{'group2Present'} . "\t" . $outputHash->{'group2Absent'} . "\t" . $outputHash->{'pvalue'} . "\n";
- 	return 1;
+	my $tmpFH = $self->tempObject;
+	print $tmpFH $outputHash->{locus_id} . "\t" . $outputHash->{'group1Present'} . "\t" . $outputHash->{'group1Absent'} . "\t" . $outputHash->{'group2Present'} . "\t" . $outputHash->{'group2Absent'} . "\t" . $outputHash->{'pvalue'} . "\n";
+	return 1;
 }
 
 sub run{
@@ -330,9 +330,9 @@ sub run{
 
 	#Create a new tempObject and store it as a global;
 	my $tmp = File::Temp->new(	TEMPLATE => 'data_XXXXX',
-								DIR => '/genodo/group_wise_data_temp/',
-								SUFFIX => '.txt',
-								UNLINK => 0);
+		DIR => '/genodo/group_wise_data_temp/',
+		SUFFIX => '.txt',
+		UNLINK => 0);
 
 	#write out column headers to the tmpfile
 
@@ -348,10 +348,6 @@ sub run{
 	for (my $i = 0; $i < $listSize; $i++) {
 		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Loci->[$i]->get_column('loci_count'), $self->group2Loci->[$i]->get_column('loci_count') , $self->testChar);
 
-		if ($_pValue > 0.0500) {
-			$sigpValueCount--;
-		}
-
 		my %rowResult;
 			#create a new hash row with results
 			$rowResult{'locus_id'} = $self->group1Loci->[$i]->get_column('id');
@@ -363,16 +359,20 @@ sub run{
 
 			$self->_printResultsToFile(\%rowResult);
 
-			push(@results , \%rowResult);
+			if ($_pValue > 0.0500) {
+				$sigpValueCount--;
+			}
+			else {
+				push(@results , \%rowResult);
+			}
 		}
 
-	my $file_name = $self->tempObject()->filename;
-	$file_name =~ s/\/genodo\/group_wise_data_temp\///;
+		my $file_name = $self->tempObject()->filename;
 
-	my @sortedResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @results);
+		my @sortedResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @results);
 
-	return (\@sortedResults , $sigpValueCount , $file_name);
-}
+		return (\@sortedResults , $sigpValueCount, $listSize, $file_name);
+	}
 
 
 #define a DESTROY method to close R instance on object close

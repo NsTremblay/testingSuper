@@ -28,8 +28,6 @@ Log::Log4perl->easy_init($DEBUG);
 
 =head2 cgiapp_init
 
-
-
 =cut
 
 sub cgiapp_init {

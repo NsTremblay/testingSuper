@@ -72,14 +72,7 @@ sub group_wise_comparisons : StartRunmode {
 	# Retrieve form data
 	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
 	
-	
-	#my $formDataRef = $formDataGenerator->getFormData();
-	#my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
-	
 	my $template = $self->load_tmpl( 'group_wise_comparison.tmpl' , die_on_bad_params=>0 );
-	
-	#$template->param(FEATURES=>$pubDataRef);
-	#$template->param(strainJSONData=>$strainJsonDataRef);
 	
 	$template->param(groupwise => 1);
 	$template->param(public_genomes => $pub_json);
@@ -93,35 +86,6 @@ sub group_wise_comparisons : StartRunmode {
 	}
 	
 	return $template->output();
-}
-
-sub group_wise_info : Runmode {
-
-	my $self=shift;
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	my $q = $self->query();
-	my @groupOneStrainNames = $q->param("group1");
-	my @groupTwoStrainNames = $q->param("group2");
-
-	if(!(@groupOneStrainNames) && !(@groupTwoStrainNames)){
-		return $formDataGenerator->_getJSONFormat("");
-	}
-	else{
-		my ($groupOneBinaryDataRef , $groupOneSnpDataRef) = $self->_getStrainInfo(\@groupOneStrainNames);
-		my ($groupTwoBinaryDataRef , $groupTwoSnpDataRef) = $self->_getStrainInfo(\@groupTwoStrainNames);
-		my @phyloList = (@groupOneStrainNames, @groupTwoStrainNames);
-
-		#Append "public_to all the items in phylo list so the labels can be identified in the tree"
-		foreach my $phyloLabel (@phyloList) {
-			$phyloLabel = "public_" . $phyloLabel;
-		}
-
-		my $groupWiseTreeRef = $self->_getGroupWisePhylo(\@phyloList);
-		my @arr;
-		push (@arr, $groupOneBinaryDataRef, $groupOneSnpDataRef, $groupTwoBinaryDataRef, $groupTwoSnpDataRef, $groupWiseTreeRef);
-		my $groupWiseDataJSONref = $formDataGenerator->_getJSONFormat(\@arr);
-		return $groupWiseDataJSONref;
-	}
 }
 
 sub comparison : Runmode {
@@ -139,15 +103,7 @@ sub comparison : Runmode {
 		my $user_email = $q->param("user-email");
 		my $user_email_confirmed = $q->param("user-email-confirmed");
 		if (($user_email eq $user_email_confirmed) && (valid_email($user_email))) {
-			my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-			## Testing the email function
-			my $comparisonHandle = Modules::GroupComparator->new();
-			$comparisonHandle->dbixSchema($self->dbixSchema);
-			$comparisonHandle->configLocation($self->config_file);
-			$comparisonHandle->testEmailToUser($user_email);
-			##
-			$template->param(email_address=>$user_email);
-			return $template->output();
+			$self->_emailStrainInfo($user_email);
 		}
 		else {
 			return $self->group_wise_comparisons('invalid email address was entered');
@@ -155,20 +111,17 @@ sub comparison : Runmode {
 	}
 	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		my ($binaryFETResults , $numSigResults , $fileLink,  $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
+		my ($binaryFETResults, $numSigResults, $totalComparisons, $fileLink,  $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
 		$template->param(binaryFETResults => $binaryFETResults);
 		$template->param(numSigResults => $numSigResults);
-		$template->param(totalResults => scalar(@{$binaryFETResults}));
+		$template->param(totalResults => $totalComparisons);
 		$template->param(runTime => $runTime);
 		$template->param(fileLink => $fileLink);
 		return $template->output();
-	} 
+	}
 }
 
-
 =head2 _getStrainInfo
-
-Writes out user selected fasta files for PanSeq analysis.
 
 =cut
 
@@ -177,41 +130,31 @@ sub _getStrainInfo {
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
 
-	#my $ffwHandle = Modules::FastaFileWrite->new();
-	#$ffwHandle->dbixSchema($self->dbixSchema);
-	#$ffwHandle->writeStrainsToFile($_groupedStrainNames);
-
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $formDataRef = $formDataGenerator->getFormData();
 
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
-	#my $snpDataRef = $comparisonHandle->getSnpData($_groupedStrainNames);
-	#return ($binaryDataRef , $snpDataRef);
-	return ($_binaryFETResults , $_numSigResults , $_fileLink , $_runTime);
+	my ($_binaryFETResults, $_numSigResults, $_totalComparisons, $_fileLink, $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
+	#Need to retrieve SNP data as well when available
+	return ($_binaryFETResults, $_numSigResults, $_totalComparisons, $_fileLink, $_runTime);
 }
 
-sub _getGroupWisePhylo {
+sub _emailStrainInfo {
 	my $self = shift;
-	my $_phyloList = shift;
-	my $groupWiseTreeRef;
+	my $_user_email = shift;
 
-	#Create a new instance of tree manipulator and call the _getNearestClades function
-	my $groupWiseTreeMaker = Modules::TreeManipulator->new();
-	$groupWiseTreeMaker->inputDirectory("../../Phylogeny/NewickTrees/");
-	$groupWiseTreeMaker->newickFile("example_tree");
-	$groupWiseTreeMaker->_pruneTree($_phyloList);
-	my $groupWiseTreeFile = $groupWiseTreeMaker->outputDirectory() . $groupWiseTreeMaker->outputTree();
-	open my $in, '<' , $groupWiseTreeFile or die "Cant write to the $groupWiseTreeFile: $!";
-	while (<$in>) {
-		$groupWiseTreeRef .= $_;
-	}
-	my $systemLine = 'rm -r ' . $groupWiseTreeFile;
-	system($systemLine);
+	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
 
-	return $groupWiseTreeRef;
+	my $comparisonHandle = Modules::GroupComparator->new();
+	$comparisonHandle->dbixSchema($self->dbixSchema);
+	$comparisonHandle->configLocation($self->config_file);
+	$comparisonHandle->testEmailToUser($_user_email);
+
+	$template->param(email_address=>$_user_email);
+
+	return $template->output();
 }
 
 1;

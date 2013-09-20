@@ -96,7 +96,9 @@ sub testEmailToUser {
 	my $self = shift;
 	my $_user_email = shift;
 	$self->config_file($self->configLocation);
-	
+
+	#Now just call getBinaryData to return necessary values
+
 	my $transport = Email::Sender::Transport::SMTP::TLS->new(
 	    host     => 'smtp.gmail.com',
 	    port     => 587,
@@ -157,12 +159,14 @@ sub getBinaryData {
 	$fet->group1Loci(\@group1Loci);
 	$fet->group2Loci(\@group2Loci);
 	$fet->testChar('1');
-	my ($binaryData , $numSig , $fileLink) = $fet->run();
+	my ($binaryData, $numSig, $totalComparisons, $fileLink) = $fet->run();
 
 	my $end = Time::HiRes::gettimeofday();
 	my $run_time = nlowmult(0.01, $end - $start);
 
-	return ($binaryData, $numSig , $fileLink ,$run_time);
+	$fileLink =~ s/\/genodo\/group_wise_data_temp\///;
+
+	return ($binaryData, $numSig, $totalComparisons, $fileLink, $run_time);
 }
 
 sub getSnpData {
