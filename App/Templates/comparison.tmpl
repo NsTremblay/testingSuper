@@ -9,14 +9,14 @@
 	<h1>GROUPWISE RESULTS PAGE</h1>
 
 	<span class="help-block">
-		Total analysis time was : <TMPL_VAR NAME="runTime"> seconds.
+		Total analysis time was : <TMPL_LOOP binaryFETResults><TMPL_VAR run_time></TMPL_LOOP> seconds.
 	</span>
 
-	<span class="help-block">There were a total of <TMPL_VAR NAME="numSigResults"> significant difference(s) detected from <TMPL_VAR NAME="totalResults"> total comaprisons.</span>
+	<span class="help-block">There were a total of <TMPL_LOOP binaryFETResults><TMPL_VAR sig_count></TMPL_LOOP> significant difference(s) detected from <TMPL_LOOP binaryFETResults><TMPL_VAR total_comparisons></TMPL_LOOP> total comaprisons.</span>
 
 	<p>The following table outputs only comparisons with <strong>significant</strong> differences between your selected groups (to view all comparisons made, download the .txt file provided in the link below). You can filter through the data table displayed on this page by providing search criteria in the input boxes above each column. For example, to only show significant differences with a p-value of less than 0.01, simply type in &lt;0.01 in the input box above the p-value column and hit enter.</p>
 
-	<p><a href="/temp/<TMPL_VAR NAME=fileLink>" download>Click here</a> to download a tab-delimited .txt file of all comparisons made.</p>
+	<p><a href="/temp/<TMPL_LOOP binaryFETResults><TMPL_VAR file_name></TMPL_LOOP>" download="loci_presence_absence.txt">Click here</a> to download a tab-delimited .txt file of all comparisons made.</p>
 
 	<table id="table1" class="table table-condensed">
 		<caption><h3>Binary FET Results</h3></caption>
@@ -31,9 +31,10 @@
 			</tr>
 		</thead>
 		<tbody>
-			<TMPL_LOOP NAME="binaryFETResults">
+			<TMPL_LOOP binaryFETResults>
+			<TMPL_LOOP sig_results>
 			<tr>
-				<td><TMPL_VAR NAME="locus_id"></td>
+				<td><TMPL_VAR NAME="marker_id"></td>
 				<td><TMPL_VAR NAME="group1Present"></td>
 				<td><TMPL_VAR NAME="group1Absent"></td>
 				<td><TMPL_VAR NAME="group2Present"></td>
@@ -41,11 +42,12 @@
 				<td><TMPL_VAR NAME="pvalue"></td>
 			</tr>
 			</TMPL_LOOP>
+			</TMPL_LOOP>
 		</tbody>
 	</table>
 
 	<script type="text/javascript">
-	setFilterGrid("table1");
+		setFilterGrid("table1");
 	</script> 
 
 </body>

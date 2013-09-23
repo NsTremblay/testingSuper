@@ -111,12 +111,9 @@ sub comparison : Runmode {
 	}
 	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		my ($binaryFETResults, $numSigResults, $totalComparisons, $fileLink,  $runTime) = $self->_getStrainInfo(\@group1 , \@group2);
+		my $binaryFETResults = $self->_getStrainInfo(\@group1 , \@group2);
+
 		$template->param(binaryFETResults => $binaryFETResults);
-		$template->param(numSigResults => $numSigResults);
-		$template->param(totalResults => $totalComparisons);
-		$template->param(runTime => $runTime);
-		$template->param(fileLink => $fileLink);
 		return $template->output();
 	}
 }
@@ -129,31 +126,22 @@ sub _getStrainInfo {
 	my $self = shift;
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
-
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my $formDataRef = $formDataGenerator->getFormData();
-
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my ($_binaryFETResults, $_numSigResults, $_totalComparisons, $_fileLink, $_runTime) = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
+	my $_binaryFETResults = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
 	#Need to retrieve SNP data as well when available
-	return ($_binaryFETResults, $_numSigResults, $_totalComparisons, $_fileLink, $_runTime);
+	return $_binaryFETResults;
 }
 
 sub _emailStrainInfo {
 	my $self = shift;
 	my $_user_email = shift;
-
 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
 	$comparisonHandle->configLocation($self->config_file);
 	$comparisonHandle->testEmailToUser($_user_email);
-
 	$template->param(email_address=>$_user_email);
-
 	return $template->output();
 }
 
