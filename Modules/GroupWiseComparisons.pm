@@ -44,9 +44,10 @@ use CGI::Application::Plugin::AutoRunmode;;
 use Phylogeny::Tree;
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
-use IO::File;
 use Data::FormValidator::Constraints (qw/valid_email/);
 use Log::Log4perl qw'get_logger';
+use Time::HiRes;
+use Math::Round 'nlowmult';
 
 sub setup {
 	my $self=shift;
@@ -89,11 +90,15 @@ sub group_wise_comparisons : StartRunmode {
 }
 
 sub comparison : Runmode {
+	my $start = Time::HiRes::gettimeofday();
 	my $self = shift;
 	
 	my $q = $self->query();
 	my @group1 = $q->param("comparison-group1-genome");
 	my @group2 = $q->param("comparison-group2-genome");
+	my @group1Names = $q->param("comparison-group1-name");
+	my @group2Names = $q->param("comparison-group2-name");
+
 	my $email = $q->param("email-results");
 
 	if(!@group1 && !@group2){
@@ -111,9 +116,12 @@ sub comparison : Runmode {
 	}
 	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		my $binaryFETResults = $self->_getStrainInfo(\@group1 , \@group2);
-
+		my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
+		my $end = Time::HiRes::gettimeofday();
+		my $run_time = nlowmult(0.01, $end - $start);
 		$template->param(binaryFETResults => $binaryFETResults);
+		$template->param(snpFETResults => $snpFETResults);
+		$template->param(run_time => $run_time);
 		return $template->output();
 	}
 }
@@ -124,13 +132,15 @@ sub comparison : Runmode {
 
 sub _getStrainInfo {
 	my $self = shift;
+	my $_group1StrainIds = shift;
+	my $_group2StrainIds = shift;
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	my $_binaryFETResults = $comparisonHandle->getBinaryData($_group1StrainNames, $_group2StrainNames);
-	#Need to retrieve SNP data as well when available
-	return $_binaryFETResults;
+	my $_binaryFETResults = $comparisonHandle->getBinaryData($_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
+	my $_snpFETResults = $comparisonHandle->getSnpData($_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
+	return ($_binaryFETResults, $_snpFETResults);
 }
 
 sub _emailStrainInfo {

@@ -308,9 +308,9 @@ sub _processLine{
 
 sub run {
 	my $self=shift;
-
+	my $_count_column = shift;
 	unless(scalar(@{$self->group1Markers}) == scalar(@{$self->group2Markers})) {
-		$self->logger->error("Sizes of loci lists for group1 and group2 must be the same");
+		$self->logger->error("Sizes of loci/snp lists for group1 and group2 must be the same");
 		exit(1);
 	}
 	
@@ -319,7 +319,7 @@ sub run {
 	my $sigpValueCount = $listSize;
 
 	for (my $i = 0; $i < $listSize; $i++) {
-		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->get_column('marker_count'), $self->group2Markers->[$i]->get_column('marker_count') , $self->testChar);
+		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->get_column($_count_column), $self->group2Markers->[$i]->get_column($_count_column) , $self->testChar);
 
 		my %rowResult;
 		$rowResult{'marker_id'} = $self->group1Markers->[$i]->get_column('id');

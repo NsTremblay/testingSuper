@@ -185,7 +185,26 @@ sub writeOutSnpData {
 	#Change this method to account for the added cols TODO
 	my $_snpCount = shift;
 	for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
-		print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . $seqFeatureTemp[$_snpCount][$i] . "\n";
+		#A
+		if ($seqFeatureTemp[$_snpCount][$i] eq 'A') {
+			print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . "1\t" . "0\t" . "0\t" . "0\n";
+		}
+		#T
+		elsif ($seqFeatureTemp[$_snpCount][$i] eq 'T') {
+			print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . "0\t" . "1\t" . "0\t" . "0\n";
+		}
+		#C
+		elsif ($seqFeatureTemp[$_snpCount][$i] eq 'C') {
+			print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . "0\t" . "0\t" . "1\t" . "0\n";
+		}
+		#G
+		elsif ($seqFeatureTemp[$_snpCount][$i] eq 'G') {
+			print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . "0\t" . "0\t" . "0\t" . "1\n";
+		}
+		# -
+		else {
+			print $outDataFile $genomeTemp[$i] . "\t" . $_snpCount . "\t" . "0\t" . "0\t" . "0\t" . "0\n";
+		}
 	}
 	if ($_snpCount % 1000 == 0) {
 		print "$_snpCount out of " . scalar(@seqFeatureTemp) . " snps completed\n";
@@ -268,7 +287,7 @@ sub copyLociDataToDb {
 
 sub copySnpDataToDb {
 	open my $snpsSQLFile , '>' , "$INPUTDATATYPE" . "_db.sql" or croak "Can't write to file: $!";
-	#print out to the sql file TODO
+	print $snpsSQLFile "BEGIN;\n"."COPY snps (snp_id, snp_name) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_names.txt\';\n"."COMMIT;\n"."BEGIN;\n"."COPY snps_genotypes (feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM \'$FindBin::Bin/$INPUTDATATYPE"."_processed_data.txt\';\n"."COMMIT;";
 	close $snpsSQLFile;
 	my $sysline = "psql $DBNAME < $FindBin::Bin/$INPUTDATATYPE"."_db.sql";
 	system($sysline) == 0 or croak "$!\n";
