@@ -108,7 +108,7 @@ sub comparison : Runmode {
 		my $user_email = $q->param("user-email");
 		my $user_email_confirmed = $q->param("user-email-confirmed");
 		if (($user_email eq $user_email_confirmed) && (valid_email($user_email))) {
-			$self->_emailStrainInfo($user_email);
+			$self->_emailStrainInfo($user_email, \@group1 , \@group2 , \@group1Names , \@group2Names);
 		}
 		else {
 			return $self->group_wise_comparisons('invalid email address was entered');
@@ -146,11 +146,15 @@ sub _getStrainInfo {
 sub _emailStrainInfo {
 	my $self = shift;
 	my $_user_email = shift;
+	my $_group1StrainIds = shift;
+	my $_group2StrainIds = shift;
+	my $_group1StrainNames = shift;
+	my $_group2StrainNames = shift;
 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
 	$comparisonHandle->configLocation($self->config_file);
-	$comparisonHandle->emailResultsToUser($_user_email);
+	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
 	$template->param(email_address=>$_user_email);
 	return $template->output();
 }
