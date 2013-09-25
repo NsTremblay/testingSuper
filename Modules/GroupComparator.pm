@@ -96,9 +96,13 @@ sub configLocation {
 sub emailResultsToUser {
 	my $self = shift;
 	my $_user_email = shift;
+	my $_group1GenomeIds = shift;
+	my $_group2GenomeIds = shift;
+	my $_group1GenomeNames = shift;
+	my $_group2GenomeNames = shift;
 	$self->config_file($self->configLocation);
 
-	#Now just call getBinaryData to return necessary values
+	my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
 
 	my $transport = Email::Sender::Transport::SMTP::TLS->new(
 		host     => 'smtp.gmail.com',
@@ -129,10 +133,8 @@ my $message = Email::MIME->create(
 	],
 	parts => [
 	Email::MIME->create(
-		body => '<html>'
-		. '<br><br>This is a test. Do not reply to this.'
-		. '<br><br>SuperPhy Team.'
-		. '</html>',
+		body => "This is a test. Do not reply to this.\n"
+		. "SuperPhy Team.\n"
 		),
 	# Email::MIME->create(
 	# 	body => io('choochoo.gif'),
