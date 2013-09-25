@@ -102,7 +102,8 @@ sub emailResultsToUser {
 	my $_group2GenomeNames = shift;
 	$self->config_file($self->configLocation);
 
-	my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
+	my $binaryFETResults = $self->getBinaryData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
+	my $snpFETResults) = $self->getSnpData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
 
 	my $transport = Email::Sender::Transport::SMTP::TLS->new(
 		host     => 'smtp.gmail.com',
