@@ -328,6 +328,7 @@ sub run {
 		$rowResult{'group2Present'} = $_group2Counts->{'pos'};
 		$rowResult{'group2Absent'} = $_group2Counts->{'neg'};
 		$rowResult{'pvalue'} = $_pValue;
+		$rowResult{'test_char'} = $self->testChar;
 		if ($_pValue > 0.0500) {
 			$sigpValueCount--;
 		}

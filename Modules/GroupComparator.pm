@@ -172,9 +172,9 @@ sub getBinaryData {
 
 	print $tmp "Locus ID \t Group 1 Present \t Group 1 Absent \t Group 2 Present \t Group 2 Absent \t p-value \n";
 
-	my $sortedResultArray =  $results->[0]{'all_results'};
-	foreach my $sortedResultRow (@{$sortedResultArray}) {
-		print $tmp $sortedResultRow->{'marker_id'} . "\t" . $sortedResultRow->{'group1Present'} . "\t" . $sortedResultRow->{'group1Absent'} . "\t" . $sortedResultRow->{'group2Present'} . "\t" . $sortedResultRow->{'group2Absent'} . "\t" . $sortedResultRow->{'pvalue'} . "\n";
+	my $allResultArray =  $results->[0]{'all_results'};
+	foreach my $allResultRow (@{$allResultArray}) {
+		print $tmp $allResultRow->{'marker_id'} . "\t" . $allResultRow->{'group1Present'} . "\t" . $allResultRow->{'group1Absent'} . "\t" . $allResultRow->{'group2Present'} . "\t" . $allResultRow->{'group2Absent'} . "\t" . $allResultRow->{'pvalue'} . "\n";
 	}
 
 	my $temp_file_name = $tmp->filename;
@@ -238,14 +238,44 @@ sub getSnpData {
 	$fet->group2($group2GenomeIds);
 	$fet->group1Markers(\@group1Snps);
 	$fet->group2Markers(\@group2Snps);
-	$fet->testChar('A,T,C,G');
 
 	my @results;
 	#Returns hash ref of results
+	$fet->testChar('A');
 	my $a_results = $fet->run('a_count');
+	$fet->testChar('T');
 	my $t_results = $fet->run('t_count');
+	$fet->testChar('C');
 	my $c_results = $fet->run('c_count');
+	$fet->testChar('G');
 	my $g_results = $fet->run('g_count');
+
+	#Merge all results and resort them
+	my @combineAllResults = (@{$a_results->[0]{'all_results'}}, @{$t_results->[0]{'all_results'}}, @{$c_results->[0]{'all_results'}}, @{$g_results->[0]{'all_results'}});
+	my @combineSigResults = (@{$a_results->[1]{'sig_results'}}, @{$t_results->[1]{'sig_results'}}, @{$c_results->[1]{'sig_results'}}, @{$g_results->[1]{'sig_results'}});
+	my $combineSigCount = $a_results->[2]{'sig_count'} + $t_results->[2]{'sig_count'} + $c_results->[2]{'sig_count'} + $g_results->[2]{'sig_count'};	
+	my $combineTotalComparisons = $a_results->[3]{'total_comparisons'} + $t_results->[3]{'total_comparisons'} + $c_results->[3]{'total_comparisons'} + $g_results->[3]{'total_comparisons'};
+
+	my @sortedAllResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineAllResults);
+	my @sortedSigResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineSigResults);
+
+	push(@results, {'all_results' => \@sortedAllResults}, {'sig_results' => \@sortedSigResults}, {'sig_count' => $combineSigCount}, {'total_comparisons' => $combineTotalComparisons});
+
+	# #Print results to file
+	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
+		DIR => '/genodo/group_wise_data_temp/',
+		UNLINK => 0);
+
+	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
+
+	print $tmp "SNP ID \t Nucleotide \t Group 1 Present \t Group 1 Absent \t Group 2 Present \t Group 2 Absent \t p-value \n";
+
+	foreach my $sortedAllResultRow (@sortedAllResults) {
+		print $tmp $sortedAllResultRow->{'marker_id'} . "\t" . $sortedAllResultRow->{'test_char'} . "\t" . $sortedAllResultRow->{'group1Present'} . "\t" . $sortedAllResultRow->{'group1Absent'} . "\t" . $sortedAllResultRow->{'group2Present'} . "\t" . $sortedAllResultRow->{'group2Absent'} . "\t" . $sortedAllResultRow->{'pvalue'} . "\n";
+	}
+
+	my $temp_file_name = $tmp->filename;
+	$temp_file_name =~ s/\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
 	foreach my $name (@{$group1GenomeNames}) {
@@ -262,10 +292,8 @@ sub getSnpData {
 	}
 
 	#push($results, {'file_name' => $temp_file_name});
-	push(@results, {'a_results' => $a_results});
-	push(@results, {'t_results' => $t_results});
-	push(@results, {'c_results' => $c_results});
-	push(@results, {'g_results' => $g_results});
+	push(@results, {'results' => \@results});
+	push(@results, {'file_name' => $temp_file_name});
 	push(@results, {'gp1_names' => \@group1NameArray});
 	push(@results, {'gp2_names' => \@group2NameArray});
 

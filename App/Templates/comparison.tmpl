@@ -95,6 +95,12 @@
 			<div id="snps_table" class="span10" style="display:none">
 				<caption><h3>SNP FET Results</h3></caption>
 
+				<span class="help-block">There were a total of <TMPL_LOOP snpFETResults><TMPL_VAR sig_count></TMPL_LOOP> significant difference(s) detected from <TMPL_LOOP snpFETResults><TMPL_VAR total_comparisons></TMPL_LOOP> total comaprisons.</span>
+
+				<p>The following table outputs only comparisons with <strong>significant</strong> differences between your selected groups (to view all comparisons made, download the .txt file provided in the link below). You can filter through the data table displayed on this page by providing search criteria in the input boxes above each column. For example, to only show significant differences with a p-value of less than 0.01, simply type in &lt;0.01 in the input box above the p-value column and hit enter.</p>
+
+				<p><a href="/temp/<TMPL_LOOP snpFETResults><TMPL_VAR file_name></TMPL_LOOP>" download="snp_presence_absence.txt">Click here</a> to download a tab-delimited .txt file of all comparisons made.</p>
+
 				<div class="row-fluid">
 					<div class="span3" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;height:200px">
 						<div style="max-height:150px;overflow:auto">
@@ -122,166 +128,62 @@
 						</div>
 					</div>
 
-					<div class="span3">
-						<ul class="nav nav-list">
-							<li class="nav-header">SNP Table Navigator</li>
-							<li><button id="snp_button_A" class="btn btn-link" type="button">A results</li>
-							<li><button id="snp_button_T" class="btn btn-link" type="button">T results</li>
-							<li><button id="snp_button_C" class="btn btn-link" type="button">C results</li>
-							<li><button id="snp_button_G" class="btn btn-link" type="button">G results</li>
-						</ul>
-					</div>
+					<table id="tableSNP" class="table table-condensed">
+						<thead>
+							<tr>
+								<th>SNP ID</th>
+								<th>Nucleotide</th>
+								<th>Group 1 Present</th>
+								<th>Group 1 Absent</th>
+								<th>Group 2 Present</th>
+								<th>Group 2 Absent</th>
+								<th>p-value</th>
+							</tr>
+						</thead>
+						<tbody>
+							<TMPL_LOOP snpFETResults>
+							<TMPL_LOOP sig_results>
+							<tr>
+								<td><TMPL_VAR NAME="marker_id"></td>
+								<td><TMPL_VAR NAME="test_char"></td>
+								<td><TMPL_VAR NAME="group1Present"></td>
+								<td><TMPL_VAR NAME="group1Absent"></td>
+								<td><TMPL_VAR NAME="group2Present"></td>
+								<td><TMPL_VAR NAME="group2Absent"></td>
+								<td><TMPL_VAR NAME="pvalue"></td>
+							</tr>
+							</TMPL_LOOP>
+							</TMPL_LOOP>
+						</tbody>
+					</table>
 				</div>
-				
-				<hr />
-				
-				<table id="tableA" class="table table-condensed">
-					<thead>
-						<caption><h4>A</h4>
-							<span class="help-block">There were a total of <TMPL_LOOP snpFETResults><TMPL_LOOP a_results><TMPL_VAR sig_count></TMPL_LOOP></TMPL_LOOP> significant difference(s) detected from <TMPL_LOOP snpFETResults><TMPL_LOOP a_results><TMPL_VAR total_comparisons></TMPL_LOOP></TMPL_LOOP> total comaprisons.</span>
-						</caption>
-						<tr>
-							<th>SNP ID</th>
-							<th>Group 1 Present</th>
-							<th>Group 1 Absent</th>
-							<th>Group 2 Present</th>
-							<th>Group 2 Absent</th>
-							<th>p-value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<TMPL_LOOP snpFETResults>
-						<TMPL_LOOP a_results>
-						<TMPL_LOOP sig_results>
-						<tr>
-							<td><TMPL_VAR NAME="marker_id"></td>
-							<td><TMPL_VAR NAME="group1Present"></td>
-							<td><TMPL_VAR NAME="group1Absent"></td>
-							<td><TMPL_VAR NAME="group2Present"></td>
-							<td><TMPL_VAR NAME="group2Absent"></td>
-							<td><TMPL_VAR NAME="pvalue"></td>
-						</tr>
-						</TMPL_LOOP>
-						</TMPL_LOOP>
-						</TMPL_LOOP>
-					</tbody>
-				</table>
-
-				<table id="tableT" style="display:none" class="table table-condensed">
-					<thead>
-						<caption><h4>T</h4></caption>
-						<tr>
-							<th>SNP ID</th>
-							<th>Group 1 Present</th>
-							<th>Group 2 Absent</th>
-							<th>p-value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td></td>
-							<td></td>
-							<td></td>
-							<td></td>
-						</tr>
-					</tbody>
-				</table>
-
-				<table id="tableC" style="display:none" class="table table-condensed">
-					<thead>
-						<caption><h4>C</h4></caption>
-						<tr>
-							<th>SNP ID</th>
-							<th>Group 1 Present</th>
-							<th>Group 2 Absent</th>
-							<th>p-value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td></td>
-							<td></td>
-							<td></td>
-							<td></td>
-						</tr>
-					</tbody>
-				</table>
-
-				<table id="tableG" style="display:none" class="table table-condensed">
-					<thead>
-						<caption><h4>G</h4></caption>
-						<tr>
-							<th>SNP ID</th>
-							<th>Group 1 Present</th>
-							<th>Group 2 Absent</th>
-							<th>p-value</th>
-						</tr>
-					</thead>
-					<tbody>
-						<tr>
-							<td></td>
-							<td></td>
-							<td></td>
-							<td></td>
-						</tr>
-					</tbody>
-				</table>
 
 			</div>
-
 		</div>
-	</div>
 
-</body>
+	</body>
 
-<script type="text/javascript">
-if (document.getElementById('table1').rows.length > 1) {
-	setFilterGrid("table1");
-}
+	<script type="text/javascript">
+	if (document.getElementById('table1').rows.length > 2) {
+		setFilterGrid("table1");
+	}
 
-$('#loci_results_button').click( function(event) {
-	event.preventDefault();
-	$('#snps_table').hide();
-	$('#loci_table').show();
-});
-$('#snp_results_button').click( function(event) {
-	event.preventDefault();
-	$('#loci_table').hide();
-	$('#snps_table').show();
-});
+	if (document.getElementById('tableSNP').rows.length > 2) {
+		setFilterGrid("tableSNP");
+	}
 
-$('#snp_button_A').click( function(event) {
-	event.preventDefault();
-	$('#tableA').show();
-	$('#tableT').hide();
-	$('#tableC').hide();
-	$('#tableG').hide();
-});
+	$('#loci_results_button').click( function(event) {
+		event.preventDefault();
+		$('#snps_table').hide();
+		$('#loci_table').show();
+	});
 
-$('#snp_button_T').click( function(event) {
-	event.preventDefault();
-	$('#tableA').hide();
-	$('#tableT').show();
-	$('#tableC').hide();
-	$('#tableG').hide();
-});
+	$('#snp_results_button').click( function(event) {
+		event.preventDefault();
+		$('#loci_table').hide();
+		$('#snps_table').show();
+	});
 
-$('#snp_button_C').click( function(event) {
-	event.preventDefault();
-	$('#tableA').hide();
-	$('#tableT').hide();
-	$('#tableC').show();
-	$('#tableG').hide();
-});
+	</script> 
 
-$('#snp_button_G').click( function(event) {
-	event.preventDefault();
-	$('#tableA').hide();
-	$('#tableT').hide();
-	$('#tableC').hide();
-	$('#tableG').show();
-});
-
-</script> 
-
-</html>
+	</html>
