@@ -150,7 +150,7 @@ sub _emailStrainInfo {
 	my $comparisonHandle = Modules::GroupComparator->new();
 	$comparisonHandle->dbixSchema($self->dbixSchema);
 	$comparisonHandle->configLocation($self->config_file);
-	$comparisonHandle->testEmailToUser($_user_email);
+	$comparisonHandle->emailResultsToUser($_user_email);
 	$template->param(email_address=>$_user_email);
 	return $template->output();
 }

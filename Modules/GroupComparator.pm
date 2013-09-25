@@ -46,6 +46,7 @@ use Carp;
 use IO::File;
 use File::Temp;
 use Email::Simple;
+use Email::MIME;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
 
@@ -92,7 +93,7 @@ sub configLocation {
 	$self->{'_configLocation'} = shift // return $self->{'_configLocation'};
 }
 
-sub testEmailToUser {
+sub emailResultsToUser {
 	my $self = shift;
 	my $_user_email = shift;
 	$self->config_file($self->configLocation);
@@ -106,20 +107,44 @@ sub testEmailToUser {
 		password => $self->config_param('mail.pass'),
 		);
 	
-	my $message = Email::Simple->create(
-		header => [
-		From           => $self->config_param('mail.address'),
-		To             => $_user_email,
-		Subject        => 'SuperPhy group wise comparison results',
-		'Content-Type' => 'text/html'
-		],
+	# my $message = Email::Simple->create(
+	# 	header => [
+	# 	From           => $self->config_param('mail.address'),
+	# 	To             => $_user_email,
+	# 	Subject        => 'SuperPhy group wise comparison results',
+	# 	'Content-Type' => 'text/html'
+	# 	],
+	# 	body => '<html>'
+	# 	. '<br><br>This is a test. Do not reply to this.'
+	# 	. '<br><br>SuperPhy Team.'
+	# 	. '</html>',
+	# 	);
+
+my $message = Email::MIME->create(
+	header => [
+	To => $_user_email,
+	From => $self->config_param('mail.address'),
+	Subject        => 'SuperPhy group wise comparison results',
+	'Content-Type' => 'text/html'
+	],
+	parts => [
+	Email::MIME->create(
 		body => '<html>'
 		. '<br><br>This is a test. Do not reply to this.'
 		. '<br><br>SuperPhy Team.'
 		. '</html>',
-		);
-	
-	sendmail( $message, {transport => $transport} );
+		),
+	# Email::MIME->create(
+	# 	body => io('choochoo.gif'),
+	# 	attributes => {
+	# 		filename => 'choochoo.gif',
+	# 		content_type => 'image/gif',
+	# 		},
+	# 		),
+	],
+	);
+
+sendmail( $message, {transport => $transport} );
 }
 
 sub getBinaryData {
