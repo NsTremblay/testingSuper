@@ -36,19 +36,9 @@ sub dispatch_args {
                 '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
                 '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
                 '/statistics' =>    {app=>'Statistics' , rm=>'stats'},
-                '/group_wise_info/' => {app=>'GroupWiseComparisons', rm=>'group_wise_info'},
                 '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'},
-                '/host_source_form' => {app=>'StrainInfo' , rm=>'host_source_form'},
-                '/isolation_source_form' => {app=>'StrainInfo' , rm=>'isolation_source_form'},
-                '/serotype_form' => {app=>'StrainInfo' , rm=>'serotype_form'},
-                '/isolation_date_form' => {app=>'StrainInfo' , rm=>'isolation_date_form'},
-                '/isolation_location_form' => {app=>'StrainInfo' , rm=>'isolation_location_form'},
                 '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'},
                 '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'},
-                #Demo for map operations
-                '/map_example' => {app=>'MapExample',  rm=>'map_example'},
-                '/map_multi_markers' => {app=>'MapExample', rm=>'map_multi_markers'}
-  
         ],
     };
 }

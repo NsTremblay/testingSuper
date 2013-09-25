@@ -40,10 +40,15 @@ use parent 'Modules::App_Super';
 use Modules::FET;
 use Log::Log4perl;
 use Carp;
-use List::MoreUtils qw(indexes);
-use List::MoreUtils qw(natatime);
-use Parallel::ForkManager;
-use POSIX;
+#use List::MoreUtils qw(indexes);
+#use List::MoreUtils qw(natatime);
+#use Parallel::ForkManager;
+use IO::File;
+use File::Temp;
+use Email::Simple;
+use Email::MIME;
+use Email::Sender::Simple qw(sendmail);
+use Email::Sender::Transport::SMTP::TLS;
 
 sub new {
 	my ($class) = shift;
@@ -83,18 +88,78 @@ sub dbixSchema {
 	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
 }
 
+sub configLocation {
+	my $self = shift;
+	$self->{'_configLocation'} = shift // return $self->{'_configLocation'};
+}
+
+sub emailResultsToUser {
+	my $self = shift;
+	my $_user_email = shift;
+	$self->config_file($self->configLocation);
+
+	#Now just call getBinaryData to return necessary values
+
+	my $transport = Email::Sender::Transport::SMTP::TLS->new(
+		host     => 'smtp.gmail.com',
+		port     => 587,
+		username => $self->config_param('mail.address'),
+		password => $self->config_param('mail.pass'),
+		);
+	
+	# my $message = Email::Simple->create(
+	# 	header => [
+	# 	From           => $self->config_param('mail.address'),
+	# 	To             => $_user_email,
+	# 	Subject        => 'SuperPhy group wise comparison results',
+	# 	'Content-Type' => 'text/html'
+	# 	],
+	# 	body => '<html>'
+	# 	. '<br><br>This is a test. Do not reply to this.'
+	# 	. '<br><br>SuperPhy Team.'
+	# 	. '</html>',
+	# 	);
+
+my $message = Email::MIME->create(
+	header => [
+	To => $_user_email,
+	From => $self->config_param('mail.address'),
+	Subject        => 'SuperPhy group wise comparison results',
+	'Content-Type' => 'text/html'
+	],
+	parts => [
+	Email::MIME->create(
+		body => '<html>'
+		. '<br><br>This is a test. Do not reply to this.'
+		. '<br><br>SuperPhy Team.'
+		. '</html>',
+		),
+	# Email::MIME->create(
+	# 	body => io('choochoo.gif'),
+	# 	attributes => {
+	# 		filename => 'choochoo.gif',
+	# 		content_type => 'image/gif',
+	# 		},
+	# 		),
+	],
+	);
+
+sendmail( $message, {transport => $transport} );
+}
+
 sub getBinaryData {
-	BEGIN { our $start_run = time(); }
 	my $self = shift;
 	my $group1GenomeIds = shift;
 	my $group2GenomeIds = shift;
+	my $group1GenomeNames = shift;
+	my $group2GenomeNames = shift;
 
 	my $group1lociDataTable = $self->dbixSchema->resultset('Loci')->search(
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['loci_genotypes'],
 			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'loci_count'],
+			as => ['id', 'locus_count'],
 			group_by => [qw/me.locus_id/],
 			order_by => [qw/me.locus_id/]
 		}
@@ -105,7 +170,7 @@ sub getBinaryData {
 		{
 			join => ['loci_genotypes'],
 			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'loci_count'],
+			as => ['id', 'locus_count'],
 			group_by => [qw/me.locus_id/],
 			order_by => [qw/me.locus_id/]
 		}
@@ -117,84 +182,147 @@ sub getBinaryData {
 	my $fet = Modules::FET->new();
 	$fet->group1($group1GenomeIds);
 	$fet->group2($group2GenomeIds);
-	$fet->group1Loci(\@group1Loci);
-	$fet->group2Loci(\@group2Loci);
+	$fet->group1Markers(\@group1Loci);
+	$fet->group2Markers(\@group2Loci);
 	$fet->testChar('1');
-	my ($binaryData , $numSig) = $fet->run();
+	#Returns hash ref of results
+	my $results = $fet->run('locus_count');
 
-	my $end_run = time();
-	my $run_time = $end_run - our $start_run;
-	#print STDERR "Job took $run_time seconds\n"
+	# #Print results to file
+	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
+		DIR => '/genodo/group_wise_data_temp/',
+		UNLINK => 0);
 
-	return ($binaryData, $numSig , $run_time);
+	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
+
+	print $tmp "Locus ID \t Group 1 Present \t Group 1 Absent \t Group 2 Present \t Group 2 Absent \t p-value \n";
+
+	my $allResultArray =  $results->[0]{'all_results'};
+	foreach my $allResultRow (@{$allResultArray}) {
+		print $tmp $allResultRow->{'marker_id'} . "\t" . $allResultRow->{'group1Present'} . "\t" . $allResultRow->{'group1Absent'} . "\t" . $allResultRow->{'group2Present'} . "\t" . $allResultRow->{'group2Absent'} . "\t" . $allResultRow->{'pvalue'} . "\n";
+	}
+
+	my $temp_file_name = $tmp->filename;
+	$temp_file_name =~ s/\/genodo\/group_wise_data_temp\///;
+
+	my @group1NameArray;
+	foreach my $name (@{$group1GenomeNames}) {
+		my %nameHash;
+		$nameHash{'name'} = $name;
+		push (@group1NameArray , \%nameHash);
+	}
+
+	my @group2NameArray;
+	foreach my $name (@{$group2GenomeNames}) {
+		my %nameHash;
+		$nameHash{'name'} = $name;
+		push (@group2NameArray , \%nameHash);
+	}
+
+	push($results, {'file_name' => $temp_file_name});
+	push($results, {'gp1_names' => \@group1NameArray});
+	push($results, {'gp2_names' => \@group2NameArray});
+
+	return $results;
 }
 
 sub getSnpData {
 	my $self = shift;
-	#For demo purposes we will query the first three strains from the data tables.
-	my $strainIds = shift;
-	#my @strainIds = (1,2,3,4,5,6,7,8,9,10);
-	#foreach my $strainId (@{$strainIds}) {
-	#The real strain id's will be passed as array refs;
-	my @lociData;
-	my @locusNames;
+	my $group1GenomeIds = shift;
+	my $group2GenomeIds = shift;
+	my $group1GenomeNames = shift;
+	my $group2GenomeNames = shift;
 
-	my $locusNameTable = $self->dbixSchema->resultset('DataSnpName')->search(
-		{},
+	my $group1SnpDataTable = $self->dbixSchema->resultset('Snp')->search(
+		{feature_id => $group1GenomeIds},
 		{
-			column => [qw/me.locus_name/]
+			join => ['snps_genotypes'],
+			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.snp_id/],
+			order_by => [qw/me.snp_id/]
 		}
 		);
-	
-	while (my $locusNameRow = $locusNameTable->next) {
-		my %locus;
-		my @adenine;
-		my @thymidine;
-		my @cytosine;
-		my @guanine;
-		$locus{'locusname'} = $locusNameRow->locus_name;
-		$locus{'adenine'} = \@adenine;
-		$locus{'adenine_count'} = 0;
-		$locus{'thymidine'} = \@thymidine;
-		$locus{'thymidine_count'} = 0;
-		$locus{'cytosine'} = \@cytosine;
-		$locus{'cytosine_count'} = 0;
-		$locus{'guanine'} = \@guanine;
-		$locus{'guanine_count'} = 0;
-		push (@lociData , \%locus); 
+
+	my $group2SnpDataTable = $self->dbixSchema->resultset('Snp')->search(
+		{feature_id => $group2GenomeIds},
+		{
+			join => ['snps_genotypes'],
+			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.snp_id/],
+			order_by => [qw/me.snp_id/]
+		}
+		);
+
+	my @group1Snps = $group1SnpDataTable->all;
+	my @group2Snps = $group2SnpDataTable->all;
+
+	my $fet = Modules::FET->new();
+	$fet->group1($group1GenomeIds);
+	$fet->group2($group2GenomeIds);
+	$fet->group1Markers(\@group1Snps);
+	$fet->group2Markers(\@group2Snps);
+
+	my @results;
+	#Returns hash ref of results
+	$fet->testChar('A');
+	my $a_results = $fet->run('a_count');
+	$fet->testChar('T');
+	my $t_results = $fet->run('t_count');
+	$fet->testChar('C');
+	my $c_results = $fet->run('c_count');
+	$fet->testChar('G');
+	my $g_results = $fet->run('g_count');
+
+	#Merge all results and resort them
+	my @combineAllResults = (@{$a_results->[0]{'all_results'}}, @{$t_results->[0]{'all_results'}}, @{$c_results->[0]{'all_results'}}, @{$g_results->[0]{'all_results'}});
+	my @combineSigResults = (@{$a_results->[1]{'sig_results'}}, @{$t_results->[1]{'sig_results'}}, @{$c_results->[1]{'sig_results'}}, @{$g_results->[1]{'sig_results'}});
+	my $combineSigCount = $a_results->[2]{'sig_count'} + $t_results->[2]{'sig_count'} + $c_results->[2]{'sig_count'} + $g_results->[2]{'sig_count'};	
+	my $combineTotalComparisons = $a_results->[3]{'total_comparisons'} + $t_results->[3]{'total_comparisons'} + $c_results->[3]{'total_comparisons'} + $g_results->[3]{'total_comparisons'};
+
+	my @sortedAllResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineAllResults);
+	my @sortedSigResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineSigResults);
+
+	push(@results, {'all_results' => \@sortedAllResults}, {'sig_results' => \@sortedSigResults}, {'sig_count' => $combineSigCount}, {'total_comparisons' => $combineTotalComparisons});
+
+	# #Print results to file
+	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
+		DIR => '/genodo/group_wise_data_temp/',
+		UNLINK => 0);
+
+	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
+
+	print $tmp "SNP ID \t Nucleotide \t Group 1 Present \t Group 1 Absent \t Group 2 Present \t Group 2 Absent \t p-value \n";
+
+	foreach my $sortedAllResultRow (@sortedAllResults) {
+		print $tmp $sortedAllResultRow->{'marker_id'} . "\t" . $sortedAllResultRow->{'test_char'} . "\t" . $sortedAllResultRow->{'group1Present'} . "\t" . $sortedAllResultRow->{'group1Absent'} . "\t" . $sortedAllResultRow->{'group2Present'} . "\t" . $sortedAllResultRow->{'group2Absent'} . "\t" . $sortedAllResultRow->{'pvalue'} . "\n";
 	}
 
-	foreach my $strainId (@{$strainIds}) {
-		my $rawBinaryData = $self->dbixSchema->resultset('RawSnpData')->search(
-			{strain => "public_".$strainId},
-			{
-				column => [qw/me.strain me.locus_name me.presence_absence/]
-			}
-			);
-		while (my $rawBinaryDataRow = $rawBinaryData->next) {
-			my @locus = (grep($_->{'locusname'} eq $rawBinaryDataRow->locus_name , @lociData));
-			if ($rawBinaryDataRow->snp eq 'A') {
-				push (@{$locus[0]->{'adenine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'adenine_count'}++;
-			}
-			elsif ($rawBinaryDataRow->snp eq 'T') {
-				push (@{$locus[0]->{'thymidine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'thymidine_count'}++;
-			}
-			elsif ($rawBinaryDataRow->snp eq 'C') {
-				push (@{$locus[0]->{'cytosine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'cytosine_count'}++;
-			}
-			elsif ($rawBinaryDataRow->snp eq 'G') {
-				push (@{$locus[0]->{'guanine'}} , {strain => $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainId})->name});
-				$locus[0]->{'guanine_count'}++;
-			}
-			else {
-			}
-			#push (@locusNames , $rawBinaryDataRow->locus_name);
-		}
+	my $temp_file_name = $tmp->filename;
+	$temp_file_name =~ s/\/genodo\/group_wise_data_temp\///;
+
+	my @group1NameArray;
+	foreach my $name (@{$group1GenomeNames}) {
+		my %nameHash;
+		$nameHash{'name'} = $name;
+		push (@group1NameArray , \%nameHash);
 	}
-	return \@lociData;
+
+	my @group2NameArray;
+	foreach my $name (@{$group2GenomeNames}) {
+		my %nameHash;
+		$nameHash{'name'} = $name;
+		push (@group2NameArray , \%nameHash);
+	}
+
+	#push($results, {'file_name' => $temp_file_name});
+	push(@results, {'results' => \@results});
+	push(@results, {'file_name' => $temp_file_name});
+	push(@results, {'gp1_names' => \@group1NameArray});
+	push(@results, {'gp2_names' => \@group2NameArray});
+
+	return \@results;
 }
 
 1;
