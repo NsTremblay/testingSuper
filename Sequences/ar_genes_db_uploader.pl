@@ -206,11 +206,14 @@ sub load_gene {
 		# 'Unclassified' species.
 		
 		# Create/retrieve dbxref
-		my $dbxref = $schema->resultset('Dbxref')->create(
+		my $dbxref = $schema->resultset('Dbxref')->find_or_create(
 			{
 				accession => $card_accession,
 				version => '',
 				db_id => $db_id
+			},
+			{
+				key => 'dbxref_c1'
 			}
 		);
 		
