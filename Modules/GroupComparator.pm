@@ -148,6 +148,7 @@ my $message = Email::MIME->create(
 	);
 
 sendmail( $message, {transport => $transport} );
+exit;
 }
 
 sub getBinaryData {

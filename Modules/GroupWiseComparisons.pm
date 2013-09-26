@@ -151,12 +151,21 @@ sub _emailStrainInfo {
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-	my $comparisonHandle = Modules::GroupComparator->new();
-	$comparisonHandle->dbixSchema($self->dbixSchema);
-	$comparisonHandle->configLocation($self->config_file);
-	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
-	$template->param(email_address=>$_user_email);
-	return $template->output();
+	my $pid = fork;
+	if ($pid) {
+		$template->param(email_address=>$_user_email);
+		return $template->output();
+	}
+	else {
+		open STDIN, "</dev/null";
+		open STDOUT, ">/dev/null";
+		open STDERR, ">/dev/null";
+		my $comparisonHandle = Modules::GroupComparator->new();
+		$comparisonHandle->dbixSchema($self->dbixSchema);
+		$comparisonHandle->configLocation($self->config_file);
+		$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
+		exit;
+	} 
 }
 
 1;
