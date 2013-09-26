@@ -1,4 +1,4 @@
-package Sequences::Adapter;
+package Sequences::ExperimentalFeatures;
 
 use strict;
 use warnings;
@@ -10,16 +10,13 @@ use File::Temp;
 
 =head1 NAME
 
-Sequences::Adapter
+Sequences::ExperimentalFeatures;
 
 =head1 DESCRIPTION
 
 Based on perl package: Bio::GMOD::DB::Adapter
 
-Provides interface to CHADO database for loading a series of contigs in a multi-fasta file into the database.
-
-Our situation (of only loading a series of 1 or more contig/genomic sequences) is much simplier than the standard CHADO loading scheme.
-It allows us to make a number of simplifications over the original Adapter package.
+Provides interface to CHADO database for loading VF/AMR alleles.
 
 =cut
 
@@ -30,103 +27,78 @@ my $DEBUG = 0;
 
 # Tables in order that data is inserted
 my @tables = (
-	"upload",
-	"permission",
 	"feature",
+	"private_feature",
 	"feature_relationship",
+	"private_feature_relationship",
+	"feature_cvterm",
+	"private_feature_cvterm",
+	"featureloc",
+	"private_featureloc",
 	"featureprop",
-	"db",
-	"dbxref",
-	"feature_dbxref"
-);
-
-# To allow certain tables to point to the private versions
-my %table_names = (
-	"upload"               => "upload",
-	"permission"           => "permission",
-	"feature"              => "feature",
-	"feature_relationship" => "feature_relationship",
-	"featureprop"          => "featureprop",
-	"db"                   => "db",
-	"dbxref"               => "dbxref",
-	"feature_dbxref"       => "feature_dbxref"
+	"private_featureprop",
 );
 
 
 # Primary key sequence names
 my %sequences = (
-   feature              => "feature_feature_id_seq",
-   feature_relationship => "feature_relationship_feature_relationship_id_seq",
-   featureprop          => "featureprop_featureprop_id_seq",
-   upload               => "upload_upload_id_seq",
-   db                   => "db_db_id_seq",
-   dbxref               => "dbxref_dbxref_id_seq",
-   feature_dbxref       => "feature_dbxref_feature_dbxref_id_seq",
-   permission           => "permission_permission_id_seq"
+	feature                      => "feature_feature_id_seq",
+	feature_relationship         => "feature_relationship_feature_relationship_id_seq",
+	featureprop                  => "featureprop_featureprop_id_seq",
+	featureloc                   => "featureloc_featureloc_id_seq",
+	feature_cvterm               => "feature_cvterm_feature_cvterm_id_seq",
+	private_feature              => "private_feature_feature_id_seq",
+	private_feature_relationship => "private_feature_relationship_feature_relationship_id_seq",
+	private_featureprop          => "private_featureprop_featureprop_id_seq",
+	private_featureloc           => "private_featureloc_featureloc_id_seq",
+	private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id_seq",	 
+  
 );
 
 # Primary key ID names
 my %table_ids = (
-	feature              => "feature_id",
-	feature_relationship => "feature_relationship_id",
-	featureprop          => "featureprop_id",
-	db                   => "db_id",
-	dbxref               => "dbxref_id",
-	feature_dbxref       => "feature_dbxref_id",
-	upload               => "upload_id",
-	permission           => "permission_id"
+	feature                      => "feature_id",
+	feature_relationship         => "feature_relationship_id",
+	featureprop                  => "featureprop_id",
+	featureloc                   => "featureloc_featureloc_id",
+    feature_cvterm               => "feature_cvterm_feature_cvterm_id",
+    private_feature              => "private_feature_id",
+	private_feature_relationship => "private_feature_relationship_id",
+	private_featureprop          => "private_featureprop_id",
+	private_featureloc           => "private_featureloc_featureloc_id",
+    private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id",
 );
 
 # Valid cvterm types for featureprops table
 # hash: name => cv
 my %fp_types = (
-	mol_type => 'feature_property',
-	keywords => 'feature_property',
-	description => 'feature_property',
-	owner => 'feature_property',
-	finished => 'feature_property',
-	strain => 'local',
-	serotype => 'local',
-	isolation_host => 'local',
-	isolation_location => 'local',
-	isolation_date => 'local',
-	synonym => 'feature_property',
-	comment => 'feature_property',
-	isolation_source => 'local',
-	isolation_age => 'local',
-	isolation_latlng => 'local',
-	syndrome => 'local',
-	pmid     => 'local',
+	score => 'feature_property',
 );
 
 # Used in DB COPY statements
 my %copystring = (
-   feature              => "(feature_id,organism_id,name,uniquename,type_id,seqlen,dbxref_id,residues)",
-   feature_relationship => "(feature_relationship_id,subject_id,object_id,type_id,rank)",
-   featureprop          => "(featureprop_id,feature_id,type_id,value,rank)",
-   dbxref               => "(dbxref_id,db_id,accession,version,description)",
-   feature_dbxref       => "(feature_dbxref_id,feature_id,dbxref_id)",
-   db                   => "(db_id,name,description)",
-   upload               => "(upload_id,login_id,category,tag,release_date,upload_date)",
-   permission           => "(permission_id,upload_id,login_id,can_modify,can_share)"
-);
-
-
-# Valid organism common names
-my @organisms = (
-	'Escherichia coli'
+   feature                      => "(feature_id,organism_id,name,uniquename,type_id,seqlen,dbxref_id,residues)",
+   feature_relationship         => "(feature_relationship_id,subject_id,object_id,type_id,rank)",
+   featureprop                  => "(featureprop_id,feature_id,type_id,value,rank)",
+   feature_cvterm               => "(feature_cvterm_id,feature_id,cvterm_id,pub_id,rank)",
+   featureloc                   => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
+   private_feature              => "(feature_id,organism_id,name,uniquename,type_id,seqlen,dbxref_id,upload_id,residues)",
+   private_feature_relationship => "(feature_relationship_id,subject_id,object_id,type_id,rank)",
+   private_featureprop          => "(featureprop_id,feature_id,type_id,value,upload_id,rank)",
+   private_feature_cvterm       => "(feature_cvterm_id,feature_id,cvterm_id,pub_id,rank)",
+   private_featureloc           => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
 );
 
 # Key values for uniquename cache
 my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate";
                
 # Tables for which caches are maintained
-my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
+#my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
+my $ALLOWED_CACHE_KEYS = "collection|contig";
 
 # Tmp file names for storing upload data
 my %files = map { $_ => 'FH'.$_; } @tables; # SEQ special case in feature table
 
-# SQL for unique cache
 # SQL for unique cache
 use constant CREATE_CACHE_TABLE =>
                "CREATE TABLE public.tmp_gff_load_cache (
@@ -192,14 +164,15 @@ use constant INSERT_CACHE_PRIVATE_TYPE_ID =>
 use constant INSERT_CACHE_PRIVATE_UNIQUENAME =>
                "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
                   VALUES (?,?,FALSE)";
-                  
-# SQL for validating DBxrefs
-use constant SEARCH_DB =>
-               "SELECT db_id FROM db WHERE name =?";
-use constant SEARCH_LONG_DBXREF => 
-               "SELECT dbxref_id FROM dbxref WHERE accession =?
-                                                  AND version =?
-                                                  AND db_id =?";
+               
+# SQL for obtaining feature info
+use constant SELECT_FROM_PUBLIC_FEATURE =>
+	"SELECT uniquename, organism_id, residues, seqlen FROM feature WHERE feature_id = ?";
+	
+use constant SELECT_FROM_PRIVATE_FEATURE =>
+	"SELECT uniquename, organism_id, upload_id, residues, seqlen FROM private_feature WHERE feature_id = ?";
+	               
+            
 =head2 new
 
 Constructor
@@ -245,39 +218,10 @@ sub new {
 	$self->save_tmpfiles(   $arg{save_tmpfiles}   );
 	$self->vacuum(          $arg{vacuum}          );
 	
-	# All genomes uploaded by users (whether released as public or private by user)
-	# are stored in the private_feature and private_featureprop tables.
-	if($arg{web_upload}) {
-		# Genomes are being uploaded in the private feature and
-		# featureprop tables.
-		# Need to change some resources to point to these tables.
-		
-		$table_names{feature} = 'private_' . $table_names{feature};
-		$table_names{featureprop} = 'private_' . $table_names{featureprop};
-		$table_names{feature_relationship} = 'private_' . $table_names{feature_relationship};
-		$table_names{feature_dbxref} = 'private_' . $table_names{feature_dbxref};
-		$sequences{feature} = 'private_' . $sequences{feature};
-		$sequences{featureprop} = 'private_' . $sequences{featureprop};
-		$sequences{feature_dbxref} = 'private_' . $sequences{feature_dbxref};
-		$sequences{feature_relationship} = 'private_' . $sequences{feature_relationship};
-		
-		my $num = ($copystring{feature} =~ s/,residues\)/,upload_id,residues\)/);
-		croak "Unexpected format in feature copystring." unless $num == 1;
-		$num = ($copystring{featureprop} =~ s/,rank\)/,rank,upload_id\)/);
-		croak "Unexpected format in featureprop copystring." unless $num == 1;
-		
-		$self->{web_upload} = 1;
-		
-	} else {
-		
-		$self->{web_upload} = 0;
-	}
-	
 	$self->prepare_queries();
 	unless ($skipinit) {
 		$self->initialize_sequences();
 		$self->initialize_ontology();
-		$self->initialize_organism();
 		$self->initialize_uniquename_cache();
 	}
 	
@@ -323,6 +267,14 @@ sub initialize_ontology {
 	# Part of ID
 	$fp_sth->execute('part_of', 'relationship');
     my ($part_of) = $fp_sth->fetchrow_array();
+    
+    # Part of ID
+	$fp_sth->execute('located_in', 'relationship');
+    my ($located_in) = $fp_sth->fetchrow_array();
+    
+    # Part of ID
+	$fp_sth->execute('similar_to', 'relationship');
+    my ($similar_to) = $fp_sth->fetchrow_array();
 
     # Contig collection ID
     $fp_sth->execute('contig_collection', 'sequence');
@@ -332,13 +284,27 @@ sub initialize_ontology {
     $fp_sth->execute('contig', 'sequence');
     my ($contig) = $fp_sth->fetchrow_array();
     
+    # Allele ID
+    $fp_sth->execute('allele', 'sequence');
+    my ($allele) = $fp_sth->fetchrow_array();
+    
+    # Experimental Feature ID
+    $fp_sth->execute('experimental_feature', 'sequence');
+    my ($experimental_feature) = $fp_sth->fetchrow_array();
+    
+    # Query ID?
+    
     $self->{feature_types} = {
     	contig_collection => $contig_col,
-    	contig => $contig
+    	contig => $contig,
+    	allele => $allele,
+    	experimental_feature => $experimental_feature
     };
     
 	$self->{relationship_types} = {
     	part_of => $part_of,
+    	similar_to => $similar_to,
+    	located_in => $located_in,
     };
     
     # Feature property types
@@ -350,50 +316,12 @@ sub initialize_ontology {
     	$self->{featureprop_types}->{$type} = $cvterm_id;
     }
 
-    return;
-}
-
-=head2 initialize_organism
-
-=over
-
-=item Usage
-
-  $obj->initialize_organism()
-
-=item Function
-
-Initializes organism IDs for commonly used organisms
-
-=item Returns
-
-void
-
-=item Arguments
-
-none
-
-=back
-
-=cut
-
-sub initialize_organism {
-    my $self = shift;
-    
-    # Commonly used cvterms
-    my $o_sth = $self->dbh->prepare("SELECT organism_id FROM organism WHERE common_name = ?"); 
-    
-    # Feature property types
-    foreach my $common_name (@organisms) {
-    	$o_sth->execute($common_name);
-    	my ($o_id) = $o_sth->fetchrow_array();
-    	croak "Organism with common name $common_name not in database." unless $o_id;
-    	$self->{organisms}->{$common_name} = $o_id;
-    }
+	# Place-holder publication ID
+	my $p_sth = $self->dbh->prepare("SELECT pub_id FROM pub WHERE uniquename = 'null'");
+	($self->{pub_id}) = $fp_sth->fetchrow_array();
 
     return;
 }
-
 
 =head2 initialize_sequences
 
@@ -467,7 +395,7 @@ sub update_sequences {
 	foreach my $table (@tables) {
 		
 		my $id_name      = $table_ids{$table};
-		my $table_name   = $table_names{$table};
+		my $table_name   = $table;
 		my $max_id_query = "SELECT max($id_name) FROM $table_name";
 		my $sth          = $self->dbh->prepare($max_id_query);
 		$sth->execute;
@@ -908,23 +836,12 @@ sub uniquename_cache {
 		}
 	}
 	elsif ($argv{type_id}) { 
-		
-		if($self->{web_upload}) {
-			# private
-			$self->{'queries'}{'insert_cache_private_type_id'}->execute(
-			    $argv{feature_id},
-			    $argv{uniquename},
-			    $argv{type_id},    
-			);
-		} else {
-			# public
-			$self->{'queries'}{'insert_cache_type_id'}->execute(
-			    $argv{feature_id},
-			    $argv{uniquename},
-			    $argv{type_id},    
-			);
-		}
-		
+	
+		$self->{'queries'}{'insert_cache_type_id'}->execute(
+		    $argv{feature_id},
+		    $argv{uniquename},
+		    $argv{type_id},    
+		);
 		$self->dbh->commit;
 		return;
 	}
@@ -957,12 +874,10 @@ A hash with keys:
 
 The array contains the column values in the 'right' order:
 
-  feature_synonym_c1:      [feature_id, synonym_id]
-  feature_dbxref_c1:       [feature_id, dbxref_id]
-  feature_cvterm_c1:       [feature_id, cvterm_id]
-  featureprop_c1:          [feature_id, cvterm_id, rank]
-  feature_relationship_c1: [feature_id, feature_id, cvterm_id, rank]
-  permission_c1:           [upload_id, login_id],
+  featureloc_c1:           [feature_id, rank, is_public]
+  feature_cvterm_c1:       [feature_id, cvterm_id, is_public]
+  featureprop_c1:          [feature_id, cvterm_id, rank, is_public]
+  feature_relationship_c1: [feature_id, feature_id, cvterm_id, is_public]
   
 =back
 
@@ -974,11 +889,10 @@ sub constraint {
     my $constraint = $argv{name};
     my @terms      = @{ $argv{terms} };
 
-    if ($constraint eq 'feature_synonym_c1' ||
-        $constraint eq 'feature_dbxref_c1'  ||
-        $constraint eq 'permission_c1'      ||
-        $constraint eq 'feature_cvterm_c1') {
-        $self->throw( "wrong number of constraint terms") if (@terms != 2);
+    if ($constraint eq 'feature_cvterm_c1' ||
+        $constraint eq 'featureloc_c1') {
+		
+		$self->throw( "wrong number of constraint terms") if (@terms != 3);
         if ($self->{$constraint}{$terms[0]}{$terms[1]}) {
             return 0; #this combo is already in the constraint
         }
@@ -987,23 +901,15 @@ sub constraint {
             return 1;
         }
     }
-    elsif ($constraint eq 'featureprop_c1') {
-        $self->throw("wrong number of constraint terms") if (@terms != 3);
+    elsif ($constraint eq 'featureprop_c1' ||
+    	   $constraint eq 'feature_relationship_c1') {
+        
+        $self->throw("wrong number of constraint terms") if (@terms != 4);
         if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}) {
             return 0; #this combo is already in the constraint
         }
         else {
             $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}++;
-            return 1;
-        }
-    }
-    elsif ($constraint eq 'feature_relationship_c1') {
-        $self->throw("wrong number of constraint terms") if (@terms != 4);
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}) {
-            return 0; #this combo is already in the constraint
-        }
-        else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}++;
             return 1;
         }
     }
@@ -1062,6 +968,157 @@ sub cache {
 }
 
 
+=head2 collection
+
+=over
+
+=item Usage
+
+  $obj->collection($contig_collection_id, $is_public)        # get existing value
+
+=item Function
+
+=item Returns
+
+A hash of contig_collection data. Keys:
+	name
+	organism
+	upload
+
+=item Arguments
+
+A feature table ID for a contig_collection and a boolean indicating
+if feature is in public or private table.
+
+=back
+
+=cut
+
+sub collection {
+    my $self = shift;
+    my ($feature_id, $public) = @_;
+    
+    my $cc = $public ? "public_$feature_id" : "private_$feature_id";
+    
+    if($self->cache('collection', $cc)) {
+    	return $self->cache('collection', $cc);
+    } else {
+    	if($public) {
+    		
+    		$self->{'queries'}{'select_from_public_feature'}->execute(
+			    $feature_id         
+			);
+			my ($uname, $org_id) = $self->{'queries'}{'select_from_public_feature'}->fetchrow_array(); 
+			croak "Contig collection $feature_id not found in feature table." unless $uname;
+			
+			my $hash = {
+				name => $uname,
+				organism => $org_id
+			};
+			
+			$self->cache('collection', $cc, $hash);
+			return $hash;
+			
+    	} else {
+    		
+    		$self->{'queries'}{'select_from_private_feature'}->execute(
+			    $feature_id         
+			);
+			my ($uname, $org_id, $upl_id) = $self->{'queries'}{'select_from_private_feature'}->fetchrow_array(); 
+			croak "Contig collection $feature_id not found in feature table." unless $uname;
+			
+			my $hash = {
+				name => $uname,
+				organism => $org_id,
+				upload => $upl_id
+			};
+			
+			$self->cache('collection', $cc, $hash);
+			return $hash;
+    		
+    	}
+    }
+}
+
+=head2 contig
+
+=over
+
+=item Usage
+
+  $obj->contig($contig_id, $is_public)        # get existing value
+
+=item Function
+
+=item Returns
+
+A hash of contig data. Keys:
+	seq
+	name
+	len
+	sequence
+
+=item Arguments
+
+A feature table ID for a contig and a boolean indicating
+if feature is in public or private table.
+
+=back
+
+=cut
+
+sub contig {
+    my $self = shift;
+    my ($feature_id, $public) = @_;
+    
+    my $cc = $public ? "public_$feature_id" : "private_$feature_id";
+    
+    if($self->cache('contig', $cc)) {
+    	return $self->cache('contig', $cc);
+    } else {
+    	if($public) {
+    		
+    		$self->{'queries'}{'select_from_public_feature'}->execute(
+			    $feature_id         
+			);
+			my ($uname, $org_id, $residues, $seqlen) = $self->{'queries'}{'select_from_public_feature'}->fetchrow_array(); 
+			croak "Contig $feature_id not found in feature table." unless $uname;
+			
+			my $hash = {
+				name => $uname,
+				organism => $org_id,
+				sequence => $residues,
+				len => $seqlen
+			};
+			
+			$self->cache('contig', $cc, $hash);
+			return $hash;
+			
+    	} else {
+    		
+    		$self->{'queries'}{'select_from_private_feature'}->execute(
+			    $feature_id         
+			);
+			my ($uname, $org_id, $upl_id, $residues, $seqlen) = $self->{'queries'}{'select_from_private_feature'}->fetchrow_array(); 
+			croak "Contig $feature_id not found in feature table." unless $uname;
+			
+			my $hash = {
+				name => $uname,
+				organism => $org_id,
+				upload => $upl_id,
+				sequence => $residues,
+				len => $seqlen
+			};
+			
+			$self->cache('contig', $cc, $hash);
+			return $hash;
+    		
+    	}
+    }
+}
+
+
+
 =head2 nextfeature
 
 =over
@@ -1087,12 +1144,21 @@ new value of nextfeature (to set)
 
 sub nextfeature {
     my $self = shift;
+    my $public = shift;
 
-    my $fid = $self->nextoid('feature',@_);
-    if (!$self->first_feature_id() ) {
-        $self->first_feature_id( $fid );
-    }
-
+	my $fid;
+	if($public) {
+		$fid = $self->nextoid('feature',@_);
+	    if (!$self->first_feature_id() ) {
+	        $self->first_feature_id( $fid );
+	    }
+	} else {
+		$fid = $self->nextoid('private_feature',@_);
+	    if (!$self->first_private_feature_id() ) {
+	        $self->first_private_feature_id( $fid );
+	    }
+	}
+    
     return $fid;
 }
 
@@ -1128,6 +1194,13 @@ sub first_feature_id {
     return $self->{'first_feature_id'};
 }
 
+sub first_private_feature_id {
+    my $self = shift;
+    my $first_feature_id = shift if defined(@_);
+    return $self->{'first_private_feature_id'} = $first_feature_id if defined($first_feature_id);
+    return $self->{'first_private_feature_id'};
+}
+
 
 =head2 cleanup_tmp_table
 
@@ -1157,22 +1230,27 @@ None (it needs the first feature_id, but that is stored in the object).
 
 sub cleanup_tmp_table {
     my $self = shift;
-
+    
     my $dbh = $self->dbh;
-    my $first_feature = $self->first_feature_id();
-    return unless $first_feature;
-
-	my $delete_query;
-	if($self->{web_upload}) {
-		# private
-		$delete_query = $dbh->prepare(TMP_TABLE_PRIVATE_CLEANUP);
-	} else {
-		# public
-		$delete_query = $dbh->prepare(TMP_TABLE_CLEANUP);
-	}
-   
     warn "Attempting to clean up the loader temp table (so that --recreate_cache\nwon't be needed)...\n";
-    $delete_query->execute($first_feature); 
+    
+	# public
+    
+    my $first_feature = $self->first_feature_id();
+    unless($first_feature){
+    	my $delete_query = $dbh->prepare(TMP_TABLE_CLEANUP);
+    
+		$delete_query->execute($first_feature);
+    }
+
+	# private
+    
+    my $first_feature2 = $self->first_feature_id();
+    unless($first_feature2){
+    	my $delete_query = $dbh->prepare(TMP_TABLE_PRIVATE_CLEANUP);
+    
+		$delete_query->execute($first_feature2);
+    }
 
     return;
 }
@@ -1220,9 +1298,7 @@ sub uniquename_validation {
 	} else { 
 		# this uniquename is valid. cache it and return
 
-		$self->uniquename_cache(type_id   => $type,
-                                feature_id  => $nextfeature,
-                                uniquename  => $uniquename );
+		$self->uniquename_cache(type_id   => $type, feature_id  => $nextfeature, uniquename  => $uniquename );
 		
 		return $uniquename;
 	}
@@ -1258,12 +1334,15 @@ sub prepare_queries {
     
 	$self->{'queries'}{'validate_type_id'} = $dbh->prepare(VALIDATE_TYPE_ID);
 	
+	#$self->{'queries'}{'validate_uniquename'} = $dbh->prepare(VALIDATE_UNIQUENAME);
+	
 	$self->{'queries'}{'insert_cache_type_id'} = $dbh->prepare(INSERT_CACHE_TYPE_ID);
-	$self->{'queries'}{'insert_cache_private_type_id'} = $dbh->prepare(INSERT_CACHE_PRIVATE_TYPE_ID);
 	
-	$self->{'queries'}{'search_db'} = $dbh->prepare(SEARCH_DB);
+	#$self->{'queries'}{'insert_cache_uniquename'} = $dbh->prepare(INSERT_CACHE_UNIQUENAME);
 	
-	$self->{'queries'}{'search_long_dbxref'} = $dbh->prepare(SEARCH_LONG_DBXREF);
+	$self->{'queries'}{'select_from_public_feature'} = $dbh->prepare(SELECT_FROM_PUBLIC_FEATURE);
+	
+	$self->{'queries'}{'select_from_private_feature'} = $dbh->prepare(SELECT_FROM_PRIVATE_FEATURE);
 	
 	return;
 }
@@ -1309,8 +1388,7 @@ sub load_data {
 			next;
 		}
 		
-		my $l_table = $table_names{$table};
-		$self->copy_from_stdin($l_table,
+		$self->copy_from_stdin($table,
 			$copystring{$table},
 			$files{$table}, #file_handle name
 			$sequences{$table},
@@ -1323,7 +1401,7 @@ sub load_data {
 		warn "Optimizing database (this may take a while) ...\n";
 		warn "  ";
 		
-		foreach (values %table_names) {
+		foreach (@tables) {
 			warn "$_ ";
 			$self->dbh->do("VACUUM ANALYZE $_");
 		}
@@ -1444,304 +1522,203 @@ sub update_tracker {
 	$self->dbh->commit || croak "Tracker table update failed: ".$self->dbh->errstr();
 }
 
-=head2 handle_upload
-
-=over
-
-=item Usage
-
-  $obj->handle_upload(login_id => $id,
-  					  category => $cat,
-  					  tag => $desc,
-  					  release_date => '0000-00-00',
-  					  upload_date => '0000-00-00')
-
-=item Function
-
-Perform creation of upload entry which is printed to file handle. Caches upload id.
-Does the same for the permission table.
-
-=item Returns
-
-Nothing
-
-=item Arguments
-
-Hash with following keys: login_id, category, tag, release_date, upload_date
-
-=back
-
-=cut
-
-sub handle_upload {
-	my ($self, %argv) = @_;
-	
-	my %valid_cats = (public => 1, private => 1, release => 1);
-	
-	# Category
-	my $category = $argv{category};
-	croak "Missing argument: category" unless $category;
-	croak "Invalid category: $category" unless $valid_cats{$category};
-	
-	# Login id
-	my $login_id = $argv{login_id};
-	croak "Missing argument: login_id" unless $login_id;
-	my $l_sth = $self->dbh->prepare("SELECT count(*) FROM login WHERE login_id = $login_id");
-	$l_sth->execute();
-	croak "Invalid login_id: $login_id" unless $l_sth->fetchrow_array;
-	
-	# Tag
-	my $tag = $argv{tag};
-	$tag = 'Unclassified' unless $tag;
-	
-	# Release date
-	my $rel_date = '3955-01-01'; # Apes will rule, so whatever
-	if($category eq 'release') {
-		$rel_date = $argv{release_date};
-		croak "Missing argument: release_date" unless defined($rel_date);
-		croak "Improperly formatted date: release_date (expected format: 0000-00-00)." unless $rel_date =~ m/^\d\d\d\d-\d\d-\d\d$/;
-	}
-	
-	# Upload date
-	my $upl_date = $argv{upload_date};
-	croak "Missing argument: upload_date" unless defined($upl_date);
-	croak "Improperly formatted date/time: upload_date (expected format: 0000-00-00 00:00:00)." unless $upl_date =~ m/^\d\d\d\d-\d\d-\d\d \d\d\:\d\d:\d\d$/;
-	
-	# Cache upload value
-	my $upload_id = $self->nextoid('upload');
-	$self->cache('const','upload', $upload_id);
-	
-	# Save in file
-	$self->print_upl($upload_id, $login_id, $category, $tag, $rel_date, $upl_date);
-	$self->nextoid('upload','++');
-	
-	
-	# Now fill in permission entry
-	
-	# Uploader is given full permissions;
-	my $can_share = my $can_modify = 1;
-	my $perm_id = $self->nextoid('permission');
-	
-	if($self->constraint(name => 'permission_c1', terms => [$upload_id, $login_id])) {
-		# Permission entry has not been added previously in this run
-		$self->print_perm($perm_id, $upload_id, $login_id, $can_modify, $can_share);
-		$self->nextoid('permission','++');
-	}
-	
-	# Fill in tracker table, if req'd
-	if($argv{'tracking_id'}) {
-		my $trk_id = $argv{'tracking_id'};
-		my $trk_sth = $self->dbh->do("UPDATE tracker SET upload_id = $upload_id WHERE tracker_id = $trk_id");
-	}
-	
-	return($upload_id);
-}
-
-
-=cut
-
-=head2 handle_reserved_properties
-
-=over
-
-=item Usage
-
-  $obj->handle_reseaved_properties($feature_id, $featureprop_hashref)
-
-=item Function
-
-Create featureprop table entries.
-
-=item Returns
-
-Nothing
-
-=item Arguments
-
-Hash with following keys: login_id, category, tag, release_date, upload_date
-
-=back
-
-=cut
-
-sub handle_reserved_properties {
-	my $self = shift;
-	my ($feature_id, $fprops) = @_;
-
-	foreach my $tag (keys %$fprops) {
-      
-      	my $property_cvterm_id = $self->featureprop_types($tag);
-		unless($property_cvterm_id) {
-      		carp "Unrecognized feature property type $tag.";
-      		next;
-      	}
-      	
-		# All property values can be single value scalars or array ref of multiple values
-		# Rank is assigned based on a FIFO scheme
-		my $value = $fprops->{$tag};
-		my @value_stack;
-		
-		if(ref $value eq 'ARRAY') {
-			@value_stack = @$value;
-		} else {
-			push @value_stack, $value;
-		}
-		
-      	my $rank=0;
-      	foreach my $value (@value_stack) {
-      	
-	      	# If this property is unique, add it.
-			if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank ]) ) {
-	                                        	
-				$self->print_fprop($self->nextoid('featureprop'),$feature_id,$property_cvterm_id,$value,$rank);
-	        	$self->nextoid('featureprop','++');
-	        	$rank++;
-			} else {
-				carp "Featureprop with type $property_cvterm_id and rank $rank already exists for this feature.\n";
-			}
-      	}
-    }
-}
-
-=head2 handle_dbxref
-
-=over
-
-=item Usage
-
-  $obj->parent($feature_id, $dbxref_hashref)
-
-=item Function
-
-  Create db, dbxref and feature_dbxref table entries as needed. Save the primary
-  dbxref for later loading in the feature table.
-
-=item Returns
-
-Nothing
-
-=item Arguments
-
-  Nested hashs, keyed as:
-    a. primary => dbxref hashref
-    b. secondary => array of dbxref hashrefs
-  
-  There must be a primary if there is any secondary dbxref. Each dbxref hash
-  must contain keys:
-    i.   db
-    ii.  acc
-  and optionally
-    iii. ver
-    iv.  desc
-
-=back
-
-=cut
-
-sub handle_dbxref {
-    my $self = shift;
-    my ($feature_id,$dbxhash_ref) = @_;
-    
-    # Primary dbxref is first on list
-    # primary dbxref_id stored in feature table and in feature_dbxref table
-    # secondary dbxref_id stored only in feature_dbxref table
-    croak 'Must define a primary dbxref before defining secondary dbxrefs.' unless $dbxhash_ref->{primary};
-    my @dbxrefs = ($dbxhash_ref->{primary});
-    push @dbxrefs, @{$dbxhash_ref->{secondary}} if $dbxhash_ref->{secondary};
-    my $primary_dbxref_id;
-    
-	foreach my $dbxref (@dbxrefs) {
-		my $database  = $dbxref->{db};
-		my $accession = $dbxref->{acc};
-      	my $version   = $dbxref->{ver};
-		my $desc      = $dbxref->{desc};
-		
-		my $dbxref_id;
-		if($dbxref_id = $self->cache('dbxref',"$database|$accession|$version")) {
-			# dbxref has been created previously in this run
-			
-			# Make sure dbxref has not been added for this feature before
-			if($self->constraint(name  => 'feature_dbxref_c1', terms => [ $feature_id, $dbxref_id]) ) {
-				
-				$self->print_fdbx($self->nextoid('feature_dbxref'), $feature_id, $dbxref_id);
-          		$self->nextoid('feature_dbxref','++');
-        	}
-      	} else {
-      		# New dbxref for this run
-      		
-      		# Search for database
-          	unless ($self->cache('db', $database)) {
-          		
-				$self->{queries}{search_db}->execute("$database");
-				
-				my ($db_id) = $self->{queries}{search_db}->fetchrow_array;
-				
-				unless($db_id) { 
-					# DB not found. Create db entry
-					carp "Couldn't find database '$database' in db table. Adding new DB entry";
-					$db_id= $self->nextoid('db');
-				  	$self->print_dbname($db_id,$database,"autocreated:$database");
-				  	$self->nextoid('db','++');
-				}
-				
-				$self->cache('db',$database,$db_id);
-          	}
-          	
-          	# Search for existing dbxref
-          	$self->{queries}{search_long_dbxref}->execute($accession, $version, $self->cache('db',$database));
-			($dbxref_id) = $self->{queries}{search_long_dbxref}->fetchrow_array;
-
-			if ($dbxref_id) {
-				# Found existing dbxref
-				
-				# Make sure dbxref has not been added for this feature before
-            	if($self->constraint( name => 'feature_dbxref_c1', terms=> [ $feature_id, $dbxref_id ]) ) {
-            		
-            		$self->print_fdbx($self->nextoid('feature_dbxref'), $feature_id, $dbxref_id);
-              		$self->nextoid('feature_dbxref','++'); #$nextfeaturedbxref++;
-            	}
-            	
-            	$self->cache('dbxref',"$database|$accession|$version", $dbxref_id);
-            	
-			} else {
-				# New dbxref
-				
-				$dbxref_id = $self->nextoid('dbxref');
-				
-            	# Make sure dbxref has not been added for this feature before
-            	if($self->constraint( name => 'feature_dbxref_c1', terms=> [ $feature_id, $dbxref_id ]) ) {
-            		
-            		$self->print_fdbx($self->nextoid('feature_dbxref'), $feature_id, $dbxref_id);
-              		$self->nextoid('feature_dbxref','++'); #$nextfeaturedbxref++;
-            	}
-            	
-				$self->print_dbx($dbxref_id, $self->cache('db',$database), $accession, $version, $desc);
-				$self->cache('dbxref',"$database|$accession|$version",$dbxref_id);
-				$self->nextoid('dbxref','++');
-			}
-      	}
-      	
-      	$primary_dbxref_id = $dbxref_id unless defined($primary_dbxref_id);
-	}
-	
-	# Store primary dbxref in feature table cache (call it 'source')
-	# At this point db, dbxref table entries should already be created
-	if(defined($primary_dbxref_id)) {
-		$self->cache('source', $feature_id, $primary_dbxref_id);
-	}
-}
-
 =head2 handle_parent
 
 =over
 
 =item Usage
 
-  $obj->parent($child_feature_id)
+  $obj->handle_parent($child_feature_id, $contig_collection_id, $conti_id, $is_public)
 
 =item Function
 
-Create 'part_of' entry in feature_relationship table.
+Create 'part_of' and 'located_in' entries in feature_relationship table.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+The feature_id for the child feature, contig coolection, contig and a boolean indicating public or private
+
+=back
+
+=cut
+
+sub handle_parent {
+    my $self = shift;
+    my ($child_id, $cc_id, $c_id, $pub) = @_;
+    
+    my @rtypes = ($self->relationship_types('part_of'));
+    push @rtypes, $self->relationship_types('located_in');
+    my $rank = 0;
+    
+    my $table = $pub ? 'feature_relationship' : 'private_feature_relationship';
+    foreach my $parent_id ($cc_id, $c_id) {
+    	
+    	my $type = shift @rtypes;
+    	
+    	# If this relationship is unique, add it.
+		if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $type, $rank, $pub ]) ) {
+	                                        	
+			$self->print_frel($self->nextoid($table),$child_id,$parent_id,$type,$rank,$pub);
+			$self->nextoid($table,'++');
+		}
+    }
+}
+
+
+=head2 handle_query_hit
+
+=over
+
+=item Usage
+
+  $obj->handle_query_hit($child_feature_id, $query_gene_id, $is_public)
+
+=item Function
+
+Create 'similar_to' entry in feature_relationship table.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+The feature_id for the child feature, query gene and a boolean indicating public or private
+
+=back
+
+=cut
+
+sub handle_query_hit {
+    my $self = shift;
+    my ($child_id, $parent_id, $pub) = @_;
+    
+  	my $rtype = $self->relationship_types('similar_to');
+    my $rank = 0;
+    
+   
+    # If this relationship is unique, add it.
+    my $table = $pub ? 'feature_relationship' : 'private_feature_relationship';
+	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $rank, $pub ]) ) {
+                                        	
+		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub);
+		$self->nextoid($table,'++');
+		
+	}
+   
+}
+
+
+=head2 handle_location
+
+=over
+
+=item Usage
+
+  $obj->handle_location($child_feature_id, $contig_id, $start, $end, $is_public)
+
+=item Function
+
+Perform creation of featureloc entry.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+The feature_id for the child feature, contig, start and end coords from BLAST and a boolean indicating public or private
+
+=back
+
+=cut
+
+sub handle_location {
+	my $self = shift;
+    my ($f_id, $src_id, $min, $max, $strand, $pub) = @_;
+    
+    my $locgrp = 0;
+    my $rank = 0;
+    
+    my $table = $pub ? 'featureloc' : 'private_featureloc';
+	if ($self->constraint(name => 'featureloc_c1', terms => [ $f_id, $rank, $pub ]) ) {
+	                                    	
+		$self->print_floc($self->nextoid($table),$f_id,$src_id,$min,$max,$strand,$locgrp,$rank,$pub);
+		$self->nextoid($table,'++');
+	}
+    
+}
+
+
+=cut
+
+=head2 handle_properties
+
+=over
+
+=item Usage
+
+  $obj->handle_properties($feature_id, $percent_identity)
+
+=item Function
+
+Create featureprop table entries for BLAST results
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+percent identity, 
+
+=back
+
+=cut
+
+sub handle_properties {
+	my $self = shift;
+	my ($feature_id, $pi, $pub, $upload_id) = @_;
+
+	my $tag = 'score';
+      
+ 	my $property_cvterm_id = $self->featureprop_types($tag);
+	unless($property_cvterm_id) {
+		carp "Unrecognized feature property type $tag.";
+	}
+ 	
+ 	my $rank=0;
+ 	
+    my $table = $pub ? 'featureprop' : 'private_featureprop';
+	if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank, $pub]) ) {
+                                      	
+		$self->print_fprop($self->nextoid($table),$feature_id,$property_cvterm_id,$pi,$rank,$pub,$upload_id);
+      	$self->nextoid($table,'++');
+      	
+	} else {
+		carp "Featureprop with type $property_cvterm_id and rank $rank already exists for this feature.\n";
+	}
+ 	
+ 
+}
+
+
+
+=head2 add_types
+
+=over
+
+=item Usage
+
+  $obj->add_types($child_feature_id, $is_public)
+
+=item Function
+
+Add 'experimental feature' type in feature_cvterm table.
 
 =item Returns
 
@@ -1755,21 +1732,18 @@ The feature_id for the child feature.
 
 =cut
 
-sub handle_parent {
+sub add_types {
     my $self = shift;
-    my ($child_id) = @_;
+    my ($child_id, $pub) = @_;
     
-    my $parent_id = $self->cache('const', 'contig_collection_id');
-    my $part_of = $self->relationship_types('part_of');
+    my $ef_type = $self->feature_types('experimental_feature');
     my $rank = 0;
 
-	croak "Parent not defined." unless $parent_id;
-
-	# If this relationship is unique, add it.
-	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $part_of, $rank ]) ) {
+	my $table = $pub ? 'feature_cvterm' : 'private_feature_cvterm';
+	if ($self->constraint(name => 'feature_cvterm_c1', terms => [ $child_id, $ef_type, $pub ]) ) {
                                         	
-		$self->print_frel($self->nextoid('feature_relationship'),$child_id,$parent_id,$part_of,$rank);
-		$self->nextoid('feature_relationship','++');
+		$self->print_fcvterm($self->nextoid($table), $child_id, $ef_type, $self->publication_id, $rank);
+		$self->nextoid($table,'++');
 	}
 }
 
@@ -1781,108 +1755,75 @@ sub handle_parent {
 
 # Prints to file handles for later COPY run
 
-sub print_upl {
-	my $self = shift;
-	my ($upl_id,$login_id,$cat,$tag,$rdate,$udate) = @_;
-
-	my $fh = $self->file_handles('upload');
- 
-	print $fh join("\t",($upl_id,$login_id,$cat,$tag,$rdate,$udate)),"\n";
-  
-}
-
-sub print_perm {
-	my $self = shift;
-	my ($perm_id,$upl_id,$login_id,$mod,$share) = @_;
-
-	my $fh = $self->file_handles('permission');
- 
-	print $fh join("\t",($perm_id,$upl_id,$login_id,$mod,$share)),"\n";
-  
-}
-
 sub print_fprop {
 	my $self = shift;
-	my ($fp_id, $f_id, $cvterm_id, $value, $rank) = @_;
+	my ($fp_id, $f_id, $cvterm_id, $value, $rank, $pub, $upl_id) = @_;
 
-	my $fh = $self->file_handles('featureprop');
-	
-	if($self->web_upload) {
-		my $upl_id = $self->cache('const','upload');
-		croak 'Undefined upload_id.' unless $upl_id;
-		
-		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank,$upl_id)),"\n";
-		
+	if($pub) {
+		my $fh = $self->file_handles('featureprop');
+		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank)),"\n";		
 	} else {
-		
-		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank)),"\n";
+		my $fh = $self->file_handles('private_featureprop');
+		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank,$upl_id)),"\n";
 	}
-		
-  
-	
   
 }
 
-sub print_dbname {
+sub print_fcvterm {
 	my $self = shift;
-	my ($db_id,$name,$description) = @_;
+	my ($nextfeaturecvterm,$nextfeature,$type,$ref,$rank,$pub) = @_;
 	
-	$description ||= '\N';
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('feature_cvterm');		
+	} else {
+		$fh = $self->file_handles('private_feature_cvterm');
+	}
 	
-	my $fh = $self->file_handles('db');
-	
-	print $fh join("\t",($db_id,$name,$description)),"\n";
-	
-}
-
-sub print_fdbx {
-	my $self = shift;
-	my ($fd_id,$f_id,$dx_id) = @_;
-	
-	my $fh = $self->file_handles('feature_dbxref');
-	
-	print $fh join("\t",($fd_id,$f_id,$dx_id)),"\n";
-	
-}
-
-sub print_dbx {
-	my $self = shift;
-	my ($dbx_id,$db_id,$acc,$vers,$desc) = @_;
-	
-	my $fh = $self->file_handles('dbxref');
-	
-	print $fh join("\t",($dbx_id,$db_id,$acc,$vers,$desc)),"\n";
-	
+	print $fh join("\t", ($nextfeaturecvterm,$nextfeature,$type,$ref,$rank)),"\n";
 }
 
 sub print_frel {
 	my $self = shift;
-	my ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank) = @_;
+	my ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank,$pub) = @_;
 	
-	my $fh = $self->file_handles('feature_relationship');
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('feature_relationship');		
+	} else {
+		$fh = $self->file_handles('private_feature_relationship');
+	}
 	
 	print $fh join("\t", ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank)),"\n";
-  
+}
+
+sub print_floc {
+	my $self = shift;
+	my ($nextfeatureloc,$nextfeature,$src,$min,$max,$str,$lg,$rank,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('featureloc');		
+	} else {
+		$fh = $self->file_handles('private_featureloc');
+	}
+	
+	print $fh join("\t", ($nextfeatureloc,$nextfeature,$src,$min,$max,$str,$lg,$rank)),"\n";
 }
 
 sub print_f {
 	my $self = shift;
-	my ($nextfeature,$organism,$name,$uniquename,$type,$seqlen,$dbxref,$residues) = @_;
+	my ($nextfeature,$organism,$name,$uniquename,$type,$seqlen,$dbxref,$residues,$pub,$upl_id) = @_;
 	
-	my $fh = $self->file_handles('feature');
 	$dbxref ||= '\N';
 	
-	if($self->web_upload) {
-		my $upl_id = $self->cache('const','upload');
-		croak 'Undefined upload_id.' unless $upl_id;
-		
-		print $fh join("\t", ($nextfeature, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $upl_id, $residues)),"\n";
-		
+	if($pub) {
+		my $fh = $self->file_handles('feature');
+		print $fh join("\t", ($nextfeature, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $upl_id, $residues)),"\n";		
 	} else {
-		
+		my $fh = $self->file_handles('private_feature');
 		print $fh join("\t", ($nextfeature, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues)),"\n";
 	}
-	
 }
 
 sub nextvalueHash {  
@@ -2179,37 +2120,6 @@ sub vacuum {
     return $self->{'vacuum'};
 }
 
-=head2 web_upload
-
-=over
-
-=item Usage
-
-  $obj->web_upload()        #get existing value
-  $obj->web_upload($newval) #set new value
-
-=item Function
-
-=item Returns
-
-Boolean value of web_upload parameter (0/1)
-
-=item Arguments
-
-Boolean value of web_upload parameter (0/1)
-
-=back
-
-=cut
-
-sub web_upload {
-    my $self = shift;
-
-    my $v = shift if defined(@_);
-    return $self->{'web_upload'} = $v if defined($v);
-    return $self->{'web_upload'};
-}
-
 =head2 save_tmpfiles
 
 =over
@@ -2359,44 +2269,65 @@ sub featureprop_types {
     return $self->{featureprop_types}->{$fp};
 }
 
-=head2 organism
+
+=head2 publication_id
 
 =over
 
 =item Usage
 
-  $obj->organism() #get existing value
-  $obj->organism('common_name' => $name) #get existing value
+  $obj->publication_id #get existing value for null publication type
 
 =item Function
 
 =item Returns
 
-  organism_id for a current organism
-
-=item Arguments
-
-  To set organism, hash with following keys:
-    1. common name => name of organism
+pub_id for a null publication needed in the feature_cvterm table
 
 =back
 
 =cut
 
-sub organism {
+sub publication_id {
     my $self = shift;
-    my %argv = @_;
     
-    if($argv{common_name}) {
-   		my $cn = $argv{common_name};
-    	my $oid = $self->{organisms}->{$cn};
-    	croak "Unrecognized or unknown organism with common name $cn." unless $oid;
-    	$self->{organism_id} = $oid;
-    }
-    
-    return $self->{organism_id};
+    return $self->{pub_id};
 }
 
+=head2 reverse_complement
+
+=over
+
+=item Usage
+
+  $obj->reverse_complement($dna) #return rev comp of dna sequence
+
+=item Function
+
+=item Returns
+
+  Reverse complement of DNA sequence
+
+=item Arguments
+
+  dna string consisting of IUPAC characters
+
+=back
+
+=cut
+
+sub reverse_complement {
+	my $self = shift;
+	my $dna = shift;
+	
+	# reverse the DNA sequence
+	my $revcomp = reverse($dna);
+	
+	# complement the reversed DNA sequence
+	$revcomp =~ tr/ABCDGHMNRSTUVWXYabcdghmnrstuvwxy/TVGHCDKNYSAABWXRtvghcdknysaabwxr/;
+	
+	return $revcomp;
+}
 
 1;
 
