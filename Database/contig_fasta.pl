@@ -82,14 +82,34 @@ my $contig_rs = $schema->resultset('Feature')->search(
 	}
 );
 
+# Obtain all contigs and contig collections 
+my $contig_rs2 = $schema->resultset('PrivateFeature')->search(
+	{
+        'type.name' => "contig",
+        'type_2.name' => "part_of",
+        
+	},
+	{
+		column  => [qw/feature_id uniquename residues/],
+		'+select' => [qw/private_feature_relationship_subjects.object_id/],
+		'+as' => [qw/object_id/],
+		join    => [
+			'type',
+			{'private_feature_relationship_subjects' => 'type'}
+		],
+	}
+);
+
 # Write to FASTA file
-my $i = 0;
-my $tot = $contig_rs->count;
+my @prefix = ('public_','private_');
+
 open(my $out, ">", $OUTPUT) or die "Error: unable to write to file $OUTPUT ($!)\n";
 
-while (my $contig = $contig_rs->next) {
-	print $out '>' . 'public_' . $contig->feature_id . '|' . 'public_' . $contig->get_column('object_id') . "\n" . $contig->residues . "\n\n";
-	print "$i contigs of $tot\n" if $i % 10;
+foreach my $contigs ($contig_rs, $contig_rs2) {
+	my $p = shift @prefix;
+	while (my $contig = $contigs->next) {
+		print $out ">lcl|$p" . $contig->get_column('object_id') . "|$p" . $contig->feature_id . "\n" . $contig->residues . "\n";
+	}
 }
 
 close $out;
