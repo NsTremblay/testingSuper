@@ -102,6 +102,9 @@ sub emailResultsToUser {
 	my $_group2GenomeNames = shift;
 	$self->config_file($self->configLocation);
 
+	open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
+	print STDERR("New comparison for user email $_user_email\n");
+
 	my $binaryFETResults = $self->getBinaryData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
 	my $snpFETResults = $self->getSnpData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
 
@@ -111,32 +114,19 @@ sub emailResultsToUser {
 		username => $self->config_param('mail.address'),
 		password => $self->config_param('mail.pass'),
 		);
-	
-	# my $message = Email::Simple->create(
-	# 	header => [
-	# 	From           => $self->config_param('mail.address'),
-	# 	To             => $_user_email,
-	# 	Subject        => 'SuperPhy group wise comparison results',
-	# 	'Content-Type' => 'text/html'
-	# 	],
-	# 	body => '<html>'
-	# 	. '<br><br>This is a test. Do not reply to this.'
-	# 	. '<br><br>SuperPhy Team.'
-	# 	. '</html>',
-	# 	);
 
-my $message = Email::MIME->create(
-	header => [
-	To => $_user_email,
-	From => $self->config_param('mail.address'),
-	Subject        => 'SuperPhy group wise comparison results',
-	'Content-Type' => 'text/html'
-	],
-	parts => [
-	Email::MIME->create(
-		body => "This is a test. Do not reply to this.\n"
-		. "SuperPhy Team.\n"
-		),
+	my $message = Email::MIME->create(
+		header => [
+		To => $_user_email,
+		From => $self->config_param('mail.address'),
+		Subject        => 'SuperPhy group wise comparison results',
+		'Content-Type' => 'text/html'
+		],
+		parts => [
+		Email::MIME->create(
+			body => "This is a test. Do not reply to this.\n"
+			. "SuperPhy Team.\n"
+			),
 	# Email::MIME->create(
 	# 	body => io('choochoo.gif'),
 	# 	attributes => {
@@ -148,7 +138,6 @@ my $message = Email::MIME->create(
 	);
 
 sendmail( $message, {transport => $transport} );
-exit;
 }
 
 sub getBinaryData {
@@ -194,7 +183,7 @@ sub getBinaryData {
 
 	# #Print results to file
 	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
-		DIR => '/genodo/group_wise_data_temp/',
+		DIR => '/home/genodo/group_wise_data_temp/',
 		UNLINK => 0);
 
 	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
@@ -207,7 +196,7 @@ sub getBinaryData {
 	}
 
 	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/genodo\/group_wise_data_temp\///;
+	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
 	foreach my $name (@{$group1GenomeNames}) {
@@ -292,7 +281,7 @@ sub getSnpData {
 
 	# #Print results to file
 	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
-		DIR => '/genodo/group_wise_data_temp/',
+		DIR => '/home/genodo/group_wise_data_temp/',
 		UNLINK => 0);
 
 	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
@@ -304,7 +293,7 @@ sub getSnpData {
 	}
 
 	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/genodo\/group_wise_data_temp\///;
+	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
 	foreach my $name (@{$group1GenomeNames}) {

@@ -150,22 +150,23 @@ sub _emailStrainInfo {
 	my $_group2StrainIds = shift;
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
+	$self->session->close;
 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
 	my $pid = fork;
 	if ($pid) {
 		$template->param(email_address=>$_user_email);
 		return $template->output();
+		waitpid $pid, 0;
 	}
 	else {
-		open STDIN, "</dev/null";
-		open STDOUT, ">/dev/null";
-		open STDERR, ">/dev/null";
+		close STDIN;
+		close STDOUT;
+		close STDERR;
 		my $comparisonHandle = Modules::GroupComparator->new();
 		$comparisonHandle->dbixSchema($self->dbixSchema);
 		$comparisonHandle->configLocation($self->config_file);
 		$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
-		exit;
-	} 
+	}
 }
 
 1;
