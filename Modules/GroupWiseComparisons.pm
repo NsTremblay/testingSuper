@@ -48,6 +48,9 @@ use Data::FormValidator::Constraints (qw/valid_email/);
 use Log::Log4perl qw'get_logger';
 use Time::HiRes;
 use Math::Round 'nlowmult';
+use IO::File;
+use File::Temp;
+use Proc::Daemon; #To fork off long processes
 
 sub setup {
 	my $self=shift;
@@ -144,29 +147,71 @@ sub _getStrainInfo {
 }
 
 sub _emailStrainInfo {
+
+	#This method needs to be changed.
 	my $self = shift;
 	my $_user_email = shift;
 	my $_group1StrainIds = shift;
 	my $_group2StrainIds = shift;
 	my $_group1StrainNames = shift;
 	my $_group2StrainNames = shift;
+
+	#Need to write all the params needed to send the email
+	# #---User Email---
+
+	# [user]
+	# email = ;
+	# gp1IDs = ;
+	# gp2IDs = ;
+	# gp1Names = ;
+	# gp2Names =;
+	
+	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
+		DIR => '/home/genodo/group_wise_data_temp/',
+		UNLINK => 0);
+
+	my $userConString = "#---User Email---\n\n";
+	$userConString .= '[user]' . "\n";
+	$userConString .= "email = $_user_email\n";
+	$userConString .= "gp1IDs = " . join(',' , @{$_group1StrainIds}) . "\n";
+	$userConString .= "gp2IDs = " . join(',' , @{$_group2StrainIds}) . "\n";
+	$userConString .= "gp1Names = " . join(',', @{$_group1StrainNames}) . "\n";
+	$userConString .= "gp2Names = " . join(',', @{$_group2StrainNames});
+
+	print $userConFile $userConString or die "$!";
+
+	# Fork program and run loading separately
+	my $cmd = "perl $FindBin::Bin/../../Data/email_user_data.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+	my $daemon = Proc::Daemon->new(
+		work_dir => "$FindBin::Bin/../../Data/",
+		exec_command => $cmd,
+		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log"
+		);
+	#Fork
 	$self->session->close;
+	my $kid_pid = $daemon->Init;
+
+	#Return Parent
 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-	my $pid = fork;
-	if ($pid) {
-		$template->param(email_address=>$_user_email);
-		return $template->output();
-		waitpid $pid, 0;
-	}
-	else {
-		close STDIN;
-		close STDOUT;
-		close STDERR;
-		my $comparisonHandle = Modules::GroupComparator->new();
-		$comparisonHandle->dbixSchema($self->dbixSchema);
-		$comparisonHandle->configLocation($self->config_file);
-		$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
-	}
+	return $template->output();
+	
+	# $self->session->close;
+	# my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
+	# my $pid = fork;
+	# if ($pid) {
+	# 	$template->param(email_address=>$_user_email);
+	# 	return $template->output();
+	# 	waitpid $pid, 0;
+	# }
+	# else {
+	# 	close STDIN;
+	# 	close STDOUT;
+	# 	close STDERR;
+	# 	my $comparisonHandle = Modules::GroupComparator->new();
+	# 	$comparisonHandle->dbixSchema($self->dbixSchema);
+	# 	$comparisonHandle->configLocation($self->config_file);
+	# 	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
+	# }
 }
 
 1;
