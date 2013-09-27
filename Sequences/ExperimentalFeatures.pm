@@ -7,6 +7,7 @@ use DBI;
 use Carp qw/croak carp confess/;
 use Sys::Hostname;
 use File::Temp;
+use Time::HiRes qw( time );
 
 =head1 NAME
 
@@ -21,7 +22,7 @@ Provides interface to CHADO database for loading VF/AMR alleles.
 =cut
 
 # Calling program name
-my $calling_program = 'genodo_fasta_loader.pl';
+my $calling_program = 'genodo_allele_loader.pl';
 
 my $DEBUG = 0;
 
@@ -37,8 +38,31 @@ my @tables = (
 	"private_featureloc",
 	"featureprop",
 	"private_featureprop",
+	"tree",
+	"feature_tree",
+	"private_feature_tree"
 );
 
+# Tables in order that data is updated
+my @update_tables = (
+	"tfeature",
+	"tprivate_feature",
+	"tfeatureloc",
+	"tprivate_featureloc",
+	"tfeatureprop",
+	"tprivate_featureprop",
+	"ttree",
+);
+
+my %update_table_names = (
+	"tfeature" => 'feature',
+	"tprivate_feature" => 'private_feature',
+	"tfeatureloc" => 'featureloc',
+	"tprivate_featureloc" => 'tprivate_featureloc',
+	"tfeatureprop" => 'featureprop',
+	"tprivate_featureprop" => 'private_featureprop',
+	"ttree" => 'tree',
+);
 
 # Primary key sequence names
 my %sequences = (
@@ -51,8 +75,10 @@ my %sequences = (
 	private_feature_relationship => "private_feature_relationship_feature_relationship_id_seq",
 	private_featureprop          => "private_featureprop_featureprop_id_seq",
 	private_featureloc           => "private_featureloc_featureloc_id_seq",
-	private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id_seq",	 
-  
+	private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id_seq",
+	tree                         => "tree_tree_id_seq",
+	feature_tree                 => "feature_tree_feature_tree_id_seq",
+  	private_feature_tree         => "private_feature_tree_feature_tree_id_seq",
 );
 
 # Primary key ID names
@@ -60,19 +86,22 @@ my %table_ids = (
 	feature                      => "feature_id",
 	feature_relationship         => "feature_relationship_id",
 	featureprop                  => "featureprop_id",
-	featureloc                   => "featureloc_featureloc_id",
-    feature_cvterm               => "feature_cvterm_feature_cvterm_id",
-    private_feature              => "private_feature_id",
-	private_feature_relationship => "private_feature_relationship_id",
-	private_featureprop          => "private_featureprop_id",
-	private_featureloc           => "private_featureloc_featureloc_id",
-    private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id",
+	featureloc                   => "featureloc_id",
+    feature_cvterm               => "feature_cvterm_id",
+    private_feature              => "feature_id",
+	private_feature_relationship => "feature_relationship_id",
+	private_featureprop          => "featureprop_id",
+	private_featureloc           => "featureloc_id",
+    private_feature_cvterm       => "feature_cvterm_id",
+    tree                         => "tree_id",
+    feature_tree                 => "feature_tree_id",
+  	private_feature_tree         => "feature_tree_id",
 );
 
 # Valid cvterm types for featureprops table
 # hash: name => cv
 my %fp_types = (
-	score => 'feature_property',
+	copy_number_increase => 'sequence',
 );
 
 # Used in DB COPY statements
@@ -87,17 +116,53 @@ my %copystring = (
    private_featureprop          => "(featureprop_id,feature_id,type_id,value,upload_id,rank)",
    private_feature_cvterm       => "(feature_cvterm_id,feature_id,cvterm_id,pub_id,rank)",
    private_featureloc           => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
+   tree                         => "(tree_id,name,format,tree_string)",
+   feature_tree                 => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
+   private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)"
+);
+
+my %updatestring = (
+	tfeature                      => "seqlen = s.seqlen, residues = s.residues",
+	tfeatureloc                   => "fmin = s.fmin, fmax = s.fmin, strand = s.strand, locgroup = s.locgroup, rank = s.rank",
+	tfeatureprop                  => "value = s.value",
+	tprivate_feature              => "seqlen = s.seqlen, residues = s.residues",
+	tprivate_featureloc           => "fmin = s.fmin, fmax = s.fmin, strand = s.strand, locgroup = s.locgroup, rank = s.rank",
+	tprivate_featureprop          => "value = s.value",
+	ttree                         => "tree_string = s.tree_string",
+);
+
+my %tmpcopystring = (
+	tfeature                      => "(feature_id,organism_id,uniquename,type_id,seqlen,residues)",
+	tfeatureprop                  => "(feature_id,type_id,value,rank)",
+	tfeatureloc                   => "(feature_id,fmin,fmax,strand,locgroup,rank)",
+	tprivate_feature              => "(feature_id,organism_id,uniquename,type_id,seqlen,residues)",
+	tprivate_featureprop          => "(feature_id,type_id,value,rank)",
+	tprivate_featureloc           => "(feature_id,fmin,fmax,strand,locgroup,rank)",
+	ttree                         => "(tree_id,tree_string)",
+);
+
+my %joinstring = (
+	tfeature                      => "s.feature_id = t.feature_id",
+	tfeatureloc                   => "s.feature_id = t.feature_id",
+	tfeatureprop                  => "s.feature_id = t.feature_id AND s.type_id = t.type_id",
+	tprivate_feature              => "s.feature_id = t.feature_id",
+	tprivate_featureloc           => "s.feature_id = t.feature_id",
+	tprivate_featureprop          => "s.feature_id = t.feature_id AND s.type_id = t.type_id",
+	ttree                         => "s.tree_id = t.tree_id",
 );
 
 # Key values for uniquename cache
-my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate";
+my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate|is_public";
+
+# Key values for loci cache
+my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|type_id|uniquename|is_public|genome_id|contig_id|query_id|";
                
 # Tables for which caches are maintained
 #my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
 my $ALLOWED_CACHE_KEYS = "collection|contig";
 
 # Tmp file names for storing upload data
-my %files = map { $_ => 'FH'.$_; } @tables; # SEQ special case in feature table
+my %files = map { $_ => 'FH'.$_; } @tables, @update_tables;
 
 # SQL for unique cache
 use constant CREATE_CACHE_TABLE =>
@@ -131,6 +196,49 @@ use constant TMP_TABLE_CLEANUP =>
                "DELETE FROM tmp_gff_load_cache WHERE pub = TRUE AND feature_id >= ?";             
 use constant TMP_TABLE_PRIVATE_CLEANUP =>
                "DELETE FROM tmp_gff_load_cache WHERE pub = FALSE AND feature_id >= ?";
+               
+# SQL for loci cache
+use constant CREATE_LOCI_CACHE_TABLE =>
+               "CREATE TABLE public.tmp_loci_cache (
+                    feature_id int,
+                    uniquename varchar(1000),
+                    type_id int,
+                    genome_id int,
+                    contig_id int,
+                    query_id int,
+                    copy_number varchar(100),
+                    pub boolean,
+                    updated boolean
+                )";
+use constant DROP_LOCI_CACHE_TABLE =>
+               "DROP TABLE public.tmp_loci_cache";
+use constant POPULATE_LOCI_CACHE_TABLE =>
+	"INSERT INTO public.tmp_loci_cache ".
+	"SELECT f.feature_id, f.uniquename, f.type_id, f1.object_id, f2.object_id, f3.object_id, fp.value, TRUE, FALSE ".
+	"FROM feature f, feature_relationship f1, feature_relationship f2, feature_relationship f3, featureprop fp ".
+	"WHERE f.type_id = ? AND".
+	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" f2.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" f3.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" fp.type_id = ? AND fp.feature_id = f.feature_id";
+use constant POPULATE_PRIVATE_LOCI_CACHE_TABLE =>
+	"INSERT INTO public.tmp_loci_cache ".
+	"SELECT f.feature_id, f.uniquename, f.type_id, f1.object_id, f2.object_id, f3.object_id, fp.value, FALSE, FALSE ".
+	"FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2, private_feature_relationship f3, private_featureprop fp ".
+	"WHERE f.type_id = ? AND".
+	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" f2.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" f3.type_id = ? AND f1.subject_id = f.feature_id AND".
+	" fp.type_id = ? AND fp.feature_id = f.feature_id";
+use constant CREATE_LOCI_TABLE_INDEX1 =>
+               "CREATE INDEX tmp_loci_cache_idx1 
+                    ON public.tmp_loci_cache (type_id,genome_id,contig_id,query_id,pub,updated)";
+use constant TMP_LOCI_CLEANUP =>
+               "DELETE FROM tmp_loci_cache WHERE pub = TRUE AND feature_id >= ?";             
+use constant TMP_LOCI_PRIVATE_CLEANUP =>
+	"DELETE FROM tmp_loci_cache WHERE pub = FALSE AND feature_id >= ?";
+use constant TMP_LOCI_RESET =>
+	"UPDATE tmp_loci_cache SET updated = ?";                            
                     
 # SQL for lock table
 use constant CREATE_META_TABLE =>
@@ -157,7 +265,7 @@ use constant INSERT_CACHE_TYPE_ID =>
                   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,TRUE)";
 use constant INSERT_CACHE_UNIQUENAME =>
                "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
-                  VALUES (?,?,?)";
+                  VALUES (?,?,TRUE)";
 use constant INSERT_CACHE_PRIVATE_TYPE_ID =>
                "INSERT INTO public.tmp_gff_load_cache 
                   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,FALSE)";
@@ -171,6 +279,23 @@ use constant SELECT_FROM_PUBLIC_FEATURE =>
 	
 use constant SELECT_FROM_PRIVATE_FEATURE =>
 	"SELECT uniquename, organism_id, upload_id, residues, seqlen FROM private_feature WHERE feature_id = ?";
+	
+# SQL for maintaing loci info
+use constant VALIDATE_LOCI =>
+	"SELECT feature_id,uniquename FROM public.tmp_loci_cache WHERE ".
+    " type_id = ? AND genome_id = ? AND contig_id = ? AND query_id = ? AND pub = ? AND updated = FALSE";
+use constant INSERT_LOCI =>
+	"INSERT INTO public.tmp_loci_cache ".
+	"(feature_id,uniquename,type_id,genome_id,contig_id,query_id,pub,updated) VALUES (?,?,?,?,?,?,?,TRUE)";
+use constant UPDATE_LOCI =>
+	"UPDATE public.tmp_loci_cache SET updated = TRUE WHERE feature_id = ?";
+               
+
+# SQL for updating phylogenetic trees
+use constant VALIDATE_TREE => 
+	"SELECT tree_id FROM tree WHERE name = ?";
+	
+
 	               
             
 =head2 new
@@ -187,6 +312,8 @@ sub new {
 	
 	my $self  = bless {}, ref($class) || $class;
 	
+	$self->{now} = time();
+	
 	my $dbname  =  $arg{dbname};
 	my $dbport  =  $arg{dbport};
 	my $dbhost  =  $arg{dbhost};
@@ -194,8 +321,6 @@ sub new {
 	my $dbpass  =  $arg{dbpass};
 	my $tmp_dir =  $arg{tmp_dir};
 	croak "Missing argument: tmp_dir." unless $tmp_dir;
-	
-	my $skipinit=0;
 	
 	my $dbh = DBI->connect(
 		"dbi:Pg:dbname=$dbname;port=$dbport;host=$dbhost",
@@ -219,11 +344,14 @@ sub new {
 	$self->vacuum(          $arg{vacuum}          );
 	
 	$self->prepare_queries();
-	unless ($skipinit) {
-		$self->initialize_sequences();
-		$self->initialize_ontology();
-		$self->initialize_uniquename_cache();
-	}
+	$self->elapsed_time('prep queries');
+	
+	$self->initialize_sequences();
+	$self->elapsed_time('init seq');
+	$self->initialize_ontology();
+	$self->elapsed_time('init');
+	$self->initialize_db_caches();
+	$self->elapsed_time('prep queries');
 	
 	return $self;
 }
@@ -273,7 +401,7 @@ sub initialize_ontology {
     my ($located_in) = $fp_sth->fetchrow_array();
     
     # Part of ID
-	$fp_sth->execute('similar_to', 'relationship');
+	$fp_sth->execute('similar_to', 'sequence');
     my ($similar_to) = $fp_sth->fetchrow_array();
 
     # Contig collection ID
@@ -318,7 +446,8 @@ sub initialize_ontology {
 
 	# Place-holder publication ID
 	my $p_sth = $self->dbh->prepare("SELECT pub_id FROM pub WHERE uniquename = 'null'");
-	($self->{pub_id}) = $fp_sth->fetchrow_array();
+	$p_sth->execute();
+	($self->{pub_id}) = $p_sth->fetchrow_array();
 
     return;
 }
@@ -448,14 +577,14 @@ none
 
 =cut
 
-sub initialize_uniquename_cache {
+sub initialize_db_caches {
     my $self = shift;
 
-    #determine if the table already exists
     my $dbh = $self->dbh;
     my $sth = $dbh->prepare(VERIFY_TMP_TABLE);
+    
+    # Uniquename cache
     $sth->execute('tmp_gff_load_cache');
-
     my ($table_exists) = $sth->fetchrow_array;
 
     if (!$table_exists || $self->recreate_cache() ) {
@@ -464,25 +593,58 @@ sub initialize_uniquename_cache {
 
         print STDERR "\nCreating table...\n";
         $dbh->do(CREATE_CACHE_TABLE);
+        $self->elapsed_time('create table');
 
         print STDERR "Populating table...\n";
         $dbh->do(POPULATE_CACHE_TABLE);
         $dbh->do(POPULATE_PRIVATE_CACHE_TABLE);
+        $self->elapsed_time('pop table');
 
         print STDERR "Creating indexes...\n";
         $dbh->do(CREATE_CACHE_TABLE_INDEX1);
         $dbh->do(CREATE_CACHE_TABLE_INDEX2);
         $dbh->do(CREATE_CACHE_TABLE_INDEX3);
+        $self->elapsed_time('create index');
         
 		print STDERR "Adjusting the primary key sequences (if necessary)...";
         $self->update_sequences();
         print STDERR "Done.\n";
-
-        $dbh->commit;
+        $self->elapsed_time('upd seqs');
     }
+    
+    # Loci cache    
+    $sth->execute('tmp_loci_cache');
+    ($table_exists) = $sth->fetchrow_array;
+
+    if (!$table_exists || $self->recreate_cache() ) {
+        print STDERR "(Re)creating the loci cache in the database... ";
+        $dbh->do(DROP_LOCI_CACHE_TABLE) if ($self->recreate_cache() and $table_exists);
+
+        print STDERR "\nCreating table...\n";
+        $dbh->do(CREATE_LOCI_CACHE_TABLE);
+        $self->elapsed_time('create table2');
+
+        print STDERR "Populating table...\n";
+        $dbh->do(POPULATE_LOCI_CACHE_TABLE, undef,
+        	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
+        	$self->relationship_types('similar_to'), $self->featureprop_types('copy_number_increase'));
+        $dbh->do(POPULATE_PRIVATE_LOCI_CACHE_TABLE, undef,
+        	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
+        	$self->relationship_types('similar_to'), $self->featureprop_types('copy_number_increase'));
+        $self->elapsed_time('pop table2');
+        	
+        print STDERR "Creating indexes...\n";
+        $dbh->do(CREATE_LOCI_TABLE_INDEX1);
+        $self->elapsed_time('create index');
+        
+        print STDERR "Done.\n";
+    }
+    
+    $dbh->do(TMP_LOCI_RESET, undef, 'FALSE');
+    $dbh->commit;
+    
     return;
 }
-
 
 #################
 # Files
@@ -835,7 +997,7 @@ sub uniquename_cache {
 			return $feature_id;
 		}
 	}
-	elsif ($argv{type_id}) { 
+	elsif ($argv{type_id} && $argv{is_public}) { 
 	
 		$self->{'queries'}{'insert_cache_type_id'}->execute(
 		    $argv{feature_id},
@@ -845,8 +1007,81 @@ sub uniquename_cache {
 		$self->dbh->commit;
 		return;
 	}
+	elsif ($argv{type_id} && !$argv{is_public}) { 
+	
+		$self->{'queries'}{'insert_cache_private_type_id'}->execute(
+		    $argv{feature_id},
+		    $argv{uniquename},
+		    $argv{type_id},    
+		);
+		$self->dbh->commit;
+		return;
+	}
 }
 
+
+=head2 uniquename_cache
+
+=over
+
+=item Usage
+
+  $obj->uniquename_cache()
+
+=item Function
+
+Maintains a cache of feature.uniquenames present in the database
+
+=item Returns
+
+See Arguements.
+
+=item Arguments
+
+uniquename_cache takes a hash.  
+If it has a key 'validate', it returns the feature_id
+of the feature corresponding to that uniquename if present, 0 if it is not.
+Otherwise, it uses the values in the hash to update the uniquename_cache
+
+Allowed hash keys:
+
+  feature_id
+  type_id
+  organism_id
+  uniquename
+  validate
+
+=back
+
+=cut
+
+sub loci_cache {
+	my ($self, %argv) = @_;
+	
+	my @bogus_keys = grep {!/($ALLOWED_LOCI_CACHE_KEYS)/} keys %argv;
+	
+	if (@bogus_keys) {
+		for (@bogus_keys) {
+		    carp "I don't know what to do with the key ".$_.
+		   " in the loci_cache method; it's probably because of a typo\n";
+		}
+		croak;
+	}
+		
+	$self->{'queries'}{'insert_loci'}->execute(
+	    $argv{feature_id},
+	    $argv{uniquename},
+	    $argv{type_id},
+	    $argv{genome_id},
+	    $argv{contig_id},
+	    $argv{query_id},
+	    $argv{is_public}   
+	);
+	
+	$self->dbh->commit;
+	return;
+	
+}
 
 =head2 constraint
 
@@ -878,6 +1113,8 @@ The array contains the column values in the 'right' order:
   feature_cvterm_c1:       [feature_id, cvterm_id, is_public]
   featureprop_c1:          [feature_id, cvterm_id, rank, is_public]
   feature_relationship_c1: [feature_id, feature_id, cvterm_id, is_public]
+  feature_tree_c1:         [feature_id, tree_id, is_public]
+  tree_c1:                 [tree_name]
   
 =back
 
@@ -888,28 +1125,50 @@ sub constraint {
 
     my $constraint = $argv{name};
     my @terms      = @{ $argv{terms} };
-
+    
     if ($constraint eq 'feature_cvterm_c1' ||
-        $constraint eq 'featureloc_c1') {
+        $constraint eq 'featureloc_c1' ||
+        $constraint eq 'feature_tree_c1') {
 		
-		$self->throw( "wrong number of constraint terms") if (@terms != 3);
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}) {
+		croak( "wrong number of constraint terms $constraint") if (@terms != 3);
+        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}) {
             return 0; #this combo is already in the constraint
         }
         else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}++;
+            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}++;
+            return 1;
+        }
+    }
+    elsif ($constraint eq 'tree_c1') {
+        
+        croak("wrong number of constraint terms for $constraint") if (@terms != 1);
+        my $i = 0;
+        foreach(@terms) {
+        	croak "term $i undefined for $constraint" unless defined $_;
+        	$i++
+        }
+        if ($self->{$constraint}{$terms[0]}) {
+            return 0; #this combo is already in the constraint
+        }
+        else {
+            $self->{$constraint}{$terms[0]}++;
             return 1;
         }
     }
     elsif ($constraint eq 'featureprop_c1' ||
     	   $constraint eq 'feature_relationship_c1') {
         
-        $self->throw("wrong number of constraint terms") if (@terms != 4);
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}) {
+        croak("wrong number of constraint terms for $constraint") if (@terms != 4);
+        my $i = 0;
+        foreach(@terms) {
+        	croak "term $i undefined for $constraint" unless defined $_;
+        	$i++
+        }
+        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}) {
             return 0; #this combo is already in the constraint
         }
         else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}++;
+            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}++;
             return 1;
         }
     }
@@ -1237,21 +1496,23 @@ sub cleanup_tmp_table {
 	# public
     
     my $first_feature = $self->first_feature_id();
-    unless($first_feature){
-    	my $delete_query = $dbh->prepare(TMP_TABLE_CLEANUP);
-    
-		$delete_query->execute($first_feature);
+    if($first_feature){
+    	$dbh->do(TMP_TABLE_CLEANUP, undef, $first_feature);
+    	$dbh->do(TMP_LOCI_CLEANUP, undef, $first_feature);
+		
     }
 
 	# private
     
-    my $first_feature2 = $self->first_feature_id();
-    unless($first_feature2){
-    	my $delete_query = $dbh->prepare(TMP_TABLE_PRIVATE_CLEANUP);
-    
-		$delete_query->execute($first_feature2);
+    my $first_feature2 = $self->first_private_feature_id();
+	if($first_feature2){
+    	$dbh->do(TMP_TABLE_PRIVATE_CLEANUP, undef, $first_feature2);
+    	$dbh->do(TMP_LOCI_PRIVATE_CLEANUP, undef, $first_feature2);
     }
-
+    
+    # loci table reset
+    $dbh->do(TMP_LOCI_RESET, undef, 'FALSE');
+                            
     return;
 }
 
@@ -1262,7 +1523,7 @@ sub cleanup_tmp_table {
 
 =item Usage
 
-  $obj->uniquename_validation(uniquename, type_id, feature_id)
+  $obj->uniquename_validation(uniquename, type_id, feature_id, is_public)
 
 =item Function
 
@@ -1275,7 +1536,8 @@ If not, attempts to create a unique
 
 =item Arguments
 
-Array containing uniquename string, the cvterm type ID, feature ID for the next feature.
+  Array containing uniquename string, the cvterm type ID, feature ID for the next feature
+  and boolean indicating if feature is public.
 
 =back
 
@@ -1283,25 +1545,23 @@ Array containing uniquename string, the cvterm type ID, feature ID for the next 
 
 sub uniquename_validation {
 	my $self = shift;
-	my ($uniquename, $type, $nextfeature) = @_;
+	my ($uniquename, $type, $nextfeature, $pub) = @_;
 
-	if ($self->uniquename_cache(validate => 1, type_id => $type, uniquename  => $uniquename )) { 
+	if ($self->uniquename_cache(validate => 1, type_id => $type, uniquename => $uniquename )) { 
 		#if this returns non-zero, it is already in the cache and not valid
 
 		$uniquename = "$uniquename ($nextfeature)"; # Should be unique, if not something is screwy
 		
 		croak "Error: uniquename collision. Unable to generate uniquename using feature_id. " 
-			if $self->uniquename_cache(validate => 1, type_id => $type, uniquename  => $uniquename );
-			
-		return $uniquename;
+			if $self->uniquename_cache(validate => 1, type_id => $type, uniquename => $uniquename );
 		
 	} else { 
 		# this uniquename is valid. cache it and return
 
-		$self->uniquename_cache(type_id   => $type, feature_id  => $nextfeature, uniquename  => $uniquename );
-		
-		return $uniquename;
+		$self->uniquename_cache(type_id => $type, feature_id => $nextfeature, uniquename => $uniquename, is_public => $pub );
 	}
+	
+	return $uniquename;
 }
 
 =head2 prepare_queries
@@ -1338,11 +1598,23 @@ sub prepare_queries {
 	
 	$self->{'queries'}{'insert_cache_type_id'} = $dbh->prepare(INSERT_CACHE_TYPE_ID);
 	
+	$self->{'queries'}{'insert_cache_private_type_id'} = $dbh->prepare(INSERT_CACHE_PRIVATE_TYPE_ID);
+	
 	#$self->{'queries'}{'insert_cache_uniquename'} = $dbh->prepare(INSERT_CACHE_UNIQUENAME);
 	
 	$self->{'queries'}{'select_from_public_feature'} = $dbh->prepare(SELECT_FROM_PUBLIC_FEATURE);
 	
 	$self->{'queries'}{'select_from_private_feature'} = $dbh->prepare(SELECT_FROM_PRIVATE_FEATURE);
+	
+	# Loci table
+	$self->{'queries'}{'validate_loci'} = $dbh->prepare(VALIDATE_LOCI);
+	
+	$self->{'queries'}{'insert_loci'} = $dbh->prepare(INSERT_LOCI);
+	
+	$self->{'queries'}{'update_loci'} = $dbh->prepare(UPDATE_LOCI);
+	
+	# Tree table
+	$self->{'queries'}{'validate_tree'} = $dbh->prepare(VALIDATE_TREE);
 	
 	return;
 }
@@ -1393,6 +1665,25 @@ sub load_data {
 			$files{$table}, #file_handle name
 			$sequences{$table},
 			$nextvalue{$table});
+	}
+	
+	foreach my $table (@update_tables) {
+	
+		$self->file_handles($files{$table})->autoflush;
+		
+		if (-s $self->file_handles($files{$table})->filename <= 4) {
+			warn "Skipping $table table since the load file is empty...\n";
+			next;
+		}
+		
+		$self->update_from_stdin(
+			$update_table_names{$table},
+			$table,
+			$tmpcopystring{$table},
+			$updatestring{$table},
+			$joinstring{$table},
+			$files{$table} #file_handle name
+		);
 	}
 	
 	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
@@ -1464,12 +1755,12 @@ sub copy_from_stdin {
 
 	while (<$fh>) {
 		if ( ! ($dbh->pg_putline($_)) ) {
-			#error, disconecting
+			# error, disconecting
 			$dbh->pg_endcopy;
 			$dbh->rollback;
 			$dbh->disconnect;
 			croak("error while copying data's of file $file, line $.");
-		} #putline returns 1 if succesful
+		} # putline returns 1 if succesful
 	}
 
 	$dbh->pg_endcopy or croak("calling endcopy for $table failed: $!");
@@ -1478,6 +1769,78 @@ sub copy_from_stdin {
 	$dbh->do("SELECT setval('$sequence', $nextval) FROM $table")
 		or croak("Error when executing:  setval('$sequence', $nextval) FROM $table: $!"); 
 }
+
+=head2 copy_from_stdin
+
+=over
+
+=item Usage
+
+  $obj->copy_from_stdin($table, $fields, $file, $sequence, $nextvalue);
+
+=item Function
+
+Load data  for a single table into DB using COPY ... FROM STDIN; command.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+Array containing:
+1. table name
+2. string containing column field order (i.e. '(primary_id, value1, value2)')
+3. name of file containing tab-delim values
+4. name of primary key sequence in DB
+5. next value in primary key's sequence
+
+=back
+
+=cut
+
+sub update_from_stdin {
+	my $self          = shift;
+	my $ttable        = shift;
+	my $stable        = shift;
+	my $copy_fields   = shift;
+	my $update_fields = shift;
+	my $join          = shift;
+	my $file          = shift;
+
+	my $dbh      = $self->dbh();
+
+	warn "Updating data in $ttable table ...\n";
+
+	my $fh = $self->file_handles($file);
+	seek($fh,0,0);
+	
+	my $query1 = "CREATE TEMP TABLE $stable (LIKE $ttable INCLUDING ALL) ON COMMIT DROP";
+	$dbh->do($query1) or croak("Error when executing: $query1 ($!).\n");
+	
+	my $query2 = "COPY $stable $copy_fields FROM STDIN;";
+	print STDERR $query2,"\n";
+
+	$dbh->do($query2) or croak("Error when executing: $query2 ($!).\n");
+
+	while (<$fh>) {
+		if ( ! ($dbh->pg_putline($_)) ) {
+			# error, disconecting
+			$dbh->pg_endcopy;
+			$dbh->rollback;
+			$dbh->disconnect;
+			croak("error while copying data's of file $file, line $.");
+		} # putline returns 1 if succesful
+	}
+
+	$dbh->pg_endcopy or croak("calling endcopy for $stable failed: $!");
+	
+	# update the target table
+	my $query3 = "UPDATE $ttable t SET $update_fields FROM $stable s WHERE $join";
+	
+	$dbh->do("$query3") or croak("Error when executing: $query3 ($!).\n");
+}
+
 
 =head2 update_tracker
 
@@ -1522,6 +1885,53 @@ sub update_tracker {
 	$self->dbh->commit || croak "Tracker table update failed: ".$self->dbh->errstr();
 }
 
+=head2 check_for_allele
+
+=over
+
+=item Usage
+
+  $obj->check_for_allele($query_id, $contig_collection_id, $contig_id, $is_public)
+
+=item Function
+
+Determines if genome allele already exists for given query gene. If it does it exists,
+marks allele as being updated in cache
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+The feature_id for the child feature, contig coolection, contig and a boolean indicating public or private
+
+=back
+
+=cut
+
+sub validate_allele {
+    my $self = shift;
+	my ($query_id, $cc_id, $c_id, $pub) = @_;
+	
+	my $type = $self->feature_types('allele');
+    
+    $self->{queries}{'validate_loci'}->execute($type, $cc_id, $c_id, $query_id, $pub);
+	my ($allele_id, $allele_name) = $self->{queries}{'validate_loci'}->fetchrow_array;
+	print join(' ', $allele_id, $allele_name),"\n";
+	if($allele_id) {
+		# existing allele, mark as being updated
+		$self->{queries}{'update_loci'}->execute($allele_id);
+		$self->dbh->commit;
+		return($allele_id,$allele_name);
+		
+	} else {
+		# no existing allele
+		exit(0);
+		return 0;
+	}
+}
+
 =head2 handle_parent
 
 =over
@@ -1560,7 +1970,7 @@ sub handle_parent {
     	my $type = shift @rtypes;
     	
     	# If this relationship is unique, add it.
-		if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $type, $rank, $pub ]) ) {
+		if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $type, $pub ]) ) {
 	                                        	
 			$self->print_frel($self->nextoid($table),$child_id,$parent_id,$type,$rank,$pub);
 			$self->nextoid($table,'++');
@@ -1600,14 +2010,12 @@ sub handle_query_hit {
   	my $rtype = $self->relationship_types('similar_to');
     my $rank = 0;
     
-   
     # If this relationship is unique, add it.
     my $table = $pub ? 'feature_relationship' : 'private_feature_relationship';
-	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $rank, $pub ]) ) {
+	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $pub ]) ) {
                                         	
 		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub);
 		$self->nextoid($table,'++');
-		
 	}
    
 }
@@ -1656,13 +2064,13 @@ sub handle_location {
 
 =cut
 
-=head2 handle_properties
+=head2 handle_allele_properties
 
 =over
 
 =item Usage
 
-  $obj->handle_properties($feature_id, $percent_identity)
+  $obj->handle_allele_properties($feature_id, $percent_identity, $is_public, $upload_id)
 
 =item Function
 
@@ -1680,11 +2088,12 @@ percent identity,
 
 =cut
 
-sub handle_properties {
+sub handle_allele_properties {
 	my $self = shift;
-	my ($feature_id, $pi, $pub, $upload_id) = @_;
-
-	my $tag = 'score';
+	my ($feature_id, $allele_copy, $pub, $upload_id) = @_;
+	
+	# assign the copy number
+	my $tag = 'copy_number_increase';
       
  	my $property_cvterm_id = $self->featureprop_types($tag);
 	unless($property_cvterm_id) {
@@ -1696,16 +2105,100 @@ sub handle_properties {
     my $table = $pub ? 'featureprop' : 'private_featureprop';
 	if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank, $pub]) ) {
                                       	
-		$self->print_fprop($self->nextoid($table),$feature_id,$property_cvterm_id,$pi,$rank,$pub,$upload_id);
+		$self->print_fprop($self->nextoid($table),$feature_id,$property_cvterm_id,$allele_copy,$rank,$pub,$upload_id);
       	$self->nextoid($table,'++');
       	
 	} else {
 		carp "Featureprop with type $property_cvterm_id and rank $rank already exists for this feature.\n";
 	}
- 	
- 
 }
 
+=cut
+
+=head2 handle_phylogeny
+
+=over
+
+=item Usage
+
+  $obj->handle_phylogeny($seq_group)
+
+=item Function
+
+  Save tree in table. Link allele and query to tree entry.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+Hash containing headers pointing to FASTA alignment sequences
+
+=back
+
+=cut
+
+sub handle_phylogeny {
+	my $self = shift;
+	my ($tree, $query_id, $seq_group) = @_;
+	
+	my $tree_name = "q$query_id"; # Base name on the query gene used to search for the alleles
+	
+	# check if tree entry already exists
+	$self->{queries}{validate_tree}->execute($tree_name);
+	my ($tree_id) = $self->{queries}{validate_tree}->fetchrow_array();
+	
+	if($tree_id) {
+		# update existing tree
+		$self->print_utree($tree_id, $tree);
+		
+		# add new tree-feature relationships
+		foreach my $allele_id (keys %$seq_group) {
+			if($seq_group->{$allele_id}->{is_new}) {
+				my $pub = $seq_group->{$allele_id}->{public};
+				my $table = $pub ? 'feature_tree' : 'private_feature_tree';
+				if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
+		                                        	
+					$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
+					$self->nextoid($table,'++');
+				}
+			}
+		}
+		
+	} else {
+		# create new tree
+		
+		$tree_id = $self->nextoid('tree');
+		
+		# build tree-feature relationships
+		# query
+		if ($self->constraint(name => 'feature_tree_c1', terms => [ $query_id, $tree_id, 1 ]) ) {
+	                                        	
+			$self->print_ftree($self->nextoid('feature_tree'),$tree_id,$query_id,'locus',1);
+			$self->nextoid('feature_tree','++');
+		}
+		
+		# alleles
+		foreach my $allele_id (keys %$seq_group) {
+			my $pub = $seq_group->{$allele_id}->{public};
+			my $table = $pub ? 'feature_tree' : 'private_feature_tree';
+			if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
+	                                        	
+				$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
+				$self->nextoid($table,'++');
+			}
+		}
+		
+		# print tree
+		if ($self->constraint(name => 'tree_c1', terms => [ $tree_name,]) ) {
+	                                        	
+			$self->print_tree($tree_id,$tree_name,'perl',$tree);
+			$self->nextoid('tree','++');
+		}
+	}
+
+}
 
 
 =head2 add_types
@@ -1742,12 +2235,10 @@ sub add_types {
 	my $table = $pub ? 'feature_cvterm' : 'private_feature_cvterm';
 	if ($self->constraint(name => 'feature_cvterm_c1', terms => [ $child_id, $ef_type, $pub ]) ) {
                                         	
-		$self->print_fcvterm($self->nextoid($table), $child_id, $ef_type, $self->publication_id, $rank);
+		$self->print_fcvterm($self->nextoid($table), $child_id, $ef_type, $self->publication_id, $rank,$pub);
 		$self->nextoid($table,'++');
 	}
 }
-
-
 
 #################
 # Printing
@@ -1817,13 +2308,95 @@ sub print_f {
 	
 	$dbxref ||= '\N';
 	
-	if($pub) {
-		my $fh = $self->file_handles('feature');
+	if(!$pub) {
+		my $fh = $self->file_handles('private_feature');
 		print $fh join("\t", ($nextfeature, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $upl_id, $residues)),"\n";		
 	} else {
-		my $fh = $self->file_handles('private_feature');
+		my $fh = $self->file_handles('feature');
 		print $fh join("\t", ($nextfeature, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues)),"\n";
 	}
+}
+
+sub print_tree {
+	my $self = shift;
+	my ($tree,$name,$format,$string) = @_;
+	
+	my $fh = $self->file_handles('tree');		
+
+	print $fh join("\t", ($tree,$name,$format,$string)),"\n";
+}
+
+sub print_ftree {
+	my $self = shift;
+	my ($nextft,$tree_id,$feature_id,$type,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('feature_tree');		
+	} else {
+		$fh = $self->file_handles('private_feature_tree');
+	}	
+
+	print $fh join("\t", ($nextft,$feature_id,$tree_id,$type)),"\n";
+}
+
+# Print to tmp tables for update
+
+sub print_uf {
+	my $self = shift;
+	my ($nextfeature,$uname,$type,$seqlen,$residues,$pub) = @_;
+	
+	my $org_id = 13; # just need to put in some value to fulfill non-null constraint
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('tfeature');		
+	} else {
+		$fh = $self->file_handles('tprivate_feature');
+	}
+	
+	print $fh join("\t", ($nextfeature, $org_id, $uname, $type, $seqlen, $residues)),"\n";
+	
+}
+
+sub print_ufprop {
+	my $self = shift;
+	my ($f_id,$cvterm_id,$value,$rank,$pub) = @_;
+	
+	$rank //= 0;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('tfeatureprop');		
+	} else {
+		$fh = $self->file_handles('tprivate_featureprop');
+	}
+
+	print $fh join("\t",($f_id,$cvterm_id,$value,$rank,)),"\n";
+	
+}
+
+sub print_ufloc {
+	my $self = shift;
+	my ($nextfeature,$min,$max,$str,$lg,$rank,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('tfeatureloc');		
+	} else {
+		$fh = $self->file_handles('tprivate_featureloc');
+	}
+	
+	print $fh join("\t", ($nextfeature,$min,$max,$str,$lg,$rank)),"\n";
+}
+
+sub print_utree {
+	my $self = shift;
+	my ($tree,$string) = @_;
+	
+	my $fh = $self->file_handles('ttree');		
+
+	print $fh join("\t", ($tree,$string)),"\n";
 }
 
 sub nextvalueHash {  
@@ -2329,6 +2902,17 @@ sub reverse_complement {
 	return $revcomp;
 }
 
+sub elapsed_time {
+	my ($self, $mes) = @_;
+	
+	my $time = $self->{now};
+	my $now = time();
+	printf("$mes: %.2f\n", $now - $time);
+	
+	$self->{now} = $now;
+}
+
 1;
+
 
 

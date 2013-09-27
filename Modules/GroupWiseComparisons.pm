@@ -40,7 +40,7 @@ use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 use HTML::Template::HashWrapper;
-use CGI::Application::Plugin::AutoRunmode;;
+use CGI::Application::Plugin::AutoRunmode;
 use Phylogeny::Tree;
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
@@ -129,6 +129,9 @@ sub comparison : Runmode {
 	my $q = $self->query();
 	my @group1 = $q->param("comparison-group1-genome");
 	my @group2 = $q->param("comparison-group2-genome");
+	
+	get_logger->info('HELLO'.$self->config_param('mail.address'));
+	return '';
 
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');

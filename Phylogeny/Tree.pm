@@ -580,5 +580,16 @@ sub visableGenomes {
 	return \%visable;
 }
 
+sub newickToPerlString {
+	my $self = shift;
+	my $newick_file = shift;
+	
+	my $ptree = $self->newickToPerl($newick_file);
+	
+	$Data::Dumper::Indent = 0;
+	my $ptree_string = Data::Dumper->Dump([$ptree], ['tree']);
+	
+	return $ptree_string;
+}
 
 1;
