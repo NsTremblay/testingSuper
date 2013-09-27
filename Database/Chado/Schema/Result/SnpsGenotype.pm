@@ -30,6 +30,14 @@ __PACKAGE__->table("snps_genotypes");
   is_nullable: 0
   sequence: 'snps_genotypes_snp_genotype_id_seq'
 
+=head2 feature_id
+
+  data_type: 'text'
+  is_nullable: 0
+  original: {data_type => "varchar"}
+
+Strain ID
+
 =head2 snp_id
 
   data_type: 'integer'
@@ -70,14 +78,6 @@ Presence absence value for base "C" for each locus for each strain. Default is 0
 
 Presence absence value for base "G" for each locus for each strain. Default is 0.
 
-=head2 feature_id
-
-  data_type: 'text'
-  is_nullable: 0
-  original: {data_type => "varchar"}
-
-Strain ID
-
 =cut
 
 __PACKAGE__->add_columns(
@@ -87,6 +87,12 @@ __PACKAGE__->add_columns(
     is_auto_increment => 1,
     is_nullable       => 0,
     sequence          => "snps_genotypes_snp_genotype_id_seq",
+  },
+  "feature_id",
+  {
+    data_type   => "text",
+    is_nullable => 0,
+    original    => { data_type => "varchar" },
   },
   "snp_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
@@ -98,12 +104,6 @@ __PACKAGE__->add_columns(
   { data_type => "integer", default_value => 0, is_nullable => 0 },
   "snp_g",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
-  "feature_id",
-  {
-    data_type   => "text",
-    is_nullable => 0,
-    original    => { data_type => "varchar" },
-  },
 );
 
 =head1 PRIMARY KEY
@@ -136,8 +136,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-21 15:24:27
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Hg4Lyx44XQto7qIyMuqC1Q
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 14:32:56
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Xmmhe1PoLNaBVBjY0WXE6A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

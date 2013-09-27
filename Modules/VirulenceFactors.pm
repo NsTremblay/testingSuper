@@ -57,34 +57,28 @@ sub virulence_factors : StartRunmode {
 	my $self = shift;
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($vFactorsRef , $vJsonData) = $formDataGenerator->getVirulenceFormData();
-	my ($amrFactorsRef , $amrJsonData) = $formDataGenerator->getAmrFormData();
+	my $vFactorsRef = $formDataGenerator->getVirulenceFormData();
+	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
 	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();
 
 	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	
 	my $username = $self->authen->username;
-	
-	# Retrieve form data
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
-	$template->param(public_genomes => $pub_json);
-	$template->param(private_genomes => $pvt_json) if $pvt_json;
-	
-	$template->param(vFACTORS=>$vFactorsRef);
-	$template->param(vJSON=>$vJsonData);
 
-	$template->param(FEATURES=>$pubDataRef);
-	$template->param(strainJSONData=>$pubStrainJsonDataRef);
+# Retrieve form data
+my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
 
-	$template->param(amrFACTORS=>$amrFactorsRef);
-	$template->param(amrJSON=>$amrJsonData);
-	return $template->output();
+$template->param(public_genomes => $pub_json);
+$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+$template->param(FEATURES=>$pubDataRef);
+$template->param(strainJSONData=>$pubStrainJsonDataRef);
+
+$template->param(vFACTORS=>$vFactorsRef);
+$template->param(amrFACTORS=>$amrFactorsRef);
+return $template->output();
 }
 
 =head2 virulenceAmrByStrain
@@ -103,24 +97,25 @@ sub virulence_amr_by_strain : Runmode {
 	my @selectedVirulenceFactors = $q->param("selectedVirulence");
 	my @selectedAmrGenes = $q->param("selectedAmr");
 
-	#my ($vfByStrainJSONref , $amrByStrainJSONref , $strainTableNamesJSONref);
-	my $virAmrByStrainJSONref;
-	my ($vfByStrainRef , $amrByStrainRef , $strainTableNamesRef); 
+#my ($vfByStrainJSONref , $amrByStrainJSONref , $strainTableNamesJSONref);
+my $virAmrByStrainJSONref;
+my ($vfByStrainRef , $amrByStrainRef , $virStrainTableNamesRef, $amrStrainTableNamesRef); 
 
-	if (!@selectedStrainNames || !@selectedVirulenceFactors || !@selectedAmrGenes) {
-		return "";
-	}
-	else {
-		($vfByStrainRef , $strainTableNamesRef) = $self->_getVirulenceByStrain(\@selectedStrainNames , \@selectedVirulenceFactors);
-		($amrByStrainRef , $strainTableNamesRef) = $self->_getAmrByStrain(\@selectedStrainNames , \@selectedAmrGenes);
-		#($amrByStrainJSONref , $strainTableNamesJSONref) = $formDataGenerator->_getJSONFormat($amrByStrainRef , $strainTableNamesRef) or die "$!\n";
-	}
-	my %strainHash;
-	$strainHash{'strain'} = $strainTableNamesRef;
-	my @arr;
-	push (@arr , \%strainHash , $vfByStrainRef , $amrByStrainRef);
-	$virAmrByStrainJSONref = $formDataGenerator->_getJSONFormat(\@arr) or die "$!\n";
-	return $virAmrByStrainJSONref;
+#If somehow the user passes an empty strain list or both selected virulence and amr lists are empty
+if (!@selectedStrainNames || !@selectedVirulenceFactors && !@selectedAmrGenes) {
+	return "";
+}
+else {
+	($vfByStrainRef , $virStrainTableNamesRef) = $self->_getVirulenceByStrain(\@selectedStrainNames , \@selectedVirulenceFactors);
+	($amrByStrainRef , $amrStrainTableNamesRef) = $self->_getAmrByStrain(\@selectedStrainNames , \@selectedAmrGenes);
+}
+my %strainHash;
+$strainHash{'virStrains'} = $virStrainTableNamesRef;
+$strainHash{'amrStrains'} = $amrStrainTableNamesRef;
+my @arr;
+push (@arr , \%strainHash , $vfByStrainRef , $amrByStrainRef);
+$virAmrByStrainJSONref = $formDataGenerator->_getJSONFormat(\@arr) or die "$!\n";
+return $virAmrByStrainJSONref;
 }
 
 sub vf_meta_info : Runmode {
@@ -132,12 +127,12 @@ sub vf_meta_info : Runmode {
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
 		{'me.feature_id' => $_vFFeatureId},
 		{
-			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			join		=> ['type' , 'feature'],
-			columns		=> [ qw/feature_id me.value type.name feature.uniquename feature.name/],
-			order_by	=> { -asc => ['type.name'] }
-		}
-		);
+		#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		join		=> ['type' , 'feature'],
+		columns		=> [ qw/feature_id me.value type.name feature.uniquename feature.name/],
+		order_by	=> { -asc => ['type.name'] }
+	}
+	);
 
 	my $vFMetaFirstRow = $_virulenceFactorMetaProperties->first;
 	my %vFMetaFirst;
@@ -149,53 +144,53 @@ sub vf_meta_info : Runmode {
 	push(@virMetaData , \%vFMetaFirst);
 
 	while (my $vFMetaRow = $_virulenceFactorMetaProperties->next){
-		#Initialize a hash structure to store column data
-		my %vFMetaRowData;
-		if ($vFMetaRow->type->name eq "description") {
-			$vFMetaRowData{'term_name'}="Description";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "keywords"){
-			$vFMetaRowData{'term_name'}="Type";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "mol_type"){
-			$vFMetaRowData{'term_name'}="Molecular Type";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "name"){
-			$vFMetaRowData{'term_name'}="Factor Name";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "organism"){
-			$vFMetaRowData{'term_name'}="Organism";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "plasmid"){
-			$vFMetaRowData{'term_name'}="Plasmid name";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "strain"){
-			$vFMetaRowData{'term_name'}="Strain";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "uniquename"){
-			$vFMetaRowData{'term_name'}="Unique Name";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		elsif ($vFMetaRow->type->name eq "virulence_id"){
-			$vFMetaRowData{'term_name'}="Virulence ID";
-			$vFMetaRowData{'value'}=$vFMetaRow->value;
-		}
-		else {
-		}
-		push(@virMetaData, \%vFMetaRowData);
+	#Initialize a hash structure to store column data
+	my %vFMetaRowData;
+	if ($vFMetaRow->type->name eq "description") {
+		$vFMetaRowData{'term_name'}="Description";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
 	}
+	elsif ($vFMetaRow->type->name eq "keywords"){
+		$vFMetaRowData{'term_name'}="Type";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "mol_type"){
+		$vFMetaRowData{'term_name'}="Molecular Type";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "name"){
+		$vFMetaRowData{'term_name'}="Factor Name";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "organism"){
+		$vFMetaRowData{'term_name'}="Organism";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "plasmid"){
+		$vFMetaRowData{'term_name'}="Plasmid name";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "strain"){
+		$vFMetaRowData{'term_name'}="Strain";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "uniquename"){
+		$vFMetaRowData{'term_name'}="Unique Name";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	elsif ($vFMetaRow->type->name eq "virulence_id"){
+		$vFMetaRowData{'term_name'}="Virulence ID";
+		$vFMetaRowData{'value'}=$vFMetaRow->value;
+	}
+	else {
+	}
+	push(@virMetaData, \%vFMetaRowData);
+}
 
-	#my @virMetaData = $_virulenceFactorMetaProperties->all;
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	my $vfMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@virMetaData);
-	return $vfMetaInfoJsonRef;
+#my @virMetaData = $_virulenceFactorMetaProperties->all;
+my $formDataGenerator = Modules::FormDataGenerator->new();
+my $vfMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@virMetaData);
+return $vfMetaInfoJsonRef;
 }
 
 sub amr_meta_info : Runmode {
@@ -219,17 +214,17 @@ my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
 	'me.feature_id' => $_amrFeatureId
 	},
 	{
-			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			join => [
-			'type',
-			{ featureprops => 'type' },
-			{ feature_cvterms => { cvterm => 'dbxref'}}
-			],
-			#select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
-			#as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
-			order_by	=> { -asc => ['me.name'] }
-		}
-		);
+		#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+		join => [
+		'type',
+		{ featureprops => 'type' },
+		{ feature_cvterms => { cvterm => 'dbxref'}}
+		],
+		#select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
+		#as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
+		order_by	=> { -asc => ['me.name'] }
+	}
+	);
 
 
 my $frow = $feature_rs->first;
@@ -248,9 +243,9 @@ while(my $fprow = $fp_rs->next) {
 			push @syn, $fprow->value;
 		}
 	}
-	
+
 	my $fc_rs = $frow->feature_cvterms;
-	
+
 	while(my $fcrow = $fc_rs->next) {
 		my $aro_entry = {
 			accession => 'ARO:'.$fcrow->cvterm->dbxref->accession,
@@ -259,14 +254,14 @@ while(my $fprow = $fp_rs->next) {
 		};
 		push @aro, $aro_entry;
 	}
-	
+
 	my %data_hash = (
 		name => $frow->uniquename,
 		descriptions  => \@desc,
 		synonyms     => \@syn,
 		aro_terms    => \@aro
 		);
-	
+
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\%data_hash);
 	return $amrMetaInfoJsonRef;
@@ -280,23 +275,37 @@ sub _getVirulenceByStrain {
 
 	my @_selectedStrainNames = @{$_selectedStrainNames};
 
-	foreach my $name (@_selectedStrainNames) {
-		print STDERR  $name	. "\t";
+	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
+
+	unless(@_selectedVirulenceFactors) {
+		return ("" , \@_selectedStrainNames);
 	}
 
-	my @_selectedVirulenceFactors = @{$_selectedVirulenceFactors};
-	
 	my @unprunedTableNames;
 	my @virulenceTableData;
 
 	my $_dataTable = $self->dbixSchema->resultset('RawVirulenceData');
 
+	# my $_dataTableByVirGene = $_dataTable->search(
+	# 	{gene_id => $_selectedVirulenceFactors},
+	# 	{
+	# 		join => ['gene'],
+	# 		select => [qw/me.genome_id me.gene_id me.presence_absence/],
+	# 		as 	=> ['genome_id', 'gene_id', 'presence_absence']
+	# 	}
+	# 	);
+
+	# my %virGene;
+	# my @presenceAbsence;
+
+	# my $presenceAbsenceValue = "n/a";
+
 	foreach my $virGeneName (@_selectedVirulenceFactors) {
 		my $_dataTableByVirGene = $_dataTable->search(
-			{'gene_name' => "$virGeneName"},
+			{'gene_id' => "$virGeneName"},
 			{
-				select => [qw/me.strain me.gene_name me.presence_absence/],
-				as 	=> ['strain', 'gene_name', 'presence_absence']
+				select => [qw/me.genome_id me.gene_id me.presence_absence/],
+				as 	=> ['genome_id', 'gene_id', 'presence_absence']
 			}
 			);
 
@@ -308,9 +317,9 @@ sub _getVirulenceByStrain {
 			my %data;
 			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByVirGene->search(
-				{'strain' => "public_".$strainName},
+				{'genome_id' => "public_".$strainName},
 				{
-					column => [qw/strain gene_name presence_absence/]
+					column => [qw/genome_id gene_id presence_absence/]
 				}
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {
@@ -342,6 +351,10 @@ sub _getAmrByStrain {
 	my @_selectedStrainNames = @{$_selectedStrainNames};
 	my @_selectedAmrFactors = @{$_selectedAmrFactors};
 
+	unless(@_selectedAmrFactors) {
+		return ("" , \@_selectedStrainNames);
+	}
+
 	my @unprunedTableNames;
 	my @amrTableData;
 
@@ -349,10 +362,10 @@ sub _getAmrByStrain {
 
 	foreach my $amrGeneName (@_selectedAmrFactors) {
 		my $_dataTableByAmrGene = $_dataTable->search(
-			{'gene_name' => "$amrGeneName"},
+			{'gene_id' => "$amrGeneName"},
 			{
-				select => [qw/me.strain me.gene_name me.presence_absence/],
-				as 	=> ['strain', 'gene_name', 'presence_absence']
+				select => [qw/me.genome_id me.gene_id me.presence_absence/],
+				as 	=> ['genome_id', 'gene_id', 'presence_absence']
 			}
 			);
 
@@ -364,9 +377,9 @@ sub _getAmrByStrain {
 			my %data;
 			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByAmrGene->search(
-				{'strain' => "public_".$strainName},
+				{'genome_id' => "public_".$strainName},
 				{
-					column => [qw/strain gene_name presence_absence/]
+					column => [qw/strain gene_id presence_absence/]
 				}
 				);
 			while (my $_dataRow = $_dataRowByStrain->next) {

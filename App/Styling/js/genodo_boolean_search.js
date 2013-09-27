@@ -246,9 +246,7 @@ function buildBSForm(groupwise) {
 	
 	$('#attr-search-form').submit(function(event) {
 		event.preventDefault;
-		
 		submitSearch(groupwise);
-		
 		return false;
 	});
 }
@@ -418,7 +416,7 @@ function updateAttrMeta(visableData, set, groupwise) {
 		return false;
 	}
 	
-	var display = $('#attr-search-display')
+	var display = $('#attr-search-display');
 	display.empty();
 	
 	if(groupwise) {
@@ -538,6 +536,7 @@ function submitSearch(groupwise) {
 	// Clear old results
 	attr_search_result = {};
 	$('#attr-search-display').empty();
+	$('input[id="select-all-attr-search-display"]').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
 	updateBSResultStatus({}, 'performing search...');
 	
 	var searchObj = getBSInput();

@@ -667,6 +667,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 raw_amr_datas
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::RawAmrData>
+
+=cut
+
+__PACKAGE__->has_many(
+  "raw_amr_datas",
+  "Database::Chado::Schema::Result::RawAmrData",
+  { "foreign.gene_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 raw_virulence_datas
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::RawVirulenceData>
+
+=cut
+
+__PACKAGE__->has_many(
+  "raw_virulence_datas",
+  "Database::Chado::Schema::Result::RawVirulenceData",
+  { "foreign.gene_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 studyprop_features
 
 Type: has_many
@@ -698,8 +728,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-21 15:24:26
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:EVkVnLmdPmZMpiM2UceISA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 15:48:12
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:C0fyGNM2zJpqtbGq5abZkA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

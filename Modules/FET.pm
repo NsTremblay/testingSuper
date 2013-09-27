@@ -142,12 +142,14 @@ The most recent version of the code may be found at: https://github.com/chadlain
 Chad Laing (chadlaing gmail com)
 
 =cut
+
 use FindBin;
 use lib "$FindBin::Bin../";
 use warnings;
 use strict;
 use Carp;
-use IO::File;
+use IO::File; #get rid of these after moving the methods over 
+use File::Temp; #get rid of these after moving them methods over
 use Statistics::R;
 use Log::Log4perl;
 
@@ -160,15 +162,12 @@ sub new {
 	return $self;
 }
 
-#Get/Set methods for storing groups and loci
+#Get/Set methods
+
+#Here, groups refer to the genomes being queried
 sub group1 {
 	my $self = shift;
 	$self->{'_group1'} = shift // return $self->{'_group1'};
-}
-
-sub group1Loci {
-	my $self = shift;
-	$self->{'_group1Loci'} = shift // return $self->{'_group1Loci'};
 }
 
 sub group2 {
@@ -176,11 +175,18 @@ sub group2 {
 	$self->{'_group2'} = shift // return $self->{'_group2'};
 }
 
-sub group2Loci {
+#Here, markers refer to either genome loci or SNPs
+sub group1Markers {
 	my $self = shift;
-	$self->{'_group2Loci'} = shift // return $self->{'_group2Loci'};
+	$self->{'_group1Markers'} = shift // return $self->{'_group1Markers'};
 }
 
+sub group2Markers {
+	my $self = shift;
+	$self->{'_group2Markers'} = shift // return $self->{'_group2Markers'};
+}
+
+#Test chars will be either a binary digit (1/0) or a SNP letter (A,T,C,G)
 sub testChar {
 	my $self = shift;
 	$self->{'_testChar'} = shift // return $self->{'_testChar'};
@@ -251,17 +257,16 @@ my $rQuery = 'fisher.test(' . $matrixString . ")\n";
 }
 
 sub _countGroup{
-	#This needs to be changed
 	my $self=shift;
 	my $groupList=shift;
-	my $groupLociPosCount=shift;
+	my $groupMarkerPosCount=shift;
 
 	#do the counts
 	my %countHash;
 	$countHash{'pos'}=0;
 	$countHash{'neg'}=0;
 
-	$countHash{'pos'}=$groupLociPosCount;
+	$countHash{'pos'}=$groupMarkerPosCount;
 	$countHash{'neg'}=(scalar(@$groupList) - $countHash{'pos'});
 
 	return \%countHash; 
@@ -300,65 +305,46 @@ sub _processLine{
 	return ($pValue , $group1Counts , $group2Counts);
 }
 
-# sub _printResultsToFile{
-# 	my $self=shift;
 
-# 	my %outputHash;
-# 	foreach my $locus(keys %{$self->_resultHash}){
-# 		foreach my $testChar(keys %{$self->_resultHash->{$locus}}){
-# 			$outputHash{$locus . "\t" . $testChar} = $self->_resultHash->{$locus}->{$testChar};
-# 		}
-# 	}
-# 	 #sort new hash by value but output the key
-# 	 foreach my $output(sort{$outputHash{$a} <=> $outputHash{$b}} keys %outputHash){
-# 	 	$self->printOut($output . "\t" . $outputHash{$output} . "\n");
-# 	 }
-# 	 return 1;
-# 	}
+sub run {
+	my $self=shift;
+	my $_count_column = shift;
+	unless(scalar(@{$self->group1Markers}) == scalar(@{$self->group2Markers})) {
+		$self->logger->error("Sizes of loci/snp lists for group1 and group2 must be the same");
+		exit(1);
+	}
+	
+	my @allResults;
+	my $listSize = scalar(@{$self->group1Markers});
+	my $sigpValueCount = $listSize;
 
-	sub run{
-		my $self=shift;
+	for (my $i = 0; $i < $listSize; $i++) {
+		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->get_column($_count_column), $self->group2Markers->[$i]->get_column($_count_column) , $self->testChar);
 
-		unless(scalar(@{$self->group1Loci}) == scalar(@{$self->group2Loci})) {
-			$self->logger->error("Sizes of loci lists for group1 and group2 must be the same");
-			exit(1);
+		my %rowResult;
+		$rowResult{'marker_id'} = $self->group1Markers->[$i]->get_column('id');
+		$rowResult{'group1Present'} = $_group1Counts->{'pos'};
+		$rowResult{'group1Absent'} = $_group1Counts->{'neg'};
+		$rowResult{'group2Present'} = $_group2Counts->{'pos'};
+		$rowResult{'group2Absent'} = $_group2Counts->{'neg'};
+		$rowResult{'pvalue'} = $_pValue;
+		$rowResult{'test_char'} = $self->testChar;
+		if ($_pValue > 0.0500) {
+			$sigpValueCount--;
 		}
-
-		my @results;
-		my $listSize = scalar(@{$self->group1Loci});
-
-		my $sigpValueCount = $listSize;
-
-		for (my $i = 0; $i < $listSize; $i++) {
-			my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Loci->[$i]->get_column('loci_count'), $self->group2Loci->[$i]->get_column('loci_count') , $self->testChar);
-			
-			if ($_pValue > 0.0500) {
-				$sigpValueCount--;
-			}
-
-			my %rowResult;
-			#create a new hash row with results
-			$rowResult{'locus_id'} = $self->group1Loci->[$i]->get_column('id');
-			$rowResult{'group1Present'} = $_group1Counts->{'pos'};
-			$rowResult{'group1Absent'} = $_group1Counts->{'neg'};
-			$rowResult{'group2Present'} = $_group2Counts->{'pos'};
-			$rowResult{'group2Absent'} = $_group2Counts->{'neg'};
-			$rowResult{'pvalue'} = $_pValue;
-
-			push(@results , \%rowResult);
+		else {
 		}
-
-	#The following will be changed to store everything in a hashref and return the hashref
-	#$self->_printResultsToFile();
-
-	my @sortedResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @results);
-
-	return (\@sortedResults , $sigpValueCount);
+		push(@allResults , \%rowResult);
+	}
+	my @resultArray;
+	my @sortedAllResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @allResults);
+	my @sigResults = @sortedAllResults[0..($sigpValueCount-1)];
+	push(@resultArray, {'all_results' => \@sortedAllResults}, {'sig_results' => \@sigResults}, {'sig_count' => $sigpValueCount}, {'total_comparisons' => $listSize});
+	return \@resultArray;
 }
 
-
 #define a DESTROY method to close R instance on object close
-sub DESTORY{
+sub DESTORY {
 	my $self=shift;
 	$self->_R->stopR;
 }

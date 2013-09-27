@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 <link rel="stylesheet" href="/App/Styling/css/introjs.css">
 
-<body onload="updateVFAMRMeta()" style="background-color:#796e6c">
+<body onload="initialize()" style="background-color:#796e6c">
 
 	<div class="container" style="background-color:#FFFFFF">
 
@@ -19,43 +19,7 @@
 			<h1><span>VIRULENCE & AMR</span> <span style="color:#d41616">INFORMATION</span></h1>
 		</div>
 
-		<span class="help-block" style="margin:0px 10px 0px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left. <a class="btn btn-small" href="javascript:void(0);" onclick="startIntro();">Show me how</a></span>
-
-		<div style="padding:20px">
-			<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#vf-amr-meta-display">
-				<i class=" icon-eye-open icon-white"></i>
-				<span class="caret"></span>
-			</button>
-			<div id="vf-amr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-				<div style="padding: 10px">Change meta-data displayed in genome list:</div>
-				<form class="form-horizontal" style="padding:0px 5px 0 20px;">
-					<fieldset>		    	
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="name"> Name 
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="accession"> Accession # 
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="strain"> Strain
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="serotype"> Serotype
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_host"> Isolation Host
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_source"> Isolation Source 
-						</label>
-						<label>
-							<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_date"> Isolation Date
-						</label>														   			   						   
-					</fieldset>
-					<button id="update-vf-amr-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-				</form>
-			</div>
-		</div>
+		<span class="help-block" style="margin:0px 10px 20px 10px">Select 1 or more from each of the virulence factors, antimicrobial resistnce genes, and from the strain list (horizontal tabs). A table will generate below showing whether your selected strains contain the chosen virulence factors or anitmicrobial resistance genes. You can also look up descrptive information on each of the virulence factors or antimicrobial resistance genes by navigating the tabs on the left.</span>
 
 		<TMPL_INCLUDE NAME="virulence_amr_by_strain_form.tmpl">
 
@@ -69,6 +33,7 @@
 
 <script type="text/javascript">
 function startIntro(){
+
 	var intro = introJs();
 	intro.setOptions({
 		steps: [
@@ -93,26 +58,109 @@ $('#update-vf-amr-meta').click(function(event) {
 	event.preventDefault();
 	visableData = [];
 	$('input[name="vf-amr-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
-	updateVFAMRMeta(visableData);
+	updateVFAMRMeta('genomes' , visableData);
 	return false;
 });
 
-function updateVFAMRMeta(visibleData) {
+function initialize() {
+	//Need to init amr and vfactor lists
+	updateVFAMRMeta("genomes");
+	updateVFAMRMeta("virulence");
+	updateVFAMRMeta("amr");
+}
+
+function updateVFAMRMeta(list , visibleData) {
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
+
+	if (list == "genomes") {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList');
 		dropDown.empty();
-		$.each( public_genomes, function(feature_id, feature_obj) {
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+		genomeLabels = {};
+		$.each( public_genomes, function(feature_id, genome_obj) {
 			var lab = metaLabel(public_genomes[feature_id], visibleData);
+			genomeLabels[feature_id] = lab;
 			dropDown.append(
 				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
+				'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
 				'</li>'
 				);
-		});	
-	} 
+		});
+	}
+	else if (list == "virulence") {
+		var dropDown = $('#virListSelection');
+		dropDown.empty();
+		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
+		$.each (virulence_factors, function(vir_id, vir_obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="vir_'+vir_obj.feature_id+'"><input id="vir_'+vir_obj.feature_id+'" class="checkbox" type="checkbox" value="'+vir_obj.feature_id+'" name="selectedVirulence"/>'+vir_obj.name+' - '+vir_obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+	else if (list == "amr"){
+		var dropDown = $('#amrListSelection');
+		dropDown.empty();
+		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
+		$.each (amr_genes, function(amr_id, amr_obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedAmr"/>'+amr_obj.name+' - '+amr_obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+
+} 
+
+function appendFilteredList(obj , list) {
+	if (list == 'virulence') {
+		var dropDown = $('#virListSelection');
+		dropDown.empty();
+		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
+		$.each (obj, function(obj_id, obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence"/>'+obj.name+' - '+obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+	else if (list == 'amr') {
+		var dropDown = $('#amrListSelection');
+		dropDown.empty();
+		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
+		$.each (obj, function(obj_id, obj) {
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr"/>'+obj.name+' - '+obj.uniquename+'</label>'+
+				'</li>'
+				);
+		});
+	}
+	else {
+		var dropDown = $('#pubStrainList');
+		dropDown.empty();
+		var visibleData = [];
+		$('input[name="list-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
+		if(typeof visableData === 'undefined' || visableData.length == 0) {
+			visableData = ['name'];
+		}
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+		$.each( obj, function(feature_id, genome_obj) {
+			var lab = metaLabel(obj[feature_id], visableData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains"/>'+lab+'</label>'+
+				'</li>'
+				);
+		});
+	}
+}
 
 // Create labels for a genome with required meta data
 function metaLabel(feature, vdata) {
