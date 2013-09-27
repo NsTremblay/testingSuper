@@ -93,18 +93,18 @@ my $message = Email::MIME->create(
 		. "SuperPhy Team.\n"
 		),
 	Email::MIME->create(
-		body => io($snpFETResults->[5]{'file_name'}),
 		attributes => {
 			filename => 'group_wise_SNP_results.txt',
 			content_type => 'text/plain',
 			},
+			body => io($snpFETResults->[5]{'file_name'})->all,
 			),
 	Email::MIME->create(
-		body => io($binaryFETResults->[5]{'file_name'}),
 		attributes => {
 			filename => 'group_wise_loci_results.txt',
 			content_type => 'text/plain',
 			},
+			body => io($binaryFETResults->[5]{'file_name'})->all,
 			)
 	],
 	);
