@@ -25,8 +25,8 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 
 =head1 OPTIONS
 
- --fastafile       BLAST file to load sequence from
- --configfile      INI style config file containing DB connection parameters
+ --fasta           BLAST file to load sequence from
+ --config          INI style config file containing DB connection parameters
  --noload          Create bulk load files, but don't actually load them.
  --recreate_cache  Causes the uniquename cache to be recreated
  --remove_lock     Remove the lock to allow a new process to run
@@ -110,9 +110,9 @@ my ($CONFIGFILE, $FASTAFILE, $PANFILE, $NOLOAD,
     $VACUUM);
 
 GetOptions(
-	'configfile=s' => \$CONFIGFILE,
-    'fastafile=s' => \$FASTAFILE,
-    'panfile=s' => \$PANFILE,
+	'config=s' => \$CONFIGFILE,
+    'fasta=s' => \$FASTAFILE,
+    'pan=s' => \$PANFILE,
     'noload' => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'  => \$REMOVE_LOCK,
@@ -164,7 +164,6 @@ $argv{save_tmpfiles}  = $SAVE_TMPFILES;
 $argv{vacuum}         = $VACUUM;
 $argv{debug}          = $DEBUG;
 
-
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
 # Intialize the Tree building module
@@ -184,24 +183,25 @@ my $lock = 1;
 $chado->file_handles();
 
 # Save data for inserting into database
-warn "Preparing data for inserting into the $DBNAME database\n";
-warn "(This may take a while ...)\n";
+elapsed_time('db init');
 
 # Load locus locations
-elapsed_time('db init');
 my %loci;
 open(my $in, "<", $PANFILE) or croak "Error: unable to read file $PANFILE ($!).\n";
 <$in>; # header line
 while (my $line = <$in>) {
 	chomp $line;
 	
-	my ($id, $locus, $genome, $allele, $start, $contig) = split(/\t/,$line);
+	my ($id, $locus, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
 	
 	if($allele > 0) {
 		# Hit
+		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
 		$loci{$locus}->{$genome} = {
 			allele => $allele,
 			start => $start,
+			end => $end,
+			contig => $contig
 		};
 	}
 	
@@ -231,7 +231,7 @@ elapsed_time('positions loaded');
 		
 			# Load the sequence
 			allele($locus,$header,$seq,\%sequence_group);
-			elapsed_time("$header complete");
+			
 		}
 		
 		# Build tree
@@ -240,6 +240,7 @@ elapsed_time('positions loaded');
 	close $in;
 	
 }
+elapsed_time("sequences parsed");
 
 # Finalize and load into DB
 
@@ -250,6 +251,8 @@ $chado->flush_caches();
 $chado->load_data() unless $NOLOAD;
 
 $chado->remove_lock();
+
+elapsed_time("data loaded");
 
 exit(0);
 
@@ -304,19 +307,12 @@ sub allele {
 	
 	# Parse input
 	
-	# contig / contig_collection
+	# contig_collection
+	my $contig_collection = $header;
+	my ($access, $contig_collection_id) = ($contig_collection =~ m/(public|private)_(\d+)/);
+	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
 	
-	my ($contig, $contig_collection) = ($header =~ m/(\w+)\|(\w+)/);
-	
-	croak "Missing contig/contig collection ID in FASTA header (line: $header).\n" unless $contig && $contig_collection;
-	
-	my ($access, $contig_id) = ($contig =~ m/(public|private)_(\d+)/);
-	my ($tmp, $contig_collection_id) = ($contig_collection =~ m/(public|private)_(\d+)/);
-	
-	croak "Invalid contig ID format: $contig\n" unless $access && $contig_id;
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $tmp && $contig_collection_id;
-	croak "contig and contig_collection IDs are invalid.\n" unless $access eq $tmp;
-	
+	# privacy setting
 	my $is_public = $access eq 'public' ? 1 : 0;
 	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
 	
@@ -324,13 +320,17 @@ sub allele {
 	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
 	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
 	
-	# location info
+	# location hash
 	my $loc_hash = $loci{$locus}->{$header};
 	croak "Missing location information for locus allele $locus in contig $header.\n" unless defined $loc_hash;
 	
+	# contig
+	my $contig = $loc_hash->{contig};
+	my ($access2, $contig_id) = ($contig =~ m/(public|private)_(\d+)/);
+	
 	# contig sequence positions
 	my $start = $loc_hash->{start};
-	my $end = 0;
+	my $end = $loc_hash->{end};
 	my $allele_num = $loc_hash->{allele};
 	
 	# sequence
@@ -353,12 +353,8 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
-	elapsed_time('data parsed');
-	
 	# Check if this allele is already in DB
 	my ($allele_id, $allele_name) = $chado->validate_allele($query_id,$contig_collection_id,$contig_id,$pub_value);
-	elapsed_time('allele check');
-	
 	my $is_new = 1;
 	
 	if($allele_id) {
@@ -374,18 +370,17 @@ sub allele {
 		
 		# update feature properties
 		$chado->print_ufprop($allele_id,$chado->featureprop_types('copy_number_increase'),$allele_num,0,$is_public);
-		elapsed_time('upd info printed');
 		
 	} else {
 		# NEW
 		# Create allele feature
-	
-		# from parent
-		my $collection_info = $chado->collection($contig_collection_id, $is_public);
-		#my $contig_info = $chado->contig($contig_id, $is_public);
 		
 		# ID
 		my $curr_feature_id = $chado->nextfeature($is_public);
+	
+		# retrieve genome data
+		my $collection_info = $chado->collection($contig_collection_id, $is_public);
+		#my $contig_info = $chado->contig($contig_id, $is_public);
 		
 		# organism
 		my $organism = $collection_info->{organism};
@@ -394,13 +389,12 @@ sub allele {
 		my $dbxref = '\N';
 		
 		# uniquename
-		my $uniquename = $collection_info->{name} . " allele_copy_$allele_num\_of $query_name ";
+		my $uniquename = $collection_info->{name} . " allele_of $query_name ";
 		my $name = "$query_name allele";
 		$uniquename = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
-		
 		$chado->handle_query_hit($curr_feature_id, $query_id, $is_public);
 		
 		# Additional Feature Types
@@ -409,26 +403,18 @@ sub allele {
 		# Sequence location
 		$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
 		
-		# Blast results
-		my $upload_id;
-		
-		if(!$is_public) {
-			$upload_id = $collection_info->{upload};
-		}
-		
+		# Feature properties
+		my $upload_id = $is_public ? undef : $collection_info->{upload};
 		$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
 		
 		# Print feature
 		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id);  
 		$chado->nextfeature($is_public, '++');
-		elapsed_time('new info printed');
 		
 		# Update cache
 		$chado->loci_cache(feature_id => $curr_feature_id, uniquename => $uniquename, type_id => $type, genome_id => $contig_collection_id,
 			contig_id => $contig_id, query_id => $query_id, is_public => $pub_value);
 			
-		elapsed_time('cache updated');
-		
 		$allele_id = $curr_feature_id;
 	}
 	
@@ -470,8 +456,6 @@ sub build_tree {
 	
 	# slurp tree and convert to perl format
 	my $tree = $tree_io->newickToPerlString($tree_file);
-	
-	print "$query_id\n$tree\n\n";
 	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, \%$seq_grp);

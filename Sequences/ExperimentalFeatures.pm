@@ -138,7 +138,7 @@ my %tmpcopystring = (
 	tprivate_feature              => "(feature_id,organism_id,uniquename,type_id,seqlen,residues)",
 	tprivate_featureprop          => "(feature_id,type_id,value,rank)",
 	tprivate_featureloc           => "(feature_id,fmin,fmax,strand,locgroup,rank)",
-	ttree                         => "(tree_id,tree_string)",
+	ttree                         => "(tree_id,name,tree_string)",
 );
 
 my %joinstring = (
@@ -344,14 +344,9 @@ sub new {
 	$self->vacuum(          $arg{vacuum}          );
 	
 	$self->prepare_queries();
-	$self->elapsed_time('prep queries');
-	
 	$self->initialize_sequences();
-	$self->elapsed_time('init seq');
 	$self->initialize_ontology();
-	$self->elapsed_time('init');
 	$self->initialize_db_caches();
-	$self->elapsed_time('prep queries');
 	
 	return $self;
 }
@@ -593,23 +588,20 @@ sub initialize_db_caches {
 
         print STDERR "\nCreating table...\n";
         $dbh->do(CREATE_CACHE_TABLE);
-        $self->elapsed_time('create table');
 
         print STDERR "Populating table...\n";
         $dbh->do(POPULATE_CACHE_TABLE);
         $dbh->do(POPULATE_PRIVATE_CACHE_TABLE);
-        $self->elapsed_time('pop table');
-
+       
         print STDERR "Creating indexes...\n";
         $dbh->do(CREATE_CACHE_TABLE_INDEX1);
         $dbh->do(CREATE_CACHE_TABLE_INDEX2);
         $dbh->do(CREATE_CACHE_TABLE_INDEX3);
-        $self->elapsed_time('create index');
         
 		print STDERR "Adjusting the primary key sequences (if necessary)...";
         $self->update_sequences();
         print STDERR "Done.\n";
-        $self->elapsed_time('upd seqs');
+     
     }
     
     # Loci cache    
@@ -622,8 +614,7 @@ sub initialize_db_caches {
 
         print STDERR "\nCreating table...\n";
         $dbh->do(CREATE_LOCI_CACHE_TABLE);
-        $self->elapsed_time('create table2');
-
+        
         print STDERR "Populating table...\n";
         $dbh->do(POPULATE_LOCI_CACHE_TABLE, undef,
         	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
@@ -631,12 +622,10 @@ sub initialize_db_caches {
         $dbh->do(POPULATE_PRIVATE_LOCI_CACHE_TABLE, undef,
         	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
         	$self->relationship_types('similar_to'), $self->featureprop_types('copy_number_increase'));
-        $self->elapsed_time('pop table2');
-        	
+       	
         print STDERR "Creating indexes...\n";
         $dbh->do(CREATE_LOCI_TABLE_INDEX1);
-        $self->elapsed_time('create index');
-        
+       
         print STDERR "Done.\n";
     }
     
@@ -1918,7 +1907,7 @@ sub validate_allele {
     
     $self->{queries}{'validate_loci'}->execute($type, $cc_id, $c_id, $query_id, $pub);
 	my ($allele_id, $allele_name) = $self->{queries}{'validate_loci'}->fetchrow_array;
-	print join(' ', $allele_id, $allele_name),"\n";
+	
 	if($allele_id) {
 		# existing allele, mark as being updated
 		$self->{queries}{'update_loci'}->execute($allele_id);
@@ -1927,7 +1916,6 @@ sub validate_allele {
 		
 	} else {
 		# no existing allele
-		exit(0);
 		return 0;
 	}
 }
@@ -2151,7 +2139,7 @@ sub handle_phylogeny {
 	
 	if($tree_id) {
 		# update existing tree
-		$self->print_utree($tree_id, $tree);
+		$self->print_utree($tree_id, $tree_name, $tree);
 		
 		# add new tree-feature relationships
 		foreach my $allele_id (keys %$seq_group) {
@@ -2392,11 +2380,11 @@ sub print_ufloc {
 
 sub print_utree {
 	my $self = shift;
-	my ($tree,$string) = @_;
+	my ($tree,$name,$string) = @_;
 	
 	my $fh = $self->file_handles('ttree');		
 
-	print $fh join("\t", ($tree,$string)),"\n";
+	print $fh join("\t", ($tree,$name,$string)),"\n";
 }
 
 sub nextvalueHash {  
