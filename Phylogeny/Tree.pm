@@ -592,4 +592,44 @@ sub newickToPerlString {
 	return $ptree_string;
 }
 
+=head2 geneTree
+
+=cut
+
+sub geneTree {
+	my $self = shift;
+	my $gene_id = shift;
+	my $public = shift;
+	my $visable = shift;
+	
+	# Retrieve gene tree
+	my $table = 'feature_trees';
+	$table = 'private_feature_trees' unless $public;
+	
+	my $tree_rs = $self->dbixSchema->resultset("Tree")->search(
+		{
+			"$table.feature_id" => $gene_id	
+		},
+		{
+			join => [$table],
+			columns => ['tree_string']
+		}
+	);
+	
+	my $tree_row = $tree_rs->first;
+	croak "Error: no entry in tree table mapped to feature ID: $gene_id\n" unless $tree_row;
+	
+	# Tree hash is saved as $tree in Data::Dumper string
+	my $tree;
+	eval $tree_row->tree_string;
+	
+	# Remove genomes not visable to user
+	my $user_tree = $self->pruneTree($tree, $visable);
+	
+	# Convert to json
+	my $jtree_string = encode_json($user_tree);
+	
+	return $jtree_string;
+}
+
 1;

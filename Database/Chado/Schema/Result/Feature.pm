@@ -472,6 +472,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 feature_trees
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::FeatureTree>
+
+=cut
+
+__PACKAGE__->has_many(
+  "feature_trees",
+  "Database::Chado::Schema::Result::FeatureTree",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 featureloc_features
 
 Type: has_many
@@ -728,8 +743,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 15:48:12
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:C0fyGNM2zJpqtbGq5abZkA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:49
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ey7NapZUmJhQMo4ivsh+Bw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

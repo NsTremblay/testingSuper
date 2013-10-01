@@ -36,10 +36,12 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
+use Phylogeny::Tree;
 use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Carp;
+use JSON qw/encode_json/;
 
 sub setup {
 	my $self=shift;
@@ -120,8 +122,10 @@ return $virAmrByStrainJSONref;
 
 sub vf_meta_info : Runmode {
 	my $self = shift;
+	my $_vFFeatureId = shift;
+	
 	my $q = $self->query();
-	my $_vFFeatureId = $q->param("VFName");
+	$_vFFeatureId = $q->param("VFName") unless $_vFFeatureId;
 	my @virMetaData;
 
 	my $_virulenceFactorMetaProperties = $self->dbixSchema->resultset('Featureprop')->search(
@@ -193,52 +197,43 @@ my $vfMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\@virMetaData);
 return $vfMetaInfoJsonRef;
 }
 
+=head2 amr_meta_info
+
+=cut
 sub amr_meta_info : Runmode {
 	my $self = shift;
+	my $_amrFeatureId = shift;
+	
 	my $q = $self->query();
-	my $_amrFeatureId = $q->param("AMRName");
+	$_amrFeatureId = $q->param("AMRName") unless $_amrFeatureId;
 
-#	my $_amrMetaProperties = $self->dbixSchema->resultset('Cvterm')->search(
-#		{'featureprops.feature_id' => $_amrFeatureId},
-#		{
-#			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-#			join		=> ['featureprops' , 'feature_cvterms' , 'features'],
-#			select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
-#			as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
-#			order_by	=> { -asc => ['me.name'] }
-#		}
-#	);
-
-my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
-{
-	'me.feature_id' => $_amrFeatureId
-	},
-	{
-		#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-		join => [
-		'type',
-		{ featureprops => 'type' },
-		{ feature_cvterms => { cvterm => 'dbxref'}}
-		],
-		#select		=> [ qw/feature_cvterms.feature_id me.name me.definition features.uniquename featureprops.value/],
-		#as 			=> ['feature_id' , 'term_name' , 'term_definition' , 'uniquename' , 'value'],
-		order_by	=> { -asc => ['me.name'] }
-	}
+	my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
+		{
+			'me.feature_id' => $_amrFeatureId
+		},
+		{
+			#result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			join => [
+				'type',
+				{ featureprops => 'type' },
+				{ feature_cvterms => { cvterm => 'dbxref'}}
+			],
+			order_by	=> { -asc => ['me.name'] }
+		}
 	);
 
+	my $frow = $feature_rs->first;
+	die "Error: feature $_amrFeatureId is not of antimicrobial resistance gene type (feature type: ".$frow->type->name.").\n" unless $frow->type->name eq 'antimicrobial_resistance_gene';
 
-my $frow = $feature_rs->first;
-die "Error: feature $_amrFeatureId is not of antimicrobial resistance gene type (feature type: ".$frow->type->name.").\n" unless $frow->type->name eq 'antimicrobial_resistance_gene';
-
-my @desc;
-my @syn;
-my @aro;
-
-my $fp_rs = $frow->featureprops;
-
-while(my $fprow = $fp_rs->next) {
-	if($fprow->type->name eq 'description') {
-		push @desc, $fprow->value;
+	my @desc;
+	my @syn;
+	my @aro;
+	
+	my $fp_rs = $frow->featureprops;
+	
+	while(my $fprow = $fp_rs->next) {
+		if($fprow->type->name eq 'description') {
+			push @desc, $fprow->value;
 		} elsif($fprow->type->name eq 'synonym') {
 			push @syn, $fprow->value;
 		}
@@ -260,12 +255,11 @@ while(my $fprow = $fp_rs->next) {
 		descriptions  => \@desc,
 		synonyms     => \@syn,
 		aro_terms    => \@aro
-		);
+	);
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	my $amrMetaInfoJsonRef = $formDataGenerator->_getJSONFormat(\%data_hash);
 	return $amrMetaInfoJsonRef;
-
 }
 
 sub _getVirulenceByStrain {
@@ -362,12 +356,14 @@ sub _getAmrByStrain {
 
 	foreach my $amrGeneName (@_selectedAmrFactors) {
 		my $_dataTableByAmrGene = $_dataTable->search(
-			{'gene_id' => "$amrGeneName"},
+			{
+				'gene_id' => "$amrGeneName"
+			},
 			{
 				select => [qw/me.genome_id me.gene_id me.presence_absence/],
 				as 	=> ['genome_id', 'gene_id', 'presence_absence']
 			}
-			);
+		);
 
 		my %amrGene;
 		my @presenceAbsence;
@@ -377,22 +373,31 @@ sub _getAmrByStrain {
 			my %data;
 			my $presenceAbsenceValue = "n/a";
 			my $_dataRowByStrain = $_dataTableByAmrGene->search(
-				{'genome_id' => "public_".$strainName},
+				{
+					'genome_id' => "public_".$strainName
+				},
 				{
 					column => [qw/strain gene_id presence_absence/]
 				}
-				);
+			);
+			
 			while (my $_dataRow = $_dataRowByStrain->next) {
 				$presenceAbsenceValue = $_dataRow->presence_absence;
 			}
+			
 			if ($strainName =~ /^(public_)/) {
 				$strainName =~ s/(public_)//;
 			}
+			
 			$strainName{'strain_name'} = $self->dbixSchema->resultset('Feature')->find({'feature_id' => $strainName})->uniquename;
+			
 			push (@unprunedTableNames , \%strainName);
+			
 			$data{'value'} = $presenceAbsenceValue;
+			
 			push (@presenceAbsence , \%data);
 		}
+		
 		$amrGene{'presence_absence'} = \@presenceAbsence;
 		$amrGene{'gene_name'} = $self->dbixSchema->resultset('Feature')->find({'feature_id' => $amrGeneName})->uniquename;
 		push (@amrTableData, \%amrGene);
@@ -401,6 +406,178 @@ sub _getAmrByStrain {
 	my %amrHash;
 	$amrHash{'amr'} = \@amrTableData;
 	return (\%amrHash , \@strainTableNames);
+}
+
+=head2 view
+
+
+
+=cut
+
+sub view : Runmode {
+	my $self = shift;
+	
+	# Params 
+	my $q = $self->query();
+	my $qgene;
+	my $qtype;
+	if($self->param('amr')) {
+		$qtype='amr';
+		$qgene = $self->param('amr');
+	} elsif($self->param('vf')) {
+		$qtype='vf';
+		$qgene = $self->param('vf');
+	}
+	my @genomes = $q->param("genome");
+	
+	croak "Error: no query gene parameter." unless $qgene;
+	
+	
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema);
+	
+	# User
+	my $user = $self->authen->username;
+	
+
+	# Validate gene and retrieve gene information
+	my $qgene_info;
+	if($qtype eq 'amr') {
+		$qgene_info = $self->amr_meta_info($qgene);
+	} elsif($qtype eq 'vf') {
+		$qgene_info = $self->vf_meta_info($qgene);
+	}
+	
+	# Validate genomes
+	my %visable_genomes;
+	my $subset_genomes = 0;
+	if(@genomes) {
+		$subset_genomes = 1;
+		my @private_ids = map m/private_(\d+)/ ? $1 : (), @genomes;
+		my @public_ids = map m/public_(\d+)/ ? $1 : (), @genomes;
+		
+		get_logger->debug('public IDs'.join(', ', @public_ids));
+		
+		croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
+		
+		# Retrieve genome names
+		my $public_genomes = $data->publicGenomes(\@public_ids);
+		my $private_genomes = $data->privateGenomes($user, \@private_ids);
+		
+		foreach my $g (@$public_genomes) {
+			$visable_genomes{'public_'.$g->{feature_id}} = $g->{uniquename};
+		}
+		foreach my $g (@$private_genomes) {
+			$visable_genomes{'private_'.$g->{feature_id}} = $g->{uniquename};
+		}
+		
+		unless(keys %visable_genomes) {
+			# User requested strains that they do not have permission to view
+			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@private_ids) );
+			return $self->redirect( $self->home_page );
+		}
+		
+	} else {
+		# Default is to show all viewable genomes
+		my $public_genomes = $data->publicGenomes();
+		my $private_genomes = $data->privateGenomes($user);
+		
+		foreach my $g (@$public_genomes) {
+			$visable_genomes{'public_'.$g->{feature_id}} = $g->{uniquename};
+		}
+		foreach my $g (@$private_genomes) {
+			$visable_genomes{'private_'.$g->{feature_id}} = $g->{uniquename};
+		}
+	}
+	
+	# Template
+	my $template = $self->load_tmpl( 'query_gene_view.tmpl' , die_on_bad_params => 0);
+	
+	if($qtype eq 'amr') {
+		$template->param(amr => 1);
+	} elsif($qtype eq 'vf') {
+		$template->param(vf => 1);
+	}
+	$template->param(gene_info => $qgene_info);
+	
+	
+	# Retrieve presence / absence
+	my @lookup_genomes = keys %visable_genomes;
+	my $alleles = $self->_getResidentGenomes([$qgene], $qtype, \@lookup_genomes, $subset_genomes);
+	my $allele_json = encode_json($alleles->{$qgene}); # Only encode the lists for the gene we need
+	$template->param(allele_json => $allele_json);
+	
+	
+	# Retrieve tree
+	if(scalar keys %visable_genomes > 2) {
+		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+		my $tree_string = $tree->geneTree($qgene, 1, \%visable_genomes);
+		$template->param(tree_json => $tree_string);
+	}
+	
+	# Retrieve meta info
+	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	
+	# Retrieve MSA
+	my $msa_json = $data->seqAlignment($qgene, \%visable_genomes);
+	$template->param(msa_json => $msa_json) if($msa_json);
+	
+	return $template->output();
+}
+
+=head2 _getResidentGenomes
+
+Obtain genome feature IDs that contain
+a VF or AMR allele.
+
+Changes are needed with amr/vf tables are
+upgraded to handle private/public
+
+=cut
+
+sub _getResidentGenomes {
+	my $self = shift;
+	my $markers_ref = shift;
+	my $marker_type = shift;
+	my $genomes_ref = shift;
+	my $incl_absent = shift;
+	
+	# Convert to public/private notation
+	# Assume that in future, can distinguish which genome_id are public and private
+	
+	my $rs;
+	if($marker_type eq 'amr') {
+		$rs = 'RawAmrData';
+	} elsif($marker_type eq 'vf') {
+		$rs = 'RawVfData';
+	} else {
+		croak "[Error] unrecognized marker type: $marker_type.\n";
+	}
+	
+	my $select = {
+		'gene_id' => { '-in' => $markers_ref }
+	};
+	if($genomes_ref) {
+		$select->{genome_id} = { '-in' => $genomes_ref };
+	}
+	
+	my $allele_rs = $self->dbixSchema->resultset($rs)->search($select);
+	
+	my %alleles;
+	while(my $allele_row = $allele_rs->next) {
+		if($allele_row->presence_absence) {
+			$alleles{$allele_row->gene_id}{'present'} = [] unless defined $alleles{$allele_row->gene_id}{'present'};
+			push @{$alleles{$allele_row->gene_id}{'present'}}, $allele_row->genome_id;
+		} elsif($incl_absent) {
+			$alleles{$allele_row->gene_id}{'absent'} = [] unless defined $alleles{$allele_row->gene_id}{'absent'};
+			push @{$alleles{$allele_row->gene_id}{'absent'}}, $allele_row->genome_id;
+		}
+	}
+	
+	return \%alleles;
 }
 
 1;
