@@ -18,9 +18,9 @@ use Email::Simple;
 use Email::MIME;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
+use IO::All;
 
 open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
-
 
 my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $mailUname, $mailPass);
 my ($USERCONFIG, $USEREMAIL, $USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
@@ -95,16 +95,16 @@ my $message = Email::MIME->create(
 	Email::MIME->create(
 		attributes => {
 			filename => 'group_wise_SNP_results.txt',
-			content_type => 'text/plain',
+			disposition  => "attachment",
 			},
 			body => io($snpFETResults->[5]{'file_name'})->all,
 			),
 	Email::MIME->create(
 		attributes => {
 			filename => 'group_wise_loci_results.txt',
-			content_type => 'text/plain',
+			disposition  => "attachment",
 			},
-			body => io($binaryFETResults->[5]{'file_name'})->all,
+			body => io($binaryFETResults->[4]{'file_name'})->all,
 			)
 	],
 	);
