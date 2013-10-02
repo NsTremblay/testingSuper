@@ -215,15 +215,27 @@ function update(source, centerOnFocus, multiSelect) {
 		multiSelect = false;
 	}
 	
-	var branch_scale_factor_y = 7;
-	var branch_scale_factor_x = 1.5;
+	//var branch_scale_factor_y = 7;
+	//var branch_scale_factor_x = 1.5;
 	
 	// Re-compute tree
 	//var nodes = cluster.nodes(root);
 	nodes = cluster.nodes(root);
 	
 	// Scale branch lengths
+	var farthest = d3.max(nodes, function(d) { return d.sum_length; });
+	var lowest = d3.max(nodes, function(d) { return d.x; });
+	
+	var branch_scale_factor_y = (width - 20)/farthest;
+	var branch_scale_factor_x = (height - 20)/lowest;
 	nodes.forEach(function (d) { d.y = d.sum_length * branch_scale_factor_y; d.x = d.x * branch_scale_factor_x; });
+	
+	console.log('far: '+farthest);
+	console.log('low: '+lowest);
+	console.log('width: '+width);
+	console.log('height: '+height);
+	console.log('scaley: '+branch_scale_factor_y);
+	console.log('scalex: '+branch_scale_factor_x);
 	
 	// Shift tree to make room for new level if expansion
 	

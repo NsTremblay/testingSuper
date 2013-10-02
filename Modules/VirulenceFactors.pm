@@ -421,12 +421,12 @@ sub view : Runmode {
 	my $q = $self->query();
 	my $qgene;
 	my $qtype;
-	if($self->param('amr')) {
+	if($q->param('amr')) {
 		$qtype='amr';
-		$qgene = $self->param('amr');
-	} elsif($self->param('vf')) {
+		$qgene = $q->param('amr');
+	} elsif($q->param('vf')) {
 		$qtype='vf';
-		$qgene = $self->param('vf');
+		$qgene = $q->param('vf');
 	}
 	my @genomes = $q->param("genome");
 	
@@ -460,7 +460,7 @@ sub view : Runmode {
 		
 		croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
 		
-		# Retrieve genome names
+		# Retrieve genome names accessible to user
 		my $public_genomes = $data->publicGenomes(\@public_ids);
 		my $private_genomes = $data->privateGenomes($user, \@private_ids);
 		
@@ -544,6 +544,7 @@ sub _getResidentGenomes {
 	my $marker_type = shift;
 	my $genomes_ref = shift;
 	my $incl_absent = shift;
+	my $tabular     = shift;
 	
 	# Convert to public/private notation
 	# Assume that in future, can distinguish which genome_id are public and private
@@ -552,7 +553,7 @@ sub _getResidentGenomes {
 	if($marker_type eq 'amr') {
 		$rs = 'RawAmrData';
 	} elsif($marker_type eq 'vf') {
-		$rs = 'RawVfData';
+		$rs = 'RawVirulenceData';
 	} else {
 		croak "[Error] unrecognized marker type: $marker_type.\n";
 	}
@@ -566,18 +567,128 @@ sub _getResidentGenomes {
 	
 	my $allele_rs = $self->dbixSchema->resultset($rs)->search($select);
 	
-	my %alleles;
-	while(my $allele_row = $allele_rs->next) {
-		if($allele_row->presence_absence) {
-			$alleles{$allele_row->gene_id}{'present'} = [] unless defined $alleles{$allele_row->gene_id}{'present'};
-			push @{$alleles{$allele_row->gene_id}{'present'}}, $allele_row->genome_id;
-		} elsif($incl_absent) {
-			$alleles{$allele_row->gene_id}{'absent'} = [] unless defined $alleles{$allele_row->gene_id}{'absent'};
-			push @{$alleles{$allele_row->gene_id}{'absent'}}, $allele_row->genome_id;
+	if($tabular) {
+		# Tabular format
+		
+		# Setup indices
+		my %col;
+		my $i = 0;
+		my @empty = ('n/a') x scalar(@$genomes_ref);
+		foreach my $gn (@$genomes_ref) {
+			$col{$gn} = $i++;
+		}
+		
+		# Setup emtpy matrix;
+		my %matrix;
+		foreach my $marker (@$markers_ref) {
+			$matrix{$marker} = [@empty];
+		}
+		
+		# Fill in values
+		while(my $allele_row = $allele_rs->next) {
+			my $gene = $allele_row->gene_id;
+		
+			$matrix{$gene}->[$col{$allele_row->genome_id}] = $allele_row->presence_absence;
+		}
+		
+		return(\%matrix);
+		
+	} else {
+		# List format
+		
+		my %alleles;
+		while(my $allele_row = $allele_rs->next) {
+			if($allele_row->presence_absence) {
+				$alleles{$allele_row->gene_id}{'present'} = [] unless defined $alleles{$allele_row->gene_id}{'present'};
+				push @{$alleles{$allele_row->gene_id}{'present'}}, $allele_row->genome_id;
+			} elsif($incl_absent) {
+				$alleles{$allele_row->gene_id}{'absent'} = [] unless defined $alleles{$allele_row->gene_id}{'absent'};
+				push @{$alleles{$allele_row->gene_id}{'absent'}}, $allele_row->genome_id;
+			}
+		}
+		
+		return \%alleles;
+	}
+	
+}
+
+=head2 binaryMatrix
+
+
+=cut
+
+sub binaryMatrix : RunMode {
+	my $self = shift;
+	
+	# Params
+	my $q = $self->query();
+	my @genomes = $q->param("selectedStrains");
+	my @vf = $q->param("selectedVirulence");
+	my @amr = $q->param("selectedAmr");
+	
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema);
+	
+	# User
+	my $user = $self->authen->username;
+	
+	
+	# Validate inputs
+	
+	# empty?
+	return '' unless(@genomes && (@vf || @amr));
+	
+	# validate genomes
+	my @private_ids = map m/private_(\d+)/ ? $1 : (), @genomes;
+	my @public_ids = map m/public_(\d+)/ ? $1 : (), @genomes;
+		
+	get_logger->debug('public IDs'.join(', ', @public_ids));
+		
+	croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
+		
+	# check user can view genomes
+	my $ok = $data->verifyMultipleAccess($user, @private_ids) if @private_ids;
+	
+	# visable genomes
+	my @lookup_genomes;
+	
+	foreach my $id (@public_ids) {
+		push @lookup_genomes, 'public_' . $id;
+	}
+	if(@private_ids) {
+		foreach my $id (keys %$ok) {
+			push @lookup_genomes, 'private_' . $id if $ok->{$id};
 		}
 	}
 	
-	return \%alleles;
+	
+	unless(@lookup_genomes) {
+		# User requested strains that they do not have permission to view
+		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@private_ids) );
+		return $self->redirect( $self->home_page );
+	}
+	
+	get_logger->debug('Retrieving alleles for genomes: '.join(', ', @lookup_genomes));
+	
+	# Get presence/absence
+	# Save as mega-hash
+	my %results;
+	if(@vf) {
+		my $vf_matrix = $self->_getResidentGenomes(\@vf, 'vf', \@lookup_genomes, 1, 1);
+		
+		$results{vf} = $vf_matrix;
+	}
+	
+	if(@amr) {
+		my $amr_matrix = $self->_getResidentGenomes(\@amr, 'amr', \@lookup_genomes, 1, 1);
+		
+		$results{amr} = $amr_matrix;
+	}
+	
+	$results{genome_order} = \@lookup_genomes;
+	
+	
+	return encode_json(\%results);
 }
 
 1;

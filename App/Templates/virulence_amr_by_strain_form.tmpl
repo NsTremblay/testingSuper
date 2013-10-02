@@ -54,7 +54,7 @@ genomeLabels = {};
 							</div>
 						</div>
 
-						<div div id="amrSelect" class="span9 tab-pane">
+						<div id="amrSelect" class="span9 tab-pane">
 							<table>
 								<tbody>
 									<tr>
@@ -149,20 +149,36 @@ genomeLabels = {};
 							</div>
 						</div>
 
-						<div class="span7 row fluid" style="margin:20px 10px 30px 0px">
+						<div class="span7 row-fluid" style="margin:20px 10px 30px 0px">
 							<button id="compareSelections" class="btn btn-primary span3" type="button" value="Submit"><i class="icon-th icon-white"></i> Compared Selections</button>
 							<button id="reset" class="btn btn-danger span3" type="reset" onclick="history.go(0)" value="Reset"><i class="icon-refresh icon-white"></i> Reset</button>
 						</div>
-						<div id="virByStrain" class="row-fluid" style="max-height:500px;overflow:auto;margin:20px 0px 0px 0px;display:none">
-							<table id="virByStrainTable" class="table table-striped table-condensed">
-							</table>
+						
+						<div class="row-fluid">
+							<div id="virByStrain" style="display:none">
+								<h4>Virulence Factor Results</h4>
+								<div style="max-height:500px; max-width:900px; overflow:auto; margin:20px 0px 0px 0px;">
+									<table id="virByStrainTable" class="table table-condensed">
+									</table>
+								</div>
+								<div class="legend">
+									<span class="help-block">Legend:</span> <span class="present">&nbsp<i class="icon-ok"></i>&nbsp</span> : Present; <span class="absent">&nbsp<i class="icon-remove"></i>&nbsp</span> : Absent
+								</div>
+							</div>
 						</div>
-
-						<div id="amrByStrain" class="row-fluid" style="max-height:500px;overflow:auto;margin:20px 0px 0px 0px;display:none">
-							<table id="amrByStrainTable" class="table table-striped table-condensed">
-							</table>
+						<div class="row-fluid">
+							<div id="amrByStrain" style="display:none">
+								<h4>Antimicrobial Resistance Gene Results</h4>
+								<div style="max-height:500px; max-width:900px; overflow:auto; margin:20px 0px 0px 0px;">
+									<!--<table id="amrByStrainTable2" class="table table-condensed">-->
+									<table id="amrByStrainTable">
+									</table>
+								</div>
+								<div class="legend">
+									<span class="help-block">Legend:</span> <span class="present">&nbsp<i class="icon-ok"></i>&nbsp</span> : Present; <span class="absent">&nbsp<i class="icon-remove"></i>&nbsp</span> : Absent
+								</div>
+							</div>
 						</div>
-						<div id="legend" style="display:none"><span class="help-block">Legend:</span> <i class="icon-ok"></i> : Present; <i class="icon-remove"></i> : Absent</div>
 
 					</div>
 				</div>
@@ -246,121 +262,133 @@ genomeLabels = {};
 
 <script type="text/javascript">
 
+var current_results;
+
 $('#compareSelections').click( function(e) {
-	var virListChecked = 0;
-	var amrListChecked = 0;
-	var strainListChecked = 0;
-	$('#virListSelection input[type=checkbox]').each(function()
-	{
-		if (this.checked) {
-			virListChecked++;
-		}
-		else{
-		}
-	});
-	$('#amrListSelection input[type=checkbox]').each(function()
-	{
-		if (this.checked) {
-			amrListChecked++;
-		}
-		else{
-		}
-	});
-	$('#pubStrainList input[type=checkbox]').each(function()
-	{
-		if (this.checked) {
-			strainListChecked++;
-		}
-		else{
-		}
-	});
-	if (virListChecked == 0 && amrListChecked == 0) {
+	e.preventDefault();
+
+	// Check inputs
+	var virList = $('#virListSelection input').serialize();
+	var amrList = $('#amrListSelection input').serialize();
+	var strainList = $('#pubStrainList input').serialize();
+	var params;
+	
+	if(strainList == "") {
+		alert('You must select at least 1 Strain');
+		return false;
+	} else {
+		params = strainList;
+	}
+	
+	if (virList == "" && amrList == "") {
 		alert('You must select at least 1 Virulence Factor or AMR Gene');
 		return 0;
+	} else {
+		if(virList != "") {
+			params += '&' + virList;
+		}
+		if(amrList != "") {
+			params += '&' + amrList;
+		}
 	}
-	if (strainListChecked == 0) {
-		alert('You must select at least 1 Strain');
-		return 0;
-	}
-	else {
-		e.preventDefault();
-		$('#amrByStrain').hide("slow");
-		$('#virByStrain').hide("slow");
-		$('#legend').hide("slow");
-		$('#wheel-loader').show();
-		$('#virByStrain h4').empty();
-		$('#virByStrainTable').empty();
-		$('#amrByStrain h4').empty();
-		$('#amrByStrainTable').empty();;
-		$.post("/virulence_amr_by_strain/", ($('#virListSelection input').serialize() + '&' + $('#amrListSelection input').serialize() + '&' + $('#pubStrainList input').serialize()), 
-			function(data){
-				if (data == "") {
-					$('#wheel-loader').hide();
-					alert("Error, please try again later");
+	
+	// Hide previous results
+	$('#amrByStrain').hide("slow");
+	$('#virByStrain').hide("slow");
+	$('#wheel-loader').show();
+	$('#virByStrainTable').empty();
+	$('#amrByStrainTable').empty();
+	
+	// Retrieve 
+	$.post("/virulence-factors/binaryMatrix/", params, 
+		function(data){
+			//console.log(params);
+			//current_results = data;
+		
+			$('#wheel-loader').hide();
+			
+			if(typeof data.amr !== 'undefined') {
+				var success = displayMatrix(data.amr, data.genome_order, $('#amrByStrainTable'), 'amr');
+				
+				if(success) {
+					$('#amrByStrain').show("slow");
+					// Rotate headers
+					$('#amrByStrainTable').rotateTableCellContent();
 				}
-				else {
-
-					if (data.data[1] != "") {	
-			//virulence table
-			$('#wheel-loader').hide();
-			$('#virByStrain h4').empty();
-			$('#virByStrainTable').empty();
-			$('#virByStrain').prepend('<h4 style="margin:10px">Virulence</h4>');
-			//append the table head
-			$('#virByStrainTable').append('<thead></thead><tbody></tbody>');
-			$('#virByStrainTable thead').append('<td></td>');
-			for (var i = 0; i < data.data[0].virStrains.length; i++) {
-				$('#virByStrainTable thead').append('<td>'+data.data[0].virStrains[i].strain_name+'</td>');
-			};
-			//append the table body
-			for (var i = 0; i < data.data[1].virulence.length; i++) {
-				$('#virByStrainTable tbody').append('<tr>');
-				$('#virByStrainTable tbody').append('<td>'+data.data[1].virulence[i].gene_name+'</td>');
-				for (var j = 0; j < data.data[1].virulence[i].presence_absence.length; j++) {
-					if (data.data[1].virulence[i].presence_absence[j].value == 1) {
-						$('#virByStrainTable tbody').append('<td><i class="icon-ok"></i></td>');
-					}
-					else {
-						$('#virByStrainTable tbody').append('<td><i class="icon-remove"></td>');
-					}
-				};
-				$('#virByStrainTable tbody').append('</tr>');
 			}
-		}
-		if (data.data[2] != "") {
-			//amr table
-			$('#wheel-loader').hide();
-			$('#amrByStrain h4').empty();
-			$('#amrByStrainTable').empty();
-			$('#amrByStrain').prepend('<h4 style="margin:10px">AMR</h4>');
-			//append the table head
-			$('#amrByStrainTable').append('<thead></thead><tbody></tbody>');
-			$('#amrByStrainTable thead').append('<td></td>');
-			for (var i = 0; i < data.data[0].amrStrains.length; i++) {
-				$('#amrByStrainTable thead').append('<td>'+data.data[0].amrStrains[i].strain_name+'</td>');
-			};
-			//append the table body
-			for (var i = 0; i < data.data[2].amr.length; i++) {
-				$('#amrByStrainTable tbody').append('<tr>');
-				$('#amrByStrainTable tbody').append('<td>'+data.data[2].amr[i].gene_name+'</td>');
-				for (var j = 0; j < data.data[2].amr[i].presence_absence.length; j++) {
-					if (data.data[2].amr[i].presence_absence[j].value == 1) {
-						$('#amrByStrainTable tbody').append('<td><i class="icon-ok"></td>');
-					}
-					else {
-						$('#amrByStrainTable tbody').append('<td><i class="icon-remove"></td>');
-					}
-				};
-				$('#amrByStrainTable tbody').append('</tr>');
+			
+			if(typeof data.vf !== 'undefined') {
+				var success = displayMatrix(data.vf, data.genome_order, $('#vfByStrainTable'), 'vf');
+				
+				if(success) {
+					$('#vfByStrain').show("slow");
+					// Rotate headers
+					$('#vfByStrainTable').rotateTableCellContent();
+				}
 			}
-		}
-		$('#legend').show("slow");
-		$('#virByStrain').show("slow");
-		$('#amrByStrain').show("slow");
-	}							
-}, "json");
-}
+			
+		},
+		'json'
+	);
+	
 });
+
+function displayMatrix(data, genomes, tabElem, type) {
+	var visibleData = ['name'];
+
+	// Construct table
+	
+	// Build table header
+	var is_public = /public/;
+	var header = $('<thead></thead>').appendTo(tabElem);
+	header.append('<th></th>');
+	for(var i in genomes) {
+		var feature = genomes[i];
+		var lab;
+		if(is_public.test(feature)) {
+			lab = metaLabel(public_genomes[feature], visibleData);
+		} else {
+			lab = metaLabel(private_genomes[feature], visibleData);
+		}
+		header.append('<th class="vertical">'+lab+'</th>');
+		
+	}
+	
+		
+	// Build table
+	var body = $('<tbody></tbody>').appendTo(tabElem);
+	
+	for(var gene_id in data) {
+		var gene_info;
+		if(type == 'amr') {
+			gene_info = amr_genes[gene_id];
+		} else if(type == 'vf') {
+			gene_info = virulence_factors[gene_id];
+		}
+		
+		if(typeof gene_info === 'undefined') {
+			alert('[Error] unrecognized '+type+' gene: '+gene_id);
+			return false;
+		}
+		
+		var row = $('<tr></tr>').appendTo(body);
+		row.append('<td class="table_name">'+gene_info.uniquename+'</td>');
+		
+		var darray = data[gene_id]
+		
+		for(var j in darray) {
+		
+			if (darray[j] == 1) {
+				row.append('<td class="present"><i class="icon-ok"></td>');
+			}
+			else {
+				row.append('<td class="absent"><i class="icon-remove"></td>');
+			}
+		}
+	}
+	
+	return true;
+}
 
 $('#showVFMetaInfo').click( function(e){
 	$('#VFMetaInfo').empty();
@@ -504,5 +532,40 @@ $('#strain-autocomplete').keyup( function() {
 	});
 	appendFilteredList(filteredList , 'genome');
 });
+
+(function ($) {
+	$.fn.rotateTableCellContent = function (options) {
+		/*
+			Version 1.0
+			7/2011
+			Written by David Votrubec (davidjs.com) and
+			Michal Tehnik (@Mictech) for ST-Software.com
+		*/
+	
+		var cssClass = ((options) ? options.className : false) || "vertical";
+	
+		var cellsToRotate = $('.' + cssClass, this);
+	
+		var betterCells = [];
+		cellsToRotate.each(function () {
+			var cell = $(this)
+			, newText = cell.text()
+			, height = cell.height()
+			, width = cell.width()
+			, newDiv = $('<div>', { height: width, width: height })
+			, newInnerDiv = $('<div>', { text: newText, 'class': 'rotated' });
+		
+			newInnerDiv.css('-webkit-transform-origin', (width / 2) + 'px ' + (width / 2) + 'px');
+			newInnerDiv.css('-moz-transform-origin', (width / 2) + 'px ' + (width / 2) + 'px');
+			newDiv.append(newInnerDiv);
+		
+			betterCells.push(newDiv);
+		});
+	
+		cellsToRotate.each(function (i) {
+			$(this).html(betterCells[i]);
+		});
+	};
+})(jQuery);
 
 </script>
