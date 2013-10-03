@@ -503,10 +503,12 @@ sub view : Runmode {
 	
 	# Retrieve presence / absence
 	my @lookup_genomes = keys %visable_genomes;
-	my $alleles = $self->_getResidentGenomes([$qgene], $qtype, \@lookup_genomes, $subset_genomes);
-	my $allele_json = encode_json($alleles->{$qgene}); # Only encode the lists for the gene we need
-	$template->param(allele_json => $allele_json);
+	my $alleles = $self->_getResidentGenomes([$qgene], $qtype, \@lookup_genomes, $subset_genomes, 0);
 	
+	if(%$alleles) {
+		my $allele_json = encode_json($alleles->{$qgene}); # Only encode the lists for the gene we need
+		$template->param(allele_json => $allele_json);
+	}
 	
 	# Retrieve tree
 	if(scalar keys %visable_genomes > 2) {
@@ -545,6 +547,9 @@ sub _getResidentGenomes {
 	my $genomes_ref = shift;
 	my $incl_absent = shift;
 	my $tabular     = shift;
+	
+#	$self->dbixSchema->storage->debug(1);
+#	$self->dbixSchema->storage->debugfh(IO::File->new('/tmp/trace.out', 'w'));
 	
 	# Convert to public/private notation
 	# Assume that in future, can distinguish which genome_id are public and private

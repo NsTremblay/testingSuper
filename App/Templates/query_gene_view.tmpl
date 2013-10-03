@@ -22,7 +22,9 @@
 	<TMPL_IF vf>
 	var vf_info = <TMPL_VAR gene_info>;
 	</TMPL_IF>
+	<TMPL_IF allele_json>
 	var alleles = <TMPL_VAR allele_json>;
+	</TMPL_IF>
 	</script>
 	
 	<style>
@@ -118,11 +120,14 @@
 			</div>
 			
 		</div>
+		
+		<TMPL_IF allele_json>
 		<div class="row-fluid">
 			<div id="alleles" class="collapse in">
 			
 				<div id="allele_list" class="span8">
 				</div>
+				
 				<div class="span4">
 					<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#list-meta-display" style="margin-left: 10px">
 						<i class=" icon-eye-open icon-white"></i>
@@ -161,7 +166,17 @@
 				</div>
 			</div>
 		</div>
+		<TMPL_ELSE>
+		<div id="alleles" class="collapse in">
+			
+				<div class="span12">
+					<p>No alleles found.
+					</p>
+				</div>
+		</div>
+		</TMPL_IF>
 		
+		<TMPL_IF tree_json>
 		<div class="row-fluid">
 			<hr/>
 			<div class="span12">
@@ -185,7 +200,9 @@
 			</script>
 			<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
 		</div>
+		</TMPL_IF>
 
+		<TMPL_IF msa_json>
 		<div class="row-fluid">
 			<hr/>
 			<div class="span12">
@@ -207,6 +224,8 @@
 				
 			</div>
 		</div>
+		</TMPL_IF>
+		
 	</div>
 
 </body>
@@ -226,7 +245,7 @@
 		<TMPL_IF msa_json>
 		displayAlignment(sequence_alignment_json, $('#sequence_alignment'));
 		</TMPL_IF>
-		
+		<TMPL_IF allele_json>
 		displayAlleles(alleles, $('#allele_list'), ['name']);
 		
 		$('#update-list-meta').click(function(event) {
@@ -240,6 +259,7 @@
 	
 			return false;
 		});
+		</TMPL_IF>
 	});
 	
 	function displayVF(vir){

@@ -617,7 +617,10 @@ sub geneTree {
 	);
 	
 	my $tree_row = $tree_rs->first;
-	croak "Error: no entry in tree table mapped to feature ID: $gene_id\n" unless $tree_row;
+	unless($tree_row) {
+		get_logger->info( "[Warning] no entry in tree table mapped to feature ID: $gene_id\n");
+		return undef;
+	}
 	
 	# Tree hash is saved as $tree in Data::Dumper string
 	my $tree;

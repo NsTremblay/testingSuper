@@ -354,6 +354,15 @@ function displayMatrix(data, genomes, tabElem, type) {
 		
 	}
 	
+	var genome_params = '';
+	$.each(genomes, function(i, g) { genome_params += '&genome='+g });
+	var qgene_param;
+	if(type == 'amr') {
+		qgene_param = 'amr=';
+	} else if(type == 'vf') {
+		qgene_param = 'vf=';
+	}
+	
 		
 	// Build table
 	var body = $('<tbody></tbody>').appendTo(tabElem);
@@ -372,7 +381,9 @@ function displayMatrix(data, genomes, tabElem, type) {
 		}
 		
 		var row = $('<tr></tr>').appendTo(body);
-		row.append('<td class="table_name">'+gene_info.uniquename+'</td>');
+		row.append('<td class="table_name">'+gene_info.uniquename+
+			' <a href="/virulence-factors/view?'+qgene_param+gene_id+genome_params+'" ><i class="icon-search"></i> info</a>'+
+			'</td>');
 		
 		var darray = data[gene_id]
 		
