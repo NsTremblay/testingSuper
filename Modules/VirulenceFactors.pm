@@ -456,8 +456,6 @@ sub view : Runmode {
 		my @private_ids = map m/private_(\d+)/ ? $1 : (), @genomes;
 		my @public_ids = map m/public_(\d+)/ ? $1 : (), @genomes;
 		
-		get_logger->debug('public IDs'.join(', ', @public_ids));
-		
 		croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
 		
 		# Retrieve genome names accessible to user
@@ -500,18 +498,24 @@ sub view : Runmode {
 	}
 	$template->param(gene_info => $qgene_info);
 	
-	
 	# Retrieve presence / absence
 	my @lookup_genomes = keys %visable_genomes;
-	my $alleles = $self->_getResidentGenomes([$qgene], $qtype, \@lookup_genomes, $subset_genomes, 0);
+	my $all_alleles = $self->_getResidentGenomes([$qgene], $qtype, \@lookup_genomes, $subset_genomes, 0);
+	my $gene_alleles; 
 	
-	if(%$alleles) {
-		my $allele_json = encode_json($alleles->{$qgene}); # Only encode the lists for the gene we need
+	if(%$all_alleles) {
+		$gene_alleles = $all_alleles->{$qgene};
+		my $allele_json = encode_json($gene_alleles); # Only encode the lists for the gene we need
 		$template->param(allele_json => $allele_json);
 	}
 	
+	my $num_alleles = 0;
+	$num_alleles = scalar(@{$gene_alleles->{present}}) if $gene_alleles && $gene_alleles->{present};
+	
+	get_logger->debug('Number of alleles found:'.$num_alleles);
+	
 	# Retrieve tree
-	if(scalar keys %visable_genomes > 2) {
+	if($num_alleles > 2) {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		my $tree_string = $tree->geneTree($qgene, 1, \%visable_genomes);
 		$template->param(tree_json => $tree_string);
@@ -524,8 +528,10 @@ sub view : Runmode {
 
 	
 	# Retrieve MSA
-	my $msa_json = $data->seqAlignment($qgene, \%visable_genomes);
-	$template->param(msa_json => $msa_json) if($msa_json);
+	if($num_alleles > 1) {
+		my $msa_json = $data->seqAlignment($qgene, \%visable_genomes);
+		$template->param(msa_json => $msa_json) if($msa_json);
+	}
 	
 	return $template->output();
 }
@@ -603,7 +609,7 @@ sub _getResidentGenomes {
 		
 		my %alleles;
 		while(my $allele_row = $allele_rs->next) {
-			if($allele_row->presence_absence) {
+			if($allele_row->presence_absence == 1) {
 				$alleles{$allele_row->gene_id}{'present'} = [] unless defined $alleles{$allele_row->gene_id}{'present'};
 				push @{$alleles{$allele_row->gene_id}{'present'}}, $allele_row->genome_id;
 			} elsif($incl_absent) {
@@ -646,9 +652,7 @@ sub binaryMatrix : RunMode {
 	# validate genomes
 	my @private_ids = map m/private_(\d+)/ ? $1 : (), @genomes;
 	my @public_ids = map m/public_(\d+)/ ? $1 : (), @genomes;
-		
-	get_logger->debug('public IDs'.join(', ', @public_ids));
-		
+			
 	croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
 		
 	# check user can view genomes
@@ -665,7 +669,6 @@ sub binaryMatrix : RunMode {
 			push @lookup_genomes, 'private_' . $id if $ok->{$id};
 		}
 	}
-	
 	
 	unless(@lookup_genomes) {
 		# User requested strains that they do not have permission to view

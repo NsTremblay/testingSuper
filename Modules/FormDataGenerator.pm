@@ -896,8 +896,6 @@ sub seqAlignment {
 			}
 		);
 		
-		get_logger->debug('private alleles found: '.$feature_rs->count());
-		
 		while(my $feature = $feature_rs->next) {
 			$alignment{$visable->{'private_'.$feature->get_column('collection_id')}} = $feature->residues;
 		}
@@ -921,10 +919,7 @@ sub seqAlignment {
 			}
 		);
 		
-		get_logger->debug('public alleles found: '.$feature_rs->count());
-		
 		while(my $feature = $feature_rs->next) {
-			get_logger->debug('alleles found for genome: public_'.$feature->get_column('collection_id'));
 			$alignment{$visable->{'public_'.$feature->get_column('collection_id')}} = $feature->residues;
 		}
 	}

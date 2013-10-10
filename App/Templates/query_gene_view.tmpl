@@ -63,6 +63,9 @@
 			font-color:#A4A4A4;
 			font-size:10pt;
 		}
+		#allele_list ol {
+			margin: 10pt 25pt;
+		}
 	</style>
 
 	
@@ -219,7 +222,7 @@
 		<div class="row-fluid">
 			<div class="span12">
 				
-				<div id="sequence_alignment" class="collapse out">
+				<div id="sequence_alignment" class="collapse in">
 				</div>
 				
 			</div>
@@ -331,6 +334,7 @@
 		
 		// Sequence names, last name should be the conservation line
 		var seq_keys = Object.keys(seqJSON);
+		console.log(seq_keys);
 		var index = seq_keys.indexOf('conservation_line');
 		if(index == -1)
 			throw new Error("displayAlignment(): sequence alignment object must contain a 'conservation_line' element.");
