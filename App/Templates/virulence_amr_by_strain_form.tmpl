@@ -155,10 +155,11 @@ genomeLabels = {};
 						</div>
 						
 						<div class="row-fluid">
+						<div class="span12">
 							<div id="virByStrain" style="display:none">
 								<h4>Virulence Factor Results</h4>
 								<div style="max-height:500px; max-width:900px; overflow:auto; margin:20px 0px 0px 0px;">
-									<table id="virByStrainTable" class="table table-condensed">
+									<table id="virByStrainTable">
 									</table>
 								</div>
 								<div class="legend">
@@ -166,11 +167,12 @@ genomeLabels = {};
 								</div>
 							</div>
 						</div>
+						</div>
 						<div class="row-fluid">
+						<div class="span12">
 							<div id="amrByStrain" style="display:none">
 								<h4>Antimicrobial Resistance Gene Results</h4>
 								<div style="max-height:500px; max-width:900px; overflow:auto; margin:20px 0px 0px 0px;">
-									<!--<table id="amrByStrainTable2" class="table table-condensed">-->
 									<table id="amrByStrainTable">
 									</table>
 								</div>
@@ -178,6 +180,7 @@ genomeLabels = {};
 									<span class="help-block">Legend:</span> <span class="present">&nbsp<i class="icon-ok"></i>&nbsp</span> : Present; <span class="absent">&nbsp<i class="icon-remove"></i>&nbsp</span> : Absent
 								</div>
 							</div>
+						</div>
 						</div>
 
 					</div>
@@ -302,8 +305,8 @@ $('#compareSelections').click( function(e) {
 	// Retrieve 
 	$.post("/virulence-factors/binaryMatrix/", params, 
 		function(data){
-			//console.log(params);
-			//current_results = data;
+			console.log(params);
+			current_results = data;
 		
 			$('#wheel-loader').hide();
 			
@@ -318,12 +321,12 @@ $('#compareSelections').click( function(e) {
 			}
 			
 			if(typeof data.vf !== 'undefined') {
-				var success = displayMatrix(data.vf, data.genome_order, $('#vfByStrainTable'), 'vf');
+				var success = displayMatrix(data.vf, data.genome_order, $('#virByStrainTable'), 'vf');
 				
 				if(success) {
-					$('#vfByStrain').show("slow");
+					$('#virByStrain').show("slow");
 					// Rotate headers
-					$('#vfByStrainTable').rotateTableCellContent();
+					$('#virByStrainTable').rotateTableCellContent();
 				}
 			}
 			
@@ -381,7 +384,7 @@ function displayMatrix(data, genomes, tabElem, type) {
 		}
 		
 		var row = $('<tr></tr>').appendTo(body);
-		row.append('<td class="table_name">'+gene_info.uniquename+
+		row.append('<td class="table_name">'+gene_info.name+
 			' <a href="/virulence-factors/view?'+qgene_param+gene_id+genome_params+'" ><i class="icon-search"></i> info</a>'+
 			'</td>');
 		
