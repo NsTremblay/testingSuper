@@ -127,12 +127,14 @@ my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
 my %files = map { $_ => 'FH'.$_; } @tables; # SEQ special case in feature table
 
 # SQL for unique cache
+# SQL for unique cache
 use constant CREATE_CACHE_TABLE =>
                "CREATE TABLE public.tmp_gff_load_cache (
                     feature_id int,
                     uniquename varchar(1000),
                     type_id int,
-                    organism_id int
+                    organism_id int,
+                    pub boolean
                 )";
 use constant DROP_CACHE_TABLE =>
                "DROP TABLE public.tmp_gff_load_cache";
@@ -140,10 +142,10 @@ use constant VERIFY_TMP_TABLE =>
                "SELECT count(*) FROM pg_class WHERE relname=? and relkind='r'";
 use constant POPULATE_CACHE_TABLE =>
                "INSERT INTO public.tmp_gff_load_cache
-                SELECT feature_id,uniquename,type_id,organism_id FROM feature";
+                SELECT feature_id,uniquename,type_id,organism_id,TRUE FROM feature";
 use constant POPULATE_PRIVATE_CACHE_TABLE =>
                "INSERT INTO public.tmp_gff_load_cache
-                SELECT feature_id,uniquename,type_id,organism_id FROM private_feature";
+                SELECT feature_id,uniquename,type_id,organism_id,FALSE FROM private_feature";
 use constant CREATE_CACHE_TABLE_INDEX1 =>
                "CREATE INDEX tmp_gff_load_cache_idx1 
                     ON public.tmp_gff_load_cache (feature_id)";
@@ -154,7 +156,9 @@ use constant CREATE_CACHE_TABLE_INDEX3 =>
                "CREATE INDEX tmp_gff_load_cache_idx3
                     ON public.tmp_gff_load_cache (uniquename,type_id,organism_id)";
 use constant TMP_TABLE_CLEANUP =>
-               "DELETE FROM tmp_gff_load_cache WHERE feature_id >= ?";
+               "DELETE FROM tmp_gff_load_cache WHERE pub = TRUE AND feature_id >= ?";             
+use constant TMP_TABLE_PRIVATE_CLEANUP =>
+               "DELETE FROM tmp_gff_load_cache WHERE pub = FALSE AND feature_id >= ?";
                     
 # SQL for lock table
 use constant CREATE_META_TABLE =>
@@ -178,10 +182,16 @@ use constant VALIDATE_UNIQUENAME =>
                "SELECT feature_id FROM public.tmp_gff_load_cache WHERE uniquename = ?";
 use constant INSERT_CACHE_TYPE_ID =>
                "INSERT INTO public.tmp_gff_load_cache 
-                  (feature_id,uniquename,type_id) VALUES (?,?,?)";
+                  (feature_id,uniquename,type_id,pub) VALUES (?,?,?,TRUE)";
 use constant INSERT_CACHE_UNIQUENAME =>
-               "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename)
-                  VALUES (?,?)";
+               "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
+                  VALUES (?,?,?)";
+use constant INSERT_CACHE_PRIVATE_TYPE_ID =>
+               "INSERT INTO public.tmp_gff_load_cache 
+                  (feature_id,uniquename,type_id,pub) VALUES (?,?,?,FALSE)";
+use constant INSERT_CACHE_PRIVATE_UNIQUENAME =>
+               "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
+                  VALUES (?,?,FALSE)";
                   
 # SQL for validating DBxrefs
 use constant SEARCH_DB =>
@@ -898,14 +908,25 @@ sub uniquename_cache {
 		}
 	}
 	elsif ($argv{type_id}) { 
-	
-	$self->{'queries'}{'insert_cache_type_id'}->execute(
-	    $argv{feature_id},
-	    $argv{uniquename},
-	    $argv{type_id},    
-	);
-	$self->dbh->commit;
-	return;
+		
+		if($self->{web_upload}) {
+			# private
+			$self->{'queries'}{'insert_cache_private_type_id'}->execute(
+			    $argv{feature_id},
+			    $argv{uniquename},
+			    $argv{type_id},    
+			);
+		} else {
+			# public
+			$self->{'queries'}{'insert_cache_type_id'}->execute(
+			    $argv{feature_id},
+			    $argv{uniquename},
+			    $argv{type_id},    
+			);
+		}
+		
+		$self->dbh->commit;
+		return;
 	}
 }
 
@@ -1141,9 +1162,15 @@ sub cleanup_tmp_table {
     my $first_feature = $self->first_feature_id();
     return unless $first_feature;
 
-    my $delete_query = $dbh->prepare(TMP_TABLE_CLEANUP);
-
-
+	my $delete_query;
+	if($self->{web_upload}) {
+		# private
+		$delete_query = $dbh->prepare(TMP_TABLE_PRIVATE_CLEANUP);
+	} else {
+		# public
+		$delete_query = $dbh->prepare(TMP_TABLE_CLEANUP);
+	}
+   
     warn "Attempting to clean up the loader temp table (so that --recreate_cache\nwon't be needed)...\n";
     $delete_query->execute($first_feature); 
 
@@ -1231,11 +1258,8 @@ sub prepare_queries {
     
 	$self->{'queries'}{'validate_type_id'} = $dbh->prepare(VALIDATE_TYPE_ID);
 	
-	#$self->{'queries'}{'validate_uniquename'} = $dbh->prepare(VALIDATE_UNIQUENAME);
-	
 	$self->{'queries'}{'insert_cache_type_id'} = $dbh->prepare(INSERT_CACHE_TYPE_ID);
-	
-	#$self->{'queries'}{'insert_cache_uniquename'} = $dbh->prepare(INSERT_CACHE_UNIQUENAME);
+	$self->{'queries'}{'insert_cache_private_type_id'} = $dbh->prepare(INSERT_CACHE_PRIVATE_TYPE_ID);
 	
 	$self->{'queries'}{'search_db'} = $dbh->prepare(SEARCH_DB);
 	
@@ -1747,8 +1771,6 @@ sub handle_parent {
 		$self->print_frel($self->nextoid('feature_relationship'),$child_id,$parent_id,$part_of,$rank);
 		$self->nextoid('feature_relationship','++');
 	}
-	
-  
 }
 
 
