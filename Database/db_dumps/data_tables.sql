@@ -46,9 +46,6 @@ CREATE TABLE raw_amr_data
   CONSTRAINT raw_amr_feature_id_fkey FOREIGN KEY (gene_id)
       REFERENCES feature (feature_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-  CONSTRAINT raw_amr_private_feature_id_fkey FOREIGN KEY (gene_id)
-      REFERENCES private_feature (feature_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
