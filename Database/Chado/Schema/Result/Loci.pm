@@ -29,7 +29,7 @@ __PACKAGE__->table("loci");
 
 =head2 locus_id
 
-  data_type: 'integer'
+  data_type: 'bigint'
   is_auto_increment: 1
   is_nullable: 0
   sequence: 'loci_locus_id_seq'
@@ -44,12 +44,18 @@ Serial ID (integer) generated for each locus
 
 Locus name (can contain both char and int)
 
+=head2 locus_function
+
+  data_type: 'text'
+  is_nullable: 1
+  original: {data_type => "varchar"}
+
 =cut
 
 __PACKAGE__->add_columns(
   "locus_id",
   {
-    data_type         => "integer",
+    data_type         => "bigint",
     is_auto_increment => 1,
     is_nullable       => 0,
     sequence          => "loci_locus_id_seq",
@@ -58,6 +64,12 @@ __PACKAGE__->add_columns(
   {
     data_type   => "text",
     is_nullable => 0,
+    original    => { data_type => "varchar" },
+  },
+  "locus_function",
+  {
+    data_type   => "text",
+    is_nullable => 1,
     original    => { data_type => "varchar" },
   },
 );
@@ -91,9 +103,24 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 snps_genotypes
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-21 11:51:38
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nLLL8FN7NHdspCIv5F6oBA
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpsGenotype>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snps_genotypes",
+  "Database::Chado::Schema::Result::SnpsGenotype",
+  { "foreign.snp_id" => "self.locus_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-17 09:40:14
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zQPJ4NjbCzYpiU7HvK924w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

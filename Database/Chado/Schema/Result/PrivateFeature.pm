@@ -234,21 +234,6 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
-=head2 private_feature_cvterms
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateFeatureCvterm>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_feature_cvterms",
-  "Database::Chado::Schema::Result::PrivateFeatureCvterm",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 private_feature_dbxrefs
 
 Type: has_many
@@ -309,36 +294,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 private_featureloc_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateFeatureloc>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_featureloc_features",
-  "Database::Chado::Schema::Result::PrivateFeatureloc",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 private_featureloc_srcfeatures
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateFeatureloc>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_featureloc_srcfeatures",
-  "Database::Chado::Schema::Result::PrivateFeatureloc",
-  { "foreign.srcfeature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 private_featureprops
 
 Type: has_many
@@ -351,6 +306,21 @@ __PACKAGE__->has_many(
   "private_featureprops",
   "Database::Chado::Schema::Result::PrivateFeatureprop",
   { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 raw_amr_datas
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::RawAmrData>
+
+=cut
+
+__PACKAGE__->has_many(
+  "raw_amr_datas",
+  "Database::Chado::Schema::Result::RawAmrData",
+  { "foreign.gene_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -385,8 +355,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:49
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:y0La87w/f/v/JcxoCj2IBQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:02
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bxx5cJ8+u/VNkAzqCROlSw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

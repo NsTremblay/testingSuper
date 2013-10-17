@@ -109,7 +109,6 @@ open my $outDataFile , '>' , "$INPUTDATATYPE" . "_processed_data.txt" or croak "
 # Create a different file handle for VIR/AMR
 open my $outVirAMrDataFile , '>' , "$INPUTDATATYPE" . "_processed_viramr_data.txt" or croak "Can't write to file: $!";
 
-#Change this method below
 if ($INPUTDATATYPE eq 'binary') {
 	#Need to store the locus names first in the Loci (loci) table
 	for (my $j = 0; $j < scalar(@seqFeatureTemp)-1 ; $j++) {

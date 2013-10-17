@@ -7,20 +7,20 @@ use DBI;
 use lib "$FindBin::Bin/../";
 use Log::Log4perl qw(:easy);
 use Config::Simple;
+use IO::File;
+use IO::Dir;
 
-#Updater script for SuperPhy analysis pipeline. 
-#This script should basically update the snps_genotypes, loci_genotypes, raw_virulence_data and raw_amr_data tables.
-
-#Updating the virulence and amr tables should be easy, just reformat the binary table and append the results to the appropriate tables.
+#Updater script for SuperPhy analysis pipeline.
 
 Log::Log4perl->easy_init({ level   => $DEBUG,
 	file    => ">>/home/genodo/logs/update_data_loading.log" });
 
 INFO('Updating datatables from SuperPhy analysis');
 
-#Change this to read in the file with updated data.
 my $INPUTFILE = $ARGV[0];
 my $DATATYPE = $ARGV[1];
+
+die "Exit status recieved " , FATAL("Datatype not specified (ex. snp, binary, vir, amr).") unless $DATATYPE;
 
 #Config params for connecting to the database. 
 my $CONFIGFILE = "$FindBin::Bin/../Modules/genodo.cfg";
@@ -63,15 +63,176 @@ while (<$binary_output>) {
 	}
 	elsif ($. > 1) {
 		push (@seqFeatures , \@tempRow);
+		#For testing only
+		last if $. == 51;
 	}
 	else {
 	}
 }
 
-my $lineCount = 0;
+#INFO("Total genomes in file: " . (scalar(@genomes) - 1));
 
-INFO("Total genomes in file: " . scalar(@genomes)-1);
-#INFO(scalar(@seqFeatures) . " sequence features (Loci, Snp, etc...) in curent file");
+INFO("Processing $INPUTFILE");
 
-#Need to have checks in case a new VF/AMR gene/Loci/SNP is added.
+open my $outDataFile , '>' , "$DATATYPE" . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't write to file: $!");
 
+if ($DATATYPE eq 'binary') {
+	for (my $j = 0; $j < scalar(@seqFeatures)-1 ; $j++) {
+		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
+		writeOutBinaryData($parsed_header, $j);
+	}
+	INFO("\t...Adding loci to database");
+	copyDataToDb($outDataFile);
+}
+elsif ($DATATYPE eq 'snp'){
+	for (my $j = 0; $j < scalar(@seqFeatures)-1 ; $j++) {
+		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
+		writeOutSnpData($parsed_header, $j);
+	}
+	INFO("\t...Adding snps to database");
+	copyDataToDb($outDataFile); 
+}
+else {
+	#Data is either for virulence or amr genes
+	for (my $j = 0 ; $j < scalar(@seqFeatures)-1 ; $j++) {
+		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
+		writeOutVIRAMRData($parsed_header, $j);
+	}
+	INFO("\t...Adding vf/amr data to database");
+	copyDataToDb($outDataFile);
+}
+
+INFO("Done.");
+
+close $outDataFile;
+unlink "$DATATYPE" . "_processed_data.txt";
+
+#Helper Functions
+sub writeOutBinaryData {
+	my $_locusID = shift;
+	my $_locusIndex = shift;
+	for (my $i = 1; $i < scalar(@genomes); $i++) {
+		print $outDataFile $genomes[$i] . "\t" . $_locusID . "\t" . $seqFeatures[$_locusIndex][$i] . "\n";
+	}
+	# if ($_locusIndex+1 % 1000 == 0) {
+	# 	INFO("$_locusIndex+1 out of " . scalar(@seqFeatures) . " loci completed");
+	# }
+	# else {
+	# }
+}
+
+sub writeOutSnpData {
+	my $_snpID = shift;
+	my $_snpIndex = shift;
+	for (my $i = 1; $i < scalar(@genomes); $i++) {
+		#A
+		if ($seqFeatures[$_snpIndex][$i] eq 'A') {
+			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "1\t" . "0\t" . "0\t" . "0\n";
+		}
+		#T
+		elsif ($seqFeatures[$_snpIndex][$i] eq 'T') {
+			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "0\t" . "1\t" . "0\t" . "0\n";
+		}
+		#C
+		elsif ($seqFeatures[$_snpIndex][$i] eq 'C') {
+			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "0\t" . "0\t" . "1\t" . "0\n";
+		}
+		#G
+		elsif ($seqFeatures[$_snpIndex][$i] eq 'G') {
+			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "0\t" . "0\t" . "0\t" . "1\n";
+		}
+		# -
+		else {
+			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "0\t" . "0\t" . "0\t" . "0\n";
+		}
+	}
+	# if ($_snpIndex+1 % 1000 == 0) {
+	# 	INFO("$_snpIndex+1 out of " . scalar(@seqFeatures) . " snps completed");
+	# }
+	# else {
+	# }
+}
+
+sub writeOutVIRAMRData {
+	my $_vfamrID = shift;
+	my $_viramrIndex = shift;
+	for (my $i = 1; $i < scalar(@genomes); $i++) {
+		print $outDataFile $genomes[$i] . "\t" . $_vfamrID . "\t" . $seqFeatures[$_viramrIndex][$i] . "\n";
+	}
+	# if ($_viramrIndex+1 % 100 == 0) {
+	# 	INFO("$_viramrIndex+1 out of " . scalar(@seqFeatures) . " VF/AMR genes completed");
+	# }
+	# else {
+	# }
+}
+
+
+sub parseHeader {	my $oldHeader = shift;
+	my $_inputDataType = shift;
+	my $newHeader;
+	if ($_inputDataType eq "vir") {
+		if ($oldHeader =~ /^(VF|vf)_([\w\d]+)|/) {
+			$newHeader = $2;
+		}
+		else{
+			INFO("Emptyheader: $oldHeader. Skipping...");
+			next;
+		}
+	}
+	elsif ($_inputDataType eq "amr") {
+		if ($oldHeader =~ /^(AMR|amr)_([\w\d]+)|/) {
+			$newHeader = $2;
+		}
+		else {
+			INFO("Emptyheader: $oldHeader. Skipping...");
+			next;
+		}
+	}
+	#Locus ID (Numerical header)
+	elsif  ($_inputDataType eq "binary") {
+		#if ($oldHeader eq "") {
+		#	INFO("Emptyheader: $oldHeader. Skipping...");
+		#	next;
+		#}
+		#else {
+			$newHeader = $oldHeader;
+		#}
+	}
+	#SNP Data (Numerical header)
+	elsif ($_inputDataType eq "snp") {
+		#if ($oldHeader eq "") {
+		#	INFO("Emptyheader: $oldHeader. Skipping...");
+		#	next;
+		#}
+		#else {
+			$newHeader = $oldHeader;
+		#}
+	}
+	else{
+		die "Exit status recieved", ERROR("Parsing locus headers failed.");
+	}
+	return $newHeader;
+}
+
+sub copyDataToDb {
+	my $_outDataFile = shift;
+	if ($DATATYPE eq "snp") {
+		my $sth = $dbh->prepare('COPY snps_genotypes (feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM \'/home/amanji/repos/computational_platform/Data/snp_processed_data.txt\'') or die "Exit status recieved " , ERROR("Couldn't prepare statement: " . $dbh->errstr);
+		$sth->execute() or die "Exit status recieved " , ERROR("Could't execute statement: " . $sth->errstr);
+		$sth->finish;
+	}
+	elsif ($DATATYPE eq "binary") {
+		my $sth = $dbh->prepare("COPY loci_genotypes (feature_id, locus_id, locus_genotype) FROM '/home/amanji/repos/computational_platform/Data/binary_processed_data.txt'") or die "Exit status recieved " , ERROR("Couldn't prepare statement: " . $dbh->errstr);
+		$sth->execute() or die "Exit status recieved " , ERROR("Could't execute statement: " . $sth->errstr);
+		$sth->finish;
+	}
+	elsif ($DATATYPE eq "vir") {
+
+	}
+	elsif ($DATATYPE eq "amr") {
+
+	}
+	else{
+	}
+	$dbh->disconnect;
+}
