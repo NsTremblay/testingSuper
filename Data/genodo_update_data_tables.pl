@@ -63,8 +63,6 @@ while (<$binary_output>) {
 	}
 	elsif ($. > 1) {
 		push (@seqFeatures , \@tempRow);
-		#For testing only
-		last if $. == 51;
 	}
 	else {
 	}
@@ -98,6 +96,7 @@ else {
 		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
 		writeOutVIRAMRData($parsed_header, $j);
 	}
+	print $outDataFile "\\.\n";
 	INFO("\t...Adding vf/amr data to database");
 	copyDataToDb($outDataFile);
 }
@@ -217,20 +216,58 @@ sub parseHeader {	my $oldHeader = shift;
 sub copyDataToDb {
 	my $_outDataFile = shift;
 	if ($DATATYPE eq "snp") {
-		my $sth = $dbh->prepare('COPY snps_genotypes (feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM \'/home/amanji/repos/computational_platform/Data/snp_processed_data.txt\'') or die "Exit status recieved " , ERROR("Couldn't prepare statement: " . $dbh->errstr);
-		$sth->execute() or die "Exit status recieved " , ERROR("Could't execute statement: " . $sth->errstr);
-		$sth->finish;
+		$dbh->do("COPY snps_genoypes(feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM STDIN");
+		
+		open my $fh , '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't open data file " . $DATATYPE . "_processed_data.txt: $!");
+
+		while (<$fh>) {
+			$dbh->pg_putcopydata($_) or die "Exit status received " , ERROR("Error with pg_putcopydata: $!");
+		}
+
+		$dbh->pg_putcopyend() or die "Exit status recieved" , ERROR("Error calling pg_putcopyend: $!");
 	}
 	elsif ($DATATYPE eq "binary") {
-		my $sth = $dbh->prepare("COPY loci_genotypes (feature_id, locus_id, locus_genotype) FROM '/home/amanji/repos/computational_platform/Data/binary_processed_data.txt'") or die "Exit status recieved " , ERROR("Couldn't prepare statement: " . $dbh->errstr);
-		$sth->execute() or die "Exit status recieved " , ERROR("Could't execute statement: " . $sth->errstr);
-		$sth->finish;
+
+		$dbh->do("COPY loci_genoypes(feature_id, locus_id, locus_genotype) FROM STDIN");
+		
+		open my $fh , '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't open data file " . $DATATYPE . "_processed_data.txt: $!");
+
+		while (<$fh>) {
+			$dbh->pg_putcopydata($_) or die "Exit status received " , ERROR("Error with pg_putcopydata: $!");
+		}
+
+		$dbh->pg_putcopyend() or die "Exit status recieved " , ERROR("Error calling pg_putcopyend: $!");
 	}
 	elsif ($DATATYPE eq "vir") {
+		$dbh->do("COPY raw_virulence_data(genome_id, gene_id, presence_absence) FROM STDIN");
+
+		open my $fh, '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved ", ERROR("Cant't open data file " . $DATATYPE . "_processed_data.txt: $!");
+		seek($fh,0,0);
+
+		while (<$fh>) {
+			if (! ($dbh->pg_putcopydata($_))) {
+				$dbh->pg_putcopyend();
+				$dbh->rollback;
+				$dbh->disconnect;
+				die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+			}
+
+			#$dbh->pg_putcopydata($_) or die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+		}
+		INFO("pg_putcopydata completed successfully.");
+		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend on line $.");
 
 	}
 	elsif ($DATATYPE eq "amr") {
+		$dbh->do("COPY raw_amr_data(genome_id, gene_id, presence_absence) FROM STDIN");
 
+		open my $fh, '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved ", ERROR("Cant't open data file " . $DATATYPE . "_processed_data.txt: $!");
+
+		while (<$fh>) {
+			$dbh->pg_putcopydata($_) or die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+		}
+
+		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend: $!");
 	}
 	else{
 	}
