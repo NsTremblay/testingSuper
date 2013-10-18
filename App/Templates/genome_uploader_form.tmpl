@@ -7,13 +7,13 @@
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 	
 	<TMPL_IF some_errors>
-		<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
+	<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
 	</TMPL_IF>
 
 	<form id="genomeUploadForm" class="form" action="<TMPL_VAR rm>" method="post" enctype="multipart/form-data">
-	
+
 		<TMPL_IF upload_id>
-			<input type="hidden" name="upload_id" value="<TMPL_VAR upload_id>">
+		<input type="hidden" name="upload_id" value="<TMPL_VAR upload_id>">
 		</TMPL_IF>
 		
 		<fieldset class="form-horizontal">
@@ -37,7 +37,7 @@
 				<label class="control-label" for="inputGenomeName">Genome Name</label>
 				<div class="controls">
 					<input type="text" name="g_name" id="inputGenomeName" required>
-						<TMPL_VAR err_g_name>
+					<TMPL_VAR err_g_name>
 				</div>
 			</div>
 			
@@ -45,7 +45,7 @@
 				<label class="control-label" for="inputStrain">Strain</label>
 				<div class="controls">
 					<input type="text" name="g_strain" id="inputStrain" required>
-						<TMPL_VAR err_g_strain>
+					<TMPL_VAR err_g_strain>
 				</div>
 			</div>
 			
@@ -53,7 +53,7 @@
 				<label class="control-label" for="inputSerotype">Serotype</label>
 				<div class="controls">
 					<input type="text" name="g_serotype" id="inputSerotype" required>
-						<TMPL_VAR err_g_serotype>
+					<TMPL_VAR err_g_serotype>
 				</div>
 			</div>
 			
@@ -64,7 +64,7 @@
 					<select class="span3" name="g_host" id="inputHost" required>
 						<option value="" selected="selected">--Select Host--</option>
 						<TMPL_LOOP hosts>
-							<option value="<TMPL_VAR host_value>"><TMPL_VAR host_name></option>
+						<option value="<TMPL_VAR host_value>"><TMPL_VAR host_name></option>
 						</TMPL_LOOP>
 					</select>
 					<div id="inputOtherHost" style="display:none">
@@ -100,15 +100,15 @@
 						<input name="g_age" id="inputAge" class="input-mini" type="text"></input>
 						<label class="radio inline">
 							<input type="radio" name="g_age_unit" value="years" id="inputAgeUnitYears" checked="checked">
-								Years
+							Years
 						</label>
 						<label class="radio inline">
 							<input type="radio" name="g_age_unit" value="months" id="inputAgeUnitMonths">
-								Months
+							Months
 						</label>
 						<label class="radio inline">
 							<input type="radio" name="g_age_unit" value="days" id="inputAgeUnitDays">
-								Days
+							Days
 						</label>
 					</div>
 					<TMPL_VAR err_g_age>
@@ -175,7 +175,7 @@
 				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
 				<div class="controls">
 					<input type="text" class="input-medium" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" required>						
-						<TMPL_VAR err_g_date>
+					<TMPL_VAR err_g_date>
 				</div>
 			</div>
 			
@@ -185,7 +185,7 @@
 					<div>
 						<label class="radio">
 							<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
-								<span class="help-block">Specify by name:</span>
+							<span class="help-block">Specify by name:</span>
 						</label>
 						<select class="input-medium" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
 						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
@@ -197,9 +197,9 @@
 					<div>
 						<label class="radio">
 							<input type="radio" name="g_locate_method" value="map" id="inputLocationMapPoint">
-								<span class="help-block">Or by location on map:</span>
-								<div id="map_canvas" style="display:none; height:400px; width:500px;"></div>
+							<span class="help-block">Or by location on map:</span>
 						</label>
+						<TMPL_INCLUDE NAME="genome_uploader_map_selector.tmpl">
 					</div>
 					<TMPL_VAR err_g_location_latlng>
 				</div>
@@ -254,7 +254,7 @@
 				</label>
 				<div class="controls">
 					<input type="text" id="inputGroupLabel" name="g_group" class="input-xlarge">
-						<TMPL_VAR err_g_group>
+					<TMPL_VAR err_g_group>
 				</div>
 			</div>
 			
@@ -264,7 +264,7 @@
 				</label>
 				<div class="controls">
 					<textarea rows=2 id="inputComments" name="g_comments" class="input-xlarge"> </textarea>
-						<TMPL_VAR err_g_comments>
+					<TMPL_VAR err_g_comments>
 				</div>
 			</div>
 			
@@ -274,7 +274,7 @@
 				</label>
 				<div class="controls">
 					<input type="text" id="inputDescription" name="g_description" class="input-xlarge" >
-						<TMPL_VAR err_g_description>
+					<TMPL_VAR err_g_description>
 				</div>
 			</div>
 			
@@ -286,7 +286,7 @@
 				</label>
 				<div class="controls">
 					<input type="text" id="inputKeywords" name="g_keywords" class="input-xlarge" >
-						<TMPL_VAR err_g_keywords>
+					<TMPL_VAR err_g_keywords>
 				</div>
 			</div>
 			
@@ -296,7 +296,7 @@
 				</label>
 				<div class="controls">
 					<input type="text" id="inputOwner" name="g_owner" class="input-xlarge" >
-						<TMPL_VAR err_g_owner>
+					<TMPL_VAR err_g_owner>
 				</div>
 			</div>
 			
@@ -306,7 +306,7 @@
 				</label>
 				<div class="controls">
 					<input type="text" id="inputSynonym" name="g_synonym" class="input-xlarge" >
-						<TMPL_VAR err_g_synonym>
+					<TMPL_VAR err_g_synonym>
 				</div>
 			</div>
 			
@@ -319,7 +319,7 @@
 						<input type="text" class="input-medium" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" />
 						<input type="text" class="input-medium" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" />
 						<input type="text" class="input-mini" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" />
-					
+
 						<TMPL_VAR err_g_dbxref_db>
 						<TMPL_VAR err_g_dbxref_acc>
 						<TMPL_VAR err_g_dbxref_ver>
@@ -348,15 +348,15 @@
 				<div class="controls">
 					<label class="radio">
 						<input type="radio" name="g_finished" id="inputFinished" value="yes" <TMPL_IF g_is_finished>checked</TMPL_IF>>
-							Complete
+						Complete
 					</label>
 					<label class="radio">
 						<input type="radio" name="g_finished" id="inputUnfinished" value="no" <TMPL_IF g_not_finished>checked</TMPL_IF>>
-							Incomplete
+						Incomplete
 					</label>
 					<label class="radio">
 						<input type="radio" name="g_finished" id="inputUnfinished" value="unknown" <TMPL_IF g_unkn_finished>checked</TMPL_IF>>
-							Unspecified
+						Unspecified
 					</label>
 					<TMPL_VAR err_g_finished>
 				</div>
@@ -366,31 +366,31 @@
 				<label class="control-label" for="inputMolType">
 					Molecular Type
 				</label>
-		  		<div class="controls">
-				  	<label class="radio">
-				  		<input type="radio" name="g_mol_type" id="inputMolType" value="wgs" <TMPL_IF g_wgs_mtype>checked</TMPL_IF>>
-				  		Whole genome shotgun sequence
-				  	</label>
-				  	<label class="radio">
-				  		<input type="radio" name="g_mol_type" id="inputMolType" value="genome" <TMPL_IF g_gen_mtype>checked</TMPL_IF>>
-				  		Genome
-				  	</label>
-				  	<label class="radio">
-				  		<input type="radio" name="g_mol_type" id="inputMolType" value="chromosome" <TMPL_IF g_chr_mtype>checked</TMPL_IF>>
-				  		Chromosome
-				  	</label>
-				  	<label class="radio">
-				  		<input type="radio" name="g_mol_type" id="inputMolType" value="plasmid" <TMPL_IF g_plas_mtype>checked</TMPL_IF>>
-				  		Plasmid
-				  	</label>
-				  	<label class="radio">
-				  		<input type="radio" name="g_mol_type" id="inputMolType" value="dna" <TMPL_IF g_dna_mtype>checked</TMPL_IF>>
-				  		Unspecified
-				  	</label>
-				  	<TMPL_VAR err_g_mol_type>
-		  		</div>
-		  	</div>
-	
+				<div class="controls">
+					<label class="radio">
+						<input type="radio" name="g_mol_type" id="inputMolType" value="wgs" <TMPL_IF g_wgs_mtype>checked</TMPL_IF>>
+						Whole genome shotgun sequence
+					</label>
+					<label class="radio">
+						<input type="radio" name="g_mol_type" id="inputMolType" value="genome" <TMPL_IF g_gen_mtype>checked</TMPL_IF>>
+						Genome
+					</label>
+					<label class="radio">
+						<input type="radio" name="g_mol_type" id="inputMolType" value="chromosome" <TMPL_IF g_chr_mtype>checked</TMPL_IF>>
+						Chromosome
+					</label>
+					<label class="radio">
+						<input type="radio" name="g_mol_type" id="inputMolType" value="plasmid" <TMPL_IF g_plas_mtype>checked</TMPL_IF>>
+						Plasmid
+					</label>
+					<label class="radio">
+						<input type="radio" name="g_mol_type" id="inputMolType" value="dna" <TMPL_IF g_dna_mtype>checked</TMPL_IF>>
+						Unspecified
+					</label>
+					<TMPL_VAR err_g_mol_type>
+				</div>
+			</div>
+
 		</fieldset>
 
 		
@@ -403,60 +403,55 @@
 
 </div>
 
-<script type="text/javascript">
-	function initialize() {
-		var mapOptions = {
-			center: new google.maps.LatLng(49.134890, -122.901435),
-			zoom: 2,
-			mapTypeId: google.maps.MapTypeId.ROADMAP
-		};
-		var map = new google.maps.Map(document.getElementById("map_canvas"),
-			mapOptions);
+<script type="text/javascript">	
+$('#inputLocationMapPoint').click( function() {
+	$('#inputLocationCountry').attr("disabled", true);
+	$('#inputLocationCountry').attr("required", false);
+	$('#inputLocationState').attr("disabled", true);
+	$('#inputLocationCity').attr("disabled", true);
+	$('#inputLocationLatLng').val("");
+	$('#inputLocationLatLng').attr("disabled", false);
+	$('#inputLocationLatLng').attr("required", true);
+	$('#map').show();
+	initialize();
+});
+
+$('#inputLocationName').click( function() {
+	$('#map').hide();
+	$('#inputLocationCountry').attr("disabled", false);
+	$('#inputLocationCountry').attr("required", true);
+	$('#inputLocationState').attr("disabled", false);
+	$('#inputLocationCity').attr("disabled", false);
+	$('#inputLocationLatLng').attr("disabled", true);
+	$('#inputLocationLatLng').attr("required", false);
+});
+
+
+var sourceCategories = <TMPL_VAR json_categories>;
+
+var sourceList = <TMPL_VAR json_sources>;
+
+$('#inputHost').change ( function() { hostChange(true); } );
+
+$('#inputSource').change ( function() {
+	
+	if($(this).val() == 'other') {
+		$("#inputOtherSource").show();
+		$('#inputSourceName').attr("required", true);
+	} else {
+		$("#inputOtherSource").hide();
+		$('#inputSourceName').attr("required", false);
 	}
 	
-	$('#inputLocationMapPoint').click( function() {
-		$('#inputLocationCountry').attr("disabled", true);
-		$('#inputLocationCountry').attr("required", false);
-		$('#inputLocationState').attr("disabled", true);
-		$('#inputLocationCity').attr("disabled", true);
-		$('#map_canvas').show();
-		initialize();
-	});
-	
-	$('#inputLocationName').click( function() {
-		$('#map_canvas').hide();
-		$('#inputLocationCountry').attr("disabled", false);
-		$('#inputLocationCountry').attr("required", true);
-		$('#inputLocationState').attr("disabled", false);
-		$('#inputLocationCity').attr("disabled", false);
-	});
+});
 
-
-	var sourceCategories = <TMPL_VAR json_categories>;
-	
-	var sourceList = <TMPL_VAR json_sources>;
-	
-	$('#inputHost').change ( function() { hostChange(true); } );
-	
-	$('#inputSource').change ( function() {
-	
-		if($(this).val() == 'other') {
-			$("#inputOtherSource").show();
-			$('#inputSourceName').attr("required", true);
-		} else {
-			$("#inputOtherSource").hide();
-			$('#inputSourceName').attr("required", false);
-		}
-	
-	});
-	
 	// Uncheck other symptoms if asymptomatic checked
 	$("#inputAsymptomatic").click(function() {
 		var thisCheck = $(this);
-	
+
 		if(thisCheck.is(':checked')) {
 			$("input:checked[name=g_syndrome]").each(function() {
-			 	$(this).prop('checked', false);
+				$(this).prop('checked', false);
 			});
 		}
 	});
@@ -464,7 +459,7 @@
 	// Uncheck asymptomatic if other symptoms checked
 	$("input[name=g_syndrome]").click(function() {
 		var asymCheck = $("#inputAsymptomatic");
-	
+
 		if(asymCheck.is(':checked') && $(this).is(':checked')) {
 			asymCheck.prop('checked', false);
 		}
@@ -517,9 +512,9 @@
 	
 	// Change form options for new host
 	function hostChange(clearExisting) {
-	
+
 		var host = $('#inputHost');
-	
+
 		// Host other
 		if(host.val() == 'other') {
 			$("#inputOtherHost").show();
@@ -532,7 +527,7 @@
 			$('#inputHostGenus').attr("required", false);
 			$('#inputHostSpecies').attr("required", false);
 		}
-			
+
 		// Show source options for specified host
 		var $el = $("#inputSource");
 		$el.empty(); // remove old options
@@ -540,14 +535,14 @@
 		var cat = sourceCategories[host.val()];
 		
 		$.each(sourceList[cat], function(key, value) {
-	  		$el.append($("<option></option>")
-	     	.prop("value", key).text(value));
+			$el.append($("<option></option>")
+				.prop("value", key).text(value));
 		});
 		
 		// Set default to empty
 		$el.append($("<option></option>")
 			.prop("value","").prop("selected", "selected").text("--Select Source--"));
-			
+
 		// Diseases for specified host
 		// Clear current checks
 		$("input[name=g_syndrome]").prop('checked', false);
@@ -605,4 +600,4 @@
 		}
 	}
 
-</script>
+	</script>

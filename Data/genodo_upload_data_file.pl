@@ -75,24 +75,8 @@ unless ($ENV{USER} eq 'postgres') {
 
 open my $datafile , '<' , $INPUTFILE;
 
-#The first row contains all the genome names/id
-my @firstFileRow; #Number of columns with genome data
-
-#The first column will contain gene/snp/locus names/id
-my @firstFileColumn; # Number of columns with gene/snp/locus data (referred to as a seqFeature)
-
-while (<$datafile>) {
-	if ($. == 1) {
-		@firstFileRow = split(/\t/, $_);
-		foreach my $strain (@firstFileRow) {
-		}
-	}
-	else {
-	}
-}
-
-my @genomeTemp = @firstFileRow;
-my @seqFeatureTemp = @firstFileColumn;
+my @genomeTemp;
+my @seqFeatureTemp;
 
 open my $datafile2 , '<' , $INPUTFILE;
 
@@ -108,11 +92,6 @@ while (<$datafile2>) {
 	else {
 	}
 }
-
-my @rowDelimTable;
-my $locusCount = 0000000;
-my $snpCount = 0000000;
-my $viramrCount = 0000000;
 
 my $lineCount = 0;
 
@@ -130,14 +109,12 @@ open my $outDataFile , '>' , "$INPUTDATATYPE" . "_processed_data.txt" or croak "
 # Create a different file handle for VIR/AMR
 open my $outVirAMrDataFile , '>' , "$INPUTDATATYPE" . "_processed_viramr_data.txt" or croak "Can't write to file: $!";
 
-#Change this method below
 if ($INPUTDATATYPE eq 'binary') {
 	#Need to store the locus names first in the Loci (loci) table
 	for (my $j = 0; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
-		$locusCount++;
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
 		print $outNameFile $locusCount . "\t" . $parsedHeader . "\n";
-		writeOutBinaryData($locusCount);
+		writeOutBinaryData($j);
 	}
 	print "\t...Adding loci to database\n";
 	copyLociDataToDb();
@@ -145,20 +122,18 @@ if ($INPUTDATATYPE eq 'binary') {
 elsif ($INPUTDATATYPE eq 'snp'){
 	#Need to store the snp names first in the Snp (snps) table
 	for (my $j = 0; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
-		$snpCount++;
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
 		print $outNameFile $snpCount . "\t" . $parsedHeader . "\n";
-		writeOutSnpData($snpCount);
+		writeOutSnpData($j);
 	}
-	print "\t...Adding snps to database\n";
+	print "\t...Adding snps to database\n"; 
 	copySnpDataToDb();
 }
 else {
 	#Data is either for virulence or amr genes
 	for (my $j = 0 ; $j < scalar(@seqFeatureTemp)-1 ; $j++) {
-		$viramrCount++;
 		my $parsedHeader = parseHeader($seqFeatureTemp[$j][0], $INPUTDATATYPE);
-		writeOutVIRAMRData($parsedHeader , $viramrCount);
+		writeOutVIRAMRData($parsedHeader , $j);
 	}
 	print "\t...Adding data to database\n";
 	print $lineCount . "\n";
@@ -182,7 +157,6 @@ sub writeOutBinaryData {
 }
 
 sub writeOutSnpData {
-	#Change this method to account for the added cols TODO
 	my $_snpCount = shift;
 	for (my $i = 1; $i < scalar(@genomeTemp); $i++) {
 		#A
@@ -232,8 +206,8 @@ sub parseHeader {
 	my $_inputDataType = shift;
 	my $newHeader;
 	if ($_inputDataType eq "virulence") {
-		if ($oldHeader =~ /^(VF)(_{1})([\w\d]*)(|)/) {
-			$newHeader = $3;
+		if ($oldHeader =~ /^VF_([\w\d]+)|/) {
+			$newHeader = $1;
 		}
 		else{
 			#croak "Not a valid virulence feature_id, exiting\n";
@@ -242,8 +216,8 @@ sub parseHeader {
 		}
 	}
 	elsif ($_inputDataType eq "amr") {
-		if ($oldHeader =~ /^(AMR)(_{1})([\w\d]*)(|)/) {
-			$newHeader = $3;
+		if ($oldHeader =~ /^AMR_([\w\d]+)|/) {
+			$newHeader = $1;
 		}
 		else {
 			#croak "Not a valid amr feature_id, exiting\n";
