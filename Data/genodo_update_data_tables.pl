@@ -63,6 +63,8 @@ while (<$binary_output>) {
 	}
 	elsif ($. > 1) {
 		push (@seqFeatures , \@tempRow);
+		#Arbitrarily set cutoff for testing
+		last if ($. == 8000);
 	}
 	else {
 	}
@@ -71,46 +73,57 @@ while (<$binary_output>) {
 #INFO("Total genomes in file: " . (scalar(@genomes) - 1));
 
 INFO("Processing $INPUTFILE");
+my $numGenomes = scalar(@genomes)-1;
+INFO("Number of genomes: $numGenomes");
+my $numLoci = scalar(@seqFeatures);
+INFO("Number of loci: $numLoci");
 
 open my $outDataFile , '>' , "$DATATYPE" . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't write to file: $!");
 
 if ($DATATYPE eq 'binary') {
-	for (my $j = 0; $j < scalar(@seqFeatures)-1 ; $j++) {
+	for (my $j = 0; $j < $numLoci ; $j++) {
 		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
 		writeOutBinaryData($parsed_header, $j);
 	}
+	print $outDataFile "\\.\n\n";
+	$outDataFile->autoflush;
+	close $outDataFile;
 	INFO("\t...Adding loci to database");
 	copyDataToDb($outDataFile);
 }
 elsif ($DATATYPE eq 'snp'){
-	for (my $j = 0; $j < scalar(@seqFeatures)-1 ; $j++) {
+	for (my $j = 0; $j < $numLoci ; $j++) {
 		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
 		writeOutSnpData($parsed_header, $j);
 	}
+	print $outDataFile "\\.\n\n";
+	$outDataFile->autoflush;
+	close $outDataFile;
 	INFO("\t...Adding snps to database");
 	copyDataToDb($outDataFile); 
 }
 else {
 	#Data is either for virulence or amr genes
-	for (my $j = 0 ; $j < scalar(@seqFeatures)-1 ; $j++) {
+	for (my $j = 0 ; $j < $numLoci ; $j++) {
 		my $parsed_header = parseHeader($seqFeatures[$j][0], $DATATYPE);
 		writeOutVIRAMRData($parsed_header, $j);
 	}
-	print $outDataFile "\\.\n";
+	print $outDataFile "\\.\n\n";
+	$outDataFile->autoflush;
+	close $outDataFile;
 	INFO("\t...Adding vf/amr data to database");
 	copyDataToDb($outDataFile);
 }
 
 INFO("Done.");
 
-close $outDataFile;
 unlink "$DATATYPE" . "_processed_data.txt";
 
 #Helper Functions
 sub writeOutBinaryData {
 	my $_locusID = shift;
 	my $_locusIndex = shift;
-	for (my $i = 1; $i < scalar(@genomes); $i++) {
+	for (my $i = 1; $i < $numGenomes; $i++) {
 		print $outDataFile $genomes[$i] . "\t" . $_locusID . "\t" . $seqFeatures[$_locusIndex][$i] . "\n";
 	}
 	# if ($_locusIndex+1 % 1000 == 0) {
@@ -123,7 +136,7 @@ sub writeOutBinaryData {
 sub writeOutSnpData {
 	my $_snpID = shift;
 	my $_snpIndex = shift;
-	for (my $i = 1; $i < scalar(@genomes); $i++) {
+	for (my $i = 1; $i < $numGenomes; $i++) {
 		#A
 		if ($seqFeatures[$_snpIndex][$i] eq 'A') {
 			print $outDataFile $genomes[$i] . "\t" . $_snpID . "\t" . "1\t" . "0\t" . "0\t" . "0\n";
@@ -155,7 +168,7 @@ sub writeOutSnpData {
 sub writeOutVIRAMRData {
 	my $_vfamrID = shift;
 	my $_viramrIndex = shift;
-	for (my $i = 1; $i < scalar(@genomes); $i++) {
+	for (my $i = 1; $i < $numGenomes; $i++) {
 		print $outDataFile $genomes[$i] . "\t" . $_vfamrID . "\t" . $seqFeatures[$_viramrIndex][$i] . "\n";
 	}
 	# if ($_viramrIndex+1 % 100 == 0) {
@@ -216,27 +229,39 @@ sub parseHeader {	my $oldHeader = shift;
 sub copyDataToDb {
 	my $_outDataFile = shift;
 	if ($DATATYPE eq "snp") {
-		$dbh->do("COPY snps_genoypes(feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM STDIN");
+		$dbh->do("COPY snps_genotypes(feature_id, snp_id, snp_a, snp_t, snp_c, snp_g) FROM STDIN");
 		
 		open my $fh , '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't open data file " . $DATATYPE . "_processed_data.txt: $!");
+		seek($fh,0,0);
 
 		while (<$fh>) {
-			$dbh->pg_putcopydata($_) or die "Exit status received " , ERROR("Error with pg_putcopydata: $!");
+			if (! ($dbh->pg_putcopydata($_))) {
+				$dbh->pg_putcopyend();
+				$dbh->rollback;
+				$dbh->disconnect;
+				die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+			}
 		}
-
-		$dbh->pg_putcopyend() or die "Exit status recieved" , ERROR("Error calling pg_putcopyend: $!");
+		INFO("pg_putcopydata completed successfully.");
+		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend on line $.");
 	}
 	elsif ($DATATYPE eq "binary") {
 
-		$dbh->do("COPY loci_genoypes(feature_id, locus_id, locus_genotype) FROM STDIN");
+		$dbh->do("COPY loci_genotypes(feature_id, locus_id, locus_genotype) FROM STDIN");
 		
 		open my $fh , '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved " , ERROR("Can't open data file " . $DATATYPE . "_processed_data.txt: $!");
+		seek($fh,0,0);
 
 		while (<$fh>) {
-			$dbh->pg_putcopydata($_) or die "Exit status received " , ERROR("Error with pg_putcopydata: $!");
+			if (! ($dbh->pg_putcopydata($_))) {
+				$dbh->pg_putcopyend();
+				$dbh->rollback;
+				$dbh->disconnect;
+				die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+			}
 		}
-
-		$dbh->pg_putcopyend() or die "Exit status recieved " , ERROR("Error calling pg_putcopyend: $!");
+		INFO("pg_putcopydata completed successfully.");
+		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend on line $.");
 	}
 	elsif ($DATATYPE eq "vir") {
 		$dbh->do("COPY raw_virulence_data(genome_id, gene_id, presence_absence) FROM STDIN");
@@ -251,12 +276,9 @@ sub copyDataToDb {
 				$dbh->disconnect;
 				die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
 			}
-
-			#$dbh->pg_putcopydata($_) or die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
 		}
 		INFO("pg_putcopydata completed successfully.");
 		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend on line $.");
-
 	}
 	elsif ($DATATYPE eq "amr") {
 		$dbh->do("COPY raw_amr_data(genome_id, gene_id, presence_absence) FROM STDIN");
@@ -264,12 +286,19 @@ sub copyDataToDb {
 		open my $fh, '<' , $DATATYPE . "_processed_data.txt" or die "Exit status recieved ", ERROR("Cant't open data file " . $DATATYPE . "_processed_data.txt: $!");
 
 		while (<$fh>) {
-			$dbh->pg_putcopydata($_) or die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+			if (! ($dbh->pg_putcopydata($_))) {
+				$dbh->pg_putcopyend();
+				$dbh->rollback;
+				$dbh->disconnect;
+				die "Exit status recieved ", ERROR("Error calling pg_putcopydata: $!");
+			}
 		}
-
-		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend: $!");
+		INFO("pg_putcopydata completed successfully.");
+		$dbh->pg_putcopyend() or die "Exit status recieved ", ERROR("Error calling pg_putcopyend on line $.");
 	}
 	else{
 	}
+	$dbh->commit;
 	$dbh->disconnect;
+	INFO("Data table update complete.");
 }

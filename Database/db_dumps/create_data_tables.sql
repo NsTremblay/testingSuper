@@ -13,9 +13,6 @@ CREATE TABLE raw_amr_data
   CONSTRAINT raw_amr_data_pkey PRIMARY KEY (serial_id),
   CONSTRAINT raw_amr_feature_id_fkey FOREIGN KEY (gene_id)
       REFERENCES feature (feature_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-  CONSTRAINT raw_amr_private_feature_id_fkey FOREIGN KEY (gene_id)
-      REFERENCES private_feature (feature_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
@@ -148,10 +145,10 @@ COMMENT ON COLUMN loci_genotypes.locus_genotype IS 'Presence absence value for e
 
 -- DROP INDEX loci_genotypes_idx2;
 
--- CREATE INDEX loci_genotypes_idx2
---   ON loci_genotypes
---   USING btree
---   (locus_id);
+CREATE INDEX loci_genotypes_idx2
+  ON loci_genotypes
+  USING btree
+  (locus_id);
 
 COMMIT;
 
@@ -194,10 +191,10 @@ COMMENT ON COLUMN snps_genotypes.snp_g IS 'Presence absence value for base "G" f
 
 -- DROP INDEX snps_genotypes_idx2;
 
--- CREATE INDEX snps_genotypes_idx2
---   ON snps_genotypes
---   USING btree
---   (snp_id);
+CREATE INDEX snps_genotypes_idx2
+  ON snps_genotypes
+  USING btree
+  (snp_id);
 
 COMMIT;
 

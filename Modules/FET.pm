@@ -323,6 +323,7 @@ sub run {
 
 		my %rowResult;
 		$rowResult{'marker_id'} = $self->group1Markers->[$i]->get_column('id');
+		$rowResult{'marker_function'} = $self->group1Markers->[$i]->get_column('function');
 		$rowResult{'group1Present'} = $_group1Counts->{'pos'};
 		$rowResult{'group1Absent'} = $_group1Counts->{'neg'};
 		$rowResult{'group2Present'} = $_group2Counts->{'pos'};
