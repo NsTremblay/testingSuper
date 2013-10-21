@@ -37,5 +37,8 @@ Directory contains dumps of the genodo db using the pg_dump tool.
 11. create_tree_table.sql
 	Schema for storing tree strings. Additions on top of 10.
 	
-11. create_meta_table.sql
+12. create_meta_table.sql
 	Schema for storing meta data json strings. Additions on top of 11.
+	
+13. create_private_feature_tables.sql
+	Schema for storing feature data (types, locations) for private genomes. Additions on top of 12.

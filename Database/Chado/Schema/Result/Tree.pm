@@ -114,9 +114,41 @@ __PACKAGE__->set_primary_key("tree_id");
 
 __PACKAGE__->add_unique_constraint("tree_c1", ["name"]);
 
+=head1 RELATIONS
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-06 12:06:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:njod+PDXxsNdTl97rAHVFg
+=head2 feature_trees
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::FeatureTree>
+
+=cut
+
+__PACKAGE__->has_many(
+  "feature_trees",
+  "Database::Chado::Schema::Result::FeatureTree",
+  { "foreign.tree_id" => "self.tree_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_feature_trees
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureTree>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_feature_trees",
+  "Database::Chado::Schema::Result::PrivateFeatureTree",
+  { "foreign.tree_id" => "self.tree_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:50
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:YN45dzoQHo/FkYrzHSujQw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

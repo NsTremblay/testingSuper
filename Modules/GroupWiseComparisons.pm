@@ -46,6 +46,7 @@ use Modules::GroupComparator;
 use Modules::TreeManipulator;
 use Data::FormValidator::Constraints (qw/valid_email/);
 use Log::Log4perl qw'get_logger';
+use Carp;
 use Time::HiRes;
 use Math::Round 'nlowmult';
 use IO::File;
@@ -127,6 +128,31 @@ sub comparison : Runmode {
 		$template->param(run_time => $run_time);
 		return $template->output();
 	}
+}
+
+=head2 view
+
+=cut
+
+sub view : Runmode {
+	my $self = shift;
+
+	# Params 
+	my $q = $self->query();
+	my $qgene;
+	my $qtype;
+	if($q->param('locus')) {
+		$qtype='locus';
+		$qgene = $q->param('locus');
+	} elsif($q->param('snp')) {
+		$qtype='snp';
+		$qgene = $q->param('snp');
+	}
+	
+	my @gp1genomes = $q->param("gp1genome");
+	my @gp2genomes = $q->param("gp2genome");
+	
+	croak "Error: no query gene parameter." unless $qgene;
 }
 
 =head2 _getStrainInfo

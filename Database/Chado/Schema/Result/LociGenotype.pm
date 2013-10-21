@@ -40,7 +40,7 @@ Strain ID
 
 =head2 locus_id
 
-  data_type: 'integer'
+  data_type: 'bigint'
   is_foreign_key: 1
   is_nullable: 0
 
@@ -71,7 +71,7 @@ __PACKAGE__->add_columns(
     original    => { data_type => "varchar" },
   },
   "locus_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  { data_type => "bigint", is_foreign_key => 1, is_nullable => 0 },
   "locus_genotype",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
 );
@@ -106,8 +106,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 14:32:56
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/FJvVcu024JoTLOM6i/8cA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-17 09:40:14
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:t8gsq9p0FU8dlKrDsjnxDw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

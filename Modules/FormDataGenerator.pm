@@ -136,18 +136,25 @@ sub getFormData {
 
 sub publicGenomes {
 	my $self = shift;
+	my $subset_ids = shift;
+	
+	my $select_stmt = {
+		'type.name' =>  'contig_collection'
+	};
+	if($subset_ids) {
+		croak unless ref($subset_ids) eq 'ARRAY';
+		$select_stmt->{feature_id} = { '-in' => $subset_ids };
+	}
 	
 	my $genomes = $self->dbixSchema->resultset('Feature')->search(
- {
-     'type.name' =>  'contig_collection',
-     },
-     {
-        result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-        columns => [qw/feature_id uniquename name dbxref.accession/],
-        join => ['type' , 'dbxref'],
-        order_by    => {-asc => ['me.uniquename']}
-    }
-    );
+		$select_stmt,
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			columns => [qw/feature_id uniquename name dbxref.accession/],
+			join => ['type' , 'dbxref'],
+			order_by    => {-asc => ['me.uniquename']}
+	    }
+	);
 
     my @publicFormData = $genomes->all;
     
@@ -157,77 +164,103 @@ sub publicGenomes {
 sub privateGenomes {
     my $self = shift;
     my $username = shift;
+    my $subset_ids = shift;
     
     if($username) {
         # user is logged in
         
         # Return private genome names as list of hash-refs
         # Need to check view permissions for user
+        
+		my $select_stmt = [
+			{
+	             'login.username' => $username,
+	             'type.name'      => 'contig_collection',
+			},
+			{
+				'upload.category' => 'public',
+				'type.name'       => 'contig_collection',
+			},
+		];
+		if($subset_ids) {
+			croak unless ref($subset_ids) eq 'ARRAY';
+			$select_stmt = [
+				{
+		             'login.username' => $username,
+		             'type.name'      => 'contig_collection',
+		             'feature_id'     => { '-in' => $subset_ids }
+				},
+				{
+					'upload.category' => 'public',
+					'type.name'       => 'contig_collection',
+					'feature_id'     => { '-in' => $subset_ids }
+				},
+			];
+		}
+		
         my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-        	[
-           {
-             'login.username' => $username,
-             'type.name'      => 'contig_collection',
-             },
-             {
-                 'upload.category'    => 'public',
-                 'type.name'      => 'contig_collection',
-                 },
-                 ],
-                 {
-                    result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-                    columns => [qw/feature_id uniquename/],
-                    '+columns' => [qw/upload.category login.username/],
-                    join => [
-                    { 'upload' => { 'permissions' => 'login'} },
-                    'type'
-                    ]
+			$select_stmt,
+			{
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+				columns => [qw/feature_id uniquename/],
+				'+columns' => [qw/upload.category login.username/],
+				join => [
+					{ 'upload' => { 'permissions' => 'login'} },
+					'type'
+				]
 
-                }
-                );
+			}
+		);
         
         my @privateFormData = $genomes->all;
 
         foreach my $row_hash (@privateFormData) {
-           my $display_name = $row_hash->{uniquename};
-           if($row_hash->{upload}->{category} eq 'public') {
-              $display_name .= ' [Pub]';
-              } else {
-                $display_name .= ' [Pri]';
-            }
-            $row_hash->{displayname} = $display_name;
+			my $display_name = $row_hash->{uniquename};
+			if($row_hash->{upload}->{category} eq 'public') {
+			   $display_name .= ' [Pub]';
+			} else {
+			     $display_name .= ' [Pri]';
+			}
+			$row_hash->{displayname} = $display_name;
         }
 
         return \@privateFormData;
 
-        } else {
+	} else {
 		# Return user-uploaded public genome names as list of hash-refs
+		my $select_stmt = {
+			'upload.category' => 'public',
+			'type.name'       => 'contig_collection',
+		};
+		
+		if($subset_ids) {
+			croak unless ref($subset_ids) eq 'ARRAY';
+			$select_stmt->{feature_id} = { '-in' => $subset_ids };
+		}
+		
 		my $genomes = $self->dbixSchema->resultset('PrivateFeature')->search(
-        {
-            'upload.category'    => 'public',
-            'type.name'      => 'contig_collection',
-            },
-            {
-                result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-                columns => [qw/feature_id uniquename/],
-                join => [
-                { 'upload' => 'permissions' },
-                'type'
-                ]
+			$select_stmt,
+			{
+	            result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+	            columns => [qw/feature_id uniquename/],
+	            join => [
+					{ 'upload' => 'permissions' },
+					'type'
+				]
+	
+	        }
+        );
 
-            }
-            );
+		my @privateFormData = $genomes->all;
 
-        my @privateFormData = $genomes->all;
+		foreach my $row_hash (@privateFormData) {
+			my $display_name = $row_hash->{uniquename};
 
-        foreach my $row_hash (@privateFormData) {
-           my $display_name = $row_hash->{uniquename};
+			$row_hash->{displayname} = $display_name . ' [Pub]';
+		}
 
-           $row_hash->{displayname} = $display_name . ' [Pub]';
-       }
-
-       return \@privateFormData;
-   }
+		return \@privateFormData;
+	}
 }
 
 =head2 _hashFormData
@@ -550,47 +583,47 @@ sub genomeInfo {
 	
 	# Get pre-queried public feature table data
 	my $meta_rs = $self->dbixSchema->resultset("Meta")->search(
-  {
-   name => 'public'	
-   },
-   {
-       columns => ['data_string']
-   }
-   );
-	
+		{
+			name => 'public'	
+		},
+		{
+		    columns => ['data_string']
+		}
+	);
+		
 	my $public_json;
 	if(my $row = $meta_rs->first) {
 		$public_json = $row->data_string;
-     } else {
-      my $public_genome_info = $self->_runGenomeQuery(1);
-      $public_json = encode_json($public_genome_info);
-  }
+	} else {
+		my $public_genome_info = $self->_runGenomeQuery(1);
+		$public_json = encode_json($public_genome_info);
+	}
 
-  my $private_json;
-  if($username) {
+	my $private_json;
+	if($username) {
 		# Get user private genomes
-		
+	
 		my $private_genome_info = $self->_runGenomeQuery(0, $username);
 		$private_json = encode_json($private_genome_info);
-		
-     } else {
+	
+   } else {
 		# Get user public genomes
 		
 		my $meta_rs = $self->dbixSchema->resultset("Meta")->search(
-       {
-        name => 'upublic'	
-        },
-        {
-            columns => ['data_string']
-        }
-        );
-
+			{
+				name => 'upublic'	
+			},
+			{
+				columns => ['data_string']
+			}
+		);
+		
 		if(my $row = $meta_rs->first) {
 			$private_json = $row->data_string;
-          } else {
-           my $private_genome_info = $self->_runGenomeQuery(0);
-           $private_json = encode_json($private_genome_info);	
-       }
+		} else {
+			my $private_genome_info = $self->_runGenomeQuery(0);
+			$private_json = encode_json($private_genome_info);	
+		}
    }
 
    return($public_json, $private_json);
@@ -777,30 +810,151 @@ privacy setting if true (i.e. public, private or release).
 sub verifyAccess {
 	my ($self, $username, $feature_id) = @_;
 	
-	my $genome = $self->dbixSchema->resultset('PrivateFeature')->search(
-		[
-      {
-        'login.username' => $username,
-        'feature_id' => $feature_id
-        },
-        {
-            'upload.category'    => 'public',
-            'feature_id' => $feature_id
-            },
-            ],
-            {     
-              columns => [qw/feature_id/],
-              '+columns' => [qw/upload.category/],
-              join => { 'upload' => { 'permissions' => 'login'} },
-          }
-          );
+	my $results = $self->verifyMultipleAcess($username, [$feature_id]);
 	
-	if(my $feature = $genome->first) {
-		return $feature->upload->category;
-     } else {
-      return 0;
-  }
+	return $results->{$feature_id};
 }
 
+sub verifyMultipleAccess {
+	my ($self, $username, $feature_ids) = @_;
+	
+	croak unless ref($feature_ids) eq 'ARRAY';
+	
+	my $genomes_rs = $self->dbixSchema->resultset('PrivateFeature')->search(
+		[
+			{
+				'login.username' => $username,
+				'feature_id' => { '-in' => $feature_ids }
+        	},
+			{
+				'upload.category'    => 'public',
+				'feature_id' => { '-in' => $feature_ids }
+			},
+		],
+        {     
+        	columns => [qw/feature_id/],
+            '+columns' => [qw/upload.category/],
+            join => { 'upload' => { 'permissions' => 'login'} },
+		}
+	);
+	
+	my %results;
+	foreach my $id (@$feature_ids) {
+		if(my $feature = $genomes_rs->find( { 'feature_id' => $id })) {
+			$results{$id} = $feature->upload->category;	
+		} else {
+			$results{$id} = 0;	
+		}
+	}
+	
+	return \%results;
+}
+
+=head2 seqAlignment
+
+seqAlignent(feature_id, visable_hash)
+
+Inputs:
+ -feature_id       A query gene feature_id. 
+                    Must be 'query_gene' type.
+ -visable_hash     Hash containing
+	                 public_/private_feature_ids => uniquename
+	                                
+MAKE SURE THE USER CAN ACCESS THESE GENOMES
+DO NOT RELEASE PRIVATE SEQUENCES!	                                
+
+Returns: 
+  a JSON string representing a multiple
+  sequence alignment of gene alleles.
+
+=cut
+sub seqAlignment {
+	my ($self, $locus, $visable) = @_;
+	
+	get_logger->debug("multiple sequence alignment");  
+	
+	my @private_ids = map m/private_(\d+)/ ? $1 : (), keys %$visable;
+	my @public_ids = map m/public_(\d+)/ ? $1 : (), keys %$visable;
+	
+	my %alignment;
+	
+	if(@private_ids) {
+		my $feature_rs = $self->dbixSchema->resultset('PrivateFeature')->search(
+			{
+				'private_feature_relationship_subjects.object_id' => $locus,
+				'type.name' => 'similar_to', 
+				'private_feature_relationship_subjects_2.object_id' => { '-in' => \@private_ids },
+				'type_2.name' => 'part_of'
+			},
+			{
+				join => [
+					{ 'private_feature_relationship_subjects' => 'type' },
+					{ 'private_feature_relationship_subjects' => 'type' }
+				],
+				'+select' => ['private_feature_relationship_subjects_2.object_id'],
+				'+as' => 'collection_id'
+			}
+		);
+		
+		while(my $feature = $feature_rs->next) {
+			$alignment{$visable->{'private_'.$feature->get_column('collection_id')}} = $feature->residues;
+		}
+	}
+	
+	if(@public_ids) {
+		my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
+			{
+				'feature_relationship_subjects.object_id' => $locus,
+				'type.name' => 'similar_to', 
+				'feature_relationship_subjects_2.object_id' => { '-in' => \@public_ids },
+				'type_2.name' => 'part_of'
+			},
+			{
+				join => [
+					{ 'feature_relationship_subjects' => 'type' },
+					{ 'feature_relationship_subjects' => 'type' }
+				],
+				'+select' => ['feature_relationship_subjects_2.object_id'],
+				'+as' => 'collection_id'
+			}
+		);
+		
+		while(my $feature = $feature_rs->next) {
+			$alignment{$visable->{'public_'.$feature->get_column('collection_id')}} = $feature->residues;
+		}
+	}
+	
+	my @sequences = values(%alignment);
+	return 0 unless @sequences > 1 && @sequences < 21;
+	
+	# Compute conservation line
+	
+	my $len = length($sequences[0]);
+	map { croak "Error: sequence alignment lengths are not equal." unless length($_) == $len } @sequences[1..$#sequences];
+	
+	my $cons;
+	for(my $i = 0; $i < $len; $i++) {
+		my $m = 1;
+		my $symbol = substr($sequences[0], $i, 1);
+		
+		foreach my $s (@sequences[1..$#sequences]) {
+			if($symbol ne substr($s,$i,1)) {
+				# mismatch
+				$cons .= ' ';
+				$m = 0;
+				last;
+			}
+			
+		}
+		
+		# match
+		$cons .= '*' if $m;
+	}
+	
+	$alignment{conservation_line} = $cons;
+	
+	return encode_json(\%alignment);
+	
+}
 
 1;

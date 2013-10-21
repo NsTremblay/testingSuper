@@ -279,6 +279,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_feature_trees
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureTree>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_feature_trees",
+  "Database::Chado::Schema::Result::PrivateFeatureTree",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_featureprops
 
 Type: has_many
@@ -291,6 +306,21 @@ __PACKAGE__->has_many(
   "private_featureprops",
   "Database::Chado::Schema::Result::PrivateFeatureprop",
   { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 raw_amr_datas
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::RawAmrData>
+
+=cut
+
+__PACKAGE__->has_many(
+  "raw_amr_datas",
+  "Database::Chado::Schema::Result::RawAmrData",
+  { "foreign.gene_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -325,8 +355,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-27 15:24:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FpYPH3+TlY0LTHxwMYBxXw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:02
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bxx5cJ8+u/VNkAzqCROlSw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

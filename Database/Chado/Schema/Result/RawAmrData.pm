@@ -103,9 +103,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
+=head2 gene_2
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-10 15:48:13
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TtM2OxVVZk67Tveu9DiuUg
+Type: belongs_to
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeature>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "gene_2",
+  "Database::Chado::Schema::Result::PrivateFeature",
+  { feature_id => "gene_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:02
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:huR4gPeV91tTsOkOVmeTxQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

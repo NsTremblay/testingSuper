@@ -282,14 +282,14 @@ sub search : Runmode {
 			
 			$template->param(tree_json => $tree_string);
 
-			} else {
+		} else {
 			# No private genomes
 			# Return public tree
 			
 			$template->param(tree_json => $tree->fullTree);
-		}
+			}
 		
-		} else {
+	} else {
 		# Anonymous user
 		# Return public tree
 		

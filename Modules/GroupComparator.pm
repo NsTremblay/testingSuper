@@ -137,7 +137,7 @@ sub emailResultsToUser {
 	],
 	);
 
-sendmail( $message, {transport => $transport} );
+	sendmail( $message, {transport => $transport} );
 }
 
 sub getBinaryData {
@@ -151,9 +151,9 @@ sub getBinaryData {
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'locus_count'],
-			group_by => [qw/me.locus_id/],
+			select => ['me.locus_id', 'me.locus_function', {sum => 'loci_genotypes.locus_genotype'}],
+			as => ['id', 'function', 'locus_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
 			order_by => [qw/me.locus_id/]
 		}
 		);
@@ -162,9 +162,9 @@ sub getBinaryData {
 		{feature_id => $group2GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'locus_count'],
-			group_by => [qw/me.locus_id/],
+			select => ['me.locus_id', 'me.locus_function', {sum => 'loci_genotypes.locus_genotype'}],
+			as => ['id', 'function', 'locus_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
 			order_by => [qw/me.locus_id/]
 		}
 		);
@@ -199,22 +199,38 @@ sub getBinaryData {
 	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
+	my @group1IDArray;
 	foreach my $name (@{$group1GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group1NameArray , \%nameHash);
 	}
 
+	foreach my $id (@{$group1GenomeIds}) {
+		my %idHash;
+		$idHash{'id'} = $id;
+		push(@group1IDArray, \%idHash);
+	}
+
 	my @group2NameArray;
+	my @group2IDArray;
 	foreach my $name (@{$group2GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group2NameArray , \%nameHash);
 	}
 
+	foreach my $id (@{$group2GenomeIds}) {
+		my %idHash;
+		$idHash{'id'} = $id;
+		push(@group2IDArray, \%idHash);
+	}
+
 	push($results, {'file_name' => $temp_file_name});
 	push($results, {'gp1_names' => \@group1NameArray});
 	push($results, {'gp2_names' => \@group2NameArray});
+	push($results, {'gp1_ids' => \@group1IDArray});
+	push($results, {'gp2_ids' => \@group2IDArray});
 
 	return $results;
 }
@@ -226,25 +242,25 @@ sub getSnpData {
 	my $group1GenomeNames = shift;
 	my $group2GenomeNames = shift;
 
-	my $group1SnpDataTable = $self->dbixSchema->resultset('Snp')->search(
+	my $group1SnpDataTable = $self->dbixSchema->resultset('Loci')->search(
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['snps_genotypes'],
-			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.snp_id/],
-			order_by => [qw/me.snp_id/]
+			select => ['me.locus_id', 'me.locus_function', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
+			order_by => [qw/me.locus_id/]
 		}
 		);
 
-	my $group2SnpDataTable = $self->dbixSchema->resultset('Snp')->search(
+	my $group2SnpDataTable = $self->dbixSchema->resultset('Loci')->search(
 		{feature_id => $group2GenomeIds},
 		{
 			join => ['snps_genotypes'],
-			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.snp_id/],
-			order_by => [qw/me.snp_id/]
+			select => ['me.locus_id','me.locus_function', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
+			order_by => [qw/me.locus_id/]
 		}
 		);
 
@@ -296,17 +312,31 @@ sub getSnpData {
 	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
+	my @group1IDArray;
 	foreach my $name (@{$group1GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group1NameArray , \%nameHash);
 	}
 
+	foreach my $id (@{$group1GenomeIds}) {
+		my %idHash;
+		$idHash{'id'} = $id;
+		push(@group1IDArray, \%idHash);
+	}
+
 	my @group2NameArray;
+	my @group2IDArray;
 	foreach my $name (@{$group2GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group2NameArray , \%nameHash);
+	}
+
+	foreach my $id (@{$group2GenomeIds}) {
+		my %idHash;
+		$idHash{'id'} = $id;
+		push(@group2IDArray, \%idHash);
 	}
 
 	#push($results, {'file_name' => $temp_file_name});
@@ -314,6 +344,8 @@ sub getSnpData {
 	push(@results, {'file_name' => $temp_file_name});
 	push(@results, {'gp1_names' => \@group1NameArray});
 	push(@results, {'gp2_names' => \@group2NameArray});
+	push(@results, {'gp1_ids' => \@group1IDArray});
+	push(@results, {'gp2_ids' => \@group2IDArray});
 
 	return \@results;
 }
