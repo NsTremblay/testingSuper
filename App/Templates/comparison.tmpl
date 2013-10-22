@@ -195,13 +195,13 @@
 		var locus = $('td[type="locus_marker"]');
 
 		locus.each( function() {
-			$(this).append('<a href="/group-wise-comparisons/view?locus='+$(this).id+gp1genomes+gp2genomes+'"><i class="icon-search"></i> info</a>');
+			$(this).append('<a href="/group-wise-comparisons/view?locus='+$(this).attr('id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
 		});
 
 		var snp = $('td[type="snp_marker"]');
 
 		snp.each( function() {
-			$(this).append('<a href="/group-wise-comparisons/view?snp='+$(this).id+gp1genomes+gp2genomes+'"><i class="icon-search"></i> info</a>');
+			$(this).append('<a href="/group-wise-comparisons/view?snp='+$(this).attr('id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
 		});
 
 	});

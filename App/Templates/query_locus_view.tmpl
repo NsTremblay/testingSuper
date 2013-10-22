@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<TMPL_INCLUDE NAME="header.tmpl">
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+</head>
+
+<body>
+	<div class="container">
+
+	<TMPL_IF locus>
+	<table class="table">
+		<tr>
+			<th>Genome Name</th>
+			<th>Present/Absent</th>
+		</tr>
+		<h4>Locus: </h4>
+		<TMPL_LOOP locusMetaInfo>
+		<thead><h4><TMPL_VAR id></h4></thead>
+		<caption class="info">
+			<TMPL_VAR function>
+		</caption>
+		<tbody>
+			<TMPL_LOOP data>
+			<tr>
+				<td><a href="/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
+				<td>
+					<TMPL_IF genotype><i class="icon-ok"></i>
+					<TMPL_ELSE><i class="icon-remove"></i></TMPL_IF>
+				</td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+		</TMPL_LOOP>
+	</table>
+	</TMPL_IF>
+
+	<TMPL_IF snp>
+	<table class="table">
+		<tr>
+			<th>Genome Name</th>
+			<th>Genotype</th>
+		</tr>
+		<h4>SNP: </h4>
+		<TMPL_LOOP locusMetaInfo>
+		<thead><h4><TMPL_VAR id></h4></thead>
+		<caption>
+			<TMPL_VAR function>
+		</caption>
+
+		<tbody>
+			<TMPL_LOOP data>
+
+			<tr>
+				<td><a href="/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
+				<td><TMPL_VAR genotype></td>
+			</tr>
+			</TMPL_LOOP>
+		</tbody>
+		</TMPL_LOOP>
+	</table>
+	</TMPL_IF>
+
+</div>
+</body>
+</html>

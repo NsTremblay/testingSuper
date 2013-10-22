@@ -84,12 +84,12 @@ my $message = Email::MIME->create(
 	header => [
 	To => $USEREMAIL,
 	From => $mailUname,
-	Subject        => 'SuperPhy group wise comparison results',
+	Subject        => 'Your SuperPhy group wise comparison results are ready.',
 	'Content-Type' => 'text/html'
 	],
 	parts => [
 	Email::MIME->create(
-		body => "This is a test. Do not reply to this.\n"
+		body => "Your results are ready for download in the provided attachments. This is an automated message, please do not reply to this.\n"
 		. "SuperPhy Team.\n"
 		),
 	Email::MIME->create(
@@ -123,9 +123,9 @@ sub getBinaryData {
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'locus_count'],
-			group_by => [qw/me.locus_id/],
+			select => ['me.locus_id', 'me.locus_function', {sum => 'loci_genotypes.locus_genotype'}],
+			as => ['id', 'function', 'locus_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
 			order_by => [qw/me.locus_id/]
 		}
 		);
@@ -134,9 +134,9 @@ sub getBinaryData {
 		{feature_id => $group2GenomeIds},
 		{
 			join => ['loci_genotypes'],
-			select => ['me.locus_id', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['id', 'locus_count'],
-			group_by => [qw/me.locus_id/],
+			select => ['me.locus_id', 'me.locus_function', {sum => 'loci_genotypes.locus_genotype'}],
+			as => ['id', 'function', 'locus_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
 			order_by => [qw/me.locus_id/]
 		}
 		);
@@ -198,25 +198,25 @@ sub getSnpData {
 	my $group1GenomeNames = shift;
 	my $group2GenomeNames = shift;
 
-	my $group1SnpDataTable = $schema->resultset('Snp')->search(
+	my $group1SnpDataTable = $schema->resultset('Loci')->search(
 		{feature_id => $group1GenomeIds},
 		{
 			join => ['snps_genotypes'],
-			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.snp_id/],
-			order_by => [qw/me.snp_id/]
+			select => ['me.locus_id', 'me.locus_function', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
+			order_by => [qw/me.locus_id/]
 		}
 		);
 
-	my $group2SnpDataTable = $schema->resultset('Snp')->search(
+	my $group2SnpDataTable = $schema->resultset('Loci')->search(
 		{feature_id => $group2GenomeIds},
 		{
 			join => ['snps_genotypes'],
-			select => ['me.snp_id', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['id', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.snp_id/],
-			order_by => [qw/me.snp_id/]
+			select => ['me.locus_id', 'me.locus_function', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+			as => ['id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+			group_by => [qw/me.locus_id me.locus_function/],
+			order_by => [qw/me.locus_id/]
 		}
 		);
 

@@ -64,7 +64,7 @@ while (<$binary_output>) {
 	elsif ($. > 1) {
 		push (@seqFeatures , \@tempRow);
 		#Arbitrarily set cutoff for testing
-		last if ($. == 8000);
+		last if ($. == 1000);
 	}
 	else {
 	}

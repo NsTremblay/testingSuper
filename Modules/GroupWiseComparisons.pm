@@ -40,7 +40,7 @@ use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
 use Modules::FastaFileWrite;
 use HTML::Template::HashWrapper;
-use CGI::Application::Plugin::AutoRunmode;;
+use CGI::Application::Plugin::AutoRunmode;
 use Phylogeny::Tree;
 use Modules::GroupComparator;
 use Modules::TreeManipulator;
@@ -137,21 +137,31 @@ sub comparison : Runmode {
 sub view : Runmode {
 	my $self = shift;
 
+	my $template = $self->load_tmpl( 'query_locus_view.tmpl' , die_on_bad_params=>0 );
 	# Params 
 	my $q = $self->query();
 	my $qgene;
 	my $qtype;
+	my @gp1genomes = $q->param('gp1genome');
+	my @gp2genomes = $q->param('gp2genome');
+	my @genomeIDs = (@gp1genomes, @gp2genomes);
 	if($q->param('locus')) {
 		$qtype='locus';
 		$qgene = $q->param('locus');
-	} elsif($q->param('snp')) {
+
+		my $locusMetaInfo = $self->_getLocusMetaInfo($qtype, $qgene, \@genomeIDs);
+		$template->param(locus => 1, locusMetaInfo => $locusMetaInfo);
+		return $template->output();
+	} 
+	elsif($q->param('snp')) {
 		$qtype='snp';
 		$qgene = $q->param('snp');
+
+		my $snpMetaInfo = $self->_getLocusMetaInfo($qtype, $qgene, \@genomeIDs);
+		$template->param(snp => 1, locusMetaInfo => $snpMetaInfo);
+		return $template->output();
 	}
-	
-	my @gp1genomes = $q->param("gp1genome");
-	my @gp2genomes = $q->param("gp2genome");
-	
+
 	croak "Error: no query gene parameter." unless $qgene;
 }
 
@@ -238,6 +248,66 @@ sub _emailStrainInfo {
 	# 	$comparisonHandle->configLocation($self->config_file);
 	# 	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
 	# }
+}
+
+sub _getLocusMetaInfo {
+	my $self = shift;
+	my $_locusType = shift;
+	my $_locusID = shift;
+	my $_genomeIDs = shift;
+
+	my @metaMetaInfo;
+
+	if ($_locusType eq 'locus') {
+		my $genomesPA = $self->dbixSchema->resultset('Loci')->search(
+			{'me.locus_id' => $_locusID, 'loci_genotypes.feature_id' => $_genomeIDs},
+			{
+				join => ['loci_genotypes'],
+				select => ['me.locus_id', 'me.locus_function', 'loci_genotypes.feature_id', 'loci_genotypes.locus_genotype'],
+				as => ['id', 'function', 'genome_id', 'genotype'],
+			}
+			);
+		my @locusMetaInfo = $genomesPA->all;
+		my @metaInfo;
+		foreach my $metaRow (@locusMetaInfo) {
+			my %rowData;
+			$rowData{'genome_id'} = $metaRow->get_column('genome_id');
+			$rowData{'genotype'} = $metaRow->get_column('genotype');
+			push (@metaInfo, \%rowData);
+		}
+		push(@metaMetaInfo, {'id' => $_locusID});
+		push(@metaMetaInfo, {'function' => $locusMetaInfo[0]->get_column('function')});
+		push(@metaMetaInfo, {'data' => \@metaInfo});
+		return \@metaMetaInfo;
+	}
+	elsif ($_locusType eq 'snp') {
+		my $genomesPA = $self->dbixSchema->resultset('Loci')->search(
+			{'me.locus_id' => $_locusID, 'snps_genotypes.feature_id' => $_genomeIDs},
+			{
+				join => ['snps_genotypes'],
+				select => ['me.locus_id', 'me.locus_function', 'snps_genotypes.feature_id', 'snps_genotypes.snp_a', 'snps_genotypes.snp_t', 'snps_genotypes.snp_c', 'snps_genotypes.snp_g'],
+				as => ['id', 'function','genome_id', 'a_genotype', 't_genotype', 'c_genotype', 'g_genotype'],
+			}
+			);
+		my @snpMetaInfo = $genomesPA->all;
+		my @metaInfo;
+		foreach my $metaRow (@snpMetaInfo) {
+			my %rowData;
+			$rowData{'genome_id'} = $metaRow->get_column('genome_id');
+			my $genotype = '-';
+			$genotype = "A" if $metaRow->get_column('a_genotype') == 1;
+			$genotype = "T" if $metaRow->get_column('t_genotype') == 1;
+			$genotype = "C" if $metaRow->get_column('c_genotype') == 1;
+			$genotype = "G" if $metaRow->get_column('g_genotype') == 1;
+
+			$rowData{'genotype'} = $genotype;
+			push (@metaInfo, \%rowData);
+		}
+		push(@metaMetaInfo, {'id' => $_locusID});
+		push(@metaMetaInfo, {'function' => $snpMetaInfo[0]->get_column('function')});
+		push(@metaMetaInfo, {'data' => \@metaInfo});
+		return \@metaMetaInfo;
+	}
 }
 
 1;
