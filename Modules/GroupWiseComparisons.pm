@@ -251,6 +251,7 @@ sub _emailStrainInfo {
 }
 
 sub _getLocusMetaInfo {
+	#Change this to reflect the new tables
 	my $self = shift;
 	my $_locusType = shift;
 	my $_locusID = shift;
@@ -259,11 +260,11 @@ sub _getLocusMetaInfo {
 	my @metaMetaInfo;
 
 	if ($_locusType eq 'locus') {
-		my $genomesPA = $self->dbixSchema->resultset('Loci')->search(
-			{'me.locus_id' => $_locusID, 'loci_genotypes.feature_id' => $_genomeIDs},
+		my $genomesPA = $self->dbixSchema->resultset('Feature')->search(
+			{'me.feature_id' => $_locusID, 'loci_genotypes.genome_id' => $_genomeIDs},
 			{
-				join => ['loci_genotypes'],
-				select => ['me.locus_id', 'me.locus_function', 'loci_genotypes.feature_id', 'loci_genotypes.locus_genotype'],
+				join => ['loci_genotypes', 'featureprops'],
+				select => ['me.uniquename', 'featureprops.value', 'loci_genotypes.genome_id', 'loci_genotypes.locus_genotype'],
 				as => ['id', 'function', 'genome_id', 'genotype'],
 			}
 			);
@@ -275,17 +276,17 @@ sub _getLocusMetaInfo {
 			$rowData{'genotype'} = $metaRow->get_column('genotype');
 			push (@metaInfo, \%rowData);
 		}
-		push(@metaMetaInfo, {'id' => $_locusID});
+		push(@metaMetaInfo, {'id' => $locusMetaInfo[0]->get_column('id')});
 		push(@metaMetaInfo, {'function' => $locusMetaInfo[0]->get_column('function')});
 		push(@metaMetaInfo, {'data' => \@metaInfo});
 		return \@metaMetaInfo;
 	}
 	elsif ($_locusType eq 'snp') {
-		my $genomesPA = $self->dbixSchema->resultset('Loci')->search(
-			{'me.locus_id' => $_locusID, 'snps_genotypes.feature_id' => $_genomeIDs},
+		my $genomesPA = $self->dbixSchema->resultset('Feature')->search(
+			{'me.feature_id' => $_locusID, 'snps_genotypes.genome_id' => $_genomeIDs},
 			{
-				join => ['snps_genotypes'],
-				select => ['me.locus_id', 'me.locus_function', 'snps_genotypes.feature_id', 'snps_genotypes.snp_a', 'snps_genotypes.snp_t', 'snps_genotypes.snp_c', 'snps_genotypes.snp_g'],
+				join => ['snps_genotypes', 'featureprops'],
+				select => ['me.uniquename', 'featureprops.value', 'snps_genotypes.genome_id', 'snps_genotypes.snp_a', 'snps_genotypes.snp_t', 'snps_genotypes.snp_c', 'snps_genotypes.snp_g'],
 				as => ['id', 'function','genome_id', 'a_genotype', 't_genotype', 'c_genotype', 'g_genotype'],
 			}
 			);
@@ -303,7 +304,7 @@ sub _getLocusMetaInfo {
 			$rowData{'genotype'} = $genotype;
 			push (@metaInfo, \%rowData);
 		}
-		push(@metaMetaInfo, {'id' => $_locusID});
+		push(@metaMetaInfo, {'id' => $snpMetaInfo[0]->get_column('id')});
 		push(@metaMetaInfo, {'function' => $snpMetaInfo[0]->get_column('function')});
 		push(@metaMetaInfo, {'data' => \@metaInfo});
 		return \@metaMetaInfo;

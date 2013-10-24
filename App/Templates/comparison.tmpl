@@ -80,7 +80,7 @@
 						<TMPL_LOOP binaryFETResults>
 						<TMPL_LOOP sig_results>
 						<tr>
-							<td id="<TMPL_VAR marker_id>" type="locus_marker"><TMPL_VAR NAME="marker_id"></td>
+							<td id="<TMPL_VAR marker_id>" feature_id="<TMPL_VAR marker_feature_id>" type="locus_marker"><TMPL_VAR NAME="marker_id"></td>
 							<td><TMPL_VAR NAME="marker_function"></td>
 							<td><TMPL_VAR NAME="group1Present"></td>
 							<td><TMPL_VAR NAME="group1Absent"></td>
@@ -147,7 +147,7 @@
 							<TMPL_LOOP snpFETResults>
 							<TMPL_LOOP sig_results>
 							<tr>
-								<td id="<TMPL_VAR marker_id>" type="snp_marker"><TMPL_VAR marker_id></td>
+								<td id="<TMPL_VAR marker_id>" feature_id="<TMPL_VAR marker_feature_id>" type="snp_marker"><TMPL_VAR marker_id></td>
 								<td><TMPL_VAR NAME="marker_function"></td>
 								<td><TMPL_VAR NAME="test_char"></td>
 								<td><TMPL_VAR NAME="group1Present"></td>
@@ -195,13 +195,13 @@
 		var locus = $('td[type="locus_marker"]');
 
 		locus.each( function() {
-			$(this).append('<a href="/group-wise-comparisons/view?locus='+$(this).attr('id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
+			$(this).append('<a href="/group-wise-comparisons/view?locus='+$(this).attr('feature_id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
 		});
 
 		var snp = $('td[type="snp_marker"]');
 
 		snp.each( function() {
-			$(this).append('<a href="/group-wise-comparisons/view?snp='+$(this).attr('id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
+			$(this).append('<a href="/group-wise-comparisons/view?snp='+$(this).attr('feature_id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
 		});
 
 	});

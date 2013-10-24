@@ -322,6 +322,7 @@ sub run {
 		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->get_column($_count_column), $self->group2Markers->[$i]->get_column($_count_column) , $self->testChar);
 
 		my %rowResult;
+		$rowResult{'marker_feature_id'} = $self->group1Markers->[$i]->get_column('feature_id');
 		$rowResult{'marker_id'} = $self->group1Markers->[$i]->get_column('id');
 		$rowResult{'marker_function'} = $self->group1Markers->[$i]->get_column('function');
 		$rowResult{'group1Present'} = $_group1Counts->{'pos'};
