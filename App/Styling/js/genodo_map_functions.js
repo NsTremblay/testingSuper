@@ -13,9 +13,13 @@ Map.prototype.initializeMap = function()
 	return new google.maps.Map(document.getElementById(this.mapDiv), this.mapOptions);
 };
 
-Map.prototype.parseLocation = function(location)
+Map.prototype.parseLocation = function(location_obj)
 {
-	var markerObj = {}
+	if (!location_obj) {
+		return 0;
+	}
+	else {
+		var markerObj = {};
 
 	//Parses the location name for the marker title
 	var locationName = location_obj.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
@@ -63,6 +67,7 @@ Map.prototype.parseLocation = function(location)
 	markerObj['markerBounds'] = markerBounds;
 
 	return markerObj;
+}
 };
 
 Map.prototype.reLoadMap = function()
@@ -70,15 +75,15 @@ Map.prototype.reLoadMap = function()
 	alert('Reloading Map');
 };
 
-Map.prototype.addMarker = function(location) 
+Map.prototype.clickAddMarker = function(location, map) 
 {
 	if (marker) {
 		marker.setMap(null);
 	}
 	marker = new google.maps.Marker({
-			position: location,
-			map: map,
-		});
+		position: location,
+		map: map,
+	});
 	marker.setTitle(marker.getPosition().toString());
 	map.panTo(marker.getPosition());
 	return marker;
@@ -96,3 +101,114 @@ Map.prototype.geoCodeMapAddress = function(address, geocoder)
 		}
 	});
 };
+
+Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, selectedGenome) {
+	var sortedPublicLocations = [];
+	var multiMarkers = {};
+	var clusterList = [];
+
+	if (!genomesList) {
+		console.log("No genome locations");
+	}
+
+	$.each(genomesList, function(feature_id, feature_obj) {
+		if (feature_obj.isolation_location && feature_obj.isolation_location != "" && feature_id != selectedGenome) {
+			genomesLocationList[feature_id] = feature_obj;
+			var newMarkerObj = Map.prototype.parseLocation(feature_obj); 
+			var multiMarker = new google.maps.Marker({
+				map: map,
+				position: newMarkerObj['centerLatLng'],
+				title: feature_obj.uniquename,
+				feature_id: feature_id,
+				uniquename: feature_obj.uniquename
+			});
+			sortedPublicLocations.push(multiMarker);
+		}
+		else {
+		}
+	});
+
+	sortedPublicLocations.sort(function(a,b){
+		if(a.title < b.title) return -1;
+		if(a.title > b.title) return 1;
+		return 0;
+	});
+
+	//Create final marker objects and lists sorted alphanumerically
+	for (var i = 0; i < sortedPublicLocations.length; i++) {
+		var multiMarker = sortedPublicLocations[i];
+		multiMarkers[multiMarker.feature_id] = multiMarker;
+		clusterList.push(multiMarker);
+	};
+
+	return [multiMarkers, clusterList];
+};
+
+Map.prototype.showSelectedGenome = function(location, map) {
+	if (!location) {
+		return 0;
+	}
+	else {
+		var maxZindex = google.maps.Marker.MAX_ZINDEX;
+		var zInd = maxZindex + 1;
+		var marker = new google.maps.Marker({
+			icon: "http://maps.google.com/mapfiles/arrow.png",
+			map: map,
+			position: location.centerLatLng,
+			animation: google.maps.Animation.DROP,
+			title: location.locationName,
+			zIndex: zInd,
+		});
+		return marker;
+	}
+};
+
+Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map) {
+	visibleMarkers = {};
+	$.each( multiMarkers, function(feature_id , marker) {
+		if(map.getBounds().contains(marker.getPosition())){
+			visibleMarkers[feature_id] = marker;
+		}
+		else{
+		}
+	});
+	return visibleMarkers;
+};
+
+function MapOverlay(map, latLng, icon, title) {
+	this.latLng_ = latLng;
+	this.icon_ = icon;
+	this.title_ = title;
+	this.markerLayer = jQuery('<div />').addClass('overlay');
+	this.setMap(map);
+};
+
+MapOverlay.prototype = new google.maps.OverlayView();
+
+MapOverlay.prototype.onAdd = function() {
+	var $pane = jQuery(this.getPanes().floatPane);
+	$pane.append(this.markerLayer);
+};
+
+MapOverlay.prototype.onRemove = function() {
+	this.markerLayer.remove();
+};
+
+MapOverlay.prototype.draw = function() {
+
+	var overlayProjection = this.getProjection();
+	var fragment = document.createDocumentFragment();
+	this.markerLayer.empty();
+	var location = overlayProjection.fromLatLngToDivPixel(this.latLng_);
+	var $point = jQuery('<div class="map-point" title="'+this.title_+'" style="'
+		+'width:32px; height:32px; '
+		+'left:'+location.x+'px; top:'+location.y+'px; '
+		+'position:absolute; cursor:pointer; '
+		+'">'
+		+'<img src="'+this.icon_+'" style="position: absolute; top: -16px; left: -16px" />'
+		+'</div>');
+
+	fragment.appendChild($point.get(0));
+	this.markerLayer.append(fragment);
+};
+

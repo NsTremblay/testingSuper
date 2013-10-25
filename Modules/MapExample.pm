@@ -58,13 +58,59 @@ Run mode for the map_example page
 
 sub map_example : StartRunmode {
 	my $self = shift;
-	my $template = $self->load_tmpl( 'map_example.tmpl' , die_on_bad_params=>0 );
-	my $formDataGenerator = Modules::FormDataGenerator->new();
- 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($pubDataRef, $priDataRef , $strainJsonDataRef) = $formDataGenerator->getFormData();
-	$template->param(FEATURES=>$pubDataRef);
 
+	my $q = $self->query();
+
+	my $template = $self->load_tmpl( 'map_example.tmpl' , die_on_bad_params=>0 );
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+
+	my $username = $self->authen->username;
+
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	my $strainID;
+	my $privateStrainID;
+	my $feature = $q->param("genome");
+	if($feature && $feature ne "") {
+		if($feature =~ m/^public_(\d+)/) {
+			$strainID = $1;
+			my $strainLocationDataRef = $self->_getStrainLocation($strainID);
+			$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $feature);
+		} 
+		elsif($feature =~ m/^private_(\d+)/) {
+			$privateStrainID = $1;
+		} 
+		else {
+			die "Error: invalid genome ID: $feature.";
+		}
+	}
 	return $template->output();
+}
+
+#Same method used in strain info to get a strain location
+sub _getStrainLocation {
+	my $self = shift;
+	my $strainID = shift;
+	my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
+		{
+			column  => [qw/me.feature_id me.value type.name/],
+			join        => ['type']
+		}
+		);
+	my %strainLocation;
+	$strainLocation{'presence'} = 0;
+	while (my $location = $locationFeatureProps->next) {
+		$strainLocation{'presence'} = 1;
+		my $locValue = $location->value;
+		$strainLocation{'location'} = $locValue;
+	}
+	return \%strainLocation;
 }
 
 sub map_multi_markers : Runmode {
@@ -136,9 +182,9 @@ sub map_multi_markers : Runmode {
 	}
 
 	my $formDataGenerator = Modules::FormDataGenerator->new();
- 	$formDataGenerator->dbixSchema($self->dbixSchema);
- 	my $multiMarkerHashRef = $formDataGenerator->_getJSONFormat(\@markerList);
- 	return $multiMarkerHashRef;
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $multiMarkerHashRef = $formDataGenerator->_getJSONFormat(\@markerList);
+	return $multiMarkerHashRef;
 }
 
 1;

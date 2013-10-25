@@ -5,13 +5,27 @@
 
 <head>
 	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
 </head>
 
 <body style="background-color:#796e6c">
 
-	<div id="map-canvas" style="height:300px;padding:10px"></div>
-	<div id="map-canvas2" style="height:300px;padding:10px"></div>
-	<div id="map-canvas3" style="height:300px;padding:10px"></div>
+	<div class="container" style="background-color:#ffffff">
+		<div id="map-canvas" style="height:300px;padding:10px"></div>
+
+		<form class="form" action="/map-example/map_example" method="post" enctype="application/x-www-form-urlencoded">
+			<input type="checkbox" name="genome" value="public_176572" checked> Test Genome
+			<div>
+				<button id="strainInfoSearchButton" type="Submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-search icon-white"></i> Search</button>
+			</div>
+		</form>
+
+		<div>
+			Location: 
+			<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>
+		</div>
+
+	</div>
 
 </body>
 </html>
@@ -23,12 +37,34 @@ var mapOptions = {
 	streetViewControl: false,
 	mapTypeId: google.maps.MapTypeId.ROADMAP
 };
-var mapCreator = new Map(mapOptions, "map-canvas");
-var map = mapCreator.initializeMap();
-var marker;
+var mapFactory = new Map(mapOptions, "map-canvas");
+var map = mapFactory.initializeMap();
 
-google.maps.event.addListener(map, 'click', function(event) {
-	marker = mapCreator.addMarker(event.latLng);
+var public_genomes = <TMPL_VAR public_genomes>;
+var public_location_genomes = {};
+var private_genomes = <TMPL_VAR private_genomes>;
+var private_location_genomes = {};
+
+var selectedLocation = mapFactory.parseLocation(public_genomes["<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>"]);
+
+var lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+var multiMarkers = lists[0];
+var clusterList = lists[1];
+
+var visibleMarkers = {};
+
+var mcOptions = {gridSize: 50, maxZoom: 15};
+var mc = new MarkerClusterer(map, clusterList, mcOptions);
+
+var selectedMarker = mapFactory.showSelectedGenome(selectedLocation, map);
+(selectedLocation) ? map.fitBounds(selectedLocation.markerBounds) : 0;
+
+var myLatlng = new google.maps.LatLng(24.247471, 89.920990);
+
+var overlay = new MapOverlay(map, myLatlng, "http://maps.google.com/mapfiles/arrow.png");
+
+google.maps.event.addListener(map, 'bounds_changed', function() {
+	visibleMarkers = mapFactory.updateVisibleMarkers(visibleMarkers, multiMarkers, map);
 });
 
 </script>

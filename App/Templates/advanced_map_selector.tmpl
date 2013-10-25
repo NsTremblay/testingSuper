@@ -161,7 +161,7 @@ function reLoadMap() {
 
 	geocoder = new google.maps.Geocoder();
 	var mapOptions = {
-		center: new google.maps.LatLng(-0.000, 0.000),
+		center: new google.maps.La tLng(-0.000, 0.000),
 		zoom: 1,
 		smaptViewControl: false,
 		mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -171,7 +171,7 @@ function reLoadMap() {
 		mapOptions);
 
 	var mcOptions = {gridSize: 50, maxZoom: 15};
-	var mc = new MarkerClusterer(advancedMap, clusterList, mcOptions)
+	var mc = new MarkerClusterer(advancedMap, clusterList, mcOptions);
 	updateMapMeta('advancedLocationList');
 
 	google.maps.event.addListener(advancedMap, 'bounds_changed', function() {
