@@ -88,12 +88,12 @@ sub home : StartRunmode{
 		}
 		);
 
-	my $lociCount = $self->dbixSchema->resultset('Loci')->count(
-		{},
-		{
-			column  => [qw/locus_name/],
-		}
-		);
+	# my $lociCount = $self->dbixSchema->resultset('Loci')->count(
+	# 	{},
+	# 	{
+	# 		column  => [qw/locus_name/],
+	# 	}
+	# 	);
 
 #	my $snpCount = $self->dbixSchema->resultset('DataSnpName')->count(
 #		{},
@@ -106,7 +106,7 @@ sub home : StartRunmode{
 	$template->param(GENOMECOUNT=>$genomeCount);
 	$template->param(AMRGENECOUNT=>$amrGeneCount);
 	$template->param(VIRFACTORCOUNT=>$virFactorGeneCount);
-	$template->param(LOCICOUNT=>$lociCount);
+	#$template->param(LOCICOUNT=>$lociCount);
 	#$template->param(SNPCOUNT=>$snpCount);
 	return $template->output();
 }

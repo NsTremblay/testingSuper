@@ -192,36 +192,36 @@ function parseLocation(location_obj) {
 	var markerObj = {};
 
 	//Parses the location name for the marker title
-	var locationName = location_obj.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
+	var locationName = location_obj.isolation_location[0].match(/<location>.*<\/location>/)[0];
 	locationName = locationName.replace(/<location>/, '');
 	locationName = locationName.replace(/<\/location>/, '');
 	locationName = locationName.replace(/<[\/]+[\w\d]*>/g, '');
 	locationName = locationName.replace(/<[\w\d]*>/g, ', ');
 	locationName = locationName.replace(/, /, '');
 
-	var locationCoordinates = location_obj.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+	var locationCoordinates = location_obj.isolation_location[0].match(/<coordinates>.*<\/coordinates>/)[0];
 
 	//Parses out the center LatLong point
-	var locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
-	var locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+	var locationCenter = locationCoordinates.match(/<center>.*<\/center>/)[0];
+	var locationCenterLat = locationCenter.match(/<lat>.*<\/lat>/)[0];
 	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
 	locationCenterLat = locationCenterLat.replace(/<\/lat>/, '');
-	var locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	var locationCenterLng = locationCenter.match(/<lng>.*<\/lng>/)[0];
 	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
 	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
 
 	//Parses out boundary LatLongs
-	var locationViewportSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
-	var locationViewportSWLat = locationViewportSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-	var locationViewportSWLng = locationViewportSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	var locationViewportSW = locationCoordinates.match(/<southwest>.*<\/southwest>/)[0];
+	var locationViewportSWLat = locationViewportSW.match(/<lat>.*<\/lat>/)[0];
+	var locationViewportSWLng = locationViewportSW.match(/<lng>.*<\/lng>/)[0];
 	locationViewportSWLat = locationViewportSWLat.replace(/<lat>/, '');
 	locationViewportSWLat = locationViewportSWLat.replace(/<\/lat>/, '');
 	locationViewportSWLng = locationViewportSWLng.replace(/<lng>/, '');
 	locationViewportSWLng = locationViewportSWLng.replace(/<\/lng>/, '');
 
-	var locationViewportNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
-	var locationViewportNELat = locationViewportNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-	var locationViewportNELng = locationViewportNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+	var locationViewportNE = locationCoordinates.match(/<northeast>.*<\/northeast>/)[0];
+	var locationViewportNELat = locationViewportNE.match(/<lat>.*<\/lat>/)[0];
+	var locationViewportNELng = locationViewportNE.match(/<lng>.*<\/lng>/)[0];
 	locationViewportNELat = locationViewportNELat.replace(/<lat>/, '');
 	locationViewportNELat = locationViewportNELat.replace(/<\/lat>/, '');
 	locationViewportNELng = locationViewportNELng.replace(/<lng>/, '');

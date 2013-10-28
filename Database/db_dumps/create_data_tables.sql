@@ -13,9 +13,6 @@ CREATE TABLE raw_amr_data
   CONSTRAINT raw_amr_data_pkey PRIMARY KEY (serial_id),
   CONSTRAINT raw_amr_feature_id_fkey FOREIGN KEY (gene_id)
       REFERENCES feature (feature_id) MATCH SIMPLE
-      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
-  CONSTRAINT raw_amr_private_feature_id_fkey FOREIGN KEY (gene_id)
-      REFERENCES private_feature (feature_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
@@ -90,30 +87,30 @@ CREATE INDEX raw_virulence_genome_id
 
 COMMIT;
 
-BEGIN;
+-- BEGIN;
 
 -- Table: loci
 
 -- DROP TABLE loci;
 
-CREATE TABLE loci
-(
-  locus_id bigserial NOT NULL, -- Serial ID (integer) generated for each locus
-  locus_name character varying NOT NULL, -- Locus name (can contain both char and int)
-  locus_function character varying,
-  CONSTRAINT loci_pkey PRIMARY KEY (locus_id)
-)
-WITH (
-  OIDS=FALSE
-);
-ALTER TABLE loci
-  OWNER TO postgres;
-COMMENT ON TABLE loci
-  IS 'Stores the names and, in the future, other info (accession, location, other properties) of loci used to compare groups of strains.';
-COMMENT ON COLUMN loci.locus_id IS 'Serial ID (integer) generated for each locus';
-COMMENT ON COLUMN loci.locus_name IS 'Locus name (can contain both char and int)';
+-- CREATE TABLE loci
+-- (
+--   locus_id bigserial NOT NULL, -- Serial ID (integer) generated for each locus
+--   locus_name character varying NOT NULL, -- Locus name (can contain both char and int)
+--   locus_function character varying,
+--   CONSTRAINT loci_pkey PRIMARY KEY (locus_id)
+-- )
+-- WITH (
+--   OIDS=FALSE
+-- );
+-- ALTER TABLE loci
+--   OWNER TO postgres;
+-- COMMENT ON TABLE loci
+--   IS 'Stores the names and, in the future, other info (accession, location, other properties) of loci used to compare groups of strains.';
+-- COMMENT ON COLUMN loci.locus_id IS 'Serial ID (integer) generated for each locus';
+-- COMMENT ON COLUMN loci.locus_name IS 'Locus name (can contain both char and int)';-- 
 
-COMMIT;
+-- COMMIT;
 
 BEGIN;
 
@@ -124,12 +121,12 @@ BEGIN;
 CREATE TABLE loci_genotypes
 (
   locus_genotype_id serial NOT NULL,
-  feature_id character varying NOT NULL, -- Strain ID
-  locus_id bigint NOT NULL, -- Stores a locus ID from the loci table
+  genome_id character varying NOT NULL, -- Strain ID
+  feature_id integer NOT NULL, -- Stores a locus ID from the loci table
   locus_genotype integer NOT NULL DEFAULT 0, -- Presence absence value for each locus for each strain. Will have a value either 0 or 1. Default is 0.
   CONSTRAINT loci_genotypes_pkey PRIMARY KEY (locus_genotype_id),
-  CONSTRAINT locus_id_fkey FOREIGN KEY (locus_id)
-      REFERENCES loci (locus_id) MATCH SIMPLE
+  CONSTRAINT feature_id_fkey FOREIGN KEY (feature_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
@@ -139,19 +136,25 @@ ALTER TABLE loci_genotypes
   OWNER TO postgres;
 COMMENT ON TABLE loci_genotypes
   IS 'Presence absence values for each locus for each strain ';
-COMMENT ON COLUMN loci_genotypes.feature_id IS 'Strain ID';
-COMMENT ON COLUMN loci_genotypes.locus_id IS 'Stores a locus ID from the loci table';
 COMMENT ON COLUMN loci_genotypes.locus_genotype IS 'Presence absence value for each locus for each strain. Will have a value either 0 or 1. Default is 0.';
 
+-- Index: loci_genotypes_idx1
+
+-- DROP INDEX loci_genotypes_idx1;
+
+CREATE INDEX loci_genotypes_idx1
+  ON loci_genotypes
+  USING btree
+  (feature_id);
 
 -- Index: loci_genotypes_idx2
 
 -- DROP INDEX loci_genotypes_idx2;
 
--- CREATE INDEX loci_genotypes_idx2
---   ON loci_genotypes
---   USING btree
---   (locus_id);
+CREATE INDEX loci_genotypes_idx2
+  ON loci_genotypes
+  USING btree
+  (genome_id);
 
 COMMIT;
 
@@ -164,15 +167,15 @@ BEGIN;
 CREATE TABLE snps_genotypes
 (
   snp_genotype_id serial NOT NULL,
-  feature_id character varying NOT NULL, -- Strain ID
-  snp_id bigint NOT NULL, -- Stores a snp ID from the snps table
+  genome_id character varying NOT NULL, -- Strain ID
+  feature_id integer NOT NULL, -- Stores a snp ID from the snps table
   snp_a integer NOT NULL DEFAULT 0, -- Presence absence value for base "A" for each locus for each strain. Default is 0.
   snp_t integer NOT NULL DEFAULT 0, -- Presence absence value for base "T" for each locus for each strain. Default is 0.
   snp_c integer NOT NULL DEFAULT 0, -- Presence absence value for base "C" for each locus for each strain. Default is 0.
   snp_g integer NOT NULL DEFAULT 0, -- Presence absence value for base "G" for each locus for each strain. Default is 0.
   CONSTRAINT snp_genotypes_pkey PRIMARY KEY (snp_genotype_id),
-  CONSTRAINT locus_id_fkey FOREIGN KEY (snp_id)
-      REFERENCES loci (locus_id) MATCH SIMPLE
+  CONSTRAINT feature_id_fkey FOREIGN KEY (feature_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
       ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
@@ -182,22 +185,29 @@ ALTER TABLE snps_genotypes
   OWNER TO postgres;
 COMMENT ON TABLE snps_genotypes
   IS 'Presence absence values for each snp for each strain';
-COMMENT ON COLUMN snps_genotypes.feature_id IS 'Strain ID';
-COMMENT ON COLUMN snps_genotypes.snp_id IS 'Stores a snp ID from the snps table';
 COMMENT ON COLUMN snps_genotypes.snp_a IS 'Presence absence value for base "A" for each locus for each strain. Default is 0.';
 COMMENT ON COLUMN snps_genotypes.snp_t IS 'Presence absence value for base "T" for each locus for each strain. Default is 0.';
 COMMENT ON COLUMN snps_genotypes.snp_c IS 'Presence absence value for base "C" for each locus for each strain. Default is 0.';
 COMMENT ON COLUMN snps_genotypes.snp_g IS 'Presence absence value for base "G" for each locus for each strain. Default is 0.';
+
+-- Index: snps_genotypes_idx1
+
+-- DROP INDEX snps_genotypes_idx1;
+
+CREATE INDEX snps_genotypes_idx1
+  ON snps_genotypes
+  USING btree
+  (feature_id);
 
 
 -- Index: snps_genotypes_idx2
 
 -- DROP INDEX snps_genotypes_idx2;
 
--- CREATE INDEX snps_genotypes_idx2
---   ON snps_genotypes
---   USING btree
---   (snp_id);
+CREATE INDEX snps_genotypes_idx2
+  ON snps_genotypes
+  USING btree
+  (genome_id);
 
 COMMIT;
 
