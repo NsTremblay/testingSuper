@@ -68,6 +68,7 @@
 					<thead>
 						<tr>
 							<th>Locus ID</th>
+							<th>Function</th>
 							<th>Group 1 Present</th>
 							<th>Group 1 Absent </th>
 							<th>Group 2 Present</th>
@@ -79,7 +80,8 @@
 						<TMPL_LOOP binaryFETResults>
 						<TMPL_LOOP sig_results>
 						<tr>
-							<td><TMPL_VAR NAME="marker_id"></td>
+							<td id="<TMPL_VAR marker_id>" feature_id="<TMPL_VAR marker_feature_id>" type="locus_marker"><TMPL_VAR NAME="marker_id"></td>
+							<td><TMPL_VAR NAME="marker_function"></td>
 							<td><TMPL_VAR NAME="group1Present"></td>
 							<td><TMPL_VAR NAME="group1Absent"></td>
 							<td><TMPL_VAR NAME="group2Present"></td>
@@ -132,6 +134,7 @@
 						<thead>
 							<tr>
 								<th>SNP ID</th>
+								<th>Function</th>
 								<th>Nucleotide</th>
 								<th>Group 1 Present</th>
 								<th>Group 1 Absent</th>
@@ -144,7 +147,8 @@
 							<TMPL_LOOP snpFETResults>
 							<TMPL_LOOP sig_results>
 							<tr>
-								<td><TMPL_VAR NAME="marker_id"></td>
+								<td id="<TMPL_VAR marker_id>" feature_id="<TMPL_VAR marker_feature_id>" type="snp_marker"><TMPL_VAR marker_id></td>
+								<td><TMPL_VAR NAME="marker_function"></td>
 								<td><TMPL_VAR NAME="test_char"></td>
 								<td><TMPL_VAR NAME="group1Present"></td>
 								<td><TMPL_VAR NAME="group1Absent"></td>
@@ -182,6 +186,24 @@
 		event.preventDefault();
 		$('#loci_table').hide();
 		$('#snps_table').show();
+	});
+
+	$( document ).ready( function() {
+		var gp1genomes = "<TMPL_LOOP binaryFETResults><TMPL_LOOP gp1_ids>"+'&gp1genome='+"<TMPL_VAR id></TMPL_LOOP></TMPL_LOOP>";
+		var gp2genomes = "<TMPL_LOOP binaryFETResults><TMPL_LOOP gp2_ids>"+'&gp2genome='+"<TMPL_VAR id></TMPL_LOOP></TMPL_LOOP>";
+
+		var locus = $('td[type="locus_marker"]');
+
+		locus.each( function() {
+			$(this).append('<a href="/group-wise-comparisons/view?locus='+$(this).attr('feature_id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
+		});
+
+		var snp = $('td[type="snp_marker"]');
+
+		snp.each( function() {
+			$(this).append('<a href="/group-wise-comparisons/view?snp='+$(this).attr('feature_id')+gp1genomes+gp2genomes+'"> <i class="icon-search"></i> info</a>');
+		});
+
 	});
 
 	</script> 
