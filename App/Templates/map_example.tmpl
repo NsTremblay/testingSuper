@@ -25,6 +25,10 @@
 			<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>
 		</div>
 
+		<div class="span4" style="height:300px;overflow:auto">
+			<ul id="visibleMarkers" style="list-style:none"></ul>
+		</div>
+
 	</div>
 
 </body>
@@ -51,20 +55,16 @@ var lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, 
 var multiMarkers = lists[0];
 var clusterList = lists[1];
 
-var visibleMarkers = {};
+var visableMarkers = multiMarkers;
 
 var mcOptions = {gridSize: 50, maxZoom: 15};
 var mc = new MarkerClusterer(map, clusterList, mcOptions);
 
-var selectedMarker = mapFactory.showSelectedGenome(selectedLocation, map);
+var selectedMarkerOverlay = mapFactory.showSelectedGenome(selectedLocation, map);
 (selectedLocation) ? map.fitBounds(selectedLocation.markerBounds) : 0;
 
-var myLatlng = new google.maps.LatLng(24.247471, 89.920990);
-
-var overlay = new MapOverlay(map, myLatlng, "http://maps.google.com/mapfiles/arrow.png");
-
 google.maps.event.addListener(map, 'bounds_changed', function() {
-	visibleMarkers = mapFactory.updateVisibleMarkers(visibleMarkers, multiMarkers, map);
+	visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "visibleMarkers");
 });
 
 </script>

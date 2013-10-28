@@ -8,6 +8,8 @@
 <script src="/App/Styling/js/jquery-1.9.1.js"></script>
 <script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 <script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
 
 <TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
 
@@ -55,6 +57,9 @@
 
 					<div class="tab-pane" id="mapTab">
 						<div id="map-canvas" style="height:300px;padding:10px"></div>
+						<div style="height:200px;margin-top:10px;margin-bottom:10px;overflow:auto;border:solid;border-width:1px;border-color:#d3d3d3">
+							<ul id="visibleMarkers" style="list-style:none"></ul>
+						</div>
 					</div>
 
 					<div class="tab-pane" id="virAmrTab">
@@ -144,10 +149,6 @@
 				</div>
 			</div>
 			</TMPL_IF>
-
-			<div class="tab-pane" id="strainInfoMapTab">
-			</div>
-
 		</div>
 	</div>
 
@@ -210,86 +211,52 @@ $(document).ready(function() {
 });
 
 function onLoadCheck() {
-	//initializeMap();
 	$('#strainInfoTabs').show("slow");
 }
 
-var map;
-
-function initializeMap() {
-	codeAddress();
-}
-
-function codeAddress() {
-	var address = '<TMPL_VAR NAME=strainLocation>';
-
-	//Parses the location name for the marker title
-	var locationName = address.match(/<location>[\w\d\W\D]*<\/location>/)[0];
-	locationName = locationName.replace(/<location>/, '');
-	locationName = locationName.replace(/<\/location>/, '');
-	locationName = locationName.replace(/<[\/]+[\w\d]*>/g, '');
-	locationName = locationName.replace(/<[\w\d]*>/g, ', ');
-	locationName = locationName.replace(/, /, '');
-
-	var locationCoordinates = address.match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
-
-	//Parses out the center LatLong point
-	var locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
-	var locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
-	locationCenterLat = locationCenterLat.replace(/<\/lat>/, '');
-	var locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
-	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
-
-	//Parses out boundary LatLongs
-	var locationViewportSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
-	var locationViewportSWLat = locationViewportSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-	var locationViewportSWLng = locationViewportSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-	locationViewportSWLat = locationViewportSWLat.replace(/<lat>/, '');
-	locationViewportSWLat = locationViewportSWLat.replace(/<\/lat>/, '');
-	locationViewportSWLng = locationViewportSWLng.replace(/<lng>/, '');
-	locationViewportSWLng = locationViewportSWLng.replace(/<\/lng>/, '');
-
-	var locationViewportNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
-	var locationViewportNELat = locationViewportNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-	var locationViewportNELng = locationViewportNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-	locationViewportNELat = locationViewportNELat.replace(/<lat>/, '');
-	locationViewportNELat = locationViewportNELat.replace(/<\/lat>/, '');
-	locationViewportNELng = locationViewportNELng.replace(/<lng>/, '');
-	locationViewportNELng = locationViewportNELng.replace(/<\/lng>/, '');
-
-	var centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
-	var swLatLng = new google.maps.LatLng(locationViewportSWLat, locationViewportSWLng);
-	var neLatLng = new google.maps.LatLng(locationViewportNELat, locationViewportNELng);
-	var markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
-
-	var mapOptions = {
-		zoom: 3,
-		zoomControl: true,
-		streetViewControl: false,
-		center: centerLatLng,
-		mapTypeId: google.maps.MapTypeId.ROADMAP
-	};
-	map = new google.maps.Map(document.getElementById('map-canvas'),
-		mapOptions);
-
-	map.fitBounds(markerBounds);
-
-	var marker = new google.maps.Marker({
-		map: map,
-		position: centerLatLng,
-		animation: google.maps.Animation.DROP,
-		title: locationName
-	});
-}
-
 $('a[href="#mapTab"]').click( function(){
-	setTimeout("initializeMap()", 0);
+	setTimeout("showMap()", 0);
 });
 
+var public_genomes = <TMPL_VAR public_genomes>;
+var public_location_genomes = {};
+var private_genomes = <TMPL_VAR private_genomes>;
+var private_location_genomes = {};
 
-google.maps.event.addDomListener(window, 'load', initializeMap);
+var map;
+var mapOptions = {
+	center: new google.maps.LatLng(-0.000, 0.000),
+	zoom: 1,
+	streetViewControl: false,
+	mapTypeId: google.maps.MapTypeId.ROADMAP
+};
 
+var lists;
+var multiMarkers;
+var clusterList;
+var visableMarkers;
+
+function showMap() {
+	var mapFactory = new Map(mapOptions, "map-canvas");
+	map = mapFactory.initializeMap();
+
+	var selectedLocation = mapFactory.parseLocation(public_genomes["<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>"]);
+
+	lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	multiMarkers = lists[0];
+	clusterList = lists[1];
+
+	visableMarkers = multiMarkers;
+
+	var mcOptions = {gridSize: 50, maxZoom: 15};
+	var mc = new MarkerClusterer(map, clusterList, mcOptions);
+
+	var selectedMarkerOverlay = mapFactory.showSelectedGenome(selectedLocation, map);
+	(selectedLocation) ? map.fitBounds(selectedLocation.markerBounds) : 0;
+
+	google.maps.event.addListener(map, 'bounds_changed', function() {
+		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "visibleMarkers");
+	});
+}
 
 </script>

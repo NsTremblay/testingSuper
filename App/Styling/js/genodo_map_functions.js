@@ -13,6 +13,11 @@ Map.prototype.initializeMap = function()
 	return new google.maps.Map(document.getElementById(this.mapDiv), this.mapOptions);
 };
 
+Map.prototype.reloadMap = function(selectedLocation, map)
+{
+	this.showSelectedGenome(selectedLocation, map);
+} 
+
 Map.prototype.parseLocation = function(location_obj)
 {
 	if (!location_obj) {
@@ -70,11 +75,6 @@ Map.prototype.parseLocation = function(location_obj)
 }
 };
 
-Map.prototype.reLoadMap = function()
-{
-	alert('Reloading Map');
-};
-
 Map.prototype.clickAddMarker = function(location, map) 
 {
 	if (marker) {
@@ -120,7 +120,8 @@ Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, 
 				position: newMarkerObj['centerLatLng'],
 				title: feature_obj.uniquename,
 				feature_id: feature_id,
-				uniquename: feature_obj.uniquename
+				uniquename: feature_obj.uniquename,
+				icon: "/App/Pictures/measle_red.png"
 			});
 			sortedPublicLocations.push(multiMarker);
 		}
@@ -151,23 +152,30 @@ Map.prototype.showSelectedGenome = function(location, map) {
 	else {
 		var maxZindex = google.maps.Marker.MAX_ZINDEX;
 		var zInd = maxZindex + 1;
-		var marker = new google.maps.Marker({
+
+		var markerLatLng = new google.maps.LatLng(location.centerLatLng);
+		var overlay = new MapOverlay(map, location.centerLatLng, "/App/Pictures/marker_icon_green.png", location.locationName);
+
+/*		var marker = new google.maps.Marker({
 			icon: "http://maps.google.com/mapfiles/arrow.png",
 			map: map,
-			position: location.centerLatLng,
+			position: markerLatLng,
 			animation: google.maps.Animation.DROP,
 			title: location.locationName,
 			zIndex: zInd,
-		});
-		return marker;
+		});*/
+
+		return overlay;
 	}
 };
 
-Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map) {
+Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map, listDivName) {
 	visibleMarkers = {};
+	$('#'+listDivName).empty();
 	$.each( multiMarkers, function(feature_id , marker) {
 		if(map.getBounds().contains(marker.getPosition())){
 			visibleMarkers[feature_id] = marker;
+			$('#'+listDivName).append('<li>'+marker.uniquename+' <a href="/strain_info?genome='+marker.feature_id+'"><i class="icon-search"></i> info</a></li>');
 		}
 		else{
 		}
@@ -201,11 +209,11 @@ MapOverlay.prototype.draw = function() {
 	this.markerLayer.empty();
 	var location = overlayProjection.fromLatLngToDivPixel(this.latLng_);
 	var $point = jQuery('<div class="map-point" title="'+this.title_+'" style="'
-		+'width:32px; height:32px; '
+		+'width:22px; height:40px; '
 		+'left:'+location.x+'px; top:'+location.y+'px; '
 		+'position:absolute; cursor:pointer; '
 		+'">'
-		+'<img src="'+this.icon_+'" style="position: absolute; top: -16px; left: -16px" />'
+		+'<img src="'+this.icon_+'" style="position: absolute; top: -40px; left: -11px" />'
 		+'</div>');
 
 	fragment.appendChild($point.get(0));
