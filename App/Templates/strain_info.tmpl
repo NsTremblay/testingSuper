@@ -223,30 +223,24 @@ var public_location_genomes = {};
 var private_genomes = <TMPL_VAR private_genomes>;
 var private_location_genomes = {};
 
-var map;
-var mapOptions = {
-	center: new google.maps.LatLng(-0.000, 0.000),
-	zoom: 1,
-	streetViewControl: false,
-	mapTypeId: google.maps.MapTypeId.ROADMAP
-};
-
-var lists;
-var multiMarkers;
-var clusterList;
-var visableMarkers;
-
 function showMap() {
+	var mapOptions = {
+		center: new google.maps.LatLng(-0.000, 0.000),
+		zoom: 1,
+		streetViewControl: false,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+
 	var mapFactory = new Map(mapOptions, "map-canvas");
-	map = mapFactory.initializeMap();
+	var map = mapFactory.initializeMap();
 
 	var selectedLocation = mapFactory.parseLocation(public_genomes["<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>"]);
 
-	lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
-	multiMarkers = lists[0];
-	clusterList = lists[1];
+	var lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	var multiMarkers = lists[0];
+	var clusterList = lists[1];
 
-	visableMarkers = multiMarkers;
+	var visableMarkers = multiMarkers;
 
 	var mcOptions = {gridSize: 50, maxZoom: 15};
 	var mc = new MarkerClusterer(map, clusterList, mcOptions);

@@ -89,11 +89,14 @@ Map.prototype.clickAddMarker = function(location, map)
 	return marker;
 };
 
-Map.prototype.geoCodeMapAddress = function(address, geocoder) 
+Map.prototype.geoCodeMapAddress = function(address, map) 
 {
+	var geocoder = new google.maps.Geocoder();
 	geocoder.geocode( { 'address': address}, function(results, status) {
 		if (status == google.maps.GeocoderStatus.OK) {
-			return results;
+			map.setCenter(results[0].geometry.location);
+			map.fitBounds(results[0].geometry.viewport);
+			return 0;
 		}
 		else {
 			alert('Location ' + address + ' could not be found. Please enter a proper location');
@@ -114,14 +117,15 @@ Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, 
 	$.each(genomesList, function(feature_id, feature_obj) {
 		if (feature_obj.isolation_location && feature_obj.isolation_location != "" && feature_id != selectedGenome) {
 			genomesLocationList[feature_id] = feature_obj;
-			var newMarkerObj = Map.prototype.parseLocation(feature_obj); 
+			var newMarkerObj = Map.prototype.parseLocation(feature_obj);
 			var multiMarker = new google.maps.Marker({
 				map: map,
 				position: newMarkerObj['centerLatLng'],
 				title: feature_obj.uniquename,
 				feature_id: feature_id,
 				uniquename: feature_obj.uniquename,
-				icon: "/App/Pictures/measle_red.png"
+				icon: "/App/Pictures/measle_red.png",
+				location: newMarkerObj.locationName
 			});
 			sortedPublicLocations.push(multiMarker);
 		}
@@ -130,8 +134,8 @@ Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, 
 	});
 
 	sortedPublicLocations.sort(function(a,b){
-		if(a.title < b.title) return -1;
-		if(a.title > b.title) return 1;
+		if(a.location < b.location) return -1;
+		if(a.location > b.location) return 1;
 		return 0;
 	});
 
@@ -156,17 +160,8 @@ Map.prototype.showSelectedGenome = function(location, map) {
 		var markerLatLng = new google.maps.LatLng(location.centerLatLng);
 		var overlay = new MapOverlay(map, location.centerLatLng, "/App/Pictures/marker_icon_green.png", location.locationName);
 
-/*		var marker = new google.maps.Marker({
-			icon: "http://maps.google.com/mapfiles/arrow.png",
-			map: map,
-			position: markerLatLng,
-			animation: google.maps.Animation.DROP,
-			title: location.locationName,
-			zIndex: zInd,
-		});*/
-
-		return overlay;
-	}
+return overlay;
+}
 };
 
 Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map, listDivName) {
@@ -175,7 +170,7 @@ Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map,
 	$.each( multiMarkers, function(feature_id , marker) {
 		if(map.getBounds().contains(marker.getPosition())){
 			visibleMarkers[feature_id] = marker;
-			$('#'+listDivName).append('<li>'+marker.uniquename+' <a href="/strain_info?genome='+marker.feature_id+'"><i class="icon-search"></i> info</a></li>');
+			$('#'+listDivName).append('<li>'+marker.location+' - '+marker.uniquename+' <a href="/strain_info?genome='+marker.feature_id+'"><i class="icon-search"></i> info</a></li>');
 		}
 		else{
 		}
