@@ -334,8 +334,8 @@ sub upload_genome : Runmode {
 
 	} elsif($results->valid('g_locate_method') eq 'map') {
 		my $latlng = $results->valid('g_location_latlng');
-		my $lat = $2 if $latlng =~ /(()([\w\d]*)( ,)/;
-		my $lng = $2 if $latlng =~ /( ,)([\w\d]*)())/;
+		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
+		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
 		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
 		$genome_params{'isolation_latlng'} = $latlng_xml;
 
@@ -1133,8 +1133,8 @@ sub update_genome : Runmode {
 
 	} elsif($results->valid('g_locate_method') eq 'map') {
 		my $latlng = $results->valid('g_location_latlng');
-		my $lat = $2 if $latlng =~ /(()([\w\d]*)( ,)/;
-		my $lng = $2 if $latlng =~ /( ,)([\w\d]*)())/;
+		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
+		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
 		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
 		$form_values{'isolation_latlng'} = $latlng_xml;
 	}
@@ -1847,6 +1847,8 @@ sub _geocode_address {
 	$noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
 	$noMarkupLocation =~ s/<[\w\d]*>/, /g;
 	$noMarkupLocation =~ s/, //;
+
+	my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
 
 	my $latlong = $googleGeocoder->geocode($noMarkupLocation) or die "$!";
 

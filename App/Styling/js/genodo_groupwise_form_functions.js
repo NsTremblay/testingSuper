@@ -90,7 +90,7 @@ function updateMeta(tab, visableData) {
 		dropDown.empty();
 		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
 		
-		$.each( visibleMarkers, function(feature_id, feature_obj) {
+		$.each( visableMarkers, function(feature_id, feature_obj) {
 			var locationTitle = multiMarkers[feature_id].title;
 			var lab = metaLabel(public_location_genomes[feature_id], visableData);
 			dropDown.append(

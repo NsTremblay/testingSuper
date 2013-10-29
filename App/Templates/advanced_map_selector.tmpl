@@ -1,12 +1,5 @@
 <script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 <script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
-<script>
-var public_genomes = <TMPL_VAR public_genomes>;
-var public_location_genomes = {};
-var private_genomes = <TMPL_VAR private_genomes>;
-var private_location_genomes = {};
-visableData = ['name'];
-</script>
 
 <div style="margin:10px">
 	<p style="margin-bottom: 40px">
@@ -93,6 +86,17 @@ visableData = ['name'];
 
 <script type="text/javascript">
 
+var public_genomes = <TMPL_VAR public_genomes>;
+var public_location_genomes = {};
+var private_genomes = <TMPL_VAR private_genomes>;
+var private_location_genomes = {};
+visableData = ['name'];
+
+var visableMarkers = {};
+var multiMarkers = {};
+var mapFactory;
+var map;
+
 //This disables the enter key from submitting the form to an empty url
 $(function(){
 	$("#advancedMapLocation").keypress(function(e){
@@ -110,11 +114,6 @@ function onLoadCheck() {
 $('a[href="#map_search_tab"]').click( function(){
 	setTimeout("showMap()", 0);
 });
-
-var visableMarkers = {};
-var multiMarkers = {};
-var mapFactory;
-var map;
 
 function showMap() {
 	var mapOptions = {
@@ -138,7 +137,7 @@ function showMap() {
 
 	google.maps.event.addListener(map, 'bounds_changed', function() {
 		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "advancedMapStrainList");
-		updateMapMeta('advancedLocationList', visableData);
+		updateMeta('advancedLocationList', visableData);
 	});
 }
 
@@ -147,11 +146,12 @@ function codeAdvancedMapAddress() {
 	var results = mapFactory.geoCodeMapAddress(address, map);
 }
 
-function updateMapMeta(tab, visibleData) {
+//Refactor the meta info tabs
+function updateMeta(tab, visibleData) {
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
-	if(tab == 'advancedLocationList' || tab == 'advancedLocationInit') {
+	if(tab == 'advancedLocationList') {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#advancedMapStrainList');
 		dropDown.empty();
@@ -205,11 +205,12 @@ function metaLabel(feature, vdata) {
 	return label.join('|');
 }
 
+//Refactor this
 $('#update-map-meta').click(function(event) {
 	event.preventDefault();
 	visableData = [];
 	$('input[name="map-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
-	updateMapMeta('advancedLocationList', visableData);
+	updateMeta('advancedLocationList', visableData);
 	return false;
 });
 
