@@ -11,49 +11,14 @@
 
 <div class="span4" class="row-fluid">
 	<div style="border-style:solid;border-width:1px;border-color:#d3d3d3;margin:0px 10px 10px 0px;padding:10px">
-		<!-- Text -->
+
 		<span class="help-block">View detailed information for any of the genomes in the database, by typing in the search box. 
 			You will see a list appear with suggested genomes matching the typed text. 
-			You can also select from the drop down list below, .<br/><br/>
-			Alternatively,  use the <a href="/strain-info/search" title="Advanced Search">Advanced Search</a> page to retrieve genome information.<br/><br/></span>
+			You can also select from the drop down list below.<br/><br/>
+			Alternatively,  use the <a href="/strain-info/search" title="Advanced Search" style="color:#08c">Advanced Search</a> page to retrieve genome information.<br/><br/></span>
 			
-			<!-- Display Meta Data -->
-			<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#form-meta-display">
-				<i class=" icon-eye-open icon-white"></i>
-				<span class="caret"></span>
-			</button>
-			
-			<div id="form-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-				<div style="padding:10px;">Change meta-data displayed in form:</div>
-				<form class="form-horizontal" style="padding:0px 5px 0 20px;">
-					<fieldset>		    	
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="name"> Name 
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="accession"> Accession # 
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="strain"> Strain
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="serotype"> Serotype
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="isolation_host"> Isolation Host
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="isolation_source"> Isolation Source 
-						</label>
-						<label>
-							<input class="form-meta" type="checkbox" name="form-meta-option" value="isolation_date"> Isolation Date
-						</label>														   			   						   
-					</fieldset>
-					<button id="update-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-				</form>
-			</div>
-			
-			<!-- Public Strains -->
+			<div id="form-meta-display"></div>
+
 			<form id="pubStrainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
 				<fieldset>
 					
@@ -104,26 +69,26 @@
 
 	<script type="text/javascript">
 
+	var metaTab = new MetaTab('strainList');
+	$('#form-meta-display').append(metaTab.form_html);
+
+	var metaTabSelections = ['name'];
+
+	//On start run this function
 	$(function() {
-	// Populate forms
-	updateMeta();
-});
+		$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+		updateMeta(metaTabSelections);
+	});
 
-// Change meta displayed info in form
-$("#update-meta").click(function(event) {
-	event.preventDefault();
-	var visibleData = [];
-	$("input[name='form-meta-option']:checked").each( function(i, e) { visibleData.push( $( e ).val() ); });
-	updateMeta(visibleData);
+	$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+		metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+		updateMeta(metaTabSelections);
+	});
 
-	return false;
-});
-
-// Update and reload forms with new meta data
-function updateMeta(visableData) {
+	function updateMeta(selectedMetaData) {
 	// Default is to display just the name
-	if(typeof visableData === 'undefined' || visableData.length == 0) {
-		visableData = ['name'];
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
 	}
 
 	// Generate new labels
@@ -131,7 +96,7 @@ function updateMeta(visableData) {
 	dropDown.empty();
 	var availableTags = [];
 	$.each( public_genomes, function(i, n) {
-		var lab = metaLabel(n, visableData);
+		var lab = metaTab.metaLabel(n, selectedMetaData);
 		availableTags.push ( { label:lab, value:i } );
 	});
 	
@@ -161,44 +126,6 @@ function updateMeta(visableData) {
 			return false;  
 		}
 	});
-}
-
-// Create labels for a genome with required meta data
-function metaLabel(feature, vdata) {
-	var label = [];
-	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
-	}
-	
-	if(vdata.indexOf('accession') != -1) {
-		if(typeof feature.primary_dbxref !== 'undefined') {
-			label.push(feature.primary_dbxref);
-		} else {
-			label.push('NA');
-		}
-	}
-	
-	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-	for(var i=0; i<metaDataTypes.length; i++) {
-		var x = metaDataTypes[i];
-		
-		if(vdata.indexOf(x) != -1) {
-			
-			if(typeof feature[x] !== 'undefined') {
-				var sublabel = [];
-				
-				for(var j=0; j<feature[x].length; j++) {
-					sublabel.push(feature[x][j]);
-				}
-				
-				var sublabel_string = sublabel.join();
-				label.push(sublabel_string);
-			} else {
-				label.push('NA');
-			}
-		}
-	}
-	return label.join('|');
 }
 
 $('#strainInfoSearchButton').click(function(){

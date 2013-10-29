@@ -114,7 +114,7 @@ function showMap() {
 		updateMeta('map', visableData);
 	});
 	//Can remove this
-	updateSelectionList(visableMarkers);
+	//updateSelectionList(visableMarkers);
 }
 
 function codeMultiMapAddress() {
@@ -123,11 +123,11 @@ function codeMultiMapAddress() {
 }
 
 //Can remove this
-function updateSelectionList(visibleMarkers) {
+/*function updateSelectionList(visibleMarkers) {
 	var visibleData = [];
 	$('input[name="map-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
 	updateMeta('map', visibleData);
-}
+}*/
 
 $('#select-all-map').click( function() {
 	var map = $('input[name="genomes-in-map-search"]');

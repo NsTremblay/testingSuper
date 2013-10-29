@@ -6,9 +6,12 @@
 <head>
 	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 </head>
 
 <body style="background-color:#796e6c">
+
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 	<div class="container" style="background-color:#ffffff">
 		<div id="map-canvas" style="height:300px;padding:10px"></div>
@@ -28,6 +31,9 @@
 		<div class="span4" style="height:300px;overflow:auto">
 			<ul id="visibleMarkers" style="list-style:none"></ul>
 		</div>
+
+		<div id="form-meta-display"></div>
+
 
 	</div>
 
@@ -57,7 +63,7 @@ var clusterList = lists[1];
 
 var visableMarkers = multiMarkers;
 
-var mcOptions = {gridSize: 50, maxZoom: 15};
+var mcOptions = {gridSize: 50, maxZoom: 15}; 
 var mc = new MarkerClusterer(map, clusterList, mcOptions);
 
 var selectedMarkerOverlay = mapFactory.showSelectedGenome(selectedLocation, map);
@@ -65,6 +71,19 @@ var selectedMarkerOverlay = mapFactory.showSelectedGenome(selectedLocation, map)
 
 google.maps.event.addListener(map, 'bounds_changed', function() {
 	visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "visibleMarkers");
+});
+
+
+//Meta Tab Example
+var metaTab = new MetaTab('map');
+$('#form-meta-display').append(metaTab.form_html);
+
+var visableData = ['name'];
+var metaTabSelections = [];
+
+$('input[name="'+metaTab.tab+'-meta-option"]').click( function() {
+	metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+	//Need to then update list labels.
 });
 
 </script>

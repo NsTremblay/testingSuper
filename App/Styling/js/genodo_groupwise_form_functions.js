@@ -91,11 +91,11 @@ function updateMeta(tab, visableData) {
 		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
 		
 		$.each( visableMarkers, function(feature_id, feature_obj) {
-			var locationTitle = multiMarkers[feature_id].title;
+			var location = multiMarkers[feature_id].location;
 			var lab = metaLabel(public_location_genomes[feature_id], visableData);
 			dropDown.append(
 				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+locationTitle+' - '+lab+'</label>'+								
+				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+'</label>'+								
 				'</li>'
 				);
 			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {

@@ -15,6 +15,11 @@
 	</div>
 
 	<script type="text/javascript">
+
+	var mapFactory;
+	var map;
+	var marker;
+
 	//This disables the enter key from submitting the form to an empty url
 	$(function(){
 		$("#location").keypress(function(e){
@@ -24,9 +29,6 @@
 			}
 		});
 	});
-
-	var map;
-	var marker;
 
 	function showMap() {
 		var mapOptions = {

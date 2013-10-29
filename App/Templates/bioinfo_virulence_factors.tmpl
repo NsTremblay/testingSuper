@@ -153,7 +153,7 @@ function updateVFAMRMeta(list , visibleData) {
 		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
 		$.each (virulence_factors, function(vir_id, vir_obj) {
 			dropDown.append(
-				'<label class="checkbox" for="vir_'+vir_obj.feature_id+'"><input id="vir_'+vir_obj.feature_id+'" class="checkbox" type="checkbox" value="'+vir_obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+vir_obj.name+' - '+vir_obj.uniquename+'</label>'
+				'<label class="checkbox" for="vir_'+vir_obj.feature_id+'"><input id="vir_'+vir_obj.feature_id+'" class="checkbox" type="checkbox" value="'+vir_obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+vir_obj.name+'</label>'
 				);
 		});
 	}
@@ -163,7 +163,7 @@ function updateVFAMRMeta(list , visibleData) {
 		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
 		$.each (amr_genes, function(amr_id, amr_obj) {
 			dropDown.append(
-				'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+amr_obj.name+' - '+amr_obj.uniquename+'</label>'
+				'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+amr_obj.name+'</label>'
 				);
 		});
 	}
@@ -184,7 +184,7 @@ function appendFilteredList(obj , list) {
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+obj.name+' - '+obj.uniquename+'</label>'
+					'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+obj.name+'</label>'
 					);
 			}
 		});
@@ -203,7 +203,7 @@ function appendFilteredList(obj , list) {
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+obj.name+' - '+obj.uniquename+'</label>'
+					'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+obj.name+'</label>'
 					);
 			}
 		});
