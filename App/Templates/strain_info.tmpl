@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html>
 
-<TMPL_INCLUDE NAME="header.tmpl">
+<head>
 
-<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
-<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
-<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
-<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
+	<TMPL_INCLUDE NAME="header.tmpl">
 
-<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
+	<!-- SuperPhyloTree -->
+	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+	<!-- D3.js -->
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 
-<TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
+</head>
 
 <body onload="onLoadCheck()" style="background-color:#796e6c">
+
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
+
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 	<div class="container" style="background-color:#FFFFFF">
 
@@ -160,22 +169,6 @@
 </html>
 
 <script type="text/javascript">
-
-function showVFMetaInfo(tag) {
-	$('#VFMetaInfo').empty();
-	$('#VFMetaInfo').append('<div class="span5" id="wheel-loader" style="margin:10px 0px 0px 0px"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>');
-
-	$.post("/vf_meta_info", { VFName: tag.getAttribute("value")},  
-		function(vir){
-			$('#VFMetaInfo').empty();
-			$('#VFMetaInfo').append('<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
-
-			for (var i = 1; i < vir.data.length; i++) {
-				$('#VFMetaInfo').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
-			}
-
-		}, "json" , $('#VFMetaInfo').show());
-}
 
 //pubmed IDs for Entrez search
 var pmidList = "";

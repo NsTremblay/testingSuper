@@ -4,14 +4,18 @@
 <head>
 	<TMPL_INCLUDE NAME="header.tmpl">
 	
+	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<!-- D3.js -->
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
 	
-	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-	
+</head>
+
+<body style="background-color:#796e6c">
+
 	<script>
 	<TMPL_IF msa_json>
 	var sequence_alignment_json = <TMPL_VAR msa_json>;
@@ -28,52 +32,50 @@
 	</script>
 	
 	<style>
-		#aln_table {
-			font-family: "Lucida Console", Monaco, monospace
-		}
-		td.aln_name_col {
-			width: 140pt;
-		}
-		td.aln_pos_col {
-			text-align: right;
-			text-valign: top;
-			padding-bottom: 24px;
-		}
-		td.nuclA {
-			background-color:#F5A9A9;
-			color:black;
-		}
-		td.nuclG {
-			background-color:#F3F781;
-			color:black;
-		}
-		td.nuclC {
-			background-color:#A9F5A9;
-			color:black;
-		}
-		td.nuclT {
-			background-color:#A9D0F5;
-			color:black;
-		}
-		td.nuclGAP {
-			background-color:#F2F2F2;
-			color:black;
-		}
-		td.consM, td.consMM {
-			font-color:#A4A4A4;
-			font-size:10pt;
-		}
-		#allele_list ol {
-			margin: 10pt 25pt;
-		}
+	#aln_table {
+		font-family: "Lucida Console", Monaco, monospace
+	}
+	td.aln_name_col {
+		width: 140pt;
+	}
+	td.aln_pos_col {
+		text-align: right;
+		text-valign: top;
+		padding-bottom: 24px;
+	}
+	td.nuclA {
+		background-color:#F5A9A9;
+		color:black;
+	}
+	td.nuclG {
+		background-color:#F3F781;
+		color:black;
+	}
+	td.nuclC {
+		background-color:#A9F5A9;
+		color:black;
+	}
+	td.nuclT {
+		background-color:#A9D0F5;
+		color:black;
+	}
+	td.nuclGAP {
+		background-color:#F2F2F2;
+		color:black;
+	}
+	td.consM, td.consMM {
+		font-color:#A4A4A4;
+		font-size:10pt;
+	}
+	#allele_list ol {
+		margin: 10pt 25pt;
+	}
 	</style>
 
-	
-</head>
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
 
-<TMPL_INCLUDE NAME="nav_bar_vir_amr.tmpl">
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
 		<div class="row-fluid">
 			<div class="span12">
@@ -91,7 +93,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#description" style="padding:10px 0 10px 0;">
 					Gene Information
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 			</div>
 			<div class="span12">
@@ -112,7 +114,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#alleles" style="padding:10px 0 10px 0;">
 					Genome Alleles
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 			</div>
 			<div class="span12">
@@ -127,7 +129,7 @@
 		<TMPL_IF allele_json>
 		<div class="row-fluid">
 			<div id="alleles" class="collapse in">
-			
+
 				<div id="allele_list" class="span8">
 				</div>
 				
@@ -172,10 +174,10 @@
 		<TMPL_ELSE>
 		<div id="alleles" class="collapse in">
 			
-				<div class="span12">
-					<p>No alleles found.
-					</p>
-				</div>
+			<div class="span12">
+				<p>No alleles found.
+				</p>
+			</div>
 		</div>
 		</TMPL_IF>
 		
@@ -185,7 +187,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#phylogenetic_tree" style="padding:10px 0 10px 0;">
 					Phylogenetic Gene Tree
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 			</div>
 			<div class="span12">
@@ -211,7 +213,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#sequence_alignment" style="padding:10px 0 10px 0;">
 					Gene Sequence Alignment
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 				<div style="padding:10px 0 40px 0">
 					<p>Multiple sequence alignment of gene alleles.  
@@ -259,22 +261,22 @@
 			
 			$('#allele_list').empty();
 			displayAlleles(alleles, $('#allele_list'), visibleData); 
-	
+
 			return false;
 		});
 		</TMPL_IF>
 	});
 	
 	function displayVF(vir){
-			$('#description').empty();
-			$('#description').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
-				'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
+		$('#description').empty();
+		$('#description').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
+			'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
 
-			for (var i = 1; i < vir.data.length; i++) {
-				$('#description').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
-			}
-
+		for (var i = 1; i < vir.data.length; i++) {
+			$('#description').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
 		}
+
+	}
 	
 	function displayAMR(amr){
 		$('#description').empty();
@@ -296,7 +298,7 @@
 		$('#description').append(amrhtml);
 		
 		if(amr.data.descriptions.length > 0) {
-	
+
 			var defhtml =
 			'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Description</strong></span></div>'+
 			'<div class="span12"><ol>';
@@ -310,7 +312,7 @@
 		}
 		
 		if(amr.data.aro_terms.length > 0) {
-	
+
 			var arohtml =
 			'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Antimicrobial Resistance Ontology Annotations</strong></span></div>'+
 			'<div class="span12"><ol>';
@@ -386,15 +388,15 @@
 	}
 	
 	function displayAlleles(alleles, alleleElem, visibleData) {
-	
+
 		if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 			visibleData = ['name'];
 		}
 		var is_public = /public/;
-	
+
 		if(typeof alleles.present !== 'undefined' && alleles.present.length > 0) {
 			alleleElem.append('<h5>Genomes with an Allele Copy</h5>');
-		
+
 			var list1 = $('<ol></ol>').appendTo(alleleElem);
 			
 			for(i in alleles.present) {
@@ -411,7 +413,7 @@
 		
 		if(typeof alleles.absent !== 'undefined' && alleles.absent.length > 0) {
 			alleleElem.append('<h5>Genomes without an Allele Copy</h5>');
-		
+
 			var list2 = $('<ol></ol>').appendTo(alleleElem);
 			
 			for(i in alleles.absent) {
@@ -465,4 +467,4 @@
 		return label.join('|');
 	}
 
-</script>
+	</script>

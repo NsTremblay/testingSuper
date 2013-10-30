@@ -19,7 +19,7 @@
 			
 			<div id="form-meta-display"></div>
 
-			<form id="pubStrainInfoSearch" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+			<form id="pubStrainInfoSearch" class="form" action="/strain-info/strain_info" method="post" enctype="application/x-www-form-urlencoded">
 				<fieldset>
 					
 					<input id="strain-autocomp" class="span12" type="text" autocomplete="off" placeholder="Search for a genome" name="genomeName"></input>
@@ -31,7 +31,7 @@
 				</fieldset>
 			</form>
 			
-			<form id="pubStrainInfoDropdown" class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+			<form id="pubStrainInfoDropdown" class="form" action="/strain-info/strain_info" method="post" enctype="application/x-www-form-urlencoded">
 				<fieldset>
 					<span style="color:#796e6c">Select a genome from the list:</span>
 					<select id="pubStrainList" class="span12" style="margin:10px 0px 0px 0px" name="genome">
@@ -45,7 +45,7 @@
 			</form>
 			
 			<TMPL_IF PRIVATE_DATA>
-			<form class="form" action="/strain_info/" method="post" enctype="application/x-www-form-urlencoded">
+			<form class="form" action="/strain-info/strain_info" method="post" enctype="application/x-www-form-urlencoded">
 				<fieldset>
 					<p style="color:#796e6c">Or select from user submitted genomes:<br>
 						<span style="padding-left:20px"><small>[Pri] private</small></span>
@@ -85,6 +85,8 @@
 		updateMeta(metaTabSelections);
 	});
 
+
+	// UpdateMeta is a common function in all pages but implemented differently
 	function updateMeta(selectedMetaData) {
 	// Default is to display just the name
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {

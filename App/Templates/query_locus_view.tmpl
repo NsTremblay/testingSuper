@@ -2,11 +2,15 @@
 <html>
 <head>
 	<TMPL_INCLUDE NAME="header.tmpl">
+
+	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<!-- D3.js -->
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+
 </head>
 
 <body>
@@ -27,7 +31,7 @@
 		<tbody>
 			<TMPL_LOOP data>
 			<tr>
-				<td><a href="/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
+				<td><a href="/strain-info/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
 				<td>
 					<TMPL_IF genotype><i class="icon-ok"></i>
 					<TMPL_ELSE><i class="icon-remove"></i></TMPL_IF>
@@ -56,7 +60,7 @@
 			<TMPL_LOOP data>
 
 			<tr>
-				<td><a href="/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
+				<td><a href="/strain-info/strain_info?genome=<TMPL_VAR genome_id>"><TMPL_VAR genome_id></a></td>
 				<td><TMPL_VAR genotype></td>
 			</tr>
 			</TMPL_LOOP>

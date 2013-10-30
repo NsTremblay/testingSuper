@@ -29,16 +29,7 @@ sub dispatch_args {
                 ':app/:rm'            => { },
                 'test'                => { app => 'User', rm => 'hello' },
 				'/hello' =>     {app=>'Home' , rm=>'default'},
-                '/home' =>      {app=>'Home', rm=>'home'},
-                '/strain_info' => {app=>'StrainInfo', rm=>'strain_info'},
-                '/group_wise_comparisons' => {app=>'GroupWiseComparisons', rm=>'group_wise_comparisons'},
-                '/genome_uploader' => {app=>'GenomeUploader', rm=>'genome_uploader'},
-                '/upload_genome' => {app=>'GenomeUploader', rm=>'upload_genome'},
-                '/virulence_factors' =>   {app=>'VirulenceFactors' , rm=>'virulence_factors'},
-                '/statistics' =>    {app=>'Statistics' , rm=>'stats'},
-                '/virulence_amr_by_strain/' => {app=>'VirulenceFactors', rm=>'virulence_amr_by_strain'},
-                '/vf_meta_info' => {app=>'VirulenceFactors' , rm=>'vf_meta_info'},
-                '/amr_meta_info' => {app=>'VirulenceFactors' , rm=>'amr_meta_info'},
+                '/home' =>      {app=>'Home', rm=>'home'}
         ],
     };
 }

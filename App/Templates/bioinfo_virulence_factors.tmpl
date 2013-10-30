@@ -1,64 +1,77 @@
 <!DOCTYPE html>
 <html>
 
-<TMPL_INCLUDE NAME="header.tmpl">
+<head>
 
-<TMPL_INCLUDE NAME="nav_bar_vir_amr.tmpl">
+	<TMPL_INCLUDE NAME="header.tmpl">
 
-<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
-<script type="text/javascript" src="/App/Styling/js/intro.js"></script>
-<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
-<link rel="stylesheet" href="/App/Styling/css/introjs.css">
-<style>
-.present {
-	background-color:#81DAF5;
-	text-align: center;
-	border-style:solid dotted solid dotted; 
-	border-width:1px;
-	border-color:#848484;
-}
+	<!-- jQuery -->
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<!-- Intro.js -->
+	<link rel="stylesheet" href="/App/Styling/css/introjs.css">
+	<script type="text/javascript" src="/App/Styling/js/intro.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
+	
 
-.absent {
-	background-color:#F3F781;
-	text-align: center;
-	border-style:solid dotted solid dotted; 
-	border-width:1px;
-	border-color:#848484;
-}
 
-.table_name {
-	width: 400px;
-	height: 20px;
-}
+</head>
 
-table div.rotated {
-	-webkit-transform: rotate(270deg);
-	-moz-transform: rotate(270deg);
-	writing-mode:tb-rl;
-	white-space: nowrap;
-}
+<body style="background-color:#796e6c">
 
-thead th {
-	vertical-align: top;
-	padding: 2px;
-}
+	<style>
 
-table .vertical {
-	white-space: nowrap;
-}
+	.present {
+		background-color:#81DAF5;
+		text-align: center;
+		border-style:solid dotted solid dotted; 
+		border-width:1px;
+		border-color:#848484;
+	}
 
-table {
-	border-collapse: collapse;
-}
+	.absent {
+		background-color:#F3F781;
+		text-align: center;
+		border-style:solid dotted solid dotted; 
+		border-width:1px;
+		border-color:#848484;
+	}
 
-#amrByStrain, #virByStrain {
-	padding: 20pt 0pt;
-}
+	.table_name {
+		width: 400px;
+		height: 20px;
+	}
 
-</style>
+	table div.rotated {
+		-webkit-transform: rotate(270deg);
+		-moz-transform: rotate(270deg);
+		writing-mode:tb-rl;
+		white-space: nowrap;
+	}
 
-<body onload="initialize()" style="background-color:#796e6c">
+	thead th {
+		vertical-align: top;
+		padding: 2px;
+	}
+
+	table .vertical {
+		white-space: nowrap;
+	}
+
+	table {
+		border-collapse: collapse;
+	}
+
+	#amrByStrain, #virByStrain {
+		padding: 20pt 0pt;
+	}
+
+	</style>
+
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 	<div class="container" style="background-color:#FFFFFF">
 
@@ -79,6 +92,8 @@ table {
 </html>
 
 <script type="text/javascript">
+
+//Intro.js
 function startIntro(){
 
 	var intro = introJs();
@@ -101,27 +116,30 @@ function startIntro(){
 	intro.start();
 }
 
-$('#update-vf-amr-meta').click(function(event) {
-	event.preventDefault();
-	visableData = [];
-	$('input[name="vf-amr-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
-	updateVFAMRMeta('genomes' , visableData);
-	return false;
-});
+var metaTab = new MetaTab('strainList');
+$('#form-meta-display').append(metaTab.form_html);
 
-function initialize() {
-	//Need to init amr and vfactor lists
-	updateVFAMRMeta("genomes");
-	updateVFAMRMeta("virulence");
-	updateVFAMRMeta("amr");
-}
+var metaTabSelections = ['name'];
 
-function updateVFAMRMeta(list , visibleData) {
-	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
-		visibleData = ['name'];
-	}
+	//On start run this function
+	$(function() {
+		$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+		updateMeta("genomes", metaTabSelections);
+		updateMeta("virulence");
+		updateMeta("amr");
+	});
 
-	if (list == "genomes") {
+	$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+		metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+		updateMeta("genomes", metaTabSelections);
+	});
+
+	function updateMeta(list , selectedMetaData) {
+		if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+			selectedMetaData = ['name'];
+		}
+
+		if (list == "genomes") {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList li');
 		dropDown.empty();
@@ -130,7 +148,7 @@ function updateVFAMRMeta(list , visibleData) {
 		var selectedCount = 0;
 		$.each( public_genomes, function(feature_id, genome_obj) {
 			var selectedInput = checkIfChecked(feature_id, selectedGenomes);
-			var lab = metaLabel(public_genomes[feature_id], visibleData);
+			var lab = metaTab.metaLabel(public_genomes[feature_id], selectedMetaData);
 			genomeLabels[feature_id] = lab;
 			if (selectedInput !== undefined) {
 				selectedCount++;
@@ -167,10 +185,53 @@ function updateVFAMRMeta(list , visibleData) {
 				);
 		});
 	}
-
 }
 
-function appendFilteredList(obj , list) {
+////////////////////////////////Refactor these methods
+//////////////////////////////////////////////////TODO:
+$('#virulence-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#virulence-autocomplete').val().toLowerCase();
+	$.each(virulence_factors, function(vir_id, vir_obj) {
+		var name = vir_obj.name.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[vir_id] = vir_obj;
+		}
+	});
+	appendFilteredList(filteredList , 'virulence');
+});
+
+$('#amr-autocomplete').keyup( function() {
+	var filteredList = {};
+	var searchTerm = $('#amr-autocomplete').val().toLowerCase();
+	$.each(amr_genes, function(amr_id, amr_obj) {
+		var name = amr_obj.name.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[amr_id] = amr_obj;
+		}
+	});
+	appendFilteredList(filteredList , 'amr');
+});
+
+$('#genomes-autocomplete').keyup( function() {
+	filterGenomes();
+});
+
+function filterGenomes() {
+	var filteredList = {};
+	var searchTerm = $('#genomes-autocomplete').val().toLowerCase();
+	$.each(genomeLabels, function(feature_id, label) {
+		var name = label.toLowerCase();
+		if (name.indexOf(searchTerm) > -1) {
+			filteredList[feature_id] = public_genomes[feature_id];
+		}
+	});
+	appendFilteredList(filteredList, 'genomes', metaTabSelections);
+}
+
+/////////////////////////////////////////////////////////////////
+
+function appendFilteredList(obj , list, selectedMetaData) {
 	if (list == 'virulence') {
 		var dropDown = $('#virListSelection li');
 		dropDown.empty();
@@ -212,16 +273,11 @@ function appendFilteredList(obj , list) {
 	else {
 		var dropDown = $('#pubStrainList li');
 		dropDown.empty();
-		var visibleData = [];
 		var selectedCount = 0;
-		$('input[name="list-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
-		if(typeof visableData === 'undefined' || visableData.length == 0) {
-			visableData = ['name'];
-		}
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		$.each( obj, function(feature_id, genome_obj) {
 			var selectedInput = checkIfChecked(feature_id, selectedGenomes);
-			var lab = metaLabel(obj[feature_id], visableData);
+			var lab = metaTab.metaLabel(obj[feature_id], selectedMetaData);
 			if (selectedInput !== undefined) {
 				selectedCount++;
 				dropDown.append(
@@ -238,43 +294,24 @@ function appendFilteredList(obj , list) {
 	}
 }
 
-// Create labels for a genome with required meta data
-function metaLabel(feature, vdata) {
-	var label = [];
-	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
-	}
-	
-	if(vdata.indexOf('accession') != -1) {
-		if(typeof feature.primary_dbxref !== 'undefined') {
-			label.push(feature.primary_dbxref);
-		} else {
-			label.push('NA');
+function toggleChecked(input, listName) {
+	var index = listName[input.value];
+	if (input.checked == true) {
+		if (index == undefined) {
+			listName[input.value] = input.parentNode;
+		}
+		else {
 		}
 	}
-	
-	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-	for(var i=0; i<metaDataTypes.length; i++) {
-		var x = metaDataTypes[i];
-		
-		if(vdata.indexOf(x) != -1) {
-			
-			if(typeof feature[x] !== 'undefined') {
-				var sublabel = [];
-				
-				for(var j=0; j<feature[x].length; j++) {
-					sublabel.push(feature[x][j]);
-				}
-				
-				var sublabel_string = sublabel.join();
-				label.push(sublabel_string);
-			} else {
-				label.push('NA');
-			}
-		}
+	else {
+		delete listName[input.value];
 	}
-	return label.join('|');
 }
+
+function checkIfChecked(id, listName) {
+	return listName[id];
+}
+
 
 </script>
 

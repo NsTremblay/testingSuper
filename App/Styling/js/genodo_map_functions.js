@@ -170,7 +170,7 @@ Map.prototype.updateVisibleMarkers = function(visibleMarkers, multiMarkers, map,
 	$.each( multiMarkers, function(feature_id , marker) {
 		if(map.getBounds().contains(marker.getPosition())){
 			visibleMarkers[feature_id] = marker;
-			$('#'+listDivName).append('<li>'+marker.location+' - '+marker.uniquename+' <a href="/strain_info?genome='+marker.feature_id+'"><i class="icon-search"></i> info</a></li>');
+			$('#'+listDivName).append('<li>'+marker.location+' - '+marker.uniquename+' <a href="/strain-info/strain_info?genome='+marker.feature_id+'"><i class="icon-search"></i> info</a></li>');
 		}
 		else{
 		}

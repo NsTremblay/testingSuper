@@ -1,11 +1,24 @@
 <!DOCTYPE html>
 <html>
 
-<TMPL_INCLUDE NAME="header.tmpl">
+<head>
+	<TMPL_INCLUDE NAME="header.tmpl">
+	<!-- jQuery -->
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
+	<!-- Twitter Bootstrap -->
+	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.en_US.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.js"></script>
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+
+</head>
 
 <body style="background-color:#796e6c">
 
-<script type="text/javascript">
+	<script type="text/javascript">
 	
 	// Initialize the host list
 	$(document).ready( function() {
@@ -36,7 +49,7 @@
 		$('input[name="g_syndrome"][value="<TMPL_VAR syndrome_value>"]').prop('checked', true);
 		</TMPL_LOOP>
 		</TMPL_IF>
-			
+
 		</TMPL_IF>
 		
 		if($('input[name="g_other_syndrome_cb"]').is(':checked')) {
@@ -58,22 +71,22 @@
 		$("#inputGenomeName").focus();
 		
 	});
-	
+
 </script>
 
-	<TMPL_INCLUDE NAME="nav_bar_genome_uploader.tmpl">
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-	<div class="container" style="background-color:#FFFFFF">
-		
-		<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
-			<h1><TMPL_IF new_genome><h1><span>UPLOAD A </span> <span style="color:#d41616">GENOME</span></h1><TMPL_ELSE><h1><span>MODIFY GENOME</span> <span style="color:#d41616">ATTRIBUTES</span></h1></TMPL_IF></h1>
-		</div>
+<div class="container" style="background-color:#FFFFFF">
 
-		<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">
-
+	<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
+		<h1><TMPL_IF new_genome><h1><span>UPLOAD A </span> <span style="color:#d41616">GENOME</span></h1><TMPL_ELSE><h1><span>MODIFY GENOME</span> <span style="color:#d41616">ATTRIBUTES</span></h1></TMPL_IF></h1>
 	</div>
 
-	<TMPL_INCLUDE NAME="footer.tmpl">
+	<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">
+
+</div>
+
+<TMPL_INCLUDE NAME="footer.tmpl">
 
 </body>
 

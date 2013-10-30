@@ -114,41 +114,7 @@ genomeLabels = {};
 								<tbody>
 									<tr>
 										<td>
-											<div class="span4">
-												<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#vf-amr-meta-display">
-													<i class=" icon-eye-open icon-white"></i>
-													<span class="caret"></span>
-												</button>
-												<div id="vf-amr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-													<div style="padding: 10px">Change meta-data displayed in genome list:</div>
-													<form class="form-horizontal" style="padding:0px 5px 0 20px;">
-														<fieldset>		    	
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="name"> Name 
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="accession"> Accession # 
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="strain"> Strain
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="serotype"> Serotype
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_host"> Isolation Host
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_source"> Isolation Source 
-															</label>
-															<label>
-																<input class="vf-amr-meta" type="checkbox" name="vf-amr-meta-option" value="isolation_date"> Isolation Date
-															</label>	   						
-														</fieldset>
-														<button id="update-vf-amr-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-													</form>
-												</div>
-											</div>
+											<div class="span4" id ="form-meta-display"></div>
 										</td>
 										<td>
 											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
@@ -230,7 +196,7 @@ genomeLabels = {};
 					<div class="span5" style="padding:10px 0px 0px 0px">
 						<p>Select a virulence factor from the list below to view a detailed information page about that gene.</p>
 						<hr/>
-						<form class="form" id="showVFMetaInfoForm" action="/vf_meta_info" method="post" enctype="application/x-www-form-urlencoded">
+						<form>
 							<fieldset>
 								<table id="vfList" class="span12" name="VFName" style="max-height:200px;overflow:auto;border:solid;border-width:1px;border-color:#d3d3d3">
 								</table>
@@ -251,7 +217,7 @@ genomeLabels = {};
 					<div class="span5" style="padding:10px 0px 0px 0px">
 						<p>Select an AMR gene from the list below to view a detailed information page about that gene.</p>
 						<hr/>
-						<form class="form" id="showAMRMetaInfoForm" action="/amr_meta_info/" method="post" enctype="application/x-www-form-urlencoded">
+						<form>
 							<fieldset>
 								<table id="amrList" class="span12" name="AMRName" style="max-height:200px;overflow:auto;border:solid;border-width:1px;border-color:#d3d3d3">
 								</table>
@@ -363,9 +329,9 @@ function displayMatrix(data, genomes, tabElem, type) {
 		var feature = genomes[i];
 		var lab;
 		if(is_public.test(feature)) {
-			lab = metaLabel(public_genomes[feature], visibleData);
+			lab = metaTab.metaLabel(public_genomes[feature], visibleData);
 		} else {
-			lab = metaLabel(private_genomes[feature], visibleData);
+			lab = metaTab.metaLabel(private_genomes[feature], visibleData);
 		}
 		header.append('<th class="vertical">'+lab+'</th>');
 		
@@ -431,6 +397,9 @@ var selectedVirulence = {};
 var selectedAmr = {};
 var selectedGenomes = {};
 
+
+//Refactor these methods
+//TODO:
 function selectAllGenomes() {
 	var genomes = $('input[name="selectedStrains"]');
 	if ($('#select-all-genomes').is(':checked')) {
@@ -466,75 +435,16 @@ function selectAllAmr() {
 		amr.change();
 	}
 }
-
-function toggleChecked(input, listName) {
-	var index = listName[input.value];
-	if (input.checked == true) {
-		if (index == undefined) {
-			listName[input.value] = input.parentNode;
-		}
-		else {
-		}
-	}
-	else {
-		delete listName[input.value];
-	}
-}
-
-function checkIfChecked(id, listName) {
-	return listName[id];
-}
-
-
-$('#virulence-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#virulence-autocomplete').val().toLowerCase();
-	$.each(virulence_factors, function(vir_id, vir_obj) {
-		var name = vir_obj.name.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[vir_id] = vir_obj;
-		}
-	});
-	appendFilteredList(filteredList , 'virulence');
-});
-
-$('#amr-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#amr-autocomplete').val().toLowerCase();
-	$.each(amr_genes, function(amr_id, amr_obj) {
-		var name = amr_obj.name.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[amr_id] = amr_obj;
-		}
-	});
-	appendFilteredList(filteredList , 'amr');
-});
-
-$('#genomes-autocomplete').keyup( function() {
-	filterGenomes();
-});
-
-function filterGenomes() {
-	var filteredList = {};
-	var searchTerm = $('#genomes-autocomplete').val().toLowerCase();
-	$.each(genomeLabels, function(feature_id, label) {
-		var name = label.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[feature_id] = public_genomes[feature_id];
-		}
-	});
-	appendFilteredList(filteredList , 'genomes');
-}
+////////////////////////////////////
 
 (function ($) {
 	$.fn.rotateTableCellContent = function (options) {
-		/*
+			/*
 			Version 1.0
 			7/2011
 			Written by David Votrubec (davidjs.com) and
 			Michal Tehnik (@Mictech) for ST-Software.com
 			*/
-
 			var cssClass = ((options) ? options.className : false) || "vertical";
 
 			var cellsToRotate = $('.' + cssClass, this);

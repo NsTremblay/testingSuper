@@ -5,51 +5,58 @@
 
 	<TMPL_INCLUDE NAME="header.tmpl">
 
+	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-
-	<script>
-	var public_genomes = <TMPL_VAR public_genomes>;
-	var private_genomes = <TMPL_VAR private_genomes>;
-	var root = null,
-	visableData = ['name'];
-	genomeLabels = {}
-	</script>
-
-	<style type="text/css">
-	#pubStrainList li, #tree-selected-genomes li {
-		list-style:none;
-	}
-	#pubStrainList label.listSelected {
-		font-weight:bold;
-		font-style:italic;
-		fill: #796e6c;
-	}
-	#pubStrainList input.listSelected {
-		display:none;
-	}
-	#multiMapStrainList label.listSelected {
-		font-weight:bold;
-		font-style:italic;
-		fill: #796e6c;
-	}
-	#multiMapStrainList input.listSelected {
-		display:none;
-	}
-	</style>
-
 	<script src="/App/Styling/js/genodo_tree_functions.js"></script>
+	<!-- D3.js -->
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<!-- Groupwise Form Functions -->
 	<script src="/App/Styling/js/genodo_groupwise_form_functions.js"></script>
+	<!-- Genomes Attributes Search -->
 	<script src="/App/Styling/js/genodo_boolean_search.js"></script>
-
-	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
 
 </head>
 
-<TMPL_INCLUDE NAME="nav_bar_group_wise.tmpl">
+<script>
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var root = null,
+visableData = ['name'];
+genomeLabels = {}
+</script>
+
+<style type="text/css">
+#pubStrainList li, #tree-selected-genomes li {
+	list-style:none;
+}
+#pubStrainList label.listSelected {
+	font-weight:bold;
+	font-style:italic;
+	fill: #796e6c;
+}
+#pubStrainList input.listSelected {
+	display:none;
+}
+#multiMapStrainList label.listSelected {
+	font-weight:bold;
+	font-style:italic;
+	fill: #796e6c;
+}
+#multiMapStrainList input.listSelected {
+	display:none;
+}
+</style>
+
+<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 <body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
