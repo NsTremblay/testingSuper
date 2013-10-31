@@ -121,25 +121,24 @@ $('#form-meta-display').append(metaTab.form_html);
 
 var metaTabSelections = ['name'];
 
-	//On start run this function
-	$(function() {
-		$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
-		updateMeta("genomes", metaTabSelections);
-		updateMeta("virulence");
-		updateMeta("amr");
-	});
+//On start run this function
+$(function() {
+	$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+	updateMeta("genomes", metaTabSelections);
+	updateMeta("virulence");
+	updateMeta("amr");
+});
 
-	$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
-		metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
-		updateMeta("genomes", metaTabSelections);
-	});
+$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+	metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+	updateMeta("genomes", metaTabSelections);
+});
 
-	function updateMeta(list , selectedMetaData) {
-		if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
-			selectedMetaData = ['name'];
-		}
-
-		if (list == "genomes") {
+function updateMeta(list , selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
+	}
+	if (list == "genomes") {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList li');
 		dropDown.empty();
@@ -187,8 +186,7 @@ var metaTabSelections = ['name'];
 	}
 }
 
-////////////////////////////////Refactor these methods
-//////////////////////////////////////////////////TODO:
+//TODO: Refactor these methods.
 $('#virulence-autocomplete').keyup( function() {
 	var filteredList = {};
 	var searchTerm = $('#virulence-autocomplete').val().toLowerCase();
@@ -228,10 +226,12 @@ function filterGenomes() {
 	});
 	appendFilteredList(filteredList, 'genomes', metaTabSelections);
 }
+/////////////////////////////////////////////////////////////////////
 
-/////////////////////////////////////////////////////////////////
-
-function appendFilteredList(obj , list, selectedMetaData) {
+function appendFilteredList(obj, list, selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
+	}
 	if (list == 'virulence') {
 		var dropDown = $('#virListSelection li');
 		dropDown.empty();
@@ -249,7 +249,7 @@ function appendFilteredList(obj , list, selectedMetaData) {
 					);
 			}
 		});
-		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-virulence').click() : 0;
+		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-virulence').attr("checked", true) : 0;
 	}
 	else if (list == 'amr') {
 		var dropDown = $('#amrListSelection li');
@@ -268,7 +268,7 @@ function appendFilteredList(obj , list, selectedMetaData) {
 					);
 			}
 		});
-		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-amr').click() : 0;
+		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-amr').attr("checked", true) : 0;
 	}
 	else {
 		var dropDown = $('#pubStrainList li');
@@ -290,17 +290,17 @@ function appendFilteredList(obj , list, selectedMetaData) {
 					);
 			}
 		});
-		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-genomes').click() : 0;
+		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-genomes').attr("checked", true) : 0;
 	}
 }
 
 function toggleChecked(input, listName) {
-	var index = listName[input.value];
-	if (input.checked == true) {
-		if (index == undefined) {
-			listName[input.value] = input.parentNode;
+	var index = input.value;
+	if (input.checked) {
+		if (index in listName) {
 		}
 		else {
+			listName[input.value] = input.parentNode;
 		}
 	}
 	else {

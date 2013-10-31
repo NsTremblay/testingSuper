@@ -10,7 +10,7 @@
 // VF/AMR - Strain Selection
 
 function MetaTab(tab) {
-	this.labels = {strainList: "the list of genomes"}
+	this.labels = {strainList: "the list of genomes", attrList: "the search results", treeList: "the tree", mapList: "the list of genomes with locations"}
 
 	this.tab = tab;
 	// Build form

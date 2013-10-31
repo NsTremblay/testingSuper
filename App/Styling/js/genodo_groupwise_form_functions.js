@@ -5,55 +5,6 @@
  *
  **/
 
- function buildMetaForm(el, tab) {
-
- 	var validTabs = ['list', 'tree', 'map'];
- 	var formLabels = ['drop-down list', 'tree', 'map'];
-
- 	var i = validTabs.indexOf(tab);
- 	if(i == -1) {
- 		alert('unknown tab name');
- 		return('false');
- 	}
-
-	// Build form
-	var form_html = '<div style="display: inline-block;">'+	
-	'<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#'+tab+'-meta-display">'+
-	'<i class=" icon-eye-open icon-white"></i>'+
-	'<span class="caret"></span>'+
-	'</button>'+
-	'<div id="'+tab+'-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">'+
-	'<div style="padding:10px;">Change meta-data displayed in '+formLabels[i]+':</div>'+
-	'<form class="form-horizontal" style="padding:0px 5px 0 20px;">'+
-	'<fieldset>'+		    	
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="name"> Name </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="accession"> Accession # </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="strain"> Strain </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="serotype"> Serotype </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_host"> Isolation Host </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_source"> Isolation Source </label>'+
-	'<label><input class="meta-option" type="checkbox" name="'+tab+'-meta-option" value="isolation_date"> Isolation Date </label>'+														   			   						   
-	'</fieldset>'+
-	'<button id="update-'+tab+'-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>'+
-	'</form>'+
-	'</div>'+
-	'</div>'+
-	'</div>'+
-	'</div>';
-	
-	$(el).append(form_html);
-	
-	// Setup button behavior
-	$('#update-'+tab+'-meta').click(function(event) {
-		event.preventDefault();
-		var visibleData = [];
-		$('input[name="'+tab+'-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-		updateMeta(tab, visibleData);
-
-		return false;
-	});
-}
-
 // Update and reload various forms with new meta data
 function updateMeta(tab, visableData) {
 	// Default is to display just the name
@@ -67,7 +18,7 @@ function updateMeta(tab, visableData) {
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
 		$.each( public_genomes, function(feature_id, feature_obj) {
-			var lab = metaLabel(feature_obj, visableData);
+			var lab = metaTab.metaLabel(feature_obj, visableData);
 			genomeLabels[feature_id] = lab;
 			dropDown.append(
 				'<li>'+
@@ -84,7 +35,7 @@ function updateMeta(tab, visableData) {
 	} else if(tab == 'tree') {
 		modifyLabels(visableData);
 
-	} else if (tab == 'map') {
+	} else if (tab == 'mapList') {
 		//Do something here about that
 		var dropDown = $('#multiMapStrainList');
 		dropDown.empty();
@@ -92,7 +43,7 @@ function updateMeta(tab, visableData) {
 		
 		$.each( visableMarkers, function(feature_id, feature_obj) {
 			var location = multiMarkers[feature_id].location;
-			var lab = metaLabel(public_location_genomes[feature_id], visableData);
+			var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visableData);
 			dropDown.append(
 				'<li style="list-style-type:none">'+
 				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+'</label>'+								
@@ -110,7 +61,7 @@ function updateMeta(tab, visableData) {
 	
 }
 
-// Create labels for a genome with required meta data
+/*// Create labels for a genome with required meta data
 function metaLabel(feature, vdata) {
 	var label = [];
 	if(vdata.indexOf('name') != -1) {
@@ -146,7 +97,7 @@ function metaLabel(feature, vdata) {
 		}
 	}
 	return label.join('|');
-}
+}*/
 
 
 // Add list of genomes to group form box

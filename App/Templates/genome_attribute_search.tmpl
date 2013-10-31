@@ -76,57 +76,27 @@
 				</div>
 			</td>
 			<td>
-				<div class="span4">
-					<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#attr-meta-display" style="margin-left: 10px">
-						<i class="icon-eye-open icon-white"></i>
-						<span class="caret"></span>
-					</button>
-
-					<div id="attr-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:20px;">
-						<div style="padding: 10px">Change meta-data displayed in Results window:</div>
-						<form style="padding:0px 5px 0 20px;">
-							<fieldset>		    	
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="name"> Name 
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="accession"> Accession # 
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="strain"> Strain
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="serotype"> Serotype
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="isolation_host"> Isolation Host
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="isolation_source"> Isolation Source 
-								</label>
-								<label>
-									<input class="attr-meta" type="checkbox" name="attr-meta-option" value="isolation_date"> Isolation Date
-								</label>														   			   						   
-							</fieldset>
-							<button id="update-attr-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-						</form>
-					</div>
-				</div>
+				<div class="span4" id="attr-meta-display"></div>
 			</td>
 		</tr>
 	</tbody>
 </table>
 
 <script type="text/javascript">
-$('#update-attr-meta').click(function(event) {
-	event.preventDefault;
 
-	var visibleData = [];
-	$('input[name="attr-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-	$('#select-all-attr-search-display').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
-	updateAttrMeta(visibleData, attr_search_result, groupwise);
+var metaAttrTab = new MetaTab('attrList');
+$('#attr-meta-display').append(metaAttrTab.form_html);
 
-	return false;
+//On start run this function
+$(function() {
+	$('input[name="'+metaAttrTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+});
+
+var metaAttrTabSelections = ['name'];
+
+$('input[name="'+metaAttrTab.tab+'-meta-option"]').change( function() {
+	metaAttrTabSelections = metaAttrTab.updateSelections(this.value, this.checked, metaAttrTabSelections);
+	updateAttrMeta(metaAttrTabSelections, attr_search_result, groupwise);
 });
 
 $('#select-all-attr-search-display').click( function() {

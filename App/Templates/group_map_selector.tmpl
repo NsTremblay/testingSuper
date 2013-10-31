@@ -21,10 +21,7 @@
 						<button id="buttonMapGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
 						<button id="buttonMapGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 					</div>
-					<div id="map-meta-form" style="padding-top:20px; padding-left:0px;"></div>
-					<script type="text/javascript">
-					buildMetaForm("#map-meta-form","map");
-					</script>
+					<div id="map-meta-display" style="padding-top:20px; padding-left:0px;"></div>
 				</div>
 			</td>
 		</tr>
@@ -75,6 +72,22 @@ var multiMarkers = {};
 var mapFactory;
 var map;
 
+
+var metaMapTab = new MetaTab('mapList');
+$('#map-meta-display').append(metaMapTab.form_html);
+
+var metaMapTabSelections = ['name'];
+
+//On start run this function
+$(function() {
+	$('input[name="'+metaMapTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+});
+
+$('input[name="'+metaMapTab.tab+'-meta-option"]').change( function() {
+	metaMapTabSelections = metaMapTab.updateSelections(this.value, this.checked, metaMapTabSelections);
+	updateMeta('mapList', metaMapTabSelections);
+});
+
 //This disables the enter key from submitting the form to an empty url
 $(function(){
 	$("#multiMapLocation").keypress(function(e){
@@ -111,23 +124,14 @@ function showMap() {
 
 	google.maps.event.addListener(map, 'bounds_changed', function() {
 		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "multiMapStrainList");
-		updateMeta('map', visableData);
+		updateMeta('mapList', metaMapTabSelections);
 	});
-	//Can remove this
-	//updateSelectionList(visableMarkers);
 }
 
 function codeMultiMapAddress() {
 	var address = document.getElementById('multiMapLocation').value;
 	var results = mapFactory.geoCodeMapAddress(address, map);
 }
-
-//Can remove this
-/*function updateSelectionList(visibleMarkers) {
-	var visibleData = [];
-	$('input[name="map-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-	updateMeta('map', visibleData);
-}*/
 
 $('#select-all-map').click( function() {
 	var map = $('input[name="genomes-in-map-search"]');

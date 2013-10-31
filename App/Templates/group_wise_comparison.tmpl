@@ -21,6 +21,8 @@
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
 	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 
 </head>
 
@@ -206,11 +208,25 @@ genomeLabels = {}
 								<button id="buttonGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 							</div>
 
-							<div id="list-meta-form" style="padding-top:20px; padding-left:20px;" >
+							<div id="form-meta-display" style="padding-top:20px; padding-left:20px;" >
 							</div>
 
 							<script type="text/javascript">
-							buildMetaForm("#list-meta-form","list");
+							var metaTab = new MetaTab('strainList');
+							$('#form-meta-display').append(metaTab.form_html);
+
+							var metaTabSelections = ['name'];
+
+							//On start run this function
+							$(function() {
+								$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+								updateMeta('init', metaTabSelections);
+							});
+
+							$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+								metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+								updateMeta('list', metaTabSelections);
+							});
 							</script>
 
 						</div>
@@ -256,12 +272,8 @@ genomeLabels = {}
 							</script>
 						</div>
 
-						<div id="tree-meta-form" class="span5" style="padding-top:10px;">
+						<div id="tree-meta-display" class="span5" style="padding-top:10px;">
 						</div>
-
-						<script type="text/javascript">
-						buildMetaForm("#tree-meta-form","tree");
-						</script>
 					</div>
 
 					<div class="row-fluid">				
@@ -270,6 +282,7 @@ genomeLabels = {}
 							var smallTreeWindow = false;
 							var centreOnSelectedNode = false;
 							var multiSelect = true;
+							var metaTreeTabSelections = ['name'];
 							</script>
 							<script src="/App/Styling/js/genodo_single_strain_tree_zoom.js"></script>
 							<script type="text/javascript">
@@ -277,6 +290,19 @@ genomeLabels = {}
 							root.x0 = height / 2;
 							root.y0 = 0;
 							update(root, centreOnSelectedNode, multiSelect);
+
+							var metaTreeTab = new MetaTab('treeList');
+							$('#tree-meta-display').append(metaTreeTab.form_html);
+
+							$(function() {
+								$('input[name="'+metaTreeTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+								modifyLabels(metaTreeTabSelections);
+							});
+
+							$('input[name="'+metaTreeTab.tab+'-meta-option"]').change( function() {
+								metaTreeTabSelections = metaTreeTab.updateSelections(this.value, this.checked, metaTreeTabSelections);
+								modifyLabels(metaTreeTabSelections);
+							});
 							</script>
 						</div>
 					</div>
@@ -496,19 +522,6 @@ $('#select-all-genomes').click( function() {
 	}
 });
 
-/*$('#strain-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#strain-autocomplete').val().toLowerCase();
-	$.each(genomeLabels, function(feature_id, label) {
-		//want it to look up the label instead
-		var name = label.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[feature_id] = public_genomes[feature_id];
-		}
-	});
-	appendFilteredList(filteredList , 'genome');
-});*/
-
 $('#strain-autocomplete').keyup( function() {
 	filterGenomes();
 });
@@ -530,13 +543,12 @@ function appendFilteredList(obj , list) {
 	var strainsAlreadyInGroups = groupsList();
 	dropDown.empty();
 	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-	var visibleData = [];
-	$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
+	var visibleData = metaTabSelections;
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
 	$.each( obj, function(feature_id, genome_obj) {
-		var lab = metaLabel(obj[feature_id], visibleData);
+		var lab = metaTab.metaLabel(obj[feature_id], visibleData);
 		dropDown.append(
 			'<li style="list-style-type:none">'+
 			'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+

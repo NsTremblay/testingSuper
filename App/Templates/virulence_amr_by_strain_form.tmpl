@@ -398,8 +398,8 @@ var selectedAmr = {};
 var selectedGenomes = {};
 
 
-//Refactor these methods
-//TODO:
+//TODO: Refactor these methods.
+//These are causing bugs.
 function selectAllGenomes() {
 	var genomes = $('input[name="selectedStrains"]');
 	if ($('#select-all-genomes').is(':checked')) {
@@ -435,7 +435,7 @@ function selectAllAmr() {
 		amr.change();
 	}
 }
-////////////////////////////////////
+//////////////////////////////////////////////////////////
 
 (function ($) {
 	$.fn.rotateTableCellContent = function (options) {
