@@ -138,6 +138,17 @@ sub view : Runmode {
 	my $self = shift;
 
 	my $template = $self->load_tmpl( 'query_locus_view.tmpl' , die_on_bad_params=>0 );
+	
+	# Retrieve form data
+	my $username = $self->authen->username;
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
 	# Params 
 	my $q = $self->query();
 	my $qgene;

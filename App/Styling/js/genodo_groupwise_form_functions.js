@@ -61,45 +61,6 @@ function updateMeta(tab, visableData) {
 	
 }
 
-/*// Create labels for a genome with required meta data
-function metaLabel(feature, vdata) {
-	var label = [];
-	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
-	}
-	
-	if(vdata.indexOf('accession') != -1) {
-		if(typeof feature.primary_dbxref !== 'undefined') {
-			label.push(feature.primary_dbxref);
-		} else {
-			label.push('NA');
-		}
-	}
-	
-	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-	for(var i=0; i<metaDataTypes.length; i++) {
-		var x = metaDataTypes[i];
-		
-		if(vdata.indexOf(x) != -1) {
-			
-			if(typeof feature[x] !== 'undefined') {
-				var sublabel = [];
-				
-				for(var j=0; j<feature[x].length; j++) {
-					sublabel.push(feature[x][j]);
-				}
-				
-				var sublabel_string = sublabel.join();
-				label.push(sublabel_string);
-			} else {
-				label.push('NA');
-			}
-		}
-	}
-	return label.join('|');
-}*/
-
-
 // Add list of genomes to group form box
 function addToGroup(groupNum, genomeList) {
 	

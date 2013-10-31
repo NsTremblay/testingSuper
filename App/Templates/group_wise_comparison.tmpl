@@ -29,8 +29,7 @@
 <script>
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
-var root = null,
-visableData = ['name'];
+var root = null;
 genomeLabels = {}
 </script>
 
@@ -488,14 +487,14 @@ if ((grp1.length > 20 || grp2.length > 20) && !($('input[name="email-results"]')
 $.each( grp1, function(feature_id, genome_obj) {
 	$('#comparison-group1-names').append(
 		'<li style="list-style-type:none">'+
-		'<label class="checkbox" for="name1_'+feature_id+'"><input id="name1_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.innerText+'" name="comparison-group1-name"/>'+genome_obj.parentNode.innerText+'</label>'+
+		'<label class="checkbox" for="name1_'+feature_id+'"><input id="name1_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.textContent+'" name="comparison-group1-name"/>'+genome_obj.parentNode.textContent+'</label>'+
 		'</li>'
 		);
 });
 $.each( grp2, function(feature_id, genome_obj) {
 	$('#comparison-group2-names').append(
 		'<li style="list-style-type:none">'+
-		'<label class="checkbox" for="name2_'+feature_id+'"><input id="name2_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.innerText+'" name="comparison-group2-name"/>'+genome_obj.parentNode.innerText+'</label>'+
+		'<label class="checkbox" for="name2_'+feature_id+'"><input id="name2_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.textContent+'" name="comparison-group2-name"/>'+genome_obj.parentNode.textContent+'</label>'+
 		'</li>'
 		);
 });

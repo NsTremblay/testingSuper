@@ -63,7 +63,7 @@ sub virulence_factors : StartRunmode {
 	my $amrFactorsRef = $formDataGenerator->getAmrFormData();
 	my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();
 
-	my $template = $self->load_tmpl( 'bioinfo_virulence_factors.tmpl' , die_on_bad_params=>0 );
+	my $template = $self->load_tmpl( 'virulence_amr.tmpl' , die_on_bad_params=>0 );
 
 	my $q = $self->query();
 

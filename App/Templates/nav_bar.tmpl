@@ -29,7 +29,7 @@
 		var match = urlPathName.match(re, "$1");
 		if (match) {
 			var divId = match[1];
-			$('#'+divId).addClass("active");
+			match[1] == "" ? $('#home').addClass("active") : $('#'+divId).addClass("active");
 		}
 		</script>
 
