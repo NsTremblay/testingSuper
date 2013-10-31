@@ -1,10 +1,4 @@
 <div style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
-
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
-	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.en_US.js"></script>
-	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
 	
 	<TMPL_IF some_errors>
 	<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
@@ -413,7 +407,7 @@ $('#inputLocationMapPoint').click( function() {
 	$('#inputLocationLatLng').attr("disabled", false);
 	$('#inputLocationLatLng').attr("required", true);
 	$('#map').show();
-	initialize();
+	showMap();
 });
 
 $('#inputLocationName').click( function() {

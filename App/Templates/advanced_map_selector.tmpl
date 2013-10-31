@@ -1,12 +1,5 @@
 <script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 <script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
-<script>
-var public_genomes = <TMPL_VAR public_genomes>;
-var public_location_genomes = {};
-var private_genomes = <TMPL_VAR private_genomes>;
-var private_location_genomes = {};
-visableData = ['name'];
-</script>
 
 <div style="margin:10px">
 	<p style="margin-bottom: 40px">
@@ -23,41 +16,7 @@ visableData = ['name'];
 			<td>
 			</td>
 			<td>
-				<div class="span4">
-					<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#map-meta-display">
-						<i class=" icon-eye-open icon-white"></i>
-						<span class="caret"></span>
-					</button>
-					<div id="map-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:10px;">
-						<div style="padding: 10px">Change meta-data displayed in map:</div>
-						<form class="form-horizontal" style="padding:0px 5px 0 20px;">
-							<fieldset>		    	
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="name"> Name 
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="accession"> Accession # 
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="strain"> Strain
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="serotype"> Serotype
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="isolation_host"> Isolation Host
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="isolation_source"> Isolation Source 
-								</label>
-								<label>
-									<input class="map-meta" type="checkbox" name="map-meta-option" value="isolation_date"> Isolation Date
-								</label>														   			   						   
-							</fieldset>
-							<button id="update-map-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-						</form>
-					</div>
-				</div>
+				<div class="span4" id="map-meta-display"></div>
 			</td>
 		</tr>
 		<tr colspan="2">
@@ -93,6 +52,31 @@ visableData = ['name'];
 
 <script type="text/javascript">
 
+var public_genomes = <TMPL_VAR public_genomes>;
+var public_location_genomes = {};
+var private_genomes = <TMPL_VAR private_genomes>;
+var private_location_genomes = {};
+
+var visableMarkers = {};
+var multiMarkers = {};
+var mapFactory;
+var map;
+
+var metaMapTab = new MetaTab('mapList');
+$('#map-meta-display').append(metaMapTab.form_html);
+
+var metaMapTabSelections = ['name'];
+
+//On start run this function
+$(function() {
+	$('input[name="'+metaMapTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+});
+
+$('input[name="'+metaMapTab.tab+'-meta-option"]').change( function() {
+	metaMapTabSelections = metaMapTab.updateSelections(this.value, this.checked, metaMapTabSelections);
+	updateMapMeta(metaMapTabSelections);
+});
+
 //This disables the enter key from submitting the form to an empty url
 $(function(){
 	$("#advancedMapLocation").keypress(function(e){
@@ -110,11 +94,6 @@ function onLoadCheck() {
 $('a[href="#map_search_tab"]').click( function(){
 	setTimeout("showMap()", 0);
 });
-
-var visableMarkers = {};
-var multiMarkers = {};
-var mapFactory;
-var map;
 
 function showMap() {
 	var mapOptions = {
@@ -138,7 +117,7 @@ function showMap() {
 
 	google.maps.event.addListener(map, 'bounds_changed', function() {
 		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "advancedMapStrainList");
-		updateMapMeta('advancedLocationList', visableData);
+		updateMapMeta(metaMapTabSelections);
 	});
 }
 
@@ -147,70 +126,23 @@ function codeAdvancedMapAddress() {
 	var results = mapFactory.geoCodeMapAddress(address, map);
 }
 
-function updateMapMeta(tab, visibleData) {
+//Refactor the meta info tabs
+function updateMapMeta(visibleData) {
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
-	if(tab == 'advancedLocationList' || tab == 'advancedLocationInit') {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#advancedMapStrainList');
 		dropDown.empty();
 		
 		$.each( visableMarkers, function(feature_id, feature_obj) {
 			var location = multiMarkers[feature_id].location;
-			var lab = metaLabel(public_location_genomes[feature_id], visibleData);
+			var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visibleData);
 			
 			dropDown.append(
 				'<li>'+location+' - '+lab+'<a href="/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
 				);
 		});	
-	}
-} 
+	} 
 
-// Create labels for a genome with required meta data
-function metaLabel(feature, vdata) {
-	var label = [];
-	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
-	}
-	
-	if(vdata.indexOf('accession') != -1) {
-		if(typeof feature.primary_dbxref !== 'undefined') {
-			label.push(feature.primary_dbxref);
-		} else {
-			label.push('NA');
-		}
-	}
-	
-	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-	for(var i=0; i<metaDataTypes.length; i++) {
-		var x = metaDataTypes[i];
-		
-		if(vdata.indexOf(x) != -1) {
-			
-			if(typeof feature[x] !== 'undefined') {
-				var sublabel = [];
-				
-				for(var j=0; j<feature[x].length; j++) {
-					sublabel.push(feature[x][j]);
-				}
-				
-				var sublabel_string = sublabel.join();
-				label.push(sublabel_string);
-			} else {
-				label.push('NA');
-			}
-		}
-	}
-	return label.join('|');
-}
-
-$('#update-map-meta').click(function(event) {
-	event.preventDefault();
-	visableData = [];
-	$('input[name="map-meta-option"]:checked').each( function(i, e) { visableData.push( $( e ).val() ); });
-	updateMapMeta('advancedLocationList', visableData);
-	return false;
-});
-
-</script>
+	</script>

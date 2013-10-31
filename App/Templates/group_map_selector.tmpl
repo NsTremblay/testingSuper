@@ -1,9 +1,5 @@
+<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 <script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
-<script>
-var public_location_genomes = {};
-var private_location_genomes = {};
-</script>
-
 <div style="margin:10px">
 	<p style="margin-bottom: 40px">
 		Select multiple strains from the map. As you zoom in and out and pan accross the map the list of markers on the right will change.
@@ -25,10 +21,7 @@ var private_location_genomes = {};
 						<button id="buttonMapGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
 						<button id="buttonMapGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 					</div>
-					<div id="map-meta-form" style="padding-top:20px; padding-left:0px;"></div>
-					<script type="text/javascript">
-					buildMetaForm("#map-meta-form","map");
-					</script>
+					<div id="map-meta-display" style="padding-top:20px; padding-left:0px;"></div>
 				</div>
 			</td>
 		</tr>
@@ -71,6 +64,29 @@ var private_location_genomes = {};
 </table>
 
 <script type="text/javascript">
+var public_location_genomes = {};
+var private_location_genomes = {};
+
+var visableMarkers = {};
+var multiMarkers = {};
+var mapFactory;
+var map;
+
+
+var metaMapTab = new MetaTab('mapList');
+$('#map-meta-display').append(metaMapTab.form_html);
+
+var metaMapTabSelections = ['name'];
+
+//On start run this function
+$(function() {
+	$('input[name="'+metaMapTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+});
+
+$('input[name="'+metaMapTab.tab+'-meta-option"]').change( function() {
+	metaMapTabSelections = metaMapTab.updateSelections(this.value, this.checked, metaMapTabSelections);
+	updateMeta('mapList', metaMapTabSelections);
+});
 
 //This disables the enter key from submitting the form to an empty url
 $(function(){
@@ -82,173 +98,43 @@ $(function(){
 	});
 });
 
-var multiMap;
-//Cluster list array is required by MarkerClusterer to cluster markers together on map (i.e It does not accept an object)
-var clusterList = [];
-//multiMarkers object for all markers visible or not
-var multiMarkers = {};
-//visibleMarkers list of markers currently in viewport
-var visibleMarkers = {};
-var geocoder;
+$('a[href="#map_search_tab"]').click( function(){
+	setTimeout("showMap()", 0);
+});
 
-function initialize() {
-	//Initializes all globals then loads map
-
-	//Need to locations alphanumerically
-	var sortedPublicLocations = [];
-
-	$.each( public_genomes, function(feature_id, feature_obj) {
-		if (feature_obj.isolation_location && feature_obj.isolation_location != "") {
-			public_location_genomes[feature_id] = feature_obj;
-			var newMarkerObj = parseLocation(feature_obj);
-			var multiMarker = new google.maps.Marker({
-				map: multiMap,
-				position: newMarkerObj['centerLatLng'],
-				title: newMarkerObj['locationName'],
-				feature_id: feature_id,
-				uniquename: feature_obj.uniquename
-			});
-			sortedPublicLocations.push(multiMarker);
-		}
-		else{
-		}
-	});	
-
-	sortedPublicLocations.sort(function(a,b){
-		if(a.title < b.title) return -1;
-		if(a.title > b.title) return 1;
-		return 0;
-	});
-
-	//Create final marker objects and lists sorted alphanumerically
-	for (var i = 0; i < sortedPublicLocations.length; i++) {
-		var multiMarker = sortedPublicLocations[i];
-		multiMarkers[multiMarker.feature_id] = multiMarker;
-		clusterList.push(multiMarker);
-	};
-
-	//Set initial visibleMarkers to all markers in view
-	visibleMarkers = multiMarkers;
-
-	// Populate forms
-	updateMeta('map');
-
-	reLoadMap();
-
-}
-
-function reLoadMap() {
-
-	geocoder = new google.maps.Geocoder();
+function showMap() {
 	var mapOptions = {
 		center: new google.maps.LatLng(-0.000, 0.000),
 		zoom: 1,
-		smaptViewControl: false,
+		streetViewControl: false,
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
 
-	multiMap = new google.maps.Map(document.getElementById("multi-map-canvas"),
-		mapOptions);
+	mapFactory = new Map(mapOptions, "multi-map-canvas");
+	map = mapFactory.initializeMap();
+
+	var lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	multiMarkers = lists[0];
+	var clusterList = lists[1];
+
+	visableMarkers = multiMarkers;
 
 	var mcOptions = {gridSize: 50, maxZoom: 15};
-	var mc = new MarkerClusterer(multiMap, clusterList, mcOptions)
-	updateMeta('map');
+	var mc = new MarkerClusterer(map, clusterList, mcOptions);
 
-	google.maps.event.addListener(multiMap, 'bounds_changed', function() {
-		visibleMarkers = {};
-
-		$.each( multiMarkers, function(feature_id , marker) {
-			if(multiMap.getBounds().contains(marker.getPosition())){
-				visibleMarkers[feature_id] = marker;
-			}
-			else{
-			}
-		});
-		updateSelectionList(visibleMarkers);
+	google.maps.event.addListener(map, 'bounds_changed', function() {
+		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "multiMapStrainList");
+		updateMeta('mapList', metaMapTabSelections);
 	});
 }
 
 function codeMultiMapAddress() {
 	var address = document.getElementById('multiMapLocation').value;
-	geocoder.geocode( { 'address': address}, function(results, status) {
-		if (status == google.maps.GeocoderStatus.OK) {
-			multiMap.setCenter(results[0].geometry.location);
-			multiMap.fitBounds(results[0].geometry.viewport);
-		}
-		else {
-			alert('Location ' + document.getElementById('location').value + ' could not be found. Please enter a proper location');
-		}
-	});
+	var results = mapFactory.geoCodeMapAddress(address, map);
 }
-
-function updateSelectionList(visibleMarkers) {
-	var visibleData = [];
-	$('input[name="map-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-	updateMeta('map', visibleData);
-}
-
-function parseLocation(location_obj) {
-	//Need to take in a location from the public or private lists and parses out the locations
-	var markerObj = {};
-
-	//Parses the location name for the marker title
-	var locationName = location_obj.isolation_location[0].match(/<location>.*<\/location>/)[0];
-	locationName = locationName.replace(/<location>/, '');
-	locationName = locationName.replace(/<\/location>/, '');
-	locationName = locationName.replace(/<[\/]+[\w\d]*>/g, '');
-	locationName = locationName.replace(/<[\w\d]*>/g, ', ');
-	locationName = locationName.replace(/, /, '');
-
-	var locationCoordinates = location_obj.isolation_location[0].match(/<coordinates>.*<\/coordinates>/)[0];
-
-	//Parses out the center LatLong point
-	var locationCenter = locationCoordinates.match(/<center>.*<\/center>/)[0];
-	var locationCenterLat = locationCenter.match(/<lat>.*<\/lat>/)[0];
-	locationCenterLat = locationCenterLat.replace(/<lat>/, '');
-	locationCenterLat = locationCenterLat.replace(/<\/lat>/, '');
-	var locationCenterLng = locationCenter.match(/<lng>.*<\/lng>/)[0];
-	locationCenterLng = locationCenterLng.replace(/<lng>/, '');
-	locationCenterLng = locationCenterLng.replace(/<\/lng>/, '');
-
-	//Parses out boundary LatLongs
-	var locationViewportSW = locationCoordinates.match(/<southwest>.*<\/southwest>/)[0];
-	var locationViewportSWLat = locationViewportSW.match(/<lat>.*<\/lat>/)[0];
-	var locationViewportSWLng = locationViewportSW.match(/<lng>.*<\/lng>/)[0];
-	locationViewportSWLat = locationViewportSWLat.replace(/<lat>/, '');
-	locationViewportSWLat = locationViewportSWLat.replace(/<\/lat>/, '');
-	locationViewportSWLng = locationViewportSWLng.replace(/<lng>/, '');
-	locationViewportSWLng = locationViewportSWLng.replace(/<\/lng>/, '');
-
-	var locationViewportNE = locationCoordinates.match(/<northeast>.*<\/northeast>/)[0];
-	var locationViewportNELat = locationViewportNE.match(/<lat>.*<\/lat>/)[0];
-	var locationViewportNELng = locationViewportNE.match(/<lng>.*<\/lng>/)[0];
-	locationViewportNELat = locationViewportNELat.replace(/<lat>/, '');
-	locationViewportNELat = locationViewportNELat.replace(/<\/lat>/, '');
-	locationViewportNELng = locationViewportNELng.replace(/<lng>/, '');
-	locationViewportNELng = locationViewportNELng.replace(/<\/lng>/, '');
-
-	var centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
-	var swLatLng = new google.maps.LatLng(locationViewportSWLat, locationViewportSWLng);
-	var neLatLng = new google.maps.LatLng(locationViewportNELat, locationViewportNELng);
-	var markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
-
-	markerObj['locationName'] = locationName;
-	markerObj['centerLatLng'] = centerLatLng;
-	markerObj['markerBounds'] = markerBounds;
-
-	return markerObj;
-}
-
-
-google.maps.event.addDomListener(window, 'load', initialize);
-
-$('a[href="#map_search_tab"]').click( function(){
-	setTimeout("reLoadMap()", 0);
-});
 
 $('#select-all-map').click( function() {
 	var map = $('input[name="genomes-in-map-search"]');
 	$('#select-all-map').is(':checked') ? map.prop("checked", true) : map.prop("checked", false);
 });
-
 </script>

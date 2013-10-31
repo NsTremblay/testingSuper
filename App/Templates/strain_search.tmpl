@@ -1,22 +1,35 @@
 <!DOCTYPE html>
 <html>
 
-<TMPL_INCLUDE NAME="header.tmpl"> 
+<head>
 
-<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
-<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<TMPL_INCLUDE NAME="header.tmpl"> 
 
-<script src="/App/Styling/js/genodo_boolean_search.js"></script>
+	<!-- SuperPhyloTree -->
+	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+	<script src="/App/Styling/js/genodo_tree_functions.js"></script>
+	<!-- D3.js -->
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<!-- Genome Attributes Search -->
+	<script src="/App/Styling/js/genodo_boolean_search.js"></script>
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 
-<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
-
-<TMPL_INCLUDE NAME="nav_bar_strain_info.tmpl">
+</head>
 
 <body style="background-color:#796e6c">
+
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
+	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
+
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
 

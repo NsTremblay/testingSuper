@@ -5,51 +5,59 @@
 
 	<TMPL_INCLUDE NAME="header.tmpl">
 
+	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
-
-	<script>
-	var public_genomes = <TMPL_VAR public_genomes>;
-	var private_genomes = <TMPL_VAR private_genomes>;
-	var root = null,
-	visableData = ['name'];
-	genomeLabels = {}
-	</script>
-
-	<style type="text/css">
-	#pubStrainList li, #tree-selected-genomes li {
-		list-style:none;
-	}
-	#pubStrainList label.listSelected {
-		font-weight:bold;
-		font-style:italic;
-		fill: #796e6c;
-	}
-	#pubStrainList input.listSelected {
-		display:none;
-	}
-	#multiMapStrainList label.listSelected {
-		font-weight:bold;
-		font-style:italic;
-		fill: #796e6c;
-	}
-	#multiMapStrainList input.listSelected {
-		display:none;
-	}
-	</style>
-
 	<script src="/App/Styling/js/genodo_tree_functions.js"></script>
+	<!-- D3.js -->
+	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<!-- Groupwise Form Functions -->
 	<script src="/App/Styling/js/genodo_groupwise_form_functions.js"></script>
+	<!-- Genomes Attributes Search -->
 	<script src="/App/Styling/js/genodo_boolean_search.js"></script>
-
-	<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 
 </head>
 
-<TMPL_INCLUDE NAME="nav_bar_group_wise.tmpl">
+<script>
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var root = null;
+genomeLabels = {}
+</script>
+
+<style type="text/css">
+#pubStrainList li, #tree-selected-genomes li {
+	list-style:none;
+}
+#pubStrainList label.listSelected {
+	font-weight:bold;
+	font-style:italic;
+	fill: #796e6c;
+}
+#pubStrainList input.listSelected {
+	display:none;
+}
+#multiMapStrainList label.listSelected {
+	font-weight:bold;
+	font-style:italic;
+	fill: #796e6c;
+}
+#multiMapStrainList input.listSelected {
+	display:none;
+}
+</style>
+
+<TMPL_INCLUDE NAME="genome_attribute_search_header.tmpl">
+
+<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 <body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
@@ -199,11 +207,25 @@
 								<button id="buttonGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 							</div>
 
-							<div id="list-meta-form" style="padding-top:20px; padding-left:20px;" >
+							<div id="form-meta-display" style="padding-top:20px; padding-left:20px;" >
 							</div>
 
 							<script type="text/javascript">
-							buildMetaForm("#list-meta-form","list");
+							var metaTab = new MetaTab('strainList');
+							$('#form-meta-display').append(metaTab.form_html);
+
+							var metaTabSelections = ['name'];
+
+							//On start run this function
+							$(function() {
+								$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+								updateMeta('init', metaTabSelections);
+							});
+
+							$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+								metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+								updateMeta('list', metaTabSelections);
+							});
 							</script>
 
 						</div>
@@ -249,12 +271,8 @@
 							</script>
 						</div>
 
-						<div id="tree-meta-form" class="span5" style="padding-top:10px;">
+						<div id="tree-meta-display" class="span5" style="padding-top:10px;">
 						</div>
-
-						<script type="text/javascript">
-						buildMetaForm("#tree-meta-form","tree");
-						</script>
 					</div>
 
 					<div class="row-fluid">				
@@ -263,6 +281,7 @@
 							var smallTreeWindow = false;
 							var centreOnSelectedNode = false;
 							var multiSelect = true;
+							var metaTreeTabSelections = ['name'];
 							</script>
 							<script src="/App/Styling/js/genodo_single_strain_tree_zoom.js"></script>
 							<script type="text/javascript">
@@ -270,6 +289,19 @@
 							root.x0 = height / 2;
 							root.y0 = 0;
 							update(root, centreOnSelectedNode, multiSelect);
+
+							var metaTreeTab = new MetaTab('treeList');
+							$('#tree-meta-display').append(metaTreeTab.form_html);
+
+							$(function() {
+								$('input[name="'+metaTreeTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+								modifyLabels(metaTreeTabSelections);
+							});
+
+							$('input[name="'+metaTreeTab.tab+'-meta-option"]').change( function() {
+								metaTreeTabSelections = metaTreeTab.updateSelections(this.value, this.checked, metaTreeTabSelections);
+								modifyLabels(metaTreeTabSelections);
+							});
 							</script>
 						</div>
 					</div>
@@ -455,14 +487,14 @@ if ((grp1.length > 20 || grp2.length > 20) && !($('input[name="email-results"]')
 $.each( grp1, function(feature_id, genome_obj) {
 	$('#comparison-group1-names').append(
 		'<li style="list-style-type:none">'+
-		'<label class="checkbox" for="name1_'+feature_id+'"><input id="name1_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.innerText+'" name="comparison-group1-name"/>'+genome_obj.parentNode.innerText+'</label>'+
+		'<label class="checkbox" for="name1_'+feature_id+'"><input id="name1_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.textContent+'" name="comparison-group1-name"/>'+genome_obj.parentNode.textContent+'</label>'+
 		'</li>'
 		);
 });
 $.each( grp2, function(feature_id, genome_obj) {
 	$('#comparison-group2-names').append(
 		'<li style="list-style-type:none">'+
-		'<label class="checkbox" for="name2_'+feature_id+'"><input id="name2_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.innerText+'" name="comparison-group2-name"/>'+genome_obj.parentNode.innerText+'</label>'+
+		'<label class="checkbox" for="name2_'+feature_id+'"><input id="name2_'+feature_id+'" class="checkbox" type="checkbox" value="'+genome_obj.parentNode.textContent+'" name="comparison-group2-name"/>'+genome_obj.parentNode.textContent+'</label>'+
 		'</li>'
 		);
 });
@@ -489,19 +521,6 @@ $('#select-all-genomes').click( function() {
 	}
 });
 
-/*$('#strain-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#strain-autocomplete').val().toLowerCase();
-	$.each(genomeLabels, function(feature_id, label) {
-		//want it to look up the label instead
-		var name = label.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[feature_id] = public_genomes[feature_id];
-		}
-	});
-	appendFilteredList(filteredList , 'genome');
-});*/
-
 $('#strain-autocomplete').keyup( function() {
 	filterGenomes();
 });
@@ -523,13 +542,12 @@ function appendFilteredList(obj , list) {
 	var strainsAlreadyInGroups = groupsList();
 	dropDown.empty();
 	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-	var visibleData = [];
-	$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
+	var visibleData = metaTabSelections;
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
 	$.each( obj, function(feature_id, genome_obj) {
-		var lab = metaLabel(obj[feature_id], visibleData);
+		var lab = metaTab.metaLabel(obj[feature_id], visibleData);
 		dropDown.append(
 			'<li style="list-style-type:none">'+
 			'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+
