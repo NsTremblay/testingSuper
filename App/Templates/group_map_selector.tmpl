@@ -18,8 +18,8 @@
 			<td>
 				<div class="span4">
 					<div>
-						<button id="buttonMapGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
-						<button id="buttonMapGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
+						<button id="buttonMapGroup1" class="btn btn-primary" type="button" onclick="intoMapGenomesGroup(1)"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+						<button id="buttonMapGroup2" class="btn btn-primary" type="button" onclick="intoMapGenomesGroup(2)"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 					</div>
 					<div id="map-meta-display" style="padding-top:20px; padding-left:0px;"></div>
 				</div>
@@ -137,4 +137,4 @@ $('#select-all-map').click( function() {
 	var map = $('input[name="genomes-in-map-search"]');
 	$('#select-all-map').is(':checked') ? map.prop("checked", true) : map.prop("checked", false);
 });
-</script>
+</script>`

@@ -95,9 +95,9 @@ sub virulence_amr_by_strain : Runmode {
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 
 	my $q = $self->query();
-	my @selectedStrainNames = $q->param("selectedPubStrainList");
-	my @selectedVirulenceFactors = $q->param("selectedVirListSelection");
-	my @selectedAmrGenes = $q->param("selectedAmrListSelection");
+	my @selectedStrainNames = $q->param("selectedPubGenomesList");
+	my @selectedVirulenceFactors = $q->param("selectedVirList");
+	my @selectedAmrGenes = $q->param("selectedAmrList");
 
 #my ($vfByStrainJSONref , $amrByStrainJSONref , $strainTableNamesJSONref);
 my $virAmrByStrainJSONref;
@@ -633,9 +633,9 @@ sub binaryMatrix : RunMode {
 	
 	# Params
 	my $q = $self->query();
-	my @genomes = $q->param("selectedPubStrainList");
-	my @vf = $q->param("selectedVirListSelection");
-	my @amr = $q->param("selectedAmrListSelection");
+	my @genomes = $q->param("selectedPubGenomesList");
+	my @vf = $q->param("selectedVirList");
+	my @amr = $q->param("selectedAmrList");
 	
 	# Data object
 	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema);

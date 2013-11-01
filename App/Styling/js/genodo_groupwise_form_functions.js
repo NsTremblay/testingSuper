@@ -13,7 +13,7 @@ function updateMeta(tab, visableData) {
 	}
 	var strainsAlreadyInGroups = groupsList();
 	if(tab == 'list' || tab == 'init') {
-		var dropDown = $('#pubStrainList')
+		var dropDown = $('#pubGenomesList')
 		dropDown.empty();
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
@@ -134,8 +134,8 @@ function updateSelected(genome_id, selected) {
 // These functions alter genome format after its selected
 // select in list
 function selectInList(genome, selected) {
-	$('#pubStrainList label[for="'+genome+'"]').toggleClass('listSelected', selected);
-	$('#pubStrainList input[value="'+genome+'"]').toggleClass('listSelected', selected);
+	$('#pubGenomesList label[for="'+genome+'"]').toggleClass('listSelected', selected);
+	$('#pubGenomesList input[value="'+genome+'"]').toggleClass('listSelected', selected);
 }
 
 //select in attribute search form
