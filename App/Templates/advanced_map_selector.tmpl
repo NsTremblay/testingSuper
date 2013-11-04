@@ -30,6 +30,11 @@
 					</form>
 				</div>
 			</td>
+			<td>
+				<div class="span4">
+					<input id="mapgenomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections)">
+				</div>
+			</td>
 		</tr>
 		<tr>
 			<td>
@@ -56,6 +61,7 @@ var public_genomes = <TMPL_VAR public_genomes>;
 var public_location_genomes = {};
 var private_genomes = <TMPL_VAR private_genomes>;
 var private_location_genomes = {};
+var mapgenomeLabels = {};
 
 var visableMarkers = {};
 var multiMarkers = {};
@@ -131,18 +137,33 @@ function updateMapMeta(visibleData) {
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];
 	}
-		//This needs to be changed to account for public and private data
-		var dropDown = $('#advancedMapStrainList');
-		dropDown.empty();
-		
-		$.each( visableMarkers, function(feature_id, feature_obj) {
-			var location = multiMarkers[feature_id].location;
-			var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visibleData);
-			
-			dropDown.append(
-				'<li>'+location+' - '+lab+'<a href="/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
-				);
-		});	
-	} 
+	var dropDown = $('#advancedMapStrainList');
+	dropDown.empty();
+	mapgenomeLabels = {};
+	$.each( visableMarkers, function(feature_id, feature_obj) {
+		var location = multiMarkers[feature_id].location;
+		var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visibleData);
+		mapgenomeLabels[feature_id] = lab;
+		dropDown.append(
+			'<li>'+location+' - '+lab+'<a href="/strain-info/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
+			);
+	});
+	metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections);
+}
 
-	</script>
+function appendFilteredList(obj, list, selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
+	}
+	var dropDown = $('#advancedMapStrainList');
+	dropDown.empty();
+	$.each( obj, function(feature_id, genome_obj) {
+		var location = multiMarkers[feature_id].location;
+		var lab = metaMapTab.metaLabel(obj[feature_id], selectedMetaData);
+		dropDown.append(
+			'<li>'+location+' - '+lab+'<a href="/strain-info/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
+			);
+	});
+}
+
+</script>

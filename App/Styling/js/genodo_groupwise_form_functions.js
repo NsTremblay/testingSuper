@@ -13,7 +13,7 @@ function updateMeta(tab, visableData) {
 	}
 	var strainsAlreadyInGroups = groupsList();
 	if(tab == 'list' || tab == 'init') {
-		var dropDown = $('#pubStrainList')
+		var dropDown = $('#pubGenomesList li')
 		dropDown.empty();
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
@@ -21,44 +21,41 @@ function updateMeta(tab, visableData) {
 			var lab = metaTab.metaLabel(feature_obj, visableData);
 			genomeLabels[feature_id] = lab;
 			dropDown.append(
-				'<li>'+
-				'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+								
-				'</li>'
+				'<label class="checkbox" for="'+feature_id+'">'+
+				'<input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+
+				'</label>'
 				);
 			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
 				selectInList(feature_id, true);
 			}
-			else {
-				selectInList(feature_id, false);
-			}
 		});
-	} else if(tab == 'tree') {
+		metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
+	} 
+	else if(tab == 'tree') {
 		modifyLabels(visableData);
-
-	} else if (tab == 'mapList') {
-		//Do something here about that
+	} 
+	else if (tab == 'mapList') {
 		var dropDown = $('#multiMapStrainList');
 		dropDown.empty();
+		mapgenomeLabels = {};
 		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
-		
 		$.each( visableMarkers, function(feature_id, feature_obj) {
 			var location = multiMarkers[feature_id].location;
 			var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visableData);
+			mapgenomeLabels[feature_id] = lab;
 			dropDown.append(
 				'<li style="list-style-type:none">'+
-				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+'</label>'+								
+				'<label class="checkbox" for="map_'+feature_id+'">'+
+				'<input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+
+				'</label>'+								
 				'</li>'
 				);
 			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
 				selectInMapSearch(feature_id, true);
 			}
-			else {
-				selectInMapSearch(feature_id, false);
-			}
-		});	
-
+		});
+		metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections);
 	}
-	
 }
 
 // Add list of genomes to group form box
@@ -134,8 +131,8 @@ function updateSelected(genome_id, selected) {
 // These functions alter genome format after its selected
 // select in list
 function selectInList(genome, selected) {
-	$('#pubStrainList label[for="'+genome+'"]').toggleClass('listSelected', selected);
-	$('#pubStrainList input[value="'+genome+'"]').toggleClass('listSelected', selected);
+	$('#pubGenomesList label[for="'+genome+'"]').toggleClass('listSelected', selected);
+	$('#pubGenomesList input[value="'+genome+'"]').toggleClass('listSelected', selected);
 }
 
 //select in attribute search form

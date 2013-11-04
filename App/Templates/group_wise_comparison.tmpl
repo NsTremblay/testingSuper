@@ -30,19 +30,19 @@
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
 var root = null;
-genomeLabels = {}
+var genomeLabels = {};
 </script>
 
 <style type="text/css">
-#pubStrainList li, #tree-selected-genomes li {
+#pubGenomesList li, #tree-selected-genomes li {
 	list-style:none;
 }
-#pubStrainList label.listSelected {
+#pubGenomesList label.listSelected {
 	font-weight:bold;
 	font-style:italic;
 	fill: #796e6c;
 }
-#pubStrainList input.listSelected {
+#pubGenomesList input.listSelected {
 	display:none;
 }
 #multiMapStrainList label.listSelected {
@@ -85,7 +85,7 @@ genomeLabels = {}
 											<span class="help-block">Group 1: </span>
 										</fieldset>
 									</div>
-									<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
+									<button id="buttonRemoveGroup1" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px" onclick="removeFromGroup(1)"><i class="icon-arrow-left icon-white"></i> Remove from Group 1</button>
 								</div>
 							</td>
 							<td>
@@ -95,7 +95,7 @@ genomeLabels = {}
 											<span class="help-block">Group 2: </span>
 										</fieldset>
 									</div>
-									<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
+									<button id="buttonRemoveGroup2" class="btn btn-primary btn-small" type="button" style="display:none;margin:5px 0px 0px 0px" onclick="removeFromGroup(2)"><i class="icon-arrow-left icon-white"></i> Remove from Group 2</button>
 								</div>
 							</td>
 							<td>
@@ -175,7 +175,7 @@ genomeLabels = {}
 						<tbody>
 							<tr>
 								<td>
-									<input id="strain-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
+									<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
 								</td>
 								<td>
 									<div class="span2">
@@ -194,8 +194,10 @@ genomeLabels = {}
 								<div style="padding:10px">
 									<fieldset>
 										<span class="help-block"></span>
-
-										<ul id="pubStrainList" style="padding:0px; margin:0px"></ul>
+										<ul id="pubGenomesList" style="padding:0px; margin:0px">
+											<li style="list-style-type:none">
+											</li>
+										</ul>
 									</fieldset>
 								</div>
 							</form>
@@ -203,8 +205,8 @@ genomeLabels = {}
 						<div class="span6">
 
 							<div class="btn-group btn-group-vertical" style="margin: 20px; display: inline-block;">					
-								<button id="buttonGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
-								<button id="buttonGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
+								<button id="buttonGroup1" class="btn btn-primary" type="button" onclick="intoGenomesGroup(1)"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+								<button id="buttonGroup2" class="btn btn-primary" type="button" onclick="intoGenomesGroup(2)"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 							</div>
 
 							<div id="form-meta-display" style="padding-top:20px; padding-left:20px;" >
@@ -256,8 +258,8 @@ genomeLabels = {}
 
 						<div class="span6">
 							<div class="btn-group btn-group-vertical" style="margin: 20px; display: inline-block;">					
-								<button id="buttonTreeGroup1" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
-								<button id="buttonTreeGroup2" class="btn btn-primary" type="button"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
+								<button id="buttonTreeGroup1" class="btn btn-primary" type="button" onclick="intoTreeGroup(1)"><i class="icon-arrow-right icon-white"></i> Add to Group 1</button>
+								<button id="buttonTreeGroup2" class="btn btn-primary" type="button" onclick="intoTreeGroup(2)"><i class="icon-arrow-right icon-white"></i> Add to Group 2</button>
 							</div>
 						</div>
 					</div>
@@ -329,60 +331,17 @@ genomeLabels = {}
 <script>
 
 $(function() {
-
 // Populate forms
 updateMeta('init');
 });
 
-$('#buttonGroup1').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-list',1);
+function intoGenomesGroup(groupNum) {
+	submitGenomes('genomes-in-list', groupNum);
 	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-
 	return false;
-});
+}
 
-$('#buttonGroup2').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-list',2);
-	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-
-	return false;
-});
-
-$('#buttonTreeGroup1').click(function(event) {
-	event.preventDefault();
-
-	var genomeList = {};
-	var checked = $("input[name='genomes-in-tree']");
-	checked.each( function(i, e) { 
-		var id = $( e ).val();
-		var genome_data;
-		if(/^public_/.test(id)) {
-			genome_data = public_genomes[id]
-		} else {
-			genome_data = private_genomes[id]
-		}
-		if(typeof genome_data === 'undefined') {
-			return "Unrecognized genome";
-		}
-		var lab = genome_data.uniquename;
-		genomeList[id] = lab; 
-
-	});
-
-	addToGroup(1, genomeList);
-
-	$("#tree-selected-genomes").empty();
-
-	return false;
-});
-
-$('#buttonTreeGroup2').click(function(event) {
-	event.preventDefault();
-
+function intoTreeGroup(groupNum) {
 	var genomeList = {};
 	var checked = $("input[name='genomes-in-tree']");
 	checked.each( function(i, e) { 
@@ -399,70 +358,25 @@ $('#buttonTreeGroup2').click(function(event) {
 		var lab = genome_data.uniquename;
 		genomeList[id] = lab;
 	});
-
-	addToGroup(2, genomeList);
-
+	addToGroup(groupNum, genomeList);
 	$("#tree-selected-genomes").empty();
-
 	return false;
-});
+}
 
-$('#buttonMetaGroup1').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-attr-search',1);
+function intoAttrSearchGroup(groupNum) {
+	submitGenomes('genomes-in-attr-search', groupNum);
 	$('#select-all-attr-search-display').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
-
 	return false;
-});
+}
 
-$('#buttonMetaGroup2').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-attr-search',2);
-	$('#select-all-attr-search-display').is(':checked') ? $('#select-all-attr-search-display').click() : 0;
-
-	return false;
-});
-
-$('#buttonMapGroup1').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-map-search',1);
+function intoMapGenomesGroup(groupNum) {
+	submitGenomes('genomes-in-map-search', groupNum);
 	$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
-
 	return false;
-});
-
-$('#buttonMapGroup2').click(function(event) {
-	event.preventDefault();
-
-	submitGenomes('genomes-in-map-search',2);
-	$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
-
-	return false;
-});
-
-$('#buttonRemoveGroup2').click(function(event) {
-	event.preventDefault();
-
-	removeFromGroup(2);
-
-	return false;
-});
-
-$('#buttonRemoveGroup1').click(function(event) {
-	event.preventDefault();
-
-	removeFromGroup(1);
-
-	return false;
-});
-
+} 
 
 $('#compareGrouped').click( function(e) {
 	e.preventDefault();
-
 	$('#groupedForm').submit();
 });
 
@@ -521,45 +435,48 @@ $('#select-all-genomes').click( function() {
 	}
 });
 
-$('#strain-autocomplete').keyup( function() {
-	filterGenomes();
+$('#genomes-autocomplete').keyup( function() {
+	metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
 });
 
-function filterGenomes() {
-	var filteredList = {};
-	var searchTerm = $('#strain-autocomplete').val().toLowerCase();
-	$.each(genomeLabels, function(feature_id, label) {
-		var name = label.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[feature_id] = public_genomes[feature_id];
-		}
-	});
-	appendFilteredList(filteredList , 'genome');
-}
-
-function appendFilteredList(obj , list) {
-	var dropDown = $('#pubStrainList');
-	var strainsAlreadyInGroups = groupsList();
-	dropDown.empty();
-	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-	var visibleData = metaTabSelections;
-	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
-		visibleData = ['name'];
+function appendFilteredList(obj, list, selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
 	}
-	$.each( obj, function(feature_id, genome_obj) {
-		var lab = metaTab.metaLabel(obj[feature_id], visibleData);
-		dropDown.append(
-			'<li style="list-style-type:none">'+
-			'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+
-			'</li>'
-			);
-		if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
-			selectInList(feature_id, true);
-		}
-		else {
-			selectInList(feature_id, false);
-		}
-	});
+	var strainsAlreadyInGroups = groupsList();
+	if (list == 'genomes') {
+		var dropDown = $('#pubGenomesList li');
+		dropDown.empty();
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+		$.each( obj, function(feature_id, genome_obj) {
+			var lab = metaTab.metaLabel(obj[feature_id], selectedMetaData);
+			dropDown.append(
+				'<label class="checkbox" for="'+feature_id+'">'+
+				'<input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+
+				'</label>'
+				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInList(feature_id, true);
+			}
+		});
+	}
+	else {
+		var dropDown = $('#multiMapStrainList');
+		dropDown.empty();
+		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
+		$.each( obj, function(feature_id, genome_obj) {
+			var location = multiMarkers[feature_id].location;
+			var lab = metaMapTab.metaLabel(obj[feature_id], selectedMetaData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+'</label>'+								
+				'</li>'
+				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInMapSearch(feature_id, true);
+			}
+		});
+	}
 }
 
 $('#modal-email-results').click( function(e) {

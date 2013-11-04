@@ -31,12 +31,12 @@ genomeLabels = {};
 									<tr>
 										<td><div class="span4"></div></td>
 										<td>
-											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list">
+											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list" onkeyup="metaTab.filterList('virulence', virulence_factors, undefined, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">
 												<label class="checkbox" for="select-all-virulence">
-													<input id="select-all-virulence" type="checkbox" onclick="selectAllVirulence()"> Select All 
+													<input id="select-all-virulence" type="checkbox" onclick="selectAll('virulence')"> Select All 
 												</label>
 											</div>
 										</td>
@@ -58,7 +58,7 @@ genomeLabels = {};
 							<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
-										<ul id="selectedVirListSelection" style="padding:0px;margin:0px">
+										<ul id="selectedVirList" style="padding:0px;margin:0px">
 											<li style="list-style-type:none">
 											</li>
 										</ul>
@@ -73,12 +73,12 @@ genomeLabels = {};
 									<tr>
 										<td><div class="span4"></div></td>
 										<td>
-											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list">
+											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">
 												<label class="checkbox" for="select-all-amr">
-													<input id="select-all-amr" type="checkbox" onclick="selectAllAmr()"> Select All 
+													<input id="select-all-amr" type="checkbox" onclick="selectAll('amr')"> Select All 
 												</label>
 											</div>
 										</td>
@@ -100,7 +100,7 @@ genomeLabels = {};
 							<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
-										<ul id="selectedAmrListSelection" style="padding:0px;margin:0px">
+										<ul id="selectedAmrList" style="padding:0px;margin:0px">
 											<li style="list-style-type:none">
 											</li>
 										</ul>
@@ -117,12 +117,12 @@ genomeLabels = {};
 											<div class="span4" id ="form-meta-display"></div>
 										</td>
 										<td>
-											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list">
+											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">
 												<label class="checkbox" for="select-all-genomes">
-													<input id="select-all-genomes" type="checkbox" onclick="selectAllGenomes()"> Select All 
+													<input id="select-all-genomes" type="checkbox" onclick="selectAll('genomes')"> Select All 
 												</label>
 											</div>
 										</td>
@@ -145,7 +145,7 @@ genomeLabels = {};
 							<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
 								<div style="padding:10px">
 									<fieldset>
-										<ul id="selectedPubStrainList" style="padding:0px;margin:0px">
+										<ul id="selectedPubGenomesList" style="padding:0px;margin:0px">
 											<li style="list-style-type:none">
 											</li>
 										</ul>
@@ -246,14 +246,14 @@ var current_results;
 $('#compareSelections').click( function(e) {
 	e.preventDefault();
 
-	prepareAllSelectedInputs(selectedVirulence, "selectedVirListSelection");
-	prepareAllSelectedInputs(selectedAmr, "selectedAmrListSelection");
-	prepareAllSelectedInputs(selectedGenomes, "selectedPubStrainList");
+	prepareAllSelectedInputs(selectedVirulence, "selectedVirList");
+	prepareAllSelectedInputs(selectedAmr, "selectedAmrList");
+	prepareAllSelectedInputs(selectedGenomes, "selectedPubGenomesList");
 
 	// Check inputs
-	var virList = $('#selectedVirListSelection input').serialize();
-	var amrList = $('#selectedAmrListSelection input').serialize();
-	var strainList = $('#selectedPubStrainList input').serialize();
+	var virList = $('#selectedVirList input').serialize();
+	var amrList = $('#selectedAmrList input').serialize();
+	var strainList = $('#selectedPubGenomesList input').serialize();
 	var params;
 	
 	if(strainList == "") {
@@ -397,45 +397,19 @@ var selectedVirulence = {};
 var selectedAmr = {};
 var selectedGenomes = {};
 
-
-//TODO: Refactor these methods.
-//These are causing bugs.
-function selectAllGenomes() {
-	var genomes = $('input[name="selectedStrains"]');
-	if ($('#select-all-genomes').is(':checked')) {
-		genomes.prop("checked", true);
-		genomes.change();
+function selectAll(type) {
+	//Capitalizes the first letter
+	var inputName = type.substr(0, 1).toUpperCase() + type.substr(1);
+	var inputs = $('input[name="selected'+inputName+'"]');
+	if ($('#select-all-'+type+'').is(':checked')) {
+		inputs.prop("checked", true);
+		inputs.change();
 	}
 	else {
-		genomes.prop("checked", false);
-		genomes.change();
+		inputs.prop("checked", false);
+		inputs.change();
 	}
 }
-
-function selectAllVirulence() {
-	var vir = $('input[name="selectedVirulence"]');
-	if ($('#select-all-virulence').is(':checked')) {
-		vir.prop("checked", true);
-		vir.change();
-	}
-	else {
-		vir.prop("checked", false);
-		vir.change();
-	}
-}
-
-function selectAllAmr() {
-	var amr = $('input[name="selectedAmr"]');
-	if ($('#select-all-amr').is(':checked')) {
-		amr.prop("checked", true);
-		amr.change();
-	}
-	else {
-		amr.prop("checked", false);
-		amr.change();
-	}
-}
-//////////////////////////////////////////////////////////
 
 (function ($) {
 	$.fn.rotateTableCellContent = function (options) {

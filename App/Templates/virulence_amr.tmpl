@@ -141,7 +141,7 @@ function updateMeta(list , selectedMetaData) {
 	if (list == "genomes") {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList li');
-		dropDown.empty();
+		//dropDown.empty();
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
 		var selectedCount = 0;
@@ -152,16 +152,16 @@ function updateMeta(list , selectedMetaData) {
 			if (selectedInput !== undefined) {
 				selectedCount++;
 				dropDown.append(
-					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains" onchange="toggleChecked(this, selectedGenomes)" checked/>'+lab+'</label>'
+					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)" checked/>'+lab+'</label>'
 					);
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains" onchange="toggleChecked(this, selectedGenomes)"/>'+lab+'</label>'
+					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)"/>'+lab+'</label>'
 					);
 			}
 		});
-		filterGenomes();
+		metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
 		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-genomes').click() : 0;
 	}
 	else if (list == "virulence") {
@@ -185,48 +185,6 @@ function updateMeta(list , selectedMetaData) {
 		});
 	}
 }
-
-//TODO: Refactor these methods.
-$('#virulence-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#virulence-autocomplete').val().toLowerCase();
-	$.each(virulence_factors, function(vir_id, vir_obj) {
-		var name = vir_obj.name.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[vir_id] = vir_obj;
-		}
-	});
-	appendFilteredList(filteredList , 'virulence');
-});
-
-$('#amr-autocomplete').keyup( function() {
-	var filteredList = {};
-	var searchTerm = $('#amr-autocomplete').val().toLowerCase();
-	$.each(amr_genes, function(amr_id, amr_obj) {
-		var name = amr_obj.name.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[amr_id] = amr_obj;
-		}
-	});
-	appendFilteredList(filteredList , 'amr');
-});
-
-$('#genomes-autocomplete').keyup( function() {
-	filterGenomes();
-});
-
-function filterGenomes() {
-	var filteredList = {};
-	var searchTerm = $('#genomes-autocomplete').val().toLowerCase();
-	$.each(genomeLabels, function(feature_id, label) {
-		var name = label.toLowerCase();
-		if (name.indexOf(searchTerm) > -1) {
-			filteredList[feature_id] = public_genomes[feature_id];
-		}
-	});
-	appendFilteredList(filteredList, 'genomes', metaTabSelections);
-}
-/////////////////////////////////////////////////////////////////////
 
 function appendFilteredList(obj, list, selectedMetaData) {
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
@@ -281,12 +239,12 @@ function appendFilteredList(obj, list, selectedMetaData) {
 			if (selectedInput !== undefined) {
 				selectedCount++;
 				dropDown.append(
-					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains" onchange="toggleChecked(this, selectedGenomes)" checked/>'+lab+'</label>'
+					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)" checked/>'+lab+'</label>'
 					);
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedStrains" onchange="toggleChecked(this, selectedGenomes)"/>'+lab+'</label>'
+					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)"/>'+lab+'</label>'
 					);
 			}
 		});

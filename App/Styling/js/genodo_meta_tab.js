@@ -93,3 +93,21 @@ MetaTab.prototype.metaLabel = function(feature, vdata) {
 	}
 	return label.join('|');
 };
+
+MetaTab.prototype.filterList = function(listName, list, labels, seletedMetaTabs) {
+	var filteredList = {};
+	var searchTerm = $('#'+listName+'-autocomplete').val().toLowerCase();
+	if (labels) {
+		$.each(labels, function(id, label) {
+			var name = label.toLowerCase();
+			name.indexOf(searchTerm) > -1 ? filteredList[id] = list[id] : 0;
+		});
+	}
+	else {
+		$.each(list, function(list_id, list_obj) {
+			var name = list_obj.name.toLowerCase();
+			name.indexOf(searchTerm) > -1 ? filteredList[list_id] = list[list_id] : 0;
+		});
+	}
+	appendFilteredList(filteredList, listName, seletedMetaTabs);
+};

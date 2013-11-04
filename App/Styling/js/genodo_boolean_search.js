@@ -463,13 +463,13 @@ function attrListGroupItem(id, label, alive) {
 	if(alive) {
 		return '<li>'+
 			'<label class="checkbox" for="'+id+'">'+
-			'<input class="checkbox" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'<input class="checkbox" id="'+id+'" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
 			'</label>'+
 			'</li>';
 	} else {
 		return '<li>'+
 			'<label class="checkbox selected-attr-genome" for="'+id+'">'+
-			'<input class="checkbox selected-attr-genome" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'<input class="checkbox selected-attr-genome" id="'+id+'" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
 			'</label>'+
 			'</li>';
 	}
