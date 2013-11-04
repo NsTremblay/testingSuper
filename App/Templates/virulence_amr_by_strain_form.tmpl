@@ -31,7 +31,7 @@ genomeLabels = {};
 									<tr>
 										<td><div class="span4"></div></td>
 										<td>
-											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list" onkeyup="filterList('virulence', virulence_factors)">
+											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list" onkeyup="metaTab.filterList('virulence', virulence_factors, undefined, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">
@@ -73,7 +73,7 @@ genomeLabels = {};
 									<tr>
 										<td><div class="span4"></div></td>
 										<td>
-											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="filterList('amr', amr_genes)">
+											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">
@@ -117,7 +117,7 @@ genomeLabels = {};
 											<div class="span4" id ="form-meta-display"></div>
 										</td>
 										<td>
-											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="filterList('genomes', public_genomes, genomeLabels)">
+											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections)">
 										</td>
 										<td>
 											<div class="span2">

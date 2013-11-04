@@ -37,9 +37,10 @@
 				</div>
 			</td>
 			<td>
-				<div class="span4">
+				<div class="span4 form-inline">
+					<input id="mapgenomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections)">
 					<label class="checkbox" for="select-all-map">
-						<input id="select-all-map" type="checkbox" /> Select All 
+						<input id="select-all-map" type="checkbox"/> Select All 
 					</label>
 				</div>
 			</td>
@@ -53,7 +54,7 @@
 					<div style="padding:10px">
 						<span class="help-block"></span>
 						<ul id="multiMapStrainList" style="padding:0px;margin:0px">
-							<li style="list-style:none">
+							<li style="list-style-type:none">
 							</li>
 						</ul>
 					</div>
@@ -66,6 +67,7 @@
 <script type="text/javascript">
 var public_location_genomes = {};
 var private_location_genomes = {};
+var mapgenomeLabels = {};
 
 var visableMarkers = {};
 var multiMarkers = {};
@@ -137,4 +139,5 @@ $('#select-all-map').click( function() {
 	var map = $('input[name="genomes-in-map-search"]');
 	$('#select-all-map').is(':checked') ? map.prop("checked", true) : map.prop("checked", false);
 });
-</script>`
+
+</script>

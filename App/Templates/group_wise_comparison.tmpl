@@ -31,7 +31,6 @@ var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
 var root = null;
 var genomeLabels = {};
-var selectedGenomes = {};
 </script>
 
 <style type="text/css">
@@ -195,8 +194,10 @@ var selectedGenomes = {};
 								<div style="padding:10px">
 									<fieldset>
 										<span class="help-block"></span>
-
-										<ul id="pubGenomesList" style="padding:0px; margin:0px"></ul>
+										<ul id="pubGenomesList" style="padding:0px; margin:0px">
+											<li style="list-style-type:none">
+											</li>
+										</ul>
 									</fieldset>
 								</div>
 							</form>
@@ -376,7 +377,6 @@ function intoMapGenomesGroup(groupNum) {
 
 $('#compareGrouped').click( function(e) {
 	e.preventDefault();
-
 	$('#groupedForm').submit();
 });
 
@@ -436,50 +436,47 @@ $('#select-all-genomes').click( function() {
 });
 
 $('#genomes-autocomplete').keyup( function() {
-	filterList('genomes', public_genomes, genomeLabels);
+	metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
 });
 
-function filterList(listName, list, labels) {
-	var filteredList = {};
-	var searchTerm = $('#'+listName+'-autocomplete').val().toLowerCase();
-	if (labels) {
-		$.each(labels, function(id, label) {
-			var name = label.toLowerCase();
-			name.indexOf(searchTerm) > -1 ? filteredList[id] = list[id] : 0;
+function appendFilteredList(obj, list, selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
+	}
+	var strainsAlreadyInGroups = groupsList();
+	if (list == 'genomes') {
+		var dropDown = $('#pubGenomesList li');
+		dropDown.empty();
+		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
+		$.each( obj, function(feature_id, genome_obj) {
+			var lab = metaTab.metaLabel(obj[feature_id], selectedMetaData);
+			dropDown.append(
+				'<label class="checkbox" for="'+feature_id+'">'+
+				'<input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+
+				'</label>'
+				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInList(feature_id, true);
+			}
 		});
 	}
 	else {
-		$.each(list, function(list_id, list_obj) {
-			var name = list_obj.name.toLowerCase();
-			name.indexOf(searchTerm) > -1 ? filteredList[list_id] = list[list_id] : 0;
+		var dropDown = $('#multiMapStrainList');
+		dropDown.empty();
+		$('#select-all-map').is(':checked') ? $('#select-all-map').click() : 0;
+		$.each( obj, function(feature_id, genome_obj) {
+			var location = multiMarkers[feature_id].location;
+			var lab = metaMapTab.metaLabel(obj[feature_id], selectedMetaData);
+			dropDown.append(
+				'<li style="list-style-type:none">'+
+				'<label class="checkbox" for="map_'+feature_id+'"><input id="map_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-map-search">'+location+' - '+lab+'</label>'+								
+				'</li>'
+				);
+			if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
+				selectInMapSearch(feature_id, true);
+			}
 		});
 	}
-	appendFilteredList(filteredList, listName, metaTabSelections);
-}
-
-function appendFilteredList(obj , list, selectedMetaDat) {
-	var dropDown = $('#pubGenomesList');
-	var strainsAlreadyInGroups = groupsList();
-	dropDown.empty();
-	$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
-	var visibleData = metaTabSelections;
-	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
-		visibleData = ['name'];
-	}
-	$.each( obj, function(feature_id, genome_obj) {
-		var lab = metaTab.metaLabel(obj[feature_id], visibleData);
-		dropDown.append(
-			'<li style="list-style-type:none">'+
-			'<label class="checkbox" for="'+feature_id+'"><input id="'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="genomes-in-list"/>'+lab+'</label>'+
-			'</li>'
-			);
-		if (strainsAlreadyInGroups.indexOf(feature_id) > -1) {
-			selectInList(feature_id, true);
-		}
-		else {
-			selectInList(feature_id, false);
-		}
-	});
 }
 
 $('#modal-email-results').click( function(e) {

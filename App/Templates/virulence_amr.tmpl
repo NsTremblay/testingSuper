@@ -141,7 +141,7 @@ function updateMeta(list , selectedMetaData) {
 	if (list == "genomes") {
 		//This needs to be changed to account for public and private data
 		var dropDown = $('#pubStrainList li');
-		dropDown.empty();
+		//dropDown.empty();
 		$('#select-all-genomes').is(':checked') ? $('#select-all-genomes').click() : 0;
 		genomeLabels = {};
 		var selectedCount = 0;
@@ -161,7 +161,7 @@ function updateMeta(list , selectedMetaData) {
 					);
 			}
 		});
-		filterGenomes();
+		metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
 		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-genomes').click() : 0;
 	}
 	else if (list == "virulence") {
@@ -185,27 +185,6 @@ function updateMeta(list , selectedMetaData) {
 		});
 	}
 }
-
-function filterList(listName, list, labels) {
-	var filteredList = {};
-	var searchTerm = $('#'+listName+'-autocomplete').val().toLowerCase();
-	if (labels) {
-		$.each(labels, function(id, label) {
-			var name = label.toLowerCase();
-			name.indexOf(searchTerm) > -1 ? filteredList[id] = list[id] : 0;
-		});
-	}
-	else {
-		$.each(list, function(list_id, list_obj) {
-			var name = list_obj.name.toLowerCase();
-			name.indexOf(searchTerm) > -1 ? filteredList[list_id] = list[list_id] : 0;
-		});
-	}
-	appendFilteredList(filteredList, listName, metaTabSelections);
-}
-
-////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////
 
 function appendFilteredList(obj, list, selectedMetaData) {
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
@@ -272,9 +251,6 @@ function appendFilteredList(obj, list, selectedMetaData) {
 		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-genomes').attr("checked", true) : 0;
 	}
 }
-
-////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////
 
 function toggleChecked(input, listName) {
 	var index = input.value;
