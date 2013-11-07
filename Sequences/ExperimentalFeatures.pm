@@ -40,7 +40,9 @@ my @tables = (
 	"private_featureprop",
 	"tree",
 	"feature_tree",
-	"private_feature_tree"
+	"private_feature_tree",
+	"raw_virulence_data",
+	"raw_amr_data",
 );
 
 # Tables in order that data is updated
@@ -79,6 +81,8 @@ my %sequences = (
 	tree                         => "tree_tree_id_seq",
 	feature_tree                 => "feature_tree_feature_tree_id_seq",
   	private_feature_tree         => "private_feature_tree_feature_tree_id_seq",
+  	raw_virulence_data           => "raw_virulence_data_serial_id_seq",
+  	raw_amr_data                 => "raw_amr_data_serial_id_seq"
 );
 
 # Primary key ID names
@@ -96,6 +100,8 @@ my %table_ids = (
     tree                         => "tree_id",
     feature_tree                 => "feature_tree_id",
   	private_feature_tree         => "feature_tree_id",
+  	raw_virulence_data           => "serial_id",
+  	raw_amr_data                 => "serial_id"
 );
 
 # Valid cvterm types for featureprops table
@@ -118,7 +124,9 @@ my %copystring = (
    private_featureloc           => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
    tree                         => "(tree_id,name,format,tree_string)",
    feature_tree                 => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
-   private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)"
+   private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
+   raw_virulence_data           => "(serial_id,genome_id,gene_id,presence_absence)",
+   raw_amr_data                 => "(serial_id,genome_id,gene_id,presence_absence)",
 );
 
 my %updatestring = (
@@ -155,11 +163,10 @@ my %joinstring = (
 my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate|is_public";
 
 # Key values for loci cache
-my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|type_id|uniquename|is_public|genome_id|contig_id|query_id|";
+my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|type_id|uniquename|is_public|genome_id|contig_id|query_id";
                
 # Tables for which caches are maintained
-#my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
-my $ALLOWED_CACHE_KEYS = "collection|contig";
+my $ALLOWED_CACHE_KEYS = "collection|contig|feature";
 
 # Tmp file names for storing upload data
 my %files = map { $_ => 'FH'.$_; } @tables, @update_tables;
@@ -201,12 +208,9 @@ use constant TMP_TABLE_PRIVATE_CLEANUP =>
 use constant CREATE_LOCI_CACHE_TABLE =>
                "CREATE TABLE public.tmp_loci_cache (
                     feature_id int,
-                    uniquename varchar(1000),
-                    type_id int,
-                    genome_id int,
-                    contig_id int,
-                    query_id int,
-                    copy_number varchar(100),
+                    uniquename varchar(1000),                
+                    genome_id int,                   
+                    query_id int,                 
                     pub boolean,
                     updated boolean
                 )";
@@ -214,25 +218,20 @@ use constant DROP_LOCI_CACHE_TABLE =>
                "DROP TABLE public.tmp_loci_cache";
 use constant POPULATE_LOCI_CACHE_TABLE =>
 	"INSERT INTO public.tmp_loci_cache ".
-	"SELECT f.feature_id, f.uniquename, f.type_id, f1.object_id, f2.object_id, f3.object_id, fp.value, TRUE, FALSE ".
-	"FROM feature f, feature_relationship f1, feature_relationship f2, feature_relationship f3, featureprop fp ".
+	"SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE, FALSE ".
+	"FROM feature f, feature_relationship f1, feature_relationship f2 ".
 	"WHERE f.type_id = ? AND".
 	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f2.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f3.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" fp.type_id = ? AND fp.feature_id = f.feature_id";
+	" f2.type_id = ? AND f2.subject_id = f.feature_id";
 use constant POPULATE_PRIVATE_LOCI_CACHE_TABLE =>
 	"INSERT INTO public.tmp_loci_cache ".
-	"SELECT f.feature_id, f.uniquename, f.type_id, f1.object_id, f2.object_id, f3.object_id, fp.value, FALSE, FALSE ".
-	"FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2, private_feature_relationship f3, private_featureprop fp ".
+	"SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, FALSE, FALSE ".
+	"FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2 ".
 	"WHERE f.type_id = ? AND".
 	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f2.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f3.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" fp.type_id = ? AND fp.feature_id = f.feature_id";
+	" f2.type_id = ? AND f2.subject_id = f.feature_id";
 use constant CREATE_LOCI_TABLE_INDEX1 =>
-               "CREATE INDEX tmp_loci_cache_idx1 
-                    ON public.tmp_loci_cache (type_id,genome_id,contig_id,query_id,pub,updated)";
+	"CREATE INDEX tmp_loci_cache_idx1 ON public.tmp_loci_cache (genome_id,query_id,pub)";
 use constant TMP_LOCI_CLEANUP =>
                "DELETE FROM tmp_loci_cache WHERE pub = TRUE AND feature_id >= ?";             
 use constant TMP_LOCI_PRIVATE_CLEANUP =>
@@ -283,10 +282,10 @@ use constant SELECT_FROM_PRIVATE_FEATURE =>
 # SQL for maintaing loci info
 use constant VALIDATE_LOCI =>
 	"SELECT feature_id,uniquename FROM public.tmp_loci_cache WHERE ".
-    " type_id = ? AND genome_id = ? AND contig_id = ? AND query_id = ? AND pub = ? AND updated = FALSE";
+    " genome_id = ? AND query_id = ? AND pub = ? AND updated = FALSE";
 use constant INSERT_LOCI =>
 	"INSERT INTO public.tmp_loci_cache ".
-	"(feature_id,uniquename,type_id,genome_id,contig_id,query_id,pub,updated) VALUES (?,?,?,?,?,?,?,TRUE)";
+	"(feature_id,uniquename,genome_id,query_id,pub,updated) VALUES (?,?,?,?,?,TRUE)";
 use constant UPDATE_LOCI =>
 	"UPDATE public.tmp_loci_cache SET updated = TRUE WHERE feature_id = ?";
                
@@ -295,6 +294,8 @@ use constant UPDATE_LOCI =>
 use constant VALIDATE_TREE => 
 	"SELECT tree_id FROM tree WHERE name = ?";
 	
+# SQL for retrieving cached genome IDs from DB 
+use constant RETRIEVE_ID => "SELECT collection_id, contig_id FROM pipeline_cache WHERE tracker_id = ? AND chr_num = ?";	
 
 	               
             
@@ -342,6 +343,9 @@ sub new {
 	$self->recreate_cache(  $arg{recreate_cache}  );
 	$self->save_tmpfiles(   $arg{save_tmpfiles}   );
 	$self->vacuum(          $arg{vacuum}          );
+	
+	$self->{db_cache} = 0;
+	$self->{db_cache} = 1 if $arg{use_cached_names};
 	
 	$self->prepare_queries();
 	$self->initialize_sequences();
@@ -617,11 +621,9 @@ sub initialize_db_caches {
         
         print STDERR "Populating table...\n";
         $dbh->do(POPULATE_LOCI_CACHE_TABLE, undef,
-        	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
-        	$self->relationship_types('similar_to'), $self->featureprop_types('copy_number_increase'));
+        	$self->feature_types('allele'), $self->relationship_types('part_of'),$self->relationship_types('similar_to'));
         $dbh->do(POPULATE_PRIVATE_LOCI_CACHE_TABLE, undef,
-        	$self->feature_types('allele'), $self->relationship_types('part_of'), $self->relationship_types('located_in'),
-        	$self->relationship_types('similar_to'), $self->featureprop_types('copy_number_increase'));
+        	$self->feature_types('allele'), $self->relationship_types('part_of'),$self->relationship_types('similar_to'));
        	
         print STDERR "Creating indexes...\n";
         $dbh->do(CREATE_LOCI_TABLE_INDEX1);
@@ -716,7 +718,7 @@ none
 sub end_files {
 	my $self = shift;
 
-	foreach my $file (@tables) {
+	foreach my $file (@tables, @update_tables) {
 		my $fh = $self->file_handles($files{$file});
 		print $fh "\\.\n\n";
 	}
@@ -1060,9 +1062,7 @@ sub loci_cache {
 	$self->{'queries'}{'insert_loci'}->execute(
 	    $argv{feature_id},
 	    $argv{uniquename},
-	    $argv{type_id},
 	    $argv{genome_id},
-	    $argv{contig_id},
 	    $argv{query_id},
 	    $argv{is_public}   
 	);
@@ -1103,7 +1103,8 @@ The array contains the column values in the 'right' order:
   featureprop_c1:          [feature_id, cvterm_id, rank, is_public]
   feature_relationship_c1: [feature_id, feature_id, cvterm_id, is_public]
   feature_tree_c1:         [feature_id, tree_id, is_public]
-  tree_c1:                 [tree_name]
+  tree_c1:                 [tree_name],
+  binary_c1:               [genome_label, genome_id]
   
 =back
 
@@ -1141,6 +1142,22 @@ sub constraint {
         }
         else {
             $self->{$constraint}{$terms[0]}++;
+            return 1;
+        }
+    }
+    elsif ($constraint eq 'binary_c1') {
+        
+        croak("wrong number of constraint terms for $constraint") if (@terms != 2);
+        my $i = 0;
+        foreach(@terms) {
+        	croak "term $i undefined for $constraint" unless defined $_;
+        	$i++
+        }
+        if ($self->{$constraint}{$terms[0]}{$terms[1]}) {
+            return 0; #this combo is already in the constraint
+        }
+        else {
+            $self->{$constraint}{$terms[0]}{$terms[1]}++;
             return 1;
         }
     }
@@ -1605,6 +1622,12 @@ sub prepare_queries {
 	# Tree table
 	$self->{'queries'}{'validate_tree'} = $dbh->prepare(VALIDATE_TREE);
 	
+	# Cache table
+	if($self->{db_cache}) {
+		$self->{'queries'}{'retrieve_id'} = $dbh->prepare(RETRIEVE_ID);
+	}
+	
+	
 	return;
 }
 
@@ -1893,7 +1916,7 @@ Nothing
 
 =item Arguments
 
-The feature_id for the child feature, contig coolection, contig and a boolean indicating public or private
+The feature_id for the child feature, contig collection, contig and a boolean indicating public or private
 
 =back
 
@@ -1901,11 +1924,9 @@ The feature_id for the child feature, contig coolection, contig and a boolean in
 
 sub validate_allele {
     my $self = shift;
-	my ($query_id, $cc_id, $c_id, $pub) = @_;
+	my ($query_id, $cc_id, $pub) = @_;
 	
-	my $type = $self->feature_types('allele');
-    
-    $self->{queries}{'validate_loci'}->execute($type, $cc_id, $c_id, $query_id, $pub);
+    $self->{queries}{'validate_loci'}->execute($cc_id, $query_id, $pub);
 	my ($allele_id, $allele_name) = $self->{queries}{'validate_loci'}->fetchrow_array;
 	
 	if($allele_id) {
@@ -1918,6 +1939,40 @@ sub validate_allele {
 		# no existing allele
 		return 0;
 	}
+}
+
+=head2 retrieve_chr_info
+
+=over
+
+=item Usage
+
+  $obj->retrieve_contig_info(tracker_id, chr_num)
+
+=item Function
+
+Returns the chromosome information for given tmp
+chromosome/contig ID
+
+=item Returns
+
+Feature IDs for contig_collection and contig matching
+the arguments
+
+=item Arguments
+
+A tracker_id and chr_num in the table pipeline_cache table
+
+=back
+
+=cut
+
+sub retrieve_contig_info {
+	my ($self, $tracking_id, $chr_num) = @_;
+	
+	$self->{'queries'}{'retrieve_id'}->execute($tracking_id, $chr_num);
+	
+	return $self->{'queries'}{'retrieve_id'}->fetchrow_array();
 }
 
 =head2 handle_parent
@@ -2049,6 +2104,53 @@ sub handle_location {
     
 }
 
+=head2 handle_binary
+
+=over
+
+=item Usage
+
+  $obj->handle_binary($genome_label, $query_gene_id, $present_absent, $type)
+
+=item Function
+
+Perform creation of raw data table entry.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+1. genome_label: a contig_collection feature in the format: private_12344
+2. query_gene_id: a feature ID for the VF or AMR query gene
+3. present_absent: 1/0 indicating if allele present for gene
+4. type: VF/AMR
+
+=back
+
+=cut
+
+sub handle_binary {
+	my $self = shift;
+    my ($g_id, $qg_id, $pa, $type) = @_;
+    
+    my $table;
+	if($type eq 'amr') {
+		$table = 'raw_amr_data';
+		if ($self->constraint(name => 'binary_c1', terms => [ $g_id, $qg_id ]) ) {	                                 	
+			$self->print_amr($self->nextoid($table),$g_id,$qg_id,$pa);
+			$self->nextoid($table,'++');
+		}
+	} elsif($type eq 'vf') {
+		$table = 'raw_virulence_data';
+		if ($self->constraint(name => 'binary_c1', terms => [ $g_id, $qg_id ]) ) {	                                 	
+			$self->print_vf($self->nextoid($table),$g_id,$qg_id,$pa);
+			$self->nextoid($table,'++');
+		}
+	}
+}
+
 
 =cut
 
@@ -2142,9 +2244,10 @@ sub handle_phylogeny {
 		$self->print_utree($tree_id, $tree_name, $tree);
 		
 		# add new tree-feature relationships
-		foreach my $allele_id (keys %$seq_group) {
-			if($seq_group->{$allele_id}->{is_new}) {
-				my $pub = $seq_group->{$allele_id}->{public};
+		foreach my $genome (keys %$seq_group) {
+			my $allele_id = $seq_group->{$genome}->{allele};
+			if($seq_group->{$genome}->{is_new}) {
+				my $pub = $seq_group->{$genome}->{public};
 				my $table = $pub ? 'feature_tree' : 'private_feature_tree';
 				if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
 		                                        	
@@ -2168,8 +2271,9 @@ sub handle_phylogeny {
 		}
 		
 		# alleles
-		foreach my $allele_id (keys %$seq_group) {
-			my $pub = $seq_group->{$allele_id}->{public};
+		foreach my $genome (keys %$seq_group) {
+			my $allele_id = $seq_group->{$genome}->{allele};
+			my $pub = $seq_group->{$genome}->{public};
 			my $table = $pub ? 'feature_tree' : 'private_feature_tree';
 			if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
 	                                        	
@@ -2327,6 +2431,25 @@ sub print_ftree {
 
 	print $fh join("\t", ($nextft,$feature_id,$tree_id,$type)),"\n";
 }
+
+sub print_amr {
+	my $self = shift;
+	my ($serial_id,$genome_label,$gene,$present) = @_;
+	
+	my $fh = $self->file_handles('raw_amr_data');		
+
+	print $fh join("\t", ($serial_id,$genome_label,$gene,$present)),"\n";
+}
+
+sub print_vf {
+	my $self = shift;
+	my ($serial_id,$genome_label,$gene,$present) = @_;
+	
+	my $fh = $self->file_handles('raw_virulence_data');		
+
+	print $fh join("\t", ($serial_id,$genome_label,$gene,$present)),"\n";
+}
+
 
 # Print to tmp tables for update
 

@@ -92,6 +92,8 @@ sub group_wise_comparisons : StartRunmode {
 sub comparison : Runmode {
 	my $start = Time::HiRes::gettimeofday();
 	my $self = shift;
+
+	$self->dbixSchema->storage()->debug(1);
 	
 	my $q = $self->query();
 	my @group1 = $q->param("comparison-group1-genome");

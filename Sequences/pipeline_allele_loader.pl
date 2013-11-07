@@ -11,13 +11,12 @@ use Config::Simple;
 use ExperimentalFeatures;
 use FindBin;
 use lib "$FindBin::Bin/..";
-use Phylogeny::TreeBuilder;
 use Phylogeny::Tree;
 use Time::HiRes qw( time );
 
 =head1 NAME
 
-$0 - loads multi-fasta file into a genodo's chado database. Fasta file contains genomic or shotgun contig sequences.
+$0 - loads panseq VF / AMR analysis into genodo's chado database. This program is written for use in the genodo_pipeline.pl script.
 
 =head1 SYNOPSIS
 
@@ -25,7 +24,7 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 
 =head1 OPTIONS
 
- --fasta           BLAST file to load sequence from
+ --dir             Root directory containing subdirectories with BLAST file to load sequence from, MSA fasta files and Newick tree files.
  --config          INI style config file containing DB connection parameters
  --noload          Create bulk load files, but don't actually load them.
  --recreate_cache  Causes the uniquename cache to be recreated
@@ -113,7 +112,7 @@ it under the same terms as Perl itself.
 
 =cut
 
-my ($CONFIGFILE, $FASTAFILE, $PANFILE, $NOLOAD,
+my ($CONFIGFILE, $ROOT, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
@@ -122,8 +121,7 @@ my ($CONFIGFILE, $FASTAFILE, $PANFILE, $NOLOAD,
 
 GetOptions(
 	'config=s' => \$CONFIGFILE,
-    'fasta=s' => \$FASTAFILE,
-    'pan=s' => \$PANFILE,
+    'dir=s' => \$ROOT,
     'noload' => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'  => \$REMOVE_LOCK,
@@ -139,9 +137,8 @@ pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
 
-croak "You must supply an FASTA filename" unless $FASTAFILE;
-croak "You must supply an Panseq pan-genome filename" unless $PANFILE;
-
+croak "You must supply the path to the top-level results directory" unless $ROOT;
+$ROOT .= '/' unless $ROOT =~ m/\/$/;
 
 # Load database connection info from config file
 die "You must supply a configuration filename" unless $CONFIGFILE;
@@ -162,28 +159,34 @@ croak "Invalid configuration file." unless $DBNAME;
 # Initialize the chado adapter
 my %argv;
 
-$argv{dbname}         = $DBNAME;
-$argv{dbuser}         = $DBUSER;
-$argv{dbpass}         = $DBPASS;
-$argv{dbhost}         = $DBHOST;
-$argv{dbport}         = $DBPORT;
-$argv{dbi}            = $DBI;
-$argv{tmp_dir}        = $TMPDIR;
-$argv{noload}         = $NOLOAD;
-$argv{recreate_cache} = $RECREATE_CACHE;
-$argv{save_tmpfiles}  = $SAVE_TMPFILES;
-$argv{vacuum}         = $VACUUM;
-$argv{debug}          = $DEBUG;
+$argv{dbname}           = $DBNAME;
+$argv{dbuser}           = $DBUSER;
+$argv{dbpass}           = $DBPASS;
+$argv{dbhost}           = $DBHOST;
+$argv{dbport}           = $DBPORT;
+$argv{dbi}              = $DBI;
+$argv{tmp_dir}          = $TMPDIR;
+$argv{noload}           = $NOLOAD;
+$argv{recreate_cache}   = $RECREATE_CACHE;
+$argv{save_tmpfiles}    = $SAVE_TMPFILES;
+$argv{vacuum}           = $VACUUM;
+$argv{debug}            = $DEBUG;
+$argv{use_cached_names} = 1; # Pull contig names from DB tmp table
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
-# Intialize the Tree building module
-my $tree_builder = Phylogeny::TreeBuilder->new();
+# Intialize the Tree loading module
 my $tree_io = Phylogeny::Tree->new();
+
+# Result files
+my $allele_fasta_file = $ROOT . 'panseq_vf_amr_results/locus_alleles.fasta';
+my $allele_pos_file = $ROOT . 'panseq_vf_amr_results/pan_genome.txt';
+my $binary_file = $ROOT . 'panseq_vf_amr_results/binary_table.txt';
+my $msa_dir = $ROOT . 'msa/';
+my $tree_dir = $ROOT . 'tree/';
 
 
 # BEGIN
-my $now = time();
 
 # Lock table so no one else can upload
 $chado->remove_lock() if $REMOVE_LOCK;
@@ -193,12 +196,12 @@ my $lock = 1;
 # Prepare tmp files for storing upload data
 $chado->file_handles();
 
+
 # Save data for inserting into database
-elapsed_time('db init');
 
 # Load locus locations
 my %loci;
-open(my $in, "<", $PANFILE) or croak "Error: unable to read file $PANFILE ($!).\n";
+open(my $in, "<", $allele_pos_file) or croak "Error: unable to read file $allele_pos_file ($!).\n";
 <$in>; # header line
 while (my $line = <$in>) {
 	chomp $line;
@@ -219,40 +222,32 @@ while (my $line = <$in>) {
 }
 
 close $in;
-elapsed_time('positions loaded');
 
 # Load allele sequences
+my ($new, $replace) = load_msa();
 
-{
-	# Slurp a group of fasta sequences for each locus.
-	# This could be disasterous if the memory req'd is large (swap-thrashing yikes!)
-	# otherwise, this should be faster than line-by-line.
-	# Also assumes specific FASTA format (i.e. sequence and header contain no line breaks or spaces)
-	open (my $in, "<", $FASTAFILE) or croak "Error: unable to read file $FASTAFILE ($!).\n";
-	local $/ = "\nLocus ";
+
+# Create DB entries
+foreach my $locus (keys %$new) {
 	
-	while(my $locus_block = <$in>) {
-		$locus_block =~ s/^Locus //;
-		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my %sequence_group;
-		
-		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
-			my $header = $1;
-			my $seq = $2;
-		
-			# Load the sequence
-			allele($locus,$header,$seq,\%sequence_group);
-			
-		}
-		
-		# Build tree
-		build_tree($locus, \%sequence_group);
+	my %sequence_group;
+	my $allele_hash = $new->{$locus};
+	
+	# Create DB entries for each new allele
+	foreach my $header (keys %$allele_hash) {
+		allele($locus, $header, $allele_hash->{$header}, \%sequence_group);
 	}
-	close $in;
 	
+	# Update sequences for alleles previously loaded in DB (in case alignments have changed).
+	my $update_hash = $replace->{$locus};
+	foreach my $header (keys %$update_hash) {
+		update_allele_sequence($locus, $header, $update_hash->{$header}, \%sequence_group);
+	}
 }
 
-elapsed_time("sequences parsed");
+# Load presence/absence data
+load_binary($binary_file);
+
 
 # Finalize and load into DB
 
@@ -264,7 +259,6 @@ $chado->load_data() unless $NOLOAD;
 
 $chado->remove_lock();
 
-elapsed_time("data loaded");
 
 exit(0);
 
@@ -319,14 +313,14 @@ sub allele {
 	
 	# Parse input
 	
-	# contig_collection
-	my $contig_collection = $header;
-	my ($access, $contig_collection_id) = ($contig_collection =~ m/(public|private)_(\d+)/);
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	# Parse allele FASTA header
+	my $tmp_label = $header;
+	my ($tracker_id) = ($tmp_label =~ m/upl_(\d+)/);
+	croak "Invalid allele label: $header\n" unless $tracker_id;
 	
 	# privacy setting
-	my $is_public = $access eq 'public' ? 1 : 0;
-	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
+	my $is_public = 0;
+	my $pub_value = 'FALSE';
 	
 	# query gene
 	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
@@ -336,9 +330,10 @@ sub allele {
 	my $loc_hash = $loci{$locus}->{$header};
 	croak "Missing location information for locus allele $locus in contig $header.\n" unless defined $loc_hash;
 	
-	# contig
-	my $contig = $loc_hash->{contig};
-	my ($access2, $contig_id) = ($contig =~ m/\|(public|private)_(\d+)$/);
+	# Retrieve contig_collection and contig feature IDs
+	my $contig_num = $loc_hash->{contig};
+	my ($contig_collection_id, $contig_id) = $chado->retrieve_contig_info($tracker_id, $contig_num);
+	croak "Missing feature IDs in pipeline cache for tracker ID $tracker_id and contig $contig_num.\n" unless $contig_collection_id && $contig_id;
 	
 	# contig sequence positions
 	my $start = $loc_hash->{start};
@@ -346,7 +341,7 @@ sub allele {
 	my $allele_num = $loc_hash->{allele};
 	
 	# sequence
-	my ($seqlen, $residues, $min, $max, $strand);
+	my ($seqlen, $min, $max, $strand);
 	if($start > $end) {
 		# rev strand
 		$max = $start+1; #interbase numbering
@@ -360,7 +355,6 @@ sub allele {
 	}
 	
 	$seqlen = $max - $min;
-	$residues = $seq;
 	
 	# type 
 	my $type = $chado->feature_types('allele');
@@ -370,19 +364,10 @@ sub allele {
 	my $is_new = 1;
 	
 	if($allele_id) {
-		# UPDATE
-		# allele was created in previous analysis
-		$is_new = 0;
-		
-		# update feature sequence
-		$chado->print_uf($allele_id,$allele_name,$type,$seqlen,$residues,$is_public);
-		
-		# update feature location
-		$chado->print_ufloc($allele_id,$min,$max,$strand,0,0,$is_public);
-		
-		# update feature properties
-		$chado->print_ufprop($allele_id,$chado->featureprop_types('copy_number_increase'),$allele_num,0,$is_public);
-		
+		# Allele matching properties already exists in table.
+		croak "Allele matching properties already exists in DB \n".
+			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, public:$pub_value).";
+			
 	} else {
 		# NEW
 		# Create allele feature
@@ -420,7 +405,7 @@ sub allele {
 		$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
 		
 		# Print feature
-		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id);  
+		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
 		$chado->nextfeature($is_public, '++');
 		
 		# Update cache
@@ -430,7 +415,7 @@ sub allele {
 		$allele_id = $curr_feature_id;
 	}
 	
-	$seq_group->{$contig_collection} = {
+	$seq_group->{$header} = {
 		genome => $contig_collection_id,
 		allele => $allele_id,
 		#copy => $allele_num,
@@ -440,44 +425,130 @@ sub allele {
 	
 }
 
-sub build_tree {
-	my ($locus, $seq_grp) = @_;
+sub load_msa {
 	
-	return unless scalar keys %$seq_grp > 2; # only build trees for groups of 3 or more 
+	# Hashes to store sequences for new and previously loaded genomes
+	my %new;
+	my %replace;
 	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
-	# write alignment file
-	my $tmp_file = '/tmp/genodo_allele_aln.txt';
-	open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
-	foreach my $id (keys %$seq_grp) {
-		print $out join("\n",">".$id,$seq_grp->{$id}->{seq}),"\n";
+	# Load allele sequences into memory
+	my $loci_file = $msa_dir . "loci.txt";
+	open($in, "<", $loci_file) or die "Unable to read file $loci_file containing list of loci ($!).\n";
+	while(my $locus = <$in>) {
+		chomp $locus;
+		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+		croak "Missing query gene ID in locus line: $_\n" unless $query_id && $query_name;
+		
+		my $msa_file = $msa_dir . "$query_id.aln";
+		my $has_new = 0;
+		
+		my $fasta = Bio::SeqIO->new(-file   => $msa_file,
+                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $msa_file ($!).";
+    
+		while (my $entry = $fasta->next_seq) {
+			my $id = $entry->display_id;
+			
+			if($id =~ m/^upl_/) {
+				# New
+				$new{$locus}{$id} = $entry->seq;
+				$has_new = 1;
+			} else {
+				# Already in DB
+				$replace{$locus}{$id} = $entry->seq;
+			}
+		}
+		
+		die "Locus $locus alignment contains no new genome sequences. Why was it run then? (likely indicates error)." unless $has_new;
 	}
-	close $out;
 	
-	# clear output file for safety
-	my $tree_file = '/tmp/genodo_allele_tree.txt';
-	open($out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
-	close $out;
+	close $in;
 	
-	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak;
+	return(\%new, \%replace);
+}
+
+
+sub update_allele_sequence {
+	my ($locus, $header, $seq, $seq_group) = @_;
+	
+	# IDs
+	my $contig_collection = $header;
+	my ($access, $contig_collection_id, $allele_id) = ($contig_collection =~ m/(public|private)_(\d+)\|(\d+)/);
+	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	
+	# privacy setting
+	my $is_public = $access eq 'public' ? 1 : 0;
+	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
+	
+	# alignment sequence
+	my $residues = $seq;
+	$seq =~ tr/-//;
+	my $seqlen = length($seq);
+	
+	# type 
+	my $type = $chado->feature_types('allele');
+	
+	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
+	$chado->print_uf($allele_id,$allele_id,$type,$seqlen,$residues,$is_public);
+		
+	$seq_group->{$header} = {
+		genome => $contig_collection_id,
+		allele => $allele_id,
+		#copy => 1,
+		public => $is_public,
+		is_new => 0
+	};
+}
+
+sub load_tree {
+	my ($query_id, $seq_group) = @_;
+	
+	my $tree_file = $tree_dir . "$query_id.phy";
 	
 	# slurp tree and convert to perl format
 	my $tree = $tree_io->newickToPerlString($tree_file);
 	
 	# store tree in tables
-	$chado->handle_phylogeny($tree, $query_id, $seq_grp);
+	$chado->handle_phylogeny($tree, $query_id, $seq_group);
+	
 }
 
-sub elapsed_time {
-	my ($mes) = @_;
+sub load_binary {
+	my $bfile = shift;
 	
-	my $time = $now;
-	$now = time();
-	printf("$mes: %.2f\n", $now - $time);
+	open my $binary_output , '<' , $bfile or die "Unable to read binary file $bfile ($!)."; 
+	
+	my @seqFeatures;
+	
+	my $header = <$binary_output>;
+	chomp $header;
+	
+	my @genomes = split(/\t/, $header);
+	my $numCol = scalar(@genomes);
+	
+	while (<$binary_output>) {
+		chomp;
+		my @tempRow = split(/\t/, $_);
+		die "Missing columns in file $bfile on row $tempRow[0]." unless @tempRow == $numCol;
+		push (@seqFeatures , \@tempRow);
+	}
+	
+	foreach my $line (@seqFeatures) {
+		
+		my $query_gene = $line->[0];
+		
+		if($query_gene =~ m/(VF|AMR)_(\d+)/) {
+			
+			my ($type, $gene_id) = ($1, $2);
+			$type = lc $type;
+			
+			for(my $i = 1; $i < $numCol; $i++) {
+			
+				$chado->handle_binary($genomes[$i], $gene_id, $line->[$i], $type);
+			
+			}
+		}
+	}
 	
 }
+
 

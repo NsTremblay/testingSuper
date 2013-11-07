@@ -266,7 +266,7 @@ sub upload_genome : Runmode {
 	# Save parameters to tmp file
     my $file_path = $self->config_param('tmp.dir');
      
-	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.fna";
+	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.ffn";
 	
 	# Copy upload tmp file to our tmp file
 	my $filename = $q->param('g_file');
@@ -431,20 +431,21 @@ sub upload_genome : Runmode {
 	$opt->write($optFile);
 	
 	# Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Sequences/upload_wrapper.pl --optfile $optFile";
-	my $daemon = Proc::Daemon->new(
-		work_dir => "$FindBin::Bin/../../Sequences/",
-        exec_command => $cmd
-    );
-
-	# Fork
-	my $kid_pid = $daemon->Init;
-	
-	# Update job record
-	$tracking_row->pid($kid_pid);
-	$tracking_row->command($cmd);
-	$tracking_row->step(2); # Step 1 complete
+#	my $cmd = "perl $FindBin::Bin/../../Sequences/upload_wrapper.pl --optfile $optFile";
+#	my $daemon = Proc::Daemon->new(
+#		work_dir => "$FindBin::Bin/../../Sequences/",
+#        exec_command => $cmd
+#    );
+#
+#	# Fork
+##	my $kid_pid = $daemon->Init;
+#	
+#	# Update job record
+#	$tracking_row->pid($kid_pid);
+#	$tracking_row->command($cmd);
+#	
 	$tracking_row->feature_name($results->valid('g_name'));
+	$tracking_row->step(2); # Step 1 complete
 	$tracking_row->update;
 	
 	# Send user to status page
