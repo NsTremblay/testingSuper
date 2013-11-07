@@ -1,44 +1,7 @@
 <script>
 	var public_genomes = <TMPL_VAR public_genomes>;
 	var private_genomes = <TMPL_VAR private_genomes>;
-	var root = null,
-	visableData = ['name'];
+	var root = null;
+	var metaTreeTabSelections = ['name'];
 </script>
 
-<script>
-	$(function() {
-		// Displayed when user clicks genome
-		$( "#dialog-genome-select" ).dialog({
-			autoOpen: false,
-			resizable: false,
-			height:180,
-			modal: true,
-			buttons: {
-				"Submit": function() {
-					var form = $('<form action="/strain_info/" method="post">' +
-					  '<input type="text" name="genome" value="' + $( this ).data('genome') + '" />' +
-					  '</form>');
-					$( 'body' ).append(form);
-					$( form ).submit();
-			},
-			Cancel: function() {
-				$( this ).dialog( "close" );
-				}
-			}
-		});
-		
-		// Set up event for view options button
-		$("#update-tree-meta").click(function(event) {
-			event.preventDefault();
-			
-			visibleData = [];
-			$("input[name='tree-meta-option']:checked").each( function(i, e) { visibleData.push( $( e ).val() ); });
-			modifyLabels(visibleData);
-		
-			return false;
-		});
-	});
-
-</script>
-
-<script src="/App/Styling/js/genodo_tree_functions.js"></script>

@@ -66,7 +66,6 @@ function booleanSearch(searchObj) {
 		// Run first date search
 		var d = dateSearch[0];
 		var result = dateRange(d.date, d.before);
-		
 		// Combine with remaining date restrictions
 		for(var j = 1; j < dateOps; j++) {
 			d = dateSearch[j];
@@ -424,7 +423,7 @@ function updateAttrMeta(visableData, set, groupwise) {
 		var genomesInGroups = groupsList();
 		
 		$.each( set, function(feature_id, feature_obj) {
-			var lab = metaLabel(feature_obj, visableData);
+			var lab = metaAttrTab.metaLabel(feature_obj, visableData);
 			
 			if(genomesInGroups.indexOf(feature_id) != -1) {
 				// dead, already in group
@@ -442,54 +441,13 @@ function updateAttrMeta(visableData, set, groupwise) {
 	} else {
 		// Add results with appropriate function bindings
 		$.each( set, function(feature_id, feature_obj) {
-			var lab = metaLabel(feature_obj, visableData);
+			var lab = metaAttrTab.metaLabel(feature_obj, visableData);
 			
 			display.append(function() { 
 				return attrListItem(feature_id, lab); 
 			});
 		});
-	}
-	
-	
-	 
-}
-
-// Create labels for a genome with required meta data
-function metaLabel(feature, vdata) {
-	var label = [];
-	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
-	}
-	
-	if(vdata.indexOf('accession') != -1) {
-		if(typeof feature.primary_dbxref !== 'undefined') {
-			label.push(feature.primary_dbxref);
-		} else {
-			label.push('NA');
-		}
-	}
-	
-	var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-	for(var i=0; i<metaDataTypes.length; i++) {
-		var x = metaDataTypes[i];
-		
-		if(vdata.indexOf(x) != -1) {
-			
-			if(typeof feature[x] !== 'undefined') {
-				var sublabel = [];
-				
-				for(var j=0; j<feature[x].length; j++) {
-					sublabel.push(feature[x][j]);
-				}
-				
-				var sublabel_string = sublabel.join();
-				label.push(sublabel_string);
-			} else {
-				label.push('NA');
-			}
-		}
-	}
-	return label.join('|');
+	} 
 }
 
 function attrListItem(id, label) {
@@ -505,13 +463,13 @@ function attrListGroupItem(id, label, alive) {
 	if(alive) {
 		return '<li>'+
 			'<label class="checkbox" for="'+id+'">'+
-			'<input class="checkbox" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'<input class="checkbox" id="'+id+'" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
 			'</label>'+
 			'</li>';
 	} else {
 		return '<li>'+
 			'<label class="checkbox selected-attr-genome" for="'+id+'">'+
-			'<input class="checkbox selected-attr-genome" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
+			'<input class="checkbox selected-attr-genome" id="'+id+'" type="checkbox" value="'+id+'" name="genomes-in-attr-search"/>'+label+
 			'</label>'+
 			'</li>';
 	}
@@ -546,9 +504,7 @@ function submitSearch(groupwise) {
 		var res = booleanSearch(searchObj);
 		
 		// Post new results
-		var visibleData = [];
-		$('input[name="attr-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-		updateAttrMeta(visableData, res, groupwise);
+		updateAttrMeta(metaAttrTabSelections, res, groupwise);
 
 		updateBSResultStatus(res, false);
 		attr_search_result = res; // Save result as global

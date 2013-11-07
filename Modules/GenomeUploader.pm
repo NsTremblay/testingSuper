@@ -56,6 +56,7 @@ use JSON;
 use Sequences::GenodoDateTime;
 use HTML::FillInForm;
 use XML::Simple;
+use Geo::Coder::Google;
 
 my $dbic;
 
@@ -327,11 +328,17 @@ sub upload_genome : Runmode {
 		$locale_xml .= qq|<city>$city</city>| if $city;
 		$locale_xml .= q|</location>|;
 		
-		$genome_params{'isolation_location'} = $locale_xml;
-		
-		## CONVERT TO LAT LOG HERE??
+		my $geocoded_xml = _geocode_address($locale_xml);
+
+		$genome_params{'isolation_location'} = $geocoded_xml;
+
 	} elsif($results->valid('g_locate_method') eq 'map') {
-		$genome_params{'isolation_latlng'} = $results->valid('g_location_latlng')
+		my $latlng = $results->valid('g_location_latlng');
+		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
+		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
+		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
+		$genome_params{'isolation_latlng'} = $latlng_xml;
+
 	}
 	
 	if($results->valid('g_syndrome')) {
@@ -1120,12 +1127,17 @@ sub update_genome : Runmode {
 		$locale_xml .= qq|<state>$state</state>| if $state;
 		$locale_xml .= qq|<city>$city</city>| if $city;
 		$locale_xml .= q|</location>|;
-		
-		$form_values{'isolation_location'} = $locale_xml;
-		
-		## CONVERT TO LAT LOG HERE??
-	} elsif($results->valid('g_location_method') eq 'map') {
-		$form_values{'isolation_latlng'} = $results->valid('g_location_latlng')
+
+		my $geocoded_xml = _geocode_address($locale_xml);
+
+		$form_values{'isolation_location'} = $geocoded_xml;
+
+	} elsif($results->valid('g_locate_method') eq 'map') {
+		my $latlng = $results->valid('g_location_latlng');
+		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
+		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
+		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
+		$form_values{'isolation_latlng'} = $latlng_xml;
 	}
 	
 	if($results->valid('g_syndrome')) {
@@ -1822,7 +1834,35 @@ sub _strip_time {
 	}
 }
 
+=head2 _geocode_address
 
+Convert a location to a latlng
+
+=cut
+
+sub _geocode_address {
+	#TODO
+	my $markedUpLocation = shift;
+	my $noMarkupLocation = $markedUpLocation;
+	$noMarkupLocation =~ s/(<[\/]*location>)//g;
+	$noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
+	$noMarkupLocation =~ s/<[\w\d]*>/, /g;
+	$noMarkupLocation =~ s/, //;
+
+	my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
+
+	my $latlong = $googleGeocoder->geocode($noMarkupLocation) or die "$!";
+
+	my %location;
+	$location{'coordinates'} = $latlong;
+	
+	my @_coordinates;
+	push(@_coordinates, \%location);
+	
+	$markedUpLocation .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."</lng></northeast></viewport></coordinates>";
+
+	return $markedUpLocation;
+}
 
 =cut
 	=head2 genomeUploader

@@ -1,140 +1,119 @@
-#!/usr/bin/env perl
-
-=pod
-
-=head1 NAME
-
-Modules::GroupComparator
-
-=head1 SNYNOPSIS
-
-=head1 DESCRIPTION
-
-=head1 ACKNOWLEDGMENTS
-
-Thank you to Dr. Chad Laing and Dr. Michael Whiteside, for all their assistance on this project
-
-=head1 COPYRIGHT
-
-This work is released under the GNU General Public License v3  http://www.gnu.org/licenses/gpl.htm
-
-=head1 AVAILABILITY
-
-The most recent version of the code may be found at:
-
-=head1 AUTHOR
-
-Akiff Manji (akiff.manji@gmail.com)
-
-=head1 Methods
-
-=cut
-
-package Modules::GroupComparator;
+#!/usr/bin/perl
 
 use strict;
 use warnings;
+
+use Getopt::Long;
 use FindBin;
-use lib 'FindBin::Bin/../';
-use parent 'Modules::App_Super';
+use lib "$FindBin::Bin/../";
+use Database::Chado::Schema;
 use Modules::FET;
-use Log::Log4perl;
-use Carp;
-#use List::MoreUtils qw(indexes);
-#use List::MoreUtils qw(natatime);
-#use Parallel::ForkManager;
+use Carp qw/croak carp/;
+use Config::Simple;
+use DBIx::Class::ResultSet;
+use DBIx::Class::Row;
 use IO::File;
 use File::Temp;
 use Email::Simple;
 use Email::MIME;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
+use IO::All;
 
-sub new {
-	my ($class) = shift;
-	my $self = {};
-	bless( $self, $class );
-	$self->_initialize(@_);
-	return $self;
+open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
+
+my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $mailUname, $mailPass);
+my ($USERCONFIG, $USEREMAIL, $USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
+
+GetOptions('config=s' => \$CONFIG, 'user_config=s' => \$USERCONFIG) or (exit -1);
+croak "Missing db config file\n" unless $CONFIG;
+croak "Missing email config file\n" unless $USERCONFIG;
+
+if(my $db_conf = new Config::Simple($CONFIG)) {
+	$DBNAME    = $db_conf->param('db.name');
+	$DBUSER    = $db_conf->param('db.user');
+	$DBPASS    = $db_conf->param('db.pass');
+	$DBHOST    = $db_conf->param('db.host');
+	$DBPORT    = $db_conf->param('db.port');
+	$DBI       = $db_conf->param('db.dbi');
+	$mailUname = $db_conf->param('mail.address'); 
+	$mailPass = $db_conf->param('mail.pass');
+} 
+else {
+	die Config::Simple->error();
 }
 
-sub _initialize {
-	my ($self) = shift;
-
-	#logging
-	$self->logger(Log::Log4perl->get_logger());
-	$self->logger->info("Logger initialized in Modules::GroupComparator");
-	
-	my %params = @_;
-	#object construction set all parameters
-	foreach my $key(keys %params){
-		if($self->can($key)){
-			$self->key($params{$key});
-		}
-		else {
-			#logconfess calls the confess of Carp package, as well as logging to Log4perl
-			$self->logger->logconfess("$key is not a valid parameter in Modules::GroupComparator");
-		}
-	}
+if (my $user_conf = new Config::Simple($USERCONFIG)) {
+	$USEREMAIL = $user_conf->param('user.email');
+	$USERGP1STRAINIDS = $user_conf->param('user.gp1IDs');
+	$USERGP2STRAINIDS = $user_conf->param('user.gp2IDs');
+	$USERGP1STRAINNAMES = $user_conf->param('user.gp1Names');
+	$USERGP2STRAINNAMES = $user_conf->param('user.gp2Names');
+}
+else {
+	die Config::Simple->error();
 }
 
-sub logger {
-	my $self = shift;
-	$self->{'_logger'} = shift // return $self->{'_logger'};
+my $dbsource = 'dbi:' . $DBI . ':dbname=' . $DBNAME . ';host=' . $DBHOST;
+$dbsource . ';port=' . $DBPORT if $DBPORT;
+
+my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS);
+
+if (!$schema) {
+	die "Could not connect to database: $!\n"
 }
 
-sub dbixSchema {
-	my $self = shift;
-	$self->{'_dbixSchema'} = shift // return $self->{'_dbixSchema'};
-}
+####################
+####################
 
-sub configLocation {
-	my $self = shift;
-	$self->{'_configLocation'} = shift // return $self->{'_configLocation'};
-}
+print STDERR "New comparison for user email $USEREMAIL\n";
 
-# sub emailResultsToUser {
-# 	my $self = shift;
-# 	my $_user_email = shift;
-# 	my $_group1GenomeIds = shift;
-# 	my $_group2GenomeIds = shift;
-# 	my $_group1GenomeNames = shift;
-# 	my $_group2GenomeNames = shift;
-# 	$self->config_file($self->configLocation);
+my $binaryFETResults = getBinaryData($USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
+my $snpFETResults = getSnpData($USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
 
-# 	open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
-# 	print STDERR("New comparison for user email $_user_email\n");
+print STDERR "Sending email\n";
 
-# 	my $binaryFETResults = $self->getBinaryData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
-# 	my $snpFETResults = $self->getSnpData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
+my $transport = Email::Sender::Transport::SMTP::TLS->new(
+	host     => 'smtp.gmail.com',
+	port     => 587,
+	username => $mailUname,
+	password => $mailPass,
+	);
 
-# 	my $transport = Email::Sender::Transport::SMTP::TLS->new(
-# 		host     => 'smtp.gmail.com',
-# 		port     => 587,
-# 		username => $self->config_param('mail.address'),
-# 		password => $self->config_param('mail.pass'),
-# 		);
+my $message = Email::MIME->create(
+	header => [
+	To => $USEREMAIL,
+	From => $mailUname,
+	Subject        => 'Your SuperPhy group wise comparison results are ready.',
+	'Content-Type' => 'text/html'
+	],
+	parts => [
+	Email::MIME->create(
+		body => "Your results are ready for download in the provided attachments. This is an automated message, please do not reply to this.\n"
+		. "SuperPhy Team.\n"
+		),
+	Email::MIME->create(
+		attributes => {
+			filename => 'group_wise_SNP_results.txt',
+			disposition  => "attachment",
+			},
+			body => io($snpFETResults->[5]{'file_name'})->all,
+			),
+	Email::MIME->create(
+		attributes => {
+			filename => 'group_wise_loci_results.txt',
+			disposition  => "attachment",
+			},
+			body => io($binaryFETResults->[4]{'file_name'})->all,
+			)
+	],
+	);
 
-# 	my $message = Email::MIME->create(
-# 		header => [
-# 		To => $_user_email,
-# 		From => $self->config_param('mail.address'),
-# 		Subject        => 'SuperPhy group wise comparison results',
-# 		'Content-Type' => 'text/html'
-# 		],
-# 		parts => [
-# 		Email::MIME->create(
-# 			body => "This is a test. Do not reply to this.\n"
-# 			. "SuperPhy Team.\n"
-# 			)
-# 		],
-# 		);
+sendmail( $message, {transport => $transport} ) or die "$!\n";
 
-# 	sendmail( $message, {transport => $transport} );
-# }
-
+#####################
+#####################
 sub getBinaryData {
-	my $self = shift;
 	my $group1GenomeIds = shift;
 	my $group2GenomeIds = shift;
 	my $group1GenomeNames = shift;
@@ -187,47 +166,31 @@ sub getBinaryData {
 	}
 
 	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
-	my @group1IDArray;
 	foreach my $name (@{$group1GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group1NameArray , \%nameHash);
 	}
 
-	foreach my $id (@{$group1GenomeIds}) {
-		my %idHash;
-		$idHash{'id'} = $id;
-		push(@group1IDArray, \%idHash);
-	}
-
 	my @group2NameArray;
-	my @group2IDArray;
 	foreach my $name (@{$group2GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group2NameArray , \%nameHash);
 	}
 
-	foreach my $id (@{$group2GenomeIds}) {
-		my %idHash;
-		$idHash{'id'} = $id;
-		push(@group2IDArray, \%idHash);
-	}
-
 	push($results, {'file_name' => $temp_file_name});
 	push($results, {'gp1_names' => \@group1NameArray});
 	push($results, {'gp2_names' => \@group2NameArray});
-	push($results, {'gp1_ids' => \@group1IDArray});
-	push($results, {'gp2_ids' => \@group2IDArray});
 
 	return $results;
 }
 
+################
+################
 sub getSnpData {
-	my $self = shift;
 	my $group1GenomeIds = shift;
 	my $group2GenomeIds = shift;
 	my $group1GenomeNames = shift;
@@ -298,45 +261,25 @@ sub getSnpData {
 	}
 
 	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///;
 
 	my @group1NameArray;
-	my @group1IDArray;
 	foreach my $name (@{$group1GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group1NameArray , \%nameHash);
 	}
 
-	foreach my $id (@{$group1GenomeIds}) {
-		my %idHash;
-		$idHash{'id'} = $id;
-		push(@group1IDArray, \%idHash);
-	}
-
 	my @group2NameArray;
-	my @group2IDArray;
 	foreach my $name (@{$group2GenomeNames}) {
 		my %nameHash;
 		$nameHash{'name'} = $name;
 		push (@group2NameArray , \%nameHash);
 	}
-
-	foreach my $id (@{$group2GenomeIds}) {
-		my %idHash;
-		$idHash{'id'} = $id;
-		push(@group2IDArray, \%idHash);
-	}
-
-	#push($results, {'file_name' => $temp_file_name});
+	
 	push(@results, {'results' => \@results});
 	push(@results, {'file_name' => $temp_file_name});
 	push(@results, {'gp1_names' => \@group1NameArray});
 	push(@results, {'gp2_names' => \@group2NameArray});
-	push(@results, {'gp1_ids' => \@group1IDArray});
-	push(@results, {'gp2_ids' => \@group2IDArray});
 
 	return \@results;
 }
-
-1;

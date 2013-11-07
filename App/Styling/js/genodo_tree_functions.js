@@ -350,7 +350,7 @@ function update(source, centerOnFocus, multiSelect) {
 		.attr("text-anchor", "start")
 		.text(function(d) { 
 			if(d.leaf)
-				return dataLabel(d.name, public_genomes, private_genomes, visableData);
+				return dataLabel(d.name, public_genomes, private_genomes, metaTreeTabSelections);
 			else
 				return d.label
 		})
@@ -432,8 +432,6 @@ function submitSelection() {
 function modifyLabels(vdata) {
 	
 	vdata = (typeof vdata !== 'undefined' || vData.length == 0) ? vdata : ['name'];
-	
-	visableData = vdata;
 	
 	// Add text
 	var label = vis.selectAll("text")

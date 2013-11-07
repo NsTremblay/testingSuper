@@ -606,21 +606,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 private_feature_cvterms
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateFeatureCvterm>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_feature_cvterms",
-  "Database::Chado::Schema::Result::PrivateFeatureCvterm",
-  { "foreign.pub_id" => "self.pub_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 project_pubs
 
 Type: has_many
@@ -832,8 +817,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:49
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:62AoNVV+gwEVuk0Qa5Qpbw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:02
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5IVKVN0CFeD9skJFBopDRw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

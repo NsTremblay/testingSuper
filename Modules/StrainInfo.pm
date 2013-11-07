@@ -142,9 +142,9 @@ sub strain_info : StartRunmode {
 		my $strainAmrDataRef = $self->_getAmrData($strainID);
 		$template->param(AMRDATA=>$strainAmrDataRef);
 
-		my $strainLocationDataRef = $self->_getStrainLocation($strainID);
-		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
-
+		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
+		#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
+		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 		} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
@@ -178,8 +178,9 @@ sub strain_info : StartRunmode {
 			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
 			$template->param(AMRDATA=>$strainAmrDataRef);
 
-			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID);
-			$template->param(LOCATION => 1 , strainLocation => $strainLocationDataRef);
+			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
+			#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef);
+			$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
 			} else {
 				$template = $self->load_tmpl( 'strain_info.tmpl' ,
@@ -191,20 +192,6 @@ sub strain_info : StartRunmode {
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 
-=cut
-	# Populate forms
-	$template->param(FEATURES => $pubDataRef);
-	$template->param(strainJSONData => $pubStrainJsonDataRef);
-	
-	if(@$priDataRef) {
-		# User has private data
-		$template->param(PRIVATE_DATA => 1);
-		$template->param(PRIVATE_FEATURES => $priDataRef);
-		
-		} else {
-			$template->param(PRIVATE_DATA => 0);
-		}
-=cut
 	return $template->output();
 }
 
@@ -219,9 +206,6 @@ sub search : Runmode {
 	
 	my $username = $self->authen->username;
 	my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
-	
-	#my $pub_json = encode_json($pub);
-	#my $pvt_json = encode_json($pvt);
 	
 	my $template = $self->load_tmpl( 'strain_search.tmpl' , die_on_bad_params => 0);
 	
@@ -471,7 +455,8 @@ sub _getAmrData {
 sub _getStrainLocation {
 	my $self = shift;
 	my $strainID = shift;
-	my $locationFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
+	my $tableName = shift;
+	my $locationFeatureProps = $self->dbixSchema->resultset($tableName)->search(
 		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
 		{
 			column  => [qw/me.feature_id me.value type.name/],

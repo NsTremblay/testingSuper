@@ -4,14 +4,20 @@
 <head>
 	<TMPL_INCLUDE NAME="header.tmpl">
 	
+	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/genodo_tree.css">
+	<!-- D3.js -->
 	<script src="/App/Styling/js/d3.v3/d3.v3.min.js"></script>
+	<!-- MetaTab -->
+	<script type="text/javascript" src="/App/Styling/js/genodo_meta_tab.js"></script>
 	
-	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
-	
+</head>
+
+<body style="background-color:#796e6c">
+
 	<script>
 	<TMPL_IF msa_json>
 	var sequence_alignment_json = <TMPL_VAR msa_json>;
@@ -28,52 +34,50 @@
 	</script>
 	
 	<style>
-		#aln_table {
-			font-family: "Lucida Console", Monaco, monospace
-		}
-		td.aln_name_col {
-			width: 140pt;
-		}
-		td.aln_pos_col {
-			text-align: right;
-			text-valign: top;
-			padding-bottom: 24px;
-		}
-		td.nuclA {
-			background-color:#F5A9A9;
-			color:black;
-		}
-		td.nuclG {
-			background-color:#F3F781;
-			color:black;
-		}
-		td.nuclC {
-			background-color:#A9F5A9;
-			color:black;
-		}
-		td.nuclT {
-			background-color:#A9D0F5;
-			color:black;
-		}
-		td.nuclGAP {
-			background-color:#F2F2F2;
-			color:black;
-		}
-		td.consM, td.consMM {
-			font-color:#A4A4A4;
-			font-size:10pt;
-		}
-		#allele_list ol {
-			margin: 10pt 25pt;
-		}
+	#aln_table {
+		font-family: "Lucida Console", Monaco, monospace
+	}
+	td.aln_name_col {
+		width: 140pt;
+	}
+	td.aln_pos_col {
+		text-align: right;
+		text-valign: top;
+		padding-bottom: 24px;
+	}
+	td.nuclA {
+		background-color:#F5A9A9;
+		color:black;
+	}
+	td.nuclG {
+		background-color:#F3F781;
+		color:black;
+	}
+	td.nuclC {
+		background-color:#A9F5A9;
+		color:black;
+	}
+	td.nuclT {
+		background-color:#A9D0F5;
+		color:black;
+	}
+	td.nuclGAP {
+		background-color:#F2F2F2;
+		color:black;
+	}
+	td.consM, td.consMM {
+		font-color:#A4A4A4;
+		font-size:10pt;
+	}
+	#allele_list ol {
+		margin: 10pt 25pt;
+	}
 	</style>
 
-	
-</head>
+	<TMPL_INCLUDE NAME="phylogeny_single_strain_header.tmpl">
 
-<TMPL_INCLUDE NAME="nav_bar_vir_amr.tmpl">
+	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
-<body style="background-color:#796e6c">
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
 		<div class="row-fluid">
 			<div class="span12">
@@ -91,7 +95,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#description" style="padding:10px 0 10px 0;">
 					Gene Information
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 			</div>
 			<div class="span12">
@@ -112,7 +116,7 @@
 			<div class="span12">
 				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#alleles" style="padding:10px 0 10px 0;">
 					Genome Alleles
-				<span class="caret"></span>
+					<span class="caret"></span>
 				</button>
 			</div>
 			<div class="span12">
@@ -127,117 +131,80 @@
 		<TMPL_IF allele_json>
 		<div class="row-fluid">
 			<div id="alleles" class="collapse in">
-			
-				<div id="allele_list" class="span8">
-				</div>
-				
-				<div class="span4">
-					<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#list-meta-display" style="margin-left: 10px">
-						<i class=" icon-eye-open icon-white"></i>
-						<span class="caret"></span>
-					</button>
 
-					<div id="list-meta-display" class="collapse out" style="border-style:solid; border-width:1px; border-color:#d3d3d3; margin:20px;">
-						<div style="padding: 10px">Change meta-data displayed in list:</div>
-						<form style="padding:0px 5px 0 20px;">
-							<fieldset>		    	
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="name"> Name 
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="accession"> Accession # 
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="strain"> Strain
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="serotype"> Serotype
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="isolation_host"> Isolation Host
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="isolation_source"> Isolation Source 
-								</label>
-								<label>
-									<input class="list-meta" type="checkbox" name="list-meta-option" value="isolation_date"> Isolation Date
-								</label>														   			   						   
-							</fieldset>
-							<button id="update-list-meta" class="btn btn-small" style="margin:10px 0 0 10px;">Update</button>
-						</form>
-					</div>
-				</div>
+				<div id="allele_list" class="span8"></div>
+				
+				<div class="span4" id="list-meta-display"></div>
 			</div>
-		</div>
-		<TMPL_ELSE>
-		<div id="alleles" class="collapse in">
-			
+			<TMPL_ELSE>
+			<div id="alleles" class="collapse in">
+
 				<div class="span12">
 					<p>No alleles found.
 					</p>
 				</div>
-		</div>
-		</TMPL_IF>
-		
-		<TMPL_IF tree_json>
-		<div class="row-fluid">
-			<hr/>
-			<div class="span12">
-				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#phylogenetic_tree" style="padding:10px 0 10px 0;">
-					Phylogenetic Gene Tree
-				<span class="caret"></span>
-				</button>
 			</div>
-			<div class="span12">
-				<div style="padding:10px 0 40px 0">
-					<p>Phylogenetic tree of the gene alleles.  
-					</p>
+			</TMPL_IF>
+
+			<TMPL_IF tree_json>
+			<div class="row-fluid">
+				<hr/>
+				<div class="span12">
+					<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#phylogenetic_tree" style="padding:10px 0 10px 0;">
+						Phylogenetic Gene Tree
+						<span class="caret"></span>
+					</button>
+				</div>
+				<div class="span12">
+					<div style="padding:10px 0 40px 0">
+						<p>Phylogenetic tree of the gene alleles.  
+						</p>
+					</div>
 				</div>
 			</div>
-		</div>
-		
-		<div id="phylogenetic_tree" class="collapse in">
-			<script>
-			var smallTreeWindow = false;
-			var centreOnSelectedNode = false;
-			</script>
-			<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
-		</div>
-		</TMPL_IF>
 
-		<TMPL_IF msa_json>
-		<div class="row-fluid">
-			<hr/>
-			<div class="span12">
-				<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#sequence_alignment" style="padding:10px 0 10px 0;">
-					Gene Sequence Alignment
-				<span class="caret"></span>
-				</button>
-				<div style="padding:10px 0 40px 0">
-					<p>Multiple sequence alignment of gene alleles.  
-					</p>
+			<div id="phylogenetic_tree" class="collapse in">
+				<script>
+				var smallTreeWindow = false;
+				var centreOnSelectedNode = false;
+				</script>
+				<TMPL_INCLUDE NAME="phylogeny_single_strain.tmpl">
+			</div>
+			</TMPL_IF>
+
+			<TMPL_IF msa_json>
+			<div class="row-fluid">
+				<hr/>
+				<div class="span12">
+					<button type="button" class="btn btn-link btn-large" data-toggle="collapse" data-target="#sequence_alignment" style="padding:10px 0 10px 0;">
+						Gene Sequence Alignment
+						<span class="caret"></span>
+					</button>
+					<div style="padding:10px 0 40px 0">
+						<p>Multiple sequence alignment of gene alleles.  
+						</p>
+					</div>
 				</div>
 			</div>
-		</div>
-		<div class="row-fluid">
-			<div class="span12">
-				
-				<div id="sequence_alignment" class="collapse in">
+			<div class="row-fluid">
+				<div class="span12">
+
+					<div id="sequence_alignment" class="collapse in">
+					</div>
+
 				</div>
-				
 			</div>
+			</TMPL_IF>
+
 		</div>
-		</TMPL_IF>
-		
-	</div>
 
-</body>
+	</body>
 
-<TMPL_INCLUDE NAME="footer.tmpl">
-</html>
+	<TMPL_INCLUDE NAME="footer.tmpl">
+	</html>
 
-<script>
-	// Initialize views
+	<script>
+
 	$(function() {
 		<TMPL_IF amr>
 		displayAMR(amr_info);
@@ -249,40 +216,45 @@
 		displayAlignment(sequence_alignment_json, $('#sequence_alignment'));
 		</TMPL_IF>
 		<TMPL_IF allele_json>
-		displayAlleles(alleles, $('#allele_list'), ['name']);
-		
-		$('#update-list-meta').click(function(event) {
-			event.preventDefault;
-
-			var visibleData = [];
-			$('input[name="list-meta-option"]:checked').each( function(i, e) { visibleData.push( $( e ).val() ); });
-			
-			$('#allele_list').empty();
-			displayAlleles(alleles, $('#allele_list'), visibleData); 
-	
-			return false;
-		});
+		displayAlleles(alleles, $('#allele_list'), metaTabSelections);
+		$('input[name="'+metaTab.tab+'-meta-option"][value="name"]').attr("checked", true);
 		</TMPL_IF>
 	});
-	
+
+	<TMPL_IF allele_json>
+	// Initialize views
+	var metaTab = new MetaTab('strainList');
+	$('#list-meta-display').append(metaTab.form_html);
+
+	var metaTabSelections = ['name'];
+
+	$('input[name="'+metaTab.tab+'-meta-option"]').change( function() {
+		metaTabSelections = metaTab.updateSelections(this.value, this.checked, metaTabSelections);
+		$('#allele_list').empty();
+		displayAlleles(alleles, $('#allele_list'), metaTabSelections); 
+		return false;
+	});
+	</TMPL_IF>
+
+
 	function displayVF(vir){
-			$('#description').empty();
-			$('#description').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
-				'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
+		$('#description').empty();
+		$('#description').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
+			'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
 
-			for (var i = 1; i < vir.data.length; i++) {
-				$('#description').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
-			}
-
+		for (var i = 1; i < vir.data.length; i++) {
+			$('#description').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir.data[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir.data[i].value + '</li></ol></div>');
 		}
-	
+
+	}
+
 	function displayAMR(amr){
 		$('#description').empty();
-		
+
 		var amrhtml = 
 		'<div class="span2"><span class="muted", style="margin-left:20px;">AMR Gene: </span></div>'+
 		'<div class="span10"><h4>'+amr.data.name+'</h4></div>';
-		
+
 		if(amr.data.synonyms.length > 0) {
 			amrhtml += 
 			'<div class="span3"><span class="muted" style="padding-left:20px;">Synonyms: </span></div>';
@@ -292,43 +264,43 @@
 			}
 			amrhtml += '</div>';
 		}
-		
+
 		$('#description').append(amrhtml);
-		
+
 		if(amr.data.descriptions.length > 0) {
-	
+
 			var defhtml =
 			'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Description</strong></span></div>'+
 			'<div class="span12"><ol>';
-			
+
 			for(var j = 0; j < amr.data.descriptions.length; j++) {
 				defhtml += '<li style="padding-left:10px">'+amr.data.descriptions[j]+'</li>'
 			}
-			
+
 			defhtml += '</ol></div>';
 			$('#description').append(defhtml);
 		}
-		
+
 		if(amr.data.aro_terms.length > 0) {
-	
+
 			var arohtml =
 			'<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info"><strong>Antimicrobial Resistance Ontology Annotations</strong></span></div>'+
 			'<div class="span12"><ol>';
-			
+
 			for(var j = 0; j < amr.data.aro_terms.length; j++) {
 				arohtml += '<li style="padding-left:10px"><strong>'+amr.data.aro_terms[j].accession+' '+amr.data.aro_terms[j].term_name+
 				'</strong><br>'+amr.data.aro_terms[j].term_defn+'</li>'
 			}
-			
+
 			arohtml += '</ol></div>';
 			$('#description').append(arohtml);
 		}
 	}
-	
+
 	function displayAlignment(seqJSON, seqElem) {
 		var name_len = 17;
 		var block_len = 70;
-		
+
 		// Setup table for alignment
 		var table = $('<table id="aln_table"></table>').appendTo(seqElem);
 		
@@ -384,26 +356,27 @@
 		
 		return html;
 	}
+
 	
 	function displayAlleles(alleles, alleleElem, visibleData) {
-	
+
 		if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 			visibleData = ['name'];
 		}
 		var is_public = /public/;
-	
+
 		if(typeof alleles.present !== 'undefined' && alleles.present.length > 0) {
 			alleleElem.append('<h5>Genomes with an Allele Copy</h5>');
-		
+
 			var list1 = $('<ol></ol>').appendTo(alleleElem);
 			
 			for(i in alleles.present) {
 				var lab;
 				var feature = alleles.present[i];
 				if(is_public.test(feature)) {
-					lab = metaLabel(public_genomes[feature], visibleData);
+					lab = metaTab.metaLabel(public_genomes[feature], visibleData);
 				} else {
-					lab = metaLabel(private_genomes[feature], visibleData);
+					lab = metaTab.metaLabel(private_genomes[feature], visibleData);
 				}
 				list1.append('<li>'+lab+'</li>');
 			}	
@@ -411,58 +384,21 @@
 		
 		if(typeof alleles.absent !== 'undefined' && alleles.absent.length > 0) {
 			alleleElem.append('<h5>Genomes without an Allele Copy</h5>');
-		
+
 			var list2 = $('<ol></ol>').appendTo(alleleElem);
 			
 			for(i in alleles.absent) {
 				var lab;
 				var feature = alleles.absent[i];
 				if(is_public.test(feature)) {
-					lab = metaLabel(public_genomes[feature], visibleData);
+					lab = metaTab.metaLabel(public_genomes[feature], visibleData);
 				} else {
-					lab = metaLabel(private_genomes[feature], visibleData);
+					lab = metaTab.metaLabel(private_genomes[feature], visibleData);
 				}
 				list1.append('<li>'+lab+'</li>');
 			}	
 		}
 		
 	}
-	
-	function metaLabel(feature, vdata) {
-		var label = [];
-		if(vdata.indexOf('name') != -1) {
-			label.push(feature.uniquename);
-		}
-		
-		if(vdata.indexOf('accession') != -1) {
-			if(typeof feature.primary_dbxref !== 'undefined') {
-				label.push(feature.primary_dbxref);
-			} else {
-				label.push('NA');
-			}
-		}
-		
-		var metaDataTypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
-		for(var i=0; i<metaDataTypes.length; i++) {
-			var x = metaDataTypes[i];
-			
-			if(vdata.indexOf(x) != -1) {
-				
-				if(typeof feature[x] !== 'undefined') {
-					var sublabel = [];
-					
-					for(var j=0; j<feature[x].length; j++) {
-						sublabel.push(feature[x][j]);
-					}
-					
-					var sublabel_string = sublabel.join();
-					label.push(sublabel_string);
-				} else {
-					label.push('NA');
-				}
-			}
-		}
-		return label.join('|');
-	}
 
-</script>
+	</script>
