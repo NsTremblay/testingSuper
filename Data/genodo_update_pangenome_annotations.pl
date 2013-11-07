@@ -100,12 +100,15 @@ while (<$annotationFH>) {
 my $featurepropTypeID = getPangenomeTypeID('function');
 die "Cvterm not found: $!\n" unless $featurepropTypeID; 
 
+my %addedFeatureprops;
+
 foreach my $line (@annotations) {
 	my ($annotationID, $annotationName) = parseFragmentId($line->[0]);
 	my $feature_id = findFeatureID($annotationID);
 	next if (!$feature_id);
 	my $featureprop_id = findFeaturepropID($feature_id);
 	next if ($featureprop_id);
+	next if (exists($addedFeatureprops{$annotationID}));
 	writeOutNewAnnotaion($feature_id, $annotationID, $line->[4]);
 	#need to store the new written ids to check agaisnt
 }
@@ -167,6 +170,7 @@ sub findFeaturepropID {
 sub writeOutNewAnnotaion {
 	my ($_feature_id, $_annotation_id, $_annoatation) = @_;
 	print $fwriter "$_feature_id\t$featurepropTypeID\t$_annoatation\n";
+	$addedFeatureprops{$_annotation_id} = $_annoatation;
 }
 
 sub copyNewAnnos {

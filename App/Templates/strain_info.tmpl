@@ -68,8 +68,16 @@
 
 					<div class="tab-pane" id="mapTab">
 						<div id="map-canvas" style="height:300px;padding:10px"></div>
-						<div style="height:200px;margin-top:10px;margin-bottom:10px;overflow:auto;border:solid;border-width:1px;border-color:#d3d3d3">
-							<ul id="visibleMarkers" style="list-style:none"></ul>
+						<div class="row-fluid">
+							<div class="span7" style="height:200px;margin-top:10px;margin-bottom:10px;overflow:auto;border:solid;border-width:1px;border-color:#d3d3d3">
+								<ul id="visibleMarkers" style="list-style:none"></ul>
+							</div>
+							<div class="span5">
+								<div id="map-meta-display" style="margin-top:10px;margin-bottom:10px"></div>
+								<div>
+									<input class="span12" id="mapgenomes-autocomplete" type="text" placeholder="Filter genomes in list" onkeyup="metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections)">
+								</div>
+							</div>
 						</div>
 					</div>
 
@@ -217,6 +225,15 @@ var public_genomes = <TMPL_VAR public_genomes>;
 var public_location_genomes = {};
 var private_genomes = <TMPL_VAR private_genomes>;
 var private_location_genomes = {};
+var visableMarkers = {};
+var multiMarkers = {};
+
+var mapgenomeLabels = {};
+
+var metaMapTab = new MetaTab('mapList');
+$('#map-meta-display').append(metaMapTab.form_html);
+
+var metaMapTabSelections = ['name'];
 
 function showMap() {
 	var mapOptions = {
@@ -232,10 +249,10 @@ function showMap() {
 	var selectedLocation = mapFactory.parseLocation(public_genomes["<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>"]);
 
 	var lists = mapFactory.addMultiMarkers(public_genomes, public_location_genomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
-	var multiMarkers = lists[0];
+	multiMarkers = lists[0];
 	var clusterList = lists[1];
 
-	var visableMarkers = multiMarkers;
+	visableMarkers = multiMarkers;
 
 	var mcOptions = {gridSize: 50, maxZoom: 15};
 	var mc = new MarkerClusterer(map, clusterList, mcOptions);
@@ -245,6 +262,50 @@ function showMap() {
 
 	google.maps.event.addListener(map, 'bounds_changed', function() {
 		visableMarkers = mapFactory.updateVisibleMarkers(visableMarkers, multiMarkers, map, "visibleMarkers");
+		updateMapMeta(metaMapTabSelections);
+	});
+}
+
+//On start run this function
+$(function() {
+	$('input[name="'+metaMapTab.tab+'-meta-option"][value="name"]').attr("checked", true);
+});
+
+$('input[name="'+metaMapTab.tab+'-meta-option"]').change( function() {
+	metaMapTabSelections = metaMapTab.updateSelections(this.value, this.checked, metaMapTabSelections);
+	updateMapMeta(metaMapTabSelections);
+});
+
+function updateMapMeta(visibleData) {
+	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
+		visibleData = ['name'];
+	}
+	var dropDown = $('#visibleMarkers');
+	dropDown.empty();
+	mapgenomeLabels = {};
+	$.each( visableMarkers, function(feature_id, feature_obj) {
+		var location = multiMarkers[feature_id].location;
+		var lab = metaMapTab.metaLabel(public_location_genomes[feature_id], visibleData);
+		mapgenomeLabels[feature_id] = lab;
+		dropDown.append(
+			'<li>'+location+' - '+lab+'<a href="/strain-info/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
+			);
+	});
+	metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections);
+}
+
+function appendFilteredList(obj, list, selectedMetaData) {
+	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+		selectedMetaData = ['name'];
+	}
+	var dropDown = $('#visibleMarkers');
+	dropDown.empty();
+	$.each( obj, function(feature_id, genome_obj) {
+		var location = multiMarkers[feature_id].location;
+		var lab = metaMapTab.metaLabel(obj[feature_id], selectedMetaData);
+		dropDown.append(
+			'<li>'+location+' - '+lab+'<a href="/strain-info/strain_info?genome='+feature_id+'"><i class="icon-search"></i> info</a></li>'
+			);
 	});
 }
 
