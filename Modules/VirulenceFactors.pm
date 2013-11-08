@@ -80,6 +80,11 @@ $template->param(strainJSONData=>$pubStrainJsonDataRef);
 
 $template->param(vFACTORS=>$vFactorsRef);
 $template->param(amrFACTORS=>$amrFactorsRef);
+
+my $amrCategoriesRef = $self->categories();
+my $amr_categories_json = $formDataGenerator->_getJSONFormat($amrCategoriesRef);
+$template->param(amrCategories=>$amr_categories_json);
+
 return $template->output();
 }
 
@@ -138,11 +143,15 @@ sub categories : Runmode {
 		}
 		);
 
+	my %categories;
 	while (my $row = $categoryResults->next) {
-		print STDERR $row->get_column('parent_dbxref_id') . "\t" . $row->get_column('broad_categories') . "\t" . $row->get_column('accession') . "\t" . $row->get_column('category_name') . "\n";
+		my %category;
+		$category{'cvterm_id'} = $row->get_column('broad_categories');
+		$category{'name'} = $row->get_column('category_name');
+		$categories{$category{'cvterm_id'}} = \%category;
 	}
 
-	return;
+	return \%categories;
 }
 
 

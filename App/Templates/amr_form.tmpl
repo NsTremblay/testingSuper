@@ -1,0 +1,61 @@
+<div id="amrSelect" class="span9 tab-pane">
+	<table>
+		<tbody>
+			<tr>
+				<td>
+					<div class="span4 accordion">
+						<div class="accordion-heading">
+							<a class="accordion-toggle" data-toggle="collapse" href="#category-collapse">Select by AMR category</a>
+						</div>
+						<div id="category-collapse" class="accordion-body collapse">
+							<div class="accordion-inner" style="max-height:300px;overflow:auto">
+								<script type="text/javascript">
+									var amrCategories = <TMPL_VAR amrCategories>;
+									$.each(amrCategories.data, function(index, object) {
+										$('#category-collapse .accordion-inner').append(
+											'<label class="checkbox" for="amr-category-'+index+'">'+
+											'<input id="amr-category-'+index+'" type="checkbox">'+object.name+
+											'</label>'
+											);
+									});
+								</script>
+							</div>
+						</div>
+					</div>
+				</td>
+				<td>
+					<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
+				</td>
+				<td>
+					<div class="span2">
+						<label class="checkbox" for="select-all-amr">
+							<input id="select-all-amr" type="checkbox" onclick="selectAll('amr')"> Select All 
+						</label>
+					</div>
+				</td>
+			</tr>
+		</tbody>
+	</table>
+	<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+		<div style="padding:10px">
+			<fieldset>
+				<span class="help-block">Select on one or more amr genes</span>
+				<ul id="amrListSelection" style="padding:0px;margin:0px">
+					<li style="list-style-type:none">
+					</li>
+				</ul>
+			</fieldset>
+		</div>
+	</div>
+
+	<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+		<div style="padding:10px">
+			<fieldset>
+				<ul id="selectedAmrList" style="padding:0px;margin:0px">
+					<li style="list-style-type:none">
+					</li>
+				</ul>
+			</fieldset>
+		</div>
+	</div>
+</div>

@@ -67,47 +67,7 @@ genomeLabels = {};
 							</div>
 						</div>
 
-						<div id="amrSelect" class="span9 tab-pane">
-							<table>
-								<tbody>
-									<tr>
-										<td><div class="span4"></div></td>
-										<td>
-											<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
-										</td>
-										<td>
-											<div class="span2">
-												<label class="checkbox" for="select-all-amr">
-													<input id="select-all-amr" type="checkbox" onclick="selectAll('amr')"> Select All 
-												</label>
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-							<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-								<div style="padding:10px">
-									<fieldset>
-										<span class="help-block">Select on one or more amr genes</span>
-										<ul id="amrListSelection" style="padding:0px;margin:0px">
-											<li style="list-style-type:none">
-											</li>
-										</ul>
-									</fieldset>
-								</div>
-							</div>
-
-							<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-								<div style="padding:10px">
-									<fieldset>
-										<ul id="selectedAmrList" style="padding:0px;margin:0px">
-											<li style="list-style-type:none">
-											</li>
-										</ul>
-									</fieldset>
-								</div>
-							</div>
-						</div>
+						<TMPL_INCLUDE NAME="amr_form.tmpl">
 
 						<div id="strainSelect" class="span9 tab-pane active">
 							<table>
