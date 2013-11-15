@@ -82,8 +82,7 @@ $template->param(vFACTORS=>$vFactorsRef);
 $template->param(amrFACTORS=>$amrFactorsRef);
 
 my $amrCategoriesRef = $self->categories();
-my $amr_categories_json = $formDataGenerator->_getJSONFormat($amrCategoriesRef);
-$template->param(amrCategories=>$amr_categories_json);
+$template->param(amrCategories=>$amrCategoriesRef);
 
 return $template->output();
 }
@@ -129,7 +128,14 @@ return $virAmrByStrainJSONref;
 sub categories : Runmode {
 	#Testing out categories
 	my $self = shift;
-	#my $q = $self->query();
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $q = $self->query();
+	my @amrCategories = $q->param("amr-category");
+
+	if (@amrCategories) {
+		#get terminal children of the ids selected
+	}
 
 	my $categoryResults = $self->dbixSchema->resultset('Cvterm')->search(
 		{'dbxref.accession' => '1000001', '-not' => {'dbxref_2.accession' => '3000045'}},
@@ -138,22 +144,25 @@ sub categories : Runmode {
 			'dbxref',
 			{'cvterm_relationship_objects' => {'subject' => [{'cvterm_relationship_objects' => 'subject'}, 'dbxref']}}
 			],
-			select => ['me.dbxref_id', 'subject_2.cvterm_id', 'subject_2.name', 'dbxref_2.accession'],
-			as => ['parent_dbxref_id', 'broad_categories', 'category_name', 'accession']
+			select => ['me.dbxref_id', 'subject.cvterm_id', 'subject.name', 'subject_2.cvterm_id', 'subject_2.name', 'dbxref_2.accession'],
+			as => ['parent_dbxref_id', 'broad_category_id', 'broad_category_name', 'refined_category_id', 'refined_category_name', 'accession']
 		}
 		);
 
 	my %categories;
 	while (my $row = $categoryResults->next) {
 		my %category;
-		$category{'cvterm_id'} = $row->get_column('broad_categories');
-		$category{'name'} = $row->get_column('category_name');
-		$categories{$category{'cvterm_id'}} = \%category;
+		$category{'parent_id'} = $row->get_column('broad_category_id');
+		$category{'parent_name'} = $row->get_column('broad_category_name');
+		$categories{$category{'parent_name'}} = [] unless exists $categories{$category{'parent_name'}};
+		$category{'cvterm_id'} = $row->get_column('refined_category_id');
+		$category{'name'} = $row->get_column('refined_category_name');
+		push($categories{$category{'parent_name'}},\%category);
 	}
 
-	return \%categories;
+	my $amr_categories_json = $formDataGenerator->_getJSONFormat(\%categories);
+	return $amr_categories_json;
 }
-
 
 
 sub vf_meta_info : Runmode {

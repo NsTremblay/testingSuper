@@ -3,25 +3,52 @@
 		<tbody>
 			<tr>
 				<td>
-					<div class="span4 accordion">
-						<div class="accordion-heading">
-							<a class="accordion-toggle" data-toggle="collapse" href="#category-collapse">Select by AMR category</a>
-						</div>
-						<div id="category-collapse" class="accordion-body collapse">
-							<div class="accordion-inner" style="max-height:300px;overflow:auto">
-								<script type="text/javascript">
-									var amrCategories = <TMPL_VAR amrCategories>;
-									$.each(amrCategories.data, function(index, object) {
-										$('#category-collapse .accordion-inner').append(
-											'<label class="checkbox" for="amr-category-'+index+'">'+
-											'<input id="amr-category-'+index+'" type="checkbox">'+object.name+
-											'</label>'
-											);
-									});
-								</script>
-							</div>
-						</div>
+					<div class="span4">
+						<a data-toggle="modal" href="#amr-categories">Select by AMR category</a>
 					</div>
+					<div id="amr-categories" class="modal hide fade">
+						<div class="modal-header">
+							<button type="button" class="close" data-dismiss="modal">&times;</button>
+							<h3>Filter by AMR category</h3>
+						</div>
+						<form class="form">
+							<div id="amr-category-modal" class="modal-body" style="max-height:300px;overflow:auto">
+							</div>
+							<div class="modal-footer">
+								<button class="btn btn-primary" type="button" onclick="updateAmrCats()">Update AMR List</button>
+								<button data-dismiss="modal" class="btn">Close</button>
+							</div>
+						</form>
+					</div>
+					<script type="text/javascript">
+					var amrCategories = <TMPL_VAR amrCategories>;
+					$.each(amrCategories.data, function(index, object) {
+						var categoryTitle = capitaliseFirstLetter(index.toString());
+						var titleDiv = '<div><hr/><span class="help-block">'+categoryTitle+'</span></div>'
+						$('#amr-category-modal').append(titleDiv);
+						$.each(object, function(index, object) {
+							$('#amr-category-modal').append(
+								'<label class="checkbox" for="amr-category-'+index+'">'+
+								'<input id="amr-category-'+index+'" type="checkbox" name="amr-category" value="'+object.cvterm_id+'">'+object.name+
+								'</label>'
+								);
+						});
+					});
+					function capitaliseFirstLetter(string)
+					{
+						return string.charAt(0).toUpperCase() + string.slice(1);
+					}
+					function updateAmrCats() {
+						var amrCatList = $('input[name="amr-category"]').serialize();
+						$.ajax({
+							type: "POST",
+							url: "/virulence-factors/categories",
+							data: amrCatList,
+							success : $('button[data-dismiss="modal"]').click(),
+							dataType : "json"
+						});
+					}
+					</script>
 				</td>
 				<td>
 					<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
