@@ -365,8 +365,11 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
+	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
+	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
+	
 	# Check if this allele is already in DB
-	my ($allele_id, $allele_name) = $chado->validate_allele($query_id,$contig_collection_id,$pub_value);
+	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
 	my $is_new = 1;
 	
 	if($allele_id) {
@@ -375,7 +378,7 @@ sub allele {
 		$is_new = 0;
 		
 		# update feature sequence
-		$chado->print_uf($allele_id,$allele_name,$type,$seqlen,$residues,$is_public);
+		$chado->print_uf($allele_id,$uniquename,$type,$seqlen,$residues,$is_public);
 		
 		# update feature location
 		$chado->print_ufloc($allele_id,$min,$max,$strand,0,0,$is_public);
@@ -400,10 +403,9 @@ sub allele {
 		# external accessions
 		my $dbxref = '\N';
 		
-		# uniquename
-		my $uniquename = $collection_info->{name} . " allele_of $query_name ";
+		# uniquename & name
 		my $name = "$query_name allele";
-		$uniquename = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);

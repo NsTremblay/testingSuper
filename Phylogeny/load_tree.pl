@@ -1,10 +1,4 @@
-use strict;
-use warnings;
-use FindBin;
-use lib "$FindBin::Bin/";
-use Tree;
-use Carp;
-use Getopt::Long;
+#!/usr/bin/env perl
 
 =head1 NAME
 
@@ -34,6 +28,15 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
+
+use strict;
+use warnings;
+use FindBin;
+use lib "$FindBin::Bin/";
+use Tree;
+use Carp;
+use Getopt::Long;
+
 
 my ($tree_file);
 

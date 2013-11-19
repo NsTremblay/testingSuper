@@ -359,14 +359,17 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
+	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
+	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
+	
 	# Check if this allele is already in DB
-	my ($allele_id, $allele_name) = $chado->validate_allele($query_id,$contig_collection_id,$pub_value);
+	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
 	my $is_new = 1;
 	
 	if($allele_id) {
 		# Allele matching properties already exists in table.
 		croak "Allele matching properties already exists in DB \n".
-			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, public:$pub_value).";
+			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, un: $uniquename, public:$pub_value).";
 			
 	} else {
 		# NEW
@@ -385,10 +388,9 @@ sub allele {
 		# external accessions
 		my $dbxref = '\N';
 		
-		# uniquename
-		my $uniquename = $collection_info->{name} . " allele_of $query_name ";
+		# uniquename & name
 		my $name = "$query_name allele";
-		$uniquename = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);

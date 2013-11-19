@@ -71,7 +71,8 @@ it under the same terms as Perl itself.
 # Globals
 my ($config, $noload, $remove_lock, $help, $email_notification,
 	$mail_address, $mail_notification_address, $mail_pass, $tmpdir,
-	$conf, $dbh, $lock, $test);
+	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
+	$nr_location, $parallel_exe, $data_directory);
 
 sub error_handler {
 	# Log
@@ -169,8 +170,7 @@ use constant CREATE_CACHE_TABLE =>
 use constant INSERT_CHR => "INSERT INTO pipeline_cache (tracker_id, chr_num, name, description) VALUES (?,?,?,?)";
 
 # Globals
-my $data_directory = '/genodo_backup/data/';
-$data_directory = '/home/matt/tmp/data/' if $test;
+
 
 
 ################
@@ -258,11 +258,23 @@ if(@tracking_ids) {
 	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
 	
 	# Check genome directory is up-to-date
-	my $g_file = $data_directory . 'pangenomes/pan-genomes.ffn';
+	my $g_dir = $data_directory . 'genomes/';
+	my $g_file = $g_dir . 'pan-genomes.ffn';
 	download_pangenomes($g_file);
 	
 	# Identify any novel regions for new genomes
-	novel_region_analysis($job_dir);
+	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
+	
+	# Identify known pan-genome regions in new genomes
+	if($nr_fasta_file) {
+		# If new regions identified, need to add to file of pan-genome regions
+		my $g_file2 = $job_dir . '/pan-genomes.ffn';
+		copy $g_file, $g_file2 or die "Unable to copy pan-genomes fasta file $g_file to $g_file2 ($!).";
+		system(qq|cat $nr_fasta_file >> $g_file2|) == 0 or die "Unable to concatenate fasta file $nr_fasta_file to $g_file2";
+		$g_file = $g_file2;
+	}
+	INFO "Pan-genome region fasta file: $g_file.";
+	pangenome_analysis($job_dir, $g_file);
 	
 	
 	# Load genome data
@@ -336,6 +348,19 @@ sub init {
 			AutoCommit => 1,
 		}
 	) or die "Unable to connect to database";
+	
+	# Set exe paths
+	$muscle_exe = 'muscle';
+	$mummer_dir = '/home/ubuntu/MUMer3.23/';
+	$blast_dir = '/home/ubuntu/blast/bin/';
+	$parallel_exe = '/usr/bin/parallel';
+	$data_directory = '/genodo_backup/data/';
+	$data_directory = '/home/matt/tmp/data/' if $test;
+	$muscle_exe = '/usr/bin/muscle' if $test;
+	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
+	$blast_dir = '/home/matt/blast/bin/' if $test;
+	$nr_location = $data_directory . 'blast_databases/nr';
+	
 		
 }
 
@@ -519,15 +544,10 @@ Run panseq using VF and AMR genes as queryFile
 
 sub vf_analysis {
 	my $job_dir = shift;
-
+	
 	# Create configuration file for panseq run
 	
 	my $pan_cfg_file = $job_dir . '/vf.conf';
-	my $muscle_exe = 'muscle';
-	my $mummer_dir = '/home/ubuntu/MUMer3.23/';
-	my $blast_dir = '/usr/bin/';
-	$muscle_exe = '/usr/bin/muscle' if $test;
-	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
 	my $fasta_file = $data_directory . 'vf_amr_sequences/query_genes.ffn';
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
@@ -568,26 +588,22 @@ runMode	pan
 =head2 novel_region_analysis
 
 Run panseq to identify novel pan-genome regions in new genomes
+
 =cut
 
 sub novel_region_analysis {
-	my $job_dir = shift;
+	my ($job_dir, $genome_dir) = @_;
 
 	# Create configuration file for panseq run
 	
 	my $pan_cfg_file = $job_dir . '/nr.conf';
-	my $genome_dir = $data_directory . "pangenomes/";
-	my $muscle_exe = 'muscle';
-	my $mummer_dir = '/home/ubuntu/MUMer3.23/';
-	my $blast_dir = '/usr/bin/';
-	$muscle_exe = '/usr/bin/muscle' if $test;
-	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
+	my $result_dir = "$job_dir/panseq_nr_results/";
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out 
 qq|queryDirectory	$job_dir/fasta/
 referenceDirectory	$genome_dir
-baseDirectory	$job_dir/panseq_nr_results/
+baseDirectory	$result_dir
 numberOfCores	8
 mummerDirectory	$mummer_dir
 blastDirectory	$blast_dir
@@ -613,7 +629,66 @@ runMode	novel
 	} else {
 		die "Panseq novel region analysis failed ($stderr).";
 	}
+	
+	# If new novel regions
+	my $nr_fasta_file = $result_dir . 'novelRegions.fasta';
+	my $nr_anno_file = $result_dir . 'anno.txt';
+	if(-s $nr_fasta_file) {
+		#blast_new_regions($nr_fasta_file, $nr_anno_file);
+		return($nr_fasta_file, $nr_anno_file);
+	} else {
+		return();
+	}
+	
+}
 
+=head2 pangenome_analysis
+
+Run panseq to identify existing/known pan-genome regions in new genomes
+
+=cut
+
+sub pangenome_analysis {
+	my ($job_dir, $genome_file) = @_;
+
+	# Create configuration file for panseq run
+	
+	my $pan_cfg_file = $job_dir . '/pg.conf';
+	my $result_dir = "$job_dir/panseq_pg_results/";
+	
+	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
+	print $out
+qq|queryDirectory	$job_dir/fasta/
+queryFile	$genome_file
+baseDirectory	$result_dir
+numberOfCores	8
+mummerDirectory	$mummer_dir
+blastDirectory	$blast_dir
+minimumNovelRegionSize	1000
+novelRegionFinderMode	no_duplicates
+muscleExecutable	$muscle_exe
+fragmentationSize	1000
+percentIdentityCutoff	90
+coreGenomeThreshold	0
+runMode	pan
+storeAlleles	1
+|;
+	close $out;
+	
+	# Run panseq
+	my @loading_args = ("perl /home/ubuntu/Panseq/lib/panseq.pl",
+	$pan_cfg_file);
+	
+	$loading_args[0] = "perl /home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl" if $test;
+		
+	my $cmd = join(' ',@loading_args);
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+	if($success) {
+		INFO "Panseq pan-genome analysis completed successfully.";
+	} else {
+		die "Panseq pan-genome analysis failed ($stderr).";
+	}
 }
 
 =head2 rename_sequences
@@ -906,6 +981,27 @@ sub load_vf {
 	}
 }
 
+=head2 blast_new_regions
 
+	Assign annotations to new pan-genome regions by BLASTx against the NR DB
+	
+=cut
 
-
+sub blast_new_regions {
+	my $new_fasta = shift;
+	my $blast_file = shift; 
+	
+	# Run BLAST
+	my $blast_cmd = "$blast_dir/blastx -evalue 0.0001 -outfmt ".'\"6 qseqid qlen sseqid slen stitle\" '."-db $nr_location -max_target_seqs 1 -query -";
+	my $parallel_cmd = "cat $new_fasta | $parallel_exe --gnu -j 8 --block 1500k --recstart '>' --pipe $blast_cmd > $blast_file";
+	
+	INFO "Running parallel BLAST: $parallel_cmd";
+	
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
+	
+	if($success) {
+		INFO "New pan-genome region BLAST job completed successfully."
+	} else {
+		die "New pan-genome region BLAST job failed ($stderr).";
+	}
+}

@@ -43,6 +43,8 @@ my @tables = (
 	"private_feature_tree",
 	"raw_virulence_data",
 	"raw_amr_data",
+	"snps_genotypes",
+	"loci_genotypes",
 );
 
 # Tables in order that data is updated
@@ -82,7 +84,9 @@ my %sequences = (
 	feature_tree                 => "feature_tree_feature_tree_id_seq",
   	private_feature_tree         => "private_feature_tree_feature_tree_id_seq",
   	raw_virulence_data           => "raw_virulence_data_serial_id_seq",
-  	raw_amr_data                 => "raw_amr_data_serial_id_seq"
+  	raw_amr_data                 => "raw_amr_data_serial_id_seq",
+  	loci_genotypes               => "loci_genotypes_locus_genotype_id_seq",
+  	snps_genotypes               => "snps_genotypes_snp_genotype_id_seq",
 );
 
 # Primary key ID names
@@ -101,7 +105,9 @@ my %table_ids = (
     feature_tree                 => "feature_tree_id",
   	private_feature_tree         => "feature_tree_id",
   	raw_virulence_data           => "serial_id",
-  	raw_amr_data                 => "serial_id"
+  	raw_amr_data                 => "serial_id",
+  	loci_genotypes               => "locus_genotype_id",
+  	snps_genotypes               => "snp_genotype_id"
 );
 
 # Valid cvterm types for featureprops table
@@ -127,6 +133,8 @@ my %copystring = (
    private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
    raw_virulence_data           => "(serial_id,genome_id,gene_id,presence_absence)",
    raw_amr_data                 => "(serial_id,genome_id,gene_id,presence_absence)",
+   loci_genotypes               => "(loci_genotype_id,genome_id,feature_id,locus_genotype)",
+   snps_genotypes               => "(snp_genotype_id,genome_id,feature_id,snp_a,snp_t,snp_c,snp_g)",
 );
 
 my %updatestring = (
@@ -217,12 +225,12 @@ use constant CREATE_LOCI_CACHE_TABLE =>
 use constant DROP_LOCI_CACHE_TABLE =>
                "DROP TABLE public.tmp_loci_cache";
 use constant POPULATE_LOCI_CACHE_TABLE =>
-	"INSERT INTO public.tmp_loci_cache ".
-	"SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE, FALSE ".
-	"FROM feature f, feature_relationship f1, feature_relationship f2 ".
-	"WHERE f.type_id = ? AND".
-	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f2.type_id = ? AND f2.subject_id = f.feature_id";
+	"INSERT INTO public.tmp_loci_cache
+	 SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE, FALSE
+	 FROM feature f, feature_relationship f1, feature_relationship f2
+	 WHERE f.type_id = ? AND
+	   f1.type_id = ? AND f1.subject_id = f.feature_id AND
+	   f2.type_id = ? AND f2.subject_id = f.feature_id";
 use constant POPULATE_PRIVATE_LOCI_CACHE_TABLE =>
 	"INSERT INTO public.tmp_loci_cache ".
 	"SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, FALSE, FALSE ".
@@ -281,8 +289,8 @@ use constant SELECT_FROM_PRIVATE_FEATURE =>
 	
 # SQL for maintaing loci info
 use constant VALIDATE_LOCI =>
-	"SELECT feature_id,uniquename FROM public.tmp_loci_cache WHERE ".
-    " genome_id = ? AND query_id = ? AND pub = ? AND updated = FALSE";
+	"SELECT feature_id FROM public.tmp_loci_cache WHERE ".
+    " genome_id = ? AND query_id = ? AND uniquename = ? AND pub = ? AND updated = FALSE";
 use constant INSERT_LOCI =>
 	"INSERT INTO public.tmp_loci_cache ".
 	"(feature_id,uniquename,genome_id,query_id,pub,updated) VALUES (?,?,?,?,?,TRUE)";
@@ -395,13 +403,21 @@ sub initialize_ontology {
 	$fp_sth->execute('part_of', 'relationship');
     my ($part_of) = $fp_sth->fetchrow_array();
     
-    # Part of ID
+    # Located In ID
 	$fp_sth->execute('located_in', 'relationship');
     my ($located_in) = $fp_sth->fetchrow_array();
     
-    # Part of ID
+    # Similar To ID
 	$fp_sth->execute('similar_to', 'sequence');
     my ($similar_to) = $fp_sth->fetchrow_array();
+    
+    # Derives From ID
+	$fp_sth->execute('derives_from', 'relationship');
+    my ($derives_from) = $fp_sth->fetchrow_array();
+    
+    # Derives From ID
+	$fp_sth->execute('contained_in', 'relationship');
+    my ($contained_in) = $fp_sth->fetchrow_array();
 
     # Contig collection ID
     $fp_sth->execute('contig_collection', 'sequence');
@@ -419,19 +435,35 @@ sub initialize_ontology {
     $fp_sth->execute('experimental_feature', 'sequence');
     my ($experimental_feature) = $fp_sth->fetchrow_array();
     
-    # Query ID?
+    # SNP ID
+    $fp_sth->execute('sequence_variant', 'sequence');
+    my ($snp) = $fp_sth->fetchrow_array();
+    
+    # Pangenome Loci ID
+    $fp_sth->execute('locus', 'local');
+    my ($locus) = $fp_sth->fetchrow_array();
+    
+    # Pangenome Reference ID
+    $fp_sth->execute('pangenome', 'local');
+    my ($pan) = $fp_sth->fetchrow_array();
+    
     
     $self->{feature_types} = {
     	contig_collection => $contig_col,
     	contig => $contig,
     	allele => $allele,
-    	experimental_feature => $experimental_feature
+    	experimental_feature => $experimental_feature,
+    	snp => $snp,
+    	locus => $locus,
+    	pangenome => $pan
     };
     
 	$self->{relationship_types} = {
     	part_of => $part_of,
     	similar_to => $similar_to,
     	located_in => $located_in,
+    	derives_from => $derives_from,
+    	contained_id => $contained_in
     };
     
     # Feature property types
@@ -1555,15 +1587,10 @@ sub uniquename_validation {
 
 	if ($self->uniquename_cache(validate => 1, type_id => $type, uniquename => $uniquename )) { 
 		#if this returns non-zero, it is already in the cache and not valid
-
-		$uniquename = "$uniquename ($nextfeature)"; # Should be unique, if not something is screwy
-		
-		croak "Error: uniquename collision. Unable to generate uniquename using feature_id. " 
-			if $self->uniquename_cache(validate => 1, type_id => $type, uniquename => $uniquename );
+		croak "Error: uniquename collision. This might indicate an attempt to reload experimental feature data.";
 		
 	} else { 
 		# this uniquename is valid. cache it and return
-
 		$self->uniquename_cache(type_id => $type, feature_id => $nextfeature, uniquename => $uniquename, is_public => $pub );
 	}
 	
@@ -1903,7 +1930,7 @@ sub update_tracker {
 
 =item Usage
 
-  $obj->check_for_allele($query_id, $contig_collection_id, $contig_id, $is_public)
+  $obj->check_for_allele($query_id, $contig_collection_id, $uniquename, $is_public)
 
 =item Function
 
@@ -1916,7 +1943,7 @@ Nothing
 
 =item Arguments
 
-The feature_id for the child feature, contig collection, contig and a boolean indicating public or private
+The feature_id for the query gene feature, contig collection, the uniquename and a boolean indicating public or private
 
 =back
 
@@ -1924,9 +1951,9 @@ The feature_id for the child feature, contig collection, contig and a boolean in
 
 sub validate_allele {
     my $self = shift;
-	my ($query_id, $cc_id, $pub) = @_;
+	my ($query_id, $cc_id, $un, $pub) = @_;
 	
-    $self->{queries}{'validate_loci'}->execute($cc_id, $query_id, $pub);
+    $self->{queries}{'validate_loci'}->execute($cc_id, $query_id, $un, $pub);
 	my ($allele_id, $allele_name) = $self->{queries}{'validate_loci'}->fetchrow_array;
 	
 	if($allele_id) {
