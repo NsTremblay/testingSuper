@@ -16,7 +16,7 @@ use Time::HiRes qw( time );
 
 =head1 NAME
 
-$0 - loads panseq Pan-genome analysis into genodo's chado database. This program is written for use in the genodo_pipeline.pl script.
+$0 - loads panseq VF / AMR analysis into genodo's chado database. This program is written for use in the genodo_pipeline.pl script.
 
 =head1 SYNOPSIS
 
@@ -179,9 +179,8 @@ my $chado = Sequences::ExperimentalFeatures->new(%argv);
 my $tree_io = Phylogeny::Tree->new();
 
 # Result files
-my $allele_fasta_file = $ROOT . 'panseq_vf_amr_results/locus_alleles.fasta';
-my $allele_pos_file = $ROOT . 'panseq_vf_amr_results/pan_genome.txt';
-my $binary_file = $ROOT . 'panseq_vf_amr_results/binary_table.txt';
+my $allele_fasta_file = $ROOT . 'panseq_pg_amr_results/locus_alleles.fasta';
+my $allele_pos_file = $ROOT . 'panseq_pg_amr_results/pan_genome.txt';
 my $msa_dir = $ROOT . 'msa/';
 my $tree_dir = $ROOT . 'tree/';
 
@@ -233,6 +232,8 @@ foreach my $locus (keys %$new) {
 	my %sequence_group;
 	my $allele_hash = $new->{$locus};
 	
+	# If the pangenome reference is novel 
+	
 	# Create DB entries for each new allele
 	foreach my $header (keys %$allele_hash) {
 		allele($locus, $header, $allele_hash->{$header}, \%sequence_group);
@@ -244,10 +245,6 @@ foreach my $locus (keys %$new) {
 		update_allele_sequence($locus, $header, $update_hash->{$header}, \%sequence_group);
 	}
 }
-
-# Load presence/absence data
-load_binary($binary_file);
-
 
 # Finalize and load into DB
 
@@ -359,14 +356,17 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
+	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
+	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
+	
 	# Check if this allele is already in DB
-	my ($allele_id, $allele_name) = $chado->validate_allele($query_id,$contig_collection_id,$pub_value);
+	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
 	my $is_new = 1;
 	
 	if($allele_id) {
 		# Allele matching properties already exists in table.
 		croak "Allele matching properties already exists in DB \n".
-			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, public:$pub_value).";
+			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, un: $uniquename, public:$pub_value).";
 			
 	} else {
 		# NEW
@@ -385,10 +385,9 @@ sub allele {
 		# external accessions
 		my $dbxref = '\N';
 		
-		# uniquename
-		my $uniquename = $collection_info->{name} . " allele_of $query_name ";
+		# uniquename & name
 		my $name = "$query_name allele";
-		$uniquename = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
@@ -430,6 +429,7 @@ sub load_msa {
 	# Hashes to store sequences for new and previously loaded genomes
 	my %new;
 	my %replace;
+	my %pangenome;
 	
 	# Load allele sequences into memory
 	my $loci_file = $msa_dir . "loci.txt";
@@ -441,6 +441,7 @@ sub load_msa {
 		
 		my $msa_file = $msa_dir . "$query_id.aln";
 		my $has_new = 0;
+		my $has_ref = 0;
 		
 		my $fasta = Bio::SeqIO->new(-file   => $msa_file,
                                     -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $msa_file ($!).";
@@ -452,6 +453,24 @@ sub load_msa {
 				# New
 				$new{$locus}{$id} = $entry->seq;
 				$has_new = 1;
+			} elsif($id =~ m/^pg_/) {
+				# Reference sequence
+				$pangenome{$locus} = {
+					id => $id,
+					seq => $entry->seq,
+					novel => 0
+				}
+				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
+				$has_ref = 1;
+			} elsif($id =~ m/^nr_/) {
+				# Reference sequence, not currently in DB
+				$pangenome{$locus} = {
+					id => $id,
+					seq => $entry->seq,
+					novel => 0
+				}
+				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
+				$has_ref = 1;
 			} else {
 				# Already in DB
 				$replace{$locus}{$id} = $entry->seq;
@@ -459,11 +478,12 @@ sub load_msa {
 		}
 		
 		die "Locus $locus alignment contains no new genome sequences. Why was it run then? (likely indicates error)." unless $has_new;
+		die "Locus $locus alignment contains no reference pangenome sequences." unless $has_ref;
 	}
 	
 	close $in;
 	
-	return(\%new, \%replace);
+	return(\%new, \%replace, \%pangenome);
 }
 
 
@@ -509,45 +529,6 @@ sub load_tree {
 	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_group);
-	
-}
-
-sub load_binary {
-	my $bfile = shift;
-	
-	open my $binary_output , '<' , $bfile or die "Unable to read binary file $bfile ($!)."; 
-	
-	my @seqFeatures;
-	
-	my $header = <$binary_output>;
-	chomp $header;
-	
-	my @genomes = split(/\t/, $header);
-	my $numCol = scalar(@genomes);
-	
-	while (<$binary_output>) {
-		chomp;
-		my @tempRow = split(/\t/, $_);
-		die "Missing columns in file $bfile on row $tempRow[0]." unless @tempRow == $numCol;
-		push (@seqFeatures , \@tempRow);
-	}
-	
-	foreach my $line (@seqFeatures) {
-		
-		my $query_gene = $line->[0];
-		
-		if($query_gene =~ m/(VF|AMR)_(\d+)/) {
-			
-			my ($type, $gene_id) = ($1, $2);
-			$type = lc $type;
-			
-			for(my $i = 1; $i < $numCol; $i++) {
-			
-				$chado->handle_binary($genomes[$i], $gene_id, $line->[$i], $type);
-			
-			}
-		}
-	}
 	
 }
 

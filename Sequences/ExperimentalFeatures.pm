@@ -1096,7 +1096,7 @@ sub loci_cache {
 	    $argv{uniquename},
 	    $argv{genome_id},
 	    $argv{query_id},
-	    $argv{is_public}   
+	    $argv{is_public}
 	);
 	
 	$self->dbh->commit;
