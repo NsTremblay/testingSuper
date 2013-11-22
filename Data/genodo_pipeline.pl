@@ -207,8 +207,10 @@ if(@tracking_ids) {
 	my $meta_dir = $job_dir . '/meta/';
 	my $fasta_dir = $job_dir . '/fasta/';
 	my $opt_dir = $job_dir . '/opt/';
-	my $msa_dir = $job_dir . '/msa/';
-	my $tree_dir = $job_dir . '/tree/';
+	my $msa_dir = $job_dir . '/vf_msa/';
+	my $tree_dir = $job_dir . '/vf_tree/';
+	my $msa_dir2 = $job_dir . '/pg_msa/';
+	my $tree_dir2 = $job_dir . '/pg_tree/';
 	
 	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $msa_dir, $tree_dir) {
 		mkdir $d or die "Unable to create directory $d ($!)";
@@ -270,11 +272,28 @@ if(@tracking_ids) {
 		# If new regions identified, need to add to file of pan-genome regions
 		my $g_file2 = $job_dir . '/pan-genomes.ffn';
 		copy $g_file, $g_file2 or die "Unable to copy pan-genomes fasta file $g_file to $g_file2 ($!).";
-		system(qq|cat $nr_fasta_file >> $g_file2|) == 0 or die "Unable to concatenate fasta file $nr_fasta_file to $g_file2";
+		
+		# Add new regions with consistent identifiable names
+		my $fasta = Bio::SeqIO->new(-file   => $nr_fasta_file,
+                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $nr_fasta_file ($!).";
+    
+    	open my $out, ">>", $g_file2 or die "Unable to append to file $g_file2 ($!).";
+    	my $i = 1;
+		while (my $entry = $fasta->next_seq) {
+			my $seq = $entry->seq;
+			print $out ">nr_$i\n$seq\n";
+			$i++;
+		}
+		close $out;
+		
 		$g_file = $g_file2;
 	}
 	INFO "Pan-genome region fasta file: $g_file.";
 	pangenome_analysis($job_dir, $g_file);
+	
+	# Re-build MSAs and trees for pan-genome fragments
+	#combine_alignments($job_dir . '/panseq_pg_amr_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
+	
 	
 	
 	# Load genome data
@@ -747,13 +766,39 @@ sub combine_alignments {
 	my $allele_file = shift;
 	my $msa_dir = shift;
 	my $tree_dir = shift;
+	my $nr_sequences = shift;
+	
+	my $add_pang = 0;
+	$add_pang = 1 if $nr_sequences;
+	
+	my ($sql_type1, $sql_type2, $pang_sth);
+	if($add_pang) {
+		# Perform pan-genome fragment alignments
+		
+		# Load the reference pan-genome alignment sequences from the DB
+		my $sql = 
+qq/SELECT f.residues, f.md5checksum
+FROM feature f, cvterm t
+WHERE f.type_id = t.cvterm_id AND
+t.name = 'pangenome' AND f.feature_id = ?
+/;
+		$sql_type1 = 'locus';
+		$sql_type2 = 'derives_from';
+		
+		$pang_sth = $dbh->prepare($sql);
+			
+	} else {
+		
+		$sql_type1 = 'allele';
+		$sql_type2 = 'similar_to';
+	}
 	
 	# SQL prep
 	my $sql = 
 qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
 FROM feature f, feature_relationship r1, feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
 WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = 'allele' AND t2.name = 'similar_to' AND t3.name = 'part_of' AND
+t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
 f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
 /;
 
@@ -761,7 +806,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
 FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
 WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = 'allele' AND t2.name = 'similar_to' AND t3.name = 'part_of' AND
+t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
 f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
 /;
 
@@ -782,29 +827,59 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 	while(my $locus_block = <$in>) {
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+		my ($ftype, $query_id, $query_name) = ($locus =~ m/(\w_)*(\d+)\|(.+)/);
 		
 		# Record locus
 		print $rec "$locus\n";
 		
 		# Retrieve the alignments for other sequences in the DB
-		$sth1->execute($query_id);
-		$sth2->execute($query_id);
-		my $row = $sth1->fetchrow_arrayref;
-		my $row2 = $sth2->fetchrow_arrayref;
+		
+		my ($seq_row1, $seq_row2, $pang_ref_seq, $pang_nr_seq);
+		if($add_pang) {
+			# Look up pangenome alignments sequences: cache or DB.
+			if($ftype eq 'nr_') {
+				# New pan-genome fragement, get unaligned sequence from cache
+				$pang_nr_seq = $nr_sequences->{$query_id};
+				$query_id = "nr_$query_id";
+				
+				die "There is no corresponding sequence for the novel pan-genome region $query_id." unless $pang_nr_seq;
+				
+			} else {
+				# Old pan-genome fragement, get aligned sequence from DB
+				$pang_sth->execute($query_id);
+				($pang_ref_seq, my $md5) = $pang_sth->fetchrow_array();
+				die "There is no corresponding alignment sequence for the pan-genome region $query_id in the DB." unless $pang_ref_seq;
+				$sth1->execute($query_id);
+				$sth2->execute($query_id);
+				$seq_row1 = $sth1->fetchrow_arrayref;
+				$seq_row2 = $sth2->fetchrow_arrayref;
+				
+			}
+		} else {
+			# Look up allele alignment sequences in DB
+			$sth1->execute($query_id);
+			$sth2->execute($query_id);
+			$seq_row1 = $sth1->fetchrow_arrayref;
+			$seq_row2 = $sth2->fetchrow_arrayref;
+		}
 		
 		my $msa_file = $msa_dir . "$query_id.aln";
 		
 		my $num_seq = 0;
 		
-		if($row || $row2) {
+		if($row || $row2 || $pang_ref_seq) {
 			# Previous alleles exist
 			# Discard panseq alignment
 			# Add individual sequences to existing alignments
+			# Special Case: if aligning pan-genome fragments, always need to
+			# align reference to the loci discovered in this run.
 			
 			# Print out existing alignment to tmp file
 			my $aln_file = $msa_dir . "init.aln";
 			open(my $aln, ">", $aln_file) or die "Unable to write to file $aln_file ($!)";
+			if($pang_ref_seq) {
+				print $aln ">pg_$query_id\n$pang_ref_seq\n";
+			}
 			if($row) {
 				do {
 					my ($allele_id, $seq, $md5, $cc_id) = @$row;
@@ -821,22 +896,23 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			}
 			close $aln;
 			
-			# Align sequences one at a time
+			# Align new sequences one at a time to existing alignment
 			my $seq_file = $msa_dir . "seq.fna";
+			my @loading_args = ($muscle_exe, "-profile -in1 $aln_file -in2 $seq_file -out $aln_file");
+			my $cmd = join(' ',@loading_args);
+			
 			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 				my $header = $1;
 				my $seq = $2;
 				
-				$seq =~ s/_//g; # Remove gaps
+				$seq =~ s/-//g; # Remove gaps
 				
 				# Print to tmp file
 				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
 				print $seqo ">$header\n$seq\n";
 				close $seqo;
 				
-				# Run muscle 
-				my @loading_args = ("muscle", "-profile -in1 $aln_file -in2 $seq_file -out $aln_file");
-				my $cmd = join(' ',@loading_args);
+				# Run muscle
 				my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 	
 				unless($success) {
@@ -844,10 +920,40 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 				}
 				$num_seq++;
 			}
-			
+		
 			# move tmp file to final location
 			move $aln_file, $msa_file or die "Unable to move $aln_file file to $msa_file ($!)";
 			
+		} elsif($pang_nr_seq) {
+			# Discovered new region, so need to build alignment that includes the pan-genome region
+			
+			my $seq_file = $msa_dir . "seq.fna";
+			my @loading_args = ($muscle_exe, "-in $seq_file -out $msa_file");
+			my $cmd = join(' ',@loading_args);
+			
+			# Print to tmp file
+			my $seq_file 
+			open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
+			print $seqo ">$query_id\n$pang_nr_seq\n";
+			close $seqo;
+			
+			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
+				my $header = $1;
+				my $seq = $2;
+				
+				$seq =~ s/-//g; # Remove gaps
+				
+				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
+				print $seqo ">$header\n$seq\n";
+				close $seqo;
+			}
+				
+			my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+			unless($success) {
+					die "Muscle profile alignment failed for new pangenome region $query_id ($stderr).";
+			}
+			$num_seq++;
 		} else {
 			# No previous alleles
 			# Use alignment generated by panseq
@@ -945,6 +1051,7 @@ WHERE f.feature_id IN (
 		open my $out, ">>", $genome_file or die "Unable to append to genome fasta file $genome_file ($!).";
 		while(my ($pgid,$seq) = $sth2->fetchrow_array) {
 			
+			$seq =~ s/-//g; # Remove gaps
 			print $out ">pg_$pgid\n$seq\n";
 		}
 		close $out;
@@ -1004,4 +1111,32 @@ sub blast_new_regions {
 	} else {
 		die "New pan-genome region BLAST job failed ($stderr).";
 	}
+}
+
+sub find_snps {
+	my $ref_seq = shift;
+	my $ref_id = shift;
+	my $comp_seq = shift;
+	my $contig_collection = shift;
+	my $contig = shift;
+	
+	# Iterate through each aligned sequence, identifying mismatches
+	my $l = length($ref_seq)-1;
+	my $ref_pos = 0;
+	my $comp_pos = 0;
+		
+	for my $i (0 .. $l) {
+        my $c1 = substr($comp_seq, $i, 1);
+        my $c2 = substr($comp_seq, $i, 1);
+        	
+        $comp_pos++ unless $c1 eq '-'; # don't count gaps as a position
+        $ref_pos++ unless $c2 eq '-'; # don't count gaps as a position
+        	
+        if($c1 ne $c2) {
+        	# Found snp
+        	$chado->handle_snp($ref_id, $c2, $ref_pos, $contig_collection, $contig, $c1, $comp_pos);
+        }
+	}
+    
+	
 }
