@@ -44,7 +44,7 @@ $(function() {
 		modal: true,
 		buttons: {
 			"Submit": function() {
-				var form = $('<form action="/strain_info/" method="post">' +
+				var form = $('<form action="/strain-info/strain_info/" method="post">' +
 					'<input type="text" name="genome" value="' + $( this ).data('genome') + '" />' +
 					'</form>');
 				$( 'body' ).append(form);
