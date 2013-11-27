@@ -194,6 +194,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 amr_category_categories
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::AmrCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "amr_category_categories",
+  "Database::Chado::Schema::Result::AmrCategory",
+  { "foreign.category_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 amr_category_gene_cvterms
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::AmrCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "amr_category_gene_cvterms",
+  "Database::Chado::Schema::Result::AmrCategory",
+  { "foreign.gene_cvterm_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 analysisfeatureprops
 
 Type: has_many
@@ -1800,8 +1830,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:01
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:eMDQWGEMU0ME5iBOiRquhw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-27 16:43:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Wy/ORnbe+5PzBFHISxbMbw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

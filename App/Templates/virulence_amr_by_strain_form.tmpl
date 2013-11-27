@@ -29,7 +29,7 @@ genomeLabels = {};
 							<table>
 								<tbody>
 									<tr>
-										<td><div class="span4"></div></td>
+										<td><!--div class="span4"></div--></td>
 										<td>
 											<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list" onkeyup="metaTab.filterList('virulence', virulence_factors, undefined, metaTabSelections)">
 										</td>
@@ -74,9 +74,6 @@ genomeLabels = {};
 								<tbody>
 									<tr>
 										<td>
-											<div class="span4" id ="form-meta-display"></div>
-										</td>
-										<td>
 											<input id="genomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections)">
 										</td>
 										<td>
@@ -86,6 +83,10 @@ genomeLabels = {};
 												</label>
 											</div>
 										</td>
+										<td>
+											<div class="span3" id ="form-meta-display"></div>
+										</td>
+
 									</tr>
 								</tbody>
 							</table>

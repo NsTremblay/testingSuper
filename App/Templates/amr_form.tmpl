@@ -3,52 +3,6 @@
 		<tbody>
 			<tr>
 				<td>
-					<div class="span4">
-						<a data-toggle="modal" href="#amr-categories">Select by AMR category</a>
-					</div>
-					<div id="amr-categories" class="modal hide fade">
-						<div class="modal-header">
-							<button type="button" class="close" data-dismiss="modal">&times;</button>
-							<h3>Filter by AMR category</h3>
-						</div>
-						<form class="form">
-							<div id="amr-category-modal" class="modal-body" style="max-height:300px;overflow:auto">
-							</div>
-							<div class="modal-footer">
-								<button class="btn btn-primary" type="button" onclick="updateAmrCats()">Update AMR List</button>
-								<button data-dismiss="modal" class="btn">Close</button>
-							</div>
-						</form>
-					</div>
-					<script type="text/javascript">
-					var amrCategories = <TMPL_VAR amrCategories>;
-					$.each(amrCategories.data, function(index, object) {
-						var categoryTitle = capitaliseFirstLetter(index.toString());
-						var titleDiv = '<div><hr/><span class="help-block">'+categoryTitle+'</span></div>'
-						$('#amr-category-modal').append(titleDiv);
-						$.each(object, function(index, object) {
-							$('#amr-category-modal').append(
-								'<label class="checkbox" for="amr-category-'+index+'">'+
-								'<input id="amr-category-'+index+'" type="checkbox" name="amr-category" value="'+object.cvterm_id+'">'+object.name+
-								'</label>'
-								);
-						});
-					});
-					function capitaliseFirstLetter(string)
-					{
-						return string.charAt(0).toUpperCase() + string.slice(1);
-					}
-					function updateAmrCats() {
-						var amrCatList = $('input[name="amr-category"]').serialize();
-						$.ajax({
-							type: "POST",
-							url: "/virulence-factors/categories",
-							data: amrCatList,
-							success : $('button[data-dismiss="modal"]').click(),
-							dataType : "json"
-						});
-					}
-					</script>
 				</td>
 				<td>
 					<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
@@ -63,15 +17,51 @@
 			</tr>
 		</tbody>
 	</table>
-	<div style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
-		<div style="padding:10px">
-			<fieldset>
-				<span class="help-block">Select on one or more amr genes</span>
-				<ul id="amrListSelection" style="padding:0px;margin:0px">
-					<li style="list-style-type:none">
-					</li>
-				</ul>
-			</fieldset>
+
+	<div class="row-fluid">
+		<div class="span6" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto">
+			<div style="padding:10px">
+				<fieldset>
+					<span class="help-block">Select on one or more amr genes</span>
+					<ul id="amrListSelection" style="padding:0px;margin:0px">
+						<li style="list-style-type:none">
+						</li>
+					</ul>
+				</fieldset>
+			</div>
+		</div>
+		<div class="span6">
+			<div id="amr-categories" style="padding:10px">
+			</div>
+			<script type="text/javascript">
+			var amrCategories = <TMPL_VAR amrCategories>;
+			$('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
+			$.each(amrCategories.data, function(index, object) {
+				var categoryTitle = capitaliseFirstLetter(index.toString());
+				var titleDiv = '<span class="help-block">'+categoryTitle+': '+'</span>'
+				$('#amr-categories').append(titleDiv);
+				$('#amr-categories').append('<select class="input-xlarge"></select>');
+				$.each(object, function(index, object) {
+					$('#amr-categories select').append(
+						'<option id="amr-category-'+index+'" name="amr-category" value="'+object.cvterm_id+'">'+capitaliseFirstLetter(object.name)+'</option>'
+						);
+				});
+			});
+			function capitaliseFirstLetter(string)
+			{
+				return string.charAt(0).toUpperCase() + string.slice(1);
+			}
+			function updateAmrCats() {
+				var amrCatList = $('input[name="amr-category"]').serialize();
+				$.ajax({
+					type: "POST",
+					url: "/virulence-factors/categories",
+					data: amrCatList,
+					success : $('button[data-dismiss="modal"]').click(),
+					dataType : "json"
+				});
+			}
+			</script>
 		</div>
 	</div>
 
