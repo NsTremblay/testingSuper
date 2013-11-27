@@ -137,8 +137,14 @@ sub categories : Runmode {
 		#get terminal children of the ids selected
 	}
 
+	my @wantedCategories = (
+	'antibiotic molecule',
+	'determinant of antibiotic resistance',
+	'antibiotic target',
+	);
+
 	my $categoryResults = $self->dbixSchema->resultset('Cvterm')->search(
-		{'dbxref.accession' => '1000001', '-not' => {'dbxref_2.accession' => '3000045'}},
+		{'dbxref.accession' => '1000001', 'subject.name' => \@wantedCategories},
 		{
 			join => [
 			'dbxref',

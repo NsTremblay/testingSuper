@@ -67,76 +67,149 @@ my $cvterm = $schema->resultset('Cvterm')->find({'me.name' => 'antimicrobial_res
 my $id = $cvterm->cvterm_id;
 die unless $id;
 
-# my $geneResults = $schema->resultset('FeatureCvterm')->search(
-# 	{'feature.type_id' => $id},
-# 	{
-# 		#join => [{'cvterm' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => {'object' => {'cvterm_relationship_subjects' => 'object'}}}}}}}}}}}}}}, 'feature'],
-# 		#select => ['me.feature_id','cvterm.name', 'me.cvterm_id', 'cvterm.name' , 'cvterm_relationship_subjects.object_id', 'object_7.name'],
-# 		#as => ['gene_id', 'type_name', 'gene_cvterm_id', 'gene_cvterm_name', 'cvterm_parent_id', 'cvterm_parent_name']
-# 	}
-# 	);
-
 #Categories will have the form:
-# %categores = (
-# 	'unclassified' => {
-# 		{ 
-# 			type_id => [feature_id..], here the type_id is the cvterm_id of the gene.
-# 		}
-# 	},
+
+# 	%categores = (
+# 		'unclassified' => {
+# 			{ 
+# 				type_id => {
+#						parent_ids => [], start off with its own id
+#						feature_ids => [feature_id..], here the type_id is the cvterm_id of the gene.
+#					}
+# 			}
+# 		},
 #
-### Otherwise the has should have the form:
-#
-#	'parent_name' => {
-#		parent_id => '###',
-#			'subcategories' => {
-#				cvterm_name => {
-#				cvterm_id => '###',
-#				genes => {type_id = []}
+
+# Initially the categories hash will be empty:
+
+#	'parent_id' => {
+#		parent_name => 'ABCC',
+#		'subcategories' => {
+#			cvterm_id* => {
+#			cvterm_name => '###',
+#			type_ids => []
 #			}
+#		..*}
 #		}
-#	}
-# )
+# 	)
 
+# After the hash is populated:
 
-my %unclassifiedIds;
-
-#Bottom -> Up:
-my $amrGeneResutls = $schema->resultset('FeatureCvterm')->search(
-	{},
-	{
-
-		select => ['me.feature_id', 'me.cvterm_id'],
-		as => ['feature_id', 'type_id']
-	}
-	);
+#	'parent_id' => {
+#		parent_name => 'ABCC',
+#		'subcategories' => {
+#			cvterm_id* => {
+#			cvterm_name => '###',
+#			type_ids => { 
+#					##These will come from the unclassified types:
+#					type_id => {
+#					parent_id => cvterm_id* 
+#					feature_ids => [feature_ids..*]
+#					}
+#				..*}
+#			}
+#		..*}
+#		}
+# 	)
 
 my %categories;
-$categories{'unclassified'} = {};
-
-
-while (my $row = $amrGeneResutls->next) {
-	$categories{'unclassified'}->{$row->get_column('type_id')} = [] unless exists $categories{'unclassified'}->{$row->get_column('type_id')};
-	push(@{$categories{'unclassified'}->{$row->get_column('type_id')}}, $row->get_column('feature_id'));
-	$unclassifiedIds{$row->get_column('type_id')} = undef;
-}
-
-#while (keys {%$categories{'unclassified'}}) != 0) {
-# 	##Find the parent
-# }
-
-sub FindParent {
-	##Key is to only remove the key if the parent_id is "process or component of antibiotic biology or chemistry"
-	my $unclassifiedIds = shift;
-}
+my %unclassifiedIds;
+my %categoryIds;
 
 my @wantedCategories = (
 	'antibiotic molecule',
 	'determinant of antibiotic resistance',
-	'antibiotic target'
+	'antibiotic target',
 	);
 
-my %categoryIds;
+#Populate the initial hashes;
+getFeatureCvtermIds();
 getCategoryIds(\@wantedCategories);
+#appendBroadCategory('process or component of antibiotic biology or chemistry');
+
+while (keys %{$categories{'unclassified'}} != 0) {
+	findParents();
+}
+
+sub findParents {
+	#print "There are: " . scalar(keys %unclassifiedIds) . " unclassified ids\n";
+	#print "Matches\n" if scalar(keys %$unclassifiedIds) == scalar(keys %unclassifiedIds);
+
+	#First look up the parent_id (as a subject) for the unclassified in the list, since on the first iteration it will be the types own id,
+	#If the object of the parent is found in the %categoryIds list, update the parent_id, put type into the subcategory of the correct super category in %categories
+	#(can use the parent_id to figure this out), delete the entry from %unclassifiedIds and from the 'unclassified' sub hash in the %categories list.
+	#If the object of the parent_id does not belong to any of the ids in %categoryIds, then it must be a sub category. Just update the parent_id in the 'unclassified' sub hash
+	#Else do nothing and move to the next iteration. Eventually all genes will be categorizd under the broader classification of "process or component of antibiotic biology or chemistry"
+
+	foreach my $key (keys %{$categories{'unclassified'}}) {
+		my $parent_ids = $categories{'unclassified'}->{$key}->{'parent_ids'};
+		#print $key . "\n";
+		#sleep(1);
+
+		my $_parentResuts = $schema->resultset('CvtermRelationship')->search(
+			{'me.subject_id' => $parent_ids},
+			{
+				select => ['object_id'],
+				as => ['parent']
+			}
+			);
+
+		my $newParents = [];
+		while (my $row = $_parentResuts->next) {
+			if (exists $categoryIds{$row->get_column('parent')}) {
+				#print "Found parent: " . $row->get_column('parent') . " ...updating \%categories.\n";
+
+				my %newSubCategory;
+				$newSubCategory{'parent_id'} = $row->get_column('parent');
+				$newSubCategory{'feature_ids'} = $categories{'unclassified'}->{$key}->{'feature_ids'};
+
+				my $superClassID = $categoryIds{$row->get_column('parent')};
+				$categories{$superClassID}->{'subcategories'}->{$row->get_column('parent')}->{'type_ids'}->{$key} = \%newSubCategory;
+			}
+			else {
+				push(@{$newParents}, $row->get_column('parent'));
+			}
+		}
+		if (scalar(@{$newParents}) != 0){
+			$categories{'unclassified'}->{$key}->{'parent_ids'} = [];
+			$categories{'unclassified'}->{$key}->{'parent_ids'} = $newParents;
+		}
+		else {
+				#All parents were found, delete from the $unclassified ids list and 'unclassified' subhash in %categories;
+				delete $categories{'unclassified'}->{$key};
+				delete $unclassifiedIds{$key};
+			}
+		}
+		return;
+	}
+
+#Bottom -> Up:
+sub getFeatureCvtermIds {
+
+	my $amrGeneResutls = $schema->resultset('FeatureCvterm')->search(
+		{},
+		{
+
+			select => ['me.feature_id', 'me.cvterm_id'],
+			as => ['feature_id', 'type_id']
+		}
+		);
+
+	$categories{'unclassified'} = {};
+
+
+	while (my $row = $amrGeneResutls->next) {
+		$categories{'unclassified'}->{$row->get_column('type_id')} = {} unless exists $categories{'unclassified'}->{$row->get_column('type_id')};
+		#Set parent id initially as itself
+		$categories{'unclassified'}->{$row->get_column('type_id')}->{'parent_ids'} = [];
+		push(@{$categories{'unclassified'}->{$row->get_column('type_id')}->{'parent_ids'}}, $row->get_column('type_id'));
+		$categories{'unclassified'}->{$row->get_column('type_id')}->{'feature_ids'} = [] unless exists $categories{'unclassified'}->{$row->get_column('type_id')}->{'feature_ids'};
+		push(@{$categories{'unclassified'}->{$row->get_column('type_id')}->{'feature_ids'}}, $row->get_column('feature_id'));
+		#An additional list to make it easier for iteration
+		$unclassifiedIds{$row->get_column('type_id')} = undef;
+	}
+	return;
+}
 
 sub getCategoryIds {
 	my $wantedCategories = shift;
@@ -154,18 +227,49 @@ sub getCategoryIds {
 
 	while (my $row = $categoryResults->next) {
 		my %subcategory;
-		$subcategory{'cvterm_id'} = $row->get_column('refined_category_id');
-		$subcategory{'genes'} = {};
-		$categories{$row->get_column('broad_category_name')}->{'subcategories'} = {} unless exists $categories{$row->get_column('broad_category_name')}->{'subcategories'};
-		$categories{$row->get_column('broad_category_name')}->{'subcategories'}->{$row->get_column('refined_category_name')} = \%subcategory;
-		$categories{$row->get_column('broad_category_name')}->{'parent_id'} = $row->get_column('broad_category_id');
-		$categoryIds{$row->get_column('refined_category_id')} = undef;
+		$subcategory{$row->get_column('refined_category_id')} = {} unless exists $subcategory{$row->get_column('refined_category_id')};
+		$subcategory{$row->get_column('refined_category_id')}->{'cvterm_name'} = $row->get_column('refined_category_name');
+		$subcategory{'type_ids'} = {} unless exists $subcategory{'type_ids'};
+		
+		$categories{$row->get_column('broad_category_id')}->{'subcategories'} = {} unless exists $categories{$row->get_column('broad_category_id')}->{'subcategories'};
+		$categories{$row->get_column('broad_category_id')}->{'subcategories'}->{$row->get_column('refined_category_id')} = \%subcategory;
+		$categories{$row->get_column('broad_category_id')}->{'parent_name'} = $row->get_column('broad_category_name');
+		#Additional list to make iteration easier
+		$categoryIds{$row->get_column('refined_category_id')} = $row->get_column('broad_category_id');
 	}
+	return;
 }
 
-foreach my $x (keys %categories) {
-	print "$x: \n" . join("\t", keys %{$categories{$x}}) . "\n\n";
+sub appendBroadCategory {
+	my $term = shift;
+	#Get the  term id and append it both to the %categoryIds list and the %categories list
+	my $_categoryRow = $schema->resultset('Cvterm')->find({'me.name' => $term});
+
+	my %subcategory;
+	$subcategory{$_categoryRow->cvterm_id} = {} unless exists $subcategory{$_categoryRow->cvterm_id};
+	$subcategory{$_categoryRow->cvterm_id}->{'cvterm_name'} = $_categoryRow->name;
+	$subcategory{'type_ids'} = {} unless exists $subcategory{'type_ids'};
+
+	$categories{$_categoryRow->cvterm_id}->{'subcategories'} = {} unless exists $categories{$_categoryRow->cvterm_id}->{'subcategories'};
+	$categories{$_categoryRow->cvterm_id}->{'subcategories'}->{$_categoryRow->cvterm_id} = \%subcategory;
+	$categories{$_categoryRow->cvterm_id}->{'parent_name'} = $_categoryRow->name;
+
+	$categoryIds{$_categoryRow->cvterm_id} = $_categoryRow->cvterm_id;
 }
 
-print scalar(keys %unclassifiedIds) . "\n";
-print scalar(keys %categoryIds) . "\n";
+sub printToFile{
+	my $filePath = shift;
+	open my $fh, ">", "$filePath" or die "Could not open file: $!\n";
+
+	foreach my $x (keys %categories) {
+		print $fh "$x: " . $categories{$x}->{'parent_name'} . "\n";
+		foreach my $y (keys %{$categories{$x}->{'subcategories'}}) {
+			print $fh "$y: \n\t" . join("\t", keys %{$categories{$x}->{'subcategories'}->{$y}->{'type_ids'}}) . "\n";
+		}
+		print $fh "\n";
+	}
+	print $fh "Number of unclassified categories: " . scalar(keys %{$categories{'unclassified'}}) . "\n";
+	print $fh join(' ', keys %{$categories{'unclassified'}}) . "\n";
+
+	close $fh;
+}
