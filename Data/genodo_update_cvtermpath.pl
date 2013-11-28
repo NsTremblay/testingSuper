@@ -5,6 +5,7 @@ use warnings;
 
 use Getopt::Long;
 use IO::File;
+use IO::Dir;
 use FindBin;
 use lib "$FindBin::Bin/../";
 use Database::Chado::Schema;
@@ -13,6 +14,7 @@ use Config::Simple;
 use DBIx::Class::ResultSet;
 use DBIx::Class::Row;
 use List::MoreUtils qw/ uniq /;
+use DBI;
 
 =head1 NAME
 
@@ -127,9 +129,40 @@ getFeatureCvtermIds();
 getCategoryIds(\@wantedCategories);
 #appendBroadCategory('process or component of antibiotic biology or chemistry');
 
+print "Generated categories...\n";
+print "\t...Begin mapping terms\n";
+
 while (keys %{$categories{'unclassified'}} != 0) {
 	findParents();
 }
+
+print "Printing mapped terms to file\n";
+
+my $filePath = $dataType . "_categoies.txt";
+printToFile($filePath);
+
+#Disconnect the schema, I prefer to use DBI to copy all the data into the file;
+$schema->storage->dbh->disconnect;
+
+print "Reconnecting database for data copy...\n";
+
+# #Can use the existing config creds to connect to the db with DBI
+my $dbh = DBI->connect(
+	"dbi:Pg:dbname=$DBNAME;port=$DBPORT;host=$DBHOST",
+	$DBUSER,
+	$DBPASS,
+	{AutoCommit => 0, TraceLevel => 0}
+	) or die "Unable to reconnect to database: " . DBI->errstr;
+
+print "\t...Connected\n";
+
+copyDataToDB($filePath);
+
+unlink($filePath);
+
+##				    ##
+## Helper Functions ## 
+##				    ##
 
 sub findParents {
 	#print "There are: " . scalar(keys %unclassifiedIds) . " unclassified ids\n";
@@ -258,18 +291,45 @@ sub appendBroadCategory {
 }
 
 sub printToFile{
-	my $filePath = shift;
-	open my $fh, ">", "$filePath" or die "Could not open file: $!\n";
+	my $_filePath = shift;
+	open my $fh, ">", "$_filePath" or die "Could not open file: $!\n";
+
+	#The amr categories table currently has the columns:
+	#	gene_cvterm_id (type_id) | category_id (subcategory id) | feature_id (gene feature_id) | amr_category_id (generated automatically since its a serial type)
 
 	foreach my $x (keys %categories) {
-		print $fh "$x: " . $categories{$x}->{'parent_name'} . "\n";
 		foreach my $y (keys %{$categories{$x}->{'subcategories'}}) {
-			print $fh "$y: \n\t" . join("\t", keys %{$categories{$x}->{'subcategories'}->{$y}->{'type_ids'}}) . "\n";
+			foreach my $z (keys %{$categories{$x}->{'subcategories'}->{$y}->{'type_ids'}}) {
+				#print "$z\t$y\t$_\n" foreach(@{$categories{$x}->{'subcategories'}->{$y}->{'type_ids'}->{$z}->{'feature_ids'}});
+				foreach my $feature_id (@{$categories{$x}->{'subcategories'}->{$y}->{'type_ids'}->{$z}->{'feature_ids'}}) {
+					print $fh "$x\t$y\t$z\t$feature_id\n";
+				}
+			}
 		}
-		print $fh "\n";
 	}
-	print $fh "Number of unclassified categories: " . scalar(keys %{$categories{'unclassified'}}) . "\n";
-	print $fh join(' ', keys %{$categories{'unclassified'}}) . "\n";
 
 	close $fh;
+}
+
+sub copyDataToDB {
+	my $_filePath = shift;
+
+	#need a dbh do statement
+	$dbh->do("COPY amr_category(parent_category_id, category_id, gene_cvterm_id, feature_id) FROM STDIN");
+
+	open my $copyfh, "<", $_filePath or die "Cannot open $_filePath: $!";
+
+	while (<$copyfh>) {
+		if (! ($dbh->pg_putcopydata($_))) {
+			$dbh->pg_putcopyend();
+			$dbh->rollback;
+			$dbh->disconnect;
+			die "Error calling pg_putcopydata: $!";
+		}
+	}
+	print "pg_putcopydata completed sucessfully.\n";
+	$dbh->pg_putcopyend() or die "Error calling pg_putcopyend: $!";
+	$dbh->commit;
+	$dbh->disconnect;
+	print "Data copy completed\n";
 }

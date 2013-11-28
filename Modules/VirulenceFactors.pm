@@ -137,35 +137,99 @@ sub categories : Runmode {
 		#get terminal children of the ids selected
 	}
 
-	my @wantedCategories = (
-	'antibiotic molecule',
-	'determinant of antibiotic resistance',
-	'antibiotic target',
-	);
+	# my @wantedCategories = (
+	# 'antibiotic molecule',
+	# 'determinant of antibiotic resistance',
+	# 'antibiotic target',
+	# );
 
-	my $categoryResults = $self->dbixSchema->resultset('Cvterm')->search(
-		{'dbxref.accession' => '1000001', 'subject.name' => \@wantedCategories},
+	# my $categoryResults = $self->dbixSchema->resultset('Cvterm')->search(
+	# 	{'dbxref.accession' => '1000001', 'subject.name' => \@wantedCategories},
+	# 	{
+	# 		join => [
+	# 		'dbxref',
+	# 		{'cvterm_relationship_objects' => {'subject' => [{'cvterm_relationship_objects' => 'subject'}, 'dbxref']}}
+	# 		],
+	# 		select => ['me.dbxref_id', 'subject.cvterm_id', 'subject.name', 'subject_2.cvterm_id', 'subject_2.name', 'dbxref_2.accession'],
+	# 		as => ['parent_dbxref_id', 'broad_category_id', 'broad_category_name', 'refined_category_id', 'refined_category_name', 'accession']
+	# 	}
+	# 	);
+
+	# my %categories;
+	# while (my $row = $categoryResults->next) {
+	# 	my %category;
+	# 	$category{'parent_id'} = $row->get_column('broad_category_id');
+	# 	$category{'parent_name'} = $row->get_column('broad_category_name');
+	# 	$categories{$category{'parent_name'}} = [] unless exists $categories{$category{'parent_name'}};
+	# 	$category{'cvterm_id'} = $row->get_column('refined_category_id');
+	# 	$category{'name'} = $row->get_column('refined_category_name');
+	# 	push($categories{$category{'parent_name'}},\%category);
+	# }
+
+	#The implementation above is no longer necessary since we have direct term mappings in the amr_category table.
+
+	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
+		{},
 		{
-			join => [
-			'dbxref',
-			{'cvterm_relationship_objects' => {'subject' => [{'cvterm_relationship_objects' => 'subject'}, 'dbxref']}}
-			],
-			select => ['me.dbxref_id', 'subject.cvterm_id', 'subject.name', 'subject_2.cvterm_id', 'subject_2.name', 'dbxref_2.accession'],
-			as => ['parent_dbxref_id', 'broad_category_id', 'broad_category_name', 'refined_category_id', 'refined_category_name', 'accession']
+			join => ['parent_category', 'gene_cvterm', 'category', 'feature'],
+			select => [
+			 'parent_category.cvterm_id',
+			 'parent_category.name',
+			 'parent_category.definition',
+			 'gene_cvterm.cvterm_id',
+			 'gene_cvterm.name',
+			 'gene_cvterm.definition',
+			 'category.cvterm_id',
+			 'category.name',
+			 'category.definition',
+			 'feature.feature_id'],
+			as => [
+			'parent_id',
+			'parent_name',
+			'parent_definition',
+			'gene_id',
+			'gene_name',
+			'gene_definition',
+			'category_id',
+			'category_name',
+			'category_definition',
+			'feature_id']
 		}
 		);
 
-	my %categories;
-	while (my $row = $categoryResults->next) {
-		my %category;
-		$category{'parent_id'} = $row->get_column('broad_category_id');
-		$category{'parent_name'} = $row->get_column('broad_category_name');
-		$categories{$category{'parent_name'}} = [] unless exists $categories{$category{'parent_name'}};
-		$category{'cvterm_id'} = $row->get_column('refined_category_id');
-		$category{'name'} = $row->get_column('refined_category_name');
-		push($categories{$category{'parent_name'}},\%category);
-	}
+	#Need to account for the fact that sub categories can have many cvterms which in turn have multiple feature ids associated with them
+	# Note: 
+	# A parent_category (category) has multiple subcategories.
+	# A category has multiple gene cvterm_ids which in turn have multiple feature_ids
 
+	# %categories = (
+	# 		parent_id* => {
+	#						parent_name => parent_name,
+	#						parent_definition = parent_definition,
+	# 						subcategories => {
+	# 											category_id => {
+	#															category_name => category_name,
+	#															category_definition => category_definition,
+	#															parent_id => 'parent_id'*
+	# 															gene_id => [feature_ids..]
+	#		 													}..
+	#		 								 }..
+	#		 			  }..
+	# ); 
+
+	my %categories;
+	while (my $row = $amrCategoryResults->next) {
+		$categories{$row->get_column('parent_id')} = {} unless exists $categories{$row->get_column('parent_id')};
+		$categories{$row->get_column('parent_id')}->{'parent_name'} = $row->get_column('parent_name');
+		$categories{$row->get_column('parent_id')}->{'parent_definition'} = $row->get_column('parent_definition');
+		$categories{$row->get_column('parent_id')}->{'subcategories'} = {} unless exists $categories{$row->get_column('parent_id')}->{'subcategories'};
+		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')} = {} unless exists $categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')};
+		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'parent_id'} = $row->get_column('parent_id');
+		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_name'} = $row->get_column('category_name');
+		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_definition'} = $row->get_column('category_definition');
+		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'} = [] unless exists $categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'};
+		push(@{$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'}}, 'public_'.$row->get_column('feature_id'));
+	}
 	my $amr_categories_json = $formDataGenerator->_getJSONFormat(\%categories);
 	return $amr_categories_json;
 }

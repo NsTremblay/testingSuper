@@ -38,13 +38,15 @@
 			var amrCategories = <TMPL_VAR amrCategories>;
 			$('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
 			$.each(amrCategories.data, function(index, object) {
-				var categoryTitle = capitaliseFirstLetter(index.toString());
-				var titleDiv = '<span class="help-block">'+categoryTitle+': '+'</span>'
+				//console.log(index);
+				var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
+				var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
 				$('#amr-categories').append(titleDiv);
+				$('a[id="more-info-'+index+'"]').attr('title', object.parent_definition);
 				$('#amr-categories').append('<select name="amr-categories" id="'+index+'" class="input-xlarge"></select>');
-				$.each(object, function(index, object) {
-					$('#amr-categories select[id="'+object.parent_name+'"]').append(
-						'<option id="amr-category-'+object.name+'" name="amr-category" value="'+object.cvterm_id+'">'+capitaliseFirstLetter(object.name)+'</option>'
+				$.each(object.subcategories, function(index, object) {
+					$('#amr-categories select[id="'+object.parent_id+'"]').append(
+						'<option id="amr-category-'+object.category_name+'" name="amr-category" value="'+index+'" title="'+object.category_definition+'">'+capitaliseFirstLetter(object.category_name)+'</option>'
 						);
 				});
 			});

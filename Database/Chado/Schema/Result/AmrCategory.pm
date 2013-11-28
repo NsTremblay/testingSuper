@@ -23,14 +23,18 @@ __PACKAGE__->table("amr_category");
 
 =head1 ACCESSORS
 
-=head2 gene_cvterm_id
+=head2 amr_category_id
+
+  data_type: 'integer'
+  is_auto_increment: 1
+  is_nullable: 0
+  sequence: 'amr_category_amr_category_id_seq'
+
+=head2 parent_category_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
-
-Cvterm_id for amr gene. 
-Is a foregn key to the Cvterm table.
 
 =head2 category_id
 
@@ -41,6 +45,15 @@ Is a foregn key to the Cvterm table.
 Cvterm_id for category.
 Is a foreign key to the Cvterm table.
 
+=head2 gene_cvterm_id
+
+  data_type: 'integer'
+  is_foreign_key: 1
+  is_nullable: 0
+
+Cvterm_id for amr gene. 
+Is a foregn key to the Cvterm table.
+
 =head2 feature_id
 
   data_type: 'integer'
@@ -49,31 +62,24 @@ Is a foreign key to the Cvterm table.
 
 Stores the feature_id for each AMR gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.
 
-=head2 amr_category_id
-
-  data_type: 'integer'
-  is_auto_increment: 1
-  is_nullable: 0
-  sequence: 'amr_categories_amr_category_id_seq'
-
-Serial id acting as primary key for the amr_categories table
-
 =cut
 
 __PACKAGE__->add_columns(
-  "gene_cvterm_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "category_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "feature_id",
-  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
   "amr_category_id",
   {
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "amr_categories_amr_category_id_seq",
+    sequence          => "amr_category_amr_category_id_seq",
   },
+  "parent_category_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "category_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "gene_cvterm_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
+  "feature_id",
+  { data_type => "integer", is_foreign_key => 1, is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -140,9 +146,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
+=head2 parent_category
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-27 16:43:57
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BBPwMFQkYjoea2oA8Z0MLw
+Type: belongs_to
+
+Related object: L<Database::Chado::Schema::Result::Cvterm>
+
+=cut
+
+__PACKAGE__->belongs_to(
+  "parent_category",
+  "Database::Chado::Schema::Result::Cvterm",
+  { cvterm_id => "parent_category_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-28 14:11:41
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Ey80Rz5Cb/uEk2u/WXVheQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
