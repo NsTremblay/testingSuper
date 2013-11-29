@@ -41,8 +41,7 @@
 	}
 
 	.table_name {
-		width: 400px;
-		height: 20px;
+		white-space: nowrap;
 	}
 
 	table div.rotated {
@@ -187,6 +186,8 @@ function updateMeta(list , selectedMetaData) {
 }
 
 function appendFilteredList(obj, list, selectedMetaData) {
+	//console.log("List is: " + list + " object is: " + obj);
+	//console.log(obj);
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
 		selectedMetaData = ['name'];
 	}

@@ -211,5 +211,47 @@ CREATE INDEX snps_genotypes_idx2
 
 COMMIT;
 
+BEGIN;
+
+-- Table: amr_category
+
+-- DROP TABLE amr_category;
+
+CREATE TABLE amr_category
+(
+  amr_category_id serial NOT NULL,
+  parent_category_id integer NOT NULL,
+  category_id integer NOT NULL, -- Cvterm_id for category....
+  gene_cvterm_id integer NOT NULL, -- Cvterm_id for amr gene. ...
+  feature_id integer, -- Stores the feature_id for each AMR gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.
+  CONSTRAINT amr_category_pkey PRIMARY KEY (amr_category_id),
+  CONSTRAINT amr_category_cvterm_fkey FOREIGN KEY (category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT amr_gene_cvterm_fkey FOREIGN KEY (gene_cvterm_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT feature_id_feature_fkey FOREIGN KEY (feature_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT parent_category_cvterm_fkey FOREIGN KEY (parent_category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE amr_category
+  OWNER TO postgres;
+COMMENT ON TABLE amr_category
+  IS 'Table that maps AMR category type_ids to gene feature_ids';
+COMMENT ON COLUMN amr_category.gene_cvterm_id IS 'Cvterm_id for amr gene. 
+Is a foregn key to the Cvterm table.';
+COMMENT ON COLUMN amr_category.category_id IS 'Cvterm_id for category.
+Is a foreign key to the Cvterm table.';
+COMMENT ON COLUMN amr_category.feature_id IS 'Stores the feature_id for each AMR gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.';
+
+
+COMMIT;
 
 

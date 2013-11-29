@@ -257,6 +257,21 @@ __PACKAGE__->add_unique_constraint("feature_c1", ["organism_id", "uniquename", "
 
 =head1 RELATIONS
 
+=head2 amr_categories
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::AmrCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "amr_categories",
+  "Database::Chado::Schema::Result::AmrCategory",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 analysisfeatures
 
 Type: has_many
@@ -773,8 +788,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-23 15:36:14
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8KGcmlT5r6AUWpdTK3Q0wA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-27 16:43:57
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:n2w5FtKbrdMUtxD09cx0Qg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

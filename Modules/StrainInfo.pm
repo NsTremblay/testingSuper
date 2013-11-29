@@ -244,7 +244,7 @@ sub search : Runmode {
 		
 		# If the user does not have any private genomes, we do not need to prune tree
 		
-		if($genome_rs->find( [ { 'upload.category' => 'private' }, { 'upload.category' => 'release' } ])) {
+		if($genome_rs->search({ '-not' => {'upload.category' => 'public' }})->first) {
 			# User has access to private genomes
 			# Prune tree based on visable genomes
 			
