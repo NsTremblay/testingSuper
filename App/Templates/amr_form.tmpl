@@ -5,7 +5,7 @@
 				<td>
 				</td>
 				<td>
-					<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="metaTab.filterList('amr', amr_genes, undefined, metaTabSelections)">
+					<input id="amr-autocomplete" type="text" class="input-xlarge" placeholder="Filter amr genes in list" onkeyup="filterAmrList()">
 				</td>
 				<td>
 					<div class="span2">
@@ -33,45 +33,7 @@
 		<div class="span6">
 			<div id="amr-categories" style="padding:10px">
 			</div>
-			<div><button class="btn btn-link" type="button">Show all genes in list</button></div>
-			<script type="text/javascript">
-			var amrCategories = <TMPL_VAR amrCategories>;
-			$('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
-			$.each(amrCategories.data, function(index, object) {
-				//console.log(index);
-				var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
-				var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
-				$('#amr-categories').append(titleDiv);
-				$('a[id="more-info-'+index+'"]').attr('title', object.parent_definition);
-				$('#amr-categories').append('<select name="amr-categories" id="'+index+'" class="input-xlarge"></select>');
-				$.each(object.subcategories, function(index, object) {
-					$('#amr-categories select[id="'+object.parent_id+'"]').append(
-						'<option id="amr-category-'+object.category_name+'" name="amr-category" value="'+index+'" title="'+object.category_definition+'">'+capitaliseFirstLetter(object.category_name)+'</option>'
-						);
-				});
-			});
-			function capitaliseFirstLetter(string)
-			{
-				return string.charAt(0).toUpperCase() + string.slice(1);
-			}
-			function updateAmrCats() {
-				var amrCatList = $('input[name="amr-category"]').serialize();
-				$.ajax({
-					type: "POST",
-					url: "/virulence-factors/categories",
-					data: amrCatList,
-					success : $('button[data-dismiss="modal"]').click(),
-					dataType : "json"
-				});
-			}
-/*			function getCategories (option) {
-				alert("");
-				console.log(option.value);
-			}*/
-			$('select[name="amr-categories"]').change(function() {
-				//console.log(this.value);
-			});
-			</script>
+			<div><button class="btn btn-link" type="button" onclick="changeAmrList(amr_genes, 'amr', metaTabSelections, true)">Show all genes in list</button></div>
 		</div>
 	</div>
 
@@ -86,3 +48,66 @@
 		</div>
 	</div>
 </div>
+
+<script type="text/javascript">
+var amrCategories = <TMPL_VAR amrCategories>;
+var category_list;
+$('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
+$.each(amrCategories.data, function(index, object) {
+	var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
+	var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
+	$('#amr-categories').append(titleDiv);
+	$('a[id="more-info-'+index+'"]').attr('title', object.parent_definition);
+	$('#amr-categories').append('<select name="amr-categories" id="'+index+'" class="input-xlarge"></select>');
+	$('#amr-categories select[id="'+index+'"]').append('<option name="amr-category" value="undefined"><strong>--Select a Category--</strong></option>');
+	$.each(object.subcategories, function(index, object) {
+		$('#amr-categories select[id="'+object.parent_id+'"]').append(
+			'<option id="amr-category-'+object.category_name+'" name="amr-category" value="'+index+'" title="'+object.category_definition+'">'+capitaliseFirstLetter(object.category_name)+'</option>'
+			);
+	});
+});
+function capitaliseFirstLetter(string) {
+	return string.charAt(0).toUpperCase() + string.slice(1);
+}
+function changeAmrList(list, listName, selectedMetaTabs, boolReset) {
+	if (boolReset) {
+		$('#amr-categories select').val("undefined");
+		appendFilteredList(list, listName, selectedMetaTabs);
+		$('#amr-autocomplete').val('');
+	}
+	else {
+		appendFilteredList(list, listName, selectedMetaTabs);
+		$('#amr-autocomplete').val('');
+	}
+}
+function filterAmrList () {
+	//Fix this method
+	//console.log($('select[name="amr-categories"]').val());
+	if ($('select[name="amr-categories"]').val() != "undefined") {
+		metaTab.filterList('amr', category_list, undefined, metaTabSelections);
+	}
+	else {
+		metaTab.filterList('amr', amr_genes, undefined, metaTabSelections);
+		
+
+	}
+}
+
+$('select[name="amr-categories"]').change(function() {
+	category_list = {};
+	if (this.value == "undefined") {
+		changeAmrList(amr_genes, 'amr', metaTabSelections, true);
+	}
+	else {
+		$('#amr-categories select').val(this.value);
+		var parentId = this.id;
+		var optionId = this.value;
+		var gene_list = amrCategories.data[parentId].subcategories[optionId].gene_ids;
+		$.each(gene_list, function(index, value){
+			category_list[value] = amr_genes[value];
+		});
+		changeAmrList(category_list, 'amr', metaTabSelections, false);
+	}
+});
+
+</script>

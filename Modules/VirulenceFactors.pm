@@ -228,7 +228,7 @@ sub categories : Runmode {
 		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_name'} = $row->get_column('category_name');
 		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_definition'} = $row->get_column('category_definition');
 		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'} = [] unless exists $categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'};
-		push(@{$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'}}, 'public_'.$row->get_column('feature_id'));
+		push(@{$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'}}, $row->get_column('feature_id'));
 	}
 	my $amr_categories_json = $formDataGenerator->_getJSONFormat(\%categories);
 	return $amr_categories_json;

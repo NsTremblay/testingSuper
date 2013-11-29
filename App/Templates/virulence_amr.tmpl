@@ -186,6 +186,8 @@ function updateMeta(list , selectedMetaData) {
 }
 
 function appendFilteredList(obj, list, selectedMetaData) {
+	//console.log("List is: " + list + " object is: " + obj);
+	//console.log(obj);
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
 		selectedMetaData = ['name'];
 	}
