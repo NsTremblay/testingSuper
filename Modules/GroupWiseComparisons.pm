@@ -94,20 +94,60 @@ sub group_wise_comparisons : StartRunmode {
 }
 
 sub comparison : Runmode {
+
+	#Overhaul this runmode completely. We no longer are doing emails, just long processes:
+	# Also need to change this runmode such that if only geospatial info is selected, it returns right away
+	# with the map results.
+
+	# The next two should be written to a new html file that is kept on disk for 30 days, then deleted.
+	#If comparison is selected, then just FET results are returned, if both are selected then both are returned
+
 	my $start = Time::HiRes::gettimeofday();
 	my $self = shift;
-	
+
+	print STDERR "Session ID: " . $self->session->id() . "\n";
+	print STDERR "Remote address where id was generated: " . $self->session->remote_addr() . "\n";
+
 	my $q = $self->query();
 	my @group1 = $q->param("comparison-group1-genome");
 	my @group2 = $q->param("comparison-group2-genome");
 	my @group1Names = $q->param("comparison-group1-name");
 	my @group2Names = $q->param("comparison-group2-name");
+	my $locisnp = $q->param("loci-snp");
+	my $geospatial = $q->param("geospatial");
 
 	my $email = $q->param("email-results");
 
+
+	#Check to make sure that  both groups arent empty
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
+
+###########################################################NEW
+	#my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
+
+	# if ($locisnp && $geospatial) {
+	# 	#Retun both to user
+	# }
+	# elsif(!$geospatial) {
+	# 	#Return just loci/snp data
+		#my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
+		#my $end = Time::HiRes::gettimeofday();
+		#my $run_time = nlowmult(0.01, $end - $start);
+		#$template->param(binaryFETResults => $binaryFETResults);
+		#$template->param(snpFETResults => $snpFETResults);
+	# }
+	# else {
+	# 	#Return geospatial data
+	# }
+
+	#$template->param(run_time => $run_time);
+	#return $template->output();
+
+###########################################################NEW
+
+	#This will change
 	elsif ($email) {
 		my $user_email = $q->param("user-email");
 		my $user_email_confirmed = $q->param("user-email-confirmed");
@@ -120,11 +160,11 @@ sub comparison : Runmode {
 	}
 	else {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
+		#my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
 		my $end = Time::HiRes::gettimeofday();
 		my $run_time = nlowmult(0.01, $end - $start);
-		$template->param(binaryFETResults => $binaryFETResults);
-		$template->param(snpFETResults => $snpFETResults);
+		#$template->param(binaryFETResults => $binaryFETResults);
+		#$template->param(snpFETResults => $snpFETResults);
 		$template->param(run_time => $run_time);
 		return $template->output();
 	}

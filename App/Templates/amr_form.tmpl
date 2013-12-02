@@ -52,7 +52,7 @@
 <script type="text/javascript">
 var amrCategories = <TMPL_VAR amrCategories>;
 var category_list;
-var current_amr_category_id;
+var current_amr_category_id = "undefined";
 $('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
 $.each(amrCategories.data, function(index, object) {
 	var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());

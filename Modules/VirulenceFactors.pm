@@ -219,16 +219,18 @@ sub categories : Runmode {
 
 	my %categories;
 	while (my $row = $amrCategoryResults->next) {
-		$categories{$row->get_column('parent_id')} = {} unless exists $categories{$row->get_column('parent_id')};
-		$categories{$row->get_column('parent_id')}->{'parent_name'} = $row->get_column('parent_name');
-		$categories{$row->get_column('parent_id')}->{'parent_definition'} = $row->get_column('parent_definition');
-		$categories{$row->get_column('parent_id')}->{'subcategories'} = {} unless exists $categories{$row->get_column('parent_id')}->{'subcategories'};
-		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')} = {} unless exists $categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')};
-		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'parent_id'} = $row->get_column('parent_id');
-		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_name'} = $row->get_column('category_name');
-		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'category_definition'} = $row->get_column('category_definition');
-		$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'} = [] unless exists $categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'};
-		push(@{$categories{$row->get_column('parent_id')}->{'subcategories'}->{$row->get_column('category_id')}->{'gene_ids'}}, $row->get_column('feature_id'));
+		my $parent_id = $row->get_column('parent_id');
+		my $category_id = $row->get_column('category_id');
+		$categories{$parent_id} = {} unless exists $categories{$parent_id};
+		$categories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+		$categories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+		$categories{$parent_id}->{'subcategories'} = {} unless exists $categories{$parent_id}->{'subcategories'};
+		$categories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $categories{$parent_id}->{'subcategories'}->{$category_id};
+		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+		push(@{$categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
 	}
 	my $amr_categories_json = $formDataGenerator->_getJSONFormat(\%categories);
 	return $amr_categories_json;
