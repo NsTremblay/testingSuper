@@ -32,7 +32,7 @@
 			</td>
 			<td>
 				<div class="span4">
-					<input id="mapgenomes-autocomplete" type="text" class="input-xlarge" placeholder="Filter genomes in list" onkeyup="metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections)">
+					<input class="span4" id="mapgenomes-autocomplete" type="text" placeholder="Filter genomes in list" onkeyup="metaMapTab.filterList('mapgenomes', public_location_genomes, mapgenomeLabels, metaMapTabSelections)">
 				</div>
 			</td>
 		</tr>
@@ -132,7 +132,6 @@ function codeAdvancedMapAddress() {
 	var results = mapFactory.geoCodeMapAddress(address, map);
 }
 
-//Refactor the meta info tabs
 function updateMapMeta(visibleData) {
 	if(typeof visibleData === 'undefined' || visibleData.length == 0) {
 		visibleData = ['name'];

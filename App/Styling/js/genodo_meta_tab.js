@@ -96,6 +96,8 @@ MetaTab.prototype.metaLabel = function(feature, vdata) {
 
 MetaTab.prototype.filterList = function(listName, list, labels, seletedMetaTabs) {
 	var filteredList = {};
+	//console.log(listName);
+	//console.log(list);
 	var searchTerm = $('#'+listName+'-autocomplete').val().toLowerCase();
 	if (labels) {
 		$.each(labels, function(id, label) {
