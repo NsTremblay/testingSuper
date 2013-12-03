@@ -17,7 +17,7 @@ CREATE TABLE snp_core (
 	snp_core_id      integer NOT NULL,
 	pangenome_region integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
+	position         integer NOT NULL DEFAULT -1
 );
 
 ALTER TABLE public.snp_core OWNER TO postgres;
@@ -69,7 +69,7 @@ CREATE TABLE snp_variation (
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
+	position         integer NOT NULL DEFAULT -1
 );
 
 ALTER TABLE public.snp_variation OWNER TO postgres;
@@ -135,7 +135,7 @@ CREATE TABLE private_snp_variation (
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
+	position         integer NOT NULL DEFAULT -1
 );
 
 ALTER TABLE public.private_snp_variation OWNER TO postgres;

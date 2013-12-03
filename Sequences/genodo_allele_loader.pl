@@ -207,8 +207,13 @@ while (my $line = <$in>) {
 	
 	if($allele > 0) {
 		# Hit
+		
+		# query gene
+		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
+	
 		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
-		$loci{$locus}->{$genome} = {
+		$loci{$query_id}->{$genome} = {
 			allele => $allele,
 			start => $start,
 			end => $end,
@@ -236,17 +241,21 @@ elapsed_time('positions loaded');
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
 		my %sequence_group;
 		
+		# query gene
+		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
+		
 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 			my $header = $1;
 			my $seq = $2;
 		
 			# Load the sequence
-			allele($locus,$header,$seq,\%sequence_group);
+			allele($query_id,$query_name,$header,$seq,\%sequence_group);
 			
 		}
 		
 		# Build tree
-		build_tree($locus, \%sequence_group);
+		build_tree($query_id, \%sequence_group);
 	}
 	close $in;
 	
@@ -315,26 +324,22 @@ sub cleanup_handler {
 =cut
 
 sub allele {
-	my ($locus, $header, $seq, $seq_group) = @_;
+	my ($query_id, $query_name, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	
 	# contig_collection
 	my $contig_collection = $header;
-	my ($access, $contig_collection_id) = ($contig_collection =~ m/(public|private)_(\d+)/);
+	my ($access, $contig_collection_id) = ($contig_collection =~ m/lcl\|(public|private)_(\d+)/);
 	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
 	
 	# privacy setting
 	my $is_public = $access eq 'public' ? 1 : 0;
 	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
 	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
 	# location hash
-	my $loc_hash = $loci{$locus}->{$header};
-	croak "Missing location information for locus allele $locus in contig $header.\n" unless defined $loc_hash;
+	my $loc_hash = $loci{$query_id}->{$header};
+	croak "Missing location information for locus allele $query_id in contig $header.\n" unless defined $loc_hash;
 	
 	# contig
 	my $contig = $loc_hash->{contig};
@@ -443,13 +448,9 @@ sub allele {
 }
 
 sub build_tree {
-	my ($locus, $seq_grp) = @_;
+	my ($query_id, $seq_grp) = @_;
 	
 	return unless scalar keys %$seq_grp > 2; # only build trees for groups of 3 or more 
-	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
 	
 	# write alignment file
 	my $tmp_file = '/tmp/genodo_allele_aln.txt';
@@ -472,6 +473,8 @@ sub build_tree {
 	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_grp);
+	
+	return($tmp_file);
 }
 
 sub elapsed_time {
