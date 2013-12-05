@@ -52,6 +52,7 @@ use Math::Round 'nlowmult';
 use IO::File;
 use File::Temp;
 use Proc::Daemon; #To fork off long processes
+use JSON;
 
 sub setup {
 	my $self=shift;
@@ -118,56 +119,73 @@ sub comparison : Runmode {
 
 	my $email = $q->param("email-results");
 
-
 	#Check to make sure that  both groups arent empty
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
 
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	
+	my $username = $self->authen->username;
+	
+	print STDERR "Username: " . $username . "\n" if $username;
+
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
 ###########################################################NEW
-	#my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-
-	# if ($locisnp && $geospatial) {
-	# 	#Retun both to user
-	# }
-	# elsif(!$geospatial) {
-	# 	#Return just loci/snp data
-		#my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
-		#my $end = Time::HiRes::gettimeofday();
-		#my $run_time = nlowmult(0.01, $end - $start);
-		#$template->param(binaryFETResults => $binaryFETResults);
-		#$template->param(snpFETResults => $snpFETResults);
-	# }
-	# else {
-	# 	#Return geospatial data
-	# }
-
-	#$template->param(run_time => $run_time);
-	#return $template->output();
-
-###########################################################NEW
-
-	#This will change
-	elsif ($email) {
-		my $user_email = $q->param("user-email");
-		my $user_email_confirmed = $q->param("user-email-confirmed");
-		if (($user_email eq $user_email_confirmed) && (valid_email($user_email))) {
-			$self->_emailStrainInfo($user_email, \@group1 , \@group2 , \@group1Names , \@group2Names);
-		}
-		else {
-			return $self->group_wise_comparisons('invalid email address was entered');
-		}
+if ($locisnp && $geospatial) {
+		#Retun both to user
 	}
-	else {
+	elsif(!$geospatial) {
 		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		#my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
+		#Return just loci/snp data
+		# my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
 		my $end = Time::HiRes::gettimeofday();
 		my $run_time = nlowmult(0.01, $end - $start);
-		#$template->param(binaryFETResults => $binaryFETResults);
-		#$template->param(snpFETResults => $snpFETResults);
+		# $template->param(binaryFETResults => $binaryFETResults);
+		# $template->param(snpFETResults => $snpFETResults);
+		return $template->output();
+
+	}
+	else {
+		#Return geospatial data only
+		my $template = $self->load_tmpl( 'geospatial_comparison.tmpl' , die_on_bad_params=>0 );
+		my $end = Time::HiRes::gettimeofday();
+		my $run_time = nlowmult(0.01, $end - $start);
+		$template->param(locisnp => 0);
+		#Prepare the groups into hash refs
+		my (%_group1StrainIds, %_group2StrainIds);
+		foreach my $id (@group1) {
+			$_group1StrainIds{$id} = "";
+		}
+		foreach my $id (@group2) {
+			$_group2StrainIds{$id} = "";
+		}
+		my $group1Json = encode_json(\%_group1StrainIds);
+		my $group2Json = encode_json(\%_group2StrainIds);
+		$template->param(geospatial => 1, group1 => $group1Json, group2 => $group2Json);
 		$template->param(run_time => $run_time);
+		$template->param(groupwise => 1);
+		$template->param(public_genomes => $pub_json);
+		$template->param(private_genomes => $pvt_json) if $pvt_json;
 		return $template->output();
 	}
+
+###########################################################NEW
+
+	# #This will change
+	# elsif ($email) {
+	# 	my $user_email = $q->param("user-email");
+	# 	my $user_email_confirmed = $q->param("user-email-confirmed");
+	# 	if (($user_email eq $user_email_confirmed) && (valid_email($user_email))) {
+	# 		$self->_emailStrainInfo($user_email, \@group1 , \@group2 , \@group1Names , \@group2Names);
+	# 	}
+	# 	else {
+	# 		return $self->group_wise_comparisons('invalid email address was entered');
+	# 	}
+	# }
 }
 
 =head2 view
@@ -233,73 +251,123 @@ sub _getStrainInfo {
 	return ($_binaryFETResults, $_snpFETResults);
 }
 
-sub _emailStrainInfo {
-
-	#This method needs to be changed.
+sub startForkedGroupCompare {
 	my $self = shift;
-	my $_user_email = shift;
-	my $_group1StrainIds = shift;
-	my $_group2StrainIds = shift;
-	my $_group1StrainNames = shift;
-	my $_group2StrainNames = shift;
+	my ($_username, $_remote_addr, $_session_id, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames, $_group2StrainNames, $_geospatial) = @_;
 
 	#Need to write all the params needed to send the email
-	# #---User Email---
+	# #---User Config---
 
 	# [user]
-	# email = ;
+	# username = ;
+	# remote_addr = ;
+	# session_id = ;
 	# gp1IDs = ;
 	# gp2IDs = ;
 	# gp1Names = ;
 	# gp2Names =;
-	
-	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+
+	my $userConFile = File::Temp->new( TEMPLATE => 'user_conf_tempXXXXXXXXXX',
+		DIR => 'home/genodo/group_wise_data_temp/',
 		UNLINK => 0);
 
-	my $userConString = "#---User Email---\n\n";
+	my $userConString = "#---User Config---\n\n";
 	$userConString .= '[user]' . "\n";
-	$userConString .= "email = $_user_email\n";
+	$userConString .= "username = $_username\n";
+	$userConString .= "remote_addr = $_remote_addr\n";
+	$userConString .= "session_id = $_session_id\n";
 	$userConString .= "gp1IDs = " . join(',' , @{$_group1StrainIds}) . "\n";
 	$userConString .= "gp2IDs = " . join(',' , @{$_group2StrainIds}) . "\n";
 	$userConString .= "gp1Names = " . join(',', @{$_group1StrainNames}) . "\n";
 	$userConString .= "gp2Names = " . join(',', @{$_group2StrainNames});
+	$userConString .= "\n geospatial = $_geospatial" if $_geospatial;
 
 	print $userConFile $userConString or die "$!";
 
-	# Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Data/email_user_data.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+	#Fork program and run loading separately
+	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl -- config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
 	my $daemon = Proc::Daemon->new(
-		work_dir => "$FindBin::Bin/../../Data/",
+		work_dir => "FindBin::Bin/../../Data/",
 		exec_command => $cmd,
-		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log"
-		);
+		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
 	#Fork
 	$self->session->close;
 	my $kid_pid = $daemon->Init;
 
 	#Return Parent
-	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-	return $template->output();
-	
-	# $self->session->close;
-	# my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
-	# my $pid = fork;
-	# if ($pid) {
-	# 	$template->param(email_address=>$_user_email);
-	# 	return $template->output();
-	# 	waitpid $pid, 0;
-	# }
-	# else {
-	# 	close STDIN;
-	# 	close STDOUT;
-	# 	close STDERR;
-	# 	my $comparisonHandle = Modules::GroupComparator->new();
-	# 	$comparisonHandle->dbixSchema($self->dbixSchema);
-	# 	$comparisonHandle->configLocation($self->config_file);
-	# 	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
-	# }
+	#TODO
+	#Do a redirect to the url with the job id
+
 }
+
+# sub _emailStrainInfo {
+
+# 	#This method needs to be changed.
+# 	my $self = shift;
+# 	my $_user_email = shift;
+# 	my $_group1StrainIds = shift;
+# 	my $_group2StrainIds = shift;
+# 	my $_group1StrainNames = shift;
+# 	my $_group2StrainNames = shift;
+
+# 	#Need to write all the params needed to send the email
+# 	# #---User Email---
+
+# 	# [user]
+# 	# email = ;
+# 	# gp1IDs = ;
+# 	# gp2IDs = ;
+# 	# gp1Names = ;
+# 	# gp2Names =;
+
+# 	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
+# 		DIR => '/home/genodo/group_wise_data_temp/',
+# 		UNLINK => 0);
+
+# 	my $userConString = "#---User Email---\n\n";
+# 	$userConString .= '[user]' . "\n";
+# 	$userConString .= "email = $_user_email\n";
+# 	$userConString .= "gp1IDs = " . join(',' , @{$_group1StrainIds}) . "\n";
+# 	$userConString .= "gp2IDs = " . join(',' , @{$_group2StrainIds}) . "\n";
+# 	$userConString .= "gp1Names = " . join(',', @{$_group1StrainNames}) . "\n";
+# 	$userConString .= "gp2Names = " . join(',', @{$_group2StrainNames});
+
+# 	print $userConFile $userConString or die "$!";
+
+# 	# Fork program and run loading separately
+# 	my $cmd = "perl $FindBin::Bin/../../Data/email_user_data.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+# 	my $daemon = Proc::Daemon->new(
+# 		work_dir => "$FindBin::Bin/../../Data/",
+# 		exec_command => $cmd,
+# 		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log"
+# 		);
+# 	#Fork
+# 	$self->session->close;
+# 	my $kid_pid = $daemon->Init;
+
+# 	#Return Parent
+# 	my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
+# 	return $template->output();
+
+# 	##Older/Another way to fork the process:
+# 	# $self->session->close;
+# 	# my $template = $self->load_tmpl( 'comparison_email.tmpl' , die_on_bad_params=>0 );
+# 	# my $pid = fork;
+# 	# if ($pid) {
+# 	# 	$template->param(email_address=>$_user_email);
+# 	# 	return $template->output();
+# 	# 	waitpid $pid, 0;
+# 	# }
+# 	# else {
+# 	# 	close STDIN;
+# 	# 	close STDOUT;
+# 	# 	close STDERR;
+# 	# 	my $comparisonHandle = Modules::GroupComparator->new();
+# 	# 	$comparisonHandle->dbixSchema($self->dbixSchema);
+# 	# 	$comparisonHandle->configLocation($self->config_file);
+# 	# 	$comparisonHandle->emailResultsToUser($_user_email, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames , $_group2StrainNames);
+# 	# }
+# }
 
 sub _getLocusMetaInfo {
 	#Change this to reflect the new tables

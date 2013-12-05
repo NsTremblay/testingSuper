@@ -93,46 +93,6 @@ sub configLocation {
 	$self->{'_configLocation'} = shift // return $self->{'_configLocation'};
 }
 
-# sub emailResultsToUser {
-# 	my $self = shift;
-# 	my $_user_email = shift;
-# 	my $_group1GenomeIds = shift;
-# 	my $_group2GenomeIds = shift;
-# 	my $_group1GenomeNames = shift;
-# 	my $_group2GenomeNames = shift;
-# 	$self->config_file($self->configLocation);
-
-# 	open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
-# 	print STDERR("New comparison for user email $_user_email\n");
-
-# 	my $binaryFETResults = $self->getBinaryData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
-# 	my $snpFETResults = $self->getSnpData($_group1GenomeIds , $_group2GenomeIds, $_group1GenomeNames, $_group2GenomeNames);
-
-# 	my $transport = Email::Sender::Transport::SMTP::TLS->new(
-# 		host     => 'smtp.gmail.com',
-# 		port     => 587,
-# 		username => $self->config_param('mail.address'),
-# 		password => $self->config_param('mail.pass'),
-# 		);
-
-# 	my $message = Email::MIME->create(
-# 		header => [
-# 		To => $_user_email,
-# 		From => $self->config_param('mail.address'),
-# 		Subject        => 'SuperPhy group wise comparison results',
-# 		'Content-Type' => 'text/html'
-# 		],
-# 		parts => [
-# 		Email::MIME->create(
-# 			body => "This is a test. Do not reply to this.\n"
-# 			. "SuperPhy Team.\n"
-# 			)
-# 		],
-# 		);
-
-# 	sendmail( $message, {transport => $transport} );
-# }
-
 sub getBinaryData {
 	my $self = shift;
 	my $group1GenomeIds = shift;
