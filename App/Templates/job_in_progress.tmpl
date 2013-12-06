@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<TMPL_INCLUDE name="header.tmpl">
+	<!-- jQuery -->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+</head>
+
+<body style="background-color:#796e6c" onload="doPoll()">
+	<TMPL_INCLUDE name="nav_bar.tmpl">
+
+	<div class="container" style="background-color:#ffffff;padding:10px">
+		<h3>Please wait while we generate your results...</h3>
+		<h4 class="help-block">Here's a few things you can do in the meantime:</h4>
+		<ul>
+			<li><p>You can wait. Once the results are ready, the page will automatically forward you to them.</p></li> 
+			<li><p>You can open up another tab or browser to do other things while you wait but don't close this page without bookmarking it or you will lose your results.</p></li>
+			<li><p>Bookmark this page and comeback to it later. You can access the results at anytime by opening up the bookmarked page. We will keep your results for 30 days.</p></li>
+		</ul>
+	</div>
+	<TMPL_INCLUDE name="footer.tmpl">
+</body>
+
+<script type="text/javascript">
+
+var job_id = "<TMPL_VAR job_id>";
+var geospatial = "<TMPL_VAR geospatial>";
+
+function doPoll() {
+	$.post("/group-wise-comparisons/comparison", {'job_id' : job_id, 'geospatial' : geospatial }).done(function(data) {
+	console.log("Data is: " + data);
+	}).always(function() { setTimeout(doPoll, 5000); 
+	});
+}
+
+</script>
+
+</html>

@@ -12,16 +12,15 @@ use Carp qw/croak carp/;
 use Config::Simple;
 use DBIx::Class::ResultSet;
 use DBIx::Class::Row;
-use DBI;
 use IO::File;
-use IO::All;
 use File::Temp;
+use JSON;
 
 #All logging to STDERR to the file specified
 open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
 
-my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $mailUname, $mailPass);
-my ($USERCONFIG, $USEREMAIL, $USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES, $SESSIONID, $REMOTEADDRESS);
+my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI);
+my ($USERCONFIG, $USERNAME, $USERREMOTEADDR, $USERSESSIONID, $USERJOBID, $USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES, $GEOSPATIAL);
 
 GetOptions('config=s' => \$CONFIG, 'user_config=s' => \$USERCONFIG) or (exit -1);
 croak "Missing db config file\n" unless $CONFIG;
@@ -40,7 +39,20 @@ else {
 }
 
 #Set user config params here
-
+if (my $user_conf = new Config::Simple($USERCONFIG)) {
+	$USERNAME = $user_conf->param('user.username');
+	$USERREMOTEADDR = $user_conf->param('user.remote_addr');
+	$USERSESSIONID = $user_conf->param('user.session_id');
+	$USERJOBID = $user_conf->param('user.job_id');
+	$USERGP1STRAINIDS = $user_conf->param('user.gp1IDs');
+	$USERGP2STRAINIDS = $user_conf->param('user.gp2IDs');
+	$USERGP1STRAINNAMES = $user_conf->param('user.gp1Names');
+	$USERGP2STRAINNAMES = $user_conf->param('user.gp2Names');
+	$GEOSPATIAL = $user_conf->param('user.geospatial');
+}
+else {
+	die Config::Simple->error();
+}
 
 my $dbsource = 'dbi:' . $DBI . 'dbname=' . $DBNAME . ';host=' . $DBHOST;
 $dbsource . ';port=' . $DBPORT if $DBPORT;

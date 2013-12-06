@@ -38,7 +38,6 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
-use Modules::FastaFileWrite;
 use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Phylogeny::Tree;
@@ -94,60 +93,60 @@ sub group_wise_comparisons : StartRunmode {
 	return $template->output();
 }
 
+#Set up the long polling server process here
 sub comparison : Runmode {
-
-	#Overhaul this runmode completely. We no longer are doing emails, just long processes:
-	# Also need to change this runmode such that if only geospatial info is selected, it returns right away
-	# with the map results.
-
-	# The next two should be written to a new html file that is kept on disk for 30 days, then deleted.
-	#If comparison is selected, then just FET results are returned, if both are selected then both are returned
-
-	my $start = Time::HiRes::gettimeofday();
 	my $self = shift;
-
-	print STDERR "Session ID: " . $self->session->id() . "\n";
-	print STDERR "Remote address where id was generated: " . $self->session->remote_addr() . "\n";
+	my $start = Time::HiRes::gettimeofday();
 
 	my $q = $self->query();
+	#Needed for forked jobs
+	my $job_id = $q->param("job_id");
+	my $geospatial = $q->param("geospatial");
+
+	if ($job_id) {
+		print STDERR "polling server with job id $job_id\n";
+		return encode_json({"$job_id" => undef});
+		#TODO:
+		#Check status of job id, if still in progress return to the polling script
+		# Else forward to the new page
+		#my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
+		#$template->param(job_id => $job_id);
+		#$template->param(geospatial=>$geospatial);
+		#return $template->output();
+	}
+
 	my @group1 = $q->param("comparison-group1-genome");
 	my @group2 = $q->param("comparison-group2-genome");
 	my @group1Names = $q->param("comparison-group1-name");
 	my @group2Names = $q->param("comparison-group2-name");
 	my $locisnp = $q->param("loci-snp");
-	my $geospatial = $q->param("geospatial");
 
-	my $email = $q->param("email-results");
+	#Deprecated email funciton
+	#my $email = $q->param("email-results");
 
-	#Check to make sure that  both groups arent empty
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
 
+	my $username = $self->authen->username;
+
+	if (!$username) {
+		$username = "\"\"";
+	}
+
+	if (!$geospatial || $geospatial eq "false") {
+		$geospatial = "false";
+	}
+
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
-	
-	my $username = $self->authen->username;
-	
-	print STDERR "Username: " . $username . "\n" if $username;
-
-	# Retrieve form data
 	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
-###########################################################NEW
-if ($locisnp && $geospatial) {
-		#Retun both to user
-	}
-	elsif(!$geospatial) {
-		my $template = $self->load_tmpl( 'comparison.tmpl' , die_on_bad_params=>0 );
-		#Return just loci/snp data
-		# my ($binaryFETResults, $snpFETResults) = $self->_getStrainInfo(\@group1 , \@group2 , \@group1Names , \@group2Names);
-		my $end = Time::HiRes::gettimeofday();
-		my $run_time = nlowmult(0.01, $end - $start);
-		# $template->param(binaryFETResults => $binaryFETResults);
-		# $template->param(snpFETResults => $snpFETResults);
-		return $template->output();
 
+	if ($locisnp && $geospatial) {
+		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
+	}
+	elsif(!$geospatial || $geospatial eq "false") {
+		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
 	}
 	else {
 		#Return geospatial data only
@@ -172,10 +171,7 @@ if ($locisnp && $geospatial) {
 		$template->param(private_genomes => $pvt_json) if $pvt_json;
 		return $template->output();
 	}
-
-###########################################################NEW
-
-	# #This will change
+	#Deprecated email module
 	# elsif ($email) {
 	# 	my $user_email = $q->param("user-email");
 	# 	my $user_email_confirmed = $q->param("user-email-confirmed");
@@ -255,7 +251,43 @@ sub startForkedGroupCompare {
 	my $self = shift;
 	my ($_username, $_remote_addr, $_session_id, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames, $_group2StrainNames, $_geospatial) = @_;
 
-	#Need to write all the params needed to send the email
+	#Check for current number of jobs, create a new job_id and fork off new job
+	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
+		{},
+		{
+			select => [{count => 'me.job_id'}],
+			as => ['job_count']
+		}
+		);
+
+	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
+		DIR => '/home/genodo/group_wise_data_temp/',
+		UNLINK => 0);
+
+	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
+
+	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
+
+	#Write the job params to the db
+
+	my $newJob = $self->dbixSchema->resultset('Job')->new({
+		'job_id' => $_job_id,
+		'remote_addr' => $_remote_addr,
+		'session_id' => $_session_id,
+		'username' => $_username,
+		'status' => "in progress"
+		});
+
+	$newJob->insert();
+
+
+	if ($newJob->in_storage()) {
+		print STDERR "New groupwise comparison job initialized successfully.\n";
+	}
+	else {
+		die "Error initializing new groupwise comparison job.\n";
+	}
+
 	# #---User Config---
 
 	# [user]
@@ -267,42 +299,37 @@ sub startForkedGroupCompare {
 	# gp1Names = ;
 	# gp2Names =;
 
-	my $userConFile = File::Temp->new( TEMPLATE => 'user_conf_tempXXXXXXXXXX',
-		DIR => 'home/genodo/group_wise_data_temp/',
-		UNLINK => 0);
-
 	my $userConString = "#---User Config---\n\n";
 	$userConString .= '[user]' . "\n";
 	$userConString .= "username = $_username\n";
 	$userConString .= "remote_addr = $_remote_addr\n";
 	$userConString .= "session_id = $_session_id\n";
+	$userConString .= "job_id = $_job_id\n";
 	$userConString .= "gp1IDs = " . join(',' , @{$_group1StrainIds}) . "\n";
 	$userConString .= "gp2IDs = " . join(',' , @{$_group2StrainIds}) . "\n";
 	$userConString .= "gp1Names = " . join(',', @{$_group1StrainNames}) . "\n";
 	$userConString .= "gp2Names = " . join(',', @{$_group2StrainNames});
-	$userConString .= "\n geospatial = $_geospatial" if $_geospatial;
+	$userConString .= "\n geospatial = $_geospatial";
 
 	print $userConFile $userConString or die "$!";
 
 	#Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl -- config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
 	my $daemon = Proc::Daemon->new(
-		work_dir => "FindBin::Bin/../../Data/",
+		work_dir => "$FindBin::Bin/../../Data/",
 		exec_command => $cmd,
 		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
 	#Fork
 	$self->session->close;
 	my $kid_pid = $daemon->Init;
 
-	#Return Parent
-	#TODO
-	#Do a redirect to the url with the job id
-
+	#Right now it redirects to comparison runmode, may want to change that
+	return $self->redirect('/group-wise-comparisons/comparison?job_id='.$_job_id.'&geospatial='.$_geospatial.'');
 }
 
-# sub _emailStrainInfo {
 
-# 	#This method needs to be changed.
+#Deprecated email module
+# sub _emailStrainInfo {
 # 	my $self = shift;
 # 	my $_user_email = shift;
 # 	my $_group1StrainIds = shift;

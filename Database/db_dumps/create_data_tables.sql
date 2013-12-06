@@ -254,4 +254,34 @@ COMMENT ON COLUMN amr_category.feature_id IS 'Stores the feature_id for each AMR
 
 COMMIT;
 
+BEGIN;
+
+-- Table: jobs
+
+-- DROP TABLE jobs;
+
+CREATE TABLE jobs
+(
+  job_id character varying NOT NULL, -- Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.
+  remote_addr character varying NOT NULL, -- IP address of the remote user that requested the job
+  session_id character varying NOT NULL, -- CGI session ID
+  username character varying, -- Username (if user logged in) of site user requesting job
+  status character varying, -- Current status of job. Will either be "in progress" or "completed"
+  CONSTRAINT jobs_pkey PRIMARY KEY (job_id)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE jobs
+  OWNER TO postgres;
+COMMENT ON TABLE jobs
+  IS 'Stores id''s and statuses of current groupwise comparison jobs.';
+COMMENT ON COLUMN jobs.job_id IS 'Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.';
+COMMENT ON COLUMN jobs.remote_addr IS 'IP address of the remote user that requested the job';
+COMMENT ON COLUMN jobs.session_id IS 'CGI session ID';
+COMMENT ON COLUMN jobs.username IS 'Username (if user logged in) of site user requesting job';
+COMMENT ON COLUMN jobs.status IS 'Current status of job. Will either be "in progress" or "completed"';
+
+COMMIT;
+
 
