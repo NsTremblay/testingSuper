@@ -93,6 +93,18 @@ sub group_wise_comparisons : StartRunmode {
 	return $template->output();
 }
 
+sub running_job : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $job_id = $q->param("job_id");
+	my $geospatial = $q->param("geospatial");
+
+	print STDERR "Job is $job_id\n";
+
+	return "completed" if $job_id;
+	return '';
+}
+
 #Set up the long polling server process here
 sub comparison : Runmode {
 	my $self = shift;
@@ -104,15 +116,15 @@ sub comparison : Runmode {
 	my $geospatial = $q->param("geospatial");
 
 	if ($job_id) {
-		print STDERR "polling server with job id $job_id\n";
-		return encode_json({"$job_id" => undef});
+		#print STDERR "polling server with job id $job_id\n";
+		#return '';
 		#TODO:
 		#Check status of job id, if still in progress return to the polling script
 		# Else forward to the new page
-		#my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
-		#$template->param(job_id => $job_id);
-		#$template->param(geospatial=>$geospatial);
-		#return $template->output();
+		my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
+		$template->param(job_id => $job_id);
+		$template->param(geospatial=>$geospatial);
+		return $template->output();
 	}
 
 	my @group1 = $q->param("comparison-group1-genome");
@@ -324,7 +336,7 @@ sub startForkedGroupCompare {
 	my $kid_pid = $daemon->Init;
 
 	#Right now it redirects to comparison runmode, may want to change that
-	return $self->redirect('/group-wise-comparisons/comparison?job_id='.$_job_id.'&geospatial='.$_geospatial.'');
+	return $self->redirect('/group-wise-comparisons/comparison?job_id='.$_job_id.'&geospatial='.$_geospatial);
 }
 
 

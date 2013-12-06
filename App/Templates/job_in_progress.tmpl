@@ -29,11 +29,22 @@ var job_id = "<TMPL_VAR job_id>";
 var geospatial = "<TMPL_VAR geospatial>";
 
 function doPoll() {
-	$.post("/group-wise-comparisons/comparison", {'job_id' : job_id, 'geospatial' : geospatial }).done(function(data) {
-	console.log("Data is: " + data);
-	}).always(function() { setTimeout(doPoll, 5000); 
+	$.ajax({
+		type: "POST",
+		url: "/group-wise-comparisons/running_job/",
+		data: {'job_id' : job_id, 'geospatial' : geospatial }
+	})
+	.done(function(data) {
+		console.log(data);
+		if (data == 'completed') {
+			return;
+		}
+		else {
+			setTimeout(function(){doPoll()},5000);
+		}
 	});
 }
+
 
 </script>
 
