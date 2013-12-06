@@ -234,6 +234,21 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
+=head2 private_feature_cvterms
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureCvterm>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_feature_cvterms",
+  "Database::Chado::Schema::Result::PrivateFeatureCvterm",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_feature_dbxrefs
 
 Type: has_many
@@ -294,6 +309,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_featureloc_features
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureloc>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_featureloc_features",
+  "Database::Chado::Schema::Result::PrivateFeatureloc",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_featureloc_srcfeatures
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureloc>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_featureloc_srcfeatures",
+  "Database::Chado::Schema::Result::PrivateFeatureloc",
+  { "foreign.srcfeature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_featureprops
 
 Type: has_many
@@ -306,6 +351,51 @@ __PACKAGE__->has_many(
   "private_featureprops",
   "Database::Chado::Schema::Result::PrivateFeatureprop",
   { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_variation_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_contig_collections",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.contig_collection" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_variation_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_contigs",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.contig" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_variation_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_loci",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.locus" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -340,8 +430,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-23 15:36:15
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:I+5F0lwViEsqqB+bm7ax5A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zXBsKFgMKb8V1f9x3FAiOg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

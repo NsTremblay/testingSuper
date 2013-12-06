@@ -17,7 +17,10 @@ CREATE TABLE snp_core (
 	snp_core_id      integer NOT NULL,
 	pangenome_region integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1
+	position         integer NOT NULL DEFAULT -1,
+	gap_offset       integer NOT NULL DEFAULT 0,
+	aln_block        integer NOT NULL DEFAULT 0,
+	aln_column       integer NOT NULL DEFAULT 0
 );
 
 ALTER TABLE public.snp_core OWNER TO postgres;
@@ -51,7 +54,11 @@ ALTER TABLE ONLY snp_core
 -- Constraints
 --
 ALTER TABLE ONLY snp_core
-    ADD CONSTRAINT snp_core_c1 UNIQUE (pangenome_region, position);
+    ADD CONSTRAINT snp_core_c1 UNIQUE (pangenome_region, position, gap_offset);
+
+ALTER TABLE ONLY snp_core
+    ADD CONSTRAINT snp_core_c2 UNIQUE (aln_block, aln_column);
+
 
 --
 -- Indices
@@ -68,8 +75,10 @@ CREATE TABLE snp_variation (
 	snp              integer NOT NULL,
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
+	locus            integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1
+	position         integer NOT NULL DEFAULT -1,
+	gap_offset       integer NOT NULL DEFAULT 0
 );
 
 ALTER TABLE public.snp_variation OWNER TO postgres;
@@ -105,15 +114,15 @@ ALTER TABLE ONLY snp_variation
 ALTER TABLE ONLY snp_variation
 	ADD CONSTRAINT snp_variation_contig_fkey FOREIGN KEY (contig) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
+ALTER TABLE ONLY snp_variation
+	ADD CONSTRAINT snp_variation_locus_fkey FOREIGN KEY (locus) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
 
 --
 -- Constraints
---
+--  
 ALTER TABLE ONLY snp_variation
-    ADD CONSTRAINT snp_variation_c1 UNIQUE (contig, position);
-    
-ALTER TABLE ONLY snp_variation
-    ADD CONSTRAINT snp_variation_c2 UNIQUE (snp, contig_collection);
+    ADD CONSTRAINT snp_variation_c1 UNIQUE (snp, contig_collection);
 
 --
 -- Indices
@@ -134,8 +143,10 @@ CREATE TABLE private_snp_variation (
 	snp              integer NOT NULL,
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
+	locus            integer NOT NULL,
 	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1
+	position         integer NOT NULL DEFAULT -1,
+	gap_offset       integer NOT NULL DEFAULT 0
 );
 
 ALTER TABLE public.private_snp_variation OWNER TO postgres;
@@ -166,20 +177,20 @@ ALTER TABLE ONLY private_snp_variation
 	ADD CONSTRAINT private_snp_variation_snp_fkey FOREIGN KEY (snp) REFERENCES snp_core(snp_core_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE ONLY private_snp_variation
-	ADD CONSTRAINT private_snp_variation_contig_collection_fkey FOREIGN KEY (contig_collection) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+	ADD CONSTRAINT private_snp_variation_contig_collection_fkey FOREIGN KEY (contig_collection) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE ONLY private_snp_variation
-	ADD CONSTRAINT private_snp_variation_contig_fkey FOREIGN KEY (contig) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+	ADD CONSTRAINT private_snp_variation_contig_fkey FOREIGN KEY (contig) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_snp_variation
+	ADD CONSTRAINT private_snp_variation_locus_fkey FOREIGN KEY (locus) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 --
 -- Constraints
 --
 ALTER TABLE ONLY private_snp_variation
-    ADD CONSTRAINT private_snp_variation_c1 UNIQUE (contig, position);
-    
-ALTER TABLE ONLY private_snp_variation
-    ADD CONSTRAINT private_snp_variation_c2 UNIQUE (snp, contig_collection);
+    ADD CONSTRAINT private_snp_variation_c1 UNIQUE (snp, contig_collection);
 
 --
 -- Indices

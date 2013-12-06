@@ -179,10 +179,11 @@ my $chado = Sequences::ExperimentalFeatures->new(%argv);
 my $tree_io = Phylogeny::Tree->new();
 
 # Result files
-my $allele_fasta_file = $ROOT . 'panseq_pg_amr_results/locus_alleles.fasta';
-my $allele_pos_file = $ROOT . 'panseq_pg_amr_results/pan_genome.txt';
-my $msa_dir = $ROOT . 'msa/';
-my $tree_dir = $ROOT . 'tree/';
+my $allele_fasta_file = $ROOT . 'panseq_pg_results/locus_alleles.fasta';
+my $allele_pos_file = $ROOT . 'panseq_pg_results/pan_genome.txt';
+my $function_file = $ROOT . 'panseq_nr_results/anno.txt';
+my $msa_dir = $ROOT . 'pg_msa/';
+my $tree_dir = $ROOT . 'pg_tree/';
 
 
 # BEGIN
@@ -197,6 +198,9 @@ $chado->file_handles();
 
 
 # Save data for inserting into database
+
+# Load function descriptions for newly detected pan-genome regions
+my %func_anno;
 
 # Load locus locations
 my %loci;
@@ -222,28 +226,58 @@ while (my $line = <$in>) {
 
 close $in;
 
-# Load allele sequences
-my ($new, $replace) = load_msa();
+# Load loci sequences
+my ($new, $replace, $pangenome) = load_msa();
 
 
 # Create DB entries
-foreach my $locus (keys %$new) {
+foreach my $pgregion (keys %$new) {
 	
 	my %sequence_group;
-	my $allele_hash = $new->{$locus};
+	my $allele_hash = $new->{$pgregion};
 	
-	# If the pangenome reference is novel 
 	
-	# Create DB entries for each new allele
+	# pangenome
+	my $query_id = $pangenome->{$pgregion}->{id};
+	my $in_core = $pangenome->{$pgregion}->{core}; # should be 0
+	
+	my $tree_file = $query_id;
+	
+	if($pangenome->{$pgregion}->{novel}) {
+		# If the pangenome reference is novel, add it to database
+		my $func = 'test_function';
+		my $func_id = 'test_function_ID';
+		
+		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $pangenome->{$pgregion}->{seq});
+		
+		# Cache feature id info for reference pangenome fragment
+		$query_id = $pg_feature_id;
+		$tree_file = $pgregion;
+		
+	} else {
+		# Update pangenome alignment sequence
+		update_reference_fragment($query_id, $pangenome->{$pgregion}->{seq});
+	}
+	
+	# Create DB entries for each new loci
 	foreach my $header (keys %$allele_hash) {
-		allele($locus, $header, $allele_hash->{$header}, \%sequence_group);
+		add_pangenome_loci($pgregion, $query_id, $header, $allele_hash->{$header}, \%sequence_group);
 	}
 	
-	# Update sequences for alleles previously loaded in DB (in case alignments have changed).
-	my $update_hash = $replace->{$locus};
+	# Update sequences for loci previously loaded in DB (in case alignments have changed).
+	my $update_hash = $replace->{$pgregion};
 	foreach my $header (keys %$update_hash) {
-		update_allele_sequence($locus, $header, $update_hash->{$header}, \%sequence_group);
+		update_pangenome_loci($header, $update_hash->{$header}, \%sequence_group);
 	}
+	
+	# Compute and load tree for this segment
+	load_tree($tree_file, $query_id, \%sequence_group);
+	
+	# Compute and load snps for this segment
+	if($in_core) {
+		compute_snps($query_id, $pangenome->{$pgregion}->{seq}, \%sequence_group, $allele_hash);
+	}
+	
 }
 
 # Finalize and load into DB
@@ -300,32 +334,28 @@ sub cleanup_handler {
     exit(1);
 }
 
-=head2 allele
+=head2 add_pangenome_loci
 
 
 =cut
 
-sub allele {
-	my ($locus, $header, $seq, $seq_group) = @_;
+sub add_pangenome_loci {
+	my ($pg_key, $pg_id, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	
 	# Parse allele FASTA header
 	my $tmp_label = $header;
 	my ($tracker_id) = ($tmp_label =~ m/upl_(\d+)/);
-	croak "Invalid allele label: $header\n" unless $tracker_id;
+	croak "Invalid loci label: $header\n" unless $tracker_id;
 	
 	# privacy setting
 	my $is_public = 0;
 	my $pub_value = 'FALSE';
 	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
 	# location hash
-	my $loc_hash = $loci{$locus}->{$header};
-	croak "Missing location information for locus allele $locus in contig $header.\n" unless defined $loc_hash;
+	my $loc_hash = $loci{$pg_key}->{$header};
+	croak "Missing location information for pangenome region $pg_key in contig $header.\n" unless defined $loc_hash;
 	
 	# Retrieve contig_collection and contig feature IDs
 	my $contig_num = $loc_hash->{contig};
@@ -354,19 +384,18 @@ sub allele {
 	$seqlen = $max - $min;
 	
 	# type 
-	my $type = $chado->feature_types('allele');
+	my $type = $chado->feature_types('locus');
 	
-	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
-	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
+	# uniquename - based on contig location and so should be unique (can't have duplicate loci at same spot) 
+	my $uniquename = "locus:$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
-	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
-	my $is_new = 1;
+	my $allele_id = $chado->validate_allele($pg_id,$contig_collection_id,$uniquename,$pub_value);
 	
 	if($allele_id) {
 		# Allele matching properties already exists in table.
-		croak "Allele matching properties already exists in DB \n".
-			"(query:$query_id, cc:$contig_collection_id, c:$contig_id, un: $uniquename, public:$pub_value).";
+		croak "Locus matching properties already exists in DB \n".
+			"(query:$pg_id, cc:$contig_collection_id, c:$contig_id, un:$uniquename, public:$pub_value).";
 			
 	} else {
 		# NEW
@@ -386,12 +415,12 @@ sub allele {
 		my $dbxref = '\N';
 		
 		# uniquename & name
-		my $name = "$query_name allele";
+		my $name = "$pg_id locus";
 		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
-		$chado->handle_query_hit($curr_feature_id, $query_id, $is_public);
+		$chado->handle_pangenom_loci($curr_feature_id, $pg_id, $is_public);
 		
 		# Additional Feature Types
 		$chado->add_types($curr_feature_id, $is_public);
@@ -399,17 +428,14 @@ sub allele {
 		# Sequence location
 		$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
 		
-		# Feature properties
-		my $upload_id = $is_public ? undef : $collection_info->{upload};
-		$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
-		
 		# Print feature
+		my $upload_id = $is_public ? undef : $collection_info->{upload};
 		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
 		$chado->nextfeature($is_public, '++');
 		
 		# Update cache
 		$chado->loci_cache(feature_id => $curr_feature_id, uniquename => $uniquename, type_id => $type, genome_id => $contig_collection_id,
-			contig_id => $contig_id, query_id => $query_id, is_public => $pub_value);
+			contig_id => $contig_id, query_id => $pg_id, is_public => $pub_value);
 			
 		$allele_id = $curr_feature_id;
 	}
@@ -419,7 +445,9 @@ sub allele {
 		allele => $allele_id,
 		#copy => $allele_num,
 		public => $is_public,
-		is_new => $is_new
+		contig => $contig_id,
+		is_new => 1,
+		seq => $seq
 	};
 	
 }
@@ -436,8 +464,12 @@ sub load_msa {
 	open($in, "<", $loci_file) or die "Unable to read file $loci_file containing list of loci ($!).\n";
 	while(my $locus = <$in>) {
 		chomp $locus;
-		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-		croak "Missing query gene ID in locus line: $_\n" unless $query_id && $query_name;
+		my ($ftype, $query_id) = ($locus =~ m/(\w+_)(\d+)/);
+		croak "Missing query gene ID in locus line: $_\n" unless $query_id && $ftype;
+		
+		if($ftype eq 'nr_') {
+			$query_id = "nr_$query_id";
+		}
 		
 		my $msa_file = $msa_dir . "$query_id.aln";
 		my $has_new = 0;
@@ -453,26 +485,35 @@ sub load_msa {
 				# New
 				$new{$locus}{$id} = $entry->seq;
 				$has_new = 1;
-			} elsif($id =~ m/^pg_/) {
+				
+			} elsif($id =~ m/^pg(acc|cor)_(\d+)/) {
 				# Reference sequence
-				$pangenome{$locus} = {
-					id => $id,
-					seq => $entry->seq,
-					novel => 0
+				my $in_core = 0;
+				if($1 eq 'cor') {
+					$in_core = 1;
 				}
+				$pangenome{$locus} = {
+					id => $2,
+					seq => $entry->seq,
+					novel => 0,
+					core => $in_core
+				};
 				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
 				$has_ref = 1;
-			} elsif($id =~ m/^nr_/) {
+				
+			} elsif($id =~ m/^nr_(\d+)/) {
 				# Reference sequence, not currently in DB
 				$pangenome{$locus} = {
-					id => $id,
+					id => $1,
 					seq => $entry->seq,
-					novel => 0
-				}
+					novel => 1,
+					core => 0, # All new sequences are not in core
+				};
 				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
 				$has_ref = 1;
+				
 			} else {
-				# Already in DB
+				# Other genome loci already in DB
 				$replace{$locus}{$id} = $entry->seq;
 			}
 		}
@@ -487,13 +528,12 @@ sub load_msa {
 }
 
 
-sub update_allele_sequence {
-	my ($locus, $header, $seq, $seq_group) = @_;
+sub update_pangenome_loci {
+	my ($header, $seq, $seq_group) = @_;
 	
 	# IDs
-	my $contig_collection = $header;
-	my ($access, $contig_collection_id, $allele_id) = ($contig_collection =~ m/(public|private)_(\d+)\|(\d+)/);
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	my ($access, $contig_collection_id, $locus_id) = ($header =~ m/(public|private)_(\d+)\|(\d+)/);
+	croak "Invalid contig_collection ID format: $header\n" unless $access && $locus_id;
 	
 	# privacy setting
 	my $is_public = $access eq 'public' ? 1 : 0;
@@ -505,30 +545,132 @@ sub update_allele_sequence {
 	my $seqlen = length($seq);
 	
 	# type 
-	my $type = $chado->feature_types('allele');
+	my $type = $chado->feature_types('locus');
 	
 	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
-	$chado->print_uf($allele_id,$allele_id,$type,$seqlen,$residues,$is_public);
+	$chado->print_uf($locus_id,$locus_id,$type,$seqlen,$residues,$is_public);
 		
 	$seq_group->{$header} = {
 		genome => $contig_collection_id,
-		allele => $allele_id,
+		allele => $locus_id,
 		#copy => 1,
 		public => $is_public,
 		is_new => 0
 	};
 }
 
-sub load_tree {
-	my ($query_id, $seq_group) = @_;
+sub update_reference_fragment {
+	my ($pg_id, $seq) = @_;
 	
-	my $tree_file = $tree_dir . "$query_id.phy";
+	# privacy setting
+	my $is_public = 1; # Pangenome regions are always in public table
+	my $pub_value = 'TRUE';
+	
+	# alignment sequence
+	my $residues = $seq;
+	$seq =~ tr/-//;
+	my $seqlen = length($seq);
+	
+	# type 
+	my $type = $chado->feature_types('pangenome');
+	
+	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
+	$chado->print_uf($pg_id,$pg_id,$type,$seqlen,$residues,$is_public);
+}
+
+
+sub load_tree {
+	my ($tname, $query_id, $seq_group) = @_;
+	
+	my $tree_file = $tree_dir . "$tname.phy";
 	
 	# slurp tree and convert to perl format
 	my $tree = $tree_io->newickToPerlString($tree_file);
 	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_group);
+	
+}
+
+
+sub compute_snps {
+	my ($query_id, $refseq, $seq_group) = @_;
+	
+	return unless scalar keys %$seq_group > 1; # need 2 or more sequences for snps
+	
+	# Compute snps for each sequence relative to the reference
+	foreach my $genome (keys %$seq_group) {
+		
+		if($seq_group->{$genome}->{is_new}) {
+			my $ghash = $seq_group->{$genome};
+			find_snps($refseq, $query_id, $ghash);
+		}
+	}
+}
+
+sub find_snps {
+	my $ref_seq = shift;
+	my $ref_id = shift;
+	my $genome_info = shift;
+	
+	my $comp_seq = $genome_info->{seq};
+	my $contig_collection = $genome_info->{genome};
+	my $contig = $genome_info->{contig};
+	my $locus = $genome_info->{allele};
+	my $is_public = $genome_info->{public};
+	
+	# Add row in SNP alignment table for genome, if it doesn't exist
+	$chado->add_snp_row($contig_collection,$is_public);
+	
+	# Iterate through each aligned sequence, identifying mismatches
+	my $l = length($ref_seq)-1;
+	my $rpos = 0;
+	my $cpos = 0;
+	my $rgap_offset = 0;
+	my $cgap_offset = 0;
+		
+	for my $i (0 .. $l) {
+        my $c1 = substr($comp_seq, $i, 1);
+        my $c2 = substr($ref_seq, $i, 1);
+        
+        # Advance position counters
+        if($c1 eq '-') {
+        	$cgap_offset++;
+        } else {
+        	$cpos++;
+        	$cgap_offset = 0 if $cgap_offset;
+        }
+        
+        if($c2 eq '-') {
+        	$rgap_offset++;
+        } else {
+        	$rpos++;
+        	$rgap_offset = 0 if $rgap_offset;
+        }
+       
+        if($c1 ne $c2) {
+        	# Found snp or indel
+        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $cpos, $cgap_offset, $is_public);
+        }
+	}
+}
+
+sub build_genome_tree {
+	
+	# write alignment file
+	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
+	$tree_io->writeSnpAlignment($tmp_file);
+	
+	# clear output file for safety
+	my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
+	open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+	close $out;
+	
+	# build newick tree
+	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+	
+	# Load tree into database
+	my $tree = $tree_io->loadTree($tree_file);
 	
 }
 

@@ -38,19 +38,19 @@ use Carp;
 use Getopt::Long;
 
 
-my ($tree_file);
+my ($tree_file,$config);
 
 GetOptions(
     'tree=s' => \$tree_file,
+    'config=s' => \$config,
 );
 
-# Connect to DB
 croak "Missing argument. You must supply the filename containing the newick tree data.\n" unless $tree_file;
+croak "Missing argument. You must supply the config filename.\n" unless $config;
 
-my $t = Phylogeny::Tree->new;
-
+my $t = Phylogeny::Tree->new(config => $config);
 
 $t->loadTree($tree_file);
 
-
+exit(0);
 

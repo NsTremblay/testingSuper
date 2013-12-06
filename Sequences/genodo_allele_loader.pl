@@ -179,7 +179,7 @@ my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
 # Intialize the Tree building module
 my $tree_builder = Phylogeny::TreeBuilder->new();
-my $tree_io = Phylogeny::Tree->new();
+my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
 
 
 # BEGIN
@@ -442,7 +442,8 @@ sub allele {
 		allele => $allele_id,
 		#copy => $allele_num,
 		public => $is_public,
-		is_new => $is_new
+		is_new => $is_new,
+		seq => $seq
 	};
 	
 }

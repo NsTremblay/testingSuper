@@ -262,12 +262,13 @@ if(@tracking_ids) {
 	# Check genome directory is up-to-date
 	my $g_dir = $data_directory . 'genomes/';
 	my $g_file = $g_dir . 'pan-genomes.ffn';
-	download_pangenomes($g_file);
+	my $core_file = $g_dir . 'core-genomes.ffn';
+	my $acc_file = $g_dir . 'accessory-genomes.ffn';
+	download_pangenomes($g_file, $core_file, $acc_file);
 	
 	# Identify any novel regions for new genomes
 	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
 	
-	# Identify known pan-genome regions in new genomes
 	if($nr_fasta_file) {
 		# If new regions identified, need to add to file of pan-genome regions
 		my $g_file2 = $job_dir . '/pan-genomes.ffn';
@@ -288,6 +289,8 @@ if(@tracking_ids) {
 		
 		$g_file = $g_file2;
 	}
+	
+	# Identify known pan-genome regions in new genomes
 	INFO "Pan-genome region fasta file: $g_file.";
 	pangenome_analysis($job_dir, $g_file);
 	
@@ -827,7 +830,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 	while(my $locus_block = <$in>) {
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my ($ftype, $query_id, $query_name) = ($locus =~ m/(\w_)*(\d+)\|(.+)/);
+		my ($ftype, $query_id) = ($locus =~ m/(\w+_)*(\d+)/);
 		
 		# Record locus
 		print $rec "$locus\n";
@@ -906,7 +909,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 				my $header = $1;
 				my $seq = $2;
 				
-				$seq =~ s/-//g; # Remove gaps
+				$seq =~ tr/-//; # Remove gaps
 				
 				# Print to tmp file
 				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
@@ -986,30 +989,62 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 
 =head2 download_pangenomes
 
-Make sure the pan-genome file is up-to-date
+Make sure the pan-genome files are up-to-date
 
 =cut
 
 sub download_pangenomes {
-	my ($genome_file) = @_;
+	my ($genome_file, $core_file, $acc_file) = @_;
 	
-	INFO "Downloading pan-genomes into data directory file $genome_file.";
+	INFO "Downloading pangenome fragments into data directory file $genome_file.";
 	
+	# If there is no core pan-genomes file, download,
+	# however this set is stable across runs
+	unless (-e $core_file && -s $core_file) {
+		my $sql = 
+		qq/SELECT f.feature_id, f.residues
+		FROM feature f, cvterm t1, cvterm t2, feature_cvterm ft
+		WHERE f.type_id = t1.cvterm_id AND t1.name = 'pangenome'
+		  AND f.feature_id = ft.feature_id AND ft.cvterm_id = t2.cvterm_id
+		  AND t2.name = 'core_genome' AND ft.is_not = FALSE
+		/;
+		
+		open my $out, ">", $core_file or die "Unable to write core pan-genome sequences to file $core_file ($!).";
+		my $sth = $dbh->prepare($sql);
+		
+		# Retrieve core pan-genome fragments in DB
+		$sth->execute();
+		while(my ($id, $seq) = $sth->fetchrow_array) {
+			$seq =~ s/-//g; # Remove gaps
+			print $out ">pgcor_$id\n$seq\n";
+		}
+		
+		close $out;
+		
+		INFO "Downloaded core pangenome fragments into file $core_file.";
+		
+	} else {
+		INFO "Using core pangenomes in file $core_file.";
+	}
+	
+	# Check if accessory genomes are up-to-date
 	my $sql = 
-qq/SELECT f.feature_id
-FROM feature f, cvterm t1 
-WHERE f.type_id = t1.cvterm_id AND t1.name = 'pangenome'
-/;
+	qq/SELECT f.feature_id
+	FROM feature f, cvterm t1, cvterm t2, feature_cvterm ft
+	WHERE f.type_id = t1.cvterm_id AND t1.name = 'pangenome'
+	  AND f.feature_id = ft.feature_id AND ft.cvterm_id = t2.cvterm_id
+	  AND t2.name = 'core_genome' AND ft.is_not = TRUE
+	/;
 
 	my $sql2 = 
-qq/SELECT f.feature_id, f.residues
-FROM feature f
-WHERE f.feature_id IN (
-/;
+	qq/SELECT f.feature_id, f.residues
+	FROM feature f
+	WHERE f.feature_id IN (
+	/;
 
 	my $sth1 = $dbh->prepare($sql);
 	
-	# Determine which pan-genome loci are missing in data directory
+	# Determine which accessory pan-genome fragments are missing
 	my %genomes;
 	my @missing;
 	
@@ -1017,20 +1052,18 @@ WHERE f.feature_id IN (
 	$sth1->execute();
 	while(my ($id) = $sth1->fetchrow_array) {
 		$genomes{$id}=0;
-		
 	}
 	
 	# Check against genomes in file
-	if(-e $genome_file) {
+	if(-e $acc_file) {
 		open my $in, "<", $genome_file or die "Unable to read genome fasta file $genome_file ($!).";
 		local $/ = "\n>";
 		while(my $block = <$in>) {
 			my ($header, $seq) = split(/\n/, $block);
 			
-			my ($pg_id) = ($header =~ m/pg_(\d+)/);
+			my ($pg_id) = ($header =~ m/pgacc_(\d+)/);
 			
-			$genomes{$pg_id} = 1 if length $seq;
-			
+			$genomes{$pg_id} = 1;
 		}
 		close $in;
 	}
@@ -1041,7 +1074,7 @@ WHERE f.feature_id IN (
 	
 	
 	my $num = scalar @missing;
-	INFO "$num pan-genome sequences need to be dowloaded.";
+	INFO "$num accessory pan-genome sequences need to be dowloaded.";
 	
 	if(@missing) {
 		$sql2 .= join(',',@missing);
@@ -1049,17 +1082,21 @@ WHERE f.feature_id IN (
 		my $sth2 = $dbh->prepare($sql2);
 		$sth2->execute();
 		
-		open my $out, ">>", $genome_file or die "Unable to append to genome fasta file $genome_file ($!).";
+		open my $out, ">>", $acc_file or die "Unable to append to pangenome fasta file $acc_file ($!).";
 		while(my ($pgid,$seq) = $sth2->fetchrow_array) {
 			
 			$seq =~ s/-//g; # Remove gaps
-			print $out ">pg_$pgid\n$seq\n";
+			print $out ">pgacc_$pgid\n$seq\n";
 		}
 		close $out;
 	}
+	INFO "New accessory pangenome sequences downloaded and appended to file $acc_file.";
+	
+	my $syscmd = "cat $core_file $acc_file > $genome_file";
+	
+	system($syscmd) == 0 or die "Unable to concatenate files $core_file and $acc_file into pangenome sequences file $genome_file ($!)";
 
-	INFO "Pan-genome download completed and appended to file.";
-
+	INFO "Pan-genome sequences in file $genome_file up-to-date.";
 }
 
 =head2 load_vf
@@ -1112,32 +1149,4 @@ sub blast_new_regions {
 	} else {
 		die "New pan-genome region BLAST job failed ($stderr).";
 	}
-}
-
-sub find_snps {
-	my $ref_seq = shift;
-	my $ref_id = shift;
-	my $comp_seq = shift;
-	my $contig_collection = shift;
-	my $contig = shift;
-	
-	# Iterate through each aligned sequence, identifying mismatches
-	my $l = length($ref_seq)-1;
-	my $ref_pos = 0;
-	my $comp_pos = 0;
-		
-	for my $i (0 .. $l) {
-        my $c1 = substr($comp_seq, $i, 1);
-        my $c2 = substr($comp_seq, $i, 1);
-        	
-        $comp_pos++ unless $c1 eq '-'; # don't count gaps as a position
-        $ref_pos++ unless $c2 eq '-'; # don't count gaps as a position
-        	
-        if($c1 ne $c2) {
-        	# Found snp
-        	$chado->handle_snp($ref_id, $c2, $ref_pos, $contig_collection, $contig, $c1, $comp_pos);
-        }
-	}
-    
-	
 }

@@ -30,17 +30,21 @@ __PACKAGE__->table("snps_genotypes");
   is_nullable: 0
   sequence: 'snps_genotypes_snp_genotype_id_seq'
 
-=head2 genome_id
+=head2 feature_id
 
   data_type: 'text'
   is_nullable: 0
   original: {data_type => "varchar"}
 
-=head2 feature_id
+Strain ID
+
+=head2 snp_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
+
+Stores a snp ID from the snps table
 
 =head2 snp_a
 
@@ -84,13 +88,13 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "snps_genotypes_snp_genotype_id_seq",
   },
-  "genome_id",
+  "feature_id",
   {
     data_type   => "text",
     is_nullable => 0,
     original    => { data_type => "varchar" },
   },
-  "feature_id",
+  "snp_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "snp_a",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
@@ -116,24 +120,24 @@ __PACKAGE__->set_primary_key("snp_genotype_id");
 
 =head1 RELATIONS
 
-=head2 feature
+=head2 snp
 
 Type: belongs_to
 
-Related object: L<Database::Chado::Schema::Result::Feature>
+Related object: L<Database::Chado::Schema::Result::Snp>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "feature",
-  "Database::Chado::Schema::Result::Feature",
-  { feature_id => "feature_id" },
+  "snp",
+  "Database::Chado::Schema::Result::Snp",
+  { snp_id => "snp_id" },
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-28 15:38:00
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3Qg+o7+FBVNTtHaDgdoy1w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ddwscWDWTMmXDlJXOiT2ZQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

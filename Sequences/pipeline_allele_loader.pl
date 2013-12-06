@@ -182,8 +182,8 @@ my $tree_io = Phylogeny::Tree->new();
 my $allele_fasta_file = $ROOT . 'panseq_vf_amr_results/locus_alleles.fasta';
 my $allele_pos_file = $ROOT . 'panseq_vf_amr_results/pan_genome.txt';
 my $binary_file = $ROOT . 'panseq_vf_amr_results/binary_table.txt';
-my $msa_dir = $ROOT . 'msa/';
-my $tree_dir = $ROOT . 'tree/';
+my $msa_dir = $ROOT . 'vf_msa/';
+my $tree_dir = $ROOT . 'vf_tree/';
 
 
 # BEGIN
@@ -210,8 +210,13 @@ while (my $line = <$in>) {
 	
 	if($allele > 0) {
 		# Hit
+		
+		# query gene
+		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
+		
 		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
-		$loci{$locus}->{$genome} = {
+		$loci{$query_id}->{$genome} = {
 			allele => $allele,
 			start => $start,
 			end => $end,
@@ -230,19 +235,25 @@ my ($new, $replace) = load_msa();
 # Create DB entries
 foreach my $locus (keys %$new) {
 	
+	# query gene
+	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
+	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
+	
 	my %sequence_group;
 	my $allele_hash = $new->{$locus};
 	
 	# Create DB entries for each new allele
 	foreach my $header (keys %$allele_hash) {
-		allele($locus, $header, $allele_hash->{$header}, \%sequence_group);
+		allele($query_id, $header, $allele_hash->{$header}, \%sequence_group);
 	}
 	
 	# Update sequences for alleles previously loaded in DB (in case alignments have changed).
 	my $update_hash = $replace->{$locus};
 	foreach my $header (keys %$update_hash) {
-		update_allele_sequence($locus, $header, $update_hash->{$header}, \%sequence_group);
+		update_allele_sequence($header, $update_hash->{$header}, \%sequence_group);
 	}
+	
+	load_tree($query_id, \%sequence_group);
 }
 
 # Load presence/absence data
@@ -309,7 +320,7 @@ sub cleanup_handler {
 =cut
 
 sub allele {
-	my ($locus, $header, $seq, $seq_group) = @_;
+	my ($query_id, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	
@@ -322,13 +333,9 @@ sub allele {
 	my $is_public = 0;
 	my $pub_value = 'FALSE';
 	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
 	# location hash
-	my $loc_hash = $loci{$locus}->{$header};
-	croak "Missing location information for locus allele $locus in contig $header.\n" unless defined $loc_hash;
+	my $loc_hash = $loci{$query_id}->{$header};
+	croak "Missing location information for locus allele $query_id in contig $header.\n" unless defined $loc_hash;
 	
 	# Retrieve contig_collection and contig feature IDs
 	my $contig_num = $loc_hash->{contig};
@@ -389,7 +396,7 @@ sub allele {
 		my $dbxref = '\N';
 		
 		# uniquename & name
-		my $name = "$query_name allele";
+		my $name = "$query_id allele";
 		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
@@ -452,11 +459,11 @@ sub load_msa {
 			
 			if($id =~ m/^upl_/) {
 				# New
-				$new{$locus}{$id} = $entry->seq;
+				$new{$query_id}{$id} = $entry->seq;
 				$has_new = 1;
 			} else {
 				# Already in DB
-				$replace{$locus}{$id} = $entry->seq;
+				$replace{$query_id}{$id} = $entry->seq;
 			}
 		}
 		
@@ -470,12 +477,11 @@ sub load_msa {
 
 
 sub update_allele_sequence {
-	my ($locus, $header, $seq, $seq_group) = @_;
+	my ($header, $seq, $seq_group) = @_;
 	
 	# IDs
-	my $contig_collection = $header;
-	my ($access, $contig_collection_id, $allele_id) = ($contig_collection =~ m/(public|private)_(\d+)\|(\d+)/);
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	my ($access, $contig_collection_id, $allele_id) = ($header =~ m/(public|private)_(\d+)\|(\d+)/);
+	croak "Invalid contig_collection ID format: $header\n" unless $access;
 	
 	# privacy setting
 	my $is_public = $access eq 'public' ? 1 : 0;
