@@ -11,14 +11,8 @@
 <body style="background-color:#796e6c" onload="doPoll()">
 	<TMPL_INCLUDE name="nav_bar.tmpl">
 
-	<div class="container" style="background-color:#ffffff;padding:10px">
-		<h3>Please wait while we generate your results...</h3>
-		<h4 class="help-block">Here's a few things you can do in the meantime:</h4>
-		<ul>
-			<li><p>You can wait. Once the results are ready, the page will automatically forward you to them.</p></li> 
-			<li><p>You can open up another tab or browser to do other things while you wait but don't close this page without bookmarking it or you will lose your results.</p></li>
-			<li><p>Bookmark this page and comeback to it later. You can access the results at anytime by opening up the bookmarked page. We will keep your results for 30 days.</p></li>
-		</ul>
+	<div id="status" class="container" style="background-color:#ffffff;padding:10px">
+		<div id="wheel-loader" style="margin:10px 0px 10px 0px" align="middle"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>
 	</div>
 	<TMPL_INCLUDE name="footer.tmpl">
 </body>
@@ -36,11 +30,25 @@ function doPoll() {
 	})
 	.done(function(data) {
 		console.log(data);
-		if (data == 'completed') {
+		if (data != 'in progress') {
+			$('html').empty();
+			$('html').append(data);
 			return;
 		}
 		else {
-			setTimeout(function(){doPoll()},5000);
+			$('#status').empty();
+			$('#status').append(
+				'<div class="row-fluid"><h3>Please wait while we generate your results...</h3><p id="status_update" style="color:#d41616;display:none"> Current status: '+data+'</p></div>'
+				+'<h4 class="help-block">Here\'s a few things you can do in the meantime:</h4>'
+				+'<ul>'
+				+'<li><p>You can wait. Once the results are ready, the page will automatically forward you to them.</p></li>'
+				+'<li><p>You can open up another tab or browser to do other things while you wait but don\'t close this page without bookmarking it or you will lose your results.</p></li>'
+				+'<li><p>Bookmark this page and comeback to it later. You can access the results at anytime by opening up the bookmarked page. We will keep your results for 30 days.</p></li>'
+				+'</ul>'
+				);
+			$('#status_update').show("slow");
+			setTimeout(function(){$('#status_update').hide("slow")},3000);
+			setTimeout(function(){doPoll()},10000);
 		}
 	});
 }
