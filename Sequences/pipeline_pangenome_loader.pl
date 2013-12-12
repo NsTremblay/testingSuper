@@ -175,8 +175,9 @@ $argv{use_cached_names} = 1; # Pull contig names from DB tmp table
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
-# Intialize the Tree loading module
-my $tree_io = Phylogeny::Tree->new();
+# Intialize the Tree building module
+my $tree_builder = Phylogeny::TreeBuilder->new();
+my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
 
 # Result files
 my $allele_fasta_file = $ROOT . 'panseq_pg_results/locus_alleles.fasta';
@@ -201,6 +202,14 @@ $chado->file_handles();
 
 # Load function descriptions for newly detected pan-genome regions
 my %func_anno;
+open IN, "<", $function_file or croak "[Error] unable to read file $function_file ($!).\n";
+
+while(<IN>) {
+	chomp;
+	my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
+	$func_anno{$q} = [$s,$t];
+}
+close IN;
 
 # Load locus locations
 my %loci;
@@ -245,19 +254,27 @@ foreach my $pgregion (keys %$new) {
 	
 	if($pangenome->{$pgregion}->{novel}) {
 		# If the pangenome reference is novel, add it to database
-		my $func = 'test_function';
-		my $func_id = 'test_function_ID';
+		my $func = undef;
+		my $func_id = undef;
 		
-		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $pangenome->{$pgregion}->{seq});
+		if($func_anno{$pgregion}) {
+			($func_id, $func) = @{$func_anno{$pgregion}};
+		}
+		
+		my $seq = $pangenome->{$pgregion}->{seq};
+		$seq =~ tr/-//; # Remove gaps, store only raw sequence
+		
+		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
 		
 		# Cache feature id info for reference pangenome fragment
 		$query_id = $pg_feature_id;
 		$tree_file = $pgregion;
 		
-	} else {
-		# Update pangenome alignment sequence
-		update_reference_fragment($query_id, $pangenome->{$pgregion}->{seq});
-	}
+	} 
+#	else {
+#		# Update pangenome alignment sequence
+#		update_reference_fragment($query_id, $pangenome->{$pgregion}->{seq});
+#	}
 	
 	# Create DB entries for each new loci
 	foreach my $header (keys %$allele_hash) {
@@ -275,7 +292,7 @@ foreach my $pgregion (keys %$new) {
 	
 	# Compute and load snps for this segment
 	if($in_core) {
-		compute_snps($query_id, $pangenome->{$pgregion}->{seq}, \%sequence_group, $allele_hash);
+		compute_snps($query_id, $pangenome->{$pgregion}->{seq}, \%sequence_group, $update_hash);
 	}
 	
 }
@@ -559,24 +576,24 @@ sub update_pangenome_loci {
 	};
 }
 
-sub update_reference_fragment {
-	my ($pg_id, $seq) = @_;
-	
-	# privacy setting
-	my $is_public = 1; # Pangenome regions are always in public table
-	my $pub_value = 'TRUE';
-	
-	# alignment sequence
-	my $residues = $seq;
-	$seq =~ tr/-//;
-	my $seqlen = length($seq);
-	
-	# type 
-	my $type = $chado->feature_types('pangenome');
-	
-	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
-	$chado->print_uf($pg_id,$pg_id,$type,$seqlen,$residues,$is_public);
-}
+#sub update_reference_fragment {
+#	my ($pg_id, $seq) = @_;
+#	
+#	# privacy setting
+#	my $is_public = 1; # Pangenome regions are always in public table
+#	my $pub_value = 'TRUE';
+#	
+#	# alignment sequence
+#	my $residues = $seq;
+#	$seq =~ tr/-//;
+#	my $seqlen = length($seq);
+#	
+#	# type 
+#	my $type = $chado->feature_types('pangenome');
+#	
+#	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
+#	$chado->print_uf($pg_id,$pg_id,$type,$seqlen,$residues,$is_public);
+#}
 
 
 sub load_tree {
@@ -594,9 +611,12 @@ sub load_tree {
 
 
 sub compute_snps {
-	my ($query_id, $refseq, $seq_group) = @_;
+	my ($query_id, $refseq, $seq_group, $db_snp_alignments) = @_;
 	
 	return unless scalar keys %$seq_group > 1; # need 2 or more sequences for snps
+	
+	my $ambiguous_regions = $chado->snp_audit($query_id,$refseq);
+	$chado->handle_insert_blocks($ambiguous_regions, $query_id, $refseq, $db_snp_alignments) if @$ambiguous_regions;
 	
 	# Compute snps for each sequence relative to the reference
 	foreach my $genome (keys %$seq_group) {
@@ -625,22 +645,16 @@ sub find_snps {
 	# Iterate through each aligned sequence, identifying mismatches
 	my $l = length($ref_seq)-1;
 	my $rpos = 0;
-	my $cpos = 0;
 	my $rgap_offset = 0;
-	my $cgap_offset = 0;
-		
+	
+	my $l2 = length($comp_seq)-1;
+	croak "Error: alignment lengths do not match for reference sequence $ref_id and locus sequence $locus ($l vs $l2).\n" if $l != $l2;
+	
 	for my $i (0 .. $l) {
         my $c1 = substr($comp_seq, $i, 1);
         my $c2 = substr($ref_seq, $i, 1);
         
-        # Advance position counters
-        if($c1 eq '-') {
-        	$cgap_offset++;
-        } else {
-        	$cpos++;
-        	$cgap_offset = 0 if $cgap_offset;
-        }
-        
+        # Advance position counters     
         if($c2 eq '-') {
         	$rgap_offset++;
         } else {
@@ -650,7 +664,7 @@ sub find_snps {
        
         if($c1 ne $c2) {
         	# Found snp or indel
-        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $cpos, $cgap_offset, $is_public);
+        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $is_public);
         }
 	}
 }
@@ -658,11 +672,11 @@ sub find_snps {
 sub build_genome_tree {
 	
 	# write alignment file
-	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
+	my $tmp_file = $TMPDIR . 'genodo_genome_aln.txt';
 	$tree_io->writeSnpAlignment($tmp_file);
 	
 	# clear output file for safety
-	my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
+	my $tree_file = $TMPDIR . 'genodo_genome_tree.txt';
 	open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
 	close $out;
 	

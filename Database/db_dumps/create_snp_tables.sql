@@ -76,9 +76,7 @@ CREATE TABLE snp_variation (
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
 	locus            integer NOT NULL,
-	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
-	gap_offset       integer NOT NULL DEFAULT 0
+	allele           char(1) NOT NULL DEFAULT 'n'
 );
 
 ALTER TABLE public.snp_variation OWNER TO postgres;
@@ -144,9 +142,7 @@ CREATE TABLE private_snp_variation (
 	contig_collection integer NOT NULL,
 	contig           integer NOT NULL,
 	locus            integer NOT NULL,
-	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
-	gap_offset       integer NOT NULL DEFAULT 0
+	allele           char(1) NOT NULL DEFAULT 'n'
 );
 
 ALTER TABLE public.private_snp_variation OWNER TO postgres;

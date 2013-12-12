@@ -33,6 +33,7 @@ $0 - Runs programs to do panseq analyses and load them into the DB for newly sub
  --config          INI style config file containing DB connection parameters
  --noload          Create bulk load files, but don't actually load them.
  --remove_lock     Remove the lock to allow a new process to run
+ --recover         Rebuild all caches
  --help            Detailed manual pages
  --email           Send email notification when script terminates unexpectedly
  --test            Run in test mode
@@ -69,10 +70,23 @@ it under the same terms as Perl itself.
 =cut
 
 # Globals
-my ($config, $noload, $remove_lock, $help, $email_notification,
+my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
 	$mail_address, $mail_notification_address, $mail_pass, $tmpdir,
 	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
 	$nr_location, $parallel_exe, $data_directory);
+	
+# Need to send emails from the front-end server
+sub send_email {
+	my $type = shift;
+	
+	# Via ssh, run email program on front-end
+	my @loading_args = ('ssh genodo',
+		'/home/genodo/computational_platform/Data/email_notification.pl',
+		'--config /home/genodo/config/genodo.cfg', "--notify $type");
+		
+	my $cmd = join(' ',@loading_args);
+	system($cmd);
+}
 
 sub error_handler {
 	# Log
@@ -88,24 +102,7 @@ sub error_handler {
     
     # Email
     if($email_notification) {
-    	my $transport = Email::Sender::Transport::SMTP::TLS->new(
-		    host     => 'smtp.gmail.com',
-		    port     => 587,
-		    username => $mail_address,
-		    password => $mail_pass,
-		);
-		
-		my $message = Email::Simple->create(
-		    header => [
-		        From           => $mail_address,
-		        To             => $mail_notification_address,
-		        Subject        => 'Genodo Pipelin Abnormal Termination',
-		        'Content-Type' => 'text/plain'
-		    ],
-		    body => "Genodo pipeline died on: ".localtime()."\n\nError: $m\n.",
-		);
-		
-		sendmail( $message, {transport => $transport} );
+    	send_email(1);
     }
     
     # Exit
@@ -117,6 +114,7 @@ GetOptions(
 	'config=s' => \$config,
     'noload' => \$noload,
     'remove_lock'  => \$remove_lock,
+    'recover' => \$recover,
     'help' => \$help,
     'email' => \$email_notification,
     'test' => \$test,
@@ -156,7 +154,11 @@ use constant REMOVE_LOCK => "DELETE FROM pipeline_status WHERE name = ?";
 use constant UPDATE_LOCK => "UPDATE pipeline_status SET status = ? WHERE name = ?";
 use constant INSERT_JOB => "UPDATE pipeline_status SET job = ? WHERE name = ?";
 # Genomes
-use constant FIND_JOBS => qq/SELECT tracker_id FROM tracker WHERE step = ? AND failed = FALSE/;
+use constant FIND_GENOMES => qq/SELECT tracker_id FROM tracker WHERE step = ? AND failed = FALSE/;
+use constant UPDATE_GENOME => qq/UPDATE tracker SET step = ? WHERE tracker_id = ?/;
+use constant SET_GENOME_JOB => qq/UPDATE tracker SET pid = ? WHERE tracker_id = ?/;
+use constant CLOSE_GENOME => qq/UPDATE tracker SET end_date = NOW() WHERE tracker_id = ?/;
+use constant FAIL_GENOME => qq/UPDATE tracker SET failed = TRUE WHERE tracker_id = ?/;
 # Genome names
 use constant CREATE_CACHE_TABLE =>
 	"CREATE TABLE pipeline_cache (
@@ -170,7 +172,13 @@ use constant CREATE_CACHE_TABLE =>
 use constant INSERT_CHR => "INSERT INTO pipeline_cache (tracker_id, chr_num, name, description) VALUES (?,?,?,?)";
 
 # Globals
-
+my $update_step_sth;
+my %tracker_step_values = (
+	pending => 1,
+	processing => 2,
+	completed => 3,
+	notified => 4
+);
 
 
 ################
@@ -216,6 +224,8 @@ if(@tracking_ids) {
 		mkdir $d or die "Unable to create directory $d ($!)";
 	}
 
+	my @genome_loading_args;
+	my $update_job_sth = $dbh->prepare(SET_GENOME_JOB);
 	foreach my $t (@tracking_ids) {
 		# Locate opt file
 		my $opt_file = $tmpdir . "genodo-options-$t.cfg";
@@ -240,6 +250,13 @@ if(@tracking_ids) {
 		# Update and move conf file
 		my $new_opt_file = $opt_dir . "genodo-options-$t.cfg";
 		$cfg->write($new_opt_file) or die "Unable to write config file to $new_opt_file ($!)\n";
+		
+		push @genome_loading_args, [$t, $new_opt_file];
+		
+		# Change status of genome to 'in progress'
+		$update_step_sth->execute($tracker_step_values{processing}, $t);
+		$update_job_sth->execute($job_id,$t);
+		
 	}
 	INFO "New data copied to analysis directory.";
 	
@@ -295,25 +312,23 @@ if(@tracking_ids) {
 	pangenome_analysis($job_dir, $g_file);
 	
 	# Re-build MSAs and trees for pan-genome fragments
-	#combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
-	
-	
+	combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
 	
 	# Load genome data
-	#load_genomes(\@tracking_ids, $opt_dir);
+	load_genomes(\@genome_loading_args);
 	
 	# Load VF/AMR results
-	#load_vf($job_dir);
+	load_vf($job_dir);
 	
 	# Load pan-genome results
+	load_pg($job_dir);
+	
+	# Recompute the metadata JSON objects
+	recompute_metadata();
+
+	# Update individual genome records, notify users, remove tmp files
 	
 	
-	
-	# Update meta tables
-	
-	# Update individual genome records
-	
-	# Remove tmp files
 	
 } else {
 	
@@ -383,7 +398,8 @@ sub init {
 	$blast_dir = '/home/matt/blast/bin/' if $test;
 	$nr_location = $data_directory . 'blast_databases/nr';
 	
-		
+	$update_step_sth = $dbh->prepare(UPDATE_GENOME);
+
 }
 
 
@@ -486,8 +502,8 @@ sub init_job {
 
 sub check_uploads {
 	
-	my $sth = $dbh->prepare(FIND_JOBS);
-	$sth->execute(2); # Step 2 = uploaded data printed to tmp directory
+	my $sth = $dbh->prepare(FIND_GENOMES);
+	$sth->execute($tracker_step_values{pending}); # Step 2 = uploaded data printed to tmp directory
 	
 	my @tracking_ids;
 	
@@ -536,27 +552,6 @@ sub sync_to_front {
 		die "Rsync of data director to front-end server failed ($stderr).";
 	}
 }
-
-=head2 msa_download
-
-sub msa_download {
-	
-	# Run loading script
-	my @loading_args = ("perl $FindBin::Bin/../Database/msa_fasta.pl",
-	'--msa_dir '. $data_directory . 'msa/', 
-	'--config '.$config);
-		
-	my $cmd = join(' ',@loading_args);
-	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
-	
-	if($success) {
-		INFO "MSA sequences sucessfully downloaded to analysis directory.";
-	} else {
-		die "MSA download to analysis directory failed ($stderr).";
-	}
-}
-
-=cut
 
 =head2 vf_analysis
 
@@ -837,18 +832,18 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		
 		# Retrieve the alignments for other sequences in the DB
 		
-		my ($seq_row1, $seq_row2, $pang_ref_seq, $pang_nr_seq);
+		my ($seq_row1, $seq_row2, $pang_ref_seq);
 		if($add_pang) {
 			# Look up pangenome alignments sequences: cache or DB.
 			if($ftype eq 'nr_') {
 				# New pan-genome fragement, get unaligned sequence from cache
-				$pang_nr_seq = $nr_sequences->{$query_id};
+				$pang_ref_seq = $nr_sequences->{$query_id};
 				$query_id = "nr_$query_id";
 				
-				die "There is no corresponding sequence for the novel pan-genome region $query_id." unless $pang_nr_seq;
+				die "There is no corresponding sequence for the novel pan-genome region $query_id." unless $pang_ref_seq;
 				
 			} else {
-				# Old pan-genome fragment, get aligned sequence from DB
+				# Old pan-genome fragment, get unaligned sequence from DB
 				$pang_sth->execute($query_id);
 				($pang_ref_seq, my $md5) = $pang_sth->fetchrow_array();
 				die "There is no corresponding alignment sequence for the pan-genome region $query_id in the DB." unless $pang_ref_seq;
@@ -871,7 +866,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		
 		my $num_seq = 0;
 		
-		if($seq_row1 || $seq_row2 || $pang_ref_seq) {
+		if($seq_row1 || $seq_row2) {
 			# Previous alleles exist
 			# Discard panseq alignment
 			# Add individual sequences to existing alignments
@@ -881,9 +876,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			# Print out existing alignment to tmp file
 			my $aln_file = $msa_dir . "init.aln";
 			open(my $aln, ">", $aln_file) or die "Unable to write to file $aln_file ($!)";
-			if($pang_ref_seq) {
-				print $aln ">pg_$query_id\n$pang_ref_seq\n";
-			}
+			
 			if($seq_row1) {
 				do {
 					my ($allele_id, $seq, $md5, $cc_id) = @$seq_row1;
@@ -904,6 +897,20 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			my $seq_file = $msa_dir . "seq.fna";
 			my @loading_args = ($muscle_exe, "-profile -in1 $aln_file -in2 $seq_file -out $aln_file");
 			my $cmd = join(' ',@loading_args);
+			
+			if($pang_ref_seq) {
+				# Align reference sequence
+				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
+				print $seqo ">pg_$query_id\n$pang_ref_seq\n";
+				close $seqo;
+				
+				# Run muscle
+				my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+				unless($success) {
+					die "Muscle profile alignment failed for reference pangenome sequence $query_id to alleles ($stderr).";
+				}
+			}
 			
 			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 				my $header = $1;
@@ -928,7 +935,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			# move tmp file to final location
 			move $aln_file, $msa_file or die "Unable to move $aln_file file to $msa_file ($!)";
 			
-		} elsif($pang_nr_seq) {
+		} elsif($pang_ref_seq) {
 			# Discovered new region, so need to build alignment that includes the pan-genome region
 			
 			my $seq_file = $msa_dir . "seq.fna";
@@ -936,7 +943,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			my $cmd = join(' ',@loading_args);
 			
 			open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-			print $seqo ">$query_id\n$pang_nr_seq\n";
+			print $seqo ">$query_id\n$pang_ref_seq\n";
 			close $seqo;
 			
 			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
@@ -1105,6 +1112,44 @@ Load the results from the panseq VF/AMR detection analysis
 
 =cut
 
+sub load_genomes {
+	my $uploads = shift;
+	
+	# Load each genome into DB
+	foreach my $tmparray (@$uploads) {
+		my ($tracking_id, $optfile) = @$tmparray;
+		my $opt = new Config::Simple($optfile) or die "Cannot read config file $optfile (" . Config::Simple->error() .')';
+		
+		# Run loading script
+		my @loading_args = ("perl $FindBin::Bin/../genodo_fasta_loader.pl", '--webupload',
+			"--tracking_id $tracking_id",
+			'--fastafile '.$opt->param('load.fastafile'), 
+			'--configfile '.$opt->param('load.configfile'),
+			'--propfile '.$opt->param('load.propfile'));
+	
+		push @loading_args, '--noload' if $noload;
+		push @loading_args, '--remove_lock' if $remove_lock;
+		push @loading_args, '--recreate_cache' if $recover;
+
+		my $cmd = join(' ',@loading_args);
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+		
+		if($success) {
+			INFO "Genome $tracking_id data loaded successfully."
+		} else {
+			die "Loading of Genome $tracking_id data failed ($stderr).";
+		}
+	}
+
+	INFO "Loading of all genome data into DB completed.";
+}
+
+=head2 load_vf
+
+Load the results from the panseq VF/AMR detection analysis
+
+=cut
+
 sub load_vf {
 	my $job_dir = shift;
 	
@@ -1114,7 +1159,9 @@ sub load_vf {
 		'--dir '.$job_dir, 
 		'--config '.$config);
 			
-	push @loading_args, '--noload --remove_lock --recreate_cache' ;#if $RECOVER;
+	push @loading_args, '--noload' if $noload;
+	push @loading_args, '--remove_lock' if $remove_lock;
+	push @loading_args, '--recreate_cache' if $recover;
 	
 	my $cmd = join(' ',@loading_args);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -1137,8 +1184,11 @@ sub blast_new_regions {
 	my $blast_file = shift; 
 	
 	# Run BLAST
+	my $num_cores = 8;
+	my $filesize = -s $new_fasta;
+	my $blocksize = int($filesize/$num_cores)+1;
 	my $blast_cmd = "$blast_dir/blastx -evalue 0.0001 -outfmt ".'\"6 qseqid qlen sseqid slen stitle\" '."-db $nr_location -max_target_seqs 1 -query -";
-	my $parallel_cmd = "cat $new_fasta | $parallel_exe --gnu -j 8 --block 1500k --recstart '>' --pipe $blast_cmd > $blast_file";
+	my $parallel_cmd = "cat $new_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
 	
 	INFO "Running parallel BLAST: $parallel_cmd";
 	
@@ -1150,3 +1200,82 @@ sub blast_new_regions {
 		die "New pan-genome region BLAST job failed ($stderr).";
 	}
 }
+
+=head2 load_pg
+
+Load the results from the panseq pangenome analysis
+
+=cut
+
+sub load_pg {
+	my $job_dir = shift;
+	
+	INFO "Loading pangenome into DB";
+	
+	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_pangenome_loader.pl",
+		'--dir '.$job_dir, 
+		'--config '.$config);
+			
+	push @loading_args, '--noload' if $noload;
+	push @loading_args, '--remove_lock' if $remove_lock;
+	push @loading_args, '--recreate_cache' if $recover;
+	
+	my $cmd = join(' ',@loading_args);
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+	if($success) {
+		INFO "Pangenome data loaded successfully."
+	} else {
+		die "Loading of pangenome data failed ($stderr).";
+	}
+}
+
+=head2 recompute_metadata 
+
+Recompute the json objects that contain genomes and their properties
+
+=cut
+
+sub recompute_metadata {
+	
+	INFO "Loading Metadata into DB";
+	
+	unless($noload) {
+		my @loading_args = ("perl $FindBin::Bin/../Database/load_meta_data.pl",
+		'--config '.$config);
+		
+		my $cmd = join(' ',@loading_args);
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+		
+		if($success) {
+			INFO "Metadata JSON objects loaded successfully."
+		} else {
+			die "Loading of Metadata JSON objects failed ($stderr).";
+		}
+	}
+}
+
+=head2 close_out
+
+Update status for individual uploads, email users, delete tmp files
+
+=cut
+
+sub close_out {
+	my $tracking_ids;
+	
+	INFO "Updating genome status in DB caches";
+	
+	my $close_sth = $dbh->prepare(CLOSE_GENOME);
+	foreach my $tracker_id (@$tracking_ids) {
+		$update_step_sth->execute($tracker_step_values{completed}, $tracker_id);
+		$close_sth->execute($tracker_id);
+	}
+	
+	INFO "Emailing users";
+	
+	send_email(2);
+}
+
+
+

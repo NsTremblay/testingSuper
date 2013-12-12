@@ -154,9 +154,9 @@ my ($CONFIGFILE, $FASTAFILE, $PROPFILE, $NOLOAD,
     $WEBUPLOAD, $TRACKINGID, $NONAMECACHE);
 
 GetOptions(
-	'configfile=s'=> \$CONFIGFILE,
-    'fastafile=s'=> \$FASTAFILE,
-    'propfile=s'=> \$PROPFILE,
+	'config=s'=> \$CONFIGFILE,
+    'fasta=s'=> \$FASTAFILE,
+    'attributes=s'=> \$PROPFILE,
     'noload'     => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'   => \$REMOVE_LOCK,

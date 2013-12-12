@@ -452,7 +452,7 @@ sub upload_genome : Runmode {
 #	$tracking_row->command($cmd);
 #	
 	$tracking_row->feature_name($results->valid('g_name'));
-	$tracking_row->step(2); # Step 1 complete
+	$tracking_row->step(1); # Step 1 complete
 	$tracking_row->update;
 	
 	# Send user to status page

@@ -37,6 +37,7 @@ use Carp qw/croak carp/;
 use File::Path qw/remove_tree/;
 use Phylogeny::TreeBuilder;
 use Phylogeny::Tree;
+use IO::CaptureOutput qw(capture_exec);
 
 
 # Globals (set these to match local values)
@@ -44,7 +45,7 @@ my $muscle_exe = '/usr/bin/muscle';
 my $mummer_dir = '/home/matt/MUMer3.23/';
 my $blast_dir = '/home/matt/blast/bin/';
 my $parallel_exe = '/usr/bin/parallel';
-my $nr_location = '/home/matt/tmp/data/blast_databases/nr';
+my $nr_location = '/home/matt/blast_databases/gammaproteobacteria_nr';
 my $panseq_exe = '/home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl';
 
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
@@ -157,6 +158,7 @@ unless($panseq_dir) {
 	}
 	
 	my $pan_cfg_file = $root_dir . 'pg.conf';
+	my $core_threshold = 3;
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out
@@ -170,7 +172,7 @@ novelRegionFinderMode	no_duplicates
 muscleExecutable	$muscle_exe
 fragmentationSize	1000
 percentIdentityCutoff	90
-coreGenomeThreshold	4
+coreGenomeThreshold	$core_threshold
 runMode	pan
 storeAlleles	1
 nameOrId	name
@@ -188,13 +190,16 @@ nameOrId	name
 	
 	# Blast pangenome regions
 	my $input_fasta = $panseq_dir . 'panGenomeFragments.fasta';
-	#my $input_fasta = $panseq_dir . 'testGenomeFragments.fasta';
 	my $blast_file = $panseq_dir . 'anno.txt';
 	my $blast_cmd = "$blast_dir/blastx -evalue 0.0001 -outfmt ".'\"6 qseqid qlen sseqid slen stitle\" '."-db $nr_location -max_target_seqs 1 -query -";
-	my $parallel_cmd = "cat $input_fasta | $parallel_exe --gnu -j 8 --block 1500k --recstart '>' --pipe $blast_cmd > $blast_file";
+	my $num_cores = 8;
+	my $filesize = -s $input_fasta;
+	my $blocksize = int($filesize/$num_cores);
+	#my $parallel_cmd = "cat $input_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
+	my $parallel_cmd = "grep \">\" -m 64 -A 1 $input_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
 	
 	print "\trunning blast on pangenome fragments...\n";
-	#system($parallel_cmd) == 0 or croak "[Error] BLAST failed.\n";
+	system($parallel_cmd) == 0 or croak "[Error] BLAST failed.\n";
 	print "\tcomplete\n";
 	
 }
@@ -202,11 +207,23 @@ nameOrId	name
 # Finalize and load into DB
 
 # Load functions
+my %anno_functions;
+my $anno_file = $panseq_dir . 'anno.txt';
+open IN, "<", $anno_file or croak "[Error] unable to read file $anno_file ($!).\n";
+
+while(<IN>) {
+	chomp;
+	my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
+	$anno_functions{$q} = [$s,$t];
+}
+close IN;
+
 
 # Load pangenome
 my $core_fasta_file = $panseq_dir . 'coreGenomeFragments.fasta';
 my $acc_fasta_file = $panseq_dir . 'accessoryGenomeFragments.fasta';
 my @core_status = (1,0);
+my $num_pg = 0;
 
 foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 	my $in_core = shift @core_status;
@@ -216,23 +233,33 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
     
 	while (my $entry = $fasta->next_seq) {
 		my $id = $entry->display_id;
-		my $func = 'test_function';
-		my $func_id = 'test_function_ID';
+		my $func = undef;
+		my $func_id = undef;
+		
+		if($anno_functions{$id}) {
+			($func_id, $func) = @{$anno_functions{$id}};
+		}
 		
 		my ($locus_id, $uniquename) = ($id =~ m/^lcl\|(\d+)\|(lcl\|.+)$/);
-		croak "Error: unable to parse header $id in pangenome fasta file $pan_file.\n" unless $uniquename && $locus_id; 
+		croak "Error: unable to parse header $id in pangenome fasta file $pan_file.\n" unless $uniquename && $locus_id;
 		
-		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $entry->seq);
+		my $seq = $entry->seq;
+		$seq =~ tr/-//; # Remove gaps, store only raw sequence
+		
+		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
 		
 		# Cache feature id another info for reference pangenome fragment
 		$chado->cache('feature',$uniquename,$pg_feature_id);
 	
 		$chado->cache('core',$pg_feature_id,$in_core);
 		if($in_core) {
-			$chado->cache('sequence',$pg_feature_id,$entry->seq);
+			$chado->cache('sequence',$pg_feature_id,$seq);
 		}
-	
+		$num_pg++;
 	}
+	
+	my $data_type = ($in_core) ? 'Core':'Accessory';
+	print "$data_type pangenome fragments loaded.\n";
 }
 
 
@@ -261,9 +288,11 @@ while (my $line = <$in>) {
 		};		
 	}
 }
+print "Loci locations loaded.\n";
 
-# Initialize / verify 
+# Initialize / verify
 
+my $num_done = 0;
 # Load loci
 {
 	# Slurp a group of fasta sequences for each locus.
@@ -293,12 +322,13 @@ while (my $line = <$in>) {
 			
 		}
 		
-		# Build tree
-		build_tree($query_id, \%sequence_group);
+		# Build tree and calculate the snps
+		snps_and_trees($query_id, \%sequence_group);
 		
-		# Calculate the snps
-		compute_snps($query_id, \%sequence_group);
+		$num_done++;
+		print "Pangenome segments $num_done of $num_pg loaded." if $num_done % 1000 == 0;
 	}
+	
 	close $in;
 	
 }
@@ -445,8 +475,11 @@ sub pangenome_locus {
 		
 		# uniquename & name
 		my $name = "$query_id locus";
-		print "LOCUS NAME $uniquename\n";
-		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		my $ok_name = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		unless($ok_name) {
+			warn "Dropping duplicate of pangenome region $uniquename.";
+			return 0;
+		}
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
@@ -482,52 +515,94 @@ sub pangenome_locus {
 	
 }
 
-sub build_tree {
+sub snps_and_trees {
 	my ($query_id, $seq_grp) = @_;
 	
-	return unless scalar keys %$seq_grp > 2; # only build trees for groups of 3 or more 
+	my $do_tree = 0;
+	my $do_snps = 0;
+	my $num_seqs = scalar keys %$seq_grp;
+	
+	$do_tree = 1 if $num_seqs > 2; # only build trees for groups of 3 or more
+	$do_snps = 1 if $chado->cache('core',$query_id) && $num_seqs > 1; # need 2 or more sequences for snps
 	
 	# write alignment file
 	my $tmp_file = $tmp_dir . 'genodo_allele_aln.txt';
-	open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
-	foreach my $id (keys %$seq_grp) {
-		print $out join("\n",">".$id,$seq_grp->{$id}->{seq}),"\n";
-	}
-	close $out;
-	
-	# clear output file for safety
-	my $tree_file = $tmp_dir . 'genodo_allele_tree.txt';
-	open($out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
-	close $out;
-	
-	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak;
-	
-	# slurp tree and convert to perl format
-	my $tree = $tree_io->newickToPerlString($tree_file);
-	
-	# store tree in tables
-	$chado->handle_phylogeny($tree, $query_id, $seq_grp);
-}
-
-sub compute_snps {
-	my ($query_id, $seq_group) = @_;
-	
-	return unless $chado->cache('core',$query_id);
-	return unless scalar keys %$seq_group > 1; # need 2 or more sequences for snps
-	
-	# Retrieve reference pangenome sequence
-	my $refseq = $chado->cache('sequence',$query_id);
-	croak "No sequence found for reference pangenome segment $query_id." unless $refseq;
-	
-	# Compute snps for each sequence relative to the reference
-	foreach my $genome (keys %$seq_group) {
+	if($do_tree || $do_snps) {
 		
-		if($seq_group->{$genome}->{is_new}) {
-			my $ghash = $seq_group->{$genome};
-			find_snps($refseq, $query_id, $ghash);
+		open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
+		foreach my $id (keys %$seq_grp) {
+			print $out join("\n",">".$id,$seq_grp->{$id}->{seq}),"\n";
 		}
+		close $out;
 	}
+	
+	if($do_tree) {
+		
+		# clear output file for safety
+		my $tree_file = $tmp_dir . 'genodo_allele_tree.txt';
+		open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+		close $out;
+		
+		# build newick tree
+		$tree_builder->build_tree($tmp_file, $tree_file) or croak;
+		
+		# slurp tree and convert to perl format
+		my $tree = $tree_io->newickToPerlString($tree_file);
+		
+		# store tree in tables
+		$chado->handle_phylogeny($tree, $query_id, $seq_grp);
+	}
+	
+	if($do_snps) {
+		
+		# Align reference sequence to already aligned alleles
+		my $refseq = $chado->cache('sequence',$query_id);
+		croak "No sequence found for reference pangenome segment $query_id." unless $refseq;
+		
+		my $refheader = "refseq_$query_id";
+		my $tmp_file2 = $tmp_dir . 'genodo_reference_sequence.txt';
+		open(my $out, ">", $tmp_file2) or croak "Error: unable to write to file $tmp_file2 ($!).\n";
+		print $out ">$refheader\n$refseq\n";
+		close $out;
+		
+		my $aln_file = $tmp_dir . 'genodo_pangenome_aln.txt';
+		my @loading_args = ($muscle_exe, "-profile -in1 $tmp_file -in2 $tmp_file2 -out $aln_file");
+		my $cmd = join(' ',@loading_args);
+		
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+		unless($success) {
+			die "Muscle profile alignment failed for pangenome $query_id ($stderr).";
+		}
+		
+		# Load alignments into memory
+		my $fasta = Bio::SeqIO->new(-file   => $aln_file,
+							        -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $aln_file ($!).";
+    
+    	my $new_refseq;
+    	my %new_seqs;
+		while (my $entry = $fasta->next_seq) {
+			my $id = $entry->display_id;
+			
+			if($id eq $refheader) {
+				$new_refseq = $entry->seq;
+			} else {
+				$seq_grp->{$id}->{seq} = $entry->seq;
+			}
+		}
+		croak "Error: aligned reference pangenome sequence not found in muscle output file.\n" unless $new_refseq;
+		
+		# Compute snps for each sequence relative to the reference
+		foreach my $id (keys %$seq_grp) {
+			
+			if($seq_grp->{$id}->{is_new}) {
+				my $ghash = $seq_grp->{$id};
+				find_snps($new_refseq, $query_id, $ghash);
+			}
+		}
+		
+	}
+	
 }
 
 sub find_snps {
@@ -547,32 +622,26 @@ sub find_snps {
 	# Iterate through each aligned sequence, identifying mismatches
 	my $l = length($ref_seq)-1;
 	my $rpos = 0;
-	my $cpos = 0;
 	my $rgap_offset = 0;
-	my $cgap_offset = 0;
-		
+	
+	my $l2 = length($comp_seq)-1;
+	croak "Error: alignment lengths do not match for reference sequence $ref_id and locus sequence $contig_collection|$contig ($l vs $l2).\n$ref_seq\n$comp_seq\n" if $l != $l2;
+	
 	for my $i (0 .. $l) {
         my $c1 = substr($comp_seq, $i, 1);
         my $c2 = substr($ref_seq, $i, 1);
         
         # Advance position counters
-        if($c1 eq '-') {
-        	$cgap_offset++;
-        } else {
-        	$cpos++;
-        	$cgap_offset = 0 if $cgap_offset;
-        }
-        
         if($c2 eq '-') {
         	$rgap_offset++;
         } else {
         	$rpos++;
         	$rgap_offset = 0 if $rgap_offset;
         }
-       
+        
         if($c1 ne $c2) {
         	# Found snp or indel
-        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $cpos, $cgap_offset, $is_public);
+        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $is_public);
         }
 	}
 }
