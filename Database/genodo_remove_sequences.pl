@@ -83,7 +83,7 @@ else {
 }
 
 sub getGeneTypeID {
-	my $cvterm = 'gene';
+	my $cvterm = 'virulence_factor';
 	my $sth = $dbh->prepare('SELECT cvterm_id FROM cvterm WHERE name = ?')
 	or die "Couldn't prepare statement: " . $dbh->errstr;
 	$sth->execute($cvterm) or die "Couldn't execute statement: " . $sth->errstr;

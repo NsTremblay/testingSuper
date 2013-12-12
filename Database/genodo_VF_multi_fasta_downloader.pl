@@ -100,7 +100,7 @@ sub _getVFSequenceFeatureIds {
 	my $VFfeatureIDs = $schema->resultset('Feature')->search(
     {
         'featureprops.value' => "Virulence Factor",
-        'type.name' => "gene"
+        'type.name' => "virulence_factor"
         },
         {
             column  => [qw/feature_id/],
