@@ -50,11 +50,12 @@
 </div>
 
 <script type="text/javascript">
-var amrCategories = <TMPL_VAR amrCategories>;
+var categories = <TMPL_VAR amrCategories>;
+var amrCategories = categories.data.amrCats;
 var category_list;
 var current_amr_category_id = "undefined";
 $('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
-$.each(amrCategories.data, function(index, object) {
+$.each(amrCategories, function(index, object) {
 	var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
 	var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
 	$('#amr-categories').append(titleDiv);
@@ -95,7 +96,7 @@ function changeAmrCats (select) {
 		changeAmrList(amr_genes, 'amr', metaTabSelections, optionId);
 	}
 	else {
-		var gene_list = amrCategories.data[parentId].subcategories[optionId].gene_ids;
+		var gene_list = amrCategories[parentId].subcategories[optionId].gene_ids;
 		$.each(gene_list, function(index, value){
 			category_list[value] = amr_genes[value];
 		});

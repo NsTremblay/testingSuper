@@ -131,11 +131,19 @@ sub categories : Runmode {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my $q = $self->query();
-	my @amrCategories = $q->param("amr-category");
 
-	if (@amrCategories) {
-		#get terminal children of the ids selected
-	}
+	# my @wantedCategories = (
+	# 	'pathogenesis'
+	# 	);
+
+	# my $vfCategoryResults = $self->dbixSchema->resultset('Cvterm')->search(
+	# 	{'me.name' => \@wantedCategories},
+	# 	{
+	# 		join => [{'cvterm_relationship_objects' => {'subject' => {'cvterm_relationship_objects' => 'subject'}}}],
+	# 		select => ['me.cvterm_id', 'me.name', 'subject.cvterm_id', 'subject.name', 'subject_2.cvterm_id', 'subject_2.name'],
+	# 		as => ['matriarch_category_id', 'matriarch_category_name', 'broad_category_id', 'broad_category_name', 'refined_category_id', 'refined_category_name']
+	# 	}
+	# 	);
 
 	# my @wantedCategories = (
 	# 'antibiotic molecule',
@@ -173,16 +181,16 @@ sub categories : Runmode {
 		{
 			join => ['parent_category', 'gene_cvterm', 'category', 'feature'],
 			select => [
-			 'parent_category.cvterm_id',
-			 'parent_category.name',
-			 'parent_category.definition',
-			 'gene_cvterm.cvterm_id',
-			 'gene_cvterm.name',
-			 'gene_cvterm.definition',
-			 'category.cvterm_id',
-			 'category.name',
-			 'category.definition',
-			 'feature.feature_id'],
+			'parent_category.cvterm_id',
+			'parent_category.name',
+			'parent_category.definition',
+			'gene_cvterm.cvterm_id',
+			'gene_cvterm.name',
+			'gene_cvterm.definition',
+			'category.cvterm_id',
+			'category.name',
+			'category.definition',
+			'feature.feature_id'],
 			as => [
 			'parent_id',
 			'parent_name',
@@ -202,7 +210,7 @@ sub categories : Runmode {
 	# A parent_category (category) has multiple subcategories.
 	# A category has multiple gene cvterm_ids which in turn have multiple feature_ids
 
-	# %categories = (
+	# %amrCategories = (
 	# 		parent_id* => {
 	#						parent_name => parent_name,
 	#						parent_definition = parent_definition,
@@ -217,23 +225,92 @@ sub categories : Runmode {
 	#		 			  }..
 	# ); 
 
-	my %categories;
-	while (my $row = $amrCategoryResults->next) {
-		my $parent_id = $row->get_column('parent_id');
-		my $category_id = $row->get_column('category_id');
-		$categories{$parent_id} = {} unless exists $categories{$parent_id};
-		$categories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
-		$categories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
-		$categories{$parent_id}->{'subcategories'} = {} unless exists $categories{$parent_id}->{'subcategories'};
-		$categories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $categories{$parent_id}->{'subcategories'}->{$category_id};
-		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
-		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
-		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
-		$categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
-		push(@{$categories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
-	}
-	my $amr_categories_json = $formDataGenerator->_getJSONFormat(\%categories);
-	return $amr_categories_json;
+my %amrCategories;
+while (my $row = $amrCategoryResults->next) {
+	my $parent_id = $row->get_column('parent_id');
+	my $category_id = $row->get_column('category_id');
+	$amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
+	$amrCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+	$amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+	$amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
+	$amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
+	$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+	$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+	$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+	$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+	push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+}
+
+my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
+		{},
+		{
+			join => ['parent_category', 'gene_cvterm', 'category', 'feature'],
+			select => [
+			'parent_category.cvterm_id',
+			'parent_category.name',
+			'parent_category.definition',
+			'gene_cvterm.cvterm_id',
+			'gene_cvterm.name',
+			'gene_cvterm.definition',
+			'category.cvterm_id',
+			'category.name',
+			'category.definition',
+			'feature.feature_id'],
+			as => [
+			'parent_id',
+			'parent_name',
+			'parent_definition',
+			'gene_id',
+			'gene_name',
+			'gene_definition',
+			'category_id',
+			'category_name',
+			'category_definition',
+			'feature_id']
+		}
+		);
+
+	#Need to account for the fact that sub categories can have many cvterms which in turn have multiple feature ids associated with them
+	# Note: 
+	# A parent_category (category) has multiple subcategories.
+	# A category has multiple gene cvterm_ids which in turn have multiple feature_ids
+
+	# %vfCategories = (
+	# 		parent_id* => {
+	#						parent_name => parent_name,
+	#						parent_definition = parent_definition,
+	# 						subcategories => {
+	# 											category_id => {
+	#															category_name => category_name,
+	#															category_definition => category_definition,
+	#															parent_id => 'parent_id'*
+	# 															gene_id => [feature_ids..]
+	#		 													}..
+	#		 								 }..
+	#		 			  }..
+	# ); 
+
+my %vfCategories;
+while (my $row = $vfCategoryResults->next) {
+	my $parent_id = $row->get_column('parent_id');
+	my $category_id = $row->get_column('category_id');
+	$vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
+	$vfCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+	$vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+	$vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
+	$vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
+	$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+	$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+	$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+	$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+	push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+}
+
+my %categories = ('vfCats' => \%vfCategories,
+				  'amrCats' => \%amrCategories);
+
+my $categories_json = $formDataGenerator->_getJSONFormat(\%categories);
+return $categories_json;
 }
 
 

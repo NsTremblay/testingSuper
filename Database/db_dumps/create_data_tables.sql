@@ -256,6 +256,48 @@ COMMIT;
 
 BEGIN;
 
+-- Table: vf_category
+
+-- DROP TABLE vf_category;
+
+CREATE TABLE vf_category
+(
+  vf_category_id serial NOT NULL,
+  parent_category_id integer NOT NULL,
+  category_id integer NOT NULL, -- Cvterm_id for category....
+  gene_cvterm_id integer NOT NULL, -- Cvterm_id for vf gene. ...
+  feature_id integer, -- Stores the feature_id for each VF gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.
+  CONSTRAINT vf_category_pkey PRIMARY KEY (vf_category_id),
+  CONSTRAINT vf_category_cvterm_fkey FOREIGN KEY (category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT vf_gene_cvterm_fkey FOREIGN KEY (gene_cvterm_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT feature_id_feature_fkey FOREIGN KEY (feature_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT parent_category_cvterm_fkey FOREIGN KEY (parent_category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE vf_category
+  OWNER TO postgres;
+COMMENT ON TABLE vf_category
+  IS 'Table that maps VF category type_ids to gene feature_ids';
+COMMENT ON COLUMN vf_category.category_id IS 'Cvterm_id for category.
+Is a foreign key to the Cvterm table.';
+COMMENT ON COLUMN vf_category.gene_cvterm_id IS 'Cvterm_id for vf gene. 
+Is a foregn key to the Cvterm table.';
+COMMENT ON COLUMN vf_category.feature_id IS 'Stores the feature_id for each VF gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.';
+
+COMMIT;
+
+BEGIN;
+
 -- Table: jobs
 
 -- DROP TABLE jobs;
