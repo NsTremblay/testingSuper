@@ -185,7 +185,6 @@ sub running_job : Runmode {
 	my $job_id = $q->param("job_id");
 	my $geospatial = $q->param("geospatial");
 
-	#TODO:
 	#Check status of job id, if still in progress return to the polling script
 	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
 		{'me.job_id' => $job_id},
@@ -199,20 +198,21 @@ sub running_job : Runmode {
 
 	die "Error. Job id not found." unless $status;
 
+	my $html = "";
 	if ($status ne "in progress") {
-		
 		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";
-		my $html = "";
-
+		
 		while(<$fh>) {
 			$_ =~ s/\R//;
 			$html .= "$_";
 		}
-		return $html;
 	}
-	else {
-		return $status;
-	}
+	my %poll = (
+		'status' => $status,
+		'html' => $html,
+		);
+	my $poll_ref = encode_json(\%poll);
+	return $poll_ref;
 }
 
 =head2 view

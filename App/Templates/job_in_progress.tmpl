@@ -6,6 +6,10 @@
 	<TMPL_INCLUDE name="header.tmpl">
 	<!-- jQuery -->
 	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
 </head>
 
 <body style="background-color:#796e6c" onload="doPoll()">
@@ -21,7 +25,6 @@
 
 var job_id = "<TMPL_VAR job_id>";
 var geospatial = "<TMPL_VAR geospatial>";
-var job = "";
 
 function doPoll() {
 	$.ajax({
@@ -30,17 +33,18 @@ function doPoll() {
 		data: {'job_id' : job_id, 'geospatial' : geospatial }
 	})
 	.done(function(data) {
-		console.log(data);
-		if (data != 'in progress') {
-			job = "complete";
+		//console.log(data);
+		var json = JSON.parse(data);
+		//console.log(json);
+		if (json.status != 'in progress') {
 			$('#status').empty();
-			$('#status').append(data);
+			$('#status').append(json.html);
 			return;
 		}
 		else {
 			$('#status').empty();
 			$('#status').append(
-				'<div class="row-fluid"><h3>Please wait while we generate your results...</h3><p id="status_update" style="color:#d41616;display:none"> Current status: '+data+'</p></div>'
+				'<div class="row-fluid"><h3>Please wait while we generate your results...</h3><p id="status_update" style="color:#d41616;display:none"> Current status: '+json.status+'</p></div>'
 				+'<h4 class="help-block">Here\'s a few things you can do in the meantime:</h4>'
 				+'<ul>'
 				+'<li><p>You can wait. Once the results are ready, the page will automatically forward you to them.</p></li>'
@@ -54,6 +58,7 @@ function doPoll() {
 		}
 	});
 }
+
 
 </script>
 

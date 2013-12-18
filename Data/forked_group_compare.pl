@@ -386,45 +386,31 @@ sub writeOutHtml {
 
 	if ($_geospatial eq "true") {
 
-		$HTML .= '<div class="tab-pane" id="geo-spatial" style="padding:5px">';
-		$HTML .= 'Map stuff will go here';
-		$HTML .= '</div>';
+		# $HTML .= '<div class="tab-pane active" id="geospatial" style="padding:5px">';
+		# $HTML .= '<span class="help-block">Note: The map only shows strains with a location. Not all selected strains will appear on the map.</span>';
+		# $HTML .= '<div class="row-fluid">';
+		# $HTML .= '<div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">';
+		# $HTML .= '<p>Tree goes here</p>';
+		# $HTML .= '</div>';
+		# $HTML .= '<div class="span6">';
+		# 			<table>
+		# 				<tr>
+		# 					<div id="map-canvas" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3"></div>
+		# 					<div class="row-fluid">
+		# 						<div class="span6"><img src="/App/Pictures/genodo_measle_red.png"> Group 1</div>
+		# 						<div class="span6"><img src="/App/Pictures/genodo_measle_blue.png"> Group 2</div>
+		# 					</div>
+		# 				</tr>
+		# 			</table>
+		# 		</div>
+		# 	</div>
+		# </div>
 
 	}
 
 	$HTML .= '</div>';
 	$HTML .= '</div>';
 
-	# $HTML .= '<script>' . "\n";
-	# $HTML .= '$( document ).ready( function() {' . "\n";
-
-	# $HTML .= 'var gp1genomes = ';
-	
-	# foreach my $id (@{$_strain1IDs}) {
-	# 	$HTML .= '&gp1genome=' . $id;
-	# }
-
-	# $HTML .= ';' . "\n";
-
-	# $HTML .= 'var gp2genomes = ';
-	
-	# foreach my $id (@{$_strain2IDs}) {
-	# 	$HTML .= '&gp2genome=' . $id;
-	# }
-
-	# $HTML .= ';' . "\n";
-	
-	# $HTML .= 'var locus = $(\'td[type="locus_marker"]\');' . "\n";
-	# $HTML .= 'locus.each( function() {' . "\n";
-	# $HTML .= '$(this).append(\'<a href="/group-wise-comparisons/view?locus=\'+$(this).attr(\'feature_id\')+gp1genomes+gp2genomes+\'"> <i class="icon-search"></i> info</a>\');' . "\n";
-	# $HTML .= '});' . "\n";
-	# $HTML .= 'var snp = $(\'td[type="snp_marker"]\');' . "\n";
-	# $HTML .= 'snp.each( function() {' . "\n";
-	# $HTML .= '$(this).append(\'<a href="/group-wise-comparisons/view?snp=\'+$(this).attr(\'feature_id\')+gp1genomes+gp2genomes+\'"> <i class="icon-search"></i> info</a>\');' . "\n";
-	# $HTML .= '});' . "\n";
-	# $HTML .= '});' . "\n";
-	# $HTML = '</script>';
-	
 	print $tmp $HTML or die "Could not print out HTML file: $!\n";
 	#Print HTML output END
 
