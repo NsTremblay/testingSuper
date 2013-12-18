@@ -139,7 +139,7 @@ __PACKAGE__->belongs_to(
   "protocol",
   "Database::Chado::Schema::Result::Protocol",
   { protocol_id => "protocol_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 unittype
@@ -163,8 +163,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bcpdhlb1FQRkuvfAj1fzVA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Qb2TjslEZ3xydYATtyoghQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

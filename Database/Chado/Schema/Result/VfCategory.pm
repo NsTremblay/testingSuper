@@ -108,7 +108,7 @@ __PACKAGE__->belongs_to(
   "category",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "category_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 feature
@@ -126,7 +126,7 @@ __PACKAGE__->belongs_to(
   {
     is_deferrable => 1,
     join_type     => "LEFT",
-    on_delete     => "CASCADE,",
+    on_delete     => "CASCADE",
     on_update     => "NO ACTION",
   },
 );
@@ -143,7 +143,7 @@ __PACKAGE__->belongs_to(
   "gene_cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "gene_cvterm_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 parent_category
@@ -158,12 +158,12 @@ __PACKAGE__->belongs_to(
   "parent_category",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "parent_category_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-13 10:55:05
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XEoFp+Qmf/YOzgKSQ7UGvA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:11
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HesVvObO5e9Xw9o1yV5oMQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

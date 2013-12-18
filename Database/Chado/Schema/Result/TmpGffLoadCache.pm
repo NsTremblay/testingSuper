@@ -44,6 +44,11 @@ __PACKAGE__->table("tmp_gff_load_cache");
   data_type: 'integer'
   is_nullable: 1
 
+=head2 pub
+
+  data_type: 'boolean'
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -55,11 +60,13 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 1 },
   "organism_id",
   { data_type => "integer", is_nullable => 1 },
+  "pub",
+  { data_type => "boolean", is_nullable => 1 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-10-16 10:27:03
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pNUNkpo1D8ab5ByU/85YhQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:11
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:w7dJoZA0nxaABrV9H3pfag
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

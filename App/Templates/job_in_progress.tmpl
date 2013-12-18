@@ -10,6 +10,10 @@
 	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
 	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
 	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+	<script type="text/javascript">
+	var public_genomes = <TMPL_VAR public_genomes>;
+	var private_genomes = <TMPL_VAR private_genomes>;
+	</script>
 </head>
 
 <body style="background-color:#796e6c" onload="doPoll()">
@@ -25,6 +29,7 @@
 
 var job_id = "<TMPL_VAR job_id>";
 var geospatial = "<TMPL_VAR geospatial>";
+var geospatial_ready_results = undefined;
 
 function doPoll() {
 	$.ajax({
@@ -38,6 +43,7 @@ function doPoll() {
 		//console.log(json);
 		if (json.status != 'in progress') {
 			$('#status').empty();
+			geospatial_ready_results = json.geospatial;
 			$('#status').append(json.html);
 			return;
 		}
@@ -58,8 +64,73 @@ function doPoll() {
 		}
 	});
 }
+</script>
+
+<script type="text/javascript">
+
+if (geospatial_ready_results == "true") {
+	var group1 = <TMPL_VAR group1>;
+	var group2 = <TMPL_VAR group2>;
+	var genomeLabels = {};
+
+	var group1Genomes = {};
+	var group2Genomes = {};
+	var group1LocationGenomes = {};
+	var group2LocationGenomes = {};
+
+	var group1MultiMarkers = {};
+	var group2MultiMarkers = {};
+	var mapFactory;
+	var map;
+
+	$.each(group1, function(index, object) {
+		if (public_genomes[index]) {
+			group1Genomes[index] = public_genomes[index];
+		}
+		else if (private_genomes[index]) {
+			group1Genomes[index] = private_genomes[index];
+		}
+		else {}
+	});
+
+	$.each(group2, function(index, object) {
+		if (public_genomes[index]) {
+			group2Genomes[index] = public_genomes[index];
+		}
+		else if (private_genomes[index]) {
+			group2Genomes[index] = private_genomes[index];
+		}
+		else {}
+	});
+
+//Initialize map
+
+function showMap() {
+	var mapOptions = {
+		center: new google.maps.LatLng(-0.000, 0.000),
+		zoom: 1,
+		streetViewControl: false,
+		mapTypeId: google.maps.MapTypeId.ROADMAP
+	};
+
+	mapFactory = new Map(mapOptions, "map-canvas");
+	map = mapFactory.initializeMap();
+
+	var group1lists = mapFactory.addMultiMarkers(group1Genomes, group1LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	group1MultiMarkers = group1lists[0];
+	var group1ClusterList = group1lists[1];
+
+	var mcOptions = {gridSize: 50, maxZoom: 15};
+	var mc = new MarkerClusterer(map, group1ClusterList, mcOptions);
 
 
+	var group2lists = mapFactory.addMultiMarkers(group2Genomes, group2LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>", "/App/Pictures/genodo_measle_blue.png");
+	group2MultiMarkers = group2lists[0];
+	var group2ClusterList = group2lists[1];
+
+	var mc2 = new MarkerClusterer(map, group2ClusterList, mcOptions);
+}
+}
 </script>
 
 </html>

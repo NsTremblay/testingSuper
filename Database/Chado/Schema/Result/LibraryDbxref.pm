@@ -108,7 +108,7 @@ __PACKAGE__->belongs_to(
   "dbxref",
   "Database::Chado::Schema::Result::Dbxref",
   { dbxref_id => "dbxref_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 library
@@ -123,12 +123,12 @@ __PACKAGE__->belongs_to(
   "library",
   "Database::Chado::Schema::Result::Library",
   { library_id => "library_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zcvgmnVw5XJbj8hokj7ifA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iRLmyarrQBSikZ4Jpz5jIw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+__PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 
 =head1 TABLE: C<cv_cvterm_count_with_obs>
 
@@ -44,8 +45,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gXUwenHWQ2qf/BPirlLAcg
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:11
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vXYJSzFCY8tFtAZxu9Kceg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

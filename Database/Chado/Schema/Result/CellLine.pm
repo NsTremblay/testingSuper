@@ -271,12 +271,12 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:KVkZq1jigq5Wnd7o2AWT0g
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NSwYtxBUtuyG2hTtCq+Ebw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

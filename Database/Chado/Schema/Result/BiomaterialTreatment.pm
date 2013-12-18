@@ -130,7 +130,7 @@ __PACKAGE__->belongs_to(
   "biomaterial",
   "Database::Chado::Schema::Result::Biomaterial",
   { biomaterial_id => "biomaterial_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 treatment
@@ -145,7 +145,7 @@ __PACKAGE__->belongs_to(
   "treatment",
   "Database::Chado::Schema::Result::Treatment",
   { treatment_id => "treatment_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 unittype
@@ -169,8 +169,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:39ITqSZPv+uOellWdMWr2w
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:pIu+WU7S7I3f+xdqVTx/Pg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

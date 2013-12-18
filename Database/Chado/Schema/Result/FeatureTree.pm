@@ -124,7 +124,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 tree
@@ -139,12 +139,12 @@ __PACKAGE__->belongs_to(
   "tree",
   "Database::Chado::Schema::Result::Tree",
   { tree_id => "tree_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:49
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:6sw3jgusg6XPNa63EpjlMw
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wSRcfGFauYeGcP0bYrq6+w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -103,10 +103,26 @@ sub comparison : Runmode {
 	my $job_id = $q->param("job_id");
 	my $geospatial = $q->param("geospatial");
 
+	my $username = $self->authen->username;
+
+	if (!$username) {
+		$username = "\"\"";
+	}
+
+	if (!$geospatial || $geospatial eq "false") {
+		$geospatial = "false";
+	}
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+
 	if ($job_id) {
 		my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
 		$template->param(job_id => $job_id);
 		$template->param(geospatial=>$geospatial);
+		$template->param(public_genomes => $pub_json);
+		$template->param(private_genomes => $pvt_json) if $pvt_json;
 		return $template->output();
 	}
 
@@ -122,20 +138,6 @@ sub comparison : Runmode {
 	if(!@group1 && !@group2){
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
-
-	my $username = $self->authen->username;
-
-	if (!$username) {
-		$username = "\"\"";
-	}
-
-	if (!$geospatial || $geospatial eq "false") {
-		$geospatial = "false";
-	}
-
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
 
 	if ($locisnp && $geospatial) {
 		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
@@ -210,6 +212,7 @@ sub running_job : Runmode {
 	my %poll = (
 		'status' => $status,
 		'html' => $html,
+		'geospatial' => $geospatial
 		);
 	my $poll_ref = encode_json(\%poll);
 	return $poll_ref;
