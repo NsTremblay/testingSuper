@@ -47,7 +47,7 @@ my ($config, $notify,
 
 GetOptions(
 	'config=s' => \$config,
-    'notify' => \$notify,
+    'notify=i' => \$notify,
 ) 
 or pod2usage(-verbose => 1, -exitval => 1);
 
@@ -170,10 +170,11 @@ sub email_notification {
 			    	localtime()."\n",
 			);
 			
-			try {
+			eval {
 	  			sendmail( $message, {transport => $transport} );
-			} catch {
-	    		warn "[ERROR] sending email for $tracker_id failed: $_";
+			};
+			if($@) {
+	    		warn "[ERROR] sending email for $tracker_id failed: $@";
 	    		$fail_sth->execute($tracker_id);
 			}
 			

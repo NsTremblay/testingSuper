@@ -113,7 +113,7 @@ it under the same terms as Perl itself.
 
 =cut
 
-my ($CONFIGFILE, $FASTAFILE, $PANFILE, $NOLOAD,
+my ($CONFIGFILE, $FASTAFILE, $PANFILE, $BINARYFILE, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
@@ -124,6 +124,7 @@ GetOptions(
 	'config=s' => \$CONFIGFILE,
     'fasta=s' => \$FASTAFILE,
     'pan=s' => \$PANFILE,
+    'binary=s' => \$BINARYFILE,
     'noload' => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'  => \$REMOVE_LOCK,
@@ -263,6 +264,11 @@ elapsed_time('positions loaded');
 
 elapsed_time("sequences parsed");
 
+# Load presence/absence data
+load_binary($BINARYFILE);
+
+elapsed_time("binary file parsed");
+
 # Finalize and load into DB
 
 $chado->end_files();
@@ -370,8 +376,9 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
-	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
-	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
+	# uniquename - based on contig location and query gene and so should be unique. Can't have duplicate alleles at same spot for a single query gene
+	# however can have different query genes with hits at the same spot (if there is any redundancy in the VF or AMR gene sets).
+	my $uniquename = "allele:$query_id.$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
 	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
@@ -476,6 +483,45 @@ sub build_tree {
 	$chado->handle_phylogeny($tree, $query_id, $seq_grp);
 	
 	return($tmp_file);
+}
+
+sub load_binary {
+	my $bfile = shift;
+	
+	open my $binary_output , '<' , $bfile or die "Unable to read binary file $bfile ($!)."; 
+	
+	my @seqFeatures;
+	
+	my $header = <$binary_output>;
+	chomp $header;
+	
+	my @genomes = split(/\t/, $header);
+	my $numCol = scalar(@genomes);
+	
+	while (<$binary_output>) {
+		chomp;
+		my @tempRow = split(/\t/, $_);
+		die "Missing columns in file $bfile on row $tempRow[0]." unless @tempRow == $numCol;
+		push (@seqFeatures , \@tempRow);
+	}
+	
+	foreach my $line (@seqFeatures) {
+		
+		my $query_gene = $line->[0];
+		
+		if($query_gene =~ m/(VF|AMR)_(\d+)/) {
+			
+			my ($type, $gene_id) = ($1, $2);
+			$type = lc $type;
+			
+			for(my $i = 1; $i < $numCol; $i++) {
+			
+				$chado->handle_binary($genomes[$i], $gene_id, $line->[$i], $type);
+			
+			}
+		}
+	}
+	
 }
 
 sub elapsed_time {

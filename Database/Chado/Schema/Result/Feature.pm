@@ -682,6 +682,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 pripub_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pripub_feature_relationships",
+  "Database::Chado::Schema::Result::PripubFeatureRelationship",
+  { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 pubpri_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pubpri_feature_relationships",
+  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
+  { "foreign.subject_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 raw_amr_datas
 
 Type: has_many
@@ -803,8 +833,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9lkISG1MW8Pj/3QHtIGSZQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-16 14:26:26
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:s0rE7uzh++V45K1DZCv5dw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

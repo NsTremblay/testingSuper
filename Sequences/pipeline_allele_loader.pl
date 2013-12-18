@@ -8,9 +8,9 @@ use Pod::Usage;
 use Carp;
 use Sys::Hostname;
 use Config::Simple;
-use ExperimentalFeatures;
 use FindBin;
 use lib "$FindBin::Bin/..";
+use Sequences::ExperimentalFeatures;
 use Phylogeny::Tree;
 use Time::HiRes qw( time );
 
@@ -176,7 +176,7 @@ $argv{use_cached_names} = 1; # Pull contig names from DB tmp table
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
 # Intialize the Tree loading module
-my $tree_io = Phylogeny::Tree->new();
+my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
 
 # Result files
 my $allele_fasta_file = $ROOT . 'panseq_vf_amr_results/locus_alleles.fasta';
@@ -233,14 +233,10 @@ my ($new, $replace) = load_msa();
 
 
 # Create DB entries
-foreach my $locus (keys %$new) {
-	
-	# query gene
-	my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-	croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
+foreach my $query_id (keys %$new) {
 	
 	my %sequence_group;
-	my $allele_hash = $new->{$locus};
+	my $allele_hash = $new->{$query_id};
 	
 	# Create DB entries for each new allele
 	foreach my $header (keys %$allele_hash) {
@@ -248,7 +244,7 @@ foreach my $locus (keys %$new) {
 	}
 	
 	# Update sequences for alleles previously loaded in DB (in case alignments have changed).
-	my $update_hash = $replace->{$locus};
+	my $update_hash = $replace->{$query_id};
 	foreach my $header (keys %$update_hash) {
 		update_allele_sequence($header, $update_hash->{$header}, \%sequence_group);
 	}
@@ -300,7 +296,9 @@ filename of Data::Dumper file containing data hash.
 =cut
 
 sub cleanup_handler {
+	
     warn "@_\nAbnormal termination, trying to clean up...\n\n" if @_;  #gets the message that the die signal sent if there is one
+    #exit(1);
     if ($chado && $chado->dbh->ping) {
         
         $chado->cleanup_tmp_table;
@@ -366,9 +364,9 @@ sub allele {
 	# type 
 	my $type = $chado->feature_types('allele');
 	
-	# uniquename - based on contig location and so should be unique (can't have duplicate alleles at same spot) 
-	my $uniquename = "allele:$contig_id.$min.$max.$is_public";
-	
+	# uniquename - based on contig location and query gene and so should be unique. Can't have duplicate alleles at same spot for a single query gene
+	# however can have different query genes with hits at the same spot (if there is any redundancy in the VF or AMR gene sets).
+	my $uniquename = "allele:$query_id.$contig_id.$min.$max.$is_public";
 	# Check if this allele is already in DB
 	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
 	my $is_new = 1;
@@ -397,7 +395,10 @@ sub allele {
 		
 		# uniquename & name
 		my $name = "$query_id allele";
-		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		my $ok_name = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		unless($ok_name) {
+			die "Duplicate allele $uniquename with query $query_id.";
+		}
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
@@ -411,6 +412,7 @@ sub allele {
 		
 		# Feature properties
 		my $upload_id = $is_public ? undef : $collection_info->{upload};
+		print "UPLOAD ID: $upload_id\n";
 		$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
 		
 		# Print feature
@@ -509,6 +511,8 @@ sub update_allele_sequence {
 
 sub load_tree {
 	my ($query_id, $seq_group) = @_;
+	
+	return unless scalar keys %$seq_group > 2; # need 3 or more sequences for trees
 	
 	my $tree_file = $tree_dir . "$query_id.phy";
 	

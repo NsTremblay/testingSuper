@@ -75,19 +75,6 @@ my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
 	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
 	$nr_location, $parallel_exe, $data_directory);
 	
-# Need to send emails from the front-end server
-sub send_email {
-	my $type = shift;
-	
-	# Via ssh, run email program on front-end
-	my @loading_args = ('ssh genodo',
-		'/home/genodo/computational_platform/Data/email_notification.pl',
-		'--config /home/genodo/config/genodo.cfg', "--notify $type");
-		
-	my $cmd = join(' ',@loading_args);
-	system($cmd);
-}
-
 sub error_handler {
 	# Log
 	my $m = "Abnormal termination.";
@@ -194,6 +181,7 @@ INFO "Start of analysis pipeline run.";
 remove_lock() if $remove_lock;
 place_lock();
 
+
 # Find new sequences
 my @tracking_ids = check_uploads();
 
@@ -220,7 +208,7 @@ if(@tracking_ids) {
 	my $msa_dir2 = $job_dir . '/pg_msa/';
 	my $tree_dir2 = $job_dir . '/pg_tree/';
 	
-	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $msa_dir, $tree_dir) {
+	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $msa_dir, $tree_dir, $msa_dir2, $tree_dir2) {
 		mkdir $d or die "Unable to create directory $d ($!)";
 	}
 
@@ -267,14 +255,13 @@ if(@tracking_ids) {
 		die "AMR/VF gene fasta file missing. Please run:\n".
 		"Database/query_gene_fasta.pl --config ../Modules/genodo.cfg --combined $vf_fasta_file.";
 	}
-	
-	INFO "VF/AMR data found.";
+	INFO "VF/AMR query gene file detected.";
 	
 	# Run VF/AMR detection analysis
-	#vf_analysis($job_dir);
+	vf_analysis($job_dir);
 	
 	# Re-build MSAs and trees
-	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
+	combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
 	
 	# Check genome directory is up-to-date
 	my $g_dir = $data_directory . 'genomes/';
@@ -284,6 +271,7 @@ if(@tracking_ids) {
 	download_pangenomes($g_file, $core_file, $acc_file);
 	
 	# Identify any novel regions for new genomes
+	#my ($nr_fasta_file, $nr_anno_file);
 	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
 	
 	if($nr_fasta_file) {
@@ -327,8 +315,7 @@ if(@tracking_ids) {
 	recompute_metadata();
 
 	# Update individual genome records, notify users, remove tmp files
-	
-	
+	close_out(\@tracking_ids);
 	
 } else {
 	
@@ -391,12 +378,13 @@ sub init {
 	$mummer_dir = '/home/ubuntu/MUMer3.23/';
 	$blast_dir = '/home/ubuntu/blast/bin/';
 	$parallel_exe = '/usr/bin/parallel';
-	$data_directory = '/genodo_backup/data/';
+	$data_directory = '/panseq_results/data/';
 	$data_directory = '/home/matt/tmp/data/' if $test;
 	$muscle_exe = '/usr/bin/muscle' if $test;
 	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
 	$blast_dir = '/home/matt/blast/bin/' if $test;
-	$nr_location = $data_directory . 'blast_databases/nr';
+	$nr_location = '/panseq_results/blast_databases/nr_gammaproteobacteria';
+	$nr_location = '/home/matt/blast_databases/gammaproteobacteria_nr' if $test;
 	
 	$update_step_sth = $dbh->prepare(UPDATE_GENOME);
 
@@ -582,6 +570,9 @@ fragmentationSize	0
 percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
+storeAlleles	1
+addMissingQuery	1
+nameOrId	name
 |;
 	close $out;
 	
@@ -651,7 +642,13 @@ runMode	novel
 	my $nr_fasta_file = $result_dir . 'novelRegions.fasta';
 	my $nr_anno_file = $result_dir . 'anno.txt';
 	if(-s $nr_fasta_file) {
-		#blast_new_regions($nr_fasta_file, $nr_anno_file);
+		if($test) {
+			my $test_file = '/home/matt/tmp/anno.txt';
+			system("cp $test_file $nr_anno_file") == 0 or die "Unable to copy test annotation file $test_file";
+		} else {
+			blast_new_regions($nr_fasta_file, $nr_anno_file);
+		}
+		
 		return($nr_fasta_file, $nr_anno_file);
 	} else {
 		return();
@@ -681,14 +678,15 @@ baseDirectory	$result_dir
 numberOfCores	8
 mummerDirectory	$mummer_dir
 blastDirectory	$blast_dir
-minimumNovelRegionSize	1000
+minimumNovelRegionSize	0
 novelRegionFinderMode	no_duplicates
 muscleExecutable	$muscle_exe
-fragmentationSize	1000
+fragmentationSize	0
 percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
 storeAlleles	1
+addMissingQuery	0
 |;
 	close $out;
 	
@@ -827,30 +825,37 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
 		my ($ftype, $query_id) = ($locus =~ m/(\w+_)*(\d+)/);
 		
+		my $msa_file = $msa_dir . "$query_id.aln";
+		my $tree_file = $tree_dir . "$query_id.phy";
+		
 		# Record locus
 		print $rec "$locus\n";
 		
 		# Retrieve the alignments for other sequences in the DB
 		
-		my ($seq_row1, $seq_row2, $pang_ref_seq);
+		my ($seq_row1, $seq_row2, $pang_ref_seq, $refheader);
 		if($add_pang) {
 			# Look up pangenome alignments sequences: cache or DB.
 			if($ftype eq 'nr_') {
 				# New pan-genome fragement, get unaligned sequence from cache
 				$pang_ref_seq = $nr_sequences->{$query_id};
-				$query_id = "nr_$query_id";
+				$msa_file = $msa_dir . "nr_$query_id.aln";
+				$tree_file = $tree_dir . "nr_$query_id.phy";
+				$refheader = "nr_$query_id";
 				
-				die "There is no corresponding sequence for the novel pan-genome region $query_id." unless $pang_ref_seq;
+				die "No sequence for the novel pan-genome region $query_id found." unless $pang_ref_seq;
 				
 			} else {
 				# Old pan-genome fragment, get unaligned sequence from DB
 				$pang_sth->execute($query_id);
 				($pang_ref_seq, my $md5) = $pang_sth->fetchrow_array();
-				die "There is no corresponding alignment sequence for the pan-genome region $query_id in the DB." unless $pang_ref_seq;
+				die "There is no sequence for the pan-genome region $query_id in the DB." unless $pang_ref_seq;
 				$sth1->execute($query_id);
 				$sth2->execute($query_id);
 				$seq_row1 = $sth1->fetchrow_arrayref;
 				$seq_row2 = $sth2->fetchrow_arrayref;
+				$refheader = "pg_$query_id";
+				warn "Pangenome region $query_id has no associated loci in DB" unless $seq_row1 || $seq_row2;
 				
 			}
 			
@@ -862,8 +867,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			$seq_row2 = $sth2->fetchrow_arrayref;
 		}
 		
-		my $msa_file = $msa_dir . "$query_id.aln";
-		
+
 		my $num_seq = 0;
 		
 		if($seq_row1 || $seq_row2) {
@@ -901,7 +905,7 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			if($pang_ref_seq) {
 				# Align reference sequence
 				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-				print $seqo ">pg_$query_id\n$pang_ref_seq\n";
+				print $seqo ">$refheader\n$pang_ref_seq\n";
 				close $seqo;
 				
 				# Run muscle
@@ -943,24 +947,22 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 			my $cmd = join(' ',@loading_args);
 			
 			open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-			print $seqo ">$query_id\n$pang_ref_seq\n";
-			close $seqo;
+			print $seqo ">$refheader\n$pang_ref_seq\n";
 			
 			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 				my $header = $1;
 				my $seq = $2;
 				
 				$seq =~ s/-//g; # Remove gaps
-				
-				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
 				print $seqo ">$header\n$seq\n";
-				close $seqo;
 			}
+			
+			close $seqo;
 				
 			my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 	
 			unless($success) {
-					die "Muscle profile alignment failed for new pangenome region $query_id ($stderr).";
+				die "Muscle profile alignment failed for new pangenome region $query_id ($stderr).";
 			}
 			
 			$num_seq++;
@@ -968,6 +970,8 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		} else {
 			# No previous alleles
 			# Use alignment generated by panseq
+			
+			die "Cannot build alignment of pangnome loci without the reference pangenome fragment." if $add_pang;
 			
 			open(my $out, ">", $msa_file) or die "Unable to write to file $msa_file ($!)";
 			
@@ -985,7 +989,6 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		
 		# Build tree if enough allele sequences
 		if($num_seq > 2) {
-			my $tree_file = $tree_dir . "$query_id.phy";
 			$tb->build_tree($msa_file, $tree_file);
 		}
 	}
@@ -1063,16 +1066,17 @@ sub download_pangenomes {
 	
 	# Check against genomes in file
 	if(-e $acc_file) {
-		open my $in, "<", $genome_file or die "Unable to read genome fasta file $genome_file ($!).";
-		local $/ = "\n>";
-		while(my $block = <$in>) {
-			my ($header, $seq) = split(/\n/, $block);
+		
+		my $fasta = Bio::SeqIO->new(-file   => $acc_file,
+                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $acc_file ($!).";
+    
+		while (my $entry = $fasta->next_seq) {
+			my $seq = $entry->seq;
+			my $header = $entry->display_id;
 			
 			my ($pg_id) = ($header =~ m/pgacc_(\d+)/);
-			
 			$genomes{$pg_id} = 1;
-		}
-		close $in;
+		}	
 	}
 	
 	foreach my $id (keys %genomes) {
@@ -1121,11 +1125,11 @@ sub load_genomes {
 		my $opt = new Config::Simple($optfile) or die "Cannot read config file $optfile (" . Config::Simple->error() .')';
 		
 		# Run loading script
-		my @loading_args = ("perl $FindBin::Bin/../genodo_fasta_loader.pl", '--webupload',
+		my @loading_args = ("perl $FindBin::Bin/../Sequences/genodo_fasta_loader.pl", '--webupload',
 			"--tracking_id $tracking_id",
-			'--fastafile '.$opt->param('load.fastafile'), 
-			'--configfile '.$opt->param('load.configfile'),
-			'--propfile '.$opt->param('load.propfile'));
+			'--fasta '.$opt->param('load.fastafile'), 
+			'--config '.$opt->param('load.configfile'),
+			'--attributes '.$opt->param('load.propfile'));
 	
 		push @loading_args, '--noload' if $noload;
 		push @loading_args, '--remove_lock' if $remove_lock;
@@ -1162,6 +1166,7 @@ sub load_vf {
 	push @loading_args, '--noload' if $noload;
 	push @loading_args, '--remove_lock' if $remove_lock;
 	push @loading_args, '--recreate_cache' if $recover;
+	push @loading_args, '--save_tmpfiles' if $test;
 	
 	my $cmd = join(' ',@loading_args);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -1187,6 +1192,7 @@ sub blast_new_regions {
 	my $num_cores = 8;
 	my $filesize = -s $new_fasta;
 	my $blocksize = int($filesize/$num_cores)+1;
+	$blocksize = $blocksize > 1500000 ? 1500000 : $blocksize;
 	my $blast_cmd = "$blast_dir/blastx -evalue 0.0001 -outfmt ".'\"6 qseqid qlen sseqid slen stitle\" '."-db $nr_location -max_target_seqs 1 -query -";
 	my $parallel_cmd = "cat $new_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
 	
@@ -1262,7 +1268,7 @@ Update status for individual uploads, email users, delete tmp files
 =cut
 
 sub close_out {
-	my $tracking_ids;
+	my $tracking_ids = shift;
 	
 	INFO "Updating genome status in DB caches";
 	
@@ -1273,8 +1279,28 @@ sub close_out {
 	}
 	
 	INFO "Emailing users";
-	
 	send_email(2);
+}
+
+=head2 send_email
+
+Call program that sends various email notifications - probably doesn't need to
+be separate program
+
+=cut
+sub send_email {
+	my $type = shift;
+	
+	my @loading_args = ('perl /home/genodo/computational_platform/Data/email_notification.pl',
+		'--config /home/genodo/config/genodo.cfg', "--notify $type");
+		
+	if($test) {
+		@loading_args = ('perl /home/matt/workspace/a_genodo/sandbox/Data/email_notification.pl',
+		'--config /home/matt/workspace/a_genodo/config/genodo.cfg', "--notify $type")
+	}
+		
+	my $cmd = join(' ',@loading_args);
+	system($cmd);
 }
 
 

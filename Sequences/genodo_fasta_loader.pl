@@ -23,9 +23,9 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 
 =head1 OPTIONS
 
- --fastafile       Fasta file to load sequence from
- --propfile        Data::Dumper file containing hash of parent genome properties
- --configfile      INI style config file containing DB connection parameters
+ --fasta           Fasta file to load sequence from
+ --attributes      Data::Dumper file containing hash of parent genome properties
+ --config          INI style config file containing DB connection parameters
  --noload          Create bulk load files, but don't actually load them.
  --recreate_cache  Causes the uniquename cache to be recreated
  --remove_lock     Remove the lock to allow a new process to run

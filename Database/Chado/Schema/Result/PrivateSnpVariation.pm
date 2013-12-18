@@ -61,18 +61,6 @@ __PACKAGE__->table("private_snp_variation");
   is_nullable: 0
   size: 1
 
-=head2 position
-
-  data_type: 'integer'
-  default_value: -1
-  is_nullable: 0
-
-=head2 gap_offset
-
-  data_type: 'integer'
-  default_value: 0
-  is_nullable: 0
-
 =cut
 
 __PACKAGE__->add_columns(
@@ -93,10 +81,6 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "allele",
   { data_type => "char", default_value => "n", is_nullable => 0, size => 1 },
-  "position",
-  { data_type => "integer", default_value => -1, is_nullable => 0 },
-  "gap_offset",
-  { data_type => "integer", default_value => 0, is_nullable => 0 },
 );
 
 =head1 PRIMARY KEY
@@ -190,8 +174,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xWpqDPb17Ru1PXMRJS8sIg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-16 14:26:26
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ypDIJPtikowGgnWmsrJIRQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

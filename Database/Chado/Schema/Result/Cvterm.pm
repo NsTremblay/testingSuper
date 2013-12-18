@@ -1379,6 +1379,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 pripub_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pripub_feature_relationships",
+  "Database::Chado::Schema::Result::PripubFeatureRelationship",
+  { "foreign.type_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_feature_cvterms
 
 Type: has_many
@@ -1525,6 +1540,21 @@ Related object: L<Database::Chado::Schema::Result::PubRelationship>
 __PACKAGE__->has_many(
   "pub_relationships",
   "Database::Chado::Schema::Result::PubRelationship",
+  { "foreign.type_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 pubpri_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pubpri_feature_relationships",
+  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
   { "foreign.type_id" => "self.cvterm_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -1815,8 +1845,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2PB9zoPk5TiQvrxGuhcpfA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-16 14:26:26
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:msZCeeNpPbhbL/QH9rzrzA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

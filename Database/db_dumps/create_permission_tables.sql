@@ -428,6 +428,153 @@ CREATE INDEX private_feature_dbxref_idx2 ON private_feature_dbxref USING btree (
 
 COMMIT;
 
+BEGIN;
+
+-----------------------------------------------------------------------------
+--
+-- Name: pripub_feature_relationship; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+CREATE TABLE pripub_feature_relationship (
+    feature_relationship_id integer NOT NULL,
+    subject_id integer NOT NULL,
+    object_id integer NOT NULL,
+    type_id integer NOT NULL,
+    value text,
+    rank integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.pripub_feature_relationship OWNER TO postgres;
+
+COMMENT ON TABLE pripub_feature_relationship IS 'A mirror of the feature_relationship table.
+ Only difference is that this table maps subject features in the private_feature table to object features in the feature table.  See
+comments on feature_relationship table for more information.';
+
+
+--
+-- primary key
+--
+CREATE SEQUENCE pripub_feature_relationship_feature_relationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.pripub_feature_relationship_feature_relationship_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE pripub_feature_relationship_feature_relationship_id_seq OWNED BY pripub_feature_relationship.feature_relationship_id;
+
+ALTER TABLE ONLY pripub_feature_relationship ALTER COLUMN feature_relationship_id SET DEFAULT nextval('pripub_feature_relationship_feature_relationship_id_seq'::regclass);
+
+ALTER TABLE ONLY pripub_feature_relationship
+    ADD CONSTRAINT pripub_feature_relationship_pkey PRIMARY KEY (feature_relationship_id);
+
+
+--
+-- foreign keys
+--
+ALTER TABLE ONLY pripub_feature_relationship
+    ADD CONSTRAINT pripub_feature_relationship_object_id_fkey FOREIGN KEY (object_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY pripub_feature_relationship
+    ADD CONSTRAINT pripub_feature_relationship_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY pripub_feature_relationship
+    ADD CONSTRAINT pripub_feature_relationship_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- constraints
+--
+ALTER TABLE ONLY pripub_feature_relationship
+    ADD CONSTRAINT pripub_feature_relationship_c1 UNIQUE (subject_id, object_id, type_id, rank);
+
+
+--
+-- Indices 
+--
+CREATE INDEX pripub_feature_relationship_idx1 ON pripub_feature_relationship USING btree (subject_id);
+
+CREATE INDEX pripub_feature_relationship_idx2 ON pripub_feature_relationship USING btree (object_id);
+
+CREATE INDEX pripub_feature_relationship_idx3 ON pripub_feature_relationship USING btree (type_id);
+
+-----------------------------------------------------------------------------
+--
+-- Name: pubpri_feature_relationship; Type: TABLE; Schema: public; Owner: postgres; Tablespace: 
+--
+CREATE TABLE pubpri_feature_relationship (
+    feature_relationship_id integer NOT NULL,
+    subject_id integer NOT NULL,
+    object_id integer NOT NULL,
+    type_id integer NOT NULL,
+    value text,
+    rank integer DEFAULT 0 NOT NULL
+);
+
+
+ALTER TABLE public.pubpri_feature_relationship OWNER TO postgres;
+
+COMMENT ON TABLE pubpri_feature_relationship IS 'A mirror of the feature_relationship table.
+ Only difference is that this table maps subject features in the feature table to object features in the private_feature table.  See
+comments on feature_relationship table for more information.';
+
+
+--
+-- primary key
+--
+CREATE SEQUENCE pubpri_feature_relationship_feature_relationship_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.pubpri_feature_relationship_feature_relationship_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE pubpri_feature_relationship_feature_relationship_id_seq OWNED BY pubpri_feature_relationship.feature_relationship_id;
+
+ALTER TABLE ONLY pubpri_feature_relationship ALTER COLUMN feature_relationship_id SET DEFAULT nextval('pubpri_feature_relationship_feature_relationship_id_seq'::regclass);
+
+ALTER TABLE ONLY pubpri_feature_relationship
+    ADD CONSTRAINT pubpri_feature_relationship_pkey PRIMARY KEY (feature_relationship_id);
+
+
+--
+-- foreign keys
+--
+ALTER TABLE ONLY pubpri_feature_relationship
+    ADD CONSTRAINT pubpri_feature_relationship_object_id_fkey FOREIGN KEY (object_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY pubpri_feature_relationship
+    ADD CONSTRAINT pubpri_feature_relationship_subject_id_fkey FOREIGN KEY (subject_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY pubpri_feature_relationship
+    ADD CONSTRAINT pubpri_feature_relationship_type_id_fkey FOREIGN KEY (type_id) REFERENCES cvterm(cvterm_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- constraints
+--
+ALTER TABLE ONLY pubpri_feature_relationship
+    ADD CONSTRAINT pubpri_feature_relationship_c1 UNIQUE (subject_id, object_id, type_id, rank);
+
+
+--
+-- Indices 
+--
+CREATE INDEX pubpri_feature_relationship_idx1 ON pubpri_feature_relationship USING btree (subject_id);
+
+CREATE INDEX pubpri_feature_relationship_idx2 ON pubpri_feature_relationship USING btree (object_id);
+
+CREATE INDEX pubpri_feature_relationship_idx3 ON pubpri_feature_relationship USING btree (type_id);
+
+
+COMMIT;
+
 
 
 

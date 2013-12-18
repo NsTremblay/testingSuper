@@ -2,7 +2,6 @@ package Sequences::ExperimentalFeatures;
 
 use strict;
 use warnings;
-
 use DBI;
 use Carp qw/croak carp confess/;
 use Sys::Hostname;
@@ -32,6 +31,7 @@ my @tables = (
 	"private_feature",
 	"feature_relationship",
 	"private_feature_relationship",
+	"pripub_feature_relationship",
 	"feature_cvterm",
 	"private_feature_cvterm",
 	"featureloc",
@@ -80,6 +80,7 @@ my %sequences = (
 	feature_cvterm               => "feature_cvterm_feature_cvterm_id_seq",
 	private_feature              => "private_feature_feature_id_seq",
 	private_feature_relationship => "private_feature_relationship_feature_relationship_id_seq",
+	pripub_feature_relationship  => "pripub_feature_relationship_feature_relationship_id_seq",
 	private_featureprop          => "private_featureprop_featureprop_id_seq",
 	private_featureloc           => "private_featureloc_featureloc_id_seq",
 	private_feature_cvterm       => "private_feature_cvterm_feature_cvterm_id_seq",
@@ -102,6 +103,7 @@ my %table_ids = (
     feature_cvterm               => "feature_cvterm_id",
     private_feature              => "feature_id",
 	private_feature_relationship => "feature_relationship_id",
+	pripub_feature_relationship  => "feature_relationship_id",
 	private_featureprop          => "featureprop_id",
 	private_featureloc           => "featureloc_id",
     private_feature_cvterm       => "feature_cvterm_id",
@@ -133,8 +135,9 @@ my %copystring = (
    featureloc                   => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
    private_feature              => "(feature_id,organism_id,name,uniquename,type_id,seqlen,dbxref_id,upload_id,residues)",
    private_feature_relationship => "(feature_relationship_id,subject_id,object_id,type_id,rank)",
+   pripub_feature_relationship  => "(feature_relationship_id,subject_id,object_id,type_id,rank)",
    private_featureprop          => "(featureprop_id,feature_id,type_id,value,upload_id,rank)",
-   private_feature_cvterm       => "(feature_cvterm_id,feature_id,cvterm_id,pub_id,rank)",
+   private_feature_cvterm       => "(feature_cvterm_id,feature_id,cvterm_id,pub_id,is_not,rank)",
    private_featureloc           => "(featureloc_id,feature_id,srcfeature_id,fmin,fmax,strand,locgroup,rank)",
    tree                         => "(tree_id,name,format,tree_string)",
    feature_tree                 => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
@@ -269,7 +272,7 @@ use constant CREATE_SNP_CACHE_TABLE_INDEX1 =>
 	"ALTER TABLE public.tmp_snp_cache ADD CONSTRAINT tmp_snp_cache_c1 UNIQUE (name,block)";
 use constant INITIALIZE_SNP_TABLE =>
 	"INSERT into public.snp_alignment ".
-	"VALUES('core',1,1,'')";
+	"VALUES('core',1,0,'')";
 use constant CREATE_SNP_CACHE_TABLE =>
 	"CREATE TABLE public.tmp_snp_cache AS ".
 	"SELECT * FROM public.snp_alignment";
@@ -366,8 +369,8 @@ use constant ADD_SNP_BLOCK =>
 	  GROUP BY me.name";
 use constant ALTER_SNP => 
 	"UPDATE public.tmp_snp_cache ".
-	"SET alignment = overlay(alignment placing ? from ?) ".
-	"WHERE name = ? AND block = ?";
+	" SET alignment = overlay(alignment placing ? from ?) ".
+	" WHERE name = ? AND block = ?";
 use constant VALIDATE_SNP_ALIGNMENT => "SELECT count(*) FROM tmp_snp_cache WHERE name = ?";
 use constant RETRIEVE_PUBLIC_SNP_COLUMN =>
 	"SELECT contig_collection, locus, allele FROM snp_variation WHERE snp = ?";
@@ -816,17 +819,19 @@ sub initialize_snp_caches {
     $sth->execute($block);
     my ($pos) = $sth->fetchrow_array();
     
-    print "CURRENT BLOCK: $block, CURRENT COLUMN: $pos\n";
     
-    my $max = 10000;
-    #my $max = 2;
+    
+    #my $max = 10000;
+    my $max = 1000;
     
     # Advance counter
-    $pos++ if $table_exists; # Do not increment if starting with new alignment table
+    $pos++;
     if($pos > $max) {
     	$pos = 1;
     	$block++;
     }
+    
+    print "CURRENT BLOCK: $block, NEXT COLUMN: $pos\n";
     
     $self->{snp_alignment}->{block} = $block;
     $self->{snp_alignment}->{column} = $pos;
@@ -2481,7 +2486,13 @@ sub handle_query_hit {
     my $self = shift;
     my ($child_id, $parent_id, $pub) = @_;
     
-    $self->add_relationship($child_id, $parent_id, 'similar_to', $pub);   
+    # vf/amr query features are always in public table, so if genome is private
+    # this requires the pripub_feature_relationship table
+    unless($pub) {
+    	$self->add_relationship($child_id, $parent_id, 'similar_to', 0, 1); 
+    } else {
+    	$self->add_relationship($child_id, $parent_id, 'similar_to', $pub); 
+    }
 }
 
 =head2 handle_pangenome_loci
@@ -2512,7 +2523,13 @@ sub handle_pangenome_loci {
     my $self = shift;
     my ($child_id, $parent_id, $pub) = @_;
     
-    $self->add_relationship($child_id, $parent_id, 'derives_from', $pub);   
+    # pangenome query features are always in public table, so if genome is private
+    # this requires the pripub_feature_relationship table
+    unless($pub) {
+    	$self->add_relationship($child_id, $parent_id, 'derives_from', 0, 1); 
+    } else {
+    	$self->add_relationship($child_id, $parent_id, 'derives_from', $pub); 
+    }
 }
 
 
@@ -2884,6 +2901,10 @@ sub handle_snp {
 	# Retrieve reference snp, if exists
 	my ($ref_snp_id, $block, $column) = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
 	
+#	print "CURRENT BLOCK: ".$self->{snp_alignment}->{block}."\n";
+#	print "CURRENT COLUMN: ".$self->{snp_alignment}->{column}."\n";
+#	$self->print_alignment_lengths();
+	
 	unless($ref_snp_id) {
 		# Create new core snp
 		
@@ -2901,10 +2922,16 @@ sub handle_snp {
 		} else {
 			croak "A matching entry for region $ref_id, position $ref_pos, gap offset $rgap_offset already exists in snp_core table.";
 		}
+		
 		#print "NEW COLUMN: $ref_snp_id, $block, $column\n";
+		
 	} else {
+		
 		#print "COLUMN: $ref_snp_id, $block, $column\n";
+		
 	}
+	
+	#$self->print_alignment_lengths();
 	
 	unless($self->validate_snp($ref_snp_id, $contig_collection, $contig, $is_public)) {
 		
@@ -2989,17 +3016,32 @@ The feature_id for the child feature, query gene and a boolean indicating public
 
 sub add_relationship {
     my $self = shift;
-    my ($child_id, $parent_id, $reltype, $pub) = @_;
+    my ($child_id, $parent_id, $reltype, $pub, $xpub) = @_;
     
   	my $rtype = $self->relationship_types($reltype);
   	croak "Unrecognized relationship type: $reltype." unless $rtype;
     my $rank = 0;
     
     # If this relationship is unique, add it.
-    my $table = $pub ? 'feature_relationship' : 'private_feature_relationship';
-	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $pub ]) ) {
+    my $table;
+    my $pub_type;
+    if($pub) {
+    	$table = 'feature_relationship';
+    	$pub_type = 1;
+    } else {
+    	if($xpub) {
+    		$table = 'pripub_feature_relationship';
+    		$pub_type = 2;
+    	} else {
+    		$table = 'private_feature_relationship';
+    		$pub_type = 0;
+    	}
+    }
+    	
+    
+	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $pub_type ]) ) {
                                         	
-		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub);
+		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub,$xpub);
 		$self->nextoid($table,'++');
 	}
    
@@ -3021,7 +3063,7 @@ sub print_fprop {
 		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank)),"\n";		
 	} else {
 		my $fh = $self->file_handles('private_featureprop');
-		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$rank,$upl_id)),"\n";
+		print $fh join("\t",($fp_id,$f_id,$cvterm_id,$value,$upl_id,$rank)),"\n";
 	}
   
 }
@@ -3044,13 +3086,19 @@ sub print_fcvterm {
 
 sub print_frel {
 	my $self = shift;
-	my ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank,$pub) = @_;
+	my ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank,$pub,$xpub) = @_;
 	
 	my $fh;
 	if($pub) {
-		$fh = $self->file_handles('feature_relationship');		
+		
+		$fh = $self->file_handles('feature_relationship');
+			
 	} else {
-		$fh = $self->file_handles('private_feature_relationship');
+		if($xpub) {
+			$fh = $self->file_handles('pripub_feature_relationship');
+		} else {
+			$fh = $self->file_handles('private_feature_relationship');
+		}
 	}
 	
 	print $fh join("\t", ($nextfeaturerel,$nextfeature,$parent,$part_of,$rank)),"\n";
@@ -3793,7 +3841,6 @@ sub add_snp_column {
 		$c = $self->{snp_alignment}->{column} = 1;
 		
 		$self->{'queries'}{'add_snp_block'}->execute($b, $c, $nuc);
-		print "ADDING $b,$c,$nuc\n";
 		
 	} else {
 		# New column in current block
@@ -3899,7 +3946,7 @@ sub alter_snp {
 	
 	# Validate nucleotide
 	$nuc = uc($nuc);
-	croak "Invalid nucleotide character '$nuc'." unless $nuc eq 'A' || $nuc eq 'C' || $nuc eq 'G' || $nuc eq 'T' || $nuc eq 'N' || $nuc eq '-' || $nuc eq 'X';
+	croak "Invalid nucleotide character '$nuc'." unless $nuc =~ m/^[A-Z\-]$/;
 	
 	my $pre = $is_public ? 'public_' : 'private_';
 	my $genome = $pre . $genome_id;
@@ -4139,6 +4186,26 @@ sub snp_variations_in_column {
 	}
 	
 	return(\%variations);
+}
+
+=head2 print_alignment_lengths
+
+=cut
+
+sub print_alignment_lengths {
+	my $self = shift;
+	
+	my $sql = q/select length(alignment),block,name from tmp_snp_cache order by block,name/;
+	
+	$self->{'queries'}{'print_alignment_lengths'} = $self->dbh->prepare($sql) unless $self->{'queries'}{'print_alignment_lengths'};
+	
+	$self->{'queries'}{'print_alignment_lengths'}->execute();
+	
+	print "LENGTHS:\n---------\n";
+	while (my ($len,$b,$n) = $self->{'queries'}{'print_alignment_lengths'}->fetchrow_array) {
+		print "$n - $b: $len\n";
+	}
+	print "\n";
 }
 
 1;

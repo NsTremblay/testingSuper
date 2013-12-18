@@ -326,7 +326,7 @@ my $num_done = 0;
 		snps_and_trees($query_id, \%sequence_group);
 		
 		$num_done++;
-		print "Pangenome segments $num_done of $num_pg loaded." if $num_done % 1000 == 0;
+		print "Pangenome segments $num_done of $num_pg loaded.\n" if $num_done % 1000 == 0;
 	}
 	
 	close $in;
@@ -593,12 +593,18 @@ sub snps_and_trees {
 		croak "Error: aligned reference pangenome sequence not found in muscle output file.\n" unless $new_refseq;
 		
 		# Compute snps for each sequence relative to the reference
+		my $total_snps = 0;
 		foreach my $id (keys %$seq_grp) {
 			
 			if($seq_grp->{$id}->{is_new}) {
 				my $ghash = $seq_grp->{$id};
-				find_snps($new_refseq, $query_id, $ghash);
+				$total_snps++ if find_snps($new_refseq, $query_id, $ghash);
 			}
+			
+		}
+		
+		if($total_snps == $num_seqs) {
+			# 
 		}
 		
 	}
@@ -642,6 +648,9 @@ sub find_snps {
         if($c1 ne $c2) {
         	# Found snp or indel
         	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $is_public);
+        	
+        	#$chado->print_alignment_lengths();
+        	#exit(0);
         }
 	}
 }

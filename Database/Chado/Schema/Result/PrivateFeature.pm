@@ -234,6 +234,21 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
+=head2 pripub_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pripub_feature_relationships",
+  "Database::Chado::Schema::Result::PripubFeatureRelationship",
+  { "foreign.subject_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_feature_cvterms
 
 Type: has_many
@@ -399,6 +414,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 pubpri_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pubpri_feature_relationships",
+  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
+  { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 type
 
 Type: belongs_to
@@ -430,8 +460,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zXBsKFgMKb8V1f9x3FAiOg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-16 14:26:26
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XifuPyZfvuCWqme7/WL3bw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

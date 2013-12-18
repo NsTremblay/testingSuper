@@ -8,11 +8,13 @@ use Pod::Usage;
 use Carp;
 use Sys::Hostname;
 use Config::Simple;
-use ExperimentalFeatures;
 use FindBin;
 use lib "$FindBin::Bin/..";
+use Sequences::ExperimentalFeatures;
 use Phylogeny::Tree;
+use Phylogeny::TreeBuilder;
 use Time::HiRes qw( time );
+
 
 =head1 NAME
 
@@ -172,6 +174,7 @@ $argv{save_tmpfiles}    = $SAVE_TMPFILES;
 $argv{vacuum}           = $VACUUM;
 $argv{debug}            = $DEBUG;
 $argv{use_cached_names} = 1; # Pull contig names from DB tmp table
+$argv{snp_capable}      = 1; # Prepare snp loading methods
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
@@ -245,7 +248,6 @@ foreach my $pgregion (keys %$new) {
 	my %sequence_group;
 	my $allele_hash = $new->{$pgregion};
 	
-	
 	# pangenome
 	my $query_id = $pangenome->{$pgregion}->{id};
 	my $in_core = $pangenome->{$pgregion}->{core}; # should be 0
@@ -270,7 +272,7 @@ foreach my $pgregion (keys %$new) {
 		$query_id = $pg_feature_id;
 		$tree_file = $pgregion;
 		
-	} 
+	}
 #	else {
 #		# Update pangenome alignment sequence
 #		update_reference_fragment($query_id, $pangenome->{$pgregion}->{seq});
@@ -433,11 +435,14 @@ sub add_pangenome_loci {
 		
 		# uniquename & name
 		my $name = "$pg_id locus";
-		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		my $ok_name = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
+		unless($ok_name) {
+			die "Duplicate allele $uniquename.";
+		}
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
-		$chado->handle_pangenom_loci($curr_feature_id, $pg_id, $is_public);
+		$chado->handle_pangenome_loci($curr_feature_id, $pg_id, $is_public);
 		
 		# Additional Feature Types
 		$chado->add_types($curr_feature_id, $is_public);
@@ -484,8 +489,21 @@ sub load_msa {
 		my ($ftype, $query_id) = ($locus =~ m/(\w+_)(\d+)/);
 		croak "Missing query gene ID in locus line: $_\n" unless $query_id && $ftype;
 		
+		# Process locus tag to determine situation: new pangenome region, old pangenome region in core/accessory
+		my $in_core;
+		my $novel;
 		if($ftype eq 'nr_') {
 			$query_id = "nr_$query_id";
+			$in_core = 0;
+			$novel = 1;
+		} elsif($ftype eq 'pgacc_') {
+			$in_core = 0;
+			$novel = 0;
+		} elsif($ftype eq 'pgcor_') {
+			$in_core = 1;
+			$novel = 0;
+		} else {
+			croak "Invalid locus tag $locus in pangenome loci list loci.txt.";
 		}
 		
 		my $msa_file = $msa_dir . "$query_id.aln";
@@ -503,30 +521,30 @@ sub load_msa {
 				$new{$locus}{$id} = $entry->seq;
 				$has_new = 1;
 				
-			} elsif($id =~ m/^pg(acc|cor)_(\d+)/) {
-				# Reference sequence
-				my $in_core = 0;
-				if($1 eq 'cor') {
-					$in_core = 1;
-				}
-				$pangenome{$locus} = {
-					id => $2,
-					seq => $entry->seq,
-					novel => 0,
-					core => $in_core
-				};
-				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
-				$has_ref = 1;
+			} elsif($id =~ m/^pg_(\d+)/) {
+				# Reference sequence, new/old, in/out core determined from locus tag in loci.txt
 				
-			} elsif($id =~ m/^nr_(\d+)/) {
-				# Reference sequence, not currently in DB
 				$pangenome{$locus} = {
 					id => $1,
 					seq => $entry->seq,
-					novel => 1,
-					core => 0, # All new sequences are not in core
+					novel => $novel,
+					core => $in_core
 				};
 				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
+				die "Conflicting loci names $id and $locus in fasta file and loci.txt" if $novel;
+				$has_ref = 1;
+				
+			} elsif($id =~ m/^nr_(\d+)/) {
+				# Reference sequence, new/old, in/out core determined from locus tag in loci.txt
+				
+				$pangenome{$locus} = {
+					id => $1,
+					seq => $entry->seq,
+					novel => $novel,
+					core => $in_core
+				};
+				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
+				die "Conflicting loci names $id and $locus in fasta file and loci.txt" unless $novel;
 				$has_ref = 1;
 				
 			} else {
@@ -598,6 +616,8 @@ sub update_pangenome_loci {
 
 sub load_tree {
 	my ($tname, $query_id, $seq_group) = @_;
+	
+	return unless scalar keys %$seq_group > 2; # need 3 or more sequences for trees
 	
 	my $tree_file = $tree_dir . "$tname.phy";
 	
