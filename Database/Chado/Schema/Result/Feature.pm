@@ -787,9 +787,24 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
+=head2 vf_categories
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-27 16:43:57
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:n2w5FtKbrdMUtxD09cx0Qg
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::VfCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "vf_categories",
+  "Database::Chado::Schema::Result::VfCategory",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-13 10:55:05
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Xftje3icKIf+6OnMDpyAAQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

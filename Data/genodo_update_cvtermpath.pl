@@ -65,10 +65,6 @@ $dbsource . ';port=' . $DBPORT if $DBPORT;
 
 my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS) or croak "Could not connect to database.";
 
-my $cvterm = $schema->resultset('Cvterm')->find({'me.name' => 'antimicrobial_resistance_gene'});
-my $id = $cvterm->cvterm_id;
-die unless $id;
-
 #Categories will have the form:
 
 # 	%categores = (
@@ -114,19 +110,29 @@ die unless $id;
 #		}
 # 	)
 
-my %categories;
-my %unclassifiedIds;
-my %categoryIds;
+my (%categories, %unclassifiedIds, %categoryIds, $id, $dbh);
 
-my @wantedCategories = (
-	'antibiotic molecule',
-	'determinant of antibiotic resistance',
-	'antibiotic target',
-	);
+if ($dataType eq 'amr') {
+	my $cvterm = $schema->resultset('Cvterm')->find({'me.name' => 'antimicrobial_resistance_gene'});
+	$id = $cvterm->cvterm_id;
+	die unless $id;
+
+	my @wantedCategories = (
+		'antibiotic molecule',
+		'determinant of antibiotic resistance',
+		'antibiotic target',
+		);
+
+	#Need the correct pub_id to grab the correct sequences
+
+	my $pub_rs = $schema->resultset('Pub')->find({uniquename => 'The Comprehensive Antibiotic Resistance Database'});
+	my $pub_id = $pub_rs->pub_id;
+
+	die "Pub id could not be found for \'The Comprehensive Antibiotic Resistance Database\'" unless $pub_id;
 
 #Populate the initial hashes;
-getFeatureCvtermIds();
-getCategoryIds(\@wantedCategories);
+getFeatureCvtermIds($pub_id);
+getAmrCategoryIds(\@wantedCategories);
 #appendBroadCategory('process or component of antibiotic biology or chemistry');
 
 print "Generated categories...\n";
@@ -147,7 +153,7 @@ $schema->storage->dbh->disconnect;
 print "Reconnecting database for data copy...\n";
 
 # #Can use the existing config creds to connect to the db with DBI
-my $dbh = DBI->connect(
+$dbh = DBI->connect(
 	"dbi:Pg:dbname=$DBNAME;port=$DBPORT;host=$DBHOST",
 	$DBUSER,
 	$DBPASS,
@@ -156,9 +162,65 @@ my $dbh = DBI->connect(
 
 print "\t...Connected\n";
 
-copyDataToDB($filePath);
+copyAmrDataToDB($filePath);
 
 unlink($filePath);
+
+}
+
+elsif ($dataType eq 'vir') {
+	my $cvterm = $schema->resultset('Cvterm')->find({'me.name' => 'virulence_factor'});
+	$id = $cvterm->cvterm_id;
+	die unless $id;
+
+	my @wantedCategories = (
+		'pathogenesis'
+		);
+
+	#Need the correct pub_id to grab the correct sequences
+
+	my $pub_rs = $schema->resultset('Pub')->find({'me.uniquename' => 'Virulence Factor Database'});
+	my $pub_id = $pub_rs->pub_id;
+
+	die "Pub id could not be found for \'Virulence Factor Database\'" unless $pub_id;
+
+#Populate the initial hashes;
+getFeatureCvtermIds($pub_id);
+getVFCategoryIds(\@wantedCategories);
+#appendBroadCategory('process or component of antibiotic biology or chemistry');
+
+print "Generated categories...\n";
+print "\t...Begin mapping terms\n";
+
+while (keys %{$categories{'unclassified'}} != 0) {
+	findParents();
+}
+
+print "Printing mapped terms to file\n";
+
+my $filePath = $dataType . "_categoies.txt";
+printToFile($filePath);
+
+#Disconnect the schema, I prefer to use DBI to copy all the data into the file;
+$schema->storage->dbh->disconnect;
+
+print "Reconnecting database for data copy...\n";
+
+# #Can use the existing config creds to connect to the db with DBI
+$dbh = DBI->connect(
+	"dbi:Pg:dbname=$DBNAME;port=$DBPORT;host=$DBHOST",
+	$DBUSER,
+	$DBPASS,
+	{AutoCommit => 0, TraceLevel => 0}
+	) or die "Unable to reconnect to database: " . DBI->errstr;
+
+print "\t...Connected\n";
+
+copyVFDataToDB($filePath);
+
+unlink($filePath);
+
+}
 
 ##				    ##
 ## Helper Functions ## 
@@ -218,9 +280,9 @@ sub findParents {
 
 #Bottom -> Up:
 sub getFeatureCvtermIds {
-
-	my $amrGeneResutls = $schema->resultset('FeatureCvterm')->search(
-		{},
+	my $_pub_id = shift;
+	my $geneResults = $schema->resultset('FeatureCvterm')->search(
+		{'me.pub_id' => $_pub_id},
 		{
 
 			select => ['me.feature_id', 'me.cvterm_id'],
@@ -231,7 +293,7 @@ sub getFeatureCvtermIds {
 	$categories{'unclassified'} = {};
 
 
-	while (my $row = $amrGeneResutls->next) {
+	while (my $row = $geneResults->next) {
 		$categories{'unclassified'}->{$row->get_column('type_id')} = {} unless exists $categories{'unclassified'}->{$row->get_column('type_id')};
 		#Set parent id initially as itself
 		$categories{'unclassified'}->{$row->get_column('type_id')}->{'parent_ids'} = [];
@@ -244,9 +306,9 @@ sub getFeatureCvtermIds {
 	return;
 }
 
-sub getCategoryIds {
+sub getAmrCategoryIds {
 	my $wantedCategories = shift;
-	my $categoryResults = $schema->resultset('Cvterm')->search(
+	my $amrCategoryResults = $schema->resultset('Cvterm')->search(
 		{'dbxref.accession' => '1000001', 'subject.name' => $wantedCategories},
 		{
 			join => [
@@ -258,7 +320,33 @@ sub getCategoryIds {
 		}
 		);
 
-	while (my $row = $categoryResults->next) {
+	while (my $row = $amrCategoryResults->next) {
+		my %subcategory;
+		$subcategory{$row->get_column('refined_category_id')} = {} unless exists $subcategory{$row->get_column('refined_category_id')};
+		$subcategory{$row->get_column('refined_category_id')}->{'cvterm_name'} = $row->get_column('refined_category_name');
+		$subcategory{'type_ids'} = {} unless exists $subcategory{'type_ids'};
+		
+		$categories{$row->get_column('broad_category_id')}->{'subcategories'} = {} unless exists $categories{$row->get_column('broad_category_id')}->{'subcategories'};
+		$categories{$row->get_column('broad_category_id')}->{'subcategories'}->{$row->get_column('refined_category_id')} = \%subcategory;
+		$categories{$row->get_column('broad_category_id')}->{'parent_name'} = $row->get_column('broad_category_name');
+		#Additional list to make iteration easier
+		$categoryIds{$row->get_column('refined_category_id')} = $row->get_column('broad_category_id');
+	}
+	return;
+}
+
+sub getVFCategoryIds {
+	my $wantedCategories = shift;
+	my $vfCategoryResults = $schema->resultset('Cvterm')->search(
+		{'me.name' => $wantedCategories},
+		{
+			join => [{'cvterm_relationship_objects' => {'subject' => {'cvterm_relationship_objects' => 'subject'}}}],
+			select => ['me.cvterm_id', 'me.name', 'subject.cvterm_id', 'subject.name', 'subject_2.cvterm_id', 'subject_2.name'],
+			as => ['matriarch_category_id', 'matriarch_category_name', 'broad_category_id', 'broad_category_name', 'refined_category_id', 'refined_category_name']
+		}
+		);
+
+	while (my $row = $vfCategoryResults->next) {
 		my %subcategory;
 		$subcategory{$row->get_column('refined_category_id')} = {} unless exists $subcategory{$row->get_column('refined_category_id')};
 		$subcategory{$row->get_column('refined_category_id')}->{'cvterm_name'} = $row->get_column('refined_category_name');
@@ -294,8 +382,8 @@ sub printToFile{
 	my $_filePath = shift;
 	open my $fh, ">", "$_filePath" or die "Could not open file: $!\n";
 
-	#The amr categories table currently has the columns:
-	#	gene_cvterm_id (type_id) | category_id (subcategory id) | feature_id (gene feature_id) | amr_category_id (generated automatically since its a serial type)
+	#The categories table currently has the columns:
+	#	gene_cvterm_id (type_id) | category_id (subcategory id) | feature_id (gene feature_id) | amr/vf_category_id (generated automatically since its a serial type)
 
 	foreach my $x (keys %categories) {
 		foreach my $y (keys %{$categories{$x}->{'subcategories'}}) {
@@ -311,11 +399,34 @@ sub printToFile{
 	close $fh;
 }
 
-sub copyDataToDB {
+sub copyAmrDataToDB {
 	my $_filePath = shift;
 
 	#need a dbh do statement
 	$dbh->do("COPY amr_category(parent_category_id, category_id, gene_cvterm_id, feature_id) FROM STDIN");
+
+	open my $copyfh, "<", $_filePath or die "Cannot open $_filePath: $!";
+
+	while (<$copyfh>) {
+		if (! ($dbh->pg_putcopydata($_))) {
+			$dbh->pg_putcopyend();
+			$dbh->rollback;
+			$dbh->disconnect;
+			die "Error calling pg_putcopydata: $!";
+		}
+	}
+	print "pg_putcopydata completed sucessfully.\n";
+	$dbh->pg_putcopyend() or die "Error calling pg_putcopyend: $!";
+	$dbh->commit;
+	$dbh->disconnect;
+	print "Data copy completed\n";
+}
+
+sub copyVFDataToDB {
+	my $_filePath = shift;
+
+	#need a dbh do statement
+	$dbh->do("COPY vf_category(parent_category_id, category_id, gene_cvterm_id, feature_id) FROM STDIN");
 
 	open my $copyfh, "<", $_filePath or die "Cannot open $_filePath: $!";
 

@@ -1424,6 +1424,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_feature_cvterms
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateFeatureCvterm>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_feature_cvterms",
+  "Database::Chado::Schema::Result::PrivateFeatureCvterm",
+  { "foreign.cvterm_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_feature_relationships
 
 Type: has_many
@@ -1844,9 +1859,54 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 vf_category_categories
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-11-28 14:11:41
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:eo8wUTGIXUsE0ZOCbwZJtg
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::VfCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "vf_category_categories",
+  "Database::Chado::Schema::Result::VfCategory",
+  { "foreign.category_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 vf_category_gene_cvterms
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::VfCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "vf_category_gene_cvterms",
+  "Database::Chado::Schema::Result::VfCategory",
+  { "foreign.gene_cvterm_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 vf_category_parent_categories
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::VfCategory>
+
+=cut
+
+__PACKAGE__->has_many(
+  "vf_category_parent_categories",
+  "Database::Chado::Schema::Result::VfCategory",
+  { "foreign.parent_category_id" => "self.cvterm_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-13 14:54:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:OzYZ5Cb5+YVwO+C4rOXHvw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

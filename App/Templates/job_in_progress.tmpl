@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<TMPL_INCLUDE name="header.tmpl">
+	<!-- jQuery -->
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+	<!-- Google Maps -->
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
+	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
+	<script type="text/javascript" src="/App/Styling/js/markerclusterer.js"></script>
+</head>
+
+<body style="background-color:#796e6c" onload="doPoll()">
+	<TMPL_INCLUDE name="nav_bar.tmpl">
+
+	<div id="status" class="container" style="background-color:#ffffff;padding:10px">
+		<div id="wheel-loader" style="margin:10px 0px 10px 0px" align="middle"><small><em><img src="/App/Pictures/wheel-loader.gif"> Loading Info...</em></small></div>
+	</div>
+	<TMPL_INCLUDE name="footer.tmpl">
+</body>
+
+<script type="text/javascript">
+
+var job_id = "<TMPL_VAR job_id>";
+var geospatial = "<TMPL_VAR geospatial>";
+
+function doPoll() {
+	$.ajax({
+		type: "POST",
+		url: "/group-wise-comparisons/running_job/",
+		data: {'job_id' : job_id, 'geospatial' : geospatial }
+	})
+	.done(function(data) {
+		//console.log(data);
+		var json = JSON.parse(data);
+		//console.log(json);
+		if (json.status != 'in progress') {
+			$('#status').empty();
+			$('#status').append(json.html);
+			return;
+		}
+		else {
+			$('#status').empty();
+			$('#status').append(
+				'<div class="row-fluid"><h3>Please wait while we generate your results...</h3><p id="status_update" style="color:#d41616;display:none"> Current status: '+json.status+'</p></div>'
+				+'<h4 class="help-block">Here\'s a few things you can do in the meantime:</h4>'
+				+'<ul>'
+				+'<li><p>You can wait. Once the results are ready, the page will automatically forward you to them.</p></li>'
+				+'<li><p>You can open up another tab or browser to do other things while you wait but don\'t close this page without bookmarking it or you will lose your results.</p></li>'
+				+'<li><p>Bookmark this page and comeback to it later. You can access the results at anytime by opening up the bookmarked page. We will keep your results for 30 days.</p></li>'
+				+'</ul>'
+				);
+			$('#status_update').show("slow");
+			setTimeout(function(){$('#status_update').hide("slow")},3000);
+			setTimeout(function(){doPoll()},10000);
+		}
+	});
+}
+
+
+</script>
+
+</html>

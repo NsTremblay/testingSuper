@@ -254,4 +254,76 @@ COMMENT ON COLUMN amr_category.feature_id IS 'Stores the feature_id for each AMR
 
 COMMIT;
 
+BEGIN;
+
+-- Table: vf_category
+
+-- DROP TABLE vf_category;
+
+CREATE TABLE vf_category
+(
+  vf_category_id serial NOT NULL,
+  parent_category_id integer NOT NULL,
+  category_id integer NOT NULL, -- Cvterm_id for category....
+  gene_cvterm_id integer NOT NULL, -- Cvterm_id for vf gene. ...
+  feature_id integer, -- Stores the feature_id for each VF gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.
+  CONSTRAINT vf_category_pkey PRIMARY KEY (vf_category_id),
+  CONSTRAINT vf_category_cvterm_fkey FOREIGN KEY (category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT vf_gene_cvterm_fkey FOREIGN KEY (gene_cvterm_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT feature_id_feature_fkey FOREIGN KEY (feature_id)
+      REFERENCES feature (feature_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+  CONSTRAINT parent_category_cvterm_fkey FOREIGN KEY (parent_category_id)
+      REFERENCES cvterm (cvterm_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE vf_category
+  OWNER TO postgres;
+COMMENT ON TABLE vf_category
+  IS 'Table that maps VF category type_ids to gene feature_ids';
+COMMENT ON COLUMN vf_category.category_id IS 'Cvterm_id for category.
+Is a foreign key to the Cvterm table.';
+COMMENT ON COLUMN vf_category.gene_cvterm_id IS 'Cvterm_id for vf gene. 
+Is a foregn key to the Cvterm table.';
+COMMENT ON COLUMN vf_category.feature_id IS 'Stores the feature_id for each VF gene. Is a foreign key to the feature table. Maps to cvterm_id from the feature_cvterm table.';
+
+COMMIT;
+
+BEGIN;
+
+-- Table: jobs
+
+-- DROP TABLE jobs;
+
+CREATE TABLE jobs
+(
+  job_id character varying NOT NULL, -- Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.
+  remote_addr character varying NOT NULL, -- IP address of the remote user that requested the job
+  session_id character varying NOT NULL, -- CGI session ID
+  username character varying, -- Username (if user logged in) of site user requesting job
+  status character varying, -- Current status of job. Will either be "in progress" or "completed"
+  CONSTRAINT jobs_pkey PRIMARY KEY (job_id)
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE jobs
+  OWNER TO postgres;
+COMMENT ON TABLE jobs
+  IS 'Stores id''s and statuses of current groupwise comparison jobs.';
+COMMENT ON COLUMN jobs.job_id IS 'Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.';
+COMMENT ON COLUMN jobs.remote_addr IS 'IP address of the remote user that requested the job';
+COMMENT ON COLUMN jobs.session_id IS 'CGI session ID';
+COMMENT ON COLUMN jobs.username IS 'Username (if user logged in) of site user requesting job';
+COMMENT ON COLUMN jobs.status IS 'Current status of job. Will either be "in progress" or "completed"';
+
+COMMIT;
+
 
