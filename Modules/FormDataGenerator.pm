@@ -332,7 +332,7 @@ sub getVirulenceFormData {
     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
     {
         'featureprops.value' => "Virulence Factor",
-        'type.name' => "gene"
+        'type.name' => "virulence_factor"
         },
         {
             column  => [qw/feature_id type_id me.name uniquename type.name featureprops.value/],

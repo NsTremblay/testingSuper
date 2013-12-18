@@ -105,13 +105,21 @@ Map.prototype.geoCodeMapAddress = function(address, map)
 	});
 };
 
-Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, selectedGenome) {
+Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, selectedGenome, markerIcon) {
 	var sortedPublicLocations = [];
 	var multiMarkers = {};
 	var clusterList = [];
+	var icon;
 
 	if (!genomesList) {
 		console.log("No genome locations");
+	}
+
+	if (!markerIcon) {
+		icon = "/App/Pictures/genodo_measle_red.png";
+	}
+	else {
+		icon = markerIcon;
 	}
 
 	$.each(genomesList, function(feature_id, feature_obj) {
@@ -124,7 +132,7 @@ Map.prototype.addMultiMarkers = function(genomesList, genomesLocationList, map, 
 				title: feature_obj.uniquename,
 				feature_id: feature_id,
 				uniquename: feature_obj.uniquename,
-				icon: "/App/Pictures/measle_red.png",
+				icon: icon,
 				location: newMarkerObj.locationName
 			});
 			sortedPublicLocations.push(multiMarker);

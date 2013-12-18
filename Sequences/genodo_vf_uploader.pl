@@ -2,12 +2,16 @@
 
 use strict;
 use warnings;
+
+use Getopt::Long;
 use IO::File;
 use IO::Dir;
 use Bio::SeqIO;
 use FindBin;
 use lib "$FindBin::Bin/../";
-use File::Basename;
+use Config::Simple;
+use Database::Chado::Schema;
+use Carp qw/croak carp/;
 
 #This script should parse the headers for the virluence factors from http://www.mgc.ac.cn/VFs/main.htm
 	# An example of a fasta header from the multi-fasta file downloaded:
