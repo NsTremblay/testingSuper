@@ -21,6 +21,7 @@
 
 var job_id = "<TMPL_VAR job_id>";
 var geospatial = "<TMPL_VAR geospatial>";
+var job = "";
 
 function doPoll() {
 	$.ajax({
@@ -31,8 +32,9 @@ function doPoll() {
 	.done(function(data) {
 		console.log(data);
 		if (data != 'in progress') {
-			$('html').empty();
-			$('html').append(data);
+			job = "complete";
+			$('#status').empty();
+			$('#status').append(data);
 			return;
 		}
 		else {
@@ -52,7 +54,6 @@ function doPoll() {
 		}
 	});
 }
-
 
 </script>
 

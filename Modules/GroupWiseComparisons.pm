@@ -201,7 +201,7 @@ sub running_job : Runmode {
 
 	if ($status ne "in progress") {
 		
-		open my $fh, "<", "/home/genodo/group_wise_data_temp/test_page.html";
+		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";
 		my $html = "";
 
 		while(<$fh>) {
