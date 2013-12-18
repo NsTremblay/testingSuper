@@ -63,38 +63,12 @@ it under the same terms as Perl itself.
 
 =cut
 
-=head2 error_handler
-
-  Print error to log, send error flag to DB table and then send email notification
-
-=cut
-
 # Globals
 my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
 	$mail_address, $mail_notification_address, $mail_pass, $tmpdir,
 	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
 	$nr_location, $parallel_exe, $data_directory);
 	
-sub error_handler {
-	# Log
-	my $m = "Abnormal termination.";
-	$m = @_ if @_;
-	FATAL("$m");
-	warn "$m";
-    
-    # DB
-    if ($dbh && $dbh->ping && $lock) {
-        update_status(-1);
-    }
-    
-    # Email
-    if($email_notification) {
-    	send_email(1);
-    }
-    
-    # Exit
-    exit(1);
-}
 
 $test = 0;
 GetOptions(
@@ -110,7 +84,7 @@ or pod2usage(-verbose => 1, -exitval => 1);
 pod2usage(-verbose => 2, -exitval => 1) if $help;
 
 # Perform error reporting before dying
-#$SIG{__DIE__} = $SIG{INT} = &error_handler;
+$SIG{__DIE__} = $SIG{INT} = 'error_handler';
 
 # Start logger
 my $logfile = ">>/home/genodo/logs/pipeline.log";
@@ -175,7 +149,7 @@ my %tracker_step_values = (
 # Initialization
 init($config);
 
-INFO "Start of analysis pipeline run.";
+INFO "\n\t***Start of analysis pipeline run***";
 
 # Place lock
 remove_lock() if $remove_lock;
@@ -191,11 +165,10 @@ if(@tracking_ids) {
 	INFO "Tracking IDs: ". join(', ',@tracking_ids);
 	
 	# Sync new genome files to analysis server
-	#&sync_to_analysis;
+	&sync_to_analysis unless $test;
 	
 	# New sequences uploaded, initiate analysis job
 	my ($job_id, $job_dir) = init_job();
-	#my ($job_id, $job_dir) = ('7JtG72dKRY','/home/matt/tmp/data/new_genomes/7JtG72dKRY');
 	
 	INFO "Job ID: $job_id";
 	
@@ -271,7 +244,6 @@ if(@tracking_ids) {
 	download_pangenomes($g_file, $core_file, $acc_file);
 	
 	# Identify any novel regions for new genomes
-	#my ($nr_fasta_file, $nr_anno_file);
 	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
 	
 	if($nr_fasta_file) {
@@ -1303,5 +1275,31 @@ sub send_email {
 	system($cmd);
 }
 
+=head2 error_handler
+
+  Print error to log, send error flag to DB table and then send email notification
+
+=cut
+
+sub error_handler {
+	# Log
+	my $m = "Abnormal termination.";
+	$m = "[ERROR] @_\n" if @_;
+	FATAL("$m");
+	warn "$m";
+    
+    # DB
+    if ($dbh && $dbh->ping && $lock) {
+        update_status(-1);
+    }
+    
+    # Email
+    if($email_notification) {
+    	send_email(1);
+    }
+    
+    # Exit
+    exit(1);
+}
 
 
