@@ -110,7 +110,7 @@ __PACKAGE__->belongs_to(
   "cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "cvterm_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phenotype
@@ -125,12 +125,12 @@ __PACKAGE__->belongs_to(
   "phenotype",
   "Database::Chado::Schema::Result::Phenotype",
   { phenotype_id => "phenotype_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dU8Dze/rj75SCoiX+p+Ojg
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:GYhJTDGdA70L7an6WqkRbQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

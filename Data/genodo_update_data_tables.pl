@@ -189,7 +189,7 @@ sub parseHeader {	my $oldHeader = shift;
 	my $_inputDataType = shift;
 	my $newHeader;
 	if ($_inputDataType eq "vir") {
-		if ($oldHeader =~ /^(VF|vf)_([\w\d]+)|/) {
+		if ($oldHeader =~ /^(VF|vf)_([\w\d]+)(|)/) {
 			$newHeader = $2;
 		}
 		else{
@@ -198,7 +198,7 @@ sub parseHeader {	my $oldHeader = shift;
 		}
 	}
 	elsif ($_inputDataType eq "amr") {
-		if ($oldHeader =~ /^(AMR|amr)_([\w\d]+)|/) {
+		if ($oldHeader =~ /^(AMR|amr)_([\w\d]+)(|)/) {
 			$newHeader = $2;
 		}
 		else {

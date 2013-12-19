@@ -115,8 +115,8 @@ __PACKAGE__->set_primary_key("meta_id");
 __PACKAGE__->add_unique_constraint("meta_c1", ["name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-08-13 16:15:09
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Laq0VxpM4z3BHQ9fKUL/MQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jg0/sTeKJTxB08K8PpK3LQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

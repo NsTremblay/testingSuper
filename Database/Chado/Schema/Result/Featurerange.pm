@@ -130,7 +130,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 featuremap
@@ -145,7 +145,7 @@ __PACKAGE__->belongs_to(
   "featuremap",
   "Database::Chado::Schema::Result::Featuremap",
   { featuremap_id => "featuremap_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 leftendf
@@ -180,7 +180,7 @@ __PACKAGE__->belongs_to(
   "leftstartf",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "leftstartf_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 rightendf
@@ -195,7 +195,7 @@ __PACKAGE__->belongs_to(
   "rightendf",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "rightendf_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 rightstartf
@@ -219,8 +219,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:npzzkJdDD64ys4Uz032D9A
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vaC9hwevJLH9VNJIuIRXFw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

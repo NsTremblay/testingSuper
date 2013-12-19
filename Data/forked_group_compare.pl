@@ -251,7 +251,7 @@ sub writeOutHtml {
 	$HTML .= '<ul class="nav nav-tabs">';
 	$HTML .= '<li class="active"><a href="#loci_table" id="loci_results_button" data-toggle="tab">Loci Presence Absence</a></li>';
 	$HTML .= '<li><a href="#snps_table" id="snp_results_button" data-toggle="tab">SNP Presence Absence</a></li>';
-	$HTML .= '<li><a href="#geo-spatial" id="geospatial_results_button" data-toggle="tab">Geospatial Results</a></li>' if $_geospatial eq "true";
+	$HTML .= '<li id="geo-spatial-tab" style="display:none"><a href="#geo-spatial" id="geospatial_results_button" data-toggle="tab">Geospatial Results</a></li>';
 	$HTML .= '</ul>';
 
 	$HTML .= '<div class="tab-content">';
@@ -384,29 +384,29 @@ sub writeOutHtml {
 	$HTML .= '</table>';
 	$HTML .= '</div>';
 
-	if ($_geospatial eq "true") {
+	# if ($_geospatial eq "true") {
 
-		# $HTML .= '<div class="tab-pane active" id="geospatial" style="padding:5px">';
-		# $HTML .= '<span class="help-block">Note: The map only shows strains with a location. Not all selected strains will appear on the map.</span>';
-		# $HTML .= '<div class="row-fluid">';
-		# $HTML .= '<div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">';
-		# $HTML .= '<p>Tree goes here</p>';
-		# $HTML .= '</div>';
-		# $HTML .= '<div class="span6">';
-		# 			<table>
-		# 				<tr>
-		# 					<div id="map-canvas" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3"></div>
-		# 					<div class="row-fluid">
-		# 						<div class="span6"><img src="/App/Pictures/genodo_measle_red.png"> Group 1</div>
-		# 						<div class="span6"><img src="/App/Pictures/genodo_measle_blue.png"> Group 2</div>
-		# 					</div>
-		# 				</tr>
-		# 			</table>
-		# 		</div>
-		# 	</div>
-		# </div>
+	# 	$HTML .= '<div class="tab-pane active" id="geo-spatial" style="padding:5px">';
+	# 	$HTML .= '<span class="help-block">Note: The map only shows strains with a location. Not all selected strains will appear on the map.</span>';
+	# 	$HTML .= '<div class="row-fluid">';
+	# 	$HTML .= '<!--div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">';
+	# 	$HTML .= '<p>Tree goes here</p>';
+	# 	$HTML .= '</div-->';
+	# 	$HTML .= '<div class="span6">';
+	# 	$HTML .= '<table>';
+	# 	$HTML .= '<tr>';
+	# 	$HTML .= '<div id="map-canvas" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3"></div>';
+	# 	$HTML .= '<div class="row-fluid">';
+	# 	$HTML .= '<div class="span6"><img src="/App/Pictures/genodo_measle_red.png"> Group 1</div>';
+	# 	$HTML .= '<div class="span6"><img src="/App/Pictures/genodo_measle_blue.png"> Group 2</div>';
+	# 	$HTML .= '</div>';
+	# 	$HTML .= '</tr>';
+	# 	$HTML .= '</table>';
+	# 	$HTML .= '</div>';
+	# 	$HTML .= '</div>';
+	# 	$HTML .= '</div>';
 
-	}
+	# }
 
 	$HTML .= '</div>';
 	$HTML .= '</div>';

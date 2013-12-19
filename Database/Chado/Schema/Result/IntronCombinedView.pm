@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+__PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 
 =head1 TABLE: C<intron_combined_view>
 
@@ -85,8 +86,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07033 @ 2013-05-06 10:20:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jaWtkCcIfIPzBnmKWdhnXQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:11
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hD6EYx6ED8C33lCWk4b+lA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

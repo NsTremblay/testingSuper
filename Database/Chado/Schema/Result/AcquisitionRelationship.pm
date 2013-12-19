@@ -134,7 +134,7 @@ __PACKAGE__->belongs_to(
   "object",
   "Database::Chado::Schema::Result::Acquisition",
   { acquisition_id => "object_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 subject
@@ -149,7 +149,7 @@ __PACKAGE__->belongs_to(
   "subject",
   "Database::Chado::Schema::Result::Acquisition",
   { acquisition_id => "subject_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -164,12 +164,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zxgPEjsk0PKo6BwwL88hDQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NULJ7cCXmAdxQuCglpfweA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

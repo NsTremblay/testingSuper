@@ -170,7 +170,7 @@ __PACKAGE__->belongs_to(
   "environment1",
   "Database::Chado::Schema::Result::Environment",
   { environment_id => "environment1_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 environment2
@@ -185,7 +185,7 @@ __PACKAGE__->belongs_to(
   "environment2",
   "Database::Chado::Schema::Result::Environment",
   { environment_id => "environment2_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 genotype1
@@ -200,7 +200,7 @@ __PACKAGE__->belongs_to(
   "genotype1",
   "Database::Chado::Schema::Result::Genotype",
   { genotype_id => "genotype1_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 genotype2
@@ -215,7 +215,7 @@ __PACKAGE__->belongs_to(
   "genotype2",
   "Database::Chado::Schema::Result::Genotype",
   { genotype_id => "genotype2_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 organism
@@ -230,7 +230,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phenotype1
@@ -245,7 +245,7 @@ __PACKAGE__->belongs_to(
   "phenotype1",
   "Database::Chado::Schema::Result::Phenotype",
   { phenotype_id => "phenotype1_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phenotype2
@@ -263,7 +263,7 @@ __PACKAGE__->belongs_to(
   {
     is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE,",
+    on_delete     => "CASCADE",
     on_update     => "NO ACTION",
   },
 );
@@ -297,12 +297,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ZSanY/xGVJuTjlPIRxzq6A
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:vN6nEkOFdKhxRExmNs9FMQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

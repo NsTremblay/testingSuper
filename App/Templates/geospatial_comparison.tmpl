@@ -27,9 +27,9 @@
 				<div class="tab-pane active" id="geospatial" style="padding:5px">
 					<span class="help-block">Note: The map only shows strains with a location. Not all selected strains will appear on the map.</span>
 					<div class="row-fluid">
-						<div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">
+						<!--div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">
 							<p>Tree goes here</p>
-						</div>
+						</div-->
 						<div class="span6">
 							<table>
 								<tr>
@@ -103,7 +103,7 @@ function showMap() {
 	mapFactory = new Map(mapOptions, "map-canvas");
 	map = mapFactory.initializeMap();
 
-	var group1lists = mapFactory.addMultiMarkers(group1Genomes, group1LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	var group1lists = mapFactory.addMultiMarkers(group1Genomes, group1LocationGenomes, map, "");
 	group1MultiMarkers = group1lists[0];
 	var group1ClusterList = group1lists[1];
 
@@ -111,7 +111,7 @@ function showMap() {
 	var mc = new MarkerClusterer(map, group1ClusterList, mcOptions);
 
 
-	var group2lists = mapFactory.addMultiMarkers(group2Genomes, group2LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>", "/App/Pictures/genodo_measle_blue.png");
+	var group2lists = mapFactory.addMultiMarkers(group2Genomes, group2LocationGenomes, map, "", "/App/Pictures/genodo_measle_blue.png");
 	group2MultiMarkers = group2lists[0];
 	var group2ClusterList = group2lists[1];
 

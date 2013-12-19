@@ -309,6 +309,7 @@ CREATE TABLE jobs
   session_id character varying NOT NULL, -- CGI session ID
   username character varying, -- Username (if user logged in) of site user requesting job
   status character varying, -- Current status of job. Will either be "in progress" or "completed"
+  user_config character varying NOT NULL,
   CONSTRAINT jobs_pkey PRIMARY KEY (job_id)
 )
 WITH (
@@ -323,6 +324,8 @@ COMMENT ON COLUMN jobs.remote_addr IS 'IP address of the remote user that reques
 COMMENT ON COLUMN jobs.session_id IS 'CGI session ID';
 COMMENT ON COLUMN jobs.username IS 'Username (if user logged in) of site user requesting job';
 COMMENT ON COLUMN jobs.status IS 'Current status of job. Will either be "in progress" or "completed"';
+
+
 
 COMMIT;
 
