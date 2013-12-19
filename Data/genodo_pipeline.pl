@@ -87,7 +87,7 @@ pod2usage(-verbose => 2, -exitval => 1) if $help;
 $SIG{__DIE__} = $SIG{INT} = 'error_handler';
 
 # Start logger
-my $logfile = ">>/home/genodo/logs/pipeline.log";
+my $logfile = ">>/home/ubuntu/log/pipeline.log";
 $logfile = ">>/tmp/pipeline.log" if $test;
 Log::Log4perl->easy_init(
 	{ 
@@ -325,7 +325,7 @@ sub init {
 	my $dbpass = $conf->param('db.pass');
 	die "Invalid configuration file. Missing db parameters." unless $dbuser;
 	
-	$tmpdir = $conf->param('tmp.dir');
+	$tmpdir = $conf->param('dir.seq');
 	die "Invalid configuration file. Missing tmpdir parameters." unless $tmpdir;
 	$tmpdir = '/home/matt/tmp/' if $test;
 	
@@ -480,10 +480,8 @@ sub check_uploads {
 
 sub sync_to_analysis {
 	
-	# Run loading script
-	my @loading_args = ("sync_remote");
-		
-	my $cmd = join(' ',@loading_args);
+	# Run copy script
+	my $cmd = "/home/ubuntu/sync/sync_local";
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 	
 	if($success) {
@@ -492,25 +490,6 @@ sub sync_to_analysis {
 		die "Rsync of data director to analysis server failed ($stderr).";
 	}
 	
-}
-
-=head2 sync_to_front
-
-=cut
-
-sub sync_to_front {
-	
-	# Run loading script
-	my @loading_args = ("sync_local");
-		
-	my $cmd = join(' ',@loading_args);
-	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
-	
-	if($success) {
-		INFO "Data sync'ed to front-end server";
-	} else {
-		die "Rsync of data director to front-end server failed ($stderr).";
-	}
 }
 
 =head2 vf_analysis

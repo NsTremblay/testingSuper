@@ -60,7 +60,7 @@ use Geo::Coder::Google;
 
 my $dbic;
 
-my @analysis_steps = ('Pending', 'Processing',  'Completed', 'Completed');
+my @analysis_steps = ('Queued', 'Processing', 'Completed', 'Completed');
 my %tracker_step_values = (
 	pending => 1,
 	processing => 2,
@@ -271,7 +271,8 @@ sub upload_genome : Runmode {
 	# Copy to persistent tmp file
 	# The CGI upload tmp file is auto-deleted
 	# Save parameters to tmp file
-    my $file_path = $self->config_param('tmp.dir');
+    my $file_path = $self->config_param('dir.seq');
+    croak "Missing config parameter for sequence directory." unless $file_path;
      
 	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.ffn";
 	

@@ -20,7 +20,7 @@ with 'Roles::DatabaseConnector';
 use Log::Log4perl qw(:easy);
 
 # get script location via File::Basename
-my $SCRIPT_LOCATION = dirname(__FILE__);
+my $SCRIPT_LOCATION = dirname(__FILE__) . '/../../config';
 
 # Initialize a basic root logger
 # Note: over-write this in child classes if you want to direct the output somewhere
@@ -39,7 +39,6 @@ sub cgiapp_init {
 
 	# Load config options
 	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
-	#$self->config_file($SCRIPT_LOCATION.'/chado_db_test.cfg');
 
 	# Set up database connection
 	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
