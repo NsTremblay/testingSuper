@@ -139,6 +139,10 @@ sub comparison : Runmode {
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
 
+	if (!$geospatial || $geospatial eq "false" && !$locisnp || $locisnp eq "false") {
+		return $self->group_wise_comparisons('no data analysis type selected');
+	}
+
 	if ($locisnp && $geospatial) {
 		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
 	}
