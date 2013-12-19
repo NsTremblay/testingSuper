@@ -389,9 +389,9 @@ sub writeOutHtml {
 		$HTML .= '<div class="tab-pane active" id="geo-spatial" style="padding:5px">';
 		$HTML .= '<span class="help-block">Note: The map only shows strains with a location. Not all selected strains will appear on the map.</span>';
 		$HTML .= '<div class="row-fluid">';
-		$HTML .= '<div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">';
+		$HTML .= '<!--div class="span6" style="height:400px;border-style:solid;border-width:1px;border-color:#d3d3d3">';
 		$HTML .= '<p>Tree goes here</p>';
-		$HTML .= '</div>';
+		$HTML .= '</div-->';
 		$HTML .= '<div class="span6">';
 		$HTML .= '<table>';
 		$HTML .= '<tr>';

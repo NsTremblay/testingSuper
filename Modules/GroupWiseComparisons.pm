@@ -191,8 +191,8 @@ sub running_job : Runmode {
 	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
 		{'me.job_id' => $job_id},
 		{
-			select => ['status'],
-			as => ['status']
+			select => ['status', 'user_config'],
+			as => ['status', 'user_config']
 		}
 		);
 
@@ -201,18 +201,29 @@ sub running_job : Runmode {
 	die "Error. Job id not found." unless $status;
 
 	my $html = "";
+	my $group1 = "";
+	my $group2 = "";
+
 	if ($status ne "in progress") {
-		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";
-		
+		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";		
 		while(<$fh>) {
 			$_ =~ s/\R//;
 			$html .= "$_";
+		}
+		if (my $user_conf = new Config::Simple("/home/genodo/group_wise_data_temp/".$jobs_resultset->first->get_column('user_config'))) {
+			$group1 = $user_conf->param('user.gp1IDs');
+			$group2 = $user_conf->param('user.gp2IDs');
+		}
+		else {
+			die Config::Simple->error();
 		}
 	}
 	my %poll = (
 		'status' => $status,
 		'html' => $html,
-		'geospatial' => $geospatial
+		'geospatial' => $geospatial,
+		'group1' => $group1,
+		'group2' => $group2
 		);
 	my $poll_ref = encode_json(\%poll);
 	return $poll_ref;
@@ -299,9 +310,10 @@ sub startForkedGroupCompare {
 		UNLINK => 0);
 
 	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
-
 	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
 
+	my $userConFileName = $userConFile->filename;
+	$userConFileName =~ s/\/home\/genodo\/group_wise_data_temp\///g;
 	#Write the job params to the db
 
 	my $newJob = $self->dbixSchema->resultset('Job')->new({
@@ -309,7 +321,8 @@ sub startForkedGroupCompare {
 		'remote_addr' => $_remote_addr,
 		'session_id' => $_session_id,
 		'username' => $_username,
-		'status' => "in progress"
+		'status' => "in progress",
+		'user_config' => $userConFileName
 		});
 
 	$newJob->insert();

@@ -30,6 +30,22 @@
 var job_id = "<TMPL_VAR job_id>";
 var geospatial = "<TMPL_VAR geospatial>";
 var geospatial_ready_results = undefined;
+var json;
+
+var group1;
+var group2;
+
+var genomeLabels = {};
+
+var group1Genomes = {};
+var group2Genomes = {};
+var group1LocationGenomes = {};
+var group2LocationGenomes = {};
+
+var group1MultiMarkers = {};
+var group2MultiMarkers = {};
+var mapFactory;
+var map;
 
 function doPoll() {
 	$.ajax({
@@ -39,12 +55,18 @@ function doPoll() {
 	})
 	.done(function(data) {
 		//console.log(data);
-		var json = JSON.parse(data);
+		json = JSON.parse(data);
+		group1 = json.group1;
+		group2 = json.group2;
 		//console.log(json);
 		if (json.status != 'in progress') {
 			$('#status').empty();
 			geospatial_ready_results = json.geospatial;
 			$('#status').append(json.html);
+			if (geospatial_ready_results == "true") {
+				createMap();
+				showMap();
+			}
 			return;
 		}
 		else {
@@ -68,43 +90,29 @@ function doPoll() {
 
 <script type="text/javascript">
 
-if (geospatial_ready_results == "true") {
-	var group1 = <TMPL_VAR group1>;
-	var group2 = <TMPL_VAR group2>;
-	var genomeLabels = {};
-
-	var group1Genomes = {};
-	var group2Genomes = {};
-	var group1LocationGenomes = {};
-	var group2LocationGenomes = {};
-
-	var group1MultiMarkers = {};
-	var group2MultiMarkers = {};
-	var mapFactory;
-	var map;
+function createMap() {
 
 	$.each(group1, function(index, object) {
-		if (public_genomes[index]) {
-			group1Genomes[index] = public_genomes[index];
+		if (public_genomes[object]) {
+			group1Genomes[object] = public_genomes[object];
 		}
-		else if (private_genomes[index]) {
-			group1Genomes[index] = private_genomes[index];
+		else if (private_genomes[object]) {
+			group1Genomes[object] = private_genomes[object];
 		}
 		else {}
 	});
 
 	$.each(group2, function(index, object) {
-		if (public_genomes[index]) {
-			group2Genomes[index] = public_genomes[index];
+		if (public_genomes[object]) {
+			group2Genomes[object] = public_genomes[object];
 		}
-		else if (private_genomes[index]) {
-			group2Genomes[index] = private_genomes[index];
+		else if (private_genomes[object]) {
+			group2Genomes[index] = private_genomes[object];
 		}
 		else {}
 	});
-
+}
 //Initialize map
-
 function showMap() {
 	var mapOptions = {
 		center: new google.maps.LatLng(-0.000, 0.000),
@@ -116,7 +124,7 @@ function showMap() {
 	mapFactory = new Map(mapOptions, "map-canvas");
 	map = mapFactory.initializeMap();
 
-	var group1lists = mapFactory.addMultiMarkers(group1Genomes, group1LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>");
+	var group1lists = mapFactory.addMultiMarkers(group1Genomes, group1LocationGenomes, map, "");
 	group1MultiMarkers = group1lists[0];
 	var group1ClusterList = group1lists[1];
 
@@ -124,13 +132,13 @@ function showMap() {
 	var mc = new MarkerClusterer(map, group1ClusterList, mcOptions);
 
 
-	var group2lists = mapFactory.addMultiMarkers(group2Genomes, group2LocationGenomes, map, "<TMPL_IF LOCATION><TMPL_VAR strainLocation></TMPL_IF>", "/App/Pictures/genodo_measle_blue.png");
+	var group2lists = mapFactory.addMultiMarkers(group2Genomes, group2LocationGenomes, map, "", "/App/Pictures/genodo_measle_blue.png");
 	group2MultiMarkers = group2lists[0];
 	var group2ClusterList = group2lists[1];
 
 	var mc2 = new MarkerClusterer(map, group2ClusterList, mcOptions);
 }
-}
+
 </script>
 
 </html>
