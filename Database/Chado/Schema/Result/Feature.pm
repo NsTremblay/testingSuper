@@ -712,6 +712,36 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 pripub_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pripub_feature_relationships",
+  "Database::Chado::Schema::Result::PripubFeatureRelationship",
+  { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 pubpri_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pubpri_feature_relationships",
+  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
+  { "foreign.subject_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 raw_amr_datas
 
 Type: has_many
@@ -739,6 +769,66 @@ __PACKAGE__->has_many(
   "raw_virulence_datas",
   "Database::Chado::Schema::Result::RawVirulenceData",
   { "foreign.gene_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_cores
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpCore>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_cores",
+  "Database::Chado::Schema::Result::SnpCore",
+  { "foreign.pangenome_region" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_variation_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_variation_contig_collections",
+  "Database::Chado::Schema::Result::SnpVariation",
+  { "foreign.contig_collection" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_variation_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_variation_contigs",
+  "Database::Chado::Schema::Result::SnpVariation",
+  { "foreign.contig" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_variation_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_variation_loci",
+  "Database::Chado::Schema::Result::SnpVariation",
+  { "foreign.locus" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -803,8 +893,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BxFHUYPPBuPgWsXrrI3qdg
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:58
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gPihADplAjr+JsuH5XQjMQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
