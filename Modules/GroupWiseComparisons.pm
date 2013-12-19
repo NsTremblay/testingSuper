@@ -137,6 +137,17 @@ sub comparison : Runmode {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+	
+	# Validate genome access
+	my @private_ids = map m/private_(\d+)/ ? $1 : (), (@group1, @group2);
+
+	if(@private_ids) {
+		my $ok = $formDataGenerator->verifyMultipleAccess($username, @private_ids);
+		foreach my $id (keys %$ok) {
+			return $self->group_wise_comparisons('<strong>Permission Denied!</strong> You have not been granted access to uploaded genome $id') unless $ok->{$id};
+		}
+	}
+	
 
 	if ($locisnp && $geospatial) {
 		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
@@ -293,10 +304,12 @@ sub startForkedGroupCompare {
 		);
 
 	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+		#DIR => '/home/genodo/group_wise_data_temp/',
+		DIR => '/home/matt/tmp/compare',
 		UNLINK => 0);
 
-	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
+	#my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
+	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/matt\/tmp\/compare\/user_conf_temp([\w\d]*)/);
 
 	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
 
@@ -347,14 +360,14 @@ sub startForkedGroupCompare {
 	print $userConFile $userConString or die "$!";
 
 	#Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
-	my $daemon = Proc::Daemon->new(
-		work_dir => "$FindBin::Bin/../../Data/",
-		exec_command => $cmd,
-		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
-	#Fork
-	$self->session->close;
-	my $kid_pid = $daemon->Init;
+#	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+#	my $daemon = Proc::Daemon->new(
+#		work_dir => "$FindBin::Bin/../../Data/",
+#		exec_command => $cmd,
+#		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
+#	#Fork
+#	$self->session->close;
+#	my $kid_pid = $daemon->Init;
 
 	#Right now it redirects to comparison runmode, may want to change that
 	return $self->redirect('/group-wise-comparisons/comparison?job_id='.$_job_id.'&geospatial='.$_geospatial);

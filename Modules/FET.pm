@@ -151,7 +151,7 @@ use Carp;
 use IO::File; #get rid of these after moving the methods over 
 use File::Temp; #get rid of these after moving them methods over
 use Statistics::R;
-use Log::Log4perl;
+use Log::Log4perl qw(:easy);
 
 #object creation
 sub new {
@@ -212,6 +212,7 @@ sub _initialize{
 	my $self=shift;
 
 	#logging
+	Log::Log4perl->easy_init($DEBUG) unless Log::Log4perl->get_logger();
 	$self->logger(Log::Log4perl->get_logger());
 	$self->logger->debug("Logger initialized in Modules::FET");
 
@@ -319,12 +320,12 @@ sub run {
 	my $sigpValueCount = $listSize;
 
 	for (my $i = 0; $i < $listSize; $i++) {
-		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->get_column($_count_column), $self->group2Markers->[$i]->get_column($_count_column) , $self->testChar);
+		my ($_pValue, $_group1Counts, $_group2Counts) = $self->_processLine($self->group1Markers->[$i]->{$_count_column}, $self->group2Markers->[$i]->{$_count_column} , $self->testChar);
 
 		my %rowResult;
-		$rowResult{'marker_feature_id'} = $self->group1Markers->[$i]->get_column('feature_id');
-		$rowResult{'marker_id'} = $self->group1Markers->[$i]->get_column('id');
-		$rowResult{'marker_function'} = $self->group1Markers->[$i]->get_column('function');
+		$rowResult{'marker_feature_id'} = $self->group1Markers->[$i]->{'feature_id'};
+		$rowResult{'marker_id'} = $self->group1Markers->[$i]->{'id'};
+		$rowResult{'marker_function'} = $self->group1Markers->[$i]->{'function'};
 		$rowResult{'group1Present'} = $_group1Counts->{'pos'};
 		$rowResult{'group1Absent'} = $_group1Counts->{'neg'};
 		$rowResult{'group2Present'} = $_group2Counts->{'pos'};

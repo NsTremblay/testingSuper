@@ -15,6 +15,7 @@ use DBIx::Class::Row;
 use IO::File;
 use File::Temp;
 use JSON;
+use Time::HiRes qw( time );
 
 #All logging to STDERR to the file specified
 open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
@@ -63,10 +64,15 @@ if (!$schema) {
 	die "Could not connect to database: $!\n";
 }
 
+#Obtain type IDs
+my $type_ids = lookup_terms($schema);
+
 print STDERR "New comparison for user $USERNAME : $USERSESSIONID\n";
 
-my $binaryFETResults = getBinaryData($USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
-my $snpFETResults = getSnpData($USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
+my ($pub_g1_strains_ids, $pri_g1_strains_ids, $pub_g2_strains_ids, $pri_g2_strains_ids) = parse_genome_ids($USERGP1STRAINIDS, $USERGP2STRAINIDS);
+
+my $binaryFETResults = getBinaryData($pub_g1_strains_ids, $pri_g1_strains_ids, $pub_g2_strains_ids, $pri_g2_strains_ids, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
+my $snpFETResults = getSnpData($pub_g1_strains_ids, $pri_g1_strains_ids, $pub_g2_strains_ids, $pri_g2_strains_ids, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES);
 
 print STDERR "Writing out html file\n";
 
@@ -81,39 +87,23 @@ die "Job ID: $USERJOBID does not exist in database.\n" unless $default_job_rs;
 $default_job_rs->update({status => "$tempHTMLFileID"});
 
 sub getBinaryData {
-	my $group1GenomeIds = shift;
-	my $group2GenomeIds = shift;
-	my $group1GenomeNames = shift;
-	my $group2GenomeNames = shift;
-
-	my $group1lociDataTable = $schema->resultset('Feature')->search(
-		{'loci_genotypes.genome_id' => $group1GenomeIds, 'type.name' => 'pangenome'},
-		{
-			join => ['loci_genotypes', 'type', 'featureprops'],
-			select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['feature_id', 'id', 'function', 'locus_count'],
-			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
-		}
-		);
-
-	my $group2lociDataTable = $schema->resultset('Feature')->search(
-		{'loci_genotypes.genome_id' => $group2GenomeIds, 'type.name' => 'pangenome'},
-		{
-			join => ['loci_genotypes', 'type', 'featureprops'],
-			select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {sum => 'loci_genotypes.locus_genotype'}],
-			as => ['feature_id', 'id', 'function', 'locus_count'],
-			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
-		}
-		);
-
-	my @group1Loci = $group1lociDataTable->all;
-	my @group2Loci = $group2lociDataTable->all;
+	my ($public_g1_genomes, $private_g1_genomes, $public_g2_genomes, $private_g2_genomes,
+		$group1GenomeNames, $group2GenomeNames) = @_;
+	
+	my ($g1_totals, $g2_totals) = countLoci($schema, $public_g1_genomes, $private_g1_genomes, $public_g2_genomes, $private_g2_genomes);
+	
+	my @g1_ordered_rows; 
+	my @g2_ordered_rows; 
+	foreach my $l (keys %$g1_totals) {
+		push @g1_ordered_rows, $g1_totals->{$l};
+		push @g2_ordered_rows, $g2_totals->{$l};
+	}
 
 	my $fet = Modules::FET->new();
-	$fet->group1($group1GenomeIds);
-	$fet->group2($group2GenomeIds);
-	$fet->group1Markers(\@group1Loci);
-	$fet->group2Markers(\@group2Loci);
+	$fet->group1($group1GenomeNames);
+	$fet->group2($group2GenomeNames);
+	$fet->group1Markers(\@g1_ordered_rows);
+	$fet->group2Markers(\@g2_ordered_rows);
 	$fet->testChar('1');
 	#Returns hash ref of results
 	my $results = $fet->run('locus_count');
@@ -143,56 +133,81 @@ sub getBinaryData {
 }
 
 sub getSnpData {
-	my $group1GenomeIds = shift;
-	my $group2GenomeIds = shift;
-	my $group1GenomeNames = shift;
-	my $group2GenomeNames = shift;
-
-	my $group1SnpDataTable = $schema->resultset('Feature')->search(
-		{'snps_genotypes.genome_id' => $group1GenomeIds, 'type.name' => 'pangenome'},
-		{
-			join => ['snps_genotypes', 'type', 'featureprops'],
-			select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['feature_id', 'id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
-		}
-		);
-
-	my $group2SnpDataTable = $schema->resultset('Feature')->search(
-		{'snps_genotypes.genome_id' => $group2GenomeIds, 'type.name' => 'pangenome'},
-		{
-			join => ['snps_genotypes' , 'type', 'featureprops'],
-			select => ['me.feature_id', 'me.uniquename','featureprops.value', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
-			as => ['feature_id', 'id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
-			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
-		}
-		);
-
-	my @group1Snps = $group1SnpDataTable->all;
-	my @group2Snps = $group2SnpDataTable->all;
+	my ($public_g1_genomes, $private_g1_genomes, $public_g2_genomes, $private_g2_genomes,
+		$group1GenomeNames, $group2GenomeNames) = @_;
+	
+	my $tot1 = scalar(@$group1GenomeNames);
+	my $tot2 = scalar(@$group2GenomeNames);
+	my ($g1_totals, $g2_totals) = countSnps($schema, $public_g1_genomes, $private_g1_genomes, $public_g2_genomes, $private_g2_genomes, $tot1, $tot2);
+	
+	my @g1_ordered_rows; 
+	my @g2_ordered_rows; 
+	foreach my $s (keys %$g1_totals) {
+		push @g1_ordered_rows, $g1_totals->{$s};
+		push @g2_ordered_rows, $g2_totals->{$s};
+	}
+	
+#	my $group1SnpDataTable = $schema->resultset('Feature')->search(
+#		{'snps_genotypes.genome_id' => $group1GenomeIds, 'type.name' => 'pangenome'},
+#		{
+#			join => ['snps_genotypes', 'type', 'featureprops'],
+#			select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+#			as => ['feature_id', 'id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+#			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
+#		}
+#		);
+#
+#	my $group2SnpDataTable = $schema->resultset('Feature')->search(
+#		{'snps_genotypes.genome_id' => $group2GenomeIds, 'type.name' => 'pangenome'},
+#		{
+#			join => ['snps_genotypes' , 'type', 'featureprops'],
+#			select => ['me.feature_id', 'me.uniquename','featureprops.value', {sum => 'snps_genotypes.snp_a'}, {sum => 'snps_genotypes.snp_t'}, {sum => 'snps_genotypes.snp_c'}, {sum => 'snps_genotypes.snp_g'}],
+#			as => ['feature_id', 'id', 'function', 'a_count', 't_count', 'c_count', 'g_count'],
+#			group_by => [qw/me.feature_id me.uniquename me.name featureprops.value/]
+#		}
+#		);
+#
+#	my @group1Snps = $group1SnpDataTable->all;
+#	my @group2Snps = $group2SnpDataTable->all;
 
 	my $fet = Modules::FET->new();
-	$fet->group1($group1GenomeIds);
-	$fet->group2($group2GenomeIds);
-	$fet->group1Markers(\@group1Snps);
-	$fet->group2Markers(\@group2Snps);
+	$fet->group1($group1GenomeNames);
+	$fet->group2($group2GenomeNames);
+	$fet->group1Markers(\@g1_ordered_rows);
+	$fet->group2Markers(\@g1_ordered_rows);
+	
+	# Merge results as each nucleotide is analyzed
+	my @combineAllResults;
+	my @combineSigResults;
+	my $combineSigCount = 0;
+	my $combineTotalComparisons = 0;
+	foreach my $nuc (qw/A C G T/) {
+		
+		$fet->testChar($nuc);
+		my $a_results = $fet->run($nuc);
+		
+		push @combineAllResults, @{$a_results->[0]{'all_results'}};
+		push @combineSigResults, @{$a_results->[1]{'sig_results'}};
+		$combineSigCount += $a_results->[2]{'sig_count'};
+		$combineTotalComparisons += $a_results->[3]{'total_comparisons'};
+	}
 
 	my @results;
-	#Returns hash ref of results
-	$fet->testChar('A');
-	my $a_results = $fet->run('a_count');
-	$fet->testChar('T');
-	my $t_results = $fet->run('t_count');
-	$fet->testChar('C');
-	my $c_results = $fet->run('c_count');
-	$fet->testChar('G');
-	my $g_results = $fet->run('g_count');
-
-	#Merge all results and resort them
-	my @combineAllResults = (@{$a_results->[0]{'all_results'}}, @{$t_results->[0]{'all_results'}}, @{$c_results->[0]{'all_results'}}, @{$g_results->[0]{'all_results'}});
-	my @combineSigResults = (@{$a_results->[1]{'sig_results'}}, @{$t_results->[1]{'sig_results'}}, @{$c_results->[1]{'sig_results'}}, @{$g_results->[1]{'sig_results'}});
-	my $combineSigCount = $a_results->[2]{'sig_count'} + $t_results->[2]{'sig_count'} + $c_results->[2]{'sig_count'} + $g_results->[2]{'sig_count'};	
-	my $combineTotalComparisons = $a_results->[3]{'total_comparisons'} + $t_results->[3]{'total_comparisons'} + $c_results->[3]{'total_comparisons'} + $g_results->[3]{'total_comparisons'};
+#	#Returns hash ref of results
+#	$fet->testChar('A');
+#	my $a_results = $fet->run('a_count');
+#	$fet->testChar('T');
+#	my $t_results = $fet->run('t_count');
+#	$fet->testChar('C');
+#	my $c_results = $fet->run('c_count');
+#	$fet->testChar('G');
+#	my $g_results = $fet->run('g_count');
+#
+#	#Merge all results and resort them
+#	my @combineAllResults = (@{$a_results->[0]{'all_results'}}, @{$t_results->[0]{'all_results'}}, @{$c_results->[0]{'all_results'}}, @{$g_results->[0]{'all_results'}});
+#	my @combineSigResults = (@{$a_results->[1]{'sig_results'}}, @{$t_results->[1]{'sig_results'}}, @{$c_results->[1]{'sig_results'}}, @{$g_results->[1]{'sig_results'}});
+#	my $combineSigCount = $a_results->[2]{'sig_count'} + $t_results->[2]{'sig_count'} + $c_results->[2]{'sig_count'} + $g_results->[2]{'sig_count'};	
+#	my $combineTotalComparisons = $a_results->[3]{'total_comparisons'} + $t_results->[3]{'total_comparisons'} + $c_results->[3]{'total_comparisons'} + $g_results->[3]{'total_comparisons'};
 
 	my @sortedAllResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineAllResults);
 	my @sortedSigResults = sort({$a->{'pvalue'} <=> $b->{'pvalue'}} @combineSigResults);
@@ -417,3 +432,409 @@ sub writeOutHtml {
 	print STDERR "New temp HTML file created : $tempFileName.\n";
 	return $tempFileName;
 }
+
+sub countLoci {
+	my $schema = shift;
+	my $public_g1_genomes = shift;
+	my $private_g1_genomes = shift;
+	my $public_g2_genomes = shift;
+	my $private_g2_genomes = shift;
+	
+	my %g1_totals; my %g2_totals;
+	
+	if(@$public_g1_genomes) {
+		my $g1_counts = $schema->resultset('Feature')->search(
+			{
+				'me.type_id' => $type_ids->{pangenome},
+				'feature_relationship_objects.type_id' => $type_ids->{derives_from},
+				'feature_relationship_subjects.type_id' => $type_ids->{part_of},
+				'feature_relationship_subjects.object_id' => $public_g1_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function} 
+			},
+			{
+				join => [
+					{'feature_relationship_objects' => {'subject' => 'feature_relationship_subjects'}},
+					'featureprops'
+				],
+				select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {count => 'feature_relationship_objects.subject_id'}],
+				as => ['feature_id', 'id', 'function', 'locus_count'],
+				group_by => [qw/me.feature_id me.uniquename featureprops.value/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			}
+		);
+		
+		map { $g1_totals{$_->{feature_id}} = $_; $g2_totals{$_->{feature_id}}->{locus_count} = 0 } $g1_counts->all;
+	}
+
+	if(@$private_g1_genomes) {
+		my $pri_g1_counts = $schema->resultset('Feature')->search(
+			{
+				'me.type_id' => $type_ids->{pangenome},
+				'pripub_feature_relationships.type_id' => $type_ids->{derives_from},
+				'private_feature_relationship_subjects.type_id' => $type_ids->{part_of},
+				'feature_relationship_subjects.object_id' => $private_g1_genomes,
+				'private_featureprops.type_id' => $type_ids->{panseq_function} 
+			},
+			{
+				join => [
+					{'pripub_feature_relationships' => {'subject' => 'private_feature_relationship_subjects'}},
+					'private_featureprops'
+				],
+				select => ['me.feature_id', {count => 'pripub_feature_relationships.subject_id'}],
+				as => ['feature_id', 'id', 'function', 'locus_count'],
+				group_by => [qw/me.feature_id me.uniquename private_featureprops.value/]
+			}
+		);
+		
+		# Combine totals
+		while (my $rhash = $pri_g1_counts->next) {
+			
+			if(defined $g1_totals{$rhash->{feature_id}}) {
+				$g1_totals{$rhash->{feature_id}}->{locus_count} += $rhash->{locus_count}
+			} else {
+				$g1_totals{$rhash->{feature_id}} = $rhash;
+				$g2_totals{$rhash->{feature_id}}->{locus_count} = 0;
+			}	
+		}
+	}
+	
+	if(@$public_g2_genomes) {
+		my $g2_counts = $schema->resultset('Feature')->search(
+			{
+				'me.type_id' => $type_ids->{pangenome},
+				'feature_relationship_objects.type_id' => $type_ids->{derives_from},
+				'feature_relationship_subjects.type_id' => $type_ids->{part_of},
+				'feature_relationship_subjects.object_id' => $public_g2_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function} 
+			},
+			{
+				join => [
+					{'feature_relationship_objects' => {'subject' => 'feature_relationship_subjects'}},
+					'featureprops'
+				],
+				select => ['me.feature_id', 'me.uniquename', 'featureprops.value', {count => 'feature_relationship_objects.subject_id'}],
+				as => ['feature_id', 'id', 'function', 'locus_count'],
+				group_by => [qw/me.feature_id me.uniquename featureprops.value/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			}
+		);
+		
+		# Combine totals
+		while (my $rhash = $g2_counts->next) {
+			
+			if(defined $g2_totals{$rhash->{feature_id}}) {
+				$g2_totals{$rhash->{feature_id}}->{locus_count} += $rhash->{locus_count}
+			} else {
+				my $num = $rhash->{locus_count};
+				$rhash->{locus_count} = 0;
+				$g1_totals{$rhash->{feature_id}} = $rhash;
+				$g2_totals{$rhash->{feature_id}}->{locus_count} = $num;
+			}	
+		}
+	}
+
+	if(@$private_g2_genomes) {
+		my $pri_g2_counts = $schema->resultset('Feature')->search(
+			{
+				'me.type_id' => $type_ids->{pangenome},
+				'pripub_feature_relationships.type_id' => $type_ids->{derives_from},
+				'private_feature_relationship_subjects.type_id' => $type_ids->{part_of},
+				'feature_relationship_subjects.object_id' => $private_g2_genomes,
+				'private_featureprops.type_id' => $type_ids->{panseq_function} 
+			},
+			{
+				join => [
+					{'pripub_feature_relationships' => {'subject' => 'private_feature_relationship_subjects'}},
+					'private_featureprops'
+				],
+				select => ['me.feature_id', {count => 'pripub_feature_relationships.subject_id'}],
+				as => ['feature_id', 'id', 'function', 'locus_count'],
+				group_by => [qw/me.feature_id me.uniquename private_featureprops.value/]
+			}
+		);
+		
+		# Combine totals
+		while (my $rhash = $pri_g2_counts->next) {
+			
+			if(defined $g2_totals{$rhash->{feature_id}}) {
+				$g2_totals{$rhash->{feature_id}}->{locus_count} += $rhash->{locus_count}
+			} else {
+				my $num = $rhash->{locus_count};
+				$rhash->{locus_count} = 0;
+				$g1_totals{$rhash->{feature_id}} = $rhash;
+				$g2_totals{$rhash->{feature_id}}->{locus_count} = $num;
+			}	
+		}
+	}
+	
+	return (\%g1_totals, \%g2_totals);
+}
+
+sub countSnps {
+	my $schema = shift;
+	my $public_g1_genomes = shift;
+	my $private_g1_genomes = shift;
+	my $public_g2_genomes = shift;
+	my $private_g2_genomes = shift;
+	my $tot1 = shift;
+	my $tot2 = shift;
+	
+	my %g1_snps;
+	my %g2_snps;
+	
+	
+	
+	if(@$public_g1_genomes) {
+		
+		my $g1_counts = $schema->resultset('SnpVariation')->search(
+			{
+				'contig_collection' => $public_g1_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function}
+			},
+			{
+				join => {'snp' => {'pangenome_region' => 'featureprops'}},
+				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
+				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
+				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+			}
+		);
+		
+		while (my $snp_row = $g1_counts->next) {
+			my $snp_id = $snp_row->{snp};
+			my $snp = $snp_row->{allele};
+			my $bkg = $snp_row->{background};
+			my $num = $snp_row->{count};
+			
+			unless($g1_snps{$snp_id}) {
+				#my ($frag, $func) = $schema->resultset('SnpCore')->find($snp_id,{}
+				
+				my $frag = $snp_row->{fragment};
+				my $func = $snp_row->{function};
+				
+				$g1_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				$g2_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				
+				$g1_snps{$snp_id}{$bkg} = $tot1;
+				$g2_snps{$snp_id}{$bkg} = $tot2;
+				
+				# Functional descriptors only needed for group1
+				$g1_snps{$snp_id}{feature_id} = $snp_id;
+				$g1_snps{$snp_id}{id} = "Snp $snp_id in pan-genome fragment $frag";
+				$g1_snps{$snp_id}{function} = $func;
+			}
+			
+			$g1_snps{$snp_id}{$snp} = $num;
+			$g1_snps{$snp_id}{$bkg} -= $num;
+			
+			
+		}
+	}
+	
+	if(@$private_g1_genomes) {
+		
+		my $g1_counts = $schema->resultset('PrivateSnpVariation')->search(
+			{
+				'contig_collection' => $private_g1_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function}
+			},
+			{
+				join => {'snp' => {'pangenome_region' => 'featureprops'}},
+				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
+				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
+				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+			}
+		);
+		
+		while (my $snp_row = $g1_counts->next) {
+			my $snp_id = $snp_row->{snp};
+			my $snp = $snp_row->{allele};
+			my $bkg = $snp_row->{background};
+			my $num = $snp_row->{count};
+			
+			unless($g1_snps{$snp_id}) {
+				my $frag = $snp_row->{fragment};
+				my $func = $snp_row->{function};
+				
+				$g1_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				$g2_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				
+				$g1_snps{$snp_id}{$bkg} = $tot1;
+				$g2_snps{$snp_id}{$bkg} = $tot2;
+				
+				# Functional descriptors only needed for group1
+				$g1_snps{$snp_id}{feature_id} = $snp_id;
+				$g1_snps{$snp_id}{id} = "Snp $snp_id in pan-genome fragment $frag";
+				$g1_snps{$snp_id}{function} = $func;
+			}
+			
+			$g1_snps{$snp_id}{$snp} += $num;
+			$g1_snps{$snp_id}{$bkg} -= $num;
+		}
+	}
+	
+	if(@$public_g2_genomes) {
+		 my $g2_counts = $schema->resultset('SnpVariation')->search(
+			{
+				'contig_collection' => $public_g2_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function}
+			},
+			{
+				join => {'snp' => {'pangenome_region' => 'featureprops'}},
+				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
+				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
+				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+			}
+		);
+		
+		while (my $snp_row = $g2_counts->next) {
+			my $snp_id = $snp_row->{snp};
+			my $snp = $snp_row->{allele};
+			my $bkg = $snp_row->{background};
+			my $num = $snp_row->{count};
+			
+			unless($g2_snps{$snp_id}) {
+				# Never seen this snp position before
+				my $frag = $snp_row->{fragment};
+				my $func = $snp_row->{function};
+				
+				$g1_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				$g2_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				
+				$g1_snps{$snp_id}{$bkg} = $tot1;
+				$g2_snps{$snp_id}{$bkg} = $tot2;
+				
+				# Functional descriptors only needed for group1
+				$g1_snps{$snp_id}{feature_id} = $snp_id;
+				$g1_snps{$snp_id}{id} = "Snp $snp_id in pan-genome fragment $frag";
+				$g1_snps{$snp_id}{function} = $func;
+			}
+			
+			$g2_snps{$snp_id}{$snp} += $num;
+			$g2_snps{$snp_id}{$bkg} -= $num;
+			
+		}
+	}
+	
+	if(@$private_g2_genomes) {
+		
+		my $g2_counts = $schema->resultset('PrivateSnpVariation')->search(
+			{
+				'contig_collection' => $private_g2_genomes,
+				'featureprops.type_id' => $type_ids->{panseq_function}
+			},
+			{
+				join => {'snp' => {'pangenome_region' => 'featureprops'}},
+				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
+				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
+				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
+				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+			}
+		);
+		
+		while (my $snp_row = $g2_counts->next) {
+			my $snp_id = $snp_row->{snp};
+			my $snp = $snp_row->{allele};
+			my $bkg = $snp_row->{background};
+			my $num = $snp_row->{count};
+			
+			unless($g2_snps{$snp_id}) {
+				# Never seen this snp position before
+				my $frag = $snp_row->{fragment};
+				my $func = $snp_row->{function};
+				
+				$g1_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				$g2_snps{$snp_id} = {A => 0, G => 0, C => 0, T => 0};
+				
+				$g1_snps{$snp_id}{$bkg} = $tot1;
+				$g2_snps{$snp_id}{$bkg} = $tot2;
+				
+				# Functional descriptors only needed for group1
+				$g1_snps{$snp_id}{feature_id} = $snp_id;
+				$g1_snps{$snp_id}{id} = "Snp $snp_id in pan-genome fragment $frag";
+				$g1_snps{$snp_id}{function} = $func;
+			}
+			
+			$g2_snps{$snp_id}{$snp} += $num;
+			$g2_snps{$snp_id}{$bkg} -= $num;
+		}
+	}
+	
+	return(\%g1_snps, \%g2_snps);
+}
+
+
+
+# Lookup and store commonly used cvterms
+sub lookup_terms {
+	my $schema = shift;
+   
+	my %terms;
+	
+	my $term_rs = $schema->resultset('Cvterm')->search(
+		[
+			{'me.name' => 'part_of', 'cv.name' => 'relationship'},
+			{'me.name' => 'derives_from', 'cv.name' => 'relationship'},
+			{'me.name' => 'locus', 'cv.name' => 'local'},
+			{'me.name' => 'pangenome', 'cv.name' => 'local'},
+			{'me.name' => 'match', 'cv.name' => 'sequence'},
+			{'me.name' => 'panseq_function', 'cv.name' => 'local'},
+		],
+		
+		{
+			join => [ 'cv' ],
+			columns => ['name','cvterm_id']
+		}
+	);
+	
+	while(my $term_row = $term_rs->next) {
+		$terms{$term_row->name} = $term_row->cvterm_id;
+	}
+
+    return \%terms;
+}
+
+sub parse_genome_ids {
+	my $group1GenomeIds = shift;
+	my $group2GenomeIds = shift;
+	
+	my @public_g1_genomes;
+	my @public_g2_genomes;
+	my @private_g1_genomes;
+	my @private_g2_genomes;
+	
+	# Parse input
+	foreach my $gname (@$group1GenomeIds) {
+		if($gname =~ m/public_(\d+)/) {
+			push @public_g1_genomes, $1;
+		} elsif($gname =~ m/private_(\d+)/) {
+			push @private_g1_genomes, $1;
+		} else {
+			croak "[Error] Invalid genome ID $gname.\n";
+		}
+	}
+	
+	foreach my $gname (@$group2GenomeIds) {
+		if($gname =~ m/public_(\d+)/) {
+			push @public_g2_genomes, $1;
+		} elsif($gname =~ m/private_(\d+)/) {
+			push @private_g2_genomes, $1;
+		} else {
+			croak "[Error] Invalid genome ID $gname.\n";
+		}
+	}
+	
+	return(\@public_g1_genomes, \@private_g2_genomes, \@public_g2_genomes, \@private_g2_genomes);
+	
+}
+
+#sub elapsed_time {
+#	my ($mes) = @_;
+#	
+#	my $time = $now;
+#	$now = time();
+#	printf("$mes: %.2f\n", $now - $time);
+#	
+#}

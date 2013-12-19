@@ -60,7 +60,13 @@ use Geo::Coder::Google;
 
 my $dbic;
 
-my @analysis_steps = qw/Initialization Loading Completed/;
+my @analysis_steps = ('Pending', 'Processing',  'Completed', 'Completed');
+my %tracker_step_values = (
+	pending => 1,
+	processing => 2,
+	completed => 3,
+	notified => 4
+);
 
 my $hostList = { 
 	hsapiens    => 'Homo sapiens (human)',
@@ -480,13 +486,17 @@ sub status : Runmode {
     croak 'You are not authorized to view this genome record.' unless $tracker_row->login_id == $user->login_id;
     
     
+    my $tot = scalar(@analysis_steps)-1; # Subtract the email notification from step, users dont need that info
+    my $step_value = $tracker_row->step;
+    $step_value = $tot if $step_value > $tot;
+    my $i = $step_value-1;
+    
     my $t = $self->load_tmpl ( 'genome_status.tmpl' , die_on_bad_params=>0 );
     $t->param(tracking_id => $tracking_id);
     $t->param(feature_name => $tracker_row->feature_name);
     $t->param(start_date => _format_time($tracker_row->start_date));
-    $t->param(analysis_step => $analysis_steps[$tracker_row->step-1]);
-    $t->param(current_step => $tracker_row->step);
-    my $tot = scalar @analysis_steps;
+    $t->param(analysis_step => $analysis_steps[$i]);
+    $t->param(current_step => $step_value);
     $t->param(total_steps => $tot);
     $t->param(failed => $tracker_row->failed);
     
