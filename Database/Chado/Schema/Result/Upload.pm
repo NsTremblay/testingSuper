@@ -194,22 +194,9 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-31 14:17:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8oRWoHPlBkbHP1HxKw4V6w
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FMMfmiUq/jkXaY/3Ey8vmQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
-
-=head2 private_features
-
-Join with database view of all contig_collection names
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_genome_names",
-  "Database::Chado::Schema::Result::PrivateGenomeName",
-  { "foreign.upload_id" => "self.upload_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
 1;

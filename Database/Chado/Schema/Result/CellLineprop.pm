@@ -117,7 +117,7 @@ __PACKAGE__->belongs_to(
   "cell_line",
   "Database::Chado::Schema::Result::CellLine",
   { cell_line_id => "cell_line_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 cell_lineprop_pubs
@@ -147,12 +147,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:51
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HKpxd8wDeO0zflbD/zAjWA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:6CRpccJarGgGkZQOaFrN2A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

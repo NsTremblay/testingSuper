@@ -169,7 +169,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::PrivateFeature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 srcfeature
@@ -193,8 +193,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-09-30 15:08:49
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Nm8LyqTVmzXIIHXIMrgzSA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TlZLJzUlgnZKOwDRkkmBsw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

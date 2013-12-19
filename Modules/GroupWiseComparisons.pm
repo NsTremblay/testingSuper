@@ -104,10 +104,26 @@ sub comparison : Runmode {
 	my $job_id = $q->param("job_id");
 	my $geospatial = $q->param("geospatial");
 
+	my $username = $self->authen->username;
+
+	if (!$username) {
+		$username = "\"\"";
+	}
+
+	if (!$geospatial || $geospatial eq "false") {
+		$geospatial = "false";
+	}
+
+	my $formDataGenerator = Modules::FormDataGenerator->new();
+	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
+
 	if ($job_id) {
 		my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
 		$template->param(job_id => $job_id);
 		$template->param(geospatial=>$geospatial);
+		$template->param(public_genomes => $pub_json);
+		$template->param(private_genomes => $pvt_json) if $pvt_json;
 		return $template->output();
 	}
 
@@ -124,20 +140,10 @@ sub comparison : Runmode {
 		return $self->group_wise_comparisons('one or more groups were empty');
 	}
 
-	my $username = $self->authen->username;
-
-	if (!$username) {
-		$username = "\"\"";
+	if (!$geospatial || $geospatial eq "false" && !$locisnp || $locisnp eq "false") {
+		return $self->group_wise_comparisons('no data analysis type selected');
 	}
 
-	if (!$geospatial || $geospatial eq "false") {
-		$geospatial = "false";
-	}
-
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
 	# Validate genome access
 	my @private_ids = map m/private_(\d+)/ ? $1 : (), (@group1, @group2);
 
@@ -148,7 +154,6 @@ sub comparison : Runmode {
 		}
 	}
 	
-
 	if ($locisnp && $geospatial) {
 		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
 	}
@@ -201,8 +206,8 @@ sub running_job : Runmode {
 	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
 		{'me.job_id' => $job_id},
 		{
-			select => ['status'],
-			as => ['status']
+			select => ['status', 'user_config'],
+			as => ['status', 'user_config']
 		}
 		);
 
@@ -211,17 +216,29 @@ sub running_job : Runmode {
 	die "Error. Job id not found." unless $status;
 
 	my $html = "";
+	my $group1 = "";
+	my $group2 = "";
+
 	if ($status ne "in progress") {
-		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";
-		
+		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";		
 		while(<$fh>) {
 			$_ =~ s/\R//;
 			$html .= "$_";
+		}
+		if (my $user_conf = new Config::Simple("/home/genodo/group_wise_data_temp/".$jobs_resultset->first->get_column('user_config'))) {
+			$group1 = $user_conf->param('user.gp1IDs');
+			$group2 = $user_conf->param('user.gp2IDs');
+		}
+		else {
+			die Config::Simple->error();
 		}
 	}
 	my %poll = (
 		'status' => $status,
 		'html' => $html,
+		'geospatial' => $geospatial,
+		'group1' => $group1,
+		'group2' => $group2
 		);
 	my $poll_ref = encode_json(\%poll);
 	return $poll_ref;
@@ -304,15 +321,15 @@ sub startForkedGroupCompare {
 		);
 
 	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
-		#DIR => '/home/genodo/group_wise_data_temp/',
-		DIR => '/home/matt/tmp/compare',
+		DIR => '/home/genodo/group_wise_data_temp/',
 		UNLINK => 0);
 
-	#my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
-	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/matt\/tmp\/compare\/user_conf_temp([\w\d]*)/);
+	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
 
 	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
 
+	my $userConFileName = $userConFile->filename;
+	$userConFileName =~ s/\/home\/genodo\/group_wise_data_temp\///g;
 	#Write the job params to the db
 
 	my $newJob = $self->dbixSchema->resultset('Job')->new({
@@ -320,7 +337,8 @@ sub startForkedGroupCompare {
 		'remote_addr' => $_remote_addr,
 		'session_id' => $_session_id,
 		'username' => $_username,
-		'status' => "in progress"
+		'status' => "in progress",
+		'user_config' => $userConFileName
 		});
 
 	$newJob->insert();
@@ -360,14 +378,14 @@ sub startForkedGroupCompare {
 	print $userConFile $userConString or die "$!";
 
 	#Fork program and run loading separately
-#	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
-#	my $daemon = Proc::Daemon->new(
-#		work_dir => "$FindBin::Bin/../../Data/",
-#		exec_command => $cmd,
-#		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
-#	#Fork
-#	$self->session->close;
-#	my $kid_pid = $daemon->Init;
+	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+	my $daemon = Proc::Daemon->new(
+		work_dir => "$FindBin::Bin/../../Data/",
+		exec_command => $cmd,
+		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
+	#Fork
+	$self->session->close;
+	my $kid_pid = $daemon->Init;
 
 	#Right now it redirects to comparison runmode, may want to change that
 	return $self->redirect('/group-wise-comparisons/comparison?job_id='.$_job_id.'&geospatial='.$_geospatial);

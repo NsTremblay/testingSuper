@@ -667,6 +667,20 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 loci_genotypes
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::LociGenotype>
+
+=cut
+
+__PACKAGE__->has_many(
+  "loci_genotypes",
+  "Database::Chado::Schema::Result::LociGenotype",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 =head2 organism
 
@@ -680,7 +694,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phylonodes
@@ -695,36 +709,6 @@ __PACKAGE__->has_many(
   "phylonodes",
   "Database::Chado::Schema::Result::Phylonode",
   { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 pripub_feature_relationships
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
-
-=cut
-
-__PACKAGE__->has_many(
-  "pripub_feature_relationships",
-  "Database::Chado::Schema::Result::PripubFeatureRelationship",
-  { "foreign.object_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 pubpri_feature_relationships
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
-
-=cut
-
-__PACKAGE__->has_many(
-  "pubpri_feature_relationships",
-  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
-  { "foreign.subject_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -758,63 +742,18 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 snp_cores
+=head2 snps_genotypes
 
 Type: has_many
 
-Related object: L<Database::Chado::Schema::Result::SnpCore>
+Related object: L<Database::Chado::Schema::Result::SnpsGenotype>
 
 =cut
 
 __PACKAGE__->has_many(
-  "snp_cores",
-  "Database::Chado::Schema::Result::SnpCore",
-  { "foreign.pangenome_region" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_variation_contig_collections
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpVariation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_variation_contig_collections",
-  "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.contig_collection" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_variation_contigs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpVariation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_variation_contigs",
-  "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.contig" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_variation_loci
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpVariation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_variation_loci",
-  "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.locus" => "self.feature_id" },
+  "snps_genotypes",
+  "Database::Chado::Schema::Result::SnpsGenotype",
+  { "foreign.feature_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -845,7 +784,7 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 vf_categories
@@ -864,8 +803,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-13 10:55:05
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Xftje3icKIf+6OnMDpyAAQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BxFHUYPPBuPgWsXrrI3qdg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

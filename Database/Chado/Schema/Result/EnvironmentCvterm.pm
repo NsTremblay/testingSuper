@@ -100,7 +100,7 @@ __PACKAGE__->belongs_to(
   "cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "cvterm_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 environment
@@ -115,12 +115,12 @@ __PACKAGE__->belongs_to(
   "environment",
   "Database::Chado::Schema::Result::Environment",
   { environment_id => "environment_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-05-07 17:37:52
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:iMOsQkcbyfak124X+Lr2ig
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hsKh1LTqvc5/mi+ts4odxg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

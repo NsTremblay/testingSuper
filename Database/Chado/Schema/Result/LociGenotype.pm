@@ -30,21 +30,17 @@ __PACKAGE__->table("loci_genotypes");
   is_nullable: 0
   sequence: 'loci_genotypes_locus_genotype_id_seq'
 
-=head2 feature_id
+=head2 genome_id
 
   data_type: 'text'
   is_nullable: 0
   original: {data_type => "varchar"}
 
-Strain ID
-
-=head2 locus_id
+=head2 feature_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
-
-Stores a locus ID from the loci table
 
 =head2 locus_genotype
 
@@ -64,13 +60,13 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "loci_genotypes_locus_genotype_id_seq",
   },
-  "feature_id",
+  "genome_id",
   {
     data_type   => "text",
     is_nullable => 0,
     original    => { data_type => "varchar" },
   },
-  "locus_id",
+  "feature_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "locus_genotype",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
@@ -90,24 +86,24 @@ __PACKAGE__->set_primary_key("locus_genotype_id");
 
 =head1 RELATIONS
 
-=head2 locus
+=head2 feature
 
 Type: belongs_to
 
-Related object: L<Database::Chado::Schema::Result::Loci>
+Related object: L<Database::Chado::Schema::Result::Feature>
 
 =cut
 
 __PACKAGE__->belongs_to(
-  "locus",
-  "Database::Chado::Schema::Result::Loci",
-  { locus_id => "locus_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  "feature",
+  "Database::Chado::Schema::Result::Feature",
+  { feature_id => "feature_id" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:mQlZThY+MTyiSZsrMyr1Tw
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JbuazhC6sDP84CLeK1OUgg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

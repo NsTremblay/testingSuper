@@ -67,6 +67,12 @@ Username (if user logged in) of site user requesting job
 
 Current status of job. Will either be "in progress" or "completed"
 
+=head2 user_config
+
+  data_type: 'text'
+  is_nullable: 0
+  original: {data_type => "varchar"}
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -100,6 +106,12 @@ __PACKAGE__->add_columns(
     is_nullable => 1,
     original    => { data_type => "varchar" },
   },
+  "user_config",
+  {
+    data_type   => "text",
+    is_nullable => 0,
+    original    => { data_type => "varchar" },
+  },
 );
 
 =head1 PRIMARY KEY
@@ -115,8 +127,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("job_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-05 11:23:42
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8D2MjePoay/47NTpvWTabQ
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:K4MAGz6vQasn1qdNM+6+0w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
