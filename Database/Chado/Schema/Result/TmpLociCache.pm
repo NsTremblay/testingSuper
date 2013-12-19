@@ -34,7 +34,17 @@ __PACKAGE__->table("tmp_loci_cache");
   is_nullable: 1
   size: 1000
 
+=head2 type_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
 =head2 genome_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
+=head2 contig_id
 
   data_type: 'integer'
   is_nullable: 1
@@ -43,6 +53,12 @@ __PACKAGE__->table("tmp_loci_cache");
 
   data_type: 'integer'
   is_nullable: 1
+
+=head2 copy_number
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 100
 
 =head2 pub
 
@@ -61,10 +77,16 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_nullable => 1 },
   "uniquename",
   { data_type => "varchar", is_nullable => 1, size => 1000 },
+  "type_id",
+  { data_type => "integer", is_nullable => 1 },
   "genome_id",
+  { data_type => "integer", is_nullable => 1 },
+  "contig_id",
   { data_type => "integer", is_nullable => 1 },
   "query_id",
   { data_type => "integer", is_nullable => 1 },
+  "copy_number",
+  { data_type => "varchar", is_nullable => 1, size => 100 },
   "pub",
   { data_type => "boolean", is_nullable => 1 },
   "updated",
@@ -72,8 +94,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2013-12-04 14:33:55
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum://jl4lOD8dev6mqOKOh2Ew
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Px3aWxQGmTlbxvt0gCyviA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
