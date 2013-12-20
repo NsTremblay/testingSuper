@@ -23,6 +23,12 @@
 
 \title{SuperPhy: A Pilot Resource for Integrated Phylogenetic and Epidemiological Analysis of Pathogens}
 
+\author{\authorname{Matthew D. Whiteside\sup{1*}, Chad R. Laing\sup{1*}, Akiff Manji\sup{1} and Victor P.J. Gannon\sup{1}}
+\affiliation{\sup{1} Laboratory for Foodborne Zoonoses, Public Health Agency of Canada, Lethbridge, AB, Canada}
+\email{\{matthew.whiteside, chad.r.laing, akiff.manji, vic.gannon\}@phac-aspc.gc.ca}
+\ \
+$^{*}$ These authors contributed equally to the writing of this manuscript.}
+
 \keywords{Bioinformatics, Computational Biology, Population Genomics, Epidemiology, Phylogeny, Bacterial Pathogenesis}
 
 \abstract{
@@ -40,7 +46,6 @@ We have previously created Panseq, an online and standalone suite of software to
 In this study, we have created a complimentary computational platform, called SuperPhy (\url{http://lfz.corefacility.ca/superphy}), that provides 1) genomic comparisons of clinical isolates, identification of virulence and antimicrobial resistance genes \textit{in silico}, 2) associations between specific genotypes and phenotypic meta-data (e.g., geospatial distribution, host, source); 3) identification of group-specific genome markers (presence/ absence of specific genomic regions, and single-nucleotide polymorphisms) in bacterial populations; 4) the ability to manipulate the display of phylogenetic trees; 5) identify statistically significant clade-specific markers. In addition, SuperPhy allows private user data repositories where user-specific genome sequences and associated datasets can be uploaded and analyzed in conjunction with all public data. Figure \ref{fig:capabilities} highlights the functions of SuperPhy.
 
 \begin{figure*}[t]
-  \vspace{-0.2cm}
   \centering
    {\includegraphics[width=10cm]{capabilities.pdf}}
   \caption{Overview of capabilities in the SuperPhy platform.}
@@ -62,9 +67,9 @@ The pilot stage of the SuperPhy platform focuses on analyzing genomes of \textit
 A predefined set of required and optional genome meta-data fields and permissible values have been selected from the minimum information about a genome sequence (MIGS) specification \cite{field2008}. The meta-data types capture key bacterial isolate attributes.
 
 \begin{figure*}[t]
-  \vspace{-0.2cm}
   \centering
    {\epsfig{file = ontology.eps, width = 12cm}}
+  \vspace{0.2cm}
   \caption{A ontology graph representing the main entity types used in the SuperPhy schema.}
   \label{fig:ontology}
   %\vspace{-0.1cm}
@@ -97,10 +102,11 @@ Users can upload their \textit{E. coli} genomes to SuperPhy for analysis and com
 Existing \textit{E. coli} genomes from the NCBI GenBank and Whole Genome Sequence repositories \cite{benson2013genbank} have been loaded into the SuperPhy database. Meta-data in these sources were mapped to the standardized MIGS set of meta-data types and values \cite{field2008}. To facilitate navigation, users can choose to display one or more meta-data types in the forms (accession, serotype, strain, host species, isolation source, isolate date can be displayed alongside genome name). Through the advanced search facility, genome information can be queried by selecting from a interactive phylogenetic tree, from a world map, by date range or by boolean search of user-defined search fields and keywords.  The sophisticated query interface is designed to help address a broad range of hypotheses based on meta-data or phylogenetic information (Figure \ref{fig:search}).
 
 \begin{figure*}[t]
-  \vspace{-0.2cm}
+%  \vspace{-0.2cm}
   \centering
-   {\includegraphics[width=14cm]{superphy_forms_copy.pdf}}
-  \caption{Advanced search function in SuperPhy. Genome information can be queried by (A) interactive phylogenetic tree (B) world map or (C) boolean search of user-specified fields and keywords.}
+   {\includegraphics[width=10cm]{meta.pdf}}
+   \vspace{0.2cm}
+  \caption{Advanced meta-data search function in SuperPhy. Users can perform a boolean search of specified fields and keywords.}
   \label{fig:search}
   %\vspace{-0.1cm}
 \end{figure*}
@@ -116,7 +122,24 @@ SuperPhy provides the ability to identify and evaluate risk factors. Users can e
 
 \subsection{Visualizing Phylogenetic and Geospatial Data}
 
-Phylogenetic tree views are provided for Genomes, AMR and VF genes and individual pan-genome regions (Figure \ref{fig:search}A). The tree interface is designed to be highly interactive; users can pan, zoom and expand, collapse or select tree nodes. The tree view is coupled with an interactive world map view of the location of strains (Figure \ref{fig:search}B). Locations can be regions such as countries, territories or states, or can be points defined by latitude and longitude coordinates. Queried genomes are simultaneously displayed in the tree and map views allowing users to explore and compare the phylogenetic and geospatial positions of strains. Meta-data such as host, source, associated disease or isolation date can be overlayed in the phylogenetic tree.
+Phylogenetic tree views are provided for Genomes, AMR and VF genes and individual pan-genome regions (Figure \ref{fig:tree}). The tree interface is designed to be highly interactive; users can pan, zoom and expand, collapse or select tree nodes. The tree view is coupled with an interactive world map view of the location of strains (Figure \ref{fig:map}). Locations can be regions such as countries, territories or states, or can be points defined by latitude and longitude coordinates. Queried genomes are simultaneously displayed in the tree and map views allowing users to explore and compare the phylogenetic and geospatial positions of strains. Meta-data such as host, source, associated disease or isolation date can be overlayed in the phylogenetic tree.
+
+\begin{figure}[!h]
+  \centering
+   {\includegraphics[width=7.4cm]{tree.pdf}}
+   \vspace{0.2cm}
+  \caption{The interactive phylogenetic tree interface in SuperPhy. In addition to displaying phylogenetic data, the interface can be used to select single or groups of genomes for further investigation. In the form, users can pan, zoom, or collapse/expand tree nodes to explore sections of the tree.}
+  \label{fig:tree}
+\end{figure}
+
+\begin{figure*}[t]
+  \centering
+   {\includegraphics[width=14cm]{map.pdf}}
+   \vspace{0.2cm}
+  \caption{The interactive world map interface in SuperPhy displays the isolation location of strains. The display algorithm clusters nearby strains and shows the number of strains in a region. Zooming in or clicking on a cluster will resolve individual strains in the region.}
+  \label{fig:map}
+\end{figure*}
+
 
 \subsection{Shiga-Toxin Subtyping}
 
