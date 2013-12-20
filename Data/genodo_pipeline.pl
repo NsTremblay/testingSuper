@@ -226,7 +226,7 @@ if(@tracking_ids) {
 	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
 	unless(-e $vf_fasta_file) {
 		die "AMR/VF gene fasta file missing. Please run:\n".
-		"Database/query_gene_fasta.pl --config ../Modules/genodo.cfg --combined $vf_fasta_file.";
+		"Database/query_gene_fasta.pl --config genodo.cfg --combined $vf_fasta_file.";
 	}
 	INFO "VF/AMR query gene file detected.";
 	

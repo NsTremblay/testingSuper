@@ -95,7 +95,7 @@ my $amr_gene_rs = $schema->resultset('Feature')->search(
 # Obtain all vf genes
 my $vf_gene_rs = $schema->resultset('Feature')->search(
 	{
-        'type.name' => "gene"
+        'type.name' => "virulence_factor"
 	},
 	{
 		column  => [qw/feature_id uniquename name residues/],
