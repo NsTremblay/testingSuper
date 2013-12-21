@@ -208,15 +208,15 @@ nameOrId	name
 
 # Load functions
 my %anno_functions;
-my $anno_file = $panseq_dir . 'anno.txt';
-open IN, "<", $anno_file or croak "[Error] unable to read file $anno_file ($!).\n";
-
-while(<IN>) {
-	chomp;
-	my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
-	$anno_functions{$q} = [$s,$t];
-}
-close IN;
+#my $anno_file = $panseq_dir . 'anno.txt';
+#open IN, "<", $anno_file or croak "[Error] unable to read file $anno_file ($!).\n";
+#
+#while(<IN>) {
+#	chomp;
+#	my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
+#	$anno_functions{$q} = [$s,$t];
+#}
+#close IN;
 
 
 # Load pangenome
@@ -249,7 +249,7 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
 		
 		# Cache feature id another info for reference pangenome fragment
-		$chado->cache('feature',$uniquename,$pg_feature_id);
+		$chado->cache('feature',$locus_id,$pg_feature_id);
 	
 		$chado->cache('core',$pg_feature_id,$in_core);
 		if($in_core) {
@@ -271,14 +271,14 @@ open(my $in, "<", $positions_file) or croak "Error: unable to read file $positio
 while (my $line = <$in>) {
 	chomp $line;
 	
-	my ($id, $locus, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
+	my ($id, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
 	
 	if($allele > 0) {
 		# Hit
 		
 		# pangenome reference region feature ID
-		my $query_id = $chado->cache('feature', $locus);
-		croak "Pangenome reference segement $locus has no assigned feature ID\n" unless $query_id;
+		my $query_id = $chado->cache('feature', $id);
+		croak "Pangenome reference segement $id has no assigned feature ID\n" unless $query_id;
 	
 		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
 		$loci{$query_id}->{$genome} = {
@@ -307,10 +307,12 @@ my $num_done = 0;
 		
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
+		my ($locus_id, $uniquename) = ($locus =~ m/^lcl\|(\d+)\|(lcl\|.+)$/);
+		croak "Error: unable to parse header $locus in the locus alleles fasta file.\n" unless $uniquename && $locus_id;
 		my %sequence_group;
 		
 		# pangenome reference region feature ID
-		my $query_id = $chado->cache('feature', $locus);
+		my $query_id = $chado->cache('feature', $locus_id);
 		croak "Pangenome reference segment $locus has no assigned feature ID\n" unless $query_id;
 		
 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {

@@ -43,6 +43,7 @@ my $build=Module::Build->new(
 		'CGI::Application::Plugin::AutoRunmode'=>0,
 		'Math::Round'=>0,
 		'Digest::MD5'=>0,
+		'Geo::Coder::Google'=>0
 	}
 );
 $build->create_build_script();
