@@ -42,7 +42,7 @@ use IO::CaptureOutput qw(capture_exec);
 
 # Globals (set these to match local values)
 my $muscle_exe = '/usr/bin/muscle';
-my $mummer_dir = '/home/matt/MUMer3.23/';
+my $mummer_dir = '/home/matt/MUMmer3.23/';
 my $blast_dir = '/home/matt/blast/bin/';
 my $parallel_exe = '/usr/bin/parallel';
 my $nr_location = '/home/matt/blast_databases/gammaproteobacteria_nr';
@@ -396,7 +396,7 @@ sub cleanup_handler {
 =cut
 
 sub pangenome_locus {
-	my ($query_id, $header, $seq, $seq_group) = @_;
+	my ($query_id, $locus_id, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	
@@ -411,7 +411,7 @@ sub pangenome_locus {
 	
 	# location hash
 	my $loc_hash = $loci{$query_id}->{$header};
-	croak "Missing location information for locus allele $query_id in contig $header.\n" unless defined $loc_hash;
+	croak "Missing location information for locus allele $locus_id ($query_id) in contig $header.\n" unless defined $loc_hash;
 	
 	# contig
 	my $contig = $loc_hash->{contig};
