@@ -42,7 +42,7 @@ sub new {
 	bless( $self, $class );
 	
 	# Fast tree executable
-	my $ftexe = $args{fasttree_exe} // 'FastTree';
+	my $ftexe = $args{fasttree_exe} // 'FastTreeMP';
 	$self->ft_exe($ftexe);
 	
 	# Fast tree command

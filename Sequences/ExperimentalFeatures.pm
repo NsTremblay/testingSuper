@@ -3221,7 +3221,7 @@ sub print_ufprop {
 	my $self = shift;
 	my ($f_id,$cvterm_id,$value,$rank,$pub) = @_;
 	
-	$rank //= 0;
+	$rank = 0 unless defined $rank;
 	
 	my $fh;
 	if($pub) {

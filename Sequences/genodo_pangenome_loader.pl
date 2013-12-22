@@ -228,6 +228,8 @@ my $num_pg = 0;
 foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 	my $in_core = shift @core_status;
 	
+	next unless -e $pan_file;
+	
 	my $fasta = Bio::SeqIO->new(-file   => $pan_file,
 							    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $pan_file ($!).";
     
