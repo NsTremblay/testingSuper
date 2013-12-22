@@ -320,7 +320,7 @@ my $num_done = 0;
 			my $seq = $2;
 		
 			# Load the sequence
-			pangenome_locus($query_id,$header,$seq,\%sequence_group);
+			pangenome_locus($query_id,$locus_id,$header,$seq,\%sequence_group);
 			
 		}
 		
@@ -411,7 +411,10 @@ sub pangenome_locus {
 	
 	# location hash
 	my $loc_hash = $loci{$query_id}->{$header};
-	croak "Missing location information for locus allele $locus_id ($query_id) in contig $header.\n" unless defined $loc_hash;
+	unless(defined $loc_hash) {
+		warn "Missing location information for locus allele $locus_id ($query_id) in contig $header.\n" unless defined $loc_hash;
+		return;
+	}
 	
 	# contig
 	my $contig = $loc_hash->{contig};

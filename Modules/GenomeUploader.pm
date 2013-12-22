@@ -271,15 +271,16 @@ sub upload_genome : Runmode {
 	# Copy to persistent tmp file
 	# The CGI upload tmp file is auto-deleted
 	# Save parameters to tmp file
-    my $file_path = $self->config_param('dir.seq');
-    croak "Missing config parameter for sequence directory." unless $file_path;
+	my $file_path = $self->config_param('dir.seq');
+	#my $file_path = $self->config_param('tmp.dir');
+	croak "Missing config parameter for sequence directory." unless $file_path;
      
 	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.ffn";
 	
 	# Copy upload tmp file to our tmp file
 	my $filename = $q->param('g_file');
 	my $uploadFile = $q->tmpFileName($filename);
-	copy($uploadFile, $tmpFastaFile) or croak "Copy failed: $!";
+	copy($uploadFile, $tmpFastaFile) or croak "Copy from $uploadFile to $tmpFastaFile failed: $!";
 	
 	# User info
 	my %upload_params = (
