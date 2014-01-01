@@ -38,6 +38,7 @@ use File::Path qw/remove_tree/;
 use Phylogeny::TreeBuilder;
 use Phylogeny::Tree;
 use IO::CaptureOutput qw(capture_exec);
+use Time::HiRes qw( time );
 
 
 # Globals (set these to match local values)
@@ -218,6 +219,7 @@ my %anno_functions;
 #}
 #close IN;
 
+elapsed_time('Start');
 
 # Load pangenome
 my $core_fasta_file = $panseq_dir . 'coreGenomeFragments.fasta';
@@ -261,7 +263,7 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 	}
 	
 	my $data_type = ($in_core) ? 'Core':'Accessory';
-	print "$data_type pangenome fragments loaded.\n";
+	elapsed_time("$data_type pangenome fragments processed.");
 }
 
 
@@ -290,7 +292,7 @@ while (my $line = <$in>) {
 		};		
 	}
 }
-print "Loci locations loaded.\n";
+elapsed_time("Loci locations loaded.");
 
 # Initialize / verify
 
@@ -323,11 +325,13 @@ my $num_done = 0;
 		
 			# Load the sequence
 			pangenome_locus($query_id,$locus_id,$header,$seq,\%sequence_group);
+			elapsed_time("Locus $header for pangenome fragment $query_id|$locus_id processed.") if $num_done < 5;
 			
 		}
 		
 		# Build tree and calculate the snps
 		snps_and_trees($query_id, \%sequence_group);
+		elapsed_time("Tree and Snps for pangenome fragment $query_id|$locus_id processed.") if $num_done < 5;
 		
 		$num_done++;
 		print "Pangenome segments $num_done of $num_pg loaded.\n" if $num_done % 1000 == 0;
@@ -542,6 +546,7 @@ sub snps_and_trees {
 		}
 		close $out;
 	}
+	elapsed_time('Alignment input file written') if $num_done < 5;
 	
 	if($do_tree) {
 		
@@ -552,12 +557,14 @@ sub snps_and_trees {
 		
 		# build newick tree
 		$tree_builder->build_tree($tmp_file, $tree_file) or croak;
+		elapsed_time('Tree built') if $num_done < 5;
 		
 		# slurp tree and convert to perl format
 		my $tree = $tree_io->newickToPerlString($tree_file);
 		
 		# store tree in tables
 		$chado->handle_phylogeny($tree, $query_id, $seq_grp);
+		elapsed_time('Tree loaded') if $num_done < 5;
 	}
 	
 	if($do_snps) {
@@ -571,6 +578,7 @@ sub snps_and_trees {
 		open(my $out, ">", $tmp_file2) or croak "Error: unable to write to file $tmp_file2 ($!).\n";
 		print $out ">$refheader\n$refseq\n";
 		close $out;
+		elapsed_time('Added reference sequence to alignment input file') if $num_done < 5;
 		
 		my $aln_file = $tmp_dir . 'genodo_pangenome_aln.txt';
 		my @loading_args = ($muscle_exe, "-profile -in1 $tmp_file -in2 $tmp_file2 -out $aln_file");
@@ -581,6 +589,7 @@ sub snps_and_trees {
 		unless($success) {
 			die "Muscle profile alignment failed for pangenome $query_id ($stderr).";
 		}
+		elapsed_time('Muscle alignment completed.') if $num_done < 5;
 		
 		# Load alignments into memory
 		my $fasta = Bio::SeqIO->new(-file   => $aln_file,
@@ -598,6 +607,7 @@ sub snps_and_trees {
 			}
 		}
 		croak "Error: aligned reference pangenome sequence not found in muscle output file.\n" unless $new_refseq;
+		elapsed_time('Alignment sequences loaded.') if $num_done < 5;
 		
 		# Compute snps for each sequence relative to the reference
 		my $total_snps = 0;
@@ -607,12 +617,12 @@ sub snps_and_trees {
 				my $ghash = $seq_grp->{$id};
 				$total_snps++ if find_snps($new_refseq, $query_id, $ghash);
 			}
-			
 		}
+		elapsed_time('Snps computed.') if $num_done < 5;
 		
-		if($total_snps == $num_seqs) {
-			# 
-		}
+#		if($total_snps == $num_seqs) {
+#			
+#		}
 		
 	}
 	
@@ -631,6 +641,7 @@ sub find_snps {
 	
 	# Add row in SNP alignment table for genome, if it doesn't exist
 	$chado->add_snp_row($contig_collection,$is_public);
+	elapsed_time('Snp table row added.') if $num_done < 5;
 	
 	# Iterate through each aligned sequence, identifying mismatches
 	my $l = length($ref_seq)-1;
@@ -660,6 +671,7 @@ sub find_snps {
         	#exit(0);
         }
 	}
+	elapsed_time('Snps discovery complete.') if $num_done < 5;
 }
 
 sub build_genome_tree {
@@ -680,5 +692,15 @@ sub build_genome_tree {
 	my $tree = $tree_io->loadTree($tree_file);
 	
 }
+
+sub elapsed_time {
+	my ($mes) = @_;
+	
+	my $time = $now;
+	$now = time();
+	printf("$mes: %.2f\n", $now - $time);
+	
+}
+
 
 
