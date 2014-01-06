@@ -38,6 +38,7 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
+use Modules::FastaFileWrite;
 use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Phylogeny::Tree;
@@ -143,6 +144,16 @@ sub comparison : Runmode {
 		return $self->group_wise_comparisons('no data analysis type selected');
 	}
 
+	# Validate genome access
+	my @private_ids = map m/private_(\d+)/ ? $1 : (), (@group1, @group2);
+
+	if(@private_ids) {
+		my $ok = $formDataGenerator->verifyMultipleAccess($username, @private_ids);
+		foreach my $id (keys %$ok) {
+			return $self->group_wise_comparisons('<strong>Permission Denied!</strong> You have not been granted access to uploaded genome $id') unless $ok->{$id};
+		}
+	}
+	
 	if ($locisnp && $geospatial) {
 		$self->startForkedGroupCompare($username, $self->session->remote_addr(), $self->session->id(), \@group1, \@group2, \@group1Names, \@group2Names, $geospatial);
 	}
@@ -314,6 +325,7 @@ sub startForkedGroupCompare {
 		UNLINK => 0);
 
 	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
+
 	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
 
 	my $userConFileName = $userConFile->filename;
@@ -349,6 +361,7 @@ sub startForkedGroupCompare {
 	# gp2IDs = ;
 	# gp1Names = ;
 	# gp2Names =;
+	
 
 	my $userConString = "#---User Config---\n\n";
 	$userConString .= '[user]' . "\n";

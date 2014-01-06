@@ -3,6 +3,8 @@
 use strict;
 use warnings;
 use Bio::SeqIO;
+use FindBin;
+use lib "$FindBin::Bin/";
 use Adapter;
 use Getopt::Long;
 use Pod::Usage;
@@ -21,15 +23,16 @@ $0 - loads multi-fasta file into a genodo's chado database. Fasta file contains 
 
 =head1 OPTIONS
 
- --fastafile       Fasta file to load sequence from
- --propfile        Data::Dumper file containing hash of parent genome properties
- --configfile      INI style config file containing DB connection parameters
+ --fasta           Fasta file to load sequence from
+ --attributes      Data::Dumper file containing hash of parent genome properties
+ --config          INI style config file containing DB connection parameters
  --noload          Create bulk load files, but don't actually load them.
  --recreate_cache  Causes the uniquename cache to be recreated
  --remove_lock     Remove the lock to allow a new process to run
  --save_tmpfiles   Save the temp files used for loading the database
  --manual          Detailed manual pages
  --webupload       Indicates that genome is user uploaded. Loads to private tables.
+ --use_fasta_names Use headers in fasta file to name chromosomes rather than searching for names in DB cache.
 
 =head1 DESCRIPTION
 
@@ -148,12 +151,12 @@ my ($CONFIGFILE, $FASTAFILE, $PROPFILE, $NOLOAD,
     $REMOVE_LOCK,
     $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI, $TMPDIR,
     $VACUUM,
-    $WEBUPLOAD, $TRACKINGID);
+    $WEBUPLOAD, $TRACKINGID, $NONAMECACHE);
 
 GetOptions(
-	'configfile=s'=> \$CONFIGFILE,
-    'fastafile=s'=> \$FASTAFILE,
-    'propfile=s'=> \$PROPFILE,
+	'config=s'=> \$CONFIGFILE,
+    'fasta=s'=> \$FASTAFILE,
+    'attributes=s'=> \$PROPFILE,
     'noload'     => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'   => \$REMOVE_LOCK,
@@ -162,7 +165,8 @@ GetOptions(
     'debug'   => \$DEBUG,
     'vacuum'  => \$VACUUM,
     'webupload' => \$WEBUPLOAD,
-    'tracking_id:s' => \$TRACKINGID
+    'tracking_id:s' => \$TRACKINGID,
+    'use_fasta_names' => \$NONAMECACHE
 ) 
 
 or pod2usage(-verbose => 1, -exitval => 1);
@@ -197,21 +201,22 @@ my ($f, $fp, $dx) = validate_genome_properties($genome_feature_properties);
 # Initialize the chado adapter
 my %argv;
 
-  $argv{fastafile}      = $FASTAFILE;
-  $argv{dbname}         = $DBNAME;
-  $argv{dbuser}         = $DBUSER;
-  $argv{dbpass}         = $DBPASS;
-  $argv{dbhost}         = $DBHOST;
-  $argv{dbport}         = $DBPORT;
-  $argv{dbi}            = $DBI;
-  $argv{tmp_dir}        = $TMPDIR;
-  $argv{noload}         = $NOLOAD;
-  $argv{recreate_cache} = $RECREATE_CACHE;
-  $argv{save_tmpfiles}  = $SAVE_TMPFILES;
-  $argv{web_upload}     = $WEBUPLOAD;
-  $argv{vacuum}         = $VACUUM;
-  $argv{debug}          = $DEBUG;
-  
+$argv{fastafile}       = $FASTAFILE;
+$argv{dbname}          = $DBNAME;
+$argv{dbuser}          = $DBUSER;
+$argv{dbpass}          = $DBPASS;
+$argv{dbhost}          = $DBHOST;
+$argv{dbport}          = $DBPORT;
+$argv{dbi}             = $DBI;
+$argv{tmp_dir}         = $TMPDIR;
+$argv{noload}          = $NOLOAD;
+$argv{recreate_cache}  = $RECREATE_CACHE;
+$argv{save_tmpfiles}   = $SAVE_TMPFILES;
+$argv{web_upload}      = $WEBUPLOAD;
+$argv{vacuum}          = $VACUUM;
+$argv{debug}           = $DEBUG;
+$argv{use_fasta_names} = $NONAMECACHE;
+                       
 my $chado = Sequences::Adapter->new(%argv);
 
 
@@ -257,9 +262,7 @@ while (my $entry = $in->next_seq) {
 	contig($entry);
 }
 
-
 # Finalize and load into DB
-
 $chado->end_files();
 
 $chado->flush_caches();
@@ -600,17 +603,30 @@ sub contig {
 	# Feature_id 
 	my $curr_feature_id = $chado->nextfeature();
 	
+	my $name;
+	my $desc;
+	my $chr_num;
 	
-	# Uniquename and name
-	my $uniquename = $contig->display_id;
-	my $name = $uniquename;
-	
-	# Create unique contig name derived from contig_collection uniquename
-	# Since contig_collection uniquename is guaranteed unique, contig name should be unique.
-	# Saves us from doing a DB query on the many contigs that could be in the fasta file.
-	my $cc_name = $chado->cache('const','contig_collection_uniquename');
-	$uniquename .= "- part_of:$cc_name";
-	
+	if($NONAMECACHE) {
+		# Get description and name from FASTA header
+		
+		# Uniquename and name
+		my $name = $contig->display_id;
+		
+		# Description
+		$desc = $contig->description
+		
+	} else {
+		# Get the user-submitted description and name from DB cache
+		
+		my $tmp_id = $contig->display_id;
+		(my $trk_id, $chr_num) = ($tmp_id =~ m/lcl\|upl_(\d+)\|(\d+)/);
+		
+		croak "Invalid temporary ID ($tmp_id) for contig." unless $trk_id && $chr_num;
+		croak "Tracking ID in temporary ID does not match supplied tracking ID ($tmp_id, $TRACKINGID)" unless $trk_id == $TRACKINGID;
+		
+		($name, $desc) = $chado->retrieve_chr_info($trk_id, $chr_num);
+	}
 
 	# Sequence Length
 	my $seqlen = $contig->length;
@@ -630,7 +646,7 @@ sub contig {
 	my $mol_type = 'dna';
 	
 	# description
-	if(my $desc = $contig->description) {
+	if($desc) {
 		# if plasmid or chromosome is in header, change default
 		if($desc =~ m/plasmid/i || $name =~ m/plasmid/i) {
 			$mol_type = 'plasmid';
@@ -650,6 +666,13 @@ sub contig {
 	
 	$chado->handle_reserved_properties($curr_feature_id, \%contig_fp);
 	
+	# Create unique contig name derived from contig_collection uniquename
+	# Since contig_collection uniquename is guaranteed unique, contig name should be unique.
+	# Saves us from doing a DB query on the many contigs that could be in the fasta file.
+	my $uniquename = $name;
+	my $cc_name = $chado->cache('const','contig_collection_uniquename');
+	$uniquename .= "- part_of:$cc_name";
+	
 	
 	# Feature relationships
 	$chado->handle_parent($curr_feature_id);
@@ -658,4 +681,12 @@ sub contig {
 	# Print  
 	$chado->print_f($curr_feature_id, $chado->organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues);  
 	$chado->nextfeature('++');
+	
+	# Cache feature ID for newly loaded contig
+	unless($NONAMECACHE) {
+		$chado->cache_contig_id($TRACKINGID, $curr_feature_id, $chr_num);
+	}
+	
 }
+
+

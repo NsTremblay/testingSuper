@@ -21,8 +21,15 @@ $0 - Downloads all Antimicrobial Resistance Gene and Virulence Factor sequences 
 =head1 COMMAND-LINE OPTIONS
 
  --config         Specify a .conf containing DB connection parameters.
+ 
+     --AND--
+     
  --amr            Specify an amr output fasta file.
  --vf             Specify an vf output fasta file.
+ 
+     --OR--
+     
+ --combined       Specify a single output fasta file for vf and amr
 
 =head1 DESCRIPTION
 
@@ -30,7 +37,7 @@ Script to download all Antimicrobial Resistance Gene and Virulence Factor sequen
 to use for generating vir/amr data and the phylogenetic tree, etc.
 
 Sequences will have the tag:
->feature_id|<uniquename>
+>[AMR|VF]_feature_id|<uniquename>|<name>
 
 =head1 AUTHOR
 
@@ -38,18 +45,25 @@ Akiff Manji, Matt Whiteside
 
 =cut
 
-my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $AMROUTPUT, $VFOUTPUT);
+my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $AMROUTPUT, $VFOUTPUT, $OUTPUT);
 
 GetOptions(
 	'config=s'  => \$CONFIG,
 	'amr=s'	=> \$AMROUTPUT,
 	'vf=s'	=> \$VFOUTPUT,
+	'combined=s' => \$OUTPUT,
 ) or ( system( 'pod2text', $0 ), exit -1 );
 
 # Connect to DB
 croak "Missing argument. You must supply a configuration filename.\n" . system ('pod2text', $0) unless $CONFIG;
-croak "Missing argument. You must supply an AMR output file.\n" . system ('pod2text', $0) unless $AMROUTPUT;
-croak "Missing argument. You must supply an VF output file.\n" . system ('pod2text', $0) unless $VFOUTPUT;
+unless($OUTPUT || ($VFOUTPUT && $AMROUTPUT)) {
+	croak "Missing argument. You must supply output file(s).\n" . system ('pod2text', $0);
+}
+if(($OUTPUT && $VFOUTPUT) || ($OUTPUT && $AMROUTPUT)) {
+	croak "Invalid arguments. You must supply a single combined output file or separate output files for vf and amr genes.\n"
+		. system ('pod2text', $0);
+}
+
 if(my $db_conf = new Config::Simple($CONFIG)) {
 	$DBNAME    = $db_conf->param('db.name');
 	$DBUSER    = $db_conf->param('db.user');
@@ -78,19 +92,10 @@ my $amr_gene_rs = $schema->resultset('Feature')->search(
 	}
 );
 
-# Write to FASTA file
-open(my $out, ">", $AMROUTPUT) or die "Error: unable to write to file $AMROUTPUT ($!)\n";
-
-while (my $gene = $amr_gene_rs->next) {
-	print $out '>AMR_' . $gene->feature_id . '|' . $gene->uniquename . "\n" . $gene->residues . "\n";
-}
-
-close $out;
-
 # Obtain all vf genes
 my $vf_gene_rs = $schema->resultset('Feature')->search(
 	{
-        'type.name' => "gene"
+        'type.name' => "virulence_factor"
 	},
 	{
 		column  => [qw/feature_id uniquename name residues/],
@@ -99,10 +104,34 @@ my $vf_gene_rs = $schema->resultset('Feature')->search(
 );
 
 # Write to FASTA file
-open($out, ">", $VFOUTPUT) or die "Error: unable to write to file $VFOUTPUT ($!)\n";
-
-while (my $gene = $vf_gene_rs->next) {
-	print $out '>VF_' . $gene->feature_id . '|' . $gene->uniquename . '|'. $gene->name ."\n" . $gene->residues . "\n";
+if($OUTPUT) {
+	
+	open(my $out, ">", $OUTPUT) or die "Error: unable to write to file $OUTPUT ($!)\n";
+	
+	while (my $gene = $amr_gene_rs->next) {
+		print $out '>AMR_' . $gene->feature_id . '|' . $gene->uniquename . "\n" . $gene->residues . "\n";
+	}
+	while (my $gene = $vf_gene_rs->next) {
+		print $out '>VF_' . $gene->feature_id . '|' . $gene->uniquename . '|'. $gene->name ."\n" . $gene->residues . "\n";
+	}
+	
+	close $out;
+	
+} else {
+	
+	open(my $out, ">", $AMROUTPUT) or die "Error: unable to write to file $AMROUTPUT ($!)\n";
+	
+	while (my $gene = $amr_gene_rs->next) {
+		print $out '>AMR_' . $gene->feature_id . '|' . $gene->uniquename . "\n" . $gene->residues . "\n";
+	}
+	
+	close $out;
+	
+	open($out, ">", $VFOUTPUT) or die "Error: unable to write to file $VFOUTPUT ($!)\n";
+	
+	while (my $gene = $vf_gene_rs->next) {
+		print $out '>VF_' . $gene->feature_id . '|' . $gene->uniquename . '|'. $gene->name ."\n" . $gene->residues . "\n";
+	}
+	
+	close $out;
 }
-
-close $out;

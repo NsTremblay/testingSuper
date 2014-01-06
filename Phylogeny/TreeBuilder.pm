@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 =pod
 
@@ -46,7 +46,7 @@ sub new {
 	$self->ft_exe($ftexe);
 	
 	# Fast tree command
-	my $ftopt = $args{fasttree_opt} // '-gtr -nt';
+	my $ftopt = $args{fasttree_opt} // '-gtr -nt -quiet -nopr';
 	$self->ft_opt($ftopt);
 	
 	return $self;
@@ -67,14 +67,11 @@ sub build_tree {
 	my $cmd = join(' ', $self->ft_exe, $self->ft_opt, $msa_file, '>', $tree_file);
 	
 	unless(system($cmd) == 0) {
-		carp "FastTree error ($!).\n";
+		die "FastTree error ($!).\n";
 		return 0;
 	}
 	
 	return(1);
 }
-
-
-
 
 1;

@@ -81,8 +81,8 @@ $template->param(strainJSONData=>$pubStrainJsonDataRef);
 $template->param(vFACTORS=>$vFactorsRef);
 $template->param(amrFACTORS=>$amrFactorsRef);
 
-my $amrCategoriesRef = $self->categories();
-$template->param(amrCategories=>$amrCategoriesRef);
+#my $amrCategoriesRef = $self->categories();
+#$template->param(amrCategories=>$amrCategoriesRef);
 
 return $template->output();
 }

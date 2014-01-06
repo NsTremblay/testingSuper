@@ -127,7 +127,6 @@ my $ALLOWED_CACHE_KEYS = "db|dbxref|feature|source|const";
 my %files = map { $_ => 'FH'.$_; } @tables; # SEQ special case in feature table
 
 # SQL for unique cache
-# SQL for unique cache
 use constant CREATE_CACHE_TABLE =>
                "CREATE TABLE public.tmp_gff_load_cache (
                     feature_id int,
@@ -185,7 +184,7 @@ use constant INSERT_CACHE_TYPE_ID =>
                   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,TRUE)";
 use constant INSERT_CACHE_UNIQUENAME =>
                "INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
-                  VALUES (?,?,?)";
+                  VALUES (?,?,TRUE)";
 use constant INSERT_CACHE_PRIVATE_TYPE_ID =>
                "INSERT INTO public.tmp_gff_load_cache 
                   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,FALSE)";
@@ -200,6 +199,11 @@ use constant SEARCH_LONG_DBXREF =>
                "SELECT dbxref_id FROM dbxref WHERE accession =?
                                                   AND version =?
                                                   AND db_id =?";
+                                                  
+# SQL for retrieving cached chromosome/contig names from DB
+use constant UPDATE_CHR_NAME => "UPDATE pipeline_cache SET collection_id = ?, contig_id = ? WHERE tracker_id = ? AND chr_num = ?";
+use constant SEARCH_CHR_NAME => "SELECT name,description FROM pipeline_cache WHERE tracker_id = ? AND chr_num = ?";
+                                                  
 =head2 new
 
 Constructor
@@ -267,9 +271,10 @@ sub new {
 		croak "Unexpected format in featureprop copystring." unless $num == 1;
 		
 		$self->{web_upload} = 1;
+		$self->{cached_names} = 1 unless $arg{use_fasta_names}; # Retrieve chr names from DB, unless turned off.
 		
 	} else {
-		
+		$self->{cached_names} = 0; # cached names only used in web upload workflow
 		$self->{web_upload} = 0;
 	}
 	
@@ -901,29 +906,21 @@ sub uniquename_cache {
 		} else { 
 			#just validate the uniquename
 			
-			$self->{'queries'}{'validate_uniquename'}->execute($argv{uniquename});
-			my ($feature_id) = $self->{'queries'}{'validate_uniquename'}->fetchrow_array;
+			my $query = $self->{'queries'}{'validate_uniquename'}->execute($argv{uniquename});
+			my ($feature_id) = $query->fetchrow_array;
 			
 			return $feature_id;
 		}
 	}
-	elsif ($argv{type_id}) { 
+	elsif ($argv{type_id}) {
 		
-		if($self->{web_upload}) {
-			# private
-			$self->{'queries'}{'insert_cache_private_type_id'}->execute(
+		my $query = $self->{'queries'}{'insert_cache_type_id'};
+		$query = $self->{'queries'}{'insert_cache_private_type_id'} if $self->{web_upload};
+		$query->execute(
 			    $argv{feature_id},
 			    $argv{uniquename},
 			    $argv{type_id},    
 			);
-		} else {
-			# public
-			$self->{'queries'}{'insert_cache_type_id'}->execute(
-			    $argv{feature_id},
-			    $argv{uniquename},
-			    $argv{type_id},    
-			);
-		}
 		
 		$self->dbh->commit;
 		return;
@@ -1265,6 +1262,11 @@ sub prepare_queries {
 	
 	$self->{'queries'}{'search_long_dbxref'} = $dbh->prepare(SEARCH_LONG_DBXREF);
 	
+	if($self->{cached_names}) {
+		$self->{'queries'}{'search_chr_name'} = $dbh->prepare(SEARCH_CHR_NAME);
+		$self->{'queries'}{'update_chr_name'} = $dbh->prepare(UPDATE_CHR_NAME);
+	}
+	
 	return;
 }
 
@@ -1443,6 +1445,81 @@ sub update_tracker {
 	$self->dbh->do("UPDATE tracker SET upload_id = $upload_id WHERE tracker_id = $tracking_id");
 	$self->dbh->commit || croak "Tracker table update failed: ".$self->dbh->errstr();
 }
+
+=head2 retrieve_chr_info
+
+=over
+
+=item Usage
+
+  $obj->retrieve_chr_info(tracker_id, chr_num)
+
+=item Function
+
+Returns the chromosome information for given tmp
+chromosome/contig ID
+
+=item Returns
+
+Array containing two strings: name and description
+for contig matching provided parameters in the 
+pipeline_cache table
+
+=item Arguments
+
+A tracker_id and chr_num in the table pipeline_cache table
+
+=back
+
+=cut
+
+sub retrieve_chr_info {
+	my ($self, $tracking_id, $chr_num) = @_;
+	
+	$self->{'queries'}{'search_chr_name'}->execute($tracking_id, $chr_num);
+	
+	return $self->{'queries'}{'search_chr_name'}->fetchrow_array();
+}
+
+=head2 cache_genome_id
+
+=over
+
+=item Usage
+
+  $obj->cache_contig_id(tracker_id)
+
+=item Function
+
+Saves the new contig collection and contig feature IDs in the DB cache table:
+pipeline_cache.
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+1) tracker_id in the table pipeline_cache table,
+2) Contig feature ID,
+3) Contig number in fasta file
+
+Retrieves the collection feature ID from the program cache.
+
+=back
+
+=cut
+
+sub cache_contig_id {
+	my ($self, $tracking_id, $contig_feature, $contig_num) = @_;
+
+	my $parent_id = $self->cache('const', 'contig_collection_id');
+	croak "Parent not defined." unless $parent_id;
+	
+	$self->{'queries'}{'update_chr_name'}->execute($parent_id, $contig_feature, $tracking_id, $contig_num);
+	
+}
+
 
 =head2 handle_upload
 
@@ -1745,7 +1822,7 @@ Create 'part_of' entry in feature_relationship table.
 
 =item Returns
 
-Nothing
+Parent feature_id
 
 =item Arguments
 
@@ -1771,6 +1848,8 @@ sub handle_parent {
 		$self->print_frel($self->nextoid('feature_relationship'),$child_id,$parent_id,$part_of,$rank);
 		$self->nextoid('feature_relationship','++');
 	}
+	
+	return $parent_id;
 }
 
 

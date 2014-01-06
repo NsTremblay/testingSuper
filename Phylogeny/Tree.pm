@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 =pod
 
@@ -55,14 +55,12 @@ sub new {
 	bless( $self, $class );
 	
 	my %params = @_;
-	my $config_file = $params{config} //= dirname (__FILE__) . "/../Modules/genodo.cfg";
+	my $config_file = $params{config};
 	my $dbix = $params{dbix_schema};
 	
-	unless($dbix) {
+	if($config_file) {
 		# No schema provided, connect to database
 		croak "Error: config file not found ($config_file).\n" unless -e $config_file;
-		
-		#print "$config_file\n";
 		
 		my $db_conf = new Config::Simple($config_file);
 		
@@ -73,9 +71,12 @@ sub new {
 						        dbUser  => $db_conf->param('db.user'),
 						        dbPass  => $db_conf->param('db.user')
 		);
-	} else {
+	} elsif($dbix) {
 		# Use existing connection
 		$self->setDbix($dbix);
+		
+	} else {
+		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object or config filename.";
 	}
 	
 	return $self;
@@ -635,4 +636,50 @@ sub geneTree {
 	return $jtree_string;
 }
 
+=cut writeSnpAlignment
+
+	Output the snp-based alignment in fasta format from the snp_alignment table
+	
+=cut
+
+sub writeSnpAlignment {
+	my $self = shift;
+	my $filenm = shift;
+	
+	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search(
+		{
+			
+		},
+		{
+			 order_by => { -asc => [qw/name block/] }
+		}
+	);
+	
+	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
+	
+	my $current_seq = '';
+	my $first = 1;
+	
+	while(my $aln_row = $aln_rs->next) {
+		
+		my $nm = $aln_row->name;
+		next if $nm eq 'core';
+		
+		if($current_seq ne $nm) {
+			# Start of new sequence
+			
+			print $out "\n" unless $first;
+			$first = 0;
+			
+			print $out ">$nm\n";
+			$current_seq = $nm;
+		}
+		
+		print $out $aln_row->alignment;
+		
+	}
+	
+	close $out;
+	
+}
 1;

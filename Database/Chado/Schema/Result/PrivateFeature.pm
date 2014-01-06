@@ -234,6 +234,21 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
+=head2 pripub_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PripubFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pripub_feature_relationships",
+  "Database::Chado::Schema::Result::PripubFeatureRelationship",
+  { "foreign.subject_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_feature_cvterms
 
 Type: has_many
@@ -354,6 +369,66 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_snp_variation_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_contig_collections",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.contig_collection" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_variation_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_contigs",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.contig" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_variation_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_variation_loci",
+  "Database::Chado::Schema::Result::PrivateSnpVariation",
+  { "foreign.locus" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 pubpri_feature_relationships
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PubpriFeatureRelationship>
+
+=cut
+
+__PACKAGE__->has_many(
+  "pubpri_feature_relationships",
+  "Database::Chado::Schema::Result::PubpriFeatureRelationship",
+  { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 type
 
 Type: belongs_to
@@ -385,8 +460,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 12:10:10
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4DFgxnPbVpM1mOYy/rw7GA
+# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:59
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0vH3x27KxzSEe1aPNhGWRw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

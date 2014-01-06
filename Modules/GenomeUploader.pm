@@ -60,7 +60,13 @@ use Geo::Coder::Google;
 
 my $dbic;
 
-my @analysis_steps = qw/Initialization Loading Completed/;
+my @analysis_steps = ('Queued', 'Processing', 'Completed', 'Completed');
+my %tracker_step_values = (
+	pending => 1,
+	processing => 2,
+	completed => 3,
+	notified => 4
+);
 
 my $hostList = { 
 	hsapiens    => 'Homo sapiens (human)',
@@ -265,14 +271,16 @@ sub upload_genome : Runmode {
 	# Copy to persistent tmp file
 	# The CGI upload tmp file is auto-deleted
 	# Save parameters to tmp file
-    my $file_path = $self->config_param('tmp.dir');
+	my $file_path = $self->config_param('dir.seq');
+	#my $file_path = $self->config_param('tmp.dir');
+	croak "Missing config parameter for sequence directory." unless $file_path;
      
-	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.fna";
+	my $tmpFastaFile = $file_path . "genodo-fasta-$tracking_id.ffn";
 	
 	# Copy upload tmp file to our tmp file
 	my $filename = $q->param('g_file');
 	my $uploadFile = $q->tmpFileName($filename);
-	copy($uploadFile, $tmpFastaFile) or croak "Copy failed: $!";
+	copy($uploadFile, $tmpFastaFile) or croak "Copy from $uploadFile to $tmpFastaFile failed: $!";
 	
 	# User info
 	my %upload_params = (
@@ -438,20 +446,21 @@ sub upload_genome : Runmode {
 	$opt->write($optFile);
 	
 	# Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Sequences/upload_wrapper.pl --optfile $optFile";
-	my $daemon = Proc::Daemon->new(
-		work_dir => "$FindBin::Bin/../../Sequences/",
-        exec_command => $cmd
-    );
-
-	# Fork
-	my $kid_pid = $daemon->Init;
-	
-	# Update job record
-	$tracking_row->pid($kid_pid);
-	$tracking_row->command($cmd);
-	$tracking_row->step(2); # Step 1 complete
+#	my $cmd = "perl $FindBin::Bin/../../Sequences/upload_wrapper.pl --optfile $optFile";
+#	my $daemon = Proc::Daemon->new(
+#		work_dir => "$FindBin::Bin/../../Sequences/",
+#        exec_command => $cmd
+#    );
+#
+#	# Fork
+##	my $kid_pid = $daemon->Init;
+#	
+#	# Update job record
+#	$tracking_row->pid($kid_pid);
+#	$tracking_row->command($cmd);
+#	
 	$tracking_row->feature_name($results->valid('g_name'));
+	$tracking_row->step(1); # Step 1 complete
 	$tracking_row->update;
 	
 	# Send user to status page
@@ -479,13 +488,17 @@ sub status : Runmode {
     croak 'You are not authorized to view this genome record.' unless $tracker_row->login_id == $user->login_id;
     
     
+    my $tot = scalar(@analysis_steps)-1; # Subtract the email notification from step, users dont need that info
+    my $step_value = $tracker_row->step;
+    $step_value = $tot if $step_value > $tot;
+    my $i = $step_value-1;
+    
     my $t = $self->load_tmpl ( 'genome_status.tmpl' , die_on_bad_params=>0 );
     $t->param(tracking_id => $tracking_id);
     $t->param(feature_name => $tracker_row->feature_name);
     $t->param(start_date => _format_time($tracker_row->start_date));
-    $t->param(analysis_step => $analysis_steps[$tracker_row->step-1]);
-    $t->param(current_step => $tracker_row->step);
-    my $tot = scalar @analysis_steps;
+    $t->param(analysis_step => $analysis_steps[$i]);
+    $t->param(current_step => $step_value);
     $t->param(total_steps => $tot);
     $t->param(failed => $tracker_row->failed);
     
