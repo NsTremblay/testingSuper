@@ -1,0 +1,268 @@
+#!/usr/bin/env perl
+
+=head1 NAME
+
+$0 - Align sequences and build trees in parallel
+
+=head1 SYNOPSIS
+	
+	% parallel_tree_builder.pl [options]
+
+=head1 COMMAND-LINE OPTIONS
+
+	--dir				Define directory containing fasta files and job list
+	--find_snps         Compare each sequence to reference and write snp positions to file
+
+=head1 DESCRIPTION
+
+
+
+=head1 AUTHOR
+
+Matt Whiteside
+
+=cut
+
+use Inline C;
+use strict;
+use warnings;
+
+use Getopt::Long;
+use Bio::SeqIO;
+use FindBin;
+use lib "$FindBin::Bin/../";
+use Carp qw/croak carp/;
+use Phylogeny::TreeBuilder;
+use Phylogeny::Tree;
+use Parallel::ForkManager;
+use IO::CaptureOutput qw(capture_exec);
+use Time::HiRes qw( time );
+
+########
+# INIT
+########
+
+# Globals (set these to match local values)
+my $muscle_exe = '/usr/bin/muscle';
+
+# Intialize the Tree building module
+my $tree_builder = Phylogeny::TreeBuilder->new();
+my $tree_io = Phylogeny::Tree->new(dbix_schema => 'empty');
+
+# Inialize the parallel manager
+# Max processes for parallel run
+my $pm = new Parallel::ForkManager(20);
+
+# Get config
+my ($alndir) = 0;
+GetOptions(
+	'dir=s' => \$alndir
+) or ( system( 'pod2text', $0 ), exit -1 );
+croak "[Error] missing argument. You must supply a valid data directory\n" . system('pod2text', $0) unless $alndir;
+
+my $fastadir = $alndir . '/fasta';
+my $treedir = $alndir . '/tree';
+my $perldir = $alndir . '/perl_tree';
+my $refdir = $alndir . '/refseq';
+my $snpdir = $alndir . '/snp_alignments';
+my $posdir = $alndir . '/snp_positions';
+my $newdir = $alndir . '/new';
+my $msadir = $alndir . '/msa';
+
+# Load jobs
+my $job_file = $alndir . '/jobs.txt';
+my @jobs;
+open my $in, '<', $job_file or croak "Error: unable to read job file $job_file ($!).\n";
+while(my $job = <$in>) {
+	chomp $job;
+	
+	my ($pg_id, $do_tree, $do_snp, $add_seq) = split(/\t/,$job);
+	push @jobs, [$pg_id, $do_tree, $do_snp, $add_seq];
+}
+close $in;
+
+# Logger
+my $log_file = "$alndir/log.txt";
+open my $log, '>', $log_file or croak "Error: unable to create log file $log_file ($!).\n";
+my $now = time();
+print $log "parallel_tree_builder.pl - ".localtime()."\n";
+
+########
+# RUN
+########
+
+my $num = 0;
+my $tot = scalar(@jobs);
+print "NUM JOBS: $tot\n";
+
+foreach my $jarray (@jobs) {
+	$num++;
+	print $log "$num of $tot jobs completed.\n" if $num % 10 == 0;
+	$pm->start and next; # do the fork
+
+	my ($pg_id,$do_tree,$do_snp,$add_seq) = @$jarray;
+	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
+
+	$pm->finish; # do the exit in the child process
+}
+
+$pm->wait_all_children;
+my $time = time() - $now;
+print $log "complete (runtime: $time)\n";
+close $log;
+exit(0);
+
+########
+# SUBS
+########
+
+sub build_tree {
+	my ($pg_id, $do_tree, $do_snp, $add_seqs) = @_;
+	
+	my $fasta_file = "$fastadir/$pg_id.fna";
+	
+	# Iteratively add new sequences to existing alignment
+	if($add_seqs) {
+		my $new_file = "$newdir/$pg_id.fna";
+		
+		my $fasta = Bio::SeqIO->new(-file   => $new_file,
+									-format => 'fasta') or croak "Unable to open Bio::SeqIO stream to $new_file ($!).";
+									
+		while (my $entry = $fasta->next_seq) {
+			
+			my $tmp_file = "$newdir/$pg_id\_tmp.fna";
+			open(my $tmpfh, '>', $tmp_file) or croak "Unable to write to tmp file $tmp_file ($!).";
+			print $tmpfh '>'.$entry->display_id."\n".$entry->seq."\n";
+			close $tmpfh;
+			
+			my $aln_file = "$msadir/$pg_id\_msa.fna";
+			my @loading_args = ($muscle_exe, "-profile -in1 $fasta_file -in2 $tmp_file -out $aln_file");
+			my $cmd = join(' ',@loading_args);
+			
+			my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+		
+			unless($success) {
+				croak "Muscle profile alignment failed for pangenome $pg_id ($stderr).";
+			}
+			
+			$fasta_file = $aln_file;
+		}
+	}
+	
+	if($do_tree) {
+		my $tree_file = "$treedir/$pg_id\_tree.phy";
+		my $perl_file = "$perldir/$pg_id\_tree.perl";
+		
+		# build newick tree
+		$tree_builder->build_tree($fasta_file, $tree_file) or croak;
+		
+		# slurp tree and convert to perl format
+		my $tree = $tree_io->newickToPerlString($tree_file);
+		open my $out, ">", $perl_file or croak "Error: unable to write to file $perl_file ($!).\n";
+		print $out $tree;
+		close $out;
+	}
+	
+	if($do_snp) {
+		
+		# Align reference sequence to already aligned alleles
+		my $ref_file = "$refdir/$pg_id\_ref.fna";
+		my $aln_file = "$snpdir/$pg_id\_snp.fna";
+		my @loading_args = ($muscle_exe, "-profile -in1 $fasta_file -in2 $ref_file -out $aln_file");
+		my $cmd = join(' ',@loading_args);
+		
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+		unless($success) {
+			croak "Muscle profile alignment failed for pangenome $pg_id ($stderr).";
+		}
+		
+		# Find snp positions
+		my $pos_fileroot = "$posdir/$pg_id";
+		my $refheader = "refseq_$pg_id";
+		my $refseq;
+		my @comp_seqs;
+		my @comp_names;
+		my $fasta = Bio::SeqIO->new(-file   => $aln_file,
+									-format => 'fasta') or croak "Unable to open Bio::SeqIO stream to $aln_file ($!).";
+		while (my $entry = $fasta->next_seq) {
+			my $id = $entry->display_id;
+			
+			if($id eq $refheader) {
+				$refseq = $entry->seq;
+			} else {
+				push @comp_seqs, $entry->seq;
+				push @comp_names, $id;
+			}
+		}
+		
+		croak "Missing reference sequence in SNP alignment for set $pg_id\n" unless $refseq;
+		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
+	}
+	
+}
+
+__END__
+__C__
+
+void write_positions(char* refseq, char* seq, char* filename) {
+	
+	FILE* fh = fopen(filename, "w");
+	int i;
+	int g = 0;
+	int p = 0;
+	
+	if (fh == NULL) {
+		fprintf(stderr, "Can't open output file %s!\n",
+			filename);
+		exit(1);
+	}
+	                                         
+	for(i=0; refseq[i] && seq[i]; ++i) {
+		if(refseq[i] == '-') {
+			g++;
+		} else {
+			p++;
+			if(g != 0) {
+				g = 0;
+			}
+		}
+		                                           
+		if(refseq[i] != seq[i]) {
+			fprintf(fh, "%i\t%i\t%c\t%c\n", p, g, refseq[i], seq[i]);
+		}                                                                         
+	}
+	
+	fclose(fh);                                                                           
+
+}
+
+void snp_positions(SV* seqs_arrayref, SV* names_arrayref, char* refseq, char* fileroot) {
+	
+	AV* names;
+	AV* seqs;
+	
+	names = (AV*)SvRV(names_arrayref);
+	seqs = (AV*)SvRV(seqs_arrayref);
+	int n = av_len(seqs);
+	int i;
+	
+	// compare each seq to ref
+	// write snps to file for genome
+	for(i=0; i <= n; ++i) {
+		SV* name = av_shift(names);
+		SV* seq = av_shift(seqs);
+		char filename[120];
+		sprintf(filename, "%s__%s__snp_positions.txt", fileroot, (char*)SvPV_nolen(name));
+		
+		write_positions(refseq, (char*)SvPV_nolen(seq), filename);
+		
+	}
+	
+}
+
+
+
+
+
+

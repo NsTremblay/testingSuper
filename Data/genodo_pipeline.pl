@@ -246,6 +246,8 @@ if(@tracking_ids) {
 	# Identify any novel regions for new genomes
 	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
 	
+	my %nr_sequences;
+	
 	if($nr_fasta_file) {
 		# If new regions identified, need to add to file of pan-genome regions
 		my $g_file2 = $job_dir . '/pan-genomes.ffn';
@@ -259,8 +261,10 @@ if(@tracking_ids) {
     	my $i = 1;
 		while (my $entry = $fasta->next_seq) {
 			my $seq = $entry->seq;
-			print $out ">nr_$i\n$seq\n";
+			my $header = "nr_$i";
+			print $out ">$header\n$seq\n";
 			$i++;
+			$nr_sequences{$header} = $seq;
 		}
 		close $out;
 		
@@ -273,6 +277,9 @@ if(@tracking_ids) {
 	
 	# Re-build MSAs and trees for pan-genome fragments
 	combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
+	
+	# Free up memory
+	undef %nr_sequences;
 	
 	# Load genome data
 	load_genomes(\@genome_loading_args);
@@ -942,6 +949,183 @@ f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id =
 		if($num_seq > 2) {
 			$tb->build_tree($msa_file, $tree_file);
 		}
+	}
+	close $in;
+	close $rec;
+
+}
+
+=head2 prepare_alignment_inputs
+
+Alignments, tree building and SNP calculations are done in a separate script
+run in parallel. This method prepares the inputs for the parallel script.
+
+=cut
+sub prepare_alignment_inputs {
+	my $allele_file = shift;
+	my $job_dir = shift;
+	my $is_pg = shift;
+	my $nr_sequences = shift;
+	
+	# Create directory tree for results/inputs
+	my $root_dir = $job_dir.'vf/';
+	$root_dir = $job_dir.'pg/' if $is_pg;
+	
+	my $new_dir = $root_dir . 'new/';
+	my $msa_dir = $root_dir . 'msa/';
+	my $fasta_dir = $root_dir . 'fasta/';
+	my $tree_dir = $root_dir . 'tree/';
+	my $perl_dir = $root_dir . 'perl_tree/';
+	my $ref_dir = $root_dir . 'refseqs/';
+	my $snp_dir = $root_dir . 'snp_alignments/';
+	my $pos_dir = $root_dir . 'snp_positions/';
+	
+	my @create_Ds = ($root_dir, $new_dir, $msa_dir, $fasta_dir, $tree_dir, $perl_dir);
+	push @create_Ds, ($ref_dir, $snp_dir, $pos_dir) if $is_pg;
+	
+	foreach my $d (@create_Ds)  {
+		mkdir $d or die "Unable to create directory $d ($!)";
+	}
+	
+	# Prepare queries
+	my ($sql_type1, $sql_type2);
+	if($is_pg) {
+		$sql_type1 = 'locus';
+		$sql_type2 = 'derives_from';
+	} else {
+		$sql_type1 = 'allele';
+		$sql_type2 = 'similar_to';
+	}
+	
+	my $sql = 
+qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
+FROM feature f, feature_relationship r1, feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
+t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
+f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
+/;
+
+	my $sql2 = 
+qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
+FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
+t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
+f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
+/;
+	
+	my $pub_sth = $dbh->prepare($sql);
+	my $pri_sth = $dbh->prepare($sql2);
+	
+	my $ref_sth;
+	if($is_pg) {
+		my $sql = 
+qq/SELECT f.residues, f.md5checksum
+FROM feature f, cvterm t
+WHERE f.type_id = t.cvterm_id AND
+t.name = 'pangenome' AND f.feature_id = ?
+/;
+
+		$ref_sth = $dbh->prepare($sql);
+	}
+	
+	# Keep record of alignment jobs
+	my $job_file = $root_dir . "jobs.txt";
+	open(my $rec, ">", $job_file) or die "Unable to write to file $job_file ($!)";
+
+	# Iterate through query gene blocks
+	open (my $in, "<", $allele_file) or die "Unable to read file $allele_file";
+	local $/ = "\nLocus ";
+	
+	while(my $locus_block = <$in>) {
+		$locus_block =~ s/^Locus //;
+		my ($locus) = ($locus_block =~ m/^(\S+)/);
+		my ($ftype, $query_id) = ($locus =~ m/(\w+_)*(\d+)/);
+		my $is_nr = $ftype eq 'nr_' ? 1 : 0;
+		
+		if($is_nr) {
+			$query_id = $locus;
+		}
+		
+		# Number of alleles/loci
+		my $num_seq = 0;
+		
+		# Retrieve the alignments for other sequences in the DB
+		# If pangenome region is novel, don't need to do this.
+		unless($is_nr) {
+			my $msa_file = $fasta_dir . "$query_id.fna";
+			open(my $aln, ">", $msa_file) or die "Unable to write to file $msa_file ($!)";
+			
+			$pub_sth->execute($query_id);
+			while(my $row = $pub_sth->fetchrow_arrayref) {
+				my ($allele_id, $seq, $md5, $cc_id) = @$row;
+				print $aln ">public_$cc_id|$allele_id\n$seq\n";
+				$num_seq++;
+			}
+			
+			$pri_sth->execute($query_id);
+			while(my $row = $pri_sth->fetchrow_arrayref) {
+				my ($allele_id, $seq, $md5, $cc_id) = @$row;
+				print $aln ">private_$cc_id|$allele_id\n$seq\n";
+				$num_seq++;
+			}
+			
+			close $aln;
+		}
+		
+		
+		# Print the reference pangenome fragnment sequence (needed for SNP computation)
+		if($is_pg) {
+			my $ref_file = $ref_dir . "$query_id\_ref.fna";
+			open(my $ref, ">", $ref_file) or die "Unable to write to file $ref_file ($!)";
+			
+			my $refheader = "refseq_$query_id";
+			my $refseq;
+			if($ftype eq 'nr_') {
+				$refseq = $nr_sequences->{$query_id};
+	
+			} else {
+				$ref_sth->execute($query_id);
+				($refseq, my $md5) = $ref_sth->fetchrow_array();
+				die "Reference pangenome fragment $query_id has no loci in the DB." unless $num_seq;
+			}
+			
+			die "Missing sequence for reference pangenome fragment $query_id." unless $refseq;
+			
+			print $ref ">$refheader\n$refseq\n";
+			
+			close $ref;
+		}
+		
+		# Print the new alleles/loci added in this run
+		my $prev_alns = 1 if $num_seq;
+		my $aln_file = $new_dir . "$query_id.fna";
+		open(my $seqo, ">", $aln_file) or die "Unable to write to file $aln_file ($!)";
+		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
+			my $header = $1;
+			my $seq = $2;
+			
+			$seq =~ tr/-//; # Remove gaps
+			
+			# Print to tmp file
+			
+			print $seqo ">$header\n$seq\n";
+			close $seqo;
+			
+			$num_seq++;
+		}
+		close $seqo;
+		
+		# Record job
+		my ($do_tree, $do_snp) = 0;
+		# Build tree if enough allele sequences
+		if($num_seq > 2) {
+			$do_tree = 1;
+		}
+		if($num_seq > 1 && $is_pg && $ftype eq 'pgcor_') {
+			$do_snp = 1;
+		}
+		print $rec join("\t",$query_id, $do_tree, $do_snp)."\n";
+		
 	}
 	close $in;
 	close $rec;

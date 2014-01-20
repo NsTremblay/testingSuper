@@ -682,4 +682,6 @@ sub writeSnpAlignment {
 	close $out;
 	
 }
+
+
 1;

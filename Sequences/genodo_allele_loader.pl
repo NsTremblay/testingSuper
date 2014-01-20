@@ -313,7 +313,6 @@ sub cleanup_handler {
     warn "@_\nAbnormal termination, trying to clean up...\n\n" if @_;  #gets the message that the die signal sent if there is one
     if ($chado && $chado->dbh->ping) {
         
-        $chado->cleanup_tmp_table;
         if ($lock) {
             warn "Trying to remove the run lock (so that --remove_lock won't be needed)...\n";
             $chado->remove_lock; #remove the lock only if we've set it
@@ -381,7 +380,17 @@ sub allele {
 	my $uniquename = "allele:$query_id.$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
-	my $allele_id = $chado->validate_allele($query_id,$contig_collection_id,$uniquename,$pub_value);
+	my ($result, $allele_id) = $chado->validate_feature($query_id,$contig_collection_id,$uniquename,$pub_value);
+	
+	if($result eq 'new_conflict') {
+		warn "Attempt to add gene allele multiple times. Dropping duplicate of allele $uniquename.";
+		return 0;
+	}
+	if($result eq 'db_conflict') {
+		warn "Attempt to update existing gene allele multiple times. Skipping duplicate allele $uniquename.";
+		return 0;
+	}
+	
 	my $is_new = 1;
 	
 	if($allele_id) {

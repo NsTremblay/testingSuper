@@ -273,10 +273,6 @@ foreach my $pgregion (keys %$new) {
 		$tree_file = $pgregion;
 		
 	}
-#	else {
-#		# Update pangenome alignment sequence
-#		update_reference_fragment($query_id, $pangenome->{$pgregion}->{seq});
-#	}
 	
 	# Create DB entries for each new loci
 	foreach my $header (keys %$allele_hash) {

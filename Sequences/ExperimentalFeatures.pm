@@ -1,5 +1,6 @@
 package Sequences::ExperimentalFeatures;
 
+#use Inline C;
 use strict;
 use warnings;
 use DBI;
@@ -144,9 +145,9 @@ my %copystring = (
    private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
    raw_virulence_data           => "(serial_id,genome_id,gene_id,presence_absence)",
    raw_amr_data                 => "(serial_id,genome_id,gene_id,presence_absence)",
-   snp_core                     => "(snp_core_id,pangenome_region,allele,position,gap_offset,aln_block,aln_column)",
-   snp_variation                => "(snp_variation_id,snp,contig_collection,contig,locus,allele)",
-   private_snp_variation        => "(snp_variation_id,snp,contig_collection,contig,locus,allele)",
+   snp_core                     => "(snp_core_id,pangenome_region_id,allele,position,gap_offset,aln_column)",
+   snp_variation                => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
+   private_snp_variation        => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
 );
 
 my %updatestring = (
@@ -168,7 +169,7 @@ my %tmpcopystring = (
 	tprivate_featureprop          => "(feature_id,type_id,value,rank)",
 	tprivate_featureloc           => "(feature_id,fmin,fmax,strand,locgroup,rank)",
 	ttree                         => "(tree_id,name,tree_string)",
-	tsnp_core                     => "(snp_core_id,pangenome_region,position,gap_offset)"
+	tsnp_core                     => "(snp_core_id,pangenome_region_id,position,gap_offset)"
 );
 
 my %joinstring = (
@@ -183,200 +184,21 @@ my %joinstring = (
 );
 
 # Key values for uniquename cache
-my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate|is_public";
+#my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate|is_public";
 
 # Key values for loci cache
-my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|type_id|uniquename|is_public|genome_id|contig_id|query_id";
+my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|uniquename|genome_id|query_id|is_public|insert|update";
                
 # Tables for which caches are maintained
-my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp";
+my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp|snp_alignment";
 
 # Tmp file names for storing upload data
 my %files = map { $_ => 'FH'.$_; } @tables, @update_tables;
 
-# SQL for unique cache
-use constant CREATE_CACHE_TABLE =>
-	"CREATE TABLE public.tmp_gff_load_cache (
-	     feature_id int,
-	     uniquename varchar(1000),
-	     type_id int,
-	     organism_id int,
-	     pub boolean
-	)";
-use constant DROP_CACHE_TABLE => "DROP TABLE public.tmp_gff_load_cache";
+# common SQL
 use constant VERIFY_TMP_TABLE => "SELECT count(*) FROM pg_class WHERE relname=? and relkind='r'";
-use constant POPULATE_CACHE_TABLE =>
-	"INSERT INTO public.tmp_gff_load_cache
-	 SELECT feature_id,uniquename,type_id,organism_id,TRUE FROM feature";
-use constant POPULATE_PRIVATE_CACHE_TABLE =>
-	"INSERT INTO public.tmp_gff_load_cache
-	 SELECT feature_id,uniquename,type_id,organism_id,FALSE FROM private_feature";
-use constant CREATE_CACHE_TABLE_INDEX1 =>
-	"CREATE INDEX tmp_gff_load_cache_idx1 
-	     ON public.tmp_gff_load_cache (feature_id)";
-use constant CREATE_CACHE_TABLE_INDEX2 =>
-	"CREATE INDEX tmp_gff_load_cache_idx2 
-	     ON public.tmp_gff_load_cache (uniquename)";
-use constant CREATE_CACHE_TABLE_INDEX3 =>
-	"CREATE INDEX tmp_gff_load_cache_idx3
-	     ON public.tmp_gff_load_cache (uniquename,type_id,organism_id)";
-use constant TMP_TABLE_CLEANUP =>
-               "DELETE FROM tmp_gff_load_cache WHERE pub = TRUE AND feature_id >= ?";             
-use constant TMP_TABLE_PRIVATE_CLEANUP =>
-               "DELETE FROM tmp_gff_load_cache WHERE pub = FALSE AND feature_id >= ?";
-               
-# SQL for loci cache
-use constant CREATE_LOCI_CACHE_TABLE =>
-	"CREATE TABLE public.tmp_loci_cache (
-	     feature_id int,
-	     uniquename varchar(1000),                
-	     genome_id int,                   
-	     query_id int,                 
-	     pub boolean,
-	     updated boolean
-	)";
-use constant DROP_LOCI_CACHE_TABLE => "DROP TABLE public.tmp_loci_cache";
-use constant POPULATE_LOCI_CACHE_TABLE =>
-	"INSERT INTO public.tmp_loci_cache
-	 SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE, FALSE
-	 FROM feature f, feature_relationship f1, feature_relationship f2
-	 WHERE f.type_id = ? AND
-	   f1.type_id = ? AND f1.subject_id = f.feature_id AND
-	   f2.type_id = ? AND f2.subject_id = f.feature_id";
-use constant POPULATE_PRIVATE_LOCI_CACHE_TABLE =>
-	"INSERT INTO public.tmp_loci_cache ".
-	"SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, FALSE, FALSE ".
-	"FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2 ".
-	"WHERE f.type_id = ? AND".
-	" f1.type_id = ? AND f1.subject_id = f.feature_id AND".
-	" f2.type_id = ? AND f2.subject_id = f.feature_id";
-use constant CREATE_LOCI_TABLE_INDEX1 =>
-	"CREATE INDEX tmp_loci_cache_idx1 ON public.tmp_loci_cache (genome_id,query_id,pub)";
-use constant TMP_LOCI_CLEANUP =>
-	"DELETE FROM tmp_loci_cache WHERE pub = TRUE AND feature_id >= ?";             
-use constant TMP_LOCI_PRIVATE_CLEANUP =>
-	"DELETE FROM tmp_loci_cache WHERE pub = FALSE AND feature_id >= ?";
-use constant TMP_LOCI_RESET => "UPDATE tmp_loci_cache SET updated = ?";
 	
-# SQL for snp alignment cache
-use constant CREATE_SNP_TABLE =>
-	"CREATE TABLE public.snp_alignment (
-		name varchar(100),
-		block int,
-		current_position int,
-		alignment varchar(10000)
-	)";
-use constant CREATE_SNP_TABLE_INDEX1 =>
-	"ALTER TABLE public.snp_alignment ADD CONSTRAINT snp_alignment_c1 UNIQUE (name,block)";
-use constant CREATE_SNP_CACHE_TABLE_INDEX1 =>
-	"ALTER TABLE public.tmp_snp_cache ADD CONSTRAINT tmp_snp_cache_c1 UNIQUE (name,block)";
-use constant INITIALIZE_SNP_TABLE =>
-	"INSERT into public.snp_alignment ".
-	"VALUES('core',1,0,'')";
-use constant CREATE_SNP_CACHE_TABLE =>
-	"CREATE TABLE public.tmp_snp_cache AS ".
-	"SELECT * FROM public.snp_alignment";
-use constant DROP_SNP_CACHE_TABLE =>
-	"DROP TABLE public.tmp_snp_cache";
-use constant FIND_CURRENT_SNP_COLUMN => 
-	"SELECT max(current_position) FROM public.tmp_snp_cache ".
-	"WHERE block = ?";
-use constant FIND_CURRENT_SNP_BLOCK => "SELECT max(block) FROM public.tmp_snp_cache";
-                     
-                    
-# SQL for lock table
-use constant CREATE_META_TABLE =>
-	"CREATE TABLE gff_meta (
-	      name        varchar(100),
-	      hostname    varchar(100),
-	      starttime   timestamp not null default now() 
-	 )";
-use constant SELECT_FROM_META => "SELECT name,hostname,starttime FROM gff_meta";
-use constant INSERT_INTO_META => "INSERT INTO gff_meta (name,hostname) VALUES (?,?)";
-use constant DELETE_FROM_META => "DELETE FROM gff_meta WHERE name = ? AND hostname = ?";
-               
-# SQL for validating uniquename
-use constant VALIDATE_TYPE_ID =>
-	"SELECT feature_id FROM public.tmp_gff_load_cache
-	     WHERE type_id = ? AND uniquename = ?";
-use constant VALIDATE_UNIQUENAME =>
-	"SELECT feature_id FROM public.tmp_gff_load_cache WHERE uniquename = ?";
-use constant INSERT_CACHE_TYPE_ID =>
-	"INSERT INTO public.tmp_gff_load_cache 
-	   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,TRUE)";
-use constant INSERT_CACHE_UNIQUENAME =>
-	"INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
-	   VALUES (?,?,TRUE)";
-use constant INSERT_CACHE_PRIVATE_TYPE_ID =>
-	"INSERT INTO public.tmp_gff_load_cache 
-	   (feature_id,uniquename,type_id,pub) VALUES (?,?,?,FALSE)";
-use constant INSERT_CACHE_PRIVATE_UNIQUENAME =>
-	"INSERT INTO public.tmp_gff_load_cache (feature_id,uniquename,pub)
-	   VALUES (?,?,FALSE)";
-               
-# SQL for obtaining feature info
-use constant SELECT_FROM_PUBLIC_FEATURE =>
-	"SELECT uniquename, organism_id, residues, seqlen FROM feature WHERE feature_id = ?";
-	
-use constant SELECT_FROM_PRIVATE_FEATURE =>
-	"SELECT uniquename, organism_id, upload_id, residues, seqlen FROM private_feature WHERE feature_id = ?";
-	
-# SQL for maintaing loci info
-use constant VALIDATE_LOCI =>
-	"SELECT feature_id FROM public.tmp_loci_cache WHERE ".
-    " genome_id = ? AND query_id = ? AND uniquename = ? AND pub = ? AND updated = FALSE";
-use constant INSERT_LOCI =>
-	"INSERT INTO public.tmp_loci_cache ".
-	"(feature_id,uniquename,genome_id,query_id,pub,updated) VALUES (?,?,?,?,?,TRUE)";
-use constant UPDATE_LOCI =>
-	"UPDATE public.tmp_loci_cache SET updated = TRUE WHERE feature_id = ?";
-               
-
-# SQL for updating phylogenetic trees
-use constant VALIDATE_TREE => "SELECT tree_id FROM tree WHERE name = ?";
-
-# SQL for maintaining snps
-use constant VALIDATE_CORE_SNP => 
-	"SELECT snp_core_id, aln_block, aln_column FROM snp_core WHERE pangenome_region = ? AND position = ? AND gap_offset = ?";
-use constant VALIDATE_PUBLIC_SNP => 
-	"SELECT snp_variation_id FROM snp_variation WHERE snp = ? AND contig_collection = ?";
-use constant VALIDATE_PRIVATE_SNP => 
-	"SELECT snp_variation_id FROM private_snp_variation WHERE snp = ? AND contig_collection = ?";
-	
-# SQL for retrieving pangenome IDs from DB
-use constant RETRIEVE_PANGENOME_ID => "SELECT feature_id FROM feature WHERE uniquename = ? AND type_id = ?";	
-
-# SQL for retrieving cached genome IDs from DB 
-use constant RETRIEVE_ID => "SELECT collection_id, contig_id FROM pipeline_cache WHERE tracker_id = ? AND chr_num = ?";	
-
-# SQL for maintaining core SNP alignments
-use constant ADD_SNP_ROW =>
-	"INSERT INTO public.tmp_snp_cache ".
-	" SELECT  ?, me.block, me.current_position, me.alignment ".
-	" FROM public.tmp_snp_cache me WHERE name = ? ";
-use constant ADD_SNP_COLUMN =>
-	"UPDATE public.tmp_snp_cache ".
-	"SET block = ?, current_position = ?, alignment = source.src_alignment || ? ".
-	"FROM ( SELECT alignment AS src_alignment,".
-	" name AS src_name,".
-	" block AS src_block".
-	" FROM public.tmp_snp_cache ) AS source ".
-	"WHERE name = source.src_name AND block = source.src_block AND block = ?";
-use constant ADD_SNP_BLOCK =>
-	"INSERT INTO tmp_snp_cache (name, block, current_position, alignment) ".
-	" SELECT me.name, ?, ?, ?".
-	" FROM tmp_snp_cache me
-	  GROUP BY me.name";
-use constant ALTER_SNP => 
-	"UPDATE public.tmp_snp_cache ".
-	" SET alignment = overlay(alignment placing ? from ?) ".
-	" WHERE name = ? AND block = ?";
-use constant VALIDATE_SNP_ALIGNMENT => "SELECT count(*) FROM tmp_snp_cache WHERE name = ?";
-use constant RETRIEVE_PUBLIC_SNP_COLUMN =>
-	"SELECT contig_collection, locus, allele FROM snp_variation WHERE snp = ?";
-use constant RETRIEVE_PRIVATE_SNP_COLUMN =>
-	"SELECT contig_collection, locus, allele FROM private_snp_variation WHERE snp = ?";
-	           
+           
             
 =head2 new
 
@@ -393,7 +215,6 @@ sub new {
 	my $self  = bless {}, ref($class) || $class;
 	
 	$self->{now} = time();
-	
 	
 	my $dbname  =  $arg{dbname};
 	my $dbport  =  $arg{dbport};
@@ -428,14 +249,18 @@ sub new {
 	$self->{db_cache} = 0;
 	$self->{db_cache} = 1 if $arg{use_cached_names};
 	
-	$self->{snp_aware} = 0;
-	$self->{snp_aware} = 1 if $arg{snp_capable};
+	my $ft = $arg{feature_type};
+	croak "Missing/invalid argument: feature_type. Must be (allele|pangenome)" unless $ft eq 'allele' || $ft eq 'pangenome';
+	$self->{feature_type} = $ft;
 	
-	$self->prepare_queries();
+	$self->{snp_aware} = 0;
+	$self->{snp_aware} = 1 if $ft eq 'pangenome';
+	
 	$self->initialize_sequences();
 	$self->initialize_ontology();
 	$self->initialize_db_caches();
 	$self->initialize_snp_caches() if $self->{snp_aware};
+	$self->prepare_queries();
 	
 	return $self;
 }
@@ -702,60 +527,87 @@ none
 
 sub initialize_db_caches {
     my $self = shift;
-
-    my $dbh = $self->dbh;
-    my $sth = $dbh->prepare(VERIFY_TMP_TABLE);
     
-    # Uniquename cache
-    $sth->execute('tmp_gff_load_cache');
+    my $is_pg = $self->{feature_type} eq 'pangenome' ? 1 : 0;
+    
+    my $table = 'tmp_allele_cache';
+    my $type_id = $self->feature_types('allele');
+    if($is_pg) {
+    	$table = 'tmp_loci_cache';
+    	$type_id = $self->feature_types('locus');
+    }
+    $self->{loci_cache}{table} = $table;
+    $self->{loci_cache}{type} = $type_id;
+    $self->{loci_cache}{is_pangenome} = $is_pg;
+    
+    # Initialize cache table 
+    my $dbh = $self->dbh;
+    my $sth = $dbh->prepare(VERIFY_TMP_TABLE); 
+    $sth->execute($table);
     my ($table_exists) = $sth->fetchrow_array;
 
     if (!$table_exists || $self->recreate_cache() ) {
-        print STDERR "(Re)creating the uniquename cache in the database... ";
-        $dbh->do(DROP_CACHE_TABLE) if ($self->recreate_cache() and $table_exists);
-
-        print STDERR "\nCreating table...\n";
-        $dbh->do(CREATE_CACHE_TABLE);
-
-        print STDERR "Populating table...\n";
-        $dbh->do(POPULATE_CACHE_TABLE);
-        $dbh->do(POPULATE_PRIVATE_CACHE_TABLE);
-       
-        print STDERR "Creating indexes...\n";
-        $dbh->do(CREATE_CACHE_TABLE_INDEX1);
-        $dbh->do(CREATE_CACHE_TABLE_INDEX2);
-        $dbh->do(CREATE_CACHE_TABLE_INDEX3);
+    	# Rebuild cache
+        print STDERR "(Re)creating the $table cache in the database... ";
         
-		print STDERR "Adjusting the primary key sequences (if necessary)...";
-        $self->update_sequences();
-        print STDERR "Done.\n";
-     
-    }
-    
-    # Loci cache    
-    $sth->execute('tmp_loci_cache');
-    ($table_exists) = $sth->fetchrow_array;
+        # Discard old table
+        if ($self->recreate_cache() and $table_exists) {
+        	my $sql = "DROP TABLE $table";
+        	$dbh->do($sql); 
+        }
 
-    if (!$table_exists || $self->recreate_cache() ) {
-        print STDERR "(Re)creating the loci cache in the database... ";
-        $dbh->do(DROP_LOCI_CACHE_TABLE) if ($self->recreate_cache() and $table_exists);
-
+		# Create new table
         print STDERR "\nCreating table...\n";
-        $dbh->do(CREATE_LOCI_CACHE_TABLE);
-        
+        my $sql = "CREATE TABLE $table (
+			feature_id int,
+			uniquename varchar(1000),                
+			genome_id int,                   
+			query_id int,                 
+			pub boolean
+		)";
+        $dbh->do($sql); 
+    	
+        # Populate table
+        my $reltype = $is_pg ? 'derives_from' : 'similar_to';
         print STDERR "Populating table...\n";
-        $dbh->do(POPULATE_LOCI_CACHE_TABLE, undef,
-        	$self->feature_types('allele'), $self->relationship_types('part_of'),$self->relationship_types('similar_to'));
-        $dbh->do(POPULATE_PRIVATE_LOCI_CACHE_TABLE, undef,
-        	$self->feature_types('allele'), $self->relationship_types('part_of'),$self->relationship_types('similar_to'));
+        $sql = "INSERT INTO $table
+		SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE
+		FROM feature f, feature_relationship f1, feature_relationship f2
+		WHERE f.type_id = $type_id AND
+		  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
+		  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
+        $dbh->do($sql);
+        $sql = "INSERT INTO $table
+		SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE
+		FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2
+		WHERE f.type_id = $type_id AND
+		  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
+		  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
+        $dbh->do($sql);
        	
+       	# Build indices
         print STDERR "Creating indexes...\n";
-        $dbh->do(CREATE_LOCI_TABLE_INDEX1);
+        $sql = "CREATE INDEX $table\_idx1 ON $table (genome_id,query_id,pub)";
+        $dbh->do($sql);
+        $sql = "CREATE INDEX $table\_idx2 ON $table (uniquename)";
+        $dbh->do($sql);
        
         print STDERR "Done.\n";
     }
     
-    $dbh->do(TMP_LOCI_RESET, undef, 'FALSE');
+    #$dbh->do(TMP_LOCI_RESET, undef, 'FALSE');
+    $self->{loci_cache}{new_loci} = {}; # Use memory to track new loci added during this run
+    $self->{loci_cache}{updated_loci} = {}; # Use memory to track altered loci during this run
+    my $file_path = $self->{tmp_dir};
+    my $tmpfile = new File::Temp(
+		TEMPLATE => "chado-cache-XXXX",
+		SUFFIX   => '.dat',
+		UNLINK   => $self->save_tmpfiles() ? 0 : 1, 
+		DIR      => $file_path,
+	);
+	chmod 0644, $tmpfile;
+	$self->{loci_cache}{fh} = $tmpfile;
+	
     $dbh->commit;
     
     return;
@@ -789,56 +641,47 @@ none
 sub initialize_snp_caches {
     my $self = shift;
 
-    my $dbh = $self->dbh;
-    my $sth = $dbh->prepare(VERIFY_TMP_TABLE);
-    
-    # snp_alignment table will need to be created if this is the first run
-    $sth->execute('snp_alignment');
-    my ($table_exists) = $sth->fetchrow_array;
-    
-    if(!$table_exists) {
-    	$dbh->do(CREATE_SNP_TABLE);
-    	$dbh->do(CREATE_SNP_TABLE_INDEX1);
-    	$dbh->do(INITIALIZE_SNP_TABLE);
-    }
-    
-    # Create tmp table to load data from this run
-    $sth->execute('tmp_snp_cache');
-    my ($table_exists2) = $sth->fetchrow_array;
-    if($table_exists2) {
-    	$dbh->do(DROP_SNP_CACHE_TABLE);
-    }
-    $dbh->do(CREATE_SNP_CACHE_TABLE);
-    $dbh->do(CREATE_SNP_CACHE_TABLE_INDEX1);
-    
-    # Initialize the counters
-	$sth = $dbh->prepare(FIND_CURRENT_SNP_BLOCK);
+	my $dbh = $self->dbh;
+	
+	# Store the core snp alignment in memory for faster access
+	my $sql = "SELECT max(aln_column) FROM snp_alignment WHERE name = 'core'";
+	my $sth = $dbh->prepare($sql);
     $sth->execute();
-    my ($block) = $sth->fetchrow_array();
-	$sth = $dbh->prepare(FIND_CURRENT_SNP_COLUMN);
-    $sth->execute($block);
     my ($pos) = $sth->fetchrow_array();
+    $self->{snp_alignment}->{core_alignment} = '';
+    $self->{snp_alignment}->{core_position} = $pos // 0;
     
-    
-    
-    #my $max = 10000;
-    my $max = 1000;
-    
-    # Advance counter
-    $pos++;
-    if($pos > $max) {
-    	$pos = 1;
-    	$block++;
+	# Create tmp table
+	$sth = $dbh->prepare(VERIFY_TMP_TABLE);
+    $sth->execute('tmp_snp_cache');
+    my ($table_exists) = $sth->fetchrow_array;
+    if($table_exists) {
+    	my $sql = "DROP TABLE tmp_snp_cache";
+    	$dbh->do($sql);
     }
-    
-    print "CURRENT BLOCK: $block, NEXT COLUMN: $pos\n";
-    
-    $self->{snp_alignment}->{block} = $block;
-    $self->{snp_alignment}->{column} = $pos;
-    $self->{snp_alignment}->{max_column} = $max;
    
-   
-    $dbh->commit;
+   $sql = 
+	"CREATE TABLE public.tmp_snp_cache (
+		name varchar(100),
+		aln_column int,
+		nuc char(1)
+	)";
+    $dbh->do($sql);
+    
+    # Prepare bulk insert
+    my $bulk_set_size = 10000;
+    my $insert_query = 'INSERT INTO tmp_snp_cache (name,aln_column,nuc) VALUES (?,?,?)';
+    $insert_query .= ', (?,?,?)' x ($bulk_set_size-1);
+    $self->{snp_alignment}{insert_tmp_variations} = $dbh->prepare($insert_query);
+    $self->{snp_alignment}{bulk_set_size} = $bulk_set_size;
+    
+    # Setup up insert buffer
+	$self->{snp_alignment}{buffer_stack} = []; 
+	$self->{snp_alignment}{buffer_num} = 0; 
+	$self->{snp_alignment}{new_rows} = [];
+	
+	
+	$dbh->commit;
     
     return;
 }
@@ -893,6 +736,7 @@ sub file_handles {
 			chmod 0644, $tmpfile;
 			$self->{file_handles}{$files{$key}} = $tmpfile;         
         }
+        
         return;
     }
 }
@@ -994,7 +838,7 @@ new value of next table id (to set)
 sub nextoid {  
   my $self = shift;
   my $table= shift;
-  my $arg  = shift if defined(@_);
+  my $arg  = shift if @_;
   
   if (defined($arg) && $arg eq '++') {
       return $self->{'nextoid'}{$table}++;
@@ -1033,10 +877,13 @@ sub remove_lock {
     my ($self, %argv) = @_;
 
     my $dbh = $self->dbh;
-    my $select_query = $dbh->prepare(SELECT_FROM_META) or carp "Select prepare failed";
+   
+    my $sql = "SELECT name,hostname,starttime FROM gff_meta";
+    my $select_query = $dbh->prepare($sql) or carp "Select prepare failed";
     $select_query->execute() or carp "Select from meta failed";
 
-    my $delete_query = $dbh->prepare(DELETE_FROM_META) or carp "Delete prepare failed";
+	$sql = "DELETE FROM gff_meta WHERE name = ? AND hostname = ?";
+    my $delete_query = $dbh->prepare($sql) or carp "Delete prepare failed";
 
     while (my @result = $select_query->fetchrow_array) {
         my ($name,$host,$time) = @result;
@@ -1088,13 +935,20 @@ sub place_lock {
     my ($table_exists) = $sth->fetchrow_array;
 
     if (!$table_exists) {
-       carp "Creating gff_meta table...\n";
-       $dbh->do(CREATE_META_TABLE);
+		carp "Creating gff_meta table...\n";
+		my $sql =  
+		"CREATE TABLE gff_meta (
+			name        varchar(100),
+			hostname    varchar(100),
+			starttime   timestamp not null default now() 
+		)";
+       $dbh->do($sql);
        
     } else {
     	# check for existing lock
     	
-	    my $select_query = $dbh->prepare(SELECT_FROM_META);
+    	my $sql = "SELECT name,hostname,starttime FROM gff_meta";
+	    my $select_query = $dbh->prepare($sql);
 	    $select_query->execute();
 	
 	    while (my @result = $select_query->fetchrow_array) {
@@ -1119,7 +973,8 @@ sub place_lock {
     my $name = "$calling_program-$pid";
     my $hostname = hostname;
 
-    my $insert_query = $dbh->prepare(INSERT_INTO_META);
+	my $sql = "INSERT INTO gff_meta (name,hostname) VALUES (?,?)";
+    my $insert_query = $dbh->prepare($sql);
     $insert_query->execute($name,$hostname);
     $dbh->commit;
 
@@ -1159,7 +1014,7 @@ Allowed hash keys:
 
 =back
 
-=cut
+
 
 sub uniquename_cache {
 	my ($self, %argv) = @_;
@@ -1176,7 +1031,7 @@ sub uniquename_cache {
 		
 	if ($argv{validate}) {
 		if(defined $argv{type_id}) {  
-			# valididate type & org too
+			# valididate type too
 			$self->{'queries'}{'validate_type_id'}->execute(
 			    $argv{type_id},
 			    $argv{uniquename},         
@@ -1215,7 +1070,7 @@ sub uniquename_cache {
 		return;
 	}
 }
-
+=cut
 
 =head2 loci_cache
 
@@ -1227,7 +1082,7 @@ sub uniquename_cache {
 
 =item Function
 
-Maintains a cache of unique alleles present in the database
+Maintains a cache of unique alleles added/updated during this run
 
 =item Returns
 
@@ -1235,18 +1090,16 @@ See Arguements.
 
 =item Arguments
 
-uniquename_cache takes a hash.  
-If it has a key 'validate', it returns the feature_id
-of the feature corresponding to that uniquename if present, 0 if it is not.
-Otherwise, it uses the values in the hash to update the uniquename_cache
+loci_cache takes a hash as input. If the key 'insert' is included,
+values are added to new cache hash. If the key 'update' is included,
+values are added to the update cache hash. 
 
 Allowed hash keys:
 
   feature_id
-  type_id
-  organism_id
   uniquename
-  validate
+  update|insert
+  
 
 =back
 
@@ -1259,200 +1112,34 @@ sub loci_cache {
 	
 	if (@bogus_keys) {
 		for (@bogus_keys) {
-		    carp "I don't know what to do with the key ".$_.
+		    carp "Error in loci_cache input: I don't know what to do with the key ".$_.
 		   " in the loci_cache method; it's probably because of a typo\n";
 		}
 		croak;
 	}
 		
-	$self->{'queries'}{'insert_loci'}->execute(
-	    $argv{feature_id},
-	    $argv{uniquename},
-	    $argv{genome_id},
-	    $argv{query_id},
-	    $argv{is_public}
-	);
+	my ($insert) = ($argv{insert} ? 1 : 0);
+	my ($update) = ($argv{update} ? 1 : 0);
 	
-	$self->dbh->commit;
+	if($update && $insert) {
+		croak "Error in loci_cache input: either 'insert' or 'update' must be specified."
+	}
+	unless($update || $insert) {
+		croak "Error in loci_cache input: 'insert' or 'update' must be specified.";
+	}
+	
+	my %info = %argv;
+	
+	if($insert) {
+		$self->{loci_cache}{new_loci}{$argv{uniquename}} = \%info;
+		my $fh = $self->{loci_cache}{fh};
+		print $fh join("\t", ($info{feature_id},$info{uniquename},$info{genome_id},$info{query_id},$info{is_public})),"\n";
+	} else {
+		$self->{loci_cache}{updated_loci}{$argv{uniquename}} = $info{feature_id};
+	}
+	
 	return;
 }
-
-#=head2 loci_cache
-#
-#=over
-#
-#=item Usage
-#
-#  $obj->loci_cache()
-#
-#=item Function
-#
-#Maintains a cache of unique alleles present in the database
-#
-#=item Returns
-#
-#See Arguements.
-#
-#=item Arguments
-#
-#uniquename_cache takes a hash.  
-#If it has a key 'validate', it returns the feature_id
-#of the feature corresponding to that uniquename if present, 0 if it is not.
-#Otherwise, it uses the values in the hash to update the uniquename_cache
-#
-#Allowed hash keys:
-#
-#  feature_id
-#  type_id
-#  organism_id
-#  uniquename
-#  validate
-#
-#=back
-#
-#=cut
-#
-#sub snp_cache {
-#	my ($self, %argv) = @_;
-#	
-#	my @bogus_keys = grep {!/($ALLOWED_LOCI_CACHE_KEYS)/} keys %argv;
-#	
-#	if (@bogus_keys) {
-#		for (@bogus_keys) {
-#		    carp "I don't know what to do with the key ".$_.
-#		   " in the loci_cache method; it's probably because of a typo\n";
-#		}
-#		croak;
-#	}
-#		
-#	$self->{'queries'}{'insert_loci'}->execute(
-#	    $argv{feature_id},
-#	    $argv{uniquename},
-#	    $argv{genome_id},
-#	    $argv{query_id},
-#	    $argv{is_public}
-#	);
-#	
-#	$self->dbh->commit;
-#	return;
-#}
-
-=head2 constraint
-
-=over
-
-=item Usage
-
-  $obj->constraint()
-
-=item Function
-
-Manages database constraints
-
-=item Returns
-
-Updates cache and returns true if the constraint has not be violated,
-otherwise returns false.
-
-=item Arguments
-
-A hash with keys:
-
-  name		constraint name
-  terms		a anonymous array with column values
-
-The array contains the column values in the 'right' order:
-
-  featureloc_c1:           [feature_id, rank, is_public]
-  feature_cvterm_c1:       [feature_id, cvterm_id, is_public]
-  featureprop_c1:          [feature_id, cvterm_id, rank, is_public]
-  feature_relationship_c1: [feature_id, feature_id, cvterm_id, is_public]
-  feature_tree_c1:         [feature_id, tree_id, is_public]
-  tree_c1:                 [tree_name],
-  binary_c1:               [genome_label, genome_id]
-  snp_core_c1:             [ref_pangenome_id, position]
-  
-=back
-
-=cut
-
-sub constraint {
-    my ($self, %argv) = @_;
-
-    my $constraint = $argv{name};
-    my @terms      = @{ $argv{terms} };
-    
-    if ($constraint eq 'feature_cvterm_c1' ||
-        $constraint eq 'featureloc_c1' ||
-        $constraint eq 'feature_tree_c1' ||
-        $constraint eq 'snp_variation_c1' ||
-        $constraint eq 'snp_core_c1') {
-		
-		croak( "wrong number of constraint terms $constraint") if (@terms != 3);
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}) {
-            return 0; #this combo is already in the constraint
-        }
-        else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}++;
-            return 1;
-        }
-    }
-    elsif ($constraint eq 'tree_c1') {
-        
-        croak("wrong number of constraint terms for $constraint") if (@terms != 1);
-        my $i = 0;
-        foreach(@terms) {
-        	croak "term $i undefined for $constraint" unless defined $_;
-        	$i++
-        }
-        if ($self->{$constraint}{$terms[0]}) {
-            return 0; #this combo is already in the constraint
-        }
-        else {
-            $self->{$constraint}{$terms[0]}++;
-            return 1;
-        }
-    }
-    elsif ($constraint eq 'binary_c1'||
-        $constraint eq 'snp_alignment_c1' ||
-        $constraint eq 'snp_core_c2' ) {
-        
-        croak("wrong number of constraint terms for $constraint") if (@terms != 2);
-        my $i = 0;
-        foreach(@terms) {
-        	croak "term $i undefined for $constraint" unless defined $_;
-        	$i++
-        }
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}) {
-            return 0; #this combo is already in the constraint
-        }
-        else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}++;
-            return 1;
-        }
-    }
-    elsif ($constraint eq 'featureprop_c1' ||
-    	   $constraint eq 'feature_relationship_c1') {
-        
-        croak("wrong number of constraint terms for $constraint") if (@terms != 4);
-        my $i = 0;
-        foreach(@terms) {
-        	croak "term $i undefined for $constraint" unless defined $_;
-        	$i++
-        }
-        if ($self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}) {
-            return 0; #this combo is already in the constraint
-        }
-        else {
-            $self->{$constraint}{$terms[0]}{$terms[1]}{$terms[2]}{$terms[3]}++;
-            return 1;
-        }
-    }
-    else {
-        croak "I don't know how to deal with the constraint $constraint: typo?";
-    }
-}
-
 
 
 =head2 cache
@@ -1496,7 +1183,7 @@ sub cache {
         confess "I don't know what to do with the key '$top_level'".
             " in the cache method; it's probably because of a typo";
     }
-
+    
     return $self->{cache}{$top_level}{$key} unless defined($value);
 
     return $self->{cache}{$top_level}{$key} = $value; 
@@ -1724,116 +1411,16 @@ new value of first_feature_id (to set)
 
 sub first_feature_id {
     my $self = shift;
-    my $first_feature_id = shift if defined(@_);
+    my $first_feature_id = shift if @_;
     return $self->{'first_feature_id'} = $first_feature_id if defined($first_feature_id);
     return $self->{'first_feature_id'};
 }
 
 sub first_private_feature_id {
     my $self = shift;
-    my $first_feature_id = shift if defined(@_);
+    my $first_feature_id = shift if @_;
     return $self->{'first_private_feature_id'} = $first_feature_id if defined($first_feature_id);
     return $self->{'first_private_feature_id'};
-}
-
-
-=head2 cleanup_tmp_table
-
-=over
-
-=item Usage
-
-  $obj->cleanup_tmp_table()
-
-=item Function
-
-Called when there is an abnormal exit from a loading program.  It deletes
-entries in the tmp_gff_load_cache table that have feature_ids that were used
-during the current session.
-
-=item Returns
-
-Nothing
-
-=item Arguments
-
-None (it needs the first feature_id, but that is stored in the object).
-
-=back
-
-=cut
-
-sub cleanup_tmp_table {
-    my $self = shift;
-    
-    my $dbh = $self->dbh;
-    warn "Attempting to clean up the loader temp table (so that --recreate_cache\nwon't be needed)...\n";
-    
-	# public
-    
-    my $first_feature = $self->first_feature_id();
-    if($first_feature){
-    	$dbh->do(TMP_TABLE_CLEANUP, undef, $first_feature);
-    	$dbh->do(TMP_LOCI_CLEANUP, undef, $first_feature);
-		
-    }
-
-	# private
-    
-    my $first_feature2 = $self->first_private_feature_id();
-	if($first_feature2){
-    	$dbh->do(TMP_TABLE_PRIVATE_CLEANUP, undef, $first_feature2);
-    	$dbh->do(TMP_LOCI_PRIVATE_CLEANUP, undef, $first_feature2);
-    }
-    
-    # loci table reset
-    $dbh->do(TMP_LOCI_RESET, undef, 'FALSE');
-                            
-    return;
-}
-
-
-=head2 uniquename_validation
-
-=over
-
-=item Usage
-
-  $obj->uniquename_validation(uniquename, type_id, feature_id, is_public)
-
-=item Function
-
-Determines if uniquename is really unique. If so, caches it and returns uniquename.
-If not, attempts to create a unique
-
-=item Returns
-
-0 if uniquename is not unique, otherwise returns 1
-
-=item Arguments
-
-  Array containing uniquename string, the cvterm type ID, feature ID for the next feature
-  and boolean indicating if feature is public.
-
-=back
-
-=cut
-
-sub uniquename_validation {
-	my $self = shift;
-	my ($uniquename, $type, $nextfeature, $pub) = @_;
-
-	if ($self->uniquename_cache(validate => 1, type_id => $type, uniquename => $uniquename )) { 
-		#if this returns non-zero, it is already in the cache and not valid
-		warn "Warning: uniquename collision. This might indicate an attempt to reload experimental feature data.";
-		return 0;
-		
-	} else { 
-		# this uniquename is valid. cache it and return
-		$self->uniquename_cache(type_id => $type, feature_id => $nextfeature, uniquename => $uniquename, is_public => $pub );
-	}
-	
-	return $uniquename;
 }
 
 =head2 prepare_queries
@@ -1864,53 +1451,49 @@ sub prepare_queries {
     my $self = shift;
     my $dbh  = $self->dbh();
     
-	$self->{'queries'}{'validate_type_id'} = $dbh->prepare(VALIDATE_TYPE_ID);
-	
-	#$self->{'queries'}{'validate_uniquename'} = $dbh->prepare(VALIDATE_UNIQUENAME);
-	
-	$self->{'queries'}{'insert_cache_type_id'} = $dbh->prepare(INSERT_CACHE_TYPE_ID);
-	
-	$self->{'queries'}{'insert_cache_private_type_id'} = $dbh->prepare(INSERT_CACHE_PRIVATE_TYPE_ID);
-	
-	#$self->{'queries'}{'insert_cache_uniquename'} = $dbh->prepare(INSERT_CACHE_UNIQUENAME);
-	
-	$self->{'queries'}{'select_from_public_feature'} = $dbh->prepare(SELECT_FROM_PUBLIC_FEATURE);
-	
-	$self->{'queries'}{'select_from_private_feature'} = $dbh->prepare(SELECT_FROM_PRIVATE_FEATURE);
+	# Queries for obtaining feature info
+	my $sql = "SELECT uniquename, organism_id, residues, seqlen FROM feature WHERE feature_id = ?";
+	$self->{'queries'}{'select_from_public_feature'} = $dbh->prepare($sql);
+	$sql = "SELECT uniquename, organism_id, upload_id, residues, seqlen FROM private_feature WHERE feature_id = ?";
+	$self->{'queries'}{'select_from_private_feature'} = $dbh->prepare($sql);
 	
 	# Loci table
-	$self->{'queries'}{'validate_loci'} = $dbh->prepare(VALIDATE_LOCI);
-	
-	$self->{'queries'}{'insert_loci'} = $dbh->prepare(INSERT_LOCI);
-	
-	$self->{'queries'}{'update_loci'} = $dbh->prepare(UPDATE_LOCI);
+	my $table = $self->{loci_cache}{table};
+	$sql = "SELECT feature_id FROM $table WHERE genome_id = ? AND query_id = ? AND uniquename = ? AND pub = ? ";
+	$self->{'queries'}{'validate_loci'} = $dbh->prepare($sql);
+	$sql = "SELECT feature_id FROM $table WHERE uniquename = ? ";
+	$self->{'queries'}{'validate_loci_name'} = $dbh->prepare($sql);
 	
 	# Tree table
-	$self->{'queries'}{'validate_tree'} = $dbh->prepare(VALIDATE_TREE);
+	$sql = "SELECT tree_id FROM tree WHERE name = ?";
+	$self->{'queries'}{'validate_tree'} = $dbh->prepare($sql);
 	
 	# Pangenome utilities
-	$self->{'queries'}{'retrieve_pangenome_id'} = $dbh->prepare(RETRIEVE_PANGENOME_ID);
+	$sql = "SELECT feature_id FROM feature WHERE uniquename = ? AND type_id = ?";
+	$self->{'queries'}{'retrieve_pangenome_id'} = $dbh->prepare($sql);
 	
 	# Cache table
 	if($self->{db_cache}) {
-		$self->{'queries'}{'retrieve_id'} = $dbh->prepare(RETRIEVE_ID);
+		$sql = "SELECT collection_id, contig_id FROM pipeline_cache WHERE tracker_id = ? AND chr_num = ?";
+		$self->{'queries'}{'retrieve_id'} = $dbh->prepare($sql);
 	}
 	
 	# SNP stuff
 	if($self->{snp_aware}) {
 		# SNP tables
-		$self->{'queries'}{'validate_core_snp'} = $dbh->prepare(VALIDATE_CORE_SNP);
-		$self->{'queries'}{'validate_public_snp'} = $dbh->prepare(VALIDATE_PUBLIC_SNP);
-		$self->{'queries'}{'validate_private_snp'} = $dbh->prepare(VALIDATE_PRIVATE_SNP);
-		
-		# SNP Alignment tables
-		$self->{'queries'}{'add_snp_row'} = $dbh->prepare(ADD_SNP_ROW);
-		$self->{'queries'}{'add_snp_column'} = $dbh->prepare(ADD_SNP_COLUMN);
-		$self->{'queries'}{'add_snp_block'} = $dbh->prepare(ADD_SNP_BLOCK);
-		$self->{'queries'}{'alter_snp'} = $dbh->prepare(ALTER_SNP);
-		$self->{'queries'}{'validate_snp_alignment'} = $dbh->prepare(VALIDATE_SNP_ALIGNMENT);
-		$self->{'queries'}{'retrieve_public_snp_column'} = $dbh->prepare(RETRIEVE_PUBLIC_SNP_COLUMN);
-		$self->{'queries'}{'retrieve_private_snp_column'} = $dbh->prepare(RETRIEVE_PRIVATE_SNP_COLUMN);
+		$sql = "SELECT snp_core_id, aln_column FROM snp_core WHERE pangenome_region_id = ? AND position = ? AND gap_offset = ?";
+		$self->{'queries'}{'validate_core_snp'} = $dbh->prepare($sql);
+		$sql = "SELECT snp_variation_id FROM snp_variation WHERE snp_id = ? AND contig_collection_id = ?";
+		$self->{'queries'}{'validate_public_snp'} = $dbh->prepare($sql);
+		$sql = "SELECT snp_variation_id FROM private_snp_variation WHERE snp_id = ? AND contig_collection_id = ?";
+		$self->{'queries'}{'validate_private_snp'} = $dbh->prepare($sql);
+		# SNP alignment tables
+		$sql = "SELECT count(*) FROM snp_alignment WHERE name = ?";
+		$self->{'queries'}{'validate_snp_alignment'} = $dbh->prepare($sql);
+		$sql = "SELECT contig_collection_id, locus_id, allele FROM snp_variation WHERE snp_id = ?";
+		$self->{'queries'}{'retrieve_public_snp_column'} = $dbh->prepare($sql);
+		$sql = "SELECT contig_collection_id, locus_id, allele FROM private_snp_variation WHERE snp_id = ?";
+		$self->{'queries'}{'retrieve_private_snp_column'} = $dbh->prepare($sql);
 	}
 	
 	
@@ -1983,6 +1566,9 @@ sub load_data {
 			$sequences{$table},
 			$nextvalue{$table});
 	}
+	
+	# Update cache with newly created loci/allele features added in this run
+	$self->push_cache();
 	
 	# Do live replacement of snp_alignment table
 	$self->push_snp_alignment() if $self->{snp_aware};
@@ -2188,22 +1774,30 @@ sub update_tracker {
 	$self->dbh->commit || croak "Tracker table update failed: ".$self->dbh->errstr();
 }
 
-=head2 validate_allele
+=head2 validate_feature
 
 =over
 
 =item Usage
 
-  $obj->validate_allele($query_id, $contig_collection_id, $uniquename, $is_public)
+  $obj->validate_feature($query_id, $contig_collection_id, $uniquename, $is_public)
 
 =item Function
 
-Determines if genome allele already exists for given query gene. If it does it exists,
-marks allele as being updated in cache
+Checks if experimental feature is in caches (DB or hash). Returns feature_id if found.
+Also indicates if this is a new feature added during current run, or is in DB from
+previous run. Returns a result string as follows:
+
+  1. new - allele/locus entirely new (not in db or mem cache)
+  2. new_conflict - allele/locus at that position for given genome already loaded in this run
+  3. db - allele/locus in db (so loaded in previous run, being updated in this run)
+  4. db_conflict - allele/locus in db already been updated in this run
 
 =item Returns
 
-Nothing
+Array containing:
+  1. Result string (new|new_conflict|db|db_conflict)
+  2. Feature ID or undef
 
 =item Arguments
 
@@ -2213,77 +1807,48 @@ The feature_id for the query gene feature, contig collection, the uniquename and
 
 =cut
 
-sub validate_allele {
+sub validate_feature {
     my $self = shift;
 	my ($query_id, $cc_id, $un, $pub) = @_;
 	
+	# Check memory caches
+	if($self->{loci_cache}{new_loci}{$un}) {
+		return('new_conflict', $self->{loci_cache}{new_loci}{$un}{feature_id});
+	}
+	if($self->{loci_cache}{updated_loci}{$un}) {
+		return('db_conflict', $self->{loci_cache}{updated_loci}{$un});
+	}
+	
+	# Check db cache
     $self->{queries}{'validate_loci'}->execute($cc_id, $query_id, $un, $pub);
 	my ($allele_id, $allele_name) = $self->{queries}{'validate_loci'}->fetchrow_array;
 	
+	# Situation specific to pangenome:
+	# Only one pangenome fragment can be mapped to each region of the genome.
+	# The pangenome loci uniquename is specific to a region of the genome, so if there are
+	# multiple pangenome fragments mapping to the same region, need to return
+	# db_conflict.
+	# This does not apply to gene alleles, where multiple genes can map to the
+	# same region and the same region can map to multiple genes.
+	# Gene allele uniquenames are specific to a region and gene type.
+	if($self->{loci_cache}{is_pangenome}) {
+		 $self->{queries}{'validate_loci_name'}->execute($un);
+		 my ($allele_id, $allele_name) = $self->{queries}{'validate_loci_name'}->fetchrow_array;
+		 return('db_conflict', $allele_id) if $allele_id;
+	}
+	
+	
 	if($allele_id) {
 		# existing allele, mark as being updated
-		$self->{queries}{'update_loci'}->execute($allele_id);
-		$self->dbh->commit;
-		return($allele_id,$allele_name);
+		$self->{loci_cache}{updated_loci}{$un} = $allele_id;
+		return('db',$allele_id);
 		
 	} else {
 		# no existing allele
-		return 0;
+		return('new',undef);
 	}
 }
 
-=head2 validate_snp
-
-=over
-
-=item Usage
-
-  $obj->validate_allele($query_id, $contig_collection_id, $uniquename, $is_public)
-
-=item Function
-
-Determines if genome allele already exists for given query gene. If it does it exists,
-marks allele as being updated in cache
-
-=item Returns
-
-Nothing
-
-=item Arguments
-
-The feature_id for the query gene feature, contig collection, the uniquename and a boolean indicating public or private
-
-=back
-
-=cut
-
-sub validate_snp {
-    my $self = shift;
-	my ($snp, $contig_collection, $contig, $pub) = @_;
-	
-	# Search for existing core snp entries in cached values
-	if ($self->constraint(name => 'snp_variation_c1', terms => [ $snp, $contig_collection, $pub ])) {
-		
-		# not found in constraint cache, check DB
-		# NOTE: the call to constraint records this entry, so we better create a entry in the DB
-		# after this method!!
-		if($pub) {
-			$self->{queries}{'validate_public_snp'}->execute($snp, $contig_collection);
-			my ($snp_id) = $self->{queries}{'validate_public_snp'}->fetchrow_array;
-			return 1 if $snp_id;
-		
-		} else {
-			$self->{queries}{'validate_private_snp'}->execute($snp, $contig_collection);
-			my ($snp_id) = $self->{queries}{'validate_private_snp'}->fetchrow_array;
-			return 1 if $snp_id;
-
-		}
-		
-	} else {
-		return 0;
-	}
-	
-}
 
 =head2 validate_snp_alignment
 
@@ -2314,18 +1879,20 @@ sub validate_snp_alignment {
 	my $genome_id = shift;
 	my $is_public = shift;
 	
-	if ($self->constraint(name => 'snp_alignment_c1', terms => [ $genome_id, $is_public ]) ) {
+	my $pre = $is_public ? 'public_':'private_';
+	my $genome = $pre . $genome_id;
 	
-		# not found in constraint cache, check DB
-		# NOTE: the call to constraint records this entry, so we better create a entry in the DB
-		# after this method!!
-		my $pre = $is_public ? 'public_':'private_';
-		my $genome = $pre . $genome_id;
-		
+	unless($self->cache('snp_alignment', $genome)) {
+	
 		$self->{queries}{'validate_snp_alignment'}->execute($genome);
 		my ($found) = $self->{queries}{'validate_snp_alignment'}->fetchrow_array;
-		return 0 if $found;
-		return 1;
+		
+		if($found) {
+			$self->cache('snp_alignment', $genome, 1);
+			return 0;
+		} else {
+			return 1;
+		}
 		
 	} else {
 		return 0;
@@ -2362,19 +1929,19 @@ sub retrieve_core_snp {
 	my ($id, $pos, $gap_offset) = @_;
 	
 	# Search for existing core snp entries in cached values
-	my ($core_snp_id, $block, $column);
+	my ($core_snp_id, $column);
 	
 	if(defined $self->cache('core_snp', "$id.$pos.$gap_offset")) {
-		($core_snp_id, $block, $column) = @{$self->cache('core_snp', "$id.$pos.$gap_offset")};
+		($core_snp_id, $column) = @{$self->cache('core_snp', "$id.$pos.$gap_offset")};
 	} else {
 		# Search for existing entries in snp_core table
 		$self->{queries}{'validate_core_snp'}->execute($id,$pos,$gap_offset);
-		($core_snp_id, $block, $column) = $self->{queries}{'validate_core_snp'}->fetchrow_array;
+		($core_snp_id, $column) = $self->{queries}{'validate_core_snp'}->fetchrow_array;
 		
-		$self->cache('core_snp', "$id.$pos.$gap_offset", [$core_snp_id, $block, $column]) if $core_snp_id;
+		$self->cache('core_snp', "$id.$pos.$gap_offset", [$core_snp_id, $column]) if $core_snp_id;
 	}
 	
-	return ($core_snp_id, $block, $column);
+	return ($core_snp_id, $column);
 }
 
 =head2 retrieve_chr_info
@@ -2447,13 +2014,9 @@ sub handle_parent {
     foreach my $parent_id ($cc_id, $c_id) {
     	
     	my $type = shift @rtypes;
-    	
-    	# If this relationship is unique, add it.
-		if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $type, $pub ]) ) {
-	                                        	
-			$self->print_frel($self->nextoid($table),$child_id,$parent_id,$type,$rank,$pub);
-			$self->nextoid($table,'++');
-		}
+		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$type,$rank,$pub);
+		$self->nextoid($table,'++');
+		
     }
 }
 
@@ -2565,11 +2128,9 @@ sub handle_location {
     my $rank = 0;
     
     my $table = $pub ? 'featureloc' : 'private_featureloc';
-	if ($self->constraint(name => 'featureloc_c1', terms => [ $f_id, $rank, $pub ]) ) {
-	                                    	
-		$self->print_floc($self->nextoid($table),$f_id,$src_id,$min,$max,$strand,$locgrp,$rank,$pub);
-		$self->nextoid($table,'++');
-	}
+	                              	
+	$self->print_floc($self->nextoid($table),$f_id,$src_id,$min,$max,$strand,$locgrp,$rank,$pub);
+	$self->nextoid($table,'++');
     
 }
 
@@ -2607,16 +2168,15 @@ sub handle_binary {
     my $table;
 	if($type eq 'amr') {
 		$table = 'raw_amr_data';
-		if ($self->constraint(name => 'binary_c1', terms => [ $g_id, $qg_id ]) ) {	                                 	
-			$self->print_amr($self->nextoid($table),$g_id,$qg_id,$pa);
-			$self->nextoid($table,'++');
-		}
+			                                 	
+		$self->print_amr($self->nextoid($table),$g_id,$qg_id,$pa);
+		$self->nextoid($table,'++');
+		
 	} elsif($type eq 'vf') {
 		$table = 'raw_virulence_data';
-		if ($self->constraint(name => 'binary_c1', terms => [ $g_id, $qg_id ]) ) {	                                 	
-			$self->print_vf($self->nextoid($table),$g_id,$qg_id,$pa);
-			$self->nextoid($table,'++');
-		}
+			                                 	
+		$self->print_vf($self->nextoid($table),$g_id,$qg_id,$pa);
+		$self->nextoid($table,'++');
 	}
 }
 
@@ -2662,14 +2222,10 @@ sub handle_allele_properties {
  	my $rank=0;
  	
     my $table = $pub ? 'featureprop' : 'private_featureprop';
-	if ($self->constraint(name => 'featureprop_c1', terms=> [ $feature_id, $property_cvterm_id, $rank, $pub]) ) {
-                                      	
-		$self->print_fprop($self->nextoid($table),$feature_id,$property_cvterm_id,$allele_copy,$rank,$pub,$upload_id);
-      	$self->nextoid($table,'++');
-      	
-	} else {
-		carp "Featureprop with type $property_cvterm_id and rank $rank already exists for this feature.\n";
-	}
+	                        	
+	$self->print_fprop($self->nextoid($table),$feature_id,$property_cvterm_id,$allele_copy,$rank,$pub,$upload_id);
+    $self->nextoid($table,'++');
+    
 }
 
 =cut
@@ -2718,11 +2274,9 @@ sub handle_phylogeny {
 			if($seq_group->{$genome}->{is_new}) {
 				my $pub = $seq_group->{$genome}->{public};
 				my $table = $pub ? 'feature_tree' : 'private_feature_tree';
-				if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
-		                                        	
-					$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
-					$self->nextoid($table,'++');
-				}
+				
+				$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
+				$self->nextoid($table,'++');
 			}
 		}
 		
@@ -2733,30 +2287,23 @@ sub handle_phylogeny {
 		
 		# build tree-feature relationships
 		# query
-		if ($self->constraint(name => 'feature_tree_c1', terms => [ $query_id, $tree_id, 1 ]) ) {
-	                                        	
-			$self->print_ftree($self->nextoid('feature_tree'),$tree_id,$query_id,'locus',1);
-			$self->nextoid('feature_tree','++');
-		}
+		                                  	
+		$self->print_ftree($self->nextoid('feature_tree'),$tree_id,$query_id,'locus',1);
+		$self->nextoid('feature_tree','++');
 		
 		# alleles
 		foreach my $genome (keys %$seq_group) {
 			my $allele_id = $seq_group->{$genome}->{allele};
 			my $pub = $seq_group->{$genome}->{public};
 			my $table = $pub ? 'feature_tree' : 'private_feature_tree';
-			if ($self->constraint(name => 'feature_tree_c1', terms => [ $allele_id, $tree_id, $pub ]) ) {
-	                                        	
-				$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
-				$self->nextoid($table,'++');
-			}
+			                              	
+			$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
+			$self->nextoid($table,'++');
 		}
 		
 		# print tree
-		if ($self->constraint(name => 'tree_c1', terms => [ $tree_name ]) ) {
-	                                        	
-			$self->print_tree($tree_id,$tree_name,'perl',$tree);
-			$self->nextoid('tree','++');
-		}
+		$self->print_tree($tree_id,$tree_name,'perl',$tree);
+		$self->nextoid('tree','++');
 	}
 
 }
@@ -2813,21 +2360,16 @@ sub handle_pangenome_segment {
 	my $pre = $in_core ? 'core ' : 'accessory ';
 	my $name = my $uniquename = $pre ."pan-genome fragment $curr_feature_id";
 	
-	$self->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
-	
-	
 	# Core designation
 	my $core_value = $in_core ? 'FALSE' : 'TRUE';
 	my $core_type = $self->feature_types('core_genome');
     my $rank = 0;
 
 	my $table = 'feature_cvterm';
-	if ($self->constraint(name => 'feature_cvterm_c1', terms => [ $curr_feature_id, $core_type, $is_public ]) ) {
-                                        	
-		$self->print_fcvterm($self->nextoid($table), $curr_feature_id, $core_type, $self->publication_id, $rank, $is_public, $core_value);
-		$self->nextoid($table,'++');
-	}
-	
+	                             	
+	$self->print_fcvterm($self->nextoid($table), $curr_feature_id, $core_type, $self->publication_id, $rank, $is_public, $core_value);
+	$self->nextoid($table,'++');
+		
 	# assign pangenome function properties
 	my @tags;
 	my @values;
@@ -2851,12 +2393,9 @@ sub handle_pangenome_segment {
 	 	
 	    my $table = 'featureprop';
 	    my $value = shift @values;
-		if ($value && $self->constraint(name => 'featureprop_c1', terms=> [ $curr_feature_id, $property_cvterm_id, $rank, $is_public]) ) {
-			
-			$self->print_fprop($self->nextoid($table),$curr_feature_id,$property_cvterm_id,$value,$rank,$is_public);
-	      	$self->nextoid($table,'++');
-	      	
-		}
+		
+		$self->print_fprop($self->nextoid($table),$curr_feature_id,$property_cvterm_id,$value,$rank,$is_public);
+	    $self->nextoid($table,'++');
 	}
 	
 	# Print pangenome feature
@@ -2899,53 +2438,30 @@ sub handle_snp {
 	croak "Positioning violation! $c2 character with gap offset value $rgap_offset for core sequence." if ($rgap_offset && $c2 ne '-') || (!$rgap_offset && $c2 eq '-');
 	
 	# Retrieve reference snp, if exists
-	my ($ref_snp_id, $block, $column) = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
-	
-#	print "CURRENT BLOCK: ".$self->{snp_alignment}->{block}."\n";
-#	print "CURRENT COLUMN: ".$self->{snp_alignment}->{column}."\n";
-#	$self->print_alignment_lengths();
+	my ($ref_snp_id, $column) = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
 	
 	unless($ref_snp_id) {
 		# Create new core snp
 		
 		# Update snp alignment strings with new column
-		($block, $column) = $self->add_snp_column($c2);
+		($column) = $self->add_snp_column($c2);
 		
 		my $table = 'snp_core';
-		if ($self->constraint(name => 'snp_core_c1', terms => [ $ref_id, $ref_pos, $rgap_offset ]) &&
-			$self->constraint(name => 'snp_core_c2', terms => [ $block, $column ])) {
-			$ref_snp_id = $self->nextoid($table);	                                 	
-			$self->print_sc($ref_snp_id,$ref_id,$c2,$ref_pos,$rgap_offset,$block,$column);
-			$self->nextoid($table,'++');
-			$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset",[$ref_snp_id, $block, $column]);
-			#print "SAVED NEW SNP UNDER $ref_id.$ref_pos.$rgap_offset: ".join(',',@{$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset")})."\n";
-		} else {
-			croak "A matching entry for region $ref_id, position $ref_pos, gap offset $rgap_offset already exists in snp_core table.";
-		}
 		
-		#print "NEW COLUMN: $ref_snp_id, $block, $column\n";
-		
-	} else {
-		
-		#print "COLUMN: $ref_snp_id, $block, $column\n";
-		
-	}
-	
-	#$self->print_alignment_lengths();
-	
-	unless($self->validate_snp($ref_snp_id, $contig_collection, $contig, $is_public)) {
-		
-		# Update snp in alignment for genome
-		$self->alter_snp($contig_collection,$is_public,$block,$column,$c1);
-		
-		# Create snp entry
-		my $table = $is_public ? 'snp_variation' : 'private_snp_variation';
-		$self->print_sv($self->nextoid($table),$ref_snp_id,$contig_collection,$contig,$locus,$c1,$is_public);
+		$ref_snp_id = $self->nextoid($table);	                                 	
+		$self->print_sc($ref_snp_id,$ref_id,$c2,$ref_pos,$rgap_offset,$column);
 		$self->nextoid($table,'++');
+		$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset",[$ref_snp_id, $column]);
 		
-	} else {
-		croak "A matching entry for genome $contig_collection and snp $ref_snp_id already exists in snp_variation table.";
 	}
+		
+	# Update snp in alignment for genome
+	$self->alter_snp($contig_collection,$is_public,$column,$c1);
+	
+	# Create snp entry
+	my $table = $is_public ? 'snp_variation' : 'private_snp_variation';
+	$self->print_sv($self->nextoid($table),$ref_snp_id,$contig_collection,$contig,$locus,$c1,$is_public);
+	$self->nextoid($table,'++');
 	
 }
 
@@ -2983,11 +2499,9 @@ sub add_types {
     my $rank = 0;
 
 	my $table = $pub ? 'feature_cvterm' : 'private_feature_cvterm';
-	if ($self->constraint(name => 'feature_cvterm_c1', terms => [ $child_id, $ef_type, $pub ]) ) {
-                                        	
-		$self->print_fcvterm($self->nextoid($table), $child_id, $ef_type, $self->publication_id, $rank,$pub);
-		$self->nextoid($table,'++');
-	}
+	                                 	
+	$self->print_fcvterm($self->nextoid($table), $child_id, $ef_type, $self->publication_id, $rank,$pub);
+	$self->nextoid($table,'++');
 }
 
 =head2 handle_query_hit
@@ -3037,13 +2551,9 @@ sub add_relationship {
     		$pub_type = 0;
     	}
     }
-    	
-    
-	if ($self->constraint(name => 'feature_relationship_c1', terms => [ $parent_id, $child_id, $rtype, $pub_type ]) ) {
-                                        	
-		$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub,$xpub);
-		$self->nextoid($table,'++');
-	}
+    	                               	
+	$self->print_frel($self->nextoid($table),$child_id,$parent_id,$rtype,$rank,$pub,$xpub);
+	$self->nextoid($table,'++');
    
 }
 
@@ -3176,11 +2686,11 @@ sub print_vf {
 
 sub print_sc {
 	my $self = shift;
-	my ($sc_id,$ref_id,$nuc,$pos,$gap,$blk,$col) = @_;
+	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col) = @_;
 	
 	my $fh = $self->file_handles('snp_core');		
 
-	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$blk,$col)),"\n";
+	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$col)),"\n";
 }
 
 sub print_sv {
@@ -3309,7 +2819,7 @@ new value of dbh (to set)
 sub dbh {
     my $self = shift;
 
-    my $dbh = shift if defined(@_);
+    my $dbh = shift if @_;
     return $self->{'dbh'} = $dbh if defined($dbh);
     return $self->{'dbh'};
 }
@@ -3340,7 +2850,7 @@ new value of tmp_dir (to set)
 sub tmp_dir {
     my $self = shift;
 
-    my $tmp_dir = shift if defined(@_);
+    my $tmp_dir = shift if @_;
     return $self->{'tmp_dir'} = $tmp_dir if defined($tmp_dir);
     return $self->{'tmp_dir'};
 }
@@ -3371,7 +2881,7 @@ new value of dbname (to set)
 sub dbname {
     my $self = shift;
 
-    my $dbname = shift if defined(@_);
+    my $dbname = shift if @_;
     return $self->{'dbname'} = $dbname if defined($dbname);
     return $self->{'dbname'};
 }
@@ -3557,7 +3067,7 @@ Boolean value of vacuum parameter (0/1)
 sub vacuum {
     my $self = shift;
 
-    my $v = shift if defined(@_);
+    my $v = shift if @_;
     return $self->{'vacuum'} = $v if defined($v);
     return $self->{'vacuum'};
 }
@@ -3587,7 +3097,7 @@ new value of save_tmpfiles (to set)
 
 sub save_tmpfiles {
     my $self = shift;
-    my $save_tmpfiles = shift if defined(@_);
+    my $save_tmpfiles = shift if @_;
     return $self->{'save_tmpfiles'} = $save_tmpfiles if defined($save_tmpfiles);
     return $self->{'save_tmpfiles'};
 }
@@ -3618,7 +3128,7 @@ new value of recreate_cache (to set)
 
 sub recreate_cache {
     my $self = shift;
-    my $recreate_cache = shift if defined(@_);
+    my $recreate_cache = shift if @_;
 
     return $self->{'recreate_cache'} = $recreate_cache if defined($recreate_cache);
     return $self->{'recreate_cache'};
@@ -3832,30 +3342,12 @@ sub elapsed_time {
 sub add_snp_column {
 	my $self = shift;
 	my $nuc = shift;
-	
-	my ($b,$c);
-	if($self->{snp_alignment}->{column} > $self->{snp_alignment}->{max_column}) {
-		# New block
-		$b = $self->{snp_alignment}->{block}+1;
-		$self->{snp_alignment}->{block} = $b;
-		$c = $self->{snp_alignment}->{column} = 1;
 		
-		$self->{'queries'}{'add_snp_block'}->execute($b, $c, $nuc);
-		
-	} else {
-		# New column in current block
-		$b = $self->{snp_alignment}->{block};
-		$c = $self->{snp_alignment}->{column};
-		
-		$self->{'queries'}{'add_snp_column'}->execute($b, $c, $nuc, $b);
+	my $c = $self->{snp_alignment}->{core_position}++;
+	$self->{snp_alignment}->{core_alignment} .= $nuc;
 	
-	}
 	
-	$self->dbh->commit;
-	
-	$self->{snp_alignment}->{column}++;
-	
-	return($b,$c);
+	return($c);
 }
 
 =head2 add_snp_row
@@ -3880,7 +3372,6 @@ sub add_snp_column {
   feature table.
 
 =back
-
 =cut
 
 sub add_snp_row {
@@ -3893,10 +3384,12 @@ sub add_snp_row {
 	
 	if ($self->validate_snp_alignment($genome_id, $is_public) ) {
 		
-		$self->{'queries'}{'add_snp_row'}->execute($genome,'core');
-		$self->dbh->commit;
+		# Record new genomes;
+		push @{$self->{snp_alignment}{new_rows}}, $genome;
+		$self->cache('snp_alignment', $genome, 1);
 	}
 }
+
 
 =head2 alter_snp
 
@@ -3928,21 +3421,12 @@ sub alter_snp {
 	my $self = shift;
 	my $genome_id = shift;
 	my $is_public = shift;
-	my $block = shift;
 	my $pos = shift;
 	my $nuc = shift;
 	
 	# Validate alignment positions
-	my $maxb = $self->{snp_alignment}->{block};
-	croak "Invalid SNP alignment block number $block (max: $maxb)." unless $block <= $maxb;
-	my $maxc = $self->{snp_alignment}->{max_column};
+	my $maxc = $self->{snp_alignment}->{core_position};
 	croak "Invalid SNP alignment position $pos (max: $maxc)." unless $pos <= $maxc;
-	
-	if($maxb == $block) {
-		# Changing position in current block, may not be a full block
-		$maxc = $self->{snp_alignment}->{column};
-		croak "Invalid SNP alignment position $pos in current block $block (max: $maxc)." unless $pos <= $maxc;
-	}
 	
 	# Validate nucleotide
 	$nuc = uc($nuc);
@@ -3951,11 +3435,16 @@ sub alter_snp {
 	my $pre = $is_public ? 'public_' : 'private_';
 	my $genome = $pre . $genome_id;
 	
-	$self->{'queries'}{'alter_snp'}->execute($nuc,$pos,$genome,$block) or 
-		croak "Unable to update SNP character in alignment. Make sure genome $genome has corresponding row in alignment ($!).";
-	
-	$self->dbh->commit;
+	push @{$self->{snp_alignment}{buffer_stack}}, $genome, $pos, $nuc;
+	$self->{snp_alignment}{buffer_num}++;
+
+	if($self->{snp_alignment}{buffer_num} == $self->{snp_alignment}{bulk_set_size}) {
 		
+		$self->{snp_alignment}{insert_tmp_variations}->execute(@{$self->{snp_alignment}{buffer_stack}});
+		$self->dbh->commit;
+		$self->{snp_alignment}{buffer_num} = 0;
+		$self->{snp_alignment}{buffer_stack} = [];
+	}
 }
 
 =head2 push_snp_alignment
@@ -3968,7 +3457,7 @@ sub alter_snp {
 
 =item Function
 
-  Move the current snp_alignment to backup and the tmp_snp_cache table to snp_alignment
+  Add the current tmp_snp_cache to the snp_alignment table
 
 =item Returns
 
@@ -3987,85 +3476,205 @@ sub push_snp_alignment {
 	
 	my $dbh = $self->dbh;
 	
-	# Drop current backup table, if it exists
-	my $sth = $dbh->prepare(VERIFY_TMP_TABLE);
-    
-    $sth->execute('snp_backup');
-    my ($table_exists) = $sth->fetchrow_array;
-    
-    if($table_exists) {
-    	$dbh->do('DROP TABLE public.snp_backup');
-    }
-    
-    # Move snp_alignment to backup
-    $dbh->do('ALTER TABLE snp_alignment RENAME TO snp_backup');
-    $dbh->do('ALTER INDEX snp_alignment_c1 RENAME TO snp_backup_c1');
-    # Move cache to snp_alignment
-    $dbh->do('ALTER TABLE tmp_snp_cache RENAME TO snp_alignment');
-    $dbh->do('ALTER INDEX tmp_snp_cache_c1 RENAME TO snp_alignment_c1');
+	# Insert the remaining rows in the buffer
+	my $num_rows = scalar(@{$self->{snp_alignment}{buffer_stack}});
+	if($num_rows) {
+		$num_rows = $num_rows/3;
+		my $insert_query = 'INSERT INTO tmp_snp_cache (name,aln_column,nuc) VALUES (?,?,?)';
+	    $insert_query .= ', (?,?,?)' x ($num_rows-1);
+	    my $insert_sth = $dbh->prepare($insert_query);
+	    $insert_sth->execute(@{$self->{snp_alignment}{buffer_stack}});
+	}
+	my $sql = "CREATE INDEX tmp_snp_cache_idx1 ON public.tmp_snp_cache (name)";
+    $dbh->do($sql);
+    $dbh->commit;
+	
+	# New additions to core
+	my $new_core_aln = $self->{snp_alignment}->{core_alignment};
+	my $curr_column = $self->{snp_alignment}->{core_position};
+
+	# Retrieve the full core snp alignment string (not just the new snps appended in this run)
+	$sql = "SELECT alignment FROM snp_alignment WHERE name = 'core'";
+	my $sth = $dbh->prepare($sql);
+	$sth->execute;
+	my ($old_core_aln) = $sth->fetchrow_array();
+	$old_core_aln = '' unless defined $old_core_aln;
+	my $full_core_aln = $old_core_aln . $new_core_aln;
+	croak "Alignment length does not match position counter $curr_column (length:".length($full_core_aln).")" unless length($full_core_aln) == $curr_column;
+	
+	# Get a list of all genomes in DB
+	my %genomes;
+	my $cc_id = $self->feature_types('contig_collection');
+	my $sql1 = "SELECT feature_id FROM feature WHERE type_id = ?";
+	my $sql2 = "SELECT feature_id FROM private_feature WHERE type_id = ?";
+	
+	# Public
+	$sth = $dbh->prepare($sql1);
+	$sth->execute($cc_id);
+	
+	while(my ($id) = $sth->fetchrow_array()) {
+		$genomes{"public_$id"}=1;
+	}
+	
+	# Private
+	$sth = $dbh->prepare($sql2);
+	$sth->execute($cc_id);
+	
+	while(my ($id) = $sth->fetchrow_array()) {
+		$genomes{"private_$id"}=1;
+	}
+	
+	# test
+	#delete $genomes{"public_58484"};
+	
+	# Prepare loading file for COPY FROM operation
+	my $file_path = $self->{tmp_dir};
+	my ($tmpfh,$tmpfile) = new File::Temp(
+		TEMPLATE => "chado-snp-alignment-XXXX",
+		SUFFIX   => '.dat',
+		UNLINK   => $self->save_tmpfiles() ? 0 : 1, 
+		DIR      => $file_path,
+	);
+	chmod 0644, $tmpfh;
+	
+	# Print core alignment additions to loading file
+	print $tmpfh join("\t", ('core',$curr_column,$new_core_aln)),"\n";
+	
+	# Iterate through new genomes
+	my @new_genomes = @{$self->{snp_alignment}{new_rows}};
+	
+	my $retrieve_sth = $dbh->prepare('SELECT aln_column,nuc FROM tmp_snp_cache WHERE name = ?');
+	#print 'NG:'.join(',',@new_genomes),"\n";
+	foreach my $g (@new_genomes) {
+		
+		$genomes{$g}=0;
+		
+		# Make genome snp changes to core string
+		$retrieve_sth->execute($g);
+		my $genome_string = $full_core_aln;
+#		while (my $varray_ref = $retrieve_sth->fetchrow_arrayref) {
+#			substr($genome_string, $varray_ref->[0], 1) = $varray_ref->[1];
+#		}
+		while (my $bunch_of_rows = $retrieve_sth->fetchall_arrayref(undef, 5000)) {
+			snp_edits($genome_string, $bunch_of_rows);
+		}
+		
+		# Print to DB file
+		print $tmpfh join("\t", ($g,$curr_column,$genome_string)),"\n";
+	}
+	
+	# Iterate through old genomes (no SNP-finding performed on these genomes)
+	# Add core snps to their strings
+	foreach my $g (keys %genomes) {
+		next unless $genomes{$g};
+		
+		print $tmpfh join("\t", ($g,$curr_column,$new_core_aln)),"\n";
+	}
+	
+	# Run upsert operation
+	warn "Upserting data in snp_alignment table ...\n";
+	seek($tmpfh,0,0);
+	
+	my $ttable = 'snp_alignment';
+	my $stable = 'tmp_snp_alignment';
+	my $query0 = "DROP TABLE IF EXISTS $stable";
+	#my $query1 = "CREATE TEMP TABLE $stable (LIKE $ttable INCLUDING ALL) ON COMMIT DROP";
+	my $query1 = "CREATE TABLE $stable (LIKE $ttable INCLUDING ALL)";
+	$dbh->do($query0) or croak("Error when executing: $query0 ($!).\n");
+	$dbh->do($query1) or croak("Error when executing: $query1 ($!).\n");
+	
+	my $query2 = "COPY $stable (name,aln_column,alignment) FROM STDIN;";
+	print STDERR $query2,"\n";
+	$dbh->do($query2) or croak("Error when executing: $query2 ($!).\n");
+
+	while (<$tmpfh>) {
+		if ( ! ($dbh->pg_putline($_)) ) {
+			# error, disconecting
+			$dbh->pg_endcopy;
+			$dbh->rollback;
+			$dbh->disconnect;
+			croak("error while copying data's of file $tmpfile, line $.");
+		} # putline returns 1 if succesful
+	}
+
+	$dbh->pg_endcopy or croak("calling endcopy for $stable failed: $!");
+	
+	# update the target table
+	my $query3 = 
+"WITH upsert AS
+(UPDATE $ttable t SET alignment = overlay(t.alignment placing s.alignment from t.aln_column+1), 
+ aln_column = s.aln_column 
+ FROM $stable s WHERE t.name = s.name
+ RETURNING t.name
+)
+INSERT INTO $ttable (name,aln_column,alignment)
+SELECT name,aln_column,alignment
+FROM $stable tmp
+WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
+
+	$dbh->do("$query3") or croak("Error when executing: $query3 ($!).\n");
+	
     
 }
 
-=head2 snp_audit
 
-Scan the reference pangenome sequence alignment for regions of ambiguity (consequetive gaps where at least one gap is new).
-Can't tell which gap is new and which is old.
+=head2 push_snp_alignment
+
+=over
+
+=item Usage
+
+  $obj->push_snp_alignment(); 
+
+=item Function
+
+  Add the current tmp_snp_cache to the snp_alignment table
+
+=item Returns
+
+  Nothing
+
+=item Arguments
+
+  None
+
+=back
 
 =cut
 
-sub snp_audit {
+sub push_cache {
 	my $self = shift;
-	my $refid = shift;
-	my $refseq = shift;
 	
-	# Search sequence for extended indels
-	my @regions;
-	my $l = length($refseq)-1;
-	my $pos = 0;
-	my $gap = 0;
-		
-	for my $i (0 .. $l) {
-        my $c = substr($refseq, $i, 1);
-        
-        # Advance position counters
-        if($c eq '-') {
-        	$gap++;
-        } else {
-        	if($gap > 1) {
-        		# extended indel
-        		my @old_snps;
-        		
-        		# find if any columns are new
-        		my $n = 0;
-        		for(my $j=1; $j <= $gap; $j++) {
-        			my ($snp_id, $block, $col) = $self->retrieve_core_snp($refid, $pos, $j);
-					
-					unless($snp_id) {
-						# new insert
-						$n++;
-					} else {
-						push @old_snps, [$snp_id, $block, $col];
-					}
-        		}
-        		
-        		if($n && $n != $gap) {
-        			# Have some new columns mixed with some old, region of ambiguity
-        			my %indel_hash;
-        			$indel_hash{p} = $pos;
-					$indel_hash{g} = $gap;
-					$indel_hash{insert_ids} = \@old_snps;
-					$indel_hash{aln_start} = $i-$gap;
-					$indel_hash{n} = $n;
-					push @regions, \%indel_hash;
-        		}
-        		
-        	}
-        	$pos++;
-        	$gap=0 if $gap;
-        }
+	my $dbh = $self->dbh;
+	my $fh = $self->{loci_cache}{fh};
+	my $file = $fh->filename;
+	$fh->autoflush;
+	
+	if (-s $file <= 0) {
+		warn "Skipping cache table since the load file is empty...\n";
+		return;
 	}
-	
-	return \@regions;
+		
+	warn "Loading data into cache table ...\n";
+	seek($fh,0,0);
+
+	my $table = $self->{loci_cache}{table};
+	my $fields = "(feature_id,uniquename,genome_id,query_id,pub)";
+	my $query = "COPY $table $fields FROM STDIN;";
+
+	$dbh->do($query) or croak("Error when executing: $query: $!");
+
+	while (<$fh>) {
+		if ( ! ($dbh->pg_putline($_)) ) {
+			# error, disconecting
+			$dbh->pg_endcopy;
+			$dbh->rollback;
+			$dbh->disconnect;
+			croak("error while copying data's of file $file, line $.");
+		} # putline returns 1 if succesful
+	}
+
+	$dbh->pg_endcopy or croak("calling endcopy for $table failed: $!");
 }
 
 =head2 handle_insert_blocks
@@ -4114,17 +3723,12 @@ sub handle_insert_blocks {
 					
 					print "CREATING NEW GAP COLUMN AT POSITION $pos, $i ($block, $column)\n";
 					
-					$self->constraint(name => 'snp_core_c1', terms => [ $ref_id, $pos, $i ]); # Make sure position is recorded in constraint cache
-					
 					my $table = 'snp_core';
-					if ($self->constraint(name => 'snp_core_c2', terms => [ $block, $column ])) {
-						my $ref_snp_id = $self->nextoid($table);	                                 	
-						$self->print_sc($ref_snp_id,$ref_id,$c2,$pos,$i,$block,$column);
-						$self->nextoid($table,'++');
-						$self->cache('core_snp',"$ref_id.$pos.$i",[$ref_snp_id, $block, $column]);
-					} else {
-						croak "A matching entry for region $ref_id, position $pos, gap offset $i already exists in snp_core table.";
-					}
+					
+					my $ref_snp_id = $self->nextoid($table);	                                 	
+					$self->print_sc($ref_snp_id,$ref_id,$c2,$pos,$i,$block,$column);
+					$self->nextoid($table,'++');
+					$self->cache('core_snp',"$ref_id.$pos.$i",[$ref_snp_id, $block, $column]);
 					
 					$col_match = 0;
 					$n--;
@@ -4141,7 +3745,7 @@ sub handle_insert_blocks {
 				
 				$self->cache('core_snp',"$ref_id.$pos.$i",[$snp_core_id, $block, $column]);
 				
-				print "MOVING OLD GAP COLUMN $snp_core_id TO POSITION $pos, $i ($block, $column)\n";
+				#print "MOVING OLD GAP COLUMN $snp_core_id TO POSITION $pos, $i ($block, $column)\n";
         		
         		shift @current_insert_ids;
         		$insert_column = $self->snp_variations_in_column($current_insert_ids[0][0]) if @current_insert_ids;
@@ -4208,7 +3812,39 @@ sub print_alignment_lengths {
 	print "\n";
 }
 
+
+
 1;
 
+__END__
+__C__
+
+// Make a series of edits to a dna string
+// Edits are stored in an array of arrays:
+// [[position, nucleotide],[...]]
+void snp_edits(SV* dna, SV* snps_arrayref) {
+	AV* snps;
+	AV* snp_row;
+	
+	snps = (AV*)SvRV(snps_arrayref);
+	int n = av_len(snps);
+	int i;
+	
+	char* dna_string = (char*)SvPV_nolen(dna);
+	
+	// compare each seq to ref
+	// write snps to file for genome
+	for(i=0; i <= n; ++i) {
+		SV* row = av_shift(snps);
+		snp_row = (AV*)SvRV(row);
+		
+		SV* pos = av_shift(snp_row);
+		SV* nuc = av_shift(snp_row);
+		int p = (int)SvIV(pos);
+		char* n = (char*)SvPV_nolen(nuc);
+		
+		dna_string[p] = *n;
+	}
+}
 
 
