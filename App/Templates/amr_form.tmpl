@@ -50,8 +50,9 @@
 </div>
 
 <script type="text/javascript">
-var categories = <TMPL_VAR amrCategories>;
-var amrCategories = categories.data.amrCats;
+//Set up AJAX call to retrieve categories since we no longer set it on page load
+var categories = <TMPL_VAR Categories>;
+var amrCategories = categories.amrCats;
 var category_list;
 var current_amr_category_id = "undefined";
 $('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
