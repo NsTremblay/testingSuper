@@ -11,7 +11,6 @@ $0 - Align sequences and build trees in parallel
 =head1 COMMAND-LINE OPTIONS
 
 	--dir				Define directory containing fasta files and job list
-	--find_snps         Compare each sequence to reference and write snp positions to file
 
 =head1 DESCRIPTION
 
@@ -36,6 +35,7 @@ use Phylogeny::TreeBuilder;
 use Phylogeny::Tree;
 use Parallel::ForkManager;
 use IO::CaptureOutput qw(capture_exec);
+use File::Copy qw/copy/;
 use Time::HiRes qw( time );
 
 ########
@@ -51,7 +51,7 @@ my $tree_io = Phylogeny::Tree->new(dbix_schema => 'empty');
 
 # Inialize the parallel manager
 # Max processes for parallel run
-my $pm = new Parallel::ForkManager(20);
+my $pm = new Parallel::ForkManager(8);
 
 # Get config
 my ($alndir) = 0;
@@ -67,7 +67,6 @@ my $refdir = $alndir . '/refseq';
 my $snpdir = $alndir . '/snp_alignments';
 my $posdir = $alndir . '/snp_positions';
 my $newdir = $alndir . '/new';
-my $msadir = $alndir . '/msa';
 
 # Load jobs
 my $job_file = $alndir . '/jobs.txt';
@@ -77,12 +76,12 @@ while(my $job = <$in>) {
 	chomp $job;
 	
 	my ($pg_id, $do_tree, $do_snp, $add_seq) = split(/\t/,$job);
-	push @jobs, [$pg_id, $do_tree, $do_snp, $add_seq];
+	push @jobs, [$pg_id, $do_tree, $do_snp, $add_seq] if($do_tree || $do_snp || $add_seq);
 }
 close $in;
 
 # Logger
-my $log_file = "$alndir/log.txt";
+my $log_file = "$alndir/parallel_log.txt";
 open my $log, '>', $log_file or croak "Error: unable to create log file $log_file ($!).\n";
 my $now = time();
 print $log "parallel_tree_builder.pl - ".localtime()."\n";
@@ -97,11 +96,11 @@ print "NUM JOBS: $tot\n";
 
 foreach my $jarray (@jobs) {
 	$num++;
-	print $log "$num of $tot jobs completed.\n" if $num % 10 == 0;
 	$pm->start and next; # do the fork
 
 	my ($pg_id,$do_tree,$do_snp,$add_seq) = @$jarray;
 	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
+	print $log "\t$pg_id success\n";
 
 	$pm->finish; # do the exit in the child process
 }
@@ -119,24 +118,26 @@ exit(0);
 sub build_tree {
 	my ($pg_id, $do_tree, $do_snp, $add_seqs) = @_;
 	
-	my $fasta_file = "$fastadir/$pg_id.fna";
+	local *STDOUT = $log;
+	local *STDERR = $log;
+	
+	my $fasta_file = "$fastadir/$pg_id.ffn";
 	
 	# Iteratively add new sequences to existing alignment
 	if($add_seqs) {
-		my $new_file = "$newdir/$pg_id.fna";
+		my $new_file = "$newdir/$pg_id.ffn";
+		my $tmp_file = "$newdir/$pg_id\_tmp.ffn";
 		
 		my $fasta = Bio::SeqIO->new(-file   => $new_file,
 									-format => 'fasta') or croak "Unable to open Bio::SeqIO stream to $new_file ($!).";
 									
 		while (my $entry = $fasta->next_seq) {
 			
-			my $tmp_file = "$newdir/$pg_id\_tmp.fna";
 			open(my $tmpfh, '>', $tmp_file) or croak "Unable to write to tmp file $tmp_file ($!).";
 			print $tmpfh '>'.$entry->display_id."\n".$entry->seq."\n";
 			close $tmpfh;
 			
-			my $aln_file = "$msadir/$pg_id\_msa.fna";
-			my @loading_args = ($muscle_exe, "-profile -in1 $fasta_file -in2 $tmp_file -out $aln_file");
+			my @loading_args = ($muscle_exe, "-profile -in1 $tmp_file -in2 $fasta_file -out $fasta_file");
 			my $cmd = join(' ',@loading_args);
 			
 			my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -145,7 +146,6 @@ sub build_tree {
 				croak "Muscle profile alignment failed for pangenome $pg_id ($stderr).";
 			}
 			
-			$fasta_file = $aln_file;
 		}
 	}
 	
@@ -166,8 +166,9 @@ sub build_tree {
 	if($do_snp) {
 		
 		# Align reference sequence to already aligned alleles
-		my $ref_file = "$refdir/$pg_id\_ref.fna";
-		my $aln_file = "$snpdir/$pg_id\_snp.fna";
+		my $ref_file = "$refdir/$pg_id\_ref.ffn";
+		my $aln_file = "$snpdir/$pg_id\_snp.ffn";
+		my $ref_aln_file = "$refdir/$pg_id\_aln.ffn";
 		my @loading_args = ($muscle_exe, "-profile -in1 $fasta_file -in2 $ref_file -out $aln_file");
 		my $cmd = join(' ',@loading_args);
 		
@@ -190,6 +191,9 @@ sub build_tree {
 			
 			if($id eq $refheader) {
 				$refseq = $entry->seq;
+				open(my $afh, '>', $ref_aln_file) or croak "Error: unable to write to file $ref_aln_file ($!).\n";
+				print $afh ">$refheader\n$refseq\n";
+				close $afh;
 			} else {
 				push @comp_seqs, $entry->seq;
 				push @comp_names, $id;

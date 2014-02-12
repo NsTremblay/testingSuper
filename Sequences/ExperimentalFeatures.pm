@@ -8,6 +8,7 @@ use Carp qw/croak carp confess/;
 use Sys::Hostname;
 use File::Temp;
 use Time::HiRes qw( time );
+use Data::Dumper;
 
 =head1 NAME
 
@@ -183,14 +184,12 @@ my %joinstring = (
 	tsnp_core                     => "s.snp_core_id = t.snp_core_id"
 );
 
-# Key values for uniquename cache
-#my $ALLOWED_UNIQUENAME_CACHE_KEYS = "feature_id|type_id|uniquename|validate|is_public";
 
 # Key values for loci cache
 my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|uniquename|genome_id|query_id|is_public|insert|update";
                
 # Tables for which caches are maintained
-my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp|snp_alignment";
+my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp|snp_alignment|uploaded_feature";
 
 # Tmp file names for storing upload data
 my %files = map { $_ => 'FH'.$_; } @tables, @update_tables;
@@ -250,7 +249,7 @@ sub new {
 	$self->{db_cache} = 1 if $arg{use_cached_names};
 	
 	my $ft = $arg{feature_type};
-	croak "Missing/invalid argument: feature_type. Must be (allele|pangenome)" unless $ft eq 'allele' || $ft eq 'pangenome';
+	croak "Missing/invalid argument: feature_type. Must be (allele|pangenome)" unless $ft && ($ft eq 'allele' || $ft eq 'pangenome');
 	$self->{feature_type} = $ft;
 	
 	$self->{snp_aware} = 0;
@@ -980,97 +979,6 @@ sub place_lock {
 
     return;
 }
-
-=head2 uniquename_cache
-
-=over
-
-=item Usage
-
-  $obj->uniquename_cache()
-
-=item Function
-
-Maintains a cache of feature.uniquenames present in the database
-
-=item Returns
-
-See Arguements.
-
-=item Arguments
-
-uniquename_cache takes a hash.  
-If it has a key 'validate', it returns the feature_id
-of the feature corresponding to that uniquename if present, 0 if it is not.
-Otherwise, it uses the values in the hash to update the uniquename_cache
-
-Allowed hash keys:
-
-  feature_id
-  type_id
-  organism_id
-  uniquename
-  validate
-
-=back
-
-
-
-sub uniquename_cache {
-	my ($self, %argv) = @_;
-	
-	my @bogus_keys = grep {!/($ALLOWED_UNIQUENAME_CACHE_KEYS)/} keys %argv;
-	
-	if (@bogus_keys) {
-		for (@bogus_keys) {
-		    carp "I don't know what to do with the key ".$_.
-		   " in the uniquename_cache method; it's probably because of a typo\n";
-		}
-		croak;
-	}
-		
-	if ($argv{validate}) {
-		if(defined $argv{type_id}) {  
-			# valididate type too
-			$self->{'queries'}{'validate_type_id'}->execute(
-			    $argv{type_id},
-			    $argv{uniquename},         
-			);
-			
-			my ($feature_id) = $self->{'queries'}{'validate_type_id'}->fetchrow_array; 
-			
-			return $feature_id;
-		} else { 
-			#just validate the uniquename
-			
-			$self->{'queries'}{'validate_uniquename'}->execute($argv{uniquename});
-			my ($feature_id) = $self->{'queries'}{'validate_uniquename'}->fetchrow_array;
-			
-			return $feature_id;
-		}
-	}
-	elsif ($argv{type_id} && $argv{is_public}) { 
-	
-		$self->{'queries'}{'insert_cache_type_id'}->execute(
-		    $argv{feature_id},
-		    $argv{uniquename},
-		    $argv{type_id},    
-		);
-		$self->dbh->commit;
-		return;
-	}
-	elsif ($argv{type_id} && !$argv{is_public}) { 
-	
-		$self->{'queries'}{'insert_cache_private_type_id'}->execute(
-		    $argv{feature_id},
-		    $argv{uniquename},
-		    $argv{type_id},    
-		);
-		$self->dbh->commit;
-		return;
-	}
-}
-=cut
 
 =head2 loci_cache
 
@@ -1839,8 +1747,7 @@ sub validate_feature {
 	
 	
 	if($allele_id) {
-		# existing allele, mark as being updated
-		$self->{loci_cache}{updated_loci}{$un} = $allele_id;
+		# return existing allele ID
 		return('db',$allele_id);
 		
 	} else {
@@ -1973,9 +1880,23 @@ A tracker_id and chr_num in the table pipeline_cache table
 sub retrieve_contig_info {
 	my ($self, $tracking_id, $chr_num) = @_;
 	
-	$self->{'queries'}{'retrieve_id'}->execute($tracking_id, $chr_num);
 	
-	return $self->{'queries'}{'retrieve_id'}->fetchrow_array();
+	my ($contig_collection_id, $contig_id);
+	my $cache_name = 'uploaded_feature';
+	my $cache_key = "tracker_id:$tracking_id.chr_num:$chr_num";
+	
+	if(defined $self->cache($cache_name, $cache_key)) {
+		# Search for matching entries in cached values
+		($contig_collection_id, $contig_id) = @{$self->cache($cache_name, $cache_key)};
+	} else {
+		# Search for existing entries in DB pipeline cache table
+		$self->{'queries'}{'retrieve_id'}->execute($tracking_id, $chr_num);
+		($contig_collection_id, $contig_id) = $self->{'queries'}{'retrieve_id'}->fetchrow_array();
+		
+		$self->cache($cache_name, $cache_key, [$contig_collection_id, $contig_id]) if $contig_id;
+	}
+	
+	return ($contig_collection_id, $contig_id);
 }
 
 =head2 handle_parent
@@ -3677,6 +3598,70 @@ sub push_cache {
 	$dbh->pg_endcopy or croak("calling endcopy for $table failed: $!");
 }
 
+=head2 snp_audit
+
+Scan the reference pangenome sequence alignment for regions of ambiguity (consequetive gaps where at least one gap is new).
+Can't tell which gap is new and which is old.
+
+=cut
+
+sub snp_audit {
+	my $self = shift;
+	my $refid = shift;
+	my $refseq = shift;
+	
+	# Search sequence for extended indels
+	my @regions;
+	my $l = length($refseq)-1;
+	my $pos = 0;
+	my $gap = 0;
+		
+	for my $i (0 .. $l) {
+        my $c = substr($refseq, $i, 1);
+        
+        # Advance position counters
+        if($c eq '-') {
+        	$gap++;
+        } else {
+        	if($gap > 1) {
+        		# extended indel
+        		my @old_snps;
+        		
+        		# find if any columns are new
+        		my $n = 0;
+        		for(my $j=1; $j <= $gap; $j++) {
+        			my ($snp_id, $col) = $self->retrieve_core_snp($refid, $pos, $j);
+        			
+					unless($snp_id) {
+						# new insert
+						$n++;
+					} else {
+						croak "Error: SNP entry in DB for $refid, $pos, $j, $snp_id missing alignment column." unless $col;
+						push @old_snps, [$snp_id, $col];
+					}
+        		}
+        		
+        		if($n && $n != $gap) {
+        			# Have some new columns mixed with some old, region of ambiguity
+        			my %indel_hash;
+        			$indel_hash{p} = $pos;
+					$indel_hash{g} = $gap;
+					$indel_hash{insert_ids} = \@old_snps;
+					$indel_hash{aln_start} = $i-$gap;
+					$indel_hash{n} = $n;
+					push @regions, \%indel_hash;
+        		}
+        		
+        	}
+        	$pos++;
+        	$gap=0 if $gap;
+        }
+	}
+	
+	return \@regions;
+}
+
+
 =head2 handle_insert_blocks
 
 Handle regions of ambiguity (new gap inserted into existing gap), identifying
@@ -3691,6 +3676,8 @@ sub handle_insert_blocks {
 	my $refseq = shift;
 	my $loci_hash = shift;
 	
+	my $v = 0;
+	
 	# Find new snps, update old snps in reach region of ambiguity
 	foreach my $region (@$regions) {
 	
@@ -3699,12 +3686,19 @@ sub handle_insert_blocks {
 		my $aln = $region->{aln_start};
 		my $n   = $region->{n};
 		my @current_insert_ids = @{$region->{insert_ids}};
-        
-        # Compare each insert position with known column characters to distinguish old and new
+		
+		# Compare each insert position with known column characters to distinguish old and new
         
         # Obtain identifying characters for the first old insert column in alignment
         my $insert_column = $self->snp_variations_in_column($current_insert_ids[0][0]);
-        
+		
+		if($v) {
+			print "REF FRAGMENT: $ref_id\n$refseq\n";
+			print "REGION: p: $pos, g: $gap, a: $aln, n: $n\n";
+			print "CURRENT SNPS IN REGION: ",Dumper(@current_insert_ids),"\n";
+			print "ALIGNMENT COLUMNS IN REGION: ",Dumper($insert_column),"\n";
+		}
+	
 		for(my $i=1; $i <= $gap; $i++) {
 			
 			# Compare alignment chars to chars in DB for a single alignment column
@@ -3712,23 +3706,23 @@ sub handle_insert_blocks {
 			my $col_match = 1;
 			foreach my $genome_label (keys %$insert_column) {
 				my $c1 = $insert_column->{$genome_label};
-				my $c2 = substr($loci_hash->{$genome_label}, $aln+$i-1,1);
+				my $c2 = substr($loci_hash->{$genome_label}->{seq}, $aln+$i-1,1);
+				
+				print "Genome $genome_label -- SNP char: $c1, alignment char: $c2 for column: $i, $aln, ",$aln+$i-1,"\n" if $v;
 				
 				if($c1 ne $c2) {
 					croak "Error: Unable to position new and old insertion columns in SNP alignment (encountered non-gap character in genome row that is currently in DB)." unless $c2 eq '-';
+					
 					# Found new snp column
 					
 					# Create new entry in snp_core table and add gap column to SNP alignment
-					my ($block, $column) = $self->add_snp_column('-');
-					
-					print "CREATING NEW GAP COLUMN AT POSITION $pos, $i ($block, $column)\n";
+					my ($column) = $self->add_snp_column('-');
 					
 					my $table = 'snp_core';
-					
 					my $ref_snp_id = $self->nextoid($table);	                                 	
-					$self->print_sc($ref_snp_id,$ref_id,$c2,$pos,$i,$block,$column);
+					$self->print_sc($ref_snp_id,$ref_id,$c2,$pos,$i,$column);
 					$self->nextoid($table,'++');
-					$self->cache('core_snp',"$ref_id.$pos.$i",[$ref_snp_id, $block, $column]);
+					$self->cache('core_snp',"$ref_id.$pos.$i",[$ref_snp_id, $column]);
 					
 					$col_match = 0;
 					$n--;
@@ -3740,15 +3734,19 @@ sub handle_insert_blocks {
         		# This gap position matches the current insert column
         		
         		# Update the position of the insert column
-        		my ($snp_core_id, $block, $column) = @{$current_insert_ids[0]};
+        		croak "Error: The snps in the DB and the current alignment are out of sync." unless @current_insert_ids;
+        		my ($snp_core_id, $column) = @{$current_insert_ids[0]};
         		$self->print_usc($snp_core_id,$ref_id,$pos,$i);
 				
-				$self->cache('core_snp',"$ref_id.$pos.$i",[$snp_core_id, $block, $column]);
+				$self->cache('core_snp',"$ref_id.$pos.$i",[$snp_core_id, $column]);
 				
-				#print "MOVING OLD GAP COLUMN $snp_core_id TO POSITION $pos, $i ($block, $column)\n";
-        		
         		shift @current_insert_ids;
         		$insert_column = $self->snp_variations_in_column($current_insert_ids[0][0]) if @current_insert_ids;
+        		
+        		print "MATCHED $snp_core_id, $column to $pos, $i in ALIGNMENT.\n" if $v;
+        		
+        	} else {
+        		print "NEW GAP COLUMN IN ALIGNMENT at $pos, $i.\n" if $v;
         	}
         	
         }

@@ -201,6 +201,8 @@ sub running_job : Runmode {
 	my $q = $self->query();
 	my $job_id = $q->param("job_id");
 	my $geospatial = $q->param("geospatial");
+	
+	my $groupwise_dir = $self->config_param('dir.groupwise');
 
 	#Check status of job id, if still in progress return to the polling script
 	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
@@ -220,12 +222,12 @@ sub running_job : Runmode {
 	my $group2 = "";
 
 	if ($status ne "in progress") {
-		open my $fh, "<", "/home/genodo/group_wise_data_temp/$status";		
+		open my $fh, "<", "$groupwise_dir/$status";		
 		while(<$fh>) {
 			$_ =~ s/\R//;
 			$html .= "$_";
 		}
-		if (my $user_conf = new Config::Simple("/home/genodo/group_wise_data_temp/".$jobs_resultset->first->get_column('user_config'))) {
+		if (my $user_conf = new Config::Simple("$groupwise_dir/".$jobs_resultset->first->get_column('user_config'))) {
 			$group1 = $user_conf->param('user.gp1IDs');
 			$group2 = $user_conf->param('user.gp2IDs');
 		}
@@ -310,6 +312,17 @@ sub _getStrainInfo {
 sub startForkedGroupCompare {
 	my $self = shift;
 	my ($_username, $_remote_addr, $_session_id, $_group1StrainIds, $_group2StrainIds, $_group1StrainNames, $_group2StrainNames, $_geospatial) = @_;
+	
+	# work directory
+	my $groupwise_dir = $self->config_param('dir.groupwise');
+	croak "Error: missing config file parameter 'dir.groupwise'." unless $groupwise_dir;
+	
+	# log directory
+	my $log_dir = $self->config_param('dir.log');
+	croak "Error: missing config file parameter 'dir.log'." unless $log_dir;
+	
+	# config file
+	my $config_file = $self->config_file;
 
 	#Check for current number of jobs, create a new job_id and fork off new job
 	my $jobs_resultset = $self->dbixSchema->resultset('Job')->search(
@@ -321,15 +334,15 @@ sub startForkedGroupCompare {
 		);
 
 	my $userConFile = File::Temp->new(	TEMPLATE => 'user_conf_tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+		DIR => $groupwise_dir,
 		UNLINK => 0);
 
-	my $_job_id = $1 if ($userConFile->filename =~ /\/home\/genodo\/group_wise_data_temp\/user_conf_temp([\w\d]*)/);
+	my $_job_id = $1 if ($userConFile->filename =~ /user_conf_temp(\w+)$/);
 
 	$_job_id = $jobs_resultset->first->get_column('job_count') +1 . "_" . $_job_id;
 
-	my $userConFileName = $userConFile->filename;
-	$userConFileName =~ s/\/home\/genodo\/group_wise_data_temp\///g;
+	#my $userConFileName = $userConFile->filename;
+	my $userConFileName = $1 if ($userConFile->filename =~ m/\/(user_conf_temp\w+)$/);
 	#Write the job params to the db
 
 	my $newJob = $self->dbixSchema->resultset('Job')->new({
@@ -373,18 +386,19 @@ sub startForkedGroupCompare {
 	$userConString .= "gp2IDs = " . join(',' , @{$_group2StrainIds}) . "\n";
 	$userConString .= "gp1Names = " . join(',', @{$_group1StrainNames}) . "\n";
 	$userConString .= "gp2Names = " . join(',', @{$_group2StrainNames});
-	$userConString .= "\n geospatial = $_geospatial";
+	$userConString .= "\ngeospatial = $_geospatial";
 
 	print $userConFile $userConString or die "$!";
 
 	#Fork program and run loading separately
-	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $FindBin::Bin/../../Modules/genodo.cfg --user_config $userConFile";
+	my $cmd = "perl $FindBin::Bin/../../Data/forked_group_compare.pl --config $config_file --user_config $userConFile";
+	get_logger->debug($cmd);
 	my $daemon = Proc::Daemon->new(
 		work_dir => "$FindBin::Bin/../../Data/",
 		exec_command => $cmd,
-		child_STDERR => "/home/genodo/logs/group_wise_comparisons.log");
+		child_STDERR => "$log_dir/group_wise_comparisons.log");
 	#Fork
-	$self->session->close;
+	$self->session->close;  # Why is this called, method depreciated and new method 'flush' gets called in the teardown method
 	my $kid_pid = $daemon->Init;
 
 	#Right now it redirects to comparison runmode, may want to change that

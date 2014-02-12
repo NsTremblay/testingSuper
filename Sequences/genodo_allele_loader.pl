@@ -175,6 +175,7 @@ $argv{recreate_cache} = $RECREATE_CACHE;
 $argv{save_tmpfiles}  = $SAVE_TMPFILES;
 $argv{vacuum}         = $VACUUM;
 $argv{debug}          = $DEBUG;
+$argv{feature_type}   = 'allele';
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
@@ -241,6 +242,7 @@ elapsed_time('positions loaded');
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
 		my %sequence_group;
+		my $num_ok = 0;  # Some allele sequences fail checks, so the overall number of sequences can drop making trees irrelevant
 		
 		# query gene
 		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
@@ -251,12 +253,12 @@ elapsed_time('positions loaded');
 			my $seq = $2;
 		
 			# Load the sequence
-			allele($query_id,$query_name,$header,$seq,\%sequence_group);
+			$num_ok++ if allele($query_id,$query_name,$header,$seq,\%sequence_group);
 			
 		}
 		
 		# Build tree
-		build_tree($query_id, \%sequence_group);
+		build_tree($query_id, \%sequence_group) if $num_ok > 2;
 	}
 	close $in;
 	
@@ -446,13 +448,15 @@ sub allele {
 		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id);  
 		$chado->nextfeature($is_public, '++');
 		
-		# Update cache
-		$chado->loci_cache(feature_id => $curr_feature_id, uniquename => $uniquename, type_id => $type, genome_id => $contig_collection_id,
-			contig_id => $contig_id, query_id => $query_id, is_public => $pub_value);
-			
 		$allele_id = $curr_feature_id;
+		
 	}
 	
+	# Record event in cache
+	my $event = $is_new ? 'insert' : 'update';
+	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
+		query_id => $query_id, is_public => $pub_value);
+			
 	$seq_group->{$contig_collection} = {
 		genome => $contig_collection_id,
 		allele => $allele_id,
@@ -462,12 +466,11 @@ sub allele {
 		seq => $seq
 	};
 	
+	return 1;
 }
 
 sub build_tree {
 	my ($query_id, $seq_grp) = @_;
-	
-	return unless scalar keys %$seq_grp > 2; # only build trees for groups of 3 or more 
 	
 	# write alignment file
 	my $tmp_file = '/tmp/genodo_allele_aln.txt';

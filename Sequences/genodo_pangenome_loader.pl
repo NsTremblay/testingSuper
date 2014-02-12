@@ -111,7 +111,6 @@ $argv{recreate_cache} = $RECREATE_CACHE;
 $argv{save_tmpfiles}  = $SAVE_TMPFILES;
 $argv{vacuum}         = $VACUUM;
 $argv{debug}          = $DEBUG;
-$argv{lite}           = 1;
 $argv{feature_type}   = 'pangenome';
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
@@ -321,9 +320,9 @@ my @tasks;
 		$do_tree = 1 if $num_seqs > 2; # only build trees for groups of 3 or more
 		$do_snps = 1 if $chado->cache('core',$query_id) && $num_seqs > 1; # need 2 or more sequences for snps
 		
-		push @tasks, [$query_id, $locus_id, $do_tree, $do_snps];
+		push @tasks, [$query_id, $locus_id, $do_tree, $do_snps, 0];
 		
-		open my $out1, '>', $fastadir . "/$query_id.fna" or croak "Error: unable to open file $fastadir/$query_id.fna ($!).";
+		open my $out1, '>', $fastadir . "/$query_id.ffn" or croak "Error: unable to open file $fastadir/$query_id.ffn ($!).";
 	
 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 			my $header = $1;
@@ -336,7 +335,7 @@ my @tasks;
 			my $refseq = $chado->cache('sequence',$query_id);
 			croak "No sequence found for reference pangenome segment $query_id." unless $refseq;
 			
-			open my $out2, '>', $refdir . "/$query_id\_ref.fna" or croak "Error: unable to open file $refdir/$query_id\_snps.fna ($!).";
+			open my $out2, '>', $refdir . "/$query_id\_ref.ffn" or croak "Error: unable to open file $refdir/$query_id\_snps.ffn ($!).";
 			my $refheader = "refseq_$query_id";
 			print $out2 ">$refheader\n$refseq\n";
 			close $out2;
@@ -401,17 +400,18 @@ foreach my $tarray (@tasks) {
 	my ($pg_id, $locus_id, $do_tree, $do_snps) = @$tarray;
 	
 	# Load sequences from file
+	my $num_ok = 0;  # Some locus sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
 	my %sequence_group;
-	my $fasta_file = $fastadir . "/$pg_id.fna";
+	my $fasta_file = $fastadir . "/$pg_id.ffn";
 	my $fasta = Bio::SeqIO->new(-file   => $fasta_file,
 								-format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
 	while(my $entry = $fasta->next_seq()) {
 		my $header = $entry->display_id;
 		my $seq = $entry->seq;
-		pangenome_locus($pg_id,$locus_id,$header,$seq,\%sequence_group);
+		$num_ok++ if pangenome_locus($pg_id,$locus_id,$header,$seq,\%sequence_group);
 	}
 	
-	if($do_tree) {
+	if($do_tree && $num_ok > 2) {
 		my $tree_file = $perldir . "/$pg_id\_tree.perl";
 		open my $in, '<', $tree_file or croak "Error: tree file not found $tree_file ($!).\n";
 		my $tree = <$in>;
@@ -421,7 +421,7 @@ foreach my $tarray (@tasks) {
 		$chado->handle_phylogeny($tree, $pg_id, \%sequence_group);
 	}
 	
-	if($do_snps) {		
+	if($do_snps && $num_ok > 1) {		
 		# Compute snps relative to the reference alignment for all new loci
 		# Performed by parallel script, load data for each genome
 		foreach my $id (keys %sequence_group) {
@@ -615,7 +615,6 @@ sub pangenome_locus {
 	my $event = $is_new ? 'insert' : 'update';
 	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
-		
 	
 	$seq_group->{$contig_collection} = {
 		genome => $contig_collection_id,
@@ -624,9 +623,9 @@ sub pangenome_locus {
 		contig => $contig_id,
 		public => $is_public,
 		is_new => $is_new,
-		seq => $seq
 	};
 	
+	return 1;
 }
 
 sub find_snps {
@@ -635,7 +634,6 @@ sub find_snps {
 	my $genome = shift;
 	my $genome_info = shift;
 	
-	my $comp_seq = $genome_info->{seq};
 	my $contig_collection = $genome_info->{genome};
 	my $contig = $genome_info->{contig};
 	my $locus = $genome_info->{allele};

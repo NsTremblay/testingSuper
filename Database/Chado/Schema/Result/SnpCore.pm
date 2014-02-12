@@ -30,7 +30,7 @@ __PACKAGE__->table("snp_core");
   is_nullable: 0
   sequence: 'snp_core_snp_core_id_seq'
 
-=head2 pangenome_region
+=head2 pangenome_region_id
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -55,12 +55,6 @@ __PACKAGE__->table("snp_core");
   default_value: 0
   is_nullable: 0
 
-=head2 aln_block
-
-  data_type: 'integer'
-  default_value: 0
-  is_nullable: 0
-
 =head2 aln_column
 
   data_type: 'integer'
@@ -77,15 +71,13 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "snp_core_snp_core_id_seq",
   },
-  "pangenome_region",
+  "pangenome_region_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "allele",
   { data_type => "char", default_value => "n", is_nullable => 0, size => 1 },
   "position",
   { data_type => "integer", default_value => -1, is_nullable => 0 },
   "gap_offset",
-  { data_type => "integer", default_value => 0, is_nullable => 0 },
-  "aln_block",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
   "aln_column",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
@@ -109,7 +101,7 @@ __PACKAGE__->set_primary_key("snp_core_id");
 
 =over 4
 
-=item * L</pangenome_region>
+=item * L</pangenome_region_id>
 
 =item * L</position>
 
@@ -119,13 +111,14 @@ __PACKAGE__->set_primary_key("snp_core_id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("snp_core_c1", ["pangenome_region", "position", "gap_offset"]);
+__PACKAGE__->add_unique_constraint(
+  "snp_core_c1",
+  ["pangenome_region_id", "position", "gap_offset"],
+);
 
 =head2 C<snp_core_c2>
 
 =over 4
-
-=item * L</aln_block>
 
 =item * L</aln_column>
 
@@ -133,7 +126,7 @@ __PACKAGE__->add_unique_constraint("snp_core_c1", ["pangenome_region", "position
 
 =cut
 
-__PACKAGE__->add_unique_constraint("snp_core_c2", ["aln_block", "aln_column"]);
+__PACKAGE__->add_unique_constraint("snp_core_c2", ["aln_column"]);
 
 =head1 RELATIONS
 
@@ -148,7 +141,7 @@ Related object: L<Database::Chado::Schema::Result::Feature>
 __PACKAGE__->belongs_to(
   "pangenome_region",
   "Database::Chado::Schema::Result::Feature",
-  { feature_id => "pangenome_region" },
+  { feature_id => "pangenome_region_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
@@ -163,7 +156,7 @@ Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
 __PACKAGE__->has_many(
   "private_snp_variations",
   "Database::Chado::Schema::Result::PrivateSnpVariation",
-  { "foreign.snp" => "self.snp_core_id" },
+  { "foreign.snp_id" => "self.snp_core_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -178,13 +171,13 @@ Related object: L<Database::Chado::Schema::Result::SnpVariation>
 __PACKAGE__->has_many(
   "snp_variations",
   "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.snp" => "self.snp_core_id" },
+  { "foreign.snp_id" => "self.snp_core_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:59
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AsMC/KnwbYesLgRIsazzpg
+# Created by DBIx::Class::Schema::Loader v0.07039 @ 2014-02-03 14:19:47
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wE1Czr3iGq9VOLrIDToOMA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

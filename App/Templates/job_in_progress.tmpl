@@ -58,7 +58,7 @@ function doPoll() {
 		json = JSON.parse(data);
 		group1 = json.group1;
 		group2 = json.group2;
-		//console.log(json);
+		console.log(json);
 		if (json.status != 'in progress') {
 			$('#status').empty();
 			geospatial_ready_results = json.geospatial;

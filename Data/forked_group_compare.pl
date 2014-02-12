@@ -17,10 +17,9 @@ use File::Temp;
 use JSON;
 use Time::HiRes qw( time );
 
-#All logging to STDERR to the file specified
-open(STDERR, ">>/home/genodo/logs/group_wise_comparisons.log") || die "Error stderr: $!";
+BEGIN { $ENV{DBIC_TRACE} = 1; }
 
-my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI);
+my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $groupwise_dir, $log_dir);
 my ($USERCONFIG, $USERNAME, $USERREMOTEADDR, $USERSESSIONID, $USERJOBID, $USERGP1STRAINIDS, $USERGP2STRAINIDS, $USERGP1STRAINNAMES, $USERGP2STRAINNAMES, $GEOSPATIAL);
 
 GetOptions('config=s' => \$CONFIG, 'user_config=s' => \$USERCONFIG) or (exit -1);
@@ -34,10 +33,23 @@ if(my $db_conf = new Config::Simple($CONFIG)) {
 	$DBHOST = $db_conf->param('db.host');
 	$DBPORT = $db_conf->param('db.port');
 	$DBI = $db_conf->param('db.dbi');
+	
+	# work directory
+	$groupwise_dir = $db_conf->param('dir.groupwise');
+	croak "Error: missing config file parameter 'dir.groupwise'." unless $groupwise_dir;
+	
+	# log directory
+	$log_dir = $db_conf->param('dir.log');
+	croak "Error: missing config file parameter 'dir.log'." unless $log_dir;
+	
 }
 else {
 	die Config::Simple->error();
 }
+
+#All logging to STDERR to the file specified
+open(STDERR, ">>$log_dir/group_wise_comparisons.log") || die "Error stderr: $!";
+
 
 #Set user config params here
 if (my $user_conf = new Config::Simple($USERCONFIG)) {
@@ -110,7 +122,7 @@ sub getBinaryData {
 
 	# #Print results to file
 	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+		DIR => $groupwise_dir,
 		UNLINK => 0);
 
 	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
@@ -122,8 +134,7 @@ sub getBinaryData {
 		print $tmp $allResultRow->{'marker_id'} . "\t" . $allResultRow->{'group1Present'} . "\t" . $allResultRow->{'group1Absent'} . "\t" . $allResultRow->{'group2Present'} . "\t" . $allResultRow->{'group2Absent'} . "\t" . $allResultRow->{'pvalue'} . "\n";
 	}
 
-	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///g;
+	my ($temp_file_name) = ($tmp->filename =~ m/\/(temp\w+)$/);
 
 	push($results, {'file_name' => $temp_file_name});
 	push($results, {'gp1_names' => $group1GenomeNames});
@@ -174,7 +185,7 @@ sub getSnpData {
 	$fet->group1($group1GenomeNames);
 	$fet->group2($group2GenomeNames);
 	$fet->group1Markers(\@g1_ordered_rows);
-	$fet->group2Markers(\@g1_ordered_rows);
+	$fet->group2Markers(\@g2_ordered_rows);
 	
 	# Merge results as each nucleotide is analyzed
 	my @combineAllResults;
@@ -216,7 +227,7 @@ sub getSnpData {
 
 	# #Print results to file
 	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+		DIR => $groupwise_dir,
 		UNLINK => 0);
 
 	print $tmp "Group 1: " . join(", ", @{$group1GenomeNames}) . "\n" . "Group 2: " . join(", ", @{$group2GenomeNames}) . "\n";   
@@ -227,8 +238,7 @@ sub getSnpData {
 		print $tmp $sortedAllResultRow->{'marker_id'} . "\t" . $sortedAllResultRow->{'test_char'} . "\t" . $sortedAllResultRow->{'group1Present'} . "\t" . $sortedAllResultRow->{'group1Absent'} . "\t" . $sortedAllResultRow->{'group2Present'} . "\t" . $sortedAllResultRow->{'group2Absent'} . "\t" . $sortedAllResultRow->{'pvalue'} . "\n";
 	}
 
-	my $temp_file_name = $tmp->filename;
-	$temp_file_name =~ s/\/home\/genodo\/group_wise_data_temp\///g;
+	my ($temp_file_name) = ($tmp->filename =~ m/\/(temp\w+)$/);
 	
 	push(@results, {'file_name' => $temp_file_name});
 	push(@results, {'gp1_names' => $group1GenomeNames});
@@ -246,14 +256,14 @@ sub writeOutHtml {
 	}
 
 	# #Print results to file
-	my $tmp = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
-		DIR => '/home/genodo/group_wise_data_temp/',
+	my ($tmp, $filename) = File::Temp->new(	TEMPLATE => 'tempXXXXXXXXXX',
+		DIR => $groupwise_dir,
 		SUFFIX => '.html',
 		UNLINK => 0);
 
-	my $tempFileName = $tmp->filename;
-	$tempFileName =~ s/\/home\/genodo\/group_wise_data_temp\///g;
-
+	my ($tempFileName) = ($tmp->filename =~ m/\/(temp\w+.html)$/);
+	print STDERR "<".$tmp->filename.">\n";
+	
 	#Print HTML output START
 	my $HTML = '<div class="span12" style="margin-bottom:20px">';
 	$HTML .= '<h1>GROUPWISE RESULTS PAGE</h1>';
@@ -583,22 +593,9 @@ sub countSnps {
 	my %g2_snps;
 	
 	
-	
 	if(@$public_g1_genomes) {
 		
-		my $g1_counts = $schema->resultset('SnpVariation')->search(
-			{
-				'contig_collection' => $public_g1_genomes,
-				'featureprops.type_id' => $type_ids->{panseq_function}
-			},
-			{
-				join => {'snp' => {'pangenome_region' => 'featureprops'}},
-				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
-				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
-				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
-			}
-		);
+		my $g1_counts = snpQuery(1, $public_g1_genomes);
 		
 		while (my $snp_row = $g1_counts->next) {
 			my $snp_id = $snp_row->{snp};
@@ -633,19 +630,7 @@ sub countSnps {
 	
 	if(@$private_g1_genomes) {
 		
-		my $g1_counts = $schema->resultset('PrivateSnpVariation')->search(
-			{
-				'contig_collection' => $private_g1_genomes,
-				'featureprops.type_id' => $type_ids->{panseq_function}
-			},
-			{
-				join => {'snp' => {'pangenome_region' => 'featureprops'}},
-				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
-				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
-				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
-			}
-		);
+		my $g1_counts = snpQuery(0, $private_g1_genomes);
 		
 		while (my $snp_row = $g1_counts->next) {
 			my $snp_id = $snp_row->{snp};
@@ -675,19 +660,8 @@ sub countSnps {
 	}
 	
 	if(@$public_g2_genomes) {
-		 my $g2_counts = $schema->resultset('SnpVariation')->search(
-			{
-				'contig_collection' => $public_g2_genomes,
-				'featureprops.type_id' => $type_ids->{panseq_function}
-			},
-			{
-				join => {'snp' => {'pangenome_region' => 'featureprops'}},
-				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
-				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
-				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
-			}
-		);
+		
+		my $g2_counts = snpQuery(1, $public_g2_genomes);
 		
 		while (my $snp_row = $g2_counts->next) {
 			my $snp_id = $snp_row->{snp};
@@ -720,19 +694,7 @@ sub countSnps {
 	
 	if(@$private_g2_genomes) {
 		
-		my $g2_counts = $schema->resultset('PrivateSnpVariation')->search(
-			{
-				'contig_collection' => $private_g2_genomes,
-				'featureprops.type_id' => $type_ids->{panseq_function}
-			},
-			{
-				join => {'snp' => {'pangenome_region' => 'featureprops'}},
-				select => ['me.snp', 'snp.pangenome_region','featureprops.value', 'me.allele', 'snp.allele', {count => 'me.snp_variation_id'} ],
-				as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
-				group_by => [qw/me.snp snp.pangenome_region featureprops.value me.allele snp.allele/],
-				result_class => 'DBIx::Class::ResultClass::HashRefInflator'
-			}
-		);
+		my $g2_counts = snpQuery(0, $private_g2_genomes);
 		
 		while (my $snp_row = $g2_counts->next) {
 			my $snp_id = $snp_row->{snp};
@@ -763,6 +725,28 @@ sub countSnps {
 	}
 	
 	return(\%g1_snps, \%g2_snps);
+}
+
+# Given a list of gpids and private/public designation, Return SNP query resultset
+sub snpQuery {
+	my ($is_public, $gpid_arrayref) = @_;
+	
+	my $table = $is_public ? 'SnpVariation' : 'PrivateSnpVariation'; 
+	my $count_rs = $schema->resultset($table)->search(
+		{
+			'contig_collection_id' => $gpid_arrayref,
+			'featureprops.type_id' => $type_ids->{panseq_function}
+		},
+		{
+			join => {'snp' => {'pangenome_region' => 'featureprops'}},
+			select => ['me.snp_id', 'snp.pangenome_region_id','featureprops.value', 'me.allele', 'snp.allele', { count => 'me.snp_variation_id'} ],
+			as => ['snp', 'fragment', 'function', 'allele', 'background', 'count'],
+			group_by => [qw/me.snp_id snp.pangenome_region_id featureprops.value me.allele snp.allele/],
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator'
+		}
+	);
+	
+	return $count_rs;
 }
 
 
@@ -826,7 +810,7 @@ sub parse_genome_ids {
 		}
 	}
 	
-	return(\@public_g1_genomes, \@private_g2_genomes, \@public_g2_genomes, \@private_g2_genomes);
+	return(\@public_g1_genomes, \@private_g1_genomes, \@public_g2_genomes, \@private_g2_genomes);
 	
 }
 

@@ -15,7 +15,6 @@ use Phylogeny::Tree;
 use Phylogeny::TreeBuilder;
 use Time::HiRes qw( time );
 
-
 =head1 NAME
 
 $0 - loads panseq VF / AMR analysis into genodo's chado database. This program is written for use in the genodo_pipeline.pl script.
@@ -174,20 +173,22 @@ $argv{save_tmpfiles}    = $SAVE_TMPFILES;
 $argv{vacuum}           = $VACUUM;
 $argv{debug}            = $DEBUG;
 $argv{use_cached_names} = 1; # Pull contig names from DB tmp table
-$argv{snp_capable}      = 1; # Prepare snp loading methods
+$argv{feature_type}     = 'pangenome';
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
-# Intialize the Tree building module
-my $tree_builder = Phylogeny::TreeBuilder->new();
-my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
-
 # Result files
+my $function_file = $ROOT . 'panseq_nr_results/anno.txt';
+#my $msa_dir = $ROOT . 'pg_msa/';
+#my $tree_dir = $ROOT . 'pg_tree/';
 my $allele_fasta_file = $ROOT . 'panseq_pg_results/locus_alleles.fasta';
 my $allele_pos_file = $ROOT . 'panseq_pg_results/pan_genome.txt';
-my $function_file = $ROOT . 'panseq_nr_results/anno.txt';
-my $msa_dir = $ROOT . 'pg_msa/';
-my $tree_dir = $ROOT . 'pg_tree/';
+my $msa_dir = $ROOT . 'fasta/';
+my $tree_dir = $ROOT . 'perl_tree/';
+my $refseq_dir = $ROOT . 'refseq/';
+my $snp_positions_dir  = $ROOT . 'snp_positions/';
+my $snp_alignments_dir = $ROOT . 'snp_alignments/';
+my $job_file = $ROOT . 'jobs.txt';
 
 
 # BEGIN
@@ -226,7 +227,17 @@ while (my $line = <$in>) {
 	if($allele > 0) {
 		# Hit
 		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
-		$loci{$locus}->{$genome} = {
+		my $query_id;
+		
+		if($locus =~ m/^nr_/) {
+			$query_id = $locus;
+		} elsif($locus =~ m/(pgcor_|pgacc_)(\d+)/) {
+			$query_id = $2;
+		} else {
+			croak "Unrecognized locus name format $locus in pan_genome.txt file.";
+		}
+		
+		$loci{$query_id}->{$genome} = {
 			allele => $allele,
 			start => $start,
 			end => $end,
@@ -238,61 +249,60 @@ while (my $line = <$in>) {
 
 close $in;
 
-# Load loci sequences
-my ($new, $replace, $pangenome) = load_msa();
+# Load loci hits
+my @jobs;
+open(my $jfh, '<', $job_file) or croak "Error: unable to read file $job_file ($!).\n";
 
+while(my $line = <$jfh>) {
+	chomp $line;
+	my @job = split(/\t/, $line);
+	
+	push @jobs, \@job;
+}
+
+close $jfh;
 
 # Create DB entries
-foreach my $pgregion (keys %$new) {
+foreach my $job (@jobs) {
+
+	my ($query_id, $do_tree, $do_snp, $add_seq) = @$job;
 	
-	my %sequence_group;
-	my $allele_hash = $new->{$pgregion};
-	
-	# pangenome
-	my $query_id = $pangenome->{$pgregion}->{id};
-	my $in_core = $pangenome->{$pgregion}->{core}; # should be 0
-	
-	my $tree_file = $query_id;
-	
-	if($pangenome->{$pgregion}->{novel}) {
-		# If the pangenome reference is novel, add it to database
+	my $pg_feature_id;
+	if($query_id =~ m/^nr_/) {
+		# Add new pangenome fragments to DB
 		my $func = undef;
 		my $func_id = undef;
 		
-		if($func_anno{$pgregion}) {
-			($func_id, $func) = @{$func_anno{$pgregion}};
+		# Blast function
+		if($func_anno{$query_id}) {
+			($func_id, $func) = @{$func_anno{$query_id}};
+		} else {
+			warn "Novel pangenome fragment $query_id has no BLAST-based function prediction";
 		}
 		
-		my $seq = $pangenome->{$pgregion}->{seq};
+		# Sequence
+		my $refseq_file = $refseq_dir . "$query_id\_ref.ffn";
+		open(my $rfh, '<', $refseq_file) or croak "Error: unable to read refseq file $refseq_file ($!).\n";
+		
+		<$rfh>; # header
+		my $seq = <$rfh>; # sequence
+		chomp $seq;
+		
+		close $rfh;
+		
 		$seq =~ tr/-//; # Remove gaps, store only raw sequence
+
+		# Core status is always accessory for new pangenome fragments		
+		my $in_core = 0;
+
+		$pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
+	} else {
+		# Pangenome fragment already in DB
+		$pg_feature_id = $query_id;
+	}
+	
+	process_locus($query_id, $pg_feature_id, $do_tree, $do_snp);
 		
-		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
-		
-		# Cache feature id info for reference pangenome fragment
-		$query_id = $pg_feature_id;
-		$tree_file = $pgregion;
-		
-	}
-	
-	# Create DB entries for each new loci
-	foreach my $header (keys %$allele_hash) {
-		add_pangenome_loci($pgregion, $query_id, $header, $allele_hash->{$header}, \%sequence_group);
-	}
-	
-	# Update sequences for loci previously loaded in DB (in case alignments have changed).
-	my $update_hash = $replace->{$pgregion};
-	foreach my $header (keys %$update_hash) {
-		update_pangenome_loci($header, $update_hash->{$header}, \%sequence_group);
-	}
-	
-	# Compute and load tree for this segment
-	load_tree($tree_file, $query_id, \%sequence_group);
-	
-	# Compute and load snps for this segment
-	if($in_core) {
-		compute_snps($query_id, $pangenome->{$pgregion}->{seq}, \%sequence_group, $update_hash);
-	}
-	
 }
 
 # Finalize and load into DB
@@ -312,25 +322,6 @@ exit(0);
 
 =head2 cleanup_handler
 
-=over
-
-=item Usage
-
-  cleanup_handler
-
-=item Function
-
-Removes table lock and any entries added to the uniquename change in tmp table.
-
-=item Returns
-
-void
-
-=item Arguments
-
-filename of Data::Dumper file containing data hash.
-
-=back
 
 =cut
 
@@ -338,7 +329,6 @@ sub cleanup_handler {
     warn "@_\nAbnormal termination, trying to clean up...\n\n" if @_;  #gets the message that the die signal sent if there is one
     if ($chado && $chado->dbh->ping) {
         
-        $chado->cleanup_tmp_table;
         if ($lock) {
             warn "Trying to remove the run lock (so that --remove_lock won't be needed)...\n";
             $chado->remove_lock; #remove the lock only if we've set it
@@ -347,6 +337,52 @@ sub cleanup_handler {
         print STDERR "Exiting...\n";
     }
     exit(1);
+}
+
+=head2 process_gene
+
+
+=cut
+
+sub process_locus {
+	my ($locus_name, $pg_feature_id, $do_tree, $do_snp) = @_;
+	
+	# Load allele sequences
+	my $num_ok = 0;  # Some loci sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
+	my $msa_file = $msa_dir . "$locus_name.ffn";
+	my $has_new = 0;
+	my %sequence_group;
+		
+	my $fasta = Bio::SeqIO->new(-file   => $msa_file,
+                                -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $msa_file ($!).";
+    
+	while (my $entry = $fasta->next_seq) {
+		my $id = $entry->display_id;
+			
+		if($id =~ m/^upl_/) {
+			# New, add
+			# NOTE: will check if attempt to insert allele multiple times
+			$num_ok++ if add_pangenome_loci($locus_name, $pg_feature_id, $id, $entry->seq, \%sequence_group);
+			$has_new = 1;
+		} else {
+			# Already in DB, update
+			# NOTE: DOES NOT CHECK IF SAME ALLELE GETS UPDATED MULTIPLE TIMES,
+			# If this is later deemed necessary, need uniquename to track alleles
+			update_pangenome_loci($id, $entry->seq, \%sequence_group, $do_snp);
+			# No non-fatal checks on done on update ops. i.e. checks where the program can discard sequence and continue.
+			# So if you get to this point, you can count this updated sequence.
+			$num_ok++; 
+		}
+	}
+		
+	die "Locus $locus_name alignment contains no new genome sequences. Why was it run then? (likely indicates error)." unless $has_new;
+	
+	# Load tree
+	load_tree($locus_name, $pg_feature_id, \%sequence_group) if $do_tree && $num_ok > 2;
+	
+	# Load snps
+	load_snps($snp_positions_dir, $refseq_dir, $pg_feature_id, \%sequence_group) if $do_snp && $num_ok > 1;
+	
 }
 
 =head2 add_pangenome_loci
@@ -405,58 +441,55 @@ sub add_pangenome_loci {
 	my $uniquename = "locus:$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
-	my $allele_id = $chado->validate_allele($pg_id,$contig_collection_id,$uniquename,$pub_value);
+	my ($result, $allele_id) = $chado->validate_feature($pg_id,$contig_collection_id,$uniquename,$pub_value);
 	
-	if($allele_id) {
-		# Allele matching properties already exists in table.
-		croak "Locus matching properties already exists in DB \n".
-			"(query:$pg_id, cc:$contig_collection_id, c:$contig_id, un:$uniquename, public:$pub_value).";
-			
-	} else {
-		# NEW
-		# Create allele feature
-		
-		# ID
-		my $curr_feature_id = $chado->nextfeature($is_public);
-	
-		# retrieve genome data
-		my $collection_info = $chado->collection($contig_collection_id, $is_public);
-		#my $contig_info = $chado->contig($contig_id, $is_public);
-		
-		# organism
-		my $organism = $collection_info->{organism};
-		
-		# external accessions
-		my $dbxref = '\N';
-		
-		# uniquename & name
-		my $name = "$pg_id locus";
-		my $ok_name = $chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
-		unless($ok_name) {
-			die "Duplicate allele $uniquename.";
-		}
-		
-		# Feature relationships
-		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
-		$chado->handle_pangenome_loci($curr_feature_id, $pg_id, $is_public);
-		
-		# Additional Feature Types
-		$chado->add_types($curr_feature_id, $is_public);
-		
-		# Sequence location
-		$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
-		
-		# Print feature
-		my $upload_id = $is_public ? undef : $collection_info->{upload};
-		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
-		$chado->nextfeature($is_public, '++');
-		
-		# Update cache
-		$chado->loci_cache(feature_id => $curr_feature_id, uniquename => $uniquename, type_id => $type, genome_id => $contig_collection_id,
-			contig_id => $contig_id, query_id => $pg_id, is_public => $pub_value);
-			
-		$allele_id = $curr_feature_id;
+	if($result eq 'new_conflict') {
+		#warn "Attempt to add new region multiple times. Dropping duplicate of pangenome region $uniquename.";
+		return 0;
 	}
+	if($result eq 'db_conflict') {
+		warn "Attempt to update existing region multiple times. Skipping duplicate pangenome region $uniquename.";
+		return 0;
+	}
+	
+	# NEW
+	# Create allele feature
+	
+	# ID
+	my $curr_feature_id = $chado->nextfeature($is_public);
+
+	# retrieve genome data
+	my $collection_info = $chado->collection($contig_collection_id, $is_public);
+	#my $contig_info = $chado->contig($contig_id, $is_public);
+	
+	# organism
+	my $organism = $collection_info->{organism};
+	
+	# external accessions
+	my $dbxref = '\N';
+	
+	# name
+	my $name = "$pg_id locus";
+	
+	# Feature relationships
+	$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
+	$chado->handle_pangenome_loci($curr_feature_id, $pg_id, $is_public);
+	
+	# Additional Feature Types
+	$chado->add_types($curr_feature_id, $is_public);
+	
+	# Sequence location
+	$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
+	
+	# Print feature
+	my $upload_id = $is_public ? undef : $collection_info->{upload};
+	$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
+	$chado->nextfeature($is_public, '++');
+	
+	# Record event in cache
+	$allele_id = $curr_feature_id;
+	$chado->loci_cache('insert' => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
+		query_id => $pg_id, is_public => $pub_value);
 	
 	$seq_group->{$header} = {
 		genome => $contig_collection_id,
@@ -468,99 +501,12 @@ sub add_pangenome_loci {
 		seq => $seq
 	};
 	
-}
-
-sub load_msa {
-	
-	# Hashes to store sequences for new and previously loaded genomes
-	my %new;
-	my %replace;
-	my %pangenome;
-	
-	# Load allele sequences into memory
-	my $loci_file = $msa_dir . "loci.txt";
-	open($in, "<", $loci_file) or die "Unable to read file $loci_file containing list of loci ($!).\n";
-	while(my $locus = <$in>) {
-		chomp $locus;
-		my ($ftype, $query_id) = ($locus =~ m/(\w+_)(\d+)/);
-		croak "Missing query gene ID in locus line: $_\n" unless $query_id && $ftype;
-		
-		# Process locus tag to determine situation: new pangenome region, old pangenome region in core/accessory
-		my $in_core;
-		my $novel;
-		if($ftype eq 'nr_') {
-			$query_id = "nr_$query_id";
-			$in_core = 0;
-			$novel = 1;
-		} elsif($ftype eq 'pgacc_') {
-			$in_core = 0;
-			$novel = 0;
-		} elsif($ftype eq 'pgcor_') {
-			$in_core = 1;
-			$novel = 0;
-		} else {
-			croak "Invalid locus tag $locus in pangenome loci list loci.txt.";
-		}
-		
-		my $msa_file = $msa_dir . "$query_id.aln";
-		my $has_new = 0;
-		my $has_ref = 0;
-		
-		my $fasta = Bio::SeqIO->new(-file   => $msa_file,
-                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $msa_file ($!).";
-    
-		while (my $entry = $fasta->next_seq) {
-			my $id = $entry->display_id;
-			
-			if($id =~ m/^upl_/) {
-				# New
-				$new{$locus}{$id} = $entry->seq;
-				$has_new = 1;
-				
-			} elsif($id =~ m/^pg_(\d+)/) {
-				# Reference sequence, new/old, in/out core determined from locus tag in loci.txt
-				
-				$pangenome{$locus} = {
-					id => $1,
-					seq => $entry->seq,
-					novel => $novel,
-					core => $in_core
-				};
-				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
-				die "Conflicting loci names $id and $locus in fasta file and loci.txt" if $novel;
-				$has_ref = 1;
-				
-			} elsif($id =~ m/^nr_(\d+)/) {
-				# Reference sequence, new/old, in/out core determined from locus tag in loci.txt
-				
-				$pangenome{$locus} = {
-					id => $1,
-					seq => $entry->seq,
-					novel => $novel,
-					core => $in_core
-				};
-				die "Multiple reference pangenome sequences in alignment file $msa_file." if $has_ref;
-				die "Conflicting loci names $id and $locus in fasta file and loci.txt" unless $novel;
-				$has_ref = 1;
-				
-			} else {
-				# Other genome loci already in DB
-				$replace{$locus}{$id} = $entry->seq;
-			}
-		}
-		
-		die "Locus $locus alignment contains no new genome sequences. Why was it run then? (likely indicates error)." unless $has_new;
-		die "Locus $locus alignment contains no reference pangenome sequences." unless $has_ref;
-	}
-	
-	close $in;
-	
-	return(\%new, \%replace, \%pangenome);
+	return 1;
 }
 
 
 sub update_pangenome_loci {
-	my ($header, $seq, $seq_group) = @_;
+	my ($header, $seq, $seq_group, $do_snp) = @_;
 	
 	# IDs
 	my ($access, $contig_collection_id, $locus_id) = ($header =~ m/(public|private)_(\d+)\|(\d+)/);
@@ -584,41 +530,21 @@ sub update_pangenome_loci {
 	$seq_group->{$header} = {
 		genome => $contig_collection_id,
 		allele => $locus_id,
-		#copy => 1,
 		public => $is_public,
 		is_new => 0
 	};
 }
 
-#sub update_reference_fragment {
-#	my ($pg_id, $seq) = @_;
-#	
-#	# privacy setting
-#	my $is_public = 1; # Pangenome regions are always in public table
-#	my $pub_value = 'TRUE';
-#	
-#	# alignment sequence
-#	my $residues = $seq;
-#	$seq =~ tr/-//;
-#	my $seqlen = length($seq);
-#	
-#	# type 
-#	my $type = $chado->feature_types('pangenome');
-#	
-#	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
-#	$chado->print_uf($pg_id,$pg_id,$type,$seqlen,$residues,$is_public);
-#}
-
-
 sub load_tree {
 	my ($tname, $query_id, $seq_group) = @_;
 	
-	return unless scalar keys %$seq_group > 2; # need 3 or more sequences for trees
+	my $tree_file = $tree_dir . "$tname\_tree.perl";
 	
-	my $tree_file = $tree_dir . "$tname.phy";
-	
-	# slurp tree and convert to perl format
-	my $tree = $tree_io->newickToPerlString($tree_file);
+	# slurp tree
+	open(my $tfh, '<', $tree_file) or croak "Error: unable to read tree file $tree_file ($!).\n";
+	my $tree = <$tfh>;
+	chomp $tree;
+	close $tfh;
 	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_group);
@@ -626,27 +552,55 @@ sub load_tree {
 }
 
 
-sub compute_snps {
-	my ($query_id, $refseq, $seq_group, $db_snp_alignments) = @_;
+sub load_snps {
+	my ($snp_positions_dir, $refseq_dir, $query_id, $sequence_group) = @_;
 	
-	return unless scalar keys %$seq_group > 1; # need 2 or more sequences for snps
+	# Load the newly aligned reference pangenome sequence
+	my $aln_file = "$refseq_dir/$query_id\_aln.ffn";
+	open(my $afh, '<', $aln_file) or croak "Error: unable to read reference pangenome alignment file $aln_file ($!).\n";
+	<$afh>; # header
+	my $refseq = <$afh>;
+	close $afh; 
 	
-	my $ambiguous_regions = $chado->snp_audit($query_id,$refseq);
-	$chado->handle_insert_blocks($ambiguous_regions, $query_id, $refseq, $db_snp_alignments) if @$ambiguous_regions;
-	
-	# Compute snps for each sequence relative to the reference
-	foreach my $genome (keys %$seq_group) {
+	# Regions in the reference pangenome sequence containing newly inserted gaps adjacent to existing gaps need to be
+	# resolved.
+	# At the end of handle_insert_blocks, all gaps in these regions will be added as snp_core entries.
+	my $ambiguous_regions = $chado->snp_audit($query_id, $refseq);
+	if(@$ambiguous_regions) {
+		# Need to load new alignments into memory
+		my $snp_aln_file = "$snp_alignments_dir/$query_id\_snp.ffn";
+		my $fasta = Bio::SeqIO->new(-file   => $snp_aln_file,
+									-format => 'fasta') or croak "Error: unable to open Bio::SeqIO stream to $snp_aln_file ($!).";
+
+		while (my $entry = $fasta->next_seq) {
+			my $id = $entry->display_id;
+			
+			next if $id =~ m/^refseq/; # already have refseq in memory
+			
+			croak "Error: Unrecognized genome $id in alignment file" unless defined $sequence_group->{$id};
+			
+			$sequence_group->{$id}->{seq} = $entry->seq;
+		}
 		
-		if($seq_group->{$genome}->{is_new}) {
-			my $ghash = $seq_group->{$genome};
-			find_snps($refseq, $query_id, $ghash);
+		$chado->handle_insert_blocks($ambiguous_regions, $query_id, $refseq, $sequence_group);
+	}
+	
+
+	# Compute snps relative to the reference alignment for all new loci
+	# Performed by parallel script, load data for each genome
+	foreach my $id (keys %$sequence_group) {
+		if($sequence_group->{$id}->{is_new}) {
+			my $ghash = $sequence_group->{$id};
+			find_snps($snp_positions_dir, $query_id, $id, $ghash);
 		}
 	}
 }
 
+
 sub find_snps {
-	my $ref_seq = shift;
+	my $data_dir = shift;
 	my $ref_id = shift;
+	my $genome = shift;
 	my $genome_info = shift;
 	
 	my $comp_seq = $genome_info->{seq};
@@ -658,50 +612,18 @@ sub find_snps {
 	# Add row in SNP alignment table for genome, if it doesn't exist
 	$chado->add_snp_row($contig_collection,$is_public);
 	
-	# Iterate through each aligned sequence, identifying mismatches
-	my $l = length($ref_seq)-1;
-	my $rpos = 0;
-	my $rgap_offset = 0;
+	# Load snp positions from file
+	my $pos_file = $data_dir . "/$ref_id\__$genome\__snp_positions.txt";
+	open(my $in, "<", $pos_file) or croak "Error: unable to read file $pos_file ($!).\n";
 	
-	my $l2 = length($comp_seq)-1;
-	croak "Error: alignment lengths do not match for reference sequence $ref_id and locus sequence $locus ($l vs $l2).\n" if $l != $l2;
-	
-	for my $i (0 .. $l) {
-        my $c1 = substr($comp_seq, $i, 1);
-        my $c2 = substr($ref_seq, $i, 1);
-        
-        # Advance position counters     
-        if($c2 eq '-') {
-        	$rgap_offset++;
-        } else {
-        	$rpos++;
-        	$rgap_offset = 0 if $rgap_offset;
-        }
-       
-        if($c1 ne $c2) {
-        	# Found snp or indel
-        	$chado->handle_snp($ref_id, $c2, $rpos, $rgap_offset, $contig_collection, $contig, $locus, $c1, $is_public);
-        }
+	while(my $snp_line = <$in>) {
+		chomp $snp_line;
+		my ($pos, $gap, $refc, $seqc) = split(/\t/, $snp_line);
+		croak "Error: invalid snp position format on line $snp_line." unless $seqc;
+		$chado->handle_snp($ref_id, $refc, $pos, $gap, $contig_collection, $contig, $locus, $seqc, $is_public);
 	}
-}
-
-sub build_genome_tree {
 	
-	# write alignment file
-	my $tmp_file = $TMPDIR . 'genodo_genome_aln.txt';
-	$tree_io->writeSnpAlignment($tmp_file);
-	
-	# clear output file for safety
-	my $tree_file = $TMPDIR . 'genodo_genome_tree.txt';
-	open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
-	close $out;
-	
-	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
-	
-	# Load tree into database
-	my $tree = $tree_io->loadTree($tree_file);
-	
+	close $in;
 }
 
 

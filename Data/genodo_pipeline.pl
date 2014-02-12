@@ -17,7 +17,6 @@ use DBI;
 use File::Temp qw(tempdir);
 use File::Copy qw(copy move);
 use IO::CaptureOutput qw(capture_exec);
-use Phylogeny::TreeBuilder;
 use Bio::SeqIO;
 
 =head1 NAME
@@ -65,9 +64,9 @@ it under the same terms as Perl itself.
 
 # Globals
 my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
-	$mail_address, $mail_notification_address, $mail_pass, $tmpdir,
+	$mail_address, $mail_notification_address, $mail_pass, $input_dir,
 	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
-	$nr_location, $parallel_exe, $data_directory);
+	$nr_location, $parallel_exe, $data_directory, $tmp_dir);
 	
 
 $test = 0;
@@ -85,17 +84,6 @@ pod2usage(-verbose => 2, -exitval => 1) if $help;
 
 # Perform error reporting before dying
 $SIG{__DIE__} = $SIG{INT} = 'error_handler';
-
-# Start logger
-my $logfile = ">>/home/ubuntu/log/pipeline.log";
-$logfile = ">>/tmp/pipeline.log" if $test;
-Log::Log4perl->easy_init(
-	{ 
-		level  => ("$DEBUG"), 
-		layout => "%P %d %p - %m%n", 
-		file   => $logfile
-	}
-);
  
 die "You must supply a configuration filename" unless $config;
 
@@ -176,12 +164,10 @@ if(@tracking_ids) {
 	my $meta_dir = $job_dir . '/meta/';
 	my $fasta_dir = $job_dir . '/fasta/';
 	my $opt_dir = $job_dir . '/opt/';
-	my $msa_dir = $job_dir . '/vf_msa/';
-	my $tree_dir = $job_dir . '/vf_tree/';
-	my $msa_dir2 = $job_dir . '/pg_msa/';
-	my $tree_dir2 = $job_dir . '/pg_tree/';
+	my $vf_dir = $job_dir . '/vf/';
+	my $pg_dir = $job_dir . '/pg/';
 	
-	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $msa_dir, $tree_dir, $msa_dir2, $tree_dir2) {
+	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $vf_dir, $pg_dir) {
 		mkdir $d or die "Unable to create directory $d ($!)";
 	}
 
@@ -189,9 +175,9 @@ if(@tracking_ids) {
 	my $update_job_sth = $dbh->prepare(SET_GENOME_JOB);
 	foreach my $t (@tracking_ids) {
 		# Locate opt file
-		my $opt_file = $tmpdir . "genodo-options-$t.cfg";
+		my $opt_file = $input_dir . "genodo-options-$t.cfg";
 		
-		die "Option file for tracking ID $t not found." unless -e $opt_file;
+		die "Option file for tracking ID $t not found (file:$opt_file)." unless -e $opt_file;
 		
 		my $cfg = new Config::Simple($opt_file) or die "Unable to read config file $opt_file";
 		
@@ -221,77 +207,56 @@ if(@tracking_ids) {
 	}
 	INFO "New data copied to analysis directory.";
 	
-	# Check for vf and amr fasta files
-	my $qg_dir = $data_directory . 'vf_amr_sequences/';
-	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
-	unless(-e $vf_fasta_file) {
-		die "AMR/VF gene fasta file missing. Please run:\n".
-		"Database/query_gene_fasta.pl --config genodo.cfg --combined $vf_fasta_file.";
-	}
-	INFO "VF/AMR query gene file detected.";
+#	# Check for vf and amr fasta files
+#	my $qg_dir = $data_directory . 'vf_amr_sequences/';
+#	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
+#	unless(-e $vf_fasta_file) {
+#		die "AMR/VF gene fasta file missing. Please run:\n".
+#		"Database/query_gene_fasta.pl --config genodo.cfg --combined $vf_fasta_file.";
+#	}
+#	INFO "VF/AMR query gene file detected.";
+#	
+#	# Run VF/AMR detection analysis
+#	vf_analysis($vf_dir, $fasta_dir);
+#	
+#	# Re-build MSAs and trees
+#	align($vf_dir.'/panseq_vf_amr_results/locus_alleles.fasta', $vf_dir);
+#	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
 	
-	# Run VF/AMR detection analysis
-	vf_analysis($job_dir);
-	
-	# Re-build MSAs and trees
-	combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
-	
-	# Check genome directory is up-to-date
-	my $g_dir = $data_directory . 'genomes/';
-	my $g_file = $g_dir . 'pan-genomes.ffn';
-	my $core_file = $g_dir . 'core-genomes.ffn';
-	my $acc_file = $g_dir . 'accessory-genomes.ffn';
-	download_pangenomes($g_file, $core_file, $acc_file);
-	
-	# Identify any novel regions for new genomes
-	my ($nr_fasta_file, $nr_anno_file) = novel_region_analysis($job_dir, $g_dir);
-	
-	my %nr_sequences;
-	
-	if($nr_fasta_file) {
-		# If new regions identified, need to add to file of pan-genome regions
-		my $g_file2 = $job_dir . '/pan-genomes.ffn';
-		copy $g_file, $g_file2 or die "Unable to copy pan-genomes fasta file $g_file to $g_file2 ($!).";
-		
-		# Add new regions with consistent identifiable names
-		my $fasta = Bio::SeqIO->new(-file   => $nr_fasta_file,
-                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $nr_fasta_file ($!).";
-    
-    	open my $out, ">>", $g_file2 or die "Unable to append to file $g_file2 ($!).";
-    	my $i = 1;
-		while (my $entry = $fasta->next_seq) {
-			my $seq = $entry->seq;
-			my $header = "nr_$i";
-			print $out ">$header\n$seq\n";
-			$i++;
-			$nr_sequences{$header} = $seq;
-		}
-		close $out;
-		
-		$g_file = $g_file2;
-	}
-	
-	# Identify known pan-genome regions in new genomes
-	INFO "Pan-genome region fasta file: $g_file.";
-	pangenome_analysis($job_dir, $g_file);
-	
-	# Re-build MSAs and trees for pan-genome fragments
-	combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
-	
-	# Free up memory
-	undef %nr_sequences;
+#	# Check genome directory is up-to-date
+#	my $pg_dir1 = $data_directory . 'pangenome_fragments/';
+#	my $pg_dir2 = $data_directory . 'current_pangenome/';
+#	my $pg_file = $pg_dir2 . 'pan-genomes.ffn';
+#	my $core_file = $pg_dir1 . 'core-genomes.ffn';
+#	my $acc_file = $pg_dir1 . 'accessory-genomes.ffn';
+#	download_pangenomes($pg_file, $core_file, $acc_file);
+#	
+#	# Identify any novel regions for new genomes
+#	my ($nr_anno_file, $nr_sequences);
+#	($pg_file, $nr_anno_file, $nr_sequences) = novel_region_analysis($pg_dir, $fasta_dir, $pg_dir2, $pg_file);
+#	
+#	# Identify known pan-genome regions in new genomes
+#	INFO "Pan-genome region fasta file: $pg_file.";
+#	pangenome_analysis($pg_dir, $fasta_dir, $pg_file);
+#	
+#	# Re-build MSAs and trees for pan-genome fragments
+#	align($pg_dir . '/panseq_pg_results/locus_alleles.fasta', $pg_dir, 1, $nr_sequences);
+#	#combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
+#	
+#	# Free up memory
+#	undef %$nr_sequences;
 	
 	# Load genome data
 	load_genomes(\@genome_loading_args);
-	
-	# Load VF/AMR results
-	load_vf($job_dir);
-	
-	# Load pan-genome results
-	load_pg($job_dir);
-	
-	# Recompute the metadata JSON objects
-	recompute_metadata();
+#	
+#	# Load VF/AMR results
+#	load_vf($vf_dir);
+#	
+#	# Load pan-genome results
+#	load_pg($pg_dir);
+#	
+#	# Recompute the metadata JSON objects
+#	recompute_metadata();
 
 	# Update individual genome records, notify users, remove tmp files
 	close_out(\@tracking_ids);
@@ -325,6 +290,18 @@ sub init {
 		die Config::Simple->error();
 	}
 	
+	# Start logger
+	my $log_dir = $conf->param('dir.log');
+	my $logfile = ">>$log_dir/pipeline.log";
+	$logfile = ">>/tmp/pipeline.log" if $test;
+	Log::Log4perl->easy_init(
+		{ 
+			level  => ("$DEBUG"), 
+			layout => "%P %d %p - %m%n", 
+			file   => $logfile
+		}
+	);
+	
 	my $dbstring = 'dbi:Pg:dbname='.$conf->param('db.name').
 	            ';port='.$conf->param('db.port').
 	            ';host='.$conf->param('db.host');
@@ -332,9 +309,11 @@ sub init {
 	my $dbpass = $conf->param('db.pass');
 	die "Invalid configuration file. Missing db parameters." unless $dbuser;
 	
-	$tmpdir = $conf->param('dir.seq');
-	die "Invalid configuration file. Missing tmpdir parameters." unless $tmpdir;
-	$tmpdir = '/home/matt/tmp/' if $test;
+	$input_dir = $conf->param('dir.seq');
+	die "Invalid configuration file. Missing dir.seq parameters." unless $input_dir;
+	
+	$tmp_dir = $conf->param('tmp.dir');
+	die "Invalid configuration file. Missing tmp.dir parameters." unless $tmp_dir;
 	
 	$mail_address = $conf->param('mail.address');
 	$mail_pass = $conf->param('mail.pass');
@@ -357,7 +336,7 @@ sub init {
 	$mummer_dir = '/home/ubuntu/MUMer3.23/';
 	$blast_dir = '/home/ubuntu/blast/bin/';
 	$parallel_exe = '/usr/bin/parallel';
-	$data_directory = '/panseq_results/data/';
+	$data_directory = '/home/ubuntu/data/';
 	$data_directory = '/home/matt/tmp/data/' if $test;
 	$muscle_exe = '/usr/bin/muscle' if $test;
 	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
@@ -506,18 +485,18 @@ Run panseq using VF and AMR genes as queryFile
 =cut
 
 sub vf_analysis {
-	my $job_dir = shift;
+	my ($vf_dir, $fasta_dir) = @_;
 	
 	# Create configuration file for panseq run
 	
-	my $pan_cfg_file = $job_dir . '/vf.conf';
+	my $pan_cfg_file = $vf_dir . 'vf.conf';
 	my $fasta_file = $data_directory . 'vf_amr_sequences/query_genes.ffn';
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out 
-qq|queryDirectory	$job_dir/fasta/
+qq|queryDirectory	$fasta_dir
 queryFile	$fasta_file
-baseDirectory	$job_dir/panseq_vf_amr_results/
+baseDirectory	$vf_dir/panseq_vf_amr_results/
 numberOfCores	8
 mummerDirectory	$mummer_dir
 blastDirectory	$blast_dir
@@ -558,7 +537,7 @@ Run panseq to identify novel pan-genome regions in new genomes
 =cut
 
 sub novel_region_analysis {
-	my ($job_dir, $genome_dir) = @_;
+	my ($job_dir, $fasta_dir, $pangenome_dir, $pangenome_file) = @_;
 
 	# Create configuration file for panseq run
 	
@@ -567,10 +546,10 @@ sub novel_region_analysis {
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out 
-qq|queryDirectory	$job_dir/fasta/
-referenceDirectory	$genome_dir
+qq|queryDirectory	$fasta_dir
+referenceDirectory	$pangenome_dir
 baseDirectory	$result_dir
-numberOfCores	8
+numberOfCores	1
 mummerDirectory	$mummer_dir
 blastDirectory	$blast_dir
 minimumNovelRegionSize	1000
@@ -596,20 +575,41 @@ runMode	novel
 		die "Panseq novel region analysis failed ($stderr).";
 	}
 	
-	# If new novel regions
+	# Check for new novel regions
 	my $nr_fasta_file = $result_dir . 'novelRegions.fasta';
 	my $nr_anno_file = $result_dir . 'anno.txt';
 	if(-s $nr_fasta_file) {
-		if($test) {
-			my $test_file = '/home/matt/tmp/anno.txt';
-			system("cp $test_file $nr_anno_file") == 0 or die "Unable to copy test annotation file $test_file";
-		} else {
-			blast_new_regions($nr_fasta_file, $nr_anno_file);
-		}
+		# New regions identified, need to add to file of pan-genome regions
+		# And provide with consistent identifiable names
 		
-		return($nr_fasta_file, $nr_anno_file);
+		my %nr_sequences;
+		
+		# Renaming
+		my $renamed_file = $job_dir . '/pan-genomes.ffn';
+		my $fasta = Bio::SeqIO->new(-file   => $nr_fasta_file,
+                                    -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $nr_fasta_file ($!).";
+    
+    	open my $out, ">", $renamed_file or die "Unable to write to file $renamed_file ($!).";
+    	my $i = 1;
+		while (my $entry = $fasta->next_seq) {
+			my $seq = $entry->seq;
+			my $header = "nr_$i";
+			print $out ">$header\n$seq\n";
+			$i++;
+			$nr_sequences{$header} = $seq;
+		}
+		close $out;
+		
+		# Run blast on these new pangenome regions
+		blast_new_regions($renamed_file, $nr_anno_file);
+		
+		# Add the pangenome regions currently in DB to pangenome file
+		system("cat $pangenome_file >> $renamed_file") == 0 or die "Unable to concatentate old pangenome file $pangenome_file to new pangenome file $renamed_file ($!).\n";
+		
+		return($renamed_file, $nr_anno_file, \%nr_sequences);
 	} else {
-		return();
+		# No new pangenome fragments found, can use existing pangenome file in next step
+		return($pangenome_file, undef, undef);
 	}
 	
 }
@@ -621,17 +621,17 @@ Run panseq to identify existing/known pan-genome regions in new genomes
 =cut
 
 sub pangenome_analysis {
-	my ($job_dir, $genome_file) = @_;
+	my ($pg_dir, $fasta_dir, $pangenome_file) = @_;
 
 	# Create configuration file for panseq run
 	
-	my $pan_cfg_file = $job_dir . '/pg.conf';
-	my $result_dir = "$job_dir/panseq_pg_results/";
+	my $pan_cfg_file = $pg_dir . '/pg.conf';
+	my $result_dir = "$pg_dir/panseq_pg_results/";
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out
-qq|queryDirectory	$job_dir/fasta/
-queryFile	$genome_file
+qq|queryDirectory	$fasta_dir
+queryFile	$pangenome_file
 baseDirectory	$result_dir
 numberOfCores	8
 mummerDirectory	$mummer_dir
@@ -687,7 +687,7 @@ sub rename_sequences {
     }
     
 	my $insert_query = $dbh->prepare(INSERT_CHR);
-	my $tmp_file = $tmpdir . 'genodo-pipeline-tmp.ffn';
+	my $tmp_file = $tmp_dir . 'genodo-pipeline-tmp.ffn';
 	
 	open (my $out, ">", $tmp_file) or die "Unable to write to file $tmp_file ($!).";
 	
@@ -710,277 +710,30 @@ sub rename_sequences {
 	move($tmp_file, $fasta_file) or die "Unable to move tmp file to $fasta_file ($!).";
 }
 
-=head2 combine_alignments
 
-Using muscle's profile alignment add the new sequences to the existing alignments
-and build trees
-
-=cut
-sub combine_alignments {
-	my $allele_file = shift;
-	my $msa_dir = shift;
-	my $tree_dir = shift;
-	my $nr_sequences = shift;
-	
-	my $add_pang = 0;
-	$add_pang = 1 if $nr_sequences;
-	
-	my ($sql_type1, $sql_type2, $pang_sth);
-	if($add_pang) {
-		# Perform pan-genome fragment alignments
-		
-		# Load the reference pan-genome alignment sequences from the DB
-		my $sql = 
-qq/SELECT f.residues, f.md5checksum
-FROM feature f, cvterm t
-WHERE f.type_id = t.cvterm_id AND
-t.name = 'pangenome' AND f.feature_id = ?
-/;
-		$sql_type1 = 'locus';
-		$sql_type2 = 'derives_from';
-		
-		$pang_sth = $dbh->prepare($sql);
-			
-	} else {
-		
-		$sql_type1 = 'allele';
-		$sql_type2 = 'similar_to';
-	}
-	
-	# SQL prep
-	my $sql = 
-qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-FROM feature f, feature_relationship r1, feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
-WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
-f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
-/;
-
-	my $sql2 = 
-qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
-WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
-f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
-/;
-
-	my $sth1 = $dbh->prepare($sql);
-	my $sth2 = $dbh->prepare($sql2);
-	
-	# Tree building obj
-	my $tb = Phylogeny::TreeBuilder->new();
-	
-	# Keep record of alleles found in this run
-	my $loc_file = $msa_dir . "loci.txt";
-	open(my $rec, ">", $loc_file) or die "Unable to write to file $loc_file ($!)";
-	
-	# Iterate through query gene blocks
-	open (my $in, "<", $allele_file) or die "Unable to read file $allele_file";
-	local $/ = "\nLocus ";
-	
-	while(my $locus_block = <$in>) {
-		$locus_block =~ s/^Locus //;
-		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my ($ftype, $query_id) = ($locus =~ m/(\w+_)*(\d+)/);
-		
-		my $msa_file = $msa_dir . "$query_id.aln";
-		my $tree_file = $tree_dir . "$query_id.phy";
-		
-		# Record locus
-		print $rec "$locus\n";
-		
-		# Retrieve the alignments for other sequences in the DB
-		
-		my ($seq_row1, $seq_row2, $pang_ref_seq, $refheader);
-		if($add_pang) {
-			# Look up pangenome alignments sequences: cache or DB.
-			if($ftype eq 'nr_') {
-				# New pan-genome fragement, get unaligned sequence from cache
-				$pang_ref_seq = $nr_sequences->{$query_id};
-				$msa_file = $msa_dir . "nr_$query_id.aln";
-				$tree_file = $tree_dir . "nr_$query_id.phy";
-				$refheader = "nr_$query_id";
-				
-				die "No sequence for the novel pan-genome region $query_id found." unless $pang_ref_seq;
-				
-			} else {
-				# Old pan-genome fragment, get unaligned sequence from DB
-				$pang_sth->execute($query_id);
-				($pang_ref_seq, my $md5) = $pang_sth->fetchrow_array();
-				die "There is no sequence for the pan-genome region $query_id in the DB." unless $pang_ref_seq;
-				$sth1->execute($query_id);
-				$sth2->execute($query_id);
-				$seq_row1 = $sth1->fetchrow_arrayref;
-				$seq_row2 = $sth2->fetchrow_arrayref;
-				$refheader = "pg_$query_id";
-				warn "Pangenome region $query_id has no associated loci in DB" unless $seq_row1 || $seq_row2;
-				
-			}
-			
-		} else {
-			# Look up allele alignment sequences in DB
-			$sth1->execute($query_id);
-			$sth2->execute($query_id);
-			$seq_row1 = $sth1->fetchrow_arrayref;
-			$seq_row2 = $sth2->fetchrow_arrayref;
-		}
-		
-
-		my $num_seq = 0;
-		
-		if($seq_row1 || $seq_row2) {
-			# Previous alleles exist
-			# Discard panseq alignment
-			# Add individual sequences to existing alignments
-			# Special Case: if aligning pan-genome fragments, always need to
-			# align reference to the loci discovered in this run.
-			
-			# Print out existing alignment to tmp file
-			my $aln_file = $msa_dir . "init.aln";
-			open(my $aln, ">", $aln_file) or die "Unable to write to file $aln_file ($!)";
-			
-			if($seq_row1) {
-				do {
-					my ($allele_id, $seq, $md5, $cc_id) = @$seq_row1;
-					print $aln ">public_$cc_id|$allele_id\n$seq\n";
-					$num_seq++;
-				} while($seq_row1 = $sth1->fetchrow_arrayref);
-			}
-			if($seq_row2) {
-				do {
-					my ($allele_id, $seq, $md5, $cc_id) = @$seq_row2;
-					print $aln ">private_$cc_id|$allele_id\n$seq\n";
-					$num_seq++;
-				} while($seq_row2 = $sth2->fetchrow_arrayref);
-			}
-			close $aln;
-			
-			# Align new sequences one at a time to existing alignment
-			my $seq_file = $msa_dir . "seq.fna";
-			my @loading_args = ($muscle_exe, "-profile -in1 $aln_file -in2 $seq_file -out $aln_file");
-			my $cmd = join(' ',@loading_args);
-			
-			if($pang_ref_seq) {
-				# Align reference sequence
-				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-				print $seqo ">$refheader\n$pang_ref_seq\n";
-				close $seqo;
-				
-				# Run muscle
-				my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
-	
-				unless($success) {
-					die "Muscle profile alignment failed for reference pangenome sequence $query_id to alleles ($stderr).";
-				}
-			}
-			
-			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
-				my $header = $1;
-				my $seq = $2;
-				
-				$seq =~ tr/-//; # Remove gaps
-				
-				# Print to tmp file
-				open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-				print $seqo ">$header\n$seq\n";
-				close $seqo;
-				
-				# Run muscle
-				my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
-	
-				unless($success) {
-					die "Muscle profile alignment failed for query gene ID $query_id and sequence $header ($stderr).";
-				}
-				$num_seq++;
-			}
-		
-			# move tmp file to final location
-			move $aln_file, $msa_file or die "Unable to move $aln_file file to $msa_file ($!)";
-			
-		} elsif($pang_ref_seq) {
-			# Discovered new region, so need to build alignment that includes the pan-genome region
-			
-			my $seq_file = $msa_dir . "seq.fna";
-			my @loading_args = ($muscle_exe, "-in $seq_file -out $msa_file");
-			my $cmd = join(' ',@loading_args);
-			
-			open(my $seqo, ">", $seq_file) or die "Unable to write to file $seq_file ($!)";
-			print $seqo ">$refheader\n$pang_ref_seq\n";
-			
-			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
-				my $header = $1;
-				my $seq = $2;
-				
-				$seq =~ s/-//g; # Remove gaps
-				print $seqo ">$header\n$seq\n";
-			}
-			
-			close $seqo;
-				
-			my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
-	
-			unless($success) {
-				die "Muscle profile alignment failed for new pangenome region $query_id ($stderr).";
-			}
-			
-			$num_seq++;
-			
-		} else {
-			# No previous alleles
-			# Use alignment generated by panseq
-			
-			die "Cannot build alignment of pangnome loci without the reference pangenome fragment." if $add_pang;
-			
-			open(my $out, ">", $msa_file) or die "Unable to write to file $msa_file ($!)";
-			
-			while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
-				my $header = $1;
-				my $seq = $2;
-				
-				# Print to tmp file
-				print $out ">$header\n$seq\n";
-				$num_seq++;
-			}
-			
-			close $out;
-		}
-		
-		# Build tree if enough allele sequences
-		if($num_seq > 2) {
-			$tb->build_tree($msa_file, $tree_file);
-		}
-	}
-	close $in;
-	close $rec;
-
-}
-
-=head2 prepare_alignment_inputs
+=head2 align
 
 Alignments, tree building and SNP calculations are done in a separate script
-run in parallel. This method prepares the inputs for the parallel script.
+run in parallel. This method prepares the inputs for the parallel script and
+runs it.
 
 =cut
-sub prepare_alignment_inputs {
+sub align {
 	my $allele_file = shift;
-	my $job_dir = shift;
+	my $root_dir = shift;
 	my $is_pg = shift;
 	my $nr_sequences = shift;
 	
 	# Create directory tree for results/inputs
-	my $root_dir = $job_dir.'vf/';
-	$root_dir = $job_dir.'pg/' if $is_pg;
-	
 	my $new_dir = $root_dir . 'new/';
-	my $msa_dir = $root_dir . 'msa/';
 	my $fasta_dir = $root_dir . 'fasta/';
 	my $tree_dir = $root_dir . 'tree/';
 	my $perl_dir = $root_dir . 'perl_tree/';
-	my $ref_dir = $root_dir . 'refseqs/';
+	my $ref_dir = $root_dir . 'refseq/';
 	my $snp_dir = $root_dir . 'snp_alignments/';
 	my $pos_dir = $root_dir . 'snp_positions/';
 	
-	my @create_Ds = ($root_dir, $new_dir, $msa_dir, $fasta_dir, $tree_dir, $perl_dir);
+	my @create_Ds = ($new_dir, $fasta_dir, $tree_dir, $perl_dir);
 	push @create_Ds, ($ref_dir, $snp_dir, $pos_dir) if $is_pg;
 	
 	foreach my $d (@create_Ds)  {
@@ -998,32 +751,33 @@ sub prepare_alignment_inputs {
 	}
 	
 	my $sql = 
-qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-FROM feature f, feature_relationship r1, feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
-WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
-f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
-/;
+	qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
+	FROM feature f, feature_relationship r1, feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+	WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
+	t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
+	f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
+	/;
 
 	my $sql2 = 
-qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
-WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
-t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
-f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
-/;
+	qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
+	FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+	WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
+	t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
+	f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
+	/;
 	
 	my $pub_sth = $dbh->prepare($sql);
 	my $pri_sth = $dbh->prepare($sql2);
 	
 	my $ref_sth;
 	if($is_pg) {
+		
 		my $sql = 
-qq/SELECT f.residues, f.md5checksum
-FROM feature f, cvterm t
-WHERE f.type_id = t.cvterm_id AND
-t.name = 'pangenome' AND f.feature_id = ?
-/;
+		qq/SELECT f.residues, f.md5checksum
+		FROM feature f, cvterm t
+		WHERE f.type_id = t.cvterm_id AND
+		t.name = 'pangenome' AND f.feature_id = ?
+		/;
 
 		$ref_sth = $dbh->prepare($sql);
 	}
@@ -1052,7 +806,7 @@ t.name = 'pangenome' AND f.feature_id = ?
 		# Retrieve the alignments for other sequences in the DB
 		# If pangenome region is novel, don't need to do this.
 		unless($is_nr) {
-			my $msa_file = $fasta_dir . "$query_id.fna";
+			my $msa_file = $fasta_dir . "$query_id.ffn";
 			open(my $aln, ">", $msa_file) or die "Unable to write to file $msa_file ($!)";
 			
 			$pub_sth->execute($query_id);
@@ -1075,18 +829,18 @@ t.name = 'pangenome' AND f.feature_id = ?
 		
 		# Print the reference pangenome fragnment sequence (needed for SNP computation)
 		if($is_pg) {
-			my $ref_file = $ref_dir . "$query_id\_ref.fna";
+			my $ref_file = $ref_dir . "$query_id\_ref.ffn";
 			open(my $ref, ">", $ref_file) or die "Unable to write to file $ref_file ($!)";
 			
 			my $refheader = "refseq_$query_id";
 			my $refseq;
-			if($ftype eq 'nr_') {
+			if($is_nr) {
 				$refseq = $nr_sequences->{$query_id};
 	
 			} else {
 				$ref_sth->execute($query_id);
 				($refseq, my $md5) = $ref_sth->fetchrow_array();
-				die "Reference pangenome fragment $query_id has no loci in the DB." unless $num_seq;
+				WARN "Reference pangenome fragment $query_id has no loci in the DB." unless $num_seq;
 			}
 			
 			die "Missing sequence for reference pangenome fragment $query_id." unless $refseq;
@@ -1097,8 +851,19 @@ t.name = 'pangenome' AND f.feature_id = ?
 		}
 		
 		# Print the new alleles/loci added in this run
-		my $prev_alns = 1 if $num_seq;
-		my $aln_file = $new_dir . "$query_id.fna";
+		my $prev_alns;
+		my $aln_file;
+		
+		if($num_seq) {
+			# Need to align new alleles/loci sequences with previous alignments 
+			$aln_file = $new_dir . "$query_id.ffn";
+			$prev_alns = 1;
+		} else {
+			# No previous alignments, just use current panseq alignment
+			$aln_file = $fasta_dir . "$query_id.ffn";
+			$prev_alns = 0;
+		}
+		
 		open(my $seqo, ">", $aln_file) or die "Unable to write to file $aln_file ($!)";
 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 			my $header = $1;
@@ -1116,7 +881,7 @@ t.name = 'pangenome' AND f.feature_id = ?
 		close $seqo;
 		
 		# Record job
-		my ($do_tree, $do_snp) = 0;
+		my ($do_tree, $do_snp) = (0,0);
 		# Build tree if enough allele sequences
 		if($num_seq > 2) {
 			$do_tree = 1;
@@ -1124,11 +889,24 @@ t.name = 'pangenome' AND f.feature_id = ?
 		if($num_seq > 1 && $is_pg && $ftype eq 'pgcor_') {
 			$do_snp = 1;
 		}
-		print $rec join("\t",$query_id, $do_tree, $do_snp)."\n";
+		print $rec join("\t", $query_id, $do_tree, $do_snp, $prev_alns)."\n";
 		
 	}
 	close $in;
 	close $rec;
+	
+	# Run parallel alignment program
+	my @loading_args = ("perl $FindBin::Bin/../Sequences/parallel_tree_builder.pl",
+		'--dir '.$root_dir);
+			
+	my $cmd = join(' ',@loading_args);
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+	if($success) {
+		INFO "Parallel sequence alignment and tree building script completed successfully.";
+	} else {
+		die "Parallel sequence alignment and tree building script failed ($stderr).";
+	}
 
 }
 
@@ -1333,13 +1111,18 @@ sub blast_new_regions {
 	
 	INFO "Running parallel BLAST: $parallel_cmd";
 	
-	my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
+	unless($test) {
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
 	
-	if($success) {
-		INFO "New pan-genome region BLAST job completed successfully."
+		if($success) {
+			INFO "New pan-genome region BLAST job completed successfully."
+		} else {
+			die "New pan-genome region BLAST job failed ($stderr).";
+		}
 	} else {
-		die "New pan-genome region BLAST job failed ($stderr).";
+		`touch $blast_file`;
 	}
+	
 }
 
 =head2 load_pg
