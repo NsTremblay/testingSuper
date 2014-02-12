@@ -15,6 +15,7 @@ my $build=Module::Build->new(
 		Carp => 0,
 		perl => '5.14.0',
 		'CGI::Application'=>0,
+		'CGI::Application::Dispatch'=>0,
 		'CGI::Application::Plugin::Config::Simple'=>0,
 		'CGI::Application::Plugin::Redirect'=>0,
 		'CGI::Application::Plugin::Session'=>0,
@@ -32,6 +33,8 @@ my $build=Module::Build->new(
 		'Proc::Daemon'=>0,
 		'Data::Dumper'=>0,
 		DateTime=>0,
+		'DateTime::Format::Strptime'=>0,
+		'DateTime::Format::Builder'=>0,
 		'HTML::FillInForm'=>0,
 		'XML::Simple'=>0,
 		'Geo::Coder::Google'=>0,
@@ -43,7 +46,11 @@ my $build=Module::Build->new(
 		'CGI::Application::Plugin::AutoRunmode'=>0,
 		'Math::Round'=>0,
 		'Digest::MD5'=>0,
-		'Geo::Coder::Google'=>0
+		'Geo::Coder::Google'=>0,
+		'DBIx::Class::Schema::Loader'=>0,
+		'IO:CaptureOutput'=>0,
+		'Parallel::ForkManager'=>0,
+		'Inline::C'=>0,
 	}
 );
 $build->create_build_script();
