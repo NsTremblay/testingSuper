@@ -308,8 +308,8 @@ function displayMatrix(data, genomes, tabElem, type) {
 function prepareAllSelectedInputs(selectionList, selectionListName) {
 	$('#'+selectionListName+' li').empty();
 	$.each(selectionList, function(i,o) {
-		attackOfTheClones = o.cloneNode();
-		attackOfTheClones.childNodes[0].name = selectionListName;
+		var attackOfTheClones = o.childNodes[0].cloneNode();
+		attackOfTheClones.name = selectionListName;
 		$('#'+selectionListName+' li').append(attackOfTheClones);
 	});
 }

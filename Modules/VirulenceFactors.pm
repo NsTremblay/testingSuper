@@ -41,7 +41,7 @@ use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Carp;
-use JSON qw/encode_json/;
+use JSON;
 
 sub setup {
 	my $self=shift;
@@ -81,8 +81,8 @@ $template->param(strainJSONData=>$pubStrainJsonDataRef);
 $template->param(vFACTORS=>$vFactorsRef);
 $template->param(amrFACTORS=>$amrFactorsRef);
 
-#my $amrCategoriesRef = $self->categories();
-#$template->param(amrCategories=>$amrCategoriesRef);
+my $amrCategoriesRef = $self->categories();
+$template->param(Categories=>$amrCategoriesRef);
 
 return $template->output();
 }
@@ -309,7 +309,8 @@ while (my $row = $vfCategoryResults->next) {
 my %categories = ('vfCats' => \%vfCategories,
 				  'amrCats' => \%amrCategories);
 
-my $categories_json = $formDataGenerator->_getJSONFormat(\%categories);
+#my $categories_json = $formDataGenerator->_getJSONFormat(\%categories);
+my $categories_json = encode_json(\%categories);
 return $categories_json;
 }
 
