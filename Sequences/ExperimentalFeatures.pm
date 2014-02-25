@@ -1,6 +1,6 @@
 package Sequences::ExperimentalFeatures;
 
-#use Inline C;
+use Inline C;
 use strict;
 use warnings;
 use DBI;
@@ -3473,9 +3473,7 @@ sub push_snp_alignment {
 		# Make genome snp changes to core string
 		$retrieve_sth->execute($g);
 		my $genome_string = $full_core_aln;
-#		while (my $varray_ref = $retrieve_sth->fetchrow_arrayref) {
-#			substr($genome_string, $varray_ref->[0], 1) = $varray_ref->[1];
-#		}
+
 		while (my $bunch_of_rows = $retrieve_sth->fetchall_arrayref(undef, 5000)) {
 			snp_edits($genome_string, $bunch_of_rows);
 		}
@@ -3539,13 +3537,13 @@ WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
 }
 
 
-=head2 push_snp_alignment
+=head2 push_cache
 
 =over
 
 =item Usage
 
-  $obj->push_snp_alignment(); 
+  $obj->push_cache(); 
 
 =item Function
 

@@ -630,17 +630,17 @@ sub genomeInfo {
 }
 
 sub _runGenomeQuery {
- my ($self, $public, $username) = @_;
+	my ($self, $public, $username) = @_;
 
- my %fp_types = (
-  serotype            => 1,
-  strain              => 1,
-  isolation_host      => 1,
-  isolation_source    => 1,
-  isolation_location  => 1,
-  isolation_latlng    => 1,
-  isolation_date      => 1,
-  );
+	my %fp_types = (
+		serotype            => 1,
+		strain              => 1,
+		isolation_host      => 1,
+		isolation_source    => 1,
+		isolation_location  => 1,
+		isolation_latlng    => 1,
+		isolation_date      => 1,
+	);
 
 	# Table and relationship names
 	my $feature_table_name = 'Feature';
@@ -659,8 +659,8 @@ sub _runGenomeQuery {
     };
     my $join = ['type'];
     my $prefetch = [
-    { 'dbxref' => 'db' },
-    { $featureprop_rel_name => 'type' },
+	    { 'dbxref' => 'db' },
+	    { $featureprop_rel_name => 'type' },
     ];
 
 	# Query data in private tables
@@ -668,24 +668,24 @@ sub _runGenomeQuery {
 		
 		if($username) {
 			$query = [
-            {
-             'login.username'     => $username,
-             'type.name'          => 'contig_collection',
-             'type_2.name'        => { '-in' => [ keys %fp_types ] }
-             },
-             {
-                 'upload.category'    => 'public',
-                 'type.name'          => 'contig_collection',
-                 'type_2.name'        => { '-in' => [ keys %fp_types ] }
-             }
-             ];
+            	{
+					'login.username'     => $username,
+					'type.name'          => 'contig_collection',
+					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+             	},
+             	{
+					'upload.category'    => 'public',
+					'type.name'          => 'contig_collection',
+					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+				}
+			];
 
-             push @$prefetch, 'upload';
-             } else {
-               $query = {
-                'upload.category'    => 'public',
-                'type.name'          => 'contig_collection',
-                'type_2.name'        => { '-in' => [ keys %fp_types ] }
+			push @$prefetch, 'upload';
+		} else {
+			$query = {
+				'upload.category'    => 'public',
+				'type.name'          => 'contig_collection',
+				'type_2.name'        => { '-in' => [ keys %fp_types ] }
             };
         }
 
@@ -693,10 +693,10 @@ sub _runGenomeQuery {
     }
 
     my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-      $query,	
-      {
-       join => $join,
-       prefetch => $prefetch,
+		$query,	
+		{
+			join => $join,
+			prefetch => $prefetch,
 			#order_by => $order_name
 		}
      );

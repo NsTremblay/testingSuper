@@ -207,56 +207,56 @@ if(@tracking_ids) {
 	}
 	INFO "New data copied to analysis directory.";
 	
-#	# Check for vf and amr fasta files
-#	my $qg_dir = $data_directory . 'vf_amr_sequences/';
-#	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
-#	unless(-e $vf_fasta_file) {
-#		die "AMR/VF gene fasta file missing. Please run:\n".
-#		"Database/query_gene_fasta.pl --config genodo.cfg --combined $vf_fasta_file.";
-#	}
-#	INFO "VF/AMR query gene file detected.";
-#	
-#	# Run VF/AMR detection analysis
-#	vf_analysis($vf_dir, $fasta_dir);
-#	
-#	# Re-build MSAs and trees
-#	align($vf_dir.'/panseq_vf_amr_results/locus_alleles.fasta', $vf_dir);
-#	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
+	# Check for vf and amr fasta files
+	my $qg_dir = $data_directory . 'vf_amr_sequences/';
+	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
+	unless(-e $vf_fasta_file) {
+		die "AMR/VF gene fasta file missing. Please run:\n".
+		"Database/query_gene_fasta.pl --config genodo.cfg --combined $vf_fasta_file.";
+	}
+	INFO "VF/AMR query gene file detected.";
 	
-#	# Check genome directory is up-to-date
-#	my $pg_dir1 = $data_directory . 'pangenome_fragments/';
-#	my $pg_dir2 = $data_directory . 'current_pangenome/';
-#	my $pg_file = $pg_dir2 . 'pan-genomes.ffn';
-#	my $core_file = $pg_dir1 . 'core-genomes.ffn';
-#	my $acc_file = $pg_dir1 . 'accessory-genomes.ffn';
-#	download_pangenomes($pg_file, $core_file, $acc_file);
-#	
-#	# Identify any novel regions for new genomes
-#	my ($nr_anno_file, $nr_sequences);
-#	($pg_file, $nr_anno_file, $nr_sequences) = novel_region_analysis($pg_dir, $fasta_dir, $pg_dir2, $pg_file);
-#	
-#	# Identify known pan-genome regions in new genomes
-#	INFO "Pan-genome region fasta file: $pg_file.";
-#	pangenome_analysis($pg_dir, $fasta_dir, $pg_file);
-#	
-#	# Re-build MSAs and trees for pan-genome fragments
-#	align($pg_dir . '/panseq_pg_results/locus_alleles.fasta', $pg_dir, 1, $nr_sequences);
-#	#combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
-#	
-#	# Free up memory
-#	undef %$nr_sequences;
+	# Run VF/AMR detection analysis
+	vf_analysis($vf_dir, $fasta_dir);
+	
+	# Re-build MSAs and trees
+	align($vf_dir.'/panseq_vf_amr_results/locus_alleles.fasta', $vf_dir);
+	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
+	
+	# Check genome directory is up-to-date
+	my $pg_dir1 = $data_directory . 'pangenome_fragments/';
+	my $pg_dir2 = $data_directory . 'current_pangenome/';
+	my $pg_file = $pg_dir2 . 'pan-genomes.ffn';
+	my $core_file = $pg_dir1 . 'core-genomes.ffn';
+	my $acc_file = $pg_dir1 . 'accessory-genomes.ffn';
+	download_pangenomes($pg_file, $core_file, $acc_file);
+	
+	# Identify any novel regions for new genomes
+	my ($nr_anno_file, $nr_sequences);
+	($pg_file, $nr_anno_file, $nr_sequences) = novel_region_analysis($pg_dir, $fasta_dir, $pg_dir2, $pg_file);
+	
+	# Identify known pan-genome regions in new genomes
+	INFO "Pan-genome region fasta file: $pg_file.";
+	pangenome_analysis($pg_dir, $fasta_dir, $pg_file);
+	
+	# Re-build MSAs and trees for pan-genome fragments
+	align($pg_dir . '/panseq_pg_results/locus_alleles.fasta', $pg_dir, 1, $nr_sequences);
+	#combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
+	
+	# Free up memory
+	undef %$nr_sequences;
 	
 	# Load genome data
 	load_genomes(\@genome_loading_args);
-#	
-#	# Load VF/AMR results
-#	load_vf($vf_dir);
-#	
-#	# Load pan-genome results
-#	load_pg($pg_dir);
-#	
-#	# Recompute the metadata JSON objects
-#	recompute_metadata();
+	
+	# Load VF/AMR results
+	load_vf($vf_dir);
+	
+	# Load pan-genome results
+	load_pg($pg_dir);
+	
+	# Recompute the metadata JSON objects
+	recompute_metadata();
 
 	# Update individual genome records, notify users, remove tmp files
 	close_out(\@tracking_ids);
@@ -1111,7 +1111,7 @@ sub blast_new_regions {
 	
 	INFO "Running parallel BLAST: $parallel_cmd";
 	
-	unless($test) {
+	#unless($test) {
 		my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
 	
 		if($success) {
@@ -1119,9 +1119,9 @@ sub blast_new_regions {
 		} else {
 			die "New pan-genome region BLAST job failed ($stderr).";
 		}
-	} else {
-		`touch $blast_file`;
-	}
+#	} else {
+#		`touch $blast_file`;
+#	}
 	
 }
 

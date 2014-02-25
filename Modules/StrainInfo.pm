@@ -67,7 +67,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-	);
+);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -114,15 +114,15 @@ sub strain_info : StartRunmode {
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
-			} elsif($feature =~ m/^private_(\d+)/) {
-				$privateStrainID = $1;
-				} else {
-					die "Error: invalid genome ID: $feature.";
-				}
-			}
+		} elsif($feature =~ m/^private_(\d+)/) {
+			$privateStrainID = $1;
+		} else {
+			die "Error: invalid genome ID: $feature.";
+		}
+	}
 
-			my $template;
-			if(defined $strainID && $strainID ne "") {
+	my $template;
+	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
 
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
@@ -143,10 +143,9 @@ sub strain_info : StartRunmode {
 		$template->param(AMRDATA=>$strainAmrDataRef);
 
 		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
-		#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef->{'location'});
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
-		} elsif(defined $privateStrainID && $privateStrainID ne "") {
+	} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
 		my $privacy_category = $formDataGenerator->verifyAccess($username, $privateStrainID);
@@ -169,24 +168,25 @@ sub strain_info : StartRunmode {
 		
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-			} else {
-				$template->param('privacy' => $privacy_category);
-			}
-			my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
-			$template->param(VIRDATA=>$strainVirDataRef);
+		} else {
+			$template->param('privacy' => $privacy_category);
+		}
+		
+		my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
+		$template->param(VIRDATA=>$strainVirDataRef);
 
-			my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
-			$template->param(AMRDATA=>$strainAmrDataRef);
+		my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
+		$template->param(AMRDATA=>$strainAmrDataRef);
 
-			my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
-			#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef);
-			$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
+		my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
+		#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef);
+		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
-			} else {
-				$template = $self->load_tmpl( 'strain_info.tmpl' ,
-					die_on_bad_params=>0 );
-				$template->param('strainData' => 0);
-			}
+	} else {
+		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+			die_on_bad_params=>0 );
+		$template->param('strainData' => 0);
+	}
 
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
@@ -223,24 +223,24 @@ sub search : Runmode {
 		
 		my $genome_rs = $self->dbixSchema()->resultset('PrivateFeature')->search(
 			[
-			{
-				'login.username' => $username,
-				'type.name'      => 'contig_collection',
+				{
+					'login.username' => $username,
+					'type.name'      => 'contig_collection',
 				},
 				{
 					'upload.category'    => 'public',
 					'type.name'      => 'contig_collection',
-					},
-					],
-					{
-						columns => [qw/feature_id uniquename/],
-						'+columns' => [qw/upload.category login.username/],
-						join => [
-						{ 'upload' => { 'permissions' => 'login'} },
-						'type'
-						]
-					}
-					);
+				},
+			],
+			{
+				columns => [qw/feature_id uniquename/],
+				'+columns' => [qw/upload.category login.username/],
+				join => [
+					{ 'upload' => { 'permissions' => 'login'} },
+					'type'
+				]
+			}
+		);
 		
 		# If the user does not have any private genomes, we do not need to prune tree
 		
@@ -271,7 +271,7 @@ sub search : Runmode {
 			# Return public tree
 			
 			$template->param(tree_json => $tree->fullTree);
-			}
+		}
 		
 	} else {
 		# Anonymous user
@@ -279,13 +279,6 @@ sub search : Runmode {
 		
 		$template->param(tree_json => $tree->fullTree);
 	}
-	
-	
-	
-	# Map
-	
-	# Meta
-	
 	
 	return $template->output();
 	
@@ -384,7 +377,7 @@ sub _getStrainInfo {
 	
 	if(defined($feature_hash{pmids})) {
 		my $pmid_list = '"'.join(',', (map {$_->{pmid}} @{$feature_hash{pmids}})).'"';
-		get_logger->debug("<$pmid_list>");
+		#get_logger->debug("<$pmid_list>");
 		$feature_hash{pmid_list} = $pmid_list;
 		delete $feature_hash{pmids};
 	}
