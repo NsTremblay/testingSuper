@@ -17,7 +17,6 @@ Thank you to Dr. Chad Laing and Dr. Matthew Whiteside, for all their assistance 
 =head1 COPYRIGHT
 
 This work is released under the GNU General Public License v3  http://www.gnu.org/licenses/gpl.htm
-
 =head1 AVAILABILITY
 
 The most recent version of the code may be found at:
