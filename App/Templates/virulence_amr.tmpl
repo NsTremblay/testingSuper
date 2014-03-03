@@ -152,12 +152,12 @@ function updateMeta(list , selectedMetaData) {
 				selectedCount++;
 				dropDown.append(
 					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)" checked/>'+lab+'</label>'
-					);
+				);
 			}
 			else {
 				dropDown.append(
 					'<label class="checkbox" for="genome_'+feature_id+'"><input id="genome_'+feature_id+'" class="checkbox" type="checkbox" value="'+feature_id+'" name="selectedGenomes" onchange="toggleChecked(this, selectedGenomes)"/>'+lab+'</label>'
-					);
+				);
 			}
 		});
 		metaTab.filterList('genomes', public_genomes, genomeLabels, metaTabSelections);
@@ -169,8 +169,8 @@ function updateMeta(list , selectedMetaData) {
 		$('#select-all-virulence').is(':checked') ? $('#select-all-virulence').click() : 0;
 		$.each (virulence_factors, function(vir_id, vir_obj) {
 			dropDown.append(
-				'<label class="checkbox" for="vir_'+vir_obj.feature_id+'"><input id="vir_'+vir_obj.feature_id+'" class="checkbox" type="checkbox" value="'+vir_obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+vir_obj.name+'</label>'
-				);
+				'<label class="checkbox" for="vir_'+vir_obj.feature_id+'"><input id="vir_'+vir_obj.feature_id+'" class="checkbox" type="checkbox" value="'+vir_obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+vir_obj.name+' - '+vir_obj.uniquename+'</label>'
+			);
 		});
 	}
 	else if (list == "amr"){
@@ -179,15 +179,15 @@ function updateMeta(list , selectedMetaData) {
 		$('#select-all-amr').is(':checked') ? $('#select-all-amr').click() : 0;
 		$.each (amr_genes, function(amr_id, amr_obj) {
 			dropDown.append(
-				'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+amr_obj.name+'</label>'
+				'<label class="checkbox" for="amr_'+amr_obj.feature_id+'"><input id="amr_'+amr_obj.feature_id+'" class="checkbox" type="checkbox" value="'+amr_obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+amr_obj.uniquename+'</label>'
 				);
 		});
 	}
 }
 
 function appendFilteredList(obj, list, selectedMetaData) {
-	//console.log("List is: " + list + " object is: " + obj);
-	//console.log(obj);
+	// console.log("List is: " + list + " object is: " + obj);
+	// console.log(obj);
 	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
 		selectedMetaData = ['name'];
 	}
@@ -204,8 +204,8 @@ function appendFilteredList(obj, list, selectedMetaData) {
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+obj.name+'</label>'
-					);
+					'<label class="checkbox" for="vir_'+obj.feature_id+'"><input id="vir_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedVirulence" onchange="toggleChecked(this, selectedVirulence)"/>'+obj.name+' - '+obj.uniquename+'</label>'
+				);
 			}
 		});
 		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-virulence').attr("checked", true) : 0;
@@ -223,8 +223,8 @@ function appendFilteredList(obj, list, selectedMetaData) {
 			}
 			else {
 				dropDown.append(
-					'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+obj.name+'</label>'
-					);
+					'<label class="checkbox" for="amr_'+obj.feature_id+'"><input id="amr_'+obj.feature_id+'" class="checkbox" type="checkbox" value="'+obj.feature_id+'" name="selectedAmr" onchange="toggleChecked(this, selectedAmr)"/>'+obj.uniquename+'</label>'
+				);
 			}
 		});
 		(dropDown.children().length == selectedCount) && (selectedCount !== 0) ? $('#select-all-amr').attr("checked", true) : 0;

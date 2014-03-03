@@ -32,8 +32,9 @@ it under the same terms as Perl itself.
 use strict;
 use warnings;
 use FindBin;
-use lib "$FindBin::Bin/";
-use Tree;
+use lib "$FindBin::Bin/../";
+use Phylogeny::Tree;
+use Phylogeny::TreeBuilder;
 use Carp;
 use Getopt::Long;
 
@@ -45,11 +46,35 @@ GetOptions(
     'config=s' => \$config,
 );
 
-croak "Missing argument. You must supply the filename containing the newick tree data.\n" unless $tree_file;
 croak "Missing argument. You must supply the config filename.\n" unless $config;
+my $tmp_dir;
+if(my $conf = new Config::Simple($config)) {
+	$tmp_dir    = $conf->param('tmp.dir');
+} else {
+	die Config::Simple->error();
+}
+croak "Invalid configuration file." unless $tmp_dir;
 
 my $t = Phylogeny::Tree->new(config => $config);
 
+unless($tree_file) {
+	# Compute genome tree
+	my $tree_builder = Phylogeny::TreeBuilder->new();
+	
+	# write alignment file
+	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
+	$t->writeSnpAlignment($tmp_file);
+	
+	# clear output file for safety
+	$tree_file = $tmp_dir . 'genodo_genome_tree.txt';
+	open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+	close $out;
+	
+	# build newick tree
+	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+}
+
+# Load tree into database
 $t->loadTree($tree_file);
 
 exit(0);

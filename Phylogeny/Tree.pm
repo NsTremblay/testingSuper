@@ -38,6 +38,7 @@ use Modules::FormDataGenerator;
 # Globals
 my $visable_nodes; # temporary pointer to list of nodes to keep when pruning by recursion
 my $short_circuit = 0; # boolean to stop subsequent recursion function calls
+my $name_key = 'displayname';
 
 =head2 new
 
@@ -69,7 +70,7 @@ sub new {
 						        dbHost  => $db_conf->param('db.host'),
 						        dbPort  => $db_conf->param('db.port'),
 						        dbUser  => $db_conf->param('db.user'),
-						        dbPass  => $db_conf->param('db.user')
+						        dbPass  => $db_conf->param('db.pass')
 		);
 	} elsif($dbix) {
 		# Use existing connection
@@ -78,6 +79,8 @@ sub new {
 	} else {
 		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object or config filename.";
 	}
+	
+	#Log::Log4perl->easy_init($DEBUG);
 	
 	return $self;
 }
@@ -243,7 +246,6 @@ sub _pruneNodeRecursive {
 				$node->{children} = \@visableNodes;
 			}
 			
-	
 			return ($node, $record); # record is empty unless $restrict_depth is true
 			
 		} elsif(@visableNodes == 1) {
@@ -264,7 +266,8 @@ sub _pruneNodeRecursive {
 		# Leaf node
 		
 		croak "Leaf node with no defined name at depth $depth.\n" unless $node->{name};
-		if(my $label = $visable_nodes->{$node->{name}}) {
+		if($visable_nodes->{$node->{name}}) {
+			my $label = $visable_nodes->{$node->{name}}->{$name_key};
 			# Add a label to the leaf node
 			$node->{label} = $label;
 			$node->{leaf} = 'true';
@@ -292,8 +295,6 @@ to root.
 sub blowUpPath {
 	my ($curr, $target, $path) = @_;
 	
-	get_logger->debug('TYPE ', ref $curr);
-	get_logger->debug('CURRENT node ', $curr->{label});
 	
 	# Children in collapsed or expanded nodes
 	my @children;
@@ -462,9 +463,11 @@ sub nodeTree {
 		my $ptree = $self->globalTree;
 	
 		# Remove genomes not visable to user
-		my $tree = $self->pruneTree($ptree, $visable);
+		my $tree = $self->pruneTree($ptree, $visable, 1);
 		
 		# Exand nodes along path to target leaf node
+		DEBUG encode_json($tree);
+		
 		blowUpPath($tree, $node, []);
 		
 		# Convert to json
@@ -564,19 +567,10 @@ sub visableGenomes {
 	my $data = Modules::FormDataGenerator->new;
 	$data->dbixSchema($self->dbixSchema);
 	
-	my $main_genomes = $data->publicGenomes;
-	
-	my $user_genomes = $data->privateGenomes;
-	
-	# Convert to tree naming scheme
 	my %visable;
-	foreach my $nodename (@$main_genomes) {
-		$visable{'public_'.$nodename->{feature_id}} = $nodename->{uniquename}; 
-	}
-	foreach my $nodename (@$user_genomes) {
-		$visable{'private_'.$nodename->{feature_id}} = $nodename->{uniquename}; 
-	}
+	$data->publicGenomes(undef, \%visable);
 	
+	$data->privateGenomes(undef, undef, \%visable);
 
 	return \%visable;
 }
@@ -646,36 +640,20 @@ sub writeSnpAlignment {
 	my $self = shift;
 	my $filenm = shift;
 	
-	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search(
-		{
-			
-		},
-		{
-			 order_by => { -asc => [qw/name block/] }
-		}
-	);
+	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search();
 	
 	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
 	
-	my $current_seq = '';
-	my $first = 1;
 	
 	while(my $aln_row = $aln_rs->next) {
 		
 		my $nm = $aln_row->name;
 		next if $nm eq 'core';
 		
-		if($current_seq ne $nm) {
-			# Start of new sequence
-			
-			print $out "\n" unless $first;
-			$first = 0;
-			
-			print $out ">$nm\n";
-			$current_seq = $nm;
-		}
-		
+		# Print fasta SNP sequence for genome
+		print $out ">$nm\n";
 		print $out $aln_row->alignment;
+		print $out "\n";
 		
 	}
 	

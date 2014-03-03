@@ -37,11 +37,13 @@ Akiff Manji, Matt Whiteside
 
 =cut
 
-my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $OUTPUT);
+my ($CONFIG, $DBNAME, $DBUSER, $DBHOST, $DBPASS, $DBPORT, $DBI, $OUTPUT, $PUBLIC);
+$PUBLIC = 0;
 
 GetOptions(
 	'config=s'  => \$CONFIG,
 	'output=s'	=> \$OUTPUT,
+	'nouploads' => \$PUBLIC
 ) or ( system( 'pod2text', $0 ), exit -1 );
 
 # Connect to DB
@@ -64,7 +66,9 @@ $dbsource . ';port=' . $DBPORT if $DBPORT;
 
 my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS) or croak "Could not connect to database.";
 
-# Obtain all contigs and contig collections 
+my @rs;
+
+# Obtain all contigs and contig collections in feature table
 my $contig_rs = $schema->resultset('Feature')->search(
 	{
         'type.name' => "contig",
@@ -82,30 +86,37 @@ my $contig_rs = $schema->resultset('Feature')->search(
 	}
 );
 
-# Obtain all contigs and contig collections 
-my $contig_rs2 = $schema->resultset('PrivateFeature')->search(
-	{
-        'type.name' => "contig",
-        'type_2.name' => "part_of",
-        
-	},
-	{
-		column  => [qw/feature_id uniquename residues/],
-		'+select' => [qw/private_feature_relationship_subjects.object_id/],
-		'+as' => [qw/object_id/],
-		join    => [
-			'type',
-			{'private_feature_relationship_subjects' => 'type'}
-		],
-	}
-);
+push @rs, $contig_rs;
+
+# Obtain all uploaded contigs and contig collections in private
+unless($PUBLIC) {
+	my $contig_rs2 = $schema->resultset('PrivateFeature')->search(
+		{
+	        'type.name' => "contig",
+	        'type_2.name' => "part_of",
+	        
+		},
+		{
+			column  => [qw/feature_id uniquename residues/],
+			'+select' => [qw/private_feature_relationship_subjects.object_id/],
+			'+as' => [qw/object_id/],
+			join    => [
+				'type',
+				{'private_feature_relationship_subjects' => 'type'}
+			],
+		}
+	);
+	
+	push @rs, $contig_rs2;
+	
+}
 
 # Write to FASTA file
 my @prefix = ('public_','private_');
 
 open(my $out, ">", $OUTPUT) or die "Error: unable to write to file $OUTPUT ($!)\n";
 
-foreach my $contigs ($contig_rs, $contig_rs2) {
+foreach my $contigs (@rs) {
 	my $p = shift @prefix;
 	while (my $contig = $contigs->next) {
 		print $out ">lcl|$p" . $contig->get_column('object_id') . "|$p" . $contig->feature_id . "\n" . $contig->residues . "\n";

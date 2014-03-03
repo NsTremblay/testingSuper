@@ -311,7 +311,10 @@ $chado->end_files();
 
 $chado->flush_caches();
 
-$chado->load_data() unless $NOLOAD;
+unless ($NOLOAD) {
+	$chado->load_data();
+	build_genome_tree();
+}
 
 $chado->remove_lock();
 
@@ -624,6 +627,29 @@ sub find_snps {
 	}
 	
 	close $in;
+}
+
+sub build_genome_tree {
+	
+	# Intialize the Tree building modules
+	my $tree_builder = Phylogeny::TreeBuilder->new();
+	my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
+	
+	# write alignment file
+	my $tmp_file = $TMPDIR . 'genodo_genome_aln.txt';
+	$tree_io->writeSnpAlignment($tmp_file);
+	
+	# clear output file for safety
+	my $tree_file = $TMPDIR . 'genodo_genome_tree.txt';
+	open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+	close $out;
+	
+	# build newick tree
+	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+	
+	# Load tree into database
+	my $tree = $tree_io->loadTree($tree_file);
+	
 }
 
 

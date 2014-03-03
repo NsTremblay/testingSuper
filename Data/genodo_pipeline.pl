@@ -342,7 +342,7 @@ sub init {
 	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
 	$blast_dir = '/home/matt/blast/bin/' if $test;
 	$nr_location = '/panseq_results/blast_databases/nr_gammaproteobacteria';
-	$nr_location = '/home/matt/blast_databases/gammaproteobacteria_nr' if $test;
+	$nr_location = '/home/matt/blast_databases/nr_gammaproteobacteria' if $test;
 	
 	$update_step_sth = $dbh->prepare(UPDATE_GENOME);
 

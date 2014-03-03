@@ -108,8 +108,8 @@ sub strain_info : StartRunmode {
 	my $q = $self->query();
 	
 	# Need to replace these param checks with a single genome request.
-	my $strainID = $q->param("singleStrainID");
-	my $privateStrainID = $q->param("privateSingleStrainID");
+	my $strainID;
+	my $privateStrainID;
 	my $feature = $q->param("genome");
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
@@ -120,11 +120,11 @@ sub strain_info : StartRunmode {
 			die "Error: invalid genome ID: $feature.";
 		}
 	}
-
+	
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
-
+		
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
@@ -136,26 +136,58 @@ sub strain_info : StartRunmode {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		$template->param(tree_json => $tree->nodeTree($feature));
 		
-		my $strainVirDataRef = $self->_getVirulenceData($strainID);
-		$template->param(VIRDATA=>$strainVirDataRef);
+		# Get Virulence and AMR genes for genome
+		my $result_hashref = $formDataGenerator->getGeneAlleleData(public_genomes => [$strainID]);
+		my $vf = $result_hashref->{vf};
+		my $amr = $result_hashref->{amr};
+		my $names = $result_hashref->{names};
+		
+		my @virData; my @amrData;
+		
+		foreach my $gene_id (keys %{$amr->{$feature}}) {
+			my %virRow;
+			$virRow{'gene_name'} = $names->{$gene_id};
+			$virRow{'feature_id'} = $gene_id;
+			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
+				$virRow{'allele_count'}++
+			}
+			push (@amrData, \%virRow);
+		}
+		
+		foreach my $gene_id (keys %{$vf->{$feature}}) {
+			my %virRow;
+			$virRow{'gene_name'} = $names->{$gene_id};
+			$virRow{'feature_id'} = $gene_id;
+			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
+				$virRow{'allele_count'}++
+			}
+			push (@virData, \%virRow);
+		}
+		
+		get_logger->debug("NUMBER OF VF:".scalar(@virData));
+		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
+		
+		$template->param(VIRDATA=>\@virData);
 
-		my $strainAmrDataRef = $self->_getAmrData($strainID);
-		$template->param(AMRDATA=>$strainAmrDataRef);
+		$template->param(AMRDATA=>\@amrData);
 
+		# Get loacation data for map
 		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# User requested information on private strain
 		
-		my $privacy_category = $formDataGenerator->verifyAccess($username, $privateStrainID);
+		# Retrieve list of private genomes user can view (need full list to mask unviewable nodes in tree)
+		my ($visable, $has_private) = $formDataGenerator->privateGenomes($username);
 		
-		unless($privacy_category) {
+		unless(defined($visable->{$feature})) {
 			# User requested strain that they do not have permission to view
 			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genome ID: '.$privateStrainID );
 			return $self->redirect( $self->home_page );
 		}
 		
+		my $privacy_category = $visable->{$feature}->{access};
 		my $strainInfoRef = $self->_getStrainInfo($privateStrainID, 0);
 		
 		$template = $self->load_tmpl( 'strain_info.tmpl' ,
@@ -172,14 +204,55 @@ sub strain_info : StartRunmode {
 			$template->param('privacy' => $privacy_category);
 		}
 		
-		my $strainVirDataRef = $self->_getVirulenceData($privateStrainID);
-		$template->param(VIRDATA=>$strainVirDataRef);
+		# Get phylogenetic tree
+		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+		if($has_private) {
+			# Need to use full tree, with non-visable nodes masked
+			$formDataGenerator->publicGenomes(undef, $visable);
+			$template->param(tree_json => $tree->nodeTree($feature, $visable));
+		} else {
+			# Can use public tree
+			$template->param(tree_json => $tree->nodeTree($feature));
+		}
+		
+		# Get Virulence and AMR genes for genome
+		get_logger->debug($privateStrainID);
+		my $result_hashref = $formDataGenerator->getGeneAlleleData(private_genomes => [$privateStrainID]);
+		
+		my $vf = $result_hashref->{vf};
+		my $amr = $result_hashref->{amr};
+		my $names = $result_hashref->{names};
+		
+		my @virData; my @amrData;
+		
+		foreach my $gene_id (keys %{$amr->{$feature}}) {
+			my %virRow;
+			$virRow{'gene_name'} = $names->{$gene_id};
+			$virRow{'feature_id'} = $gene_id;
+			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
+				$virRow{'allele_count'}++
+			}
+			push (@amrData, \%virRow);
+		}
+		
+		foreach my $gene_id (keys %{$vf->{$feature}}) {
+			my %virRow;
+			$virRow{'gene_name'} = $names->{$gene_id};
+			$virRow{'feature_id'} = $gene_id;
+			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
+				$virRow{'allele_count'}++
+			}
+			push (@virData, \%virRow);
+		}
+		
+		get_logger->debug("NUMBER OF VF:".scalar(@virData));
+		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
+		
+		$template->param(VIRDATA=>\@virData);
 
-		my $strainAmrDataRef = $self->_getAmrData($privateStrainID);
-		$template->param(AMRDATA=>$strainAmrDataRef);
+		$template->param(AMRDATA=>\@amrData);
 
 		my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
-		#$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => $strainLocationDataRef);
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
 	} else {
@@ -310,17 +383,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-	{
-		"me.feature_id" => $strainID
+		{
+			"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-			{ 'dbxref' => 'db' },
-			{ $featureprop_rel_name => 'type' },
+				{ 'dbxref' => 'db' },
+				{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-		);
+	);
 	
 	# Create hash
 	my %feature_hash;
@@ -341,14 +414,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-	{
-		feature_id => $feature->feature_id
+		{
+			feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-		);
+	);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -393,6 +466,7 @@ sub _getStrainInfo {
 	return(\%feature_hash);
 }
 
+=cut
 sub _getVirulenceData {
 	my $self = shift;
 	my $strainID = shift;
@@ -444,6 +518,7 @@ sub _getAmrData {
 	}
 	return \@amrData;
 }
+=cut
 
 sub _getStrainLocation {
 	my $self = shift;

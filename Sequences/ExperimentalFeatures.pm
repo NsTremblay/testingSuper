@@ -1,7 +1,12 @@
 package Sequences::ExperimentalFeatures;
 
-use Inline C;
 use strict;
+
+use Inline (Config =>
+			DIRECTORY => '/home/matt/Inline', );
+use Inline 'C';
+Inline->init;
+
 use warnings;
 use DBI;
 use Carp qw/croak carp confess/;
@@ -3808,11 +3813,9 @@ sub print_alignment_lengths {
 	print "\n";
 }
 
-
-
 1;
 
-__END__
+__DATA__
 __C__
 
 // Make a series of edits to a dna string

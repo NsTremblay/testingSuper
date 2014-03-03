@@ -337,7 +337,7 @@ sub allele {
 	
 	# contig_collection
 	my $contig_collection = $header;
-	my ($access, $contig_collection_id) = ($contig_collection =~ m/lcl\|(public|private)_(\d+)/);
+	my ($access, $contig_collection_id) = ($contig_collection =~ m/(?:lcl\|)?(public|private)_(\d+)/);
 	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
 	
 	# privacy setting
@@ -350,7 +350,8 @@ sub allele {
 	
 	# contig
 	my $contig = $loc_hash->{contig};
-	my ($access2, $contig_id) = ($contig =~ m/\|(public|private)_(\d+)$/);
+	my ($access2, $contig_id) = ($contig =~ m/(?:\|)?(public|private)_(\d+)$/);
+	croak "Invalid contig ID format: $contig\n" unless $access2;
 	
 	# contig sequence positions
 	my $start = $loc_hash->{start};
@@ -426,9 +427,8 @@ sub allele {
 		# external accessions
 		my $dbxref = '\N';
 		
-		# uniquename & name
+		# name
 		my $name = "$query_name allele";
-		$chado->uniquename_validation($uniquename, $type, $curr_feature_id, $is_public);
 		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);

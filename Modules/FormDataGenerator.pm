@@ -50,6 +50,14 @@ sub new {
 	my $self = {};
 	bless( $self, $class );
 	$self->_initialize(@_);
+	
+	# For displaynames
+	my $private_suffix = ' [P]';
+    my $public_suffix = ' [G]';
+    $self->{private_suffix} = $private_suffix;
+    $self->{public_suffix} = $public_suffix;
+    
+	
 	return $self;
 }
 
@@ -131,12 +139,13 @@ sub getFormData {
     #$self->_getNameMap();
     #$self->_getAccessionMap();
     
-    return($publicFormData, $privateFormData , $pubEncodedText);
+    return($publicFormData, $privateFormData, $pubEncodedText);
 }
 
 sub publicGenomes {
 	my $self = shift;
 	my $subset_ids = shift;
+	my $visable_nodes = shift;
 	
 	my $select_stmt = {
 		'type.name' =>  'contig_collection'
@@ -155,16 +164,31 @@ sub publicGenomes {
 			order_by    => {-asc => ['me.uniquename']}
 	    }
 	);
+	
+	$visable_nodes = {} unless defined $visable_nodes;
 
-    my @publicFormData = $genomes->all;
-    
-    return \@publicFormData;
+	while (my $row_hash = $genomes->next) {
+		my $display_name = $row_hash->{uniquename};
+		my $fid = $row_hash->{feature_id};
+		
+		my $key = "public_$fid";
+		$visable_nodes->{$key} = {
+			feature_id => $fid,
+			displayname => $display_name,
+			uniquename => $display_name,
+			access => 0
+		};
+		
+	}
+   
+	return ($visable_nodes);
 }
 
 sub privateGenomes {
     my $self = shift;
     my $username = shift;
     my $subset_ids = shift;
+    my $visable_nodes = shift;
     
     if($username) {
         # user is logged in
@@ -182,6 +206,7 @@ sub privateGenomes {
 				'type.name'       => 'contig_collection',
 			},
 		];
+		
 		if($subset_ids) {
 			croak unless ref($subset_ids) eq 'ARRAY';
 			$select_stmt = [
@@ -212,19 +237,33 @@ sub privateGenomes {
 			}
 		);
         
-        my @privateFormData = $genomes->all;
+        $visable_nodes = {} unless defined $visable_nodes;
+        my $has_private = 0;
 
-        foreach my $row_hash (@privateFormData) {
+		while (my $row_hash = $genomes->next) {
+        #foreach my $row_hash (@privateFormData) {
 			my $display_name = $row_hash->{uniquename};
-			if($row_hash->{upload}->{category} eq 'public') {
-			   $display_name .= ' [Pub]';
+			my $fid = $row_hash->{feature_id};
+			my $acc = $row_hash->{upload}->{category};
+			
+			if($acc eq 'public') {
+			   $display_name .= $self->{public_suffix};
 			} else {
-			     $display_name .= ' [Pri]';
+			     $display_name .= $self->{private_suffix};
+			     $has_private = 1;
 			}
-			$row_hash->{displayname} = $display_name;
+			
+			my $key = "private_$fid";
+			$visable_nodes->{$key} = {
+				feature_id => $fid,
+				displayname => $display_name,
+				uniquename => $row_hash->{uniquename},
+				access => $acc
+			};
+			
         }
 
-        return \@privateFormData;
+        return ($visable_nodes, $has_private);
 
 	} else {
 		# Return user-uploaded public genome names as list of hash-refs
@@ -250,24 +289,32 @@ sub privateGenomes {
 	
 	        }
         );
+        
+        $visable_nodes = {} unless defined $visable_nodes;
+        my $has_private = 0;
 
-		my @privateFormData = $genomes->all;
-
-		foreach my $row_hash (@privateFormData) {
-			my $display_name = $row_hash->{uniquename};
-
-			$row_hash->{displayname} = $display_name . ' [Pub]';
-		}
-
-		return \@privateFormData;
+		while (my $row_hash = $genomes->next) {
+			my $display_name = $row_hash->{uniquename} . $self->{public_suffix};
+			my $fid = $row_hash->{feature_id};
+			my $acc = 'public';
+			
+			my $key = "private_$fid";
+			$visable_nodes->{$key} = {
+				feature_id => $fid,
+				displayname => $display_name,
+				uniquename => $row_hash->{uniquename},
+				access => $acc
+			};
+			
+        }
+        
+		return($visable_nodes, $has_private);
 	}
 }
 
 =head2 _hashFormData
 
 Hashes row entries returned from the database and returns an array ref to a list of these rows.
-
-=cut
 
 sub _hashFormData {
     my $self = shift;
@@ -281,6 +328,7 @@ sub _hashFormData {
     }
     return \@formData;
 }
+=cut
 
 =head2 getGenomeUploadFormData
 
@@ -330,16 +378,15 @@ Returns an array ref to form entry data.
 sub getVirulenceFormData {
     my $self = shift;
     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'featureprops.value' => "Virulence Factor",
-        'type.name' => "virulence_factor"
+		{
+        	'type.name' => "virulence_factor"
         },
         {
-            column  => [qw/feature_id type_id me.name uniquename type.name featureprops.value/],
-            join        => ['featureprops' , 'type'],
+			column  => [qw/feature_id type_id name uniquename/],
+            join        => ['type'],
             order_by    => { -asc => ['name'] }
         }
-        );
+	);
     my $virulenceFormDataRef = $self->_hashVirAmrFormData($_virulenceFactorProperties);
     my $encodedText = encode_json($virulenceFormDataRef);
     return $encodedText;
@@ -355,15 +402,15 @@ Returns an array ref to form entry data.
 sub getAmrFormData {
     my $self = shift;
     my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'type.name' => "antimicrobial_resistance_gene"
+    	{
+			'type.name' => "antimicrobial_resistance_gene"
         },
         {
-            column  => [qw/feature_id type_id name uniquename/],
+			column  => [qw/feature_id type_id name uniquename/],
             join        => ['type'],
-            order_by    => { -asc => ['name'] }
-        }
-        );
+        	order_by    => { -asc => ['name'] }
+		}
+	);
     my $amrFormDataRef = $self->_hashVirAmrFormData($_amrFactorProperties);
     my $encodedText = encode_json($amrFormDataRef);
     return $encodedText;
@@ -411,6 +458,8 @@ sub _getJSONFormat {
     return $_encodedText;
 }
 
+=cut
+
 sub dataViewSerotype {
     my $self=shift;
     my $publicIdList=shift;
@@ -450,6 +499,7 @@ sub dataViewIsolationLocation {
     my $isolationLocationJson = $self->publicDataViewList($publicIdList,$searchParam);
     return $isolationLocationJson;
 }
+=cut
 
 sub publicDataViewList {
     my $self=shift;
@@ -530,8 +580,8 @@ sub _getNameMap {
         my $editedFeatureName = $featureRow->name;  
         $editedFeatureName =~ s/:/_/g;
         $editedFeatureName =~ s/\(/_/g;
-            $editedFeatureName =~ s/\)/_/g;
-$editedFeatureName =~ s/ /_/g;
+           $editedFeatureName =~ s/\)/_/g;
+		$editedFeatureName =~ s/ /_/g;
 print (OUT "public_" . $featureRow->feature_id . "\t" . $editedFeatureName . "\n");
 }
 close(OUT);
@@ -723,16 +773,19 @@ sub _runGenomeQuery {
 				my $displayname = $feature_hash{uniquename};
 				
 				if($feature->upload->category eq 'public') {
-					$feature_hash{displayname} = $displayname . ' [Pub]';
-                    } else {
-                     $feature_hash{displayname} = ' [Pri]';
-                 }
+					$feature_hash{displayname} = $displayname . $self->{public_suffix};
+				} else {
+					$feature_hash{displayname} = $displayname . $self->{private_suffix};
+				}
 
-                 } else {
+			} else {
 				# User not logged in, all user genomes must be public
 				my $displayname = $feature_hash{uniquename};
-				$feature_hash{displayname} = $displayname . ' [Pub]';
+				$feature_hash{displayname} = $displayname . $self->{public_suffix};
 			}
+			
+		} else {
+			$feature_hash{displayname} = $feature_hash{uniquename};
 		}
 		
 		# Featureprop data
@@ -773,28 +826,28 @@ sub loadMetaData {
 	my $usr_json = encode_json($user_public_genomes);
 	
 	$self->dbixSchema->resultset('Meta')->update_or_create(
-  {
-   name             => 'public',
-   format           => 'json',
-   data_string      => $pub_json,
-   timelastmodified => \'now()'
-   },
-   {
-       key => 'meta_c1'
-   }
-   );
+		{
+			name             => 'public',
+			format           => 'json',
+			data_string      => $pub_json,
+			timelastmodified => \'now()'
+		},
+		{
+			key => 'meta_c1'
+		}
+	);
 	
 	$self->dbixSchema->resultset('Meta')->update_or_create(
-  {
-   name             => 'upublic',
-   format           => 'json',
-   data_string      => $usr_json,
-   timelastmodified => \'now()'
-   },
-   {
-       key => 'meta_c1'
-   }
-   );
+		{
+			name             => 'upublic',
+			format           => 'json',
+			data_string      => $usr_json,
+			timelastmodified => \'now()'
+		},
+		{
+			key => 'meta_c1'
+		}
+	);
 	
 }
 
@@ -868,6 +921,7 @@ Returns:
   sequence alignment of gene alleles.
 
 =cut
+
 sub seqAlignment {
 	my ($self, $locus, $visable) = @_;
 	
@@ -955,6 +1009,170 @@ sub seqAlignment {
 	
 	return encode_json(\%alignment);
 	
+}
+
+=head2 getGeneAlleleData
+
+seqAlignent(feature_id, visable_hash)
+
+Inputs:
+ -feature_id       A query gene feature_id. 
+                    Must be 'query_gene' type.
+ -visable_hash     Hash containing
+	                 public_/private_feature_ids => uniquename
+	                                
+MAKE SURE THE USER CAN ACCESS THESE GENOMES
+DO NOT RELEASE PRIVATE SEQUENCES!	                                
+
+Returns: 
+  a JSON string representing a multiple
+  sequence alignment of gene alleles.
+
+=cut
+
+sub getGeneAlleleData {
+	my $self = shift;
+	my (%args) = @_;
+	
+	get_logger->debug(%args);
+#	$self->dbixSchema->storage->debug(1);
+#	$self->dbixSchema->storage->debugfh(IO::File->new('/tmp/trace.out', 'w'));
+	
+	# A subset of genomes must be defined
+	# If no 
+	my $public_genomes = $args{public_genomes};
+	my $private_genomes = $args{private_genomes};
+	
+	unless(($public_genomes && ref($public_genomes) eq 'ARRAY') || ($private_genomes && ref($private_genomes) eq 'ARRAY')) {
+		croak "Error: must provide array reference 'public_genomes' or 'private_genomes' as an argument."
+	}
+	
+	# Grab some type IDs
+	# Probably should have this hard-coded somewhere
+	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
+		{
+			name => [qw(similar_to part_of antimicrobial_resistance_gene virulence_factor allele)]
+		},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			columns => [qw/cvterm_id name/]
+	    }
+	);
+	my %types;
+	while (my $hashref = $type_rs->next) {
+		$types{$hashref->{'name'}} = $hashref->{'cvterm_id'}
+	}
+	my $amr_type = $types{'antimicrobial_resistance_gene'};
+	my $vf_type = $types{'virulence_factor'};
+	
+	my %amr_alleles;
+	my %vf_alleles;
+	my %gene_names;
+	
+	if($public_genomes) {
+		
+		# Retreive allele hits for each query gene (can be AMR/VF)
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $types{'similar_to'},
+			'feature_relationship_subjects.type_id' => $types{'part_of'},
+			'feature_relationship_subjects.object_id' => {'-in' => $public_genomes}
+		};
+		
+		# Select only for specific AMR/VF genes
+		if($args{markers}) {
+			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => 'feature_relationship_subjects'},
+					'object'
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $type_id = $allele_row->object->type_id;
+			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			my $gene_name = $allele_row->object->uniquename;
+			
+			$gene_names{$gene_id} = $gene_name;
+			
+			if($type_id == $vf_type) {
+				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
+				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
+				
+			} if($type_id == $amr_type) {
+				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
+				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
+				
+			} else {
+				get_logger->warn("Unrecognized allele type ID $type_id.\n");
+			}
+		}
+	}
+	
+	if($private_genomes) {
+		
+		# Retreive allele hits for each query gene (can be AMR/VF)
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $types{'similar_to'},
+			'private_feature_relationship_subjects.type_id' => $types{'part_of'},
+			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
+		};
+		
+		# Select only for specific AMR/VF genes
+		if($args{markers}) {
+			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('PripubFeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => 'private_feature_relationship_subjects'},
+					'object'
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $type_id = $allele_row->object->type_id;
+			my $genome_label = 'private_'.$allele_row->subject->private_feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			my $gene_name = $allele_row->object->uniquename;
+			
+			$gene_names{$gene_id} = $gene_name;
+			
+			if($type_id == $vf_type) {
+				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
+				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
+				
+			} if($type_id == $amr_type) {
+				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
+				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
+				
+			} else {
+				get_logger->warn("Unrecognized allele type ID $type_id.\n");
+			}
+		}
+		
+	}
+	
+	return({names => \%gene_names, amr => \%amr_alleles, vf => \%vf_alleles});
 }
 
 1;

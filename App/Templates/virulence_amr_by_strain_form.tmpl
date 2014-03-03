@@ -145,7 +145,7 @@ genomeLabels = {};
 								<script>
 								$.each(amr_genes, function(amr_id, amr_obj) {
 									$('#amrList').append(
-										'<tr><td>'+amr_obj.name+' - '+amr_obj.uniquename+'<a href="/virulence-factors/view?amr='+amr_obj.feature_id+'"><i class="icon-search"></i> info</a></td></tr>'
+										'<tr><td>'+amr_obj.uniquename+'<a href="/virulence-factors/view?amr='+amr_obj.feature_id+'"><i class="icon-search"></i> info</a></td></tr>'
 										);
 								});
 								</script>
@@ -206,12 +206,14 @@ $('#compareSelections').click( function(e) {
 	// Retrieve 
 	$.post("/virulence-factors/binaryMatrix/", params, 
 		function(data){
-			//console.log(params);
+			console.log(data);
 			current_results = data;
-
+			
 			$('#wheel-loader').hide();
 			
-			if(typeof data.amr !== 'undefined') {
+			if(!$.isEmptyObject(data.amr)) {
+				
+				
 				var success = displayMatrix(data.amr, data.genome_order, $('#amrByStrainTable'), 'amr');
 				
 				if(success) {
@@ -221,7 +223,7 @@ $('#compareSelections').click( function(e) {
 				}
 			}
 			
-			if(typeof data.vf !== 'undefined') {
+			if(!$.isEmptyObject(data.vf)) {
 				var success = displayMatrix(data.vf, data.genome_order, $('#virByStrainTable'), 'vf');
 				
 				if(success) {
@@ -233,11 +235,12 @@ $('#compareSelections').click( function(e) {
 			
 		},
 		'json'
-		);
+	);
 	
 });
 
 function displayMatrix(data, genomes, tabElem, type) {
+	
 	var visibleData = ['name'];
 
 	// Construct table
@@ -291,14 +294,17 @@ function displayMatrix(data, genomes, tabElem, type) {
 		
 		var darray = data[gene_id]
 		
-		for(var j in darray) {
-
-			if (darray[j] == 1) {
+		for(var i in genomes) {
+			var g = genomes[i];
+			var copies = darray[g];
+			
+			if (copies >= 1) {
 				row.append('<td class="present"><i class="icon-ok"></td>');
 			}
 			else {
 				row.append('<td class="absent"><i class="icon-remove"></td>');
 			}
+			
 		}
 	}
 	
@@ -366,4 +372,4 @@ function selectAll(type) {
 		};
 	})(jQuery);
 
-	</script>
+</script>

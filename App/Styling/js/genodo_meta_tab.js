@@ -10,7 +10,7 @@
 // VF/AMR - Strain Selection
 
 function MetaTab(tab) {
-	this.labels = {strainList: "the list of genomes", attrList: "the search results", treeList: "the tree", mapList: "the list of genomes with locations"}
+	this.labels = {strainList: "the list of genomes", attrList: "the search results", treeList: "the tree", mapList: "the list of genomes with locations"};
 
 	this.tab = tab;
 	// Build form
@@ -60,7 +60,7 @@ MetaTab.prototype.updateSelections = function(selected, checked, selections) {
 MetaTab.prototype.metaLabel = function(feature, vdata) {
 	var label = [];
 	if(vdata.indexOf('name') != -1) {
-		label.push(feature.uniquename);
+		label.push(feature.displayname);
 	}
 	
 	if(vdata.indexOf('accession') != -1) {

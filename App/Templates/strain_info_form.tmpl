@@ -44,17 +44,13 @@
 				</fieldset>
 			</form>
 			
-			<TMPL_IF PRIVATE_DATA>
-			<form class="form" action="/strain-info/strain_info" method="post" enctype="application/x-www-form-urlencoded">
+			<form id="priStrainInfoSearch" class="form" action="/strain-info/strain_info" method="post" enctype="application/x-www-form-urlencoded">
 				<fieldset>
 					<p style="color:#796e6c">Or select from user submitted genomes:<br>
-						<span style="padding-left:20px"><small>[Pri] private</small></span>
-						<span style="padding-left:20px"><small>[Pub] public</small></span>
+						<span style="padding-left:20px"><small>[P] private</small></span>
+						<span style="padding-left:20px"><small>[G] public (a.k.a global)</small></span>
 					</p>
-					<select class="span12" style="margin:10px 0px 0px 0px" name="privateSingleStrainID">
-						<TMPL_LOOP NAME=PRIVATE_FEATURES>
-						<option value='<TMPL_VAR NAME=FEATURE_ID>'><TMPL_VAR NAME=DISPLAYNAME></option>
-						</TMPL_LOOP>
+					<select id="priStrainList" class="span12" style="margin:10px 0px 0px 0px" name="genome">
 					</select>
 					<div style="margin:10px 0px 0px 0px">
 						<button id="showSSInfo" type="submit" class="btn btn-small btn-primary" value="Submit"><i class="icon-search icon-white"></i> Search</button>
@@ -62,7 +58,6 @@
 					</div>
 				</fieldset>
 			</form>
-			</TMPL_IF>
 
 		</div>
 	</div>
@@ -88,61 +83,90 @@
 
 	// UpdateMeta is a common function in all pages but implemented differently
 	function updateMeta(selectedMetaData) {
-	// Default is to display just the name
-	if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
-		selectedMetaData = ['name'];
-	}
-
-	// Generate new labels
-	var dropDown = $('#pubStrainList')
-	dropDown.empty();
-	var availableTags = [];
-	$.each( public_genomes, function(i, n) {
-		var lab = metaTab.metaLabel(n, selectedMetaData);
-		availableTags.push ( { label:lab, value:i } );
-	});
-	
-	// Add to display
-	availableTags.sort(function(a, b) {
-	    // Compare the 2 labels
-	    if(a.label < b.label) return -1;
-	    if(a.label > b.label) return 1;
-	    return 0;
-	});
-	
-	$.each( availableTags, function(i, n) {
-		dropDown.append(
-			$('<option></option>').val(n.value).html(n.label)
-			);
-	});
-	
-	$("#strain-autocomp").autocomplete({
-		source: availableTags,
-		select: function( event, ui ) {
-			$("#strain-autocomp").val( ui.item.label );
-			$("#strain-autocomp-hidden").val( ui.item.value );
-			return false;
-		},
-		focus: function( event, ui ) {
-			$("#strain-autocomp").val( ui.item.label );
-			return false;  
+		// Default is to display just the name
+		if(typeof selectedMetaData === 'undefined' || selectedMetaData.length == 0) {
+			selectedMetaData = ['name'];
 		}
+	
+		// Generate new labels
+		var dropDown = $('#pubStrainList')
+		dropDown.empty();
+		var availableTags = [];
+		$.each( public_genomes, function(i, n) {
+			var lab = metaTab.metaLabel(n, selectedMetaData);
+			availableTags.push ( { label:lab, value:i } );
+		});
+		
+		// Add to display
+		availableTags.sort(function(a, b) {
+		    // Compare the 2 labels
+		    if(a.label < b.label) return -1;
+		    if(a.label > b.label) return 1;
+		    return 0;
+		});
+		
+		$.each( availableTags, function(i, n) {
+			dropDown.append(
+				$('<option></option>').val(n.value).html(n.label)
+			);
+		});
+		
+		$("#strain-autocomp").autocomplete({
+			source: availableTags,
+			select: function( event, ui ) {
+				$("#strain-autocomp").val( ui.item.label );
+				$("#strain-autocomp-hidden").val( ui.item.value );
+				return false;
+			},
+			focus: function( event, ui ) {
+				$("#strain-autocomp").val( ui.item.label );
+				return false;  
+			}
+		});
+		
+		// Private strains
+		if(! $.isEmptyObject(private_genomes)) {
+			
+			// Prepare new labels
+			var dropDown2 = $('#priStrainList')
+			dropDown2.empty();
+			var availableTags2 = [];
+			$.each( private_genomes, function(i, n) {
+				var lab = metaTab.metaLabel(n, selectedMetaData);
+				availableTags2.push ( { label:lab, value:i } );
+			});
+			
+			// Add to display
+			availableTags2.sort(function(a, b) {
+			    // Compare the 2 labels
+			    if(a.label < b.label) return -1;
+			    if(a.label > b.label) return 1;
+			    return 0;
+			});
+			
+			$.each( availableTags2, function(i, n) {
+				dropDown2.append(
+					$('<option></option>').val(n.value).html(n.label)
+				);
+			});
+		}
+		
+		
+	}
+	
+	$('#strainInfoSearchButton').click(function(){
+		checkSIFields(pubStrainInfoSearch);
 	});
-}
-
-$('#strainInfoSearchButton').click(function(){
-	checkSIFields(pubStrainInfoSearch);
-});
-
-function checkSIFields(pubStrainInfoSearch) {
-	if (pubStrainInfoSearch.genome.value == "") {
-		alert("You must enter a valid search term.");
-		return false;
+	
+	function checkSIFields(pubStrainInfoSearch) {
+		if (pubStrainInfoSearch.genome.value == "") {
+			alert("You must enter a valid search term.");
+			return false;
+		}
+		else {
+			$('#pubStrainInfoSearch').submit();
+			return true;
+		}
 	}
-	else {
-		$('#pubStrainInfoSearch').submit();
-		return true;
-	}
-}
 
 </script>
