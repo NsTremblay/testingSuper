@@ -582,7 +582,7 @@ function legend() {
 		.attr("dx", -7)
 		.attr("dy", "0")
 		.attr("text-anchor", "start")
-		.text("Click and drag to pan / Mouse wheel to zoom");
+		.text("Click and drag to pan / Mouse wheel to zoom. The selected strain name is in bold and highlighted in yellow below.");
 
 }
 
