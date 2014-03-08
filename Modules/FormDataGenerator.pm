@@ -144,8 +144,8 @@ sub getFormData {
 
 sub publicGenomes {
 	my $self = shift;
-	my $subset_ids = shift;
 	my $visable_nodes = shift;
+	my $subset_ids = shift;
 	
 	my $select_stmt = {
 		'type.name' =>  'contig_collection'
@@ -180,15 +180,13 @@ sub publicGenomes {
 		};
 		
 	}
-   
-	return ($visable_nodes);
 }
 
 sub privateGenomes {
     my $self = shift;
     my $username = shift;
-    my $subset_ids = shift;
     my $visable_nodes = shift;
+    my $subset_ids = shift;
     
     if($username) {
         # user is logged in
@@ -263,7 +261,7 @@ sub privateGenomes {
 			
         }
 
-        return ($visable_nodes, $has_private);
+        return ($has_private);
 
 	} else {
 		# Return user-uploaded public genome names as list of hash-refs
@@ -308,7 +306,7 @@ sub privateGenomes {
 			
         }
         
-		return($visable_nodes, $has_private);
+		return($has_private);
 	}
 }
 

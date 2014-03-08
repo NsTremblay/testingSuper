@@ -635,8 +635,8 @@ sub view : Runmode {
 
 	# Validate genomes
 	my %visable_genomes;
-	my $public_genomes;
-	my $private_genomes;
+	my %public_genomes;
+	my %private_genomes;
 	my $subset_genomes = 0;
 	if(@genomes) {
 		$subset_genomes = 1;
@@ -646,10 +646,11 @@ sub view : Runmode {
 		croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
 		
 		# Retrieve genome names accessible to user
-		$public_genomes = $data->publicGenomes(\@public_ids);
-		($private_genomes) = $data->privateGenomes($user, \@private_ids);
 		
-		%visable_genomes = (%$public_genomes, %$private_genomes);
+		$data->publicGenomes(\%public_genomes, \@public_ids);
+		$data->privateGenomes($user, \%private_genomes, \@private_ids);
+		
+		%visable_genomes = (%public_genomes, %private_genomes);
 		
 		unless(keys %visable_genomes) {
 			# User requested strains that they do not have permission to view
@@ -659,10 +660,10 @@ sub view : Runmode {
 		
 	} else {
 		# Default is to show all viewable genomes
-		$public_genomes = $data->publicGenomes();
-		($private_genomes) = $data->privateGenomes($user);
+		$data->publicGenomes(\%public_genomes);
+		$data->privateGenomes($user, \%private_genomes);
 		
-		%visable_genomes = (%$public_genomes, %$private_genomes);
+		%visable_genomes = (%public_genomes, %private_genomes);
 	}
 	
 	# Template
@@ -676,7 +677,7 @@ sub view : Runmode {
 	$template->param(gene_info => $qgene_info);
 
 	# Retrieve presence / absence
-	my $all_alleles = _getResidentGenomes($data, [$qgene], $subset_genomes, $private_genomes, $public_genomes);
+	my $all_alleles = _getResidentGenomes($data, [$qgene], $subset_genomes, \%private_genomes, \%public_genomes);
 	my $gene_alleles = $all_alleles->{$qtype}->{$qgene};
 		
 	my $allele_json = encode_json($gene_alleles); # Only encode the lists for the gene we need
@@ -826,10 +827,12 @@ sub binaryMatrix : RunMode {
 	croak "Error: one or more invalid genome parameters." unless ( scalar(@private_ids) + scalar(@public_ids) == scalar(@genomes) );
 
 	# check user can view genomes
-	my $public_genomes = $data->publicGenomes(\@public_ids);
-	my ($private_genomes) = $data->privateGenomes($user, \@private_ids);
+	my %public_genomes;
+	my %private_genomes;
+	$data->publicGenomes(\%public_genomes, \@public_ids);
+	$data->privateGenomes($user, \%private_genomes, \@private_ids);
 		
-	my %visable_genomes = (%$public_genomes, %$private_genomes);
+	my %visable_genomes = (%public_genomes, %private_genomes);
 	
 	unless(keys %visable_genomes) {
 		# User requested strains that they do not have permission to view
@@ -838,7 +841,7 @@ sub binaryMatrix : RunMode {
 	}
 	
 	# Get presence/absence
-	my $results = _getResidentGenomes($data, \@amr, \@vf,  1, $private_genomes, $public_genomes);
+	my $results = _getResidentGenomes($data, \@amr, \@vf,  1, \%private_genomes, \%public_genomes);
 	
 	my $json =  encode_json($results);
 	get_logger->debug($json);

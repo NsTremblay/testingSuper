@@ -3,7 +3,7 @@ package Sequences::ExperimentalFeatures;
 use strict;
 
 use Inline (Config =>
-			DIRECTORY => '/home/matt/Inline', );
+			DIRECTORY => '/home/ubuntu/Inline', );
 use Inline 'C';
 Inline->init;
 

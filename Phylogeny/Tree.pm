@@ -568,9 +568,9 @@ sub visableGenomes {
 	$data->dbixSchema($self->dbixSchema);
 	
 	my %visable;
-	$data->publicGenomes(undef, \%visable);
+	$data->publicGenomes(\%visable);
 	
-	$data->privateGenomes(undef, undef, \%visable);
+	$data->privateGenomes(undef, \%visable);
 
 	return \%visable;
 }
