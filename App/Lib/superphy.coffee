@@ -22,21 +22,56 @@ root.Superphy or= {}
 ###
 class ViewController
   constructor: ->
-    alert 'Error: jQuery must be loaded before this libary' unless jQuery?
+    alert 'SuperPhy Error: jQuery must be loaded before the SuperPhy libary' unless jQuery?
+    
+  # Properties
+  
+  # View objects in window
+  views: []
+  
+  # Main action triggered by clicking on genome
+  actionType: undefined
+  
+  
+  
+  # Methods
+  init: (type) ->
+    unless type is 'single_select' or type is 'multi_select' or type is 'two_groups'
+      alert 'SuperPhy Error: unrecognized type in ViewController init() method.'
+    
+    
+    
+  createView: (viewType, elem, submitAction) ->
     
   
+  #select:
+    
+  #addToGroup:
+    
+  #submit:
+    
   
+    
+  
+    
+  
+
+# Return instance of a ViewController
 unless root.ViewController
-  root.ViewController = ViewController
+  root.ViewController = new ViewController
 
 
 ###
  CLASS ViewTemplate
  
- Genome list 
+ Template object for views. Defines required and
+ common properties/methods. All view objects
+ are descendants of the ViewTemplate.
 
 ###
 class ViewTemplate
+  type: undefined
+  
   update: (elem, genomes) ->
     alert "Error: update() must be defined in child class."
       
@@ -48,10 +83,13 @@ class ViewTemplate
 
 ###
 class ListView extends ViewTemplate
+  type: 'list'
+  
   update: (elem, gc) ->
     
     jQuery(elem).append ->
       '<p>HELLO</p>'
+      
   
 # Add to global namespace
 unless root.ListView
@@ -196,7 +234,11 @@ class GenomeController
 # Add to global namespace
 unless root.GenomeController
   root.GenomeController = GenomeController
-  
+
+
+
+
+
 ###
 
   HELPER FUNCTIONS
