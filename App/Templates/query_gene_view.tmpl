@@ -241,7 +241,7 @@
 	function displayVF(vir){
 		$('#description').empty();
 		$('#description').append('<div class="span5"><span class="muted", style="margin-left:20px;">Virulence Factor: </span></div>'+
-			'<div class="span7"><h4>'+vir.data[0].gene_name+' ('+vir.data[0].uniquename+') '+'</h4></div>');
+			'<div class="span7"><h4>'+vir[0].gene_name+' ('+vir[0].uniquename+') '+'</h4></div>');
 
 		for (var i = 1; i < vir.length; i++) {
 			$('#description').append('<div class="span12" style="margin:20px 0px 5px 20px"><span class="text-info" id="vfTerms"><strong>' + vir[i].term_name + '</strong></span></div><div class="span12"><ol><li style="padding-left:10px">' + vir[i].value + '</li></ol></div>');

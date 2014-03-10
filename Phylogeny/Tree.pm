@@ -265,9 +265,19 @@ sub _pruneNodeRecursive {
 	} else {
 		# Leaf node
 		
-		croak "Leaf node with no defined name at depth $depth.\n" unless $node->{name};
-		if($visable_nodes->{$node->{name}}) {
-			my $label = $visable_nodes->{$node->{name}}->{$name_key};
+		my $name = $node->{name};
+		croak "Leaf node with no defined name at depth $depth.\n" unless $name;
+		if($name =~ m/^upl_/) {
+			get_logger->warn("SERIOUS BUG DETECTED! genome node in tree contains a temporary ID and will be omitted from pruned tree. Tree needs to be reloaded to correct. ");
+			return;
+		}
+		my ($access, $genomeId) = ($name =~ m/^(public|private)_(\d+)/);
+		croak "Leaf node name $name does not contain valid genome ID at depth $depth.\n" unless $access && $genomeId;
+		
+		my $genome_name = "$access\_$genomeId";
+		
+		if($visable_nodes->{$genome_name}) {
+			my $label = $visable_nodes->{$genome_name}->{$name_key};
 			# Add a label to the leaf node
 			$node->{label} = $label;
 			$node->{leaf} = 'true';
@@ -621,8 +631,17 @@ sub geneTree {
 	my $tree;
 	eval $tree_row->tree_string;
 	
+	{
+		$Data::Dumper::Indent = 1;
+		$Data::Dumper::Sortkeys = 1;
+		get_logger->debug(Dumper $tree);
+		
+	}
+	
 	# Remove genomes not visable to user
 	my $user_tree = $self->pruneTree($tree, $visable);
+	
+	get_logger->debug('UT'.$user_tree);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);

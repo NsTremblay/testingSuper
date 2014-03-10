@@ -491,6 +491,26 @@ sub load_tree {
 	chomp $tree;
 	close $tfh;
 	
+	# convert the temporary Ids to the final DB Ids
+	my %conversions;
+	while($tree =~ m/upl_(\d+)/g) {
+		my $tracker_id = $1;
+		
+		next if $conversions{$tracker_id}; # Already looked up new Id
+		
+		# Retrieve contig_collection feature IDs
+		my $contig_num = 1; # Use arbitrary contig
+		my ($contig_collection_id, $contig_id) = $chado->retrieve_contig_info($tracker_id, $contig_num);
+		croak "Missing feature IDs in pipeline cache for tracker ID $tracker_id and contig $contig_num.\n" unless $contig_collection_id;
+	
+		$conversions{$tracker_id} = "private_$contig_collection_id";
+	}
+	
+	foreach my $old (keys %conversions) {
+		my $new = $conversions{$old};
+		$tree =~ s/$old/$new/g;
+	}
+	
 	# store tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_group);
 	

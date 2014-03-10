@@ -448,9 +448,11 @@ function dataLabel(node, public_genomes, private_genomes, vdata) {
 	
 	var node_data;
 	if(/^public_/.test(node)) {
-		node_data = public_genomes[node]
+		var id = node.match(/^public_\d+/);
+		node_data = public_genomes[id]
 	} else {
-		node_data = private_genomes[node]
+		var id = node.match(/^private_\d+/);
+		node_data = private_genomes[id]
 	}
 	
 	if(typeof node_data === 'undefined') {

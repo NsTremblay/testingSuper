@@ -337,7 +337,7 @@ sub vf_meta_info : Runmode {
 	my $vFMetaFirstRow = $_virulenceFactorMetaProperties->first;
 	my %vFMetaFirst;
 
-	$vFMetaFirst{'feature_id'} = $vFMetaFirstRow->feature->feature_id;
+	$vFMetaFirst{'feature_id'} = $_vFFeatureId;
 	$vFMetaFirst{'uniquename'} = $vFMetaFirstRow->feature->uniquename;
 	$vFMetaFirst{'gene_name'} = $vFMetaFirstRow->feature->name;
 
@@ -607,12 +607,16 @@ sub view : Runmode {
 	my $q = $self->query();
 	my $qgene;
 	my $qtype;
+	my @amr;
+	my @vf;
 	if($q->param('amr')) {
 		$qtype='amr';
 		$qgene = $q->param('amr');
+		push @amr, $qgene;
 	} elsif($q->param('vf')) {
 		$qtype='vf';
 		$qgene = $q->param('vf');
+		push @vf, $qgene;
 	}
 	my @genomes = $q->param("genome");
 
@@ -677,19 +681,24 @@ sub view : Runmode {
 	$template->param(gene_info => $qgene_info);
 
 	# Retrieve presence / absence
-	my $all_alleles = _getResidentGenomes($data, [$qgene], $subset_genomes, \%private_genomes, \%public_genomes);
+	my $all_alleles = _getResidentGenomes($data, \@amr, \@vf, $subset_genomes, \%private_genomes, \%public_genomes);
 	my $gene_alleles = $all_alleles->{$qtype}->{$qgene};
-		
-	my $allele_json = encode_json($gene_alleles); # Only encode the lists for the gene we need
-	$template->param(allele_json => $allele_json);
 	
 	my $num_alleles = 0;
-	map { $num_alleles += $_ } values %$gene_alleles;
+	if($gene_alleles) {
+		my $allele_json = encode_json($gene_alleles); # Only encode the lists for the gene we need
+		$template->param(allele_json => $allele_json);
+		map { $num_alleles += $_ } values %$gene_alleles;
+	}
+	
 	get_logger->debug('Number of alleles found:'.$num_alleles);
 	
 	# Retrieve tree
 	if($num_alleles > 2) {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+		foreach my $g (keys %visable_genomes) {
+			get_logger->debug("$g - ".$visable_genomes{$g});
+		}
 		my $tree_string = $tree->geneTree($qgene, 1, \%visable_genomes);
 		$template->param(tree_json => $tree_string);
 	}
@@ -760,6 +769,8 @@ sub _getResidentGenomes {
 		} else {
 			$markers_ref = $amr_ref;
 		}
+		
+		next unless $markers_ref;
 		
 		foreach my $g (@genome_order) {
 			
