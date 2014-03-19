@@ -18,7 +18,21 @@
 	<TMPL_INCLUDE NAME="nav_bar.tmpl">
 
 	<div class="container" style="background-color:#FFFFFF; padding:20px;">
-		<div id="test">
+	
+		<div id="genome-group1-form" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;max-height:400px">
+			<div id="genome-group1-list" style="max-height:350px; overflow:auto">
+			</div>
+			<button id="genome-group1-add" class="btn" type="button">Add to Group 1</button>
+		</div>
+		
+		<div id="meta-display-form"></div>
+		<div id="filter-form"></div>
+	
+		<div style="border:solid; border-width:1px; border-color:#d3d3d3; max-height:400px; overflow:auto">
+			<div style="padding:10px">
+				<div id="strains_list">
+				</div>
+			</div>
 		</div>
 	</div>
 
@@ -27,9 +41,15 @@
 		var public_genomes = <TMPL_VAR public_genomes>;
 		var private_genomes = <TMPL_VAR private_genomes>;
 		
-		var gc = new GenomeController(public_genomes, private_genomes);
+		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info/');
 		
-		gc.
+		viewController.createView('list', $('#strains_list'));
+		
+		viewController.metaForm($('#meta-display-form'));
+		
+		viewController.filterForm($('#filter-form'));
+		
+		viewController.createGroup($('#genome-group1-list'),$('#genome-group1-add'));
 		
 	</script>
 </body>
