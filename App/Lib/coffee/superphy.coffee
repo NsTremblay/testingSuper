@@ -11,7 +11,9 @@
 
 # Set export object and namespace
 root = exports ? this
-root.Superphy or= {}
+#root.Superphy or= {}
+
+jQuery
 
 ###
  CLASS SuperphyError
@@ -43,7 +45,7 @@ class ViewController
   groups: []
   
   # Main action triggered by clicking on genome
-  actionType: false
+  actionMode: false
   action: false
   
   genomeController: undefined
@@ -52,11 +54,15 @@ class ViewController
   init: (publicGenomes, privateGenomes, @actionMode, @action) ->
     unless @actionMode is 'single_select' or @actionMode is 'multi_select' or @actionMode is 'two_groups'
       throw new SuperphyError 'Unrecognized actionMode in ViewController init() method.'
-      
-    @genomeController = new GenomeController(public_genomes, private_genomes)
+       
+    @genomeController = new GenomeController(publicGenomes, privateGenomes)
+    
+    # Reset view and group lists
+    @views = []
+    @groups = []
  
  
-  createView: (viewType, elem) ->
+  createView: (viewType, elem, viewArgs...) ->
     
     # Define style of view (select|redirect)
     # to match actionMode
@@ -86,6 +92,12 @@ class ViewController
       listView = new ListView(elem, clickStyle, vNum)
       listView.update(@genomeController)
       @views.push listView
+      
+    else if viewType is 'tree'
+      # New tree view
+      treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
+      treeView.update(@genomeController)
+      @views.push treeView
       
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
@@ -158,6 +170,13 @@ class ViewController
      
     
   #submit:
+  
+  viewAction: (vNum, viewArgs...) ->
+    @views[vNum].viewAction(this.genomeController, viewArgs)
+    true
+    
+  getView: (vNum) ->
+    @views[vNum]
   
   
   updateViews: (option, checked) ->
@@ -314,9 +333,9 @@ class ViewController
     elem.append(filtType)
     
     # Add filter status bar
-    isFiltered = @genomeController.filtered
+    numVisible = @genomeController.filtered
     filterStatus = jQuery('<div id="filter-status"></div>')
-    filterOn = jQuery('<div id="filter-on">...Filter applied</div>')
+    filterOn = jQuery("<div id='filter-on'>Filter active. #{numVisible} genomes visible.</div>")
     filterOff = jQuery('<div id="filter-off"></div>')
     delFilterButton = jQuery('<button id="remove-filter" type="button">Clear</button>')
     delFilterButton.click (e) ->
@@ -324,7 +343,7 @@ class ViewController
       viewController.resetFilter()  
     filterOn.append(delFilterButton)
     
-    if isFiltered
+    if numVisible > 0
       filterOn.show()
       filterOff.hide()
     else 
@@ -347,16 +366,16 @@ class ViewController
     advForm.hide()
     elem.append(advForm)
     
-    
     true
       
   _toggleFilterStatus: ->
     
-    isFiltered = @genomeController.filtered
+    numVisible = @genomeController.filtered
     filterOn = jQuery('#filter-on')
     filterOff = jQuery('#filter-off')
     
-    if isFiltered
+    if numVisible > 0
+      filterOn.text("Filter active. #{numVisible} genomes visible.")
       filterOn.show()
       filterOff.hide()
     else 
@@ -649,11 +668,19 @@ class ViewTemplate
   style: 'select'
   
   update: (genomes) ->
-    throw new SuperphyError "ViewTemplate method update() must be defined in child class."
+    throw new SuperphyError "ViewTemplate method update() must be defined in child class (#{this.type})."
+    false # return fail
+    
+  updateCSS: (gset, genomes) ->
+    throw new SuperphyError "ViewTemplate method updateCSS() must be defined in child class (#{this.type})."
+    false # return fail
+    
+  select: (genome, isSelected) ->
+    throw new SuperphyError "ViewTemplate method select() must be defined in child class (#{this.type})."
     false # return fail
   
   dump: (genomes) ->
-    throw new SuperphyError "ViewTemplate method print() must be defined in child class."
+    throw new SuperphyError "ViewTemplate method dump() must be defined in child class (#{this.type})."
     false # return fail
     
   cssClass: ->
@@ -776,9 +803,9 @@ class ListView extends ViewTemplate
     throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
     
     # append genomes to list
-    @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public? and typeof gset.public isnt 'undefined'
+    @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public?
     
-    @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private? and typeof gset.private isnt 'undefined'
+    @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private?
     
     true # return success
     
@@ -1011,7 +1038,7 @@ class GenomeController
   publicRegexp: new RegExp('^public_')
   privateRegexp: new RegExp('^private_')
   
-  filtered: false
+  filtered: 0
    
   # FUNC update
   # Update genome names displayed to user
@@ -1058,22 +1085,34 @@ class GenomeController
     pubGenomeIds = []
     pvtGenomeIds = []
 
-    if searchTerms?
+    if searchTerms?     
       results = @_runFilter(searchTerms);
       
       pubGenomeIds = results.public;
       pvtGenomeIds = results.private;
       
-      @filtered = true
+      @filtered = pubGenomeIds.length + pvtGenomeIds.length
+      
+      # Reset visible variable for all genomes
+      g.visible = false for i,g of @public_genomes
+      g.visible = false for i,g of @private_genomes
+      
+      # Set visible variable for genomes that passed filter
+      @public_genomes[g].visible = true for g in pubGenomeIds
+      @private_genomes[g].visible = true for g in pvtGenomeIds
       
     else
       pubGenomeIds = Object.keys(@public_genomes)
       pvtGenomeIds = Object.keys(@private_genomes)
       
-      @filtered = false
+      @filtered = 0
       
-    @pubVisible = pubGenomeIds.sort (a, b) -> cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
-    @pvtVisible = pvtGenomeIds.sort (a, b) -> cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
+      # Reset visible variable for all genomes
+      g.visible = true for i,g of @public_genomes
+      g.visible = true for i,g of @private_genomes
+    
+    @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
+    @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
     
     true
     
@@ -1372,6 +1411,13 @@ class GenomeController
     pvt = (g for g in gids when @privateRegexp.test(g))
     
     return { public: pub, private: pvt }
+    
+  genome: (gid) ->
+    
+    if @publicRegexp.test(gid)
+      return @public_genomes[gid]
+    else
+      return @private_genomes[gid]
     
     
 ###

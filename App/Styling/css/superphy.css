@@ -1,0 +1,103 @@
+/*
+ 
+ File: superphy.less
+ Desc: Main Superphy stylesheet. Secondary style sheets
+   should be imported in this sheet.
+ Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+ Date: March 27th, 2013
+ 
+ * */
+/*
+ 
+ File: superphy_tree.less
+ Desc: Stylesheet for TreeView.
+ Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+ Date: March 27th, 2013
+ 
+ * */
+/** Text **********************************/
+/** Nodes *********************************/
+.treenode .treeicon {
+  font-family: FontAwesome;
+  font-size: 12px;
+}
+.treenode .treelabel {
+  font: 12px sans-serif;
+}
+.treenode circle {
+  fill: #ffffff;
+  stroke: #4682b4;
+  stroke-width: 1.5px;
+}
+.treenode rect {
+  fill: #ffffff;
+  stroke: #ff0000;
+  stroke-width: 1.5px;
+}
+.selectedNode .treelabel {
+  color: grey;
+}
+.groupedNode7 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode7 circle {
+  fill: #f29451;
+  stroke: #cd5f10;
+  stroke-width: 3px;
+}
+.groupedNode6 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode6 circle {
+  fill: #f26262;
+  stroke: #dc1212;
+  stroke-width: 3px;
+}
+.groupedNode5 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode5 circle {
+  fill: #c32bad;
+  stroke: #6f1963;
+  stroke-width: 3px;
+}
+.groupedNode4 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode4 circle {
+  fill: #16d8c3;
+  stroke: #0c7c6f;
+  stroke-width: 3px;
+}
+.groupedNode3 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode3 circle {
+  fill: #f9f386;
+  stroke: #f5e924;
+  stroke-width: 3px;
+}
+.groupedNode2 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode2 circle {
+  fill: #85bb77;
+  stroke: #528844;
+  stroke-width: 3px;
+}
+.groupedNode1 .treelabel {
+  font: italic bold 12px sans-serif;
+}
+.groupedNode1 circle {
+  fill: #487fc8;
+  stroke: #274e83;
+  stroke-width: 3px;
+}
+/** Links *********************************/
+.treelink {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+/** Colors ********************************/
+/** Mixins ********************************/

@@ -1,0 +1,97 @@
+/*
+ 
+ File: superphy_tree.less
+ Desc: Stylesheet for TreeView.
+ Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+ Date: March 27th, 2013
+ 
+ * */
+
+//@import "../css/font-awesome-4.0.3/less/font-awesome";
+
+
+
+
+
+/** Text **********************************/
+@textfont: 12px sans-serif;
+@selectedfont: italic bold 12px sans-serif;
+
+
+/** Nodes *********************************/ 
+
+// Node style mixins
+.nodeShape(@color: steelblue, @fill: #fff, @width: 1.5px) {
+  fill: @fill;
+  stroke: @color;
+  stroke-width: @width;
+}
+
+.groupedStyle(@color) {
+  @light-color: lighten(@color, 10%);
+  @dark-color: darken(@color, 10%);
+  
+  .treelabel {
+    font: @selectedfont;
+  }
+
+  circle {
+    .nodeShape(@dark-color, @light-color, 3px);
+  }
+  
+}
+
+// Create looping constructor to create styles for groups1-7
+.treenodeGroupConstructor (@index) when (@index > 0) {
+
+  // create style
+  //(~".groupedNode@{index}") {
+  .groupedNode@{index} {
+   
+    @color: "group@{index}-color";
+    .groupedStyle(@@color);
+  }
+
+  // next iteration
+  .treenodeGroupConstructor(@index - 1);
+}
+
+.treenode {
+  
+  .treeicon {
+    font-family: FontAwesome;
+    font-size: 12px;
+  }
+  
+  .treelabel {
+    font: @textfont;
+  }
+
+  circle {
+    .nodeShape;
+  }
+  
+  rect {
+    .nodeShape(red);
+  }
+  
+}
+
+.selectedNode {
+  
+  .treelabel {
+    color: grey;
+  }
+  
+}
+
+// Define color schemes for up to 7 groups
+.treenodeGroupConstructor(@group-num);
+
+/** Links *********************************/ 
+
+.treelink {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}

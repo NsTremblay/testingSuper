@@ -277,7 +277,6 @@ sub search : StartRunmode {
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 	
-=cut
 	# Phylogenetic tree
 	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 	
@@ -293,7 +292,6 @@ sub search : StartRunmode {
 		my $tree_string = $tree->fullTree();
 		$template->param(tree_json => $tree_string);
 	}
-=cut
 	
 	return $template->output();
 } 

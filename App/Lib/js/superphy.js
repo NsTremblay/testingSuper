@@ -10,14 +10,15 @@
  */
 
 (function() {
-  var GenomeController, GroupView, ListView, SuperphyError, ViewController, ViewTemplate, cmp, escapeRegExp, root, trimInput, typeIsArray,
+  var GenomeController, GroupView, ListView, SuperphyError, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+    __slice = [].slice,
     __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
-  root.Superphy || (root.Superphy = {});
+  jQuery;
 
 
   /*
@@ -62,7 +63,7 @@
 
     ViewController.prototype.groups = [];
 
-    ViewController.prototype.actionType = false;
+    ViewController.prototype.actionMode = false;
 
     ViewController.prototype.action = false;
 
@@ -74,11 +75,14 @@
       if (!(this.actionMode === 'single_select' || this.actionMode === 'multi_select' || this.actionMode === 'two_groups')) {
         throw new SuperphyError('Unrecognized actionMode in ViewController init() method.');
       }
-      return this.genomeController = new GenomeController(public_genomes, private_genomes);
+      this.genomeController = new GenomeController(publicGenomes, privateGenomes);
+      this.views = [];
+      return this.groups = [];
     };
 
-    ViewController.prototype.createView = function(viewType, elem) {
-      var clickStyle, downloadElem, listView, vNum;
+    ViewController.prototype.createView = function() {
+      var clickStyle, downloadElem, elem, listView, treeView, vNum, viewArgs, viewType;
+      viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
       downloadElem = jQuery("<a href='#' data-genome-view='" + vNum + "'>Download</a>");
@@ -98,6 +102,10 @@
         listView = new ListView(elem, clickStyle, vNum);
         listView.update(this.genomeController);
         this.views.push(listView);
+      } else if (viewType === 'tree') {
+        treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
+        treeView.update(this.genomeController);
+        this.views.push(treeView);
       } else {
         throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
         return false;
@@ -158,6 +166,17 @@
         v.updateCSS(gset, this.genomeController);
       }
       return true;
+    };
+
+    ViewController.prototype.viewAction = function() {
+      var vNum, viewArgs;
+      vNum = arguments[0], viewArgs = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      this.views[vNum].viewAction(this.genomeController, viewArgs);
+      return true;
+    };
+
+    ViewController.prototype.getView = function(vNum) {
+      return this.views[vNum];
     };
 
     ViewController.prototype.updateViews = function(option, checked) {
@@ -243,7 +262,7 @@
     };
 
     ViewController.prototype.filterForm = function(elem) {
-      var advForm, advLab, advRadio, delFilterButton, fastLab, fastRadio, filtType, filterOff, filterOn, filterStatus, isFiltered, sf;
+      var advForm, advLab, advRadio, delFilterButton, fastLab, fastRadio, filtType, filterOff, filterOn, filterStatus, numVisible, sf;
       filtType = jQuery('<div id="select-filter-form"></div>');
       fastLab = jQuery('<label class="radio">Basic</label>');
       fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>');
@@ -268,9 +287,9 @@
       advLab.append(advRadio);
       filtType.append(advLab);
       elem.append(filtType);
-      isFiltered = this.genomeController.filtered;
+      numVisible = this.genomeController.filtered;
       filterStatus = jQuery('<div id="filter-status"></div>');
-      filterOn = jQuery('<div id="filter-on">...Filter applied</div>');
+      filterOn = jQuery("<div id='filter-on'>Filter active. " + numVisible + " genomes visible.</div>");
       filterOff = jQuery('<div id="filter-off"></div>');
       delFilterButton = jQuery('<button id="remove-filter" type="button">Clear</button>');
       delFilterButton.click(function(e) {
@@ -278,7 +297,7 @@
         return viewController.resetFilter();
       });
       filterOn.append(delFilterButton);
-      if (isFiltered) {
+      if (numVisible > 0) {
         filterOn.show();
         filterOff.hide();
       } else {
@@ -299,11 +318,12 @@
     };
 
     ViewController.prototype._toggleFilterStatus = function() {
-      var filterOff, filterOn, isFiltered;
-      isFiltered = this.genomeController.filtered;
+      var filterOff, filterOn, numVisible;
+      numVisible = this.genomeController.filtered;
       filterOn = jQuery('#filter-on');
       filterOff = jQuery('#filter-off');
-      if (isFiltered) {
+      if (numVisible > 0) {
+        filterOn.text("Filter active. " + numVisible + " genomes visible.");
         filterOn.show();
         filterOff.hide();
       } else {
@@ -538,12 +558,22 @@
     ViewTemplate.prototype.style = 'select';
 
     ViewTemplate.prototype.update = function(genomes) {
-      throw new SuperphyError("ViewTemplate method update() must be defined in child class.");
+      throw new SuperphyError("ViewTemplate method update() must be defined in child class (" + this.type + ").");
+      return false;
+    };
+
+    ViewTemplate.prototype.updateCSS = function(gset, genomes) {
+      throw new SuperphyError("ViewTemplate method updateCSS() must be defined in child class (" + this.type + ").");
+      return false;
+    };
+
+    ViewTemplate.prototype.select = function(genome, isSelected) {
+      throw new SuperphyError("ViewTemplate method select() must be defined in child class (" + this.type + ").");
       return false;
     };
 
     ViewTemplate.prototype.dump = function(genomes) {
-      throw new SuperphyError("ViewTemplate method print() must be defined in child class.");
+      throw new SuperphyError("ViewTemplate method dump() must be defined in child class (" + this.type + ").");
       return false;
     };
 
@@ -590,7 +620,7 @@
       this._appendGenomes(listElem, genomes.pvtVisible, genomes.private_genomes, this.style);
       t2 = new Date();
       ft = t2 - t1;
-      console.log('elapsed time: ' + ft);
+      console.log('ListView update elapsed time: ' + ft);
       return true;
     };
 
@@ -637,21 +667,17 @@
     };
 
     ListView.prototype.updateCSS = function(gset, genomes) {
-      var ft, listEl, t1, t2;
+      var listEl;
       listEl = jQuery("#" + this.elID);
       if (!((listEl != null) && listEl.length)) {
         throw new SuperphyError("DOM element for list view " + this.elID + " not found. Cannot call ListView method updateCSS().");
       }
-      t1 = new Date();
-      if ((gset["public"] != null) && typeof gset["public"] !== 'undefined') {
+      if (gset["public"] != null) {
         this._updateGenomeCSS(listEl, gset["public"], genomes.public_genomes);
       }
-      if ((gset["private"] != null) && typeof gset["private"] !== 'undefined') {
+      if (gset["private"] != null) {
         this._updateGenomeCSS(listEl, gset["private"], genomes.private_genomes);
       }
-      t2 = new Date();
-      ft = t2 - t1;
-      console.log('elapsed time: ' + ft);
       return true;
     };
 
@@ -857,7 +883,7 @@
 
     GenomeController.prototype.privateRegexp = new RegExp('^private_');
 
-    GenomeController.prototype.filtered = false;
+    GenomeController.prototype.filtered = 0;
 
     GenomeController.prototype.update = function() {
       var g, id, _ref, _ref1;
@@ -875,7 +901,7 @@
     };
 
     GenomeController.prototype.filter = function(searchTerms) {
-      var pubGenomeIds, pvtGenomeIds, results;
+      var g, i, pubGenomeIds, pvtGenomeIds, results, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
       if (searchTerms == null) {
         searchTerms = null;
       }
@@ -885,18 +911,50 @@
         results = this._runFilter(searchTerms);
         pubGenomeIds = results["public"];
         pvtGenomeIds = results["private"];
-        this.filtered = true;
+        this.filtered = pubGenomeIds.length + pvtGenomeIds.length;
+        _ref = this.public_genomes;
+        for (i in _ref) {
+          g = _ref[i];
+          g.visible = false;
+        }
+        _ref1 = this.private_genomes;
+        for (i in _ref1) {
+          g = _ref1[i];
+          g.visible = false;
+        }
+        for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
+          g = pubGenomeIds[_i];
+          this.public_genomes[g].visible = true;
+        }
+        for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
+          g = pvtGenomeIds[_j];
+          this.private_genomes[g].visible = true;
+        }
       } else {
         pubGenomeIds = Object.keys(this.public_genomes);
         pvtGenomeIds = Object.keys(this.private_genomes);
-        this.filtered = false;
+        this.filtered = 0;
+        _ref2 = this.public_genomes;
+        for (i in _ref2) {
+          g = _ref2[i];
+          g.visible = true;
+        }
+        _ref3 = this.private_genomes;
+        for (i in _ref3) {
+          g = _ref3[i];
+          g.visible = true;
+        }
       }
-      this.pubVisible = pubGenomeIds.sort(function(a, b) {
-        return cmp(this.public_genomes[a].viewname, this.public_genomes[b].viewname);
-      });
-      this.pvtVisible = pvtGenomeIds.sort(function(a, b) {
-        return cmp(this.private_genomes[a].viewname, this.private_genomes[b].viewname);
-      });
+      this.pubVisible = pubGenomeIds.sort((function(_this) {
+        return function(a, b) {
+          return cmp(_this.public_genomes[a].viewname, _this.public_genomes[b].viewname);
+        };
+      })(this));
+      this.pvtVisible = pvtGenomeIds.sort((function(_this) {
+        return function(a, b) {
+          return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
+        };
+      })(this));
       return true;
     };
 
@@ -1330,6 +1388,14 @@
       };
     };
 
+    GenomeController.prototype.genome = function(gid) {
+      if (this.publicRegexp.test(gid)) {
+        return this.public_genomes[gid];
+      } else {
+        return this.private_genomes[gid];
+      }
+    };
+
     return GenomeController;
 
   })();
@@ -1373,5 +1439,687 @@
       return null;
     }
   };
+
+
+  /*
+  
+  
+   File: superphy_tree.coffee
+   Desc: Phylogenetic Tree View Class
+   Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+   Date: March 20th, 2013
+   */
+
+
+  /*
+   CLASS TreeView
+    
+   Phylogenetic tree view
+   */
+
+  TreeView = (function(_super) {
+    __extends(TreeView, _super);
+
+    function TreeView(parentElem, style, elNum, treeArgs) {
+      var dialog, num;
+      this.parentElem = parentElem;
+      this.style = style;
+      this.elNum = elNum;
+      if (!(treeArgs.length > 0)) {
+        throw new SuperphyError('Missing argument. TreeView constructor requires JSON tree object.');
+      }
+      this.root = treeArgs[0];
+      this.dim = {
+        w: 500,
+        h: 800
+      };
+      this.margin = {
+        top: 20,
+        right: 180,
+        bottom: 20,
+        left: 20
+      };
+      if (treeArgs[1] != null) {
+        this.dim = treeArgs[1];
+      }
+      if (treeArgs[2] != null) {
+        this.margin = treeArgs[2];
+      }
+      TreeView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+      this.width = this.dim.w - this.margin.right - this.margin.left;
+      this.height = this.dim.h - this.margin.top - this.margin.bottom;
+      this.xzoom = d3.scale.linear().domain([0, this.width]).range([0, this.width]);
+      this.yzoom = d3.scale.linear().domain([0, this.height]).range([0, this.height]);
+      this.cluster = d3.layout.cluster().size([this.width, this.height]).sort(null).value(function(d) {
+        return Number(d.length);
+      }).separation(function(a, b) {
+        return 1;
+      });
+      this.parentElem.append("<div id='tree-viewport'></div>");
+      this.wrap = d3.select("#tree-viewport").append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
+      this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
+      num = this.elNum - 1;
+      this.wrap.call(d3.behavior.zoom().x(this.xzoom).y(this.yzoom).scaleExtent([1, 8]).on("zoom", function() {
+        return viewController.getView(num).zoomed();
+      }));
+      if (this.style === 'select') {
+        dialog = jQuery('#dialog-clade-select');
+        if (!dialog.length) {
+          dialog = jQuery('<div id="dialog-clade-select"></div>').appendTo('body');
+          dialog.text("Select/unselect genomes in clade:").dialog({
+            title: 'Select clade',
+            autoOpen: false,
+            resizable: false,
+            height: 160,
+            modal: true,
+            buttons: {
+              Select: function() {
+                var node;
+                node = $(this).data("clade-node");
+                return viewController.getView(num).selectClade(node, true);
+              },
+              Unselect: function() {
+                var node;
+                node = $(this).data("clade-node");
+                return viewController.getView(num).selectClade(node, false);
+              },
+              Cancel: function() {
+                return $(this).dialog("close");
+              }
+            }
+          });
+        }
+      }
+      this._prepTree();
+      true;
+    }
+
+    TreeView.prototype.type = 'tree';
+
+    TreeView.prototype.elName = 'genome_tree';
+
+    TreeView.prototype.nodeId = 0;
+
+    TreeView.prototype.duration = 1000;
+
+    TreeView.prototype.update = function(genomes, sourceNode) {
+      var branch_scale_factor_x, branch_scale_factor_y, cladeIcons, cmdBox, dt, farthest, iNodes, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, svgLinks, svgNodes, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
+      if (sourceNode == null) {
+        sourceNode = null;
+      }
+      t1 = new Date();
+      this._sync(genomes);
+      if (sourceNode == null) {
+        sourceNode = this.root;
+      }
+      this.launchPt = {
+        x: sourceNode.x,
+        y: sourceNode.y,
+        x0: sourceNode.x0,
+        y0: sourceNode.y0
+      };
+      this.nodes = this.cluster.nodes(this.root);
+      farthest = d3.max(this.nodes, function(d) {
+        return d.sum_length * 1;
+      });
+      lowest = d3.max(this.nodes, function(d) {
+        return d.x;
+      });
+      branch_scale_factor_y = (this.width - 20) / farthest;
+      branch_scale_factor_x = (this.height - 20) / lowest;
+      _ref = this.nodes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        n = _ref[_i];
+        n.y = n.sum_length * branch_scale_factor_y;
+        n.x = n.x * branch_scale_factor_x;
+      }
+      svgNodes = this.canvas.selectAll("g.treenode").data(this.nodes, function(d) {
+        return d.id;
+      });
+      svgLinks = this.canvas.selectAll("path.treelink").data(this.cluster.links(this.nodes), function(d) {
+        return d.target.id;
+      });
+      linksEnter = svgLinks.enter().insert("path").attr("class", "treelink").attr("d", (function(_this) {
+        return function(d) {
+          var p;
+          p = {
+            x: _this.launchPt.x0,
+            y: _this.launchPt.y0
+          };
+          return _this._step({
+            source: p,
+            target: p
+          });
+        };
+      })(this));
+      svgLinks.transition().duration(this.duration).attr("d", this._step);
+      svgLinks.exit().transition().duration(this.duration).attr("d", (function(_this) {
+        return function(d) {
+          var o;
+          o = {
+            x: _this.launchPt.x,
+            y: _this.launchPt.y
+          };
+          return _this._step({
+            source: o,
+            target: o
+          });
+        };
+      })(this)).remove();
+      svgNodes.filter(function(d) {
+        return d.leaf;
+      }).attr("class", (function(_this) {
+        return function(d) {
+          return _this._classList(d);
+        };
+      })(this)).on("click", function(d) {
+        if (d.assignedGroup == null) {
+          return viewController.select(d.name, !d.selected);
+        } else {
+          return null;
+        }
+      }).select("text").text(function(d) {
+        if (d.leaf) {
+          return d.viewname;
+        } else {
+          return d.label;
+        }
+      });
+      nodesEnter = svgNodes.enter().append("g").attr("class", (function(_this) {
+        return function(d) {
+          return _this._classList(d);
+        };
+      })(this)).attr("id", function(d) {
+        return "treenode" + d.id;
+      }).attr("transform", (function(_this) {
+        return function(d) {
+          return "translate(" + _this.launchPt.y0 + "," + _this.launchPt.x0 + ")";
+        };
+      })(this));
+      leaves = nodesEnter.filter(function(d) {
+        return d.leaf;
+      });
+      leaves.append("circle").attr("r", 1e-6).style("fill", function(d) {
+        var _ref1;
+        return (_ref1 = d.selected) != null ? _ref1 : {
+          "lightsteelblue": "#fff"
+        };
+      });
+      if (this.style === 'select') {
+        leaves.on("click", function(d) {
+          if (d.assignedGroup == null) {
+            return viewController.select(d.name, !d.selected);
+          } else {
+            return null;
+          }
+        });
+      } else {
+        leaves.on("click", viewController.redirect(d.name));
+      }
+      nodesEnter.append("text").attr("class", "treelabel").attr("dx", ".6em").attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
+        if (d.leaf) {
+          return d.viewname;
+        } else {
+          return d.label;
+        }
+      }).style("fill-opacity", 1e-6);
+      num = this.elNum - 1;
+      iNodes = nodesEnter.filter(function(n) {
+        return !n.leaf && !n.root;
+      });
+      cmdBox = iNodes.append("rect").attr("width", 1e-6).attr("height", 1e-6).attr("y", -4).attr("x", -14).style("fill", "#fff");
+      cmdBox.on("click", function(d) {
+        return viewController.viewAction(num, 'expand_collapse', d, this.parentNode);
+      });
+      if (this.style === 'select') {
+        cladeIcons = iNodes.append('text').attr("class", "treeicon").attr("text-anchor", 'middle').attr("y", 4).attr("x", -23).text(function(d) {
+          return "\uf058";
+        });
+        cladeIcons.on("click", function(d) {
+          return jQuery('#dialog-clade-select').data('clade-node', d).dialog('open');
+        });
+      }
+      nodesUpdate = svgNodes.transition().duration(this.duration).attr("transform", function(d) {
+        return "translate(" + d.y + "," + d.x + ")";
+      });
+      nodesUpdate.select("circle").attr("r", 4);
+      nodesUpdate.filter(function(d) {
+        return !d.children;
+      }).select("text").style("fill-opacity", 1);
+      nodesUpdate.select("rect").attr("width", 8).attr("height", 8).style("fill", function(d) {
+        if (d._children != null) {
+          return "lightsteelblue";
+        } else {
+          return "#fff";
+        }
+      });
+      nodesExit = svgNodes.exit().transition().duration(this.duration).attr("transform", (function(_this) {
+        return function(d) {
+          return "translate(" + _this.launchPt.y + "," + _this.launchPt.x + ")";
+        };
+      })(this)).remove();
+      nodesExit.select("circle").attr("r", 1e-6);
+      nodesExit.select("text").style("fill-opacity", 1e-6);
+      nodesExit.select("rect").attr("width", 1e-6).attr("height", 1e-6);
+      _ref1 = this.nodes;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        n = _ref1[_j];
+        n.x0 = n.x;
+        n.y0 = n.y;
+      }
+      t2 = new Date();
+      dt = new Date(t2 - t1);
+      console.log('TreeView update elapsed time (sec): ' + dt.getSeconds());
+      return true;
+    };
+
+    TreeView.prototype.updateCSS = function(gset, genomes) {
+      var g, genomeList, svgNodes, updateNodes, _i, _j, _len, _len1, _ref, _ref1;
+      genomeList = {};
+      if (gset["public"] != null) {
+        _ref = gset["public"];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          g = _ref[_i];
+          genomeList[g] = genomes.public_genomes[g];
+        }
+      }
+      if (gset["private"] != null) {
+        _ref1 = gset["private"];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          g = _ref1[_j];
+          genomeList[g] = genomes.private_genomes[g];
+        }
+      }
+      svgNodes = this.canvas.selectAll("g.treenode");
+      updateNodes = svgNodes.filter(function(d) {
+        return genomeList[d.name] != null;
+      }).attr("class", (function(_this) {
+        return function(d) {
+          var _ref2;
+          g = genomeList[d.name];
+          d.selected = (_ref2 = (g.isSelected != null) && g.isSelected) != null ? _ref2 : {
+            "true": false
+          };
+          d.assignedGroup = g.assignedGroup;
+          return _this._classList(d);
+        };
+      })(this));
+      updateNodes.on("click", function(d) {
+        if (d.assignedGroup == null) {
+          return viewController.select(d.name, !d.selected);
+        } else {
+          return null;
+        }
+      });
+      return true;
+    };
+
+    TreeView.prototype.viewAction = function(genomes, argArray) {
+      var event;
+      event = argArray.shift();
+      if (event === 'expand_collapse') {
+        this._expandCollapse(genomes, argArray[0], argArray[1]);
+      } else if (event === 'select_clade') {
+        console.log('SC');
+      } else {
+        throw new SuperphyError("Unrecognized event type: " + event + " in TreeView viewAction method.");
+      }
+      return true;
+    };
+
+    TreeView.prototype.selectClade = function(node, checked) {
+      var c, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+      if (node.leaf) {
+        return viewController.select(node.name, checked);
+      } else {
+        if (node.children != null) {
+          _ref = node.children;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            c = _ref[_i];
+            _results.push(this.selectClade(c, checked));
+          }
+          return _results;
+        } else if (node._children != null) {
+          _ref1 = node._children;
+          _results1 = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            c = _ref1[_j];
+            _results1.push(this.selectClade(c, checked));
+          }
+          return _results1;
+        }
+      }
+    };
+
+    TreeView.prototype._step = function(d) {
+      return "M" + d.source.y + "," + d.source.x + "L" + d.source.y + "," + d.target.x + "L" + d.target.y + "," + d.target.x;
+    };
+
+    TreeView.prototype._prepTree = function() {
+      this.root.root = true;
+      this.root.x0 = this.height / 2;
+      this.root.y0 = 0;
+      return this._assignKeys(this.root, 0);
+    };
+
+    TreeView.prototype._assignKeys = function(n, i) {
+      var m, _i, _j, _len, _len1, _ref, _ref1;
+      n.id = i;
+      n.storage = n.length * 1;
+      i++;
+      if (n.children != null) {
+        n.daycare = n.children.slice();
+        _ref = n.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          m = _ref[_i];
+          i = this._assignKeys(m, i);
+        }
+      } else if (n._children != null) {
+        n.daycare = n._children.slice();
+        _ref1 = n._children;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          m = _ref1[_j];
+          i = this._assignKeys(m, i);
+        }
+      }
+      return i;
+    };
+
+    TreeView.prototype._sync = function(genomes) {
+      this.root = this._syncNode(this.root, genomes, 0);
+      return true;
+    };
+
+    TreeView.prototype._syncNode = function(node, genomes, sumLengths) {
+      var c, child, children, g, isExpanded, u, _i, _len, _ref, _ref1;
+      node.length = node.storage * 1;
+      node.sum_length = sumLengths + node.length;
+      if ((node.leaf != null) && node.leaf === "true") {
+        g = genomes.genome(node.name);
+        if (g.visible) {
+          node.viewname = g.viewname;
+          node.selected = (_ref = (g.isSelected != null) && g.isSelected) != null ? _ref : {
+            "true": false
+          };
+          node.assignedGroup = g.assignedGroup;
+          node.hidden = false;
+        } else {
+          node.hidden = true;
+        }
+      } else {
+        isExpanded = true;
+        if (node._children != null) {
+          isExpanded = false;
+        }
+        children = [];
+        _ref1 = node.daycare;
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          c = _ref1[_i];
+          u = this._syncNode(c, genomes, node.sum_length);
+          if (!u.hidden) {
+            children.push(u);
+          }
+        }
+        if (children.length === 0) {
+          node.hidden = true;
+        } else if (children.length === 1) {
+          node.hidden = true;
+          child = children[0];
+          child.length += node.length;
+          return child;
+        } else {
+          node.hidden = false;
+          if (isExpanded) {
+            node.children = children;
+          } else {
+            node._children = children;
+          }
+        }
+      }
+      return node;
+    };
+
+    TreeView.prototype._cloneNode = function(node) {
+      var copy, k, v;
+      copy = {};
+      for (k in node) {
+        v = node[k];
+        if (!(k === 'children' || k === '_children')) {
+          copy[k] = v;
+        }
+      }
+      return copy;
+    };
+
+    TreeView.prototype._expandCollapse = function(genomes, d, el) {
+      var c, svgNode, _i, _len, _ref;
+      svgNode = d3.select(el);
+      if (d.children != null) {
+        d._children = d.children;
+        d.children = null;
+      } else {
+        d.children = d._children;
+        d._children = null;
+        svgNode.select("text").transition().duration(this.duration).style("fill-opacity", 1e-6);
+        _ref = d.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          c = _ref[_i];
+          if (c._children != null) {
+            c.children = c._children;
+            c._children = null;
+            d3.select("#treenode" + c.id).select("text").transition().duration(this.duration).style("fill-opacity", 1e-6);
+          }
+        }
+      }
+      this.update(genomes, d);
+      return true;
+    };
+
+    TreeView.prototype.zoomed = function() {
+      this.canvas.selectAll("g.treenode").attr("transform", (function(_this) {
+        return function(d) {
+          return _this._zTransform(d, _this.xzoom, _this.yzoom);
+        };
+      })(this));
+      this.canvas.selectAll("path.treelink").attr("d", (function(_this) {
+        return function(d) {
+          return _this._zTranslate(d, _this.xzoom, _this.yzoom);
+        };
+      })(this));
+      return true;
+    };
+
+    TreeView.prototype._zTranslate = function(d, xzoom, yzoom) {
+      var sourceX, sourceY, targetX, targetY;
+      sourceX = xzoom(d.source.y);
+      sourceY = yzoom(d.source.x);
+      targetX = xzoom(d.target.y);
+      targetY = yzoom(d.target.x);
+      return "M" + sourceX + "," + sourceY + "L" + sourceX + "," + targetY + "L" + targetX + "," + targetY;
+    };
+
+    TreeView.prototype._zTransform = function(d, xzoom, yzoom) {
+      return "translate(" + xzoom(d.y) + "," + yzoom(d.x) + ")";
+    };
+
+    TreeView.prototype._classList = function(d) {
+      var clsList;
+      clsList = ['treenode'];
+      if (d.selected) {
+        clsList.push("selectedNode");
+      }
+      if (d.focus) {
+        clsList.push("focusNode");
+      }
+      if (d.assignedGroup != null) {
+        clsList.push("groupedNode" + d.assignedGroup);
+      }
+      return clsList.join(' ');
+    };
+
+
+    /*
+    
+    _appendGenomes: (el, visibleG, genomes, style) ->
+      
+       * View class
+      cls = @cssClass()
+      
+      for g in visibleG
+        
+        thiscls = cls
+        thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
+        
+        if style == 'redirect'
+           * Links
+          
+           * Create elements
+          listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
+          actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
+          
+           * Set behaviour
+          actionEl.click (e) ->
+            e.preventDefault()
+            gid = @.dataset.genome
+            viewController.redirect(gid)
+          
+           * Append to list
+          listEl.append(actionEl)
+          el.append(listEl)
+          
+        else if style == 'select'
+           * Checkboxes
+          
+           * Create elements
+          checked = ''
+          checked = 'checked' if genomes[g].isSelected
+          listEl = jQuery("<li class='#{thiscls}'></li>")
+          labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
+          actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
+          
+           * Set behaviour
+          actionEl.change (e) ->
+            e.preventDefault()
+            viewController.select(@.value, @.checked)
+          
+           * Append to list
+          labEl.append(actionEl)
+          listEl.append(labEl)
+          el.append(listEl)
+          
+        else
+          return false
+        
+      true
+      
+     * FUNC updateCSS
+     * Change CSS class for selected genomes to match underlying genome properties
+     *
+     * PARAMS
+     * simple hash object with private and public list of genome Ids to update
+     * genomeController object
+     * 
+     * RETURNS
+     * boolean 
+     *      
+    updateCSS: (gset, genomes) ->
+      
+       * Retrieve list DOM element    
+      listEl = jQuery("##{@elID}")
+      throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
+      
+       * append genomes to list
+      @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public? and typeof gset.public isnt 'undefined'
+      
+      @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private? and typeof gset.private isnt 'undefined'
+      
+      true # return success
+      
+    
+    _updateGenomeCSS: (el, changedG, genomes) ->
+      
+       * View class
+      cls = @cssClass()
+      
+      for g in changedG
+        
+        thiscls = cls
+        thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
+        itemEl = null
+        
+        if @style == 'redirect'
+           * Link style
+          
+           * Find element
+          descriptor = "li > a[data-genome='#{g}']"
+          itemEl = el.find(descriptor)
+         
+        else if @style == 'select'
+           * Checkbox style
+          
+           * Find element
+          descriptor = "li input[value='#{g}']"
+          itemEl = el.find(descriptor)
+     
+        else
+          return false
+        
+        unless itemEl? and itemEl.length
+          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
+          return false
+        
+        console.log("Updating class to #{thiscls}")
+        liEl = itemEl.parents().eq(1)
+         *console.log("Current class for list li: "+liEl.class)  
+        liEl.attr('class', thiscls)
+         *console.log("Updated class for list li: "+liEl.class())  
+          
+          
+      true # success
+    
+     * FUNC dump
+     * Generate CSV tab-delimited representation of all genomes and meta-data
+     *
+     * PARAMS
+     * genomeController object
+     * 
+     * RETURNS
+     * object containing:
+     *   ext[string] - a suitable file extension (e.g. csv)
+     *   type[string] - a MIME type
+     *   data[string] - a string containing data in final format
+     *      
+    dump: (genomes) ->
+      
+       * Create complete list of meta-types
+       * make all visible
+      fullMeta = {}
+      fullMeta[k] = true for k of genomes.visibleMeta
+      
+      output = ''
+       * Output header
+      header = (genomes.metaMap[k] for k of fullMeta)
+      header.unshift "Genome name"
+      output += "#" + header.join("\t") + "\n"
+      
+       * Output public set
+      for id,g of genomes.public_genomes
+        output += genomes.label(g,fullMeta,"\t") + "\n"
+        
+       * Output private set
+      for id,g of genomes.private_genomes
+        output += genomes.label(g,fullMeta,"\t") + "\n"
+        
+      return {
+        ext: 'csv'
+        type: 'text/plain'
+        data: output 
+      }
+     */
+
+    return TreeView;
+
+  })(ViewTemplate);
 
 }).call(this);

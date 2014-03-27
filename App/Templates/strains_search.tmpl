@@ -3,24 +3,34 @@
 
 <head>
 
-	<TMPL_INCLUDE NAME="header.tmpl"> 
-
-	<!-- SuperPhyloTree -->
 	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
 	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
 	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	<script src="/App/Lib/superphy.js"></script>
+	
+	<script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
+	
+	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
+	<!--<script src="http://d3js.org/d3.v3.min.js" ></script>-->
+	
+	<script src="/App/Lib/js/superphy.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
+	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
+	
+
 	
 </head>
 
-<body style="background-color:#796e6c">
-
-	<TMPL_INCLUDE NAME="nav_bar.tmpl">
-
-	<div class="container" style="background-color:#FFFFFF; padding:20px;">
+<body>
+	<div class="container" >
 	
-		<div id="genome-group1-form" style="border:solid;border-width:1px;border-color:#d3d3d3;padding:10px;max-height:400px">
-			<div id="genome-group1-list" style="max-height:350px; overflow:auto">
+		<div>
+			<i class="fa fa-camera-retro"></i> fa-camera-retro
+			<i class='icon-foo'>&#xf015</i> test
+		</div>
+	
+		<div id="genome-group1-form">
+			<div id="genome-group1-list">
 			</div>
 			<button id="genome-group1-add" class="btn" type="button">Add to Group 1</button>
 		</div>
@@ -28,11 +38,18 @@
 		<div id="meta-display-form"></div>
 		<div id="filter-form"></div>
 	
-		<div style="border:solid; border-width:1px; border-color:#d3d3d3; max-height:400px; overflow:auto">
-			<div style="padding:10px">
-				<div id="strains_list">
-				</div>
-			</div>
+		<div>
+			<ul id="view_tabs" class="nav nav-tabs">
+	      		<li><a href="#strains_list" data-toggle="tab">Genome List</a></li>
+	      		<li class="active"><a href="#strains_tree" data-toggle="tab">Phylogenetic Tree</a></li>
+    		</ul>
+		    <div id="view_content" class="tab-content">
+		      <div class="tab-pane active" id="strains_tree">
+		      </div>
+		      <div class="tab-pane " id="strains_list">
+		      </div>
+		    </div>
+			
 		</div>
 	</div>
 
@@ -40,6 +57,7 @@
 	
 		var public_genomes = <TMPL_VAR public_genomes>;
 		var private_genomes = <TMPL_VAR private_genomes>;
+		var tree = <TMPL_VAR tree_json>;
 		
 		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info/');
 		
@@ -51,9 +69,9 @@
 		
 		viewController.createGroup($('#genome-group1-list'),$('#genome-group1-add'));
 		
+		viewController.createView('tree', $('#strains_tree'), tree);
+		
 	</script>
 </body>
-
-<TMPL_INCLUDE NAME="footer.tmpl">
 
 </html>

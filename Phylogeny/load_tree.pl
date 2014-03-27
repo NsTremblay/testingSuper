@@ -75,7 +75,7 @@ unless($tree_file) {
 }
 
 # Load tree into database
-$t->loadTree($tree_file);
+#$t->loadTree($tree_file);
 
 exit(0);
 
