@@ -99,5 +99,132 @@
   stroke: #ccc;
   stroke-width: 1.5px;
 }
+/*
+ 
+ File: search_utilities.less
+ Desc: Stylesheet for the meta-display and filter form
+ Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+ Date: March 28th, 2013
+ 
+ * */
+/** Top Button ****************************/
+#utility-button {
+  font-size: 12pt;
+  padding: 10px;
+}
+/** Filter Status *************************/
+#filter-status div {
+  display: inline-block;
+  margin: 5px;
+  padding-left: 15px;
+}
+#filter-status button {
+  display: inline-block;
+  margin: 10px;
+}
+/** Meta-Display **************************/
+#meta-display-form {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+  min-height: 200px;
+}
+#meta-display h4 {
+  padding-left: 10px;
+}
+#meta-display p {
+  padding-left: 20px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+#meta-display div {
+  padding-bottom: 5px;
+  padding-left: 15px;
+}
+/** Filter Form ***************************/
+#filter-form {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+  min-height: 200px;
+}
+#filter-form h4 {
+  padding-left: 10px;
+}
+#filter-form p {
+  padding-left: 20px;
+  padding-top: 5px;
+}
+#select-filter-form div {
+  padding-bottom: 5px;
+  padding-left: 15px;
+}
+.formSpacing p {
+  padding-left: 30px;
+  padding-top: 5px;
+}
+.formSpacing input {
+  margin: 10px;
+}
+.formSpacing button {
+  margin: 10px;
+}
+.formSpacing select {
+  margin: 10px;
+}
+#fast-filter p {
+  padding-left: 30px;
+  padding-top: 5px;
+}
+#fast-filter input {
+  margin: 10px;
+}
+#fast-filter button {
+  margin: 10px;
+}
+#fast-filter select {
+  margin: 10px;
+}
+#adv-filter p {
+  padding-left: 30px;
+  padding-top: 5px;
+}
+#adv-filter input {
+  margin: 10px;
+}
+#adv-filter button {
+  margin: 10px;
+}
+#adv-filter select {
+  margin: 10px;
+}
+#adv-filter #adv-filter-rows .adv-filter-row div {
+  display: inline-block;
+}
+#adv-filter #adv-filter-rows .adv-filter-row select {
+  display: inline-block;
+}
+#adv-filter #adv-filter-rows .adv-filter-row a {
+  display: inline-block;
+}
+#selection-filter p {
+  padding-left: 30px;
+  padding-top: 5px;
+}
+#selection-filter input {
+  margin: 10px;
+}
+#selection-filter button {
+  margin: 10px;
+}
+#selection-filter select {
+  margin: 10px;
+}
+/** Mixins ********************************/
 /** Colors ********************************/
 /** Mixins ********************************/
+.borderStyle {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}

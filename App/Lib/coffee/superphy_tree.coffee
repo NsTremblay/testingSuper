@@ -8,6 +8,10 @@
  
  
 ###
+ 
+# Add D3 method to move node to top
+d3.selection.prototype.moveToFront = ->
+  @.each( -> @.parentNode.appendChild(@) )
 
 ###
  CLASS TreeView
@@ -21,7 +25,7 @@ class TreeView extends ViewTemplate
     
     throw new SuperphyError 'Missing argument. TreeView constructor requires JSON tree object.' unless treeArgs.length > 0
     
-    @root = treeArgs[0]
+    @root = @trueRoot = treeArgs[0]
     
     @dim={w: 500, h: 800}
     @margin={top: 20, right: 180, bottom: 20, left: 20}
@@ -81,13 +85,15 @@ class TreeView extends ViewTemplate
             modal: true,
             buttons: {
               Select: ->
-                node = $( @ ).data("clade-node")
+                node = jQuery( @ ).data("clade-node")
                 viewController.getView(num).selectClade(node, true)
+                jQuery( @ ).dialog( "close" )
               Unselect: ->
-                node = $( @ ).data("clade-node")
+                node = jQuery( @ ).data("clade-node")
                 viewController.getView(num).selectClade(node, false)
+                jQuery( @ ).dialog( "close" )
               Cancel: ->
-                $( @ ).dialog( "close" )
+                jQuery( @ ).dialog( "close" )
             }
           })
         
@@ -120,7 +126,11 @@ class TreeView extends ViewTemplate
     
     t1 = new Date()
     
+    # save old root, might require updating
+    oldRoot = @root
+    
     # filter visible, set selected, set class, set viewname
+    # changes @root object
     @_sync(genomes)
     
     # find starting point to launch new nodes/links
@@ -172,9 +182,9 @@ class TreeView extends ViewTemplate
         )
         .remove()
         
-    # Update existing node's text, classes, and events
+    # Update existing node's text, classes, style and events
     # Only leaf nodes will change
-    svgNodes.filter((d) -> d.leaf)
+    currLeaves = svgNodes.filter((d) -> d.leaf)
       .attr("class", (d) => @_classList(d))
       .on("click", (d) ->
         unless d.assignedGroup?
@@ -182,14 +192,19 @@ class TreeView extends ViewTemplate
         else
           null
       )
-      .select("text")
-        .text((d) ->
-          if d.leaf
-            d.viewname
-          else
-            d.label
-        )
       
+    currLeaves.select("text")
+      .text((d) ->
+        d.viewname
+      )
+       
+    currLeaves.select("circle")
+      .style("fill", (d) -> 
+        if d.selected
+          "lightsteelblue"
+        else
+          "#fff"
+      )   
 
     # Insert nodes
     # Enter any new nodes at the parent's previous position.
@@ -203,7 +218,12 @@ class TreeView extends ViewTemplate
     
     leaves.append("circle")
       .attr("r", 1e-6)
-      .style("fill", (d) -> d.selected ? "lightsteelblue" : "#fff" )
+      .style("fill", (d) -> 
+        if d.selected
+          "lightsteelblue"
+        else
+          "#fff"
+      )
     
     if @style is 'select'
       leaves.on("click", (d) ->
@@ -230,8 +250,8 @@ class TreeView extends ViewTemplate
       .style("fill-opacity", 1e-6)
   
     # Append command elements to new internal nodes
-    num = @elNum-1
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
+    num = @elNum-1
     
     # expand/collapse box
     cmdBox = iNodes
@@ -239,7 +259,7 @@ class TreeView extends ViewTemplate
       .attr("width", 1e-6)
       .attr("height",1e-6)
       .attr("y", -4)
-      .attr("x", -14)
+      .attr("x", -12)
       .style("fill", "#fff")
   
     cmdBox.on("click", (d) -> 
@@ -254,14 +274,14 @@ class TreeView extends ViewTemplate
         .attr("class","treeicon")
         .attr("text-anchor", 'middle')
         .attr("y", 4)
-        .attr("x", -23)
+        .attr("x", -20)
         .text((d) -> "\uf058")
         
       cladeIcons.on("click", (d) ->
         jQuery('#dialog-clade-select')
           .data('clade-node', d)
           .dialog('open')
-      ) 
+      )
   
     # Transition out new nodes
     nodesUpdate = svgNodes.transition()
@@ -300,6 +320,20 @@ class TreeView extends ViewTemplate
     nodesExit.select("rect")
       .attr("width", 1e-6)
       .attr("height",1e-6)
+      
+    # Reinsert previous root on top 
+    # (when filter is applied the viewable tree can
+    # have a root that does not match global tree root. 
+    # When restoring the tree, the previous root 
+    # has to be re-inserted after the branches, so it 
+    # appears on top of branches
+    if !oldRoot.root and @root != oldRoot
+      # Need to redraw the command features
+      id = oldRoot.id
+      elID = "treenode#{id}"
+      svgNode = @canvas.select("##{elID}")
+      svgNode.moveToFront()
+      
     
     # Stash old positions for transitions
     for n in @nodes
@@ -343,7 +377,7 @@ class TreeView extends ViewTemplate
     updateNodes = svgNodes.filter((d) -> genomeList[d.name]?)
       .attr("class", (d) =>
         g = genomeList[d.name]
-        d.selected = (g.isSelected? and g.isSelected) ? true : false
+        d.selected = (g.isSelected? and g.isSelected)
         d.assignedGroup = g.assignedGroup
         @_classList(d)
       )
@@ -396,6 +430,80 @@ class TreeView extends ViewTemplate
         @selectClade(c, checked) for c in node.children
       else if node._children?
         @selectClade(c, checked) for c in node._children
+        
+  select: (genome, isSelected) ->
+    
+    svgNodes = @canvas.selectAll("g.treenode")
+    
+    # Find element matching genome
+    updateNode = svgNodes.filter((d) -> d.name is genome)
+      .attr("class", (d) =>
+        d.selected = isSelected
+        @_classList(d)
+      )
+      
+    updateNode.select("circle")
+      .style("fill", (d) -> 
+        if d.selected
+          "lightsteelblue"
+        else
+          "#fff" 
+      )
+        
+    true
+    
+  # FUNC dump
+  # Generate a Newick formatted tree of all genomes (ignores any filters)
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # object containing:
+  #   ext[string] - a suitable file extension (e.g. csv)
+  #   type[string] - a MIME type
+  #   data[string] - a string containing data in final format
+  #      
+  dump: (genomes) ->
+    
+    tokens = []
+    
+    @_printNode(genomes, @root, tokens)
+    
+    output = tokens.join('')
+    
+    return {
+      ext: 'newick'
+      type: 'text/plain'
+      data: output 
+    }
+    
+  _printNode: (genomes, node, tokens) ->
+    
+    if node.leaf
+      # Genome node
+      g = genomes.genome(node.name)
+      lab = genomes.label(g, genomes.visibleMeta)
+      
+      tokens.push("\"#{lab}\"",':',node.length)
+    
+    else
+      # Internal node
+      
+      # Add all children
+      if node.daycare?
+        tokens.push('(')
+        
+        for c in node.daycare
+          @_printNode(genomes, c, tokens)
+          tokens.push(',')
+          
+        tokens[tokens.length-1] = ')' # replace last comma with closing bracket
+      
+      tokens.push("\"#{node.name}\"",':',node.length)
+    
+    true
+    
     
   # Build right-angle branch connectors
   _step: (d) -> 
@@ -406,11 +514,11 @@ class TreeView extends ViewTemplate
   _prepTree: ->
     
     # Set starting position of root
-    @root.root = true
-    @root.x0 = @height / 2;
-    @root.y0 = 0;
+    @trueRoot.root = true
+    @trueRoot.x0 = @height / 2;
+    @trueRoot.y0 = 0;
     
-    @_assignKeys(@root, 0)
+    @_assignKeys(@trueRoot, 0)
   
 
   _assignKeys: (n, i) ->
@@ -448,7 +556,8 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
     
-    @root = @_syncNode(@root, genomes, 0)
+    # Need to keep handle on the true root
+    @root = @_syncNode(@trueRoot, genomes, 0)
 
     true
     
@@ -462,11 +571,11 @@ class TreeView extends ViewTemplate
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
       g = genomes.genome(node.name)
-      
+     
       if g.visible
         # Update node with sync'd genome properties
         node.viewname = g.viewname
-        node.selected = (g.isSelected? and g.isSelected) ? true : false
+        node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
         
@@ -597,163 +706,6 @@ class TreeView extends ViewTemplate
     clsList.push("groupedNode#{d.assignedGroup}") if d.assignedGroup?
     
     clsList.join(' ')
-  
-  ###
-  
-  _appendGenomes: (el, visibleG, genomes, style) ->
     
-    # View class
-    cls = @cssClass()
-    
-    for g in visibleG
-      
-      thiscls = cls
-      thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
-      
-      if style == 'redirect'
-        # Links
-        
-        # Create elements
-        listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
-        actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
-        
-        # Set behaviour
-        actionEl.click (e) ->
-          e.preventDefault()
-          gid = @.dataset.genome
-          viewController.redirect(gid)
-        
-        # Append to list
-        listEl.append(actionEl)
-        el.append(listEl)
-        
-      else if style == 'select'
-        # Checkboxes
-        
-        # Create elements
-        checked = ''
-        checked = 'checked' if genomes[g].isSelected
-        listEl = jQuery("<li class='#{thiscls}'></li>")
-        labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
-        actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
-        
-        # Set behaviour
-        actionEl.change (e) ->
-          e.preventDefault()
-          viewController.select(@.value, @.checked)
-        
-        # Append to list
-        labEl.append(actionEl)
-        listEl.append(labEl)
-        el.append(listEl)
-        
-      else
-        return false
-      
-    true
-    
-  # FUNC updateCSS
-  # Change CSS class for selected genomes to match underlying genome properties
-  #
-  # PARAMS
-  # simple hash object with private and public list of genome Ids to update
-  # genomeController object
-  # 
-  # RETURNS
-  # boolean 
-  #      
-  updateCSS: (gset, genomes) ->
-    
-    # Retrieve list DOM element    
-    listEl = jQuery("##{@elID}")
-    throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
-    
-    # append genomes to list
-    @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public? and typeof gset.public isnt 'undefined'
-    
-    @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private? and typeof gset.private isnt 'undefined'
-    
-    true # return success
     
   
-  _updateGenomeCSS: (el, changedG, genomes) ->
-    
-    # View class
-    cls = @cssClass()
-    
-    for g in changedG
-      
-      thiscls = cls
-      thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-      itemEl = null
-      
-      if @style == 'redirect'
-        # Link style
-        
-        # Find element
-        descriptor = "li > a[data-genome='#{g}']"
-        itemEl = el.find(descriptor)
-       
-      else if @style == 'select'
-        # Checkbox style
-        
-        # Find element
-        descriptor = "li input[value='#{g}']"
-        itemEl = el.find(descriptor)
-   
-      else
-        return false
-      
-      unless itemEl? and itemEl.length
-        throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
-        return false
-      
-      console.log("Updating class to #{thiscls}")
-      liEl = itemEl.parents().eq(1)
-      #console.log("Current class for list li: "+liEl.class)  
-      liEl.attr('class', thiscls)
-      #console.log("Updated class for list li: "+liEl.class())  
-        
-        
-    true # success
-  
-  # FUNC dump
-  # Generate CSV tab-delimited representation of all genomes and meta-data
-  #
-  # PARAMS
-  # genomeController object
-  # 
-  # RETURNS
-  # object containing:
-  #   ext[string] - a suitable file extension (e.g. csv)
-  #   type[string] - a MIME type
-  #   data[string] - a string containing data in final format
-  #      
-  dump: (genomes) ->
-    
-    # Create complete list of meta-types
-    # make all visible
-    fullMeta = {}
-    fullMeta[k] = true for k of genomes.visibleMeta
-    
-    output = ''
-    # Output header
-    header = (genomes.metaMap[k] for k of fullMeta)
-    header.unshift "Genome name"
-    output += "#" + header.join("\t") + "\n"
-    
-    # Output public set
-    for id,g of genomes.public_genomes
-      output += genomes.label(g,fullMeta,"\t") + "\n"
-      
-    # Output private set
-    for id,g of genomes.private_genomes
-      output += genomes.label(g,fullMeta,"\t") + "\n"
-      
-    return {
-      ext: 'csv'
-      type: 'text/plain'
-      data: output 
-    }
-    
-###

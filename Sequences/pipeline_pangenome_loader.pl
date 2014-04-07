@@ -354,7 +354,7 @@ sub process_locus {
 	my $num_ok = 0;  # Some loci sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
 	my $msa_file = $msa_dir . "$locus_name.ffn";
 	my $has_new = 0;
-	my %sequence_group;
+	my @sequence_group;
 		
 	my $fasta = Bio::SeqIO->new(-file   => $msa_file,
                                 -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $msa_file ($!).";
@@ -365,13 +365,13 @@ sub process_locus {
 		if($id =~ m/^upl_/) {
 			# New, add
 			# NOTE: will check if attempt to insert allele multiple times
-			$num_ok++ if add_pangenome_loci($locus_name, $pg_feature_id, $id, $entry->seq, \%sequence_group);
+			$num_ok++ if add_pangenome_loci($locus_name, $pg_feature_id, $id, $entry->seq, \@sequence_group);
 			$has_new = 1;
 		} else {
 			# Already in DB, update
 			# NOTE: DOES NOT CHECK IF SAME ALLELE GETS UPDATED MULTIPLE TIMES,
 			# If this is later deemed necessary, need uniquename to track alleles
-			update_pangenome_loci($id, $entry->seq, \%sequence_group, $do_snp);
+			update_pangenome_loci($id, $entry->seq, \@sequence_group, $do_snp);
 			# No non-fatal checks on done on update ops. i.e. checks where the program can discard sequence and continue.
 			# So if you get to this point, you can count this updated sequence.
 			$num_ok++; 
@@ -381,10 +381,10 @@ sub process_locus {
 	die "Locus $locus_name alignment contains no new genome sequences. Why was it run then? (likely indicates error)." unless $has_new;
 	
 	# Load tree
-	load_tree($locus_name, $pg_feature_id, \%sequence_group) if $do_tree && $num_ok > 2;
+	load_tree($locus_name, $pg_feature_id, \@sequence_group) if $do_tree && $num_ok > 2;
 	
 	# Load snps
-	load_snps($snp_positions_dir, $refseq_dir, $pg_feature_id, \%sequence_group) if $do_snp && $num_ok > 1;
+	load_snps($snp_positions_dir, $refseq_dir, $pg_feature_id, \@sequence_group) if $do_snp && $num_ok > 1;
 	
 }
 
@@ -494,9 +494,10 @@ sub add_pangenome_loci {
 	$chado->loci_cache('insert' => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $pg_id, is_public => $pub_value);
 	
-	$seq_group->{$header} = {
+	push @$seq_group, {
 		genome => $contig_collection_id,
 		allele => $allele_id,
+		header => $header,
 		#copy => $allele_num,
 		public => $is_public,
 		contig => $contig_id,
@@ -530,9 +531,10 @@ sub update_pangenome_loci {
 	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
 	$chado->print_uf($locus_id,$locus_id,$type,$seqlen,$residues,$is_public);
 		
-	$seq_group->{$header} = {
+	push @$seq_group, {
 		genome => $contig_collection_id,
 		allele => $locus_id,
+		header => $header,
 		public => $is_public,
 		is_new => 0
 	};
@@ -549,27 +551,35 @@ sub load_tree {
 	chomp $tree;
 	close $tfh;
 	
-	# convert the temporary Ids to the final DB Ids
+	# Swap the headers in the tree with consistent tree names
+	# Assumes headers are unique
 	my %conversions;
-	while($tree =~ m/upl_(\d+)/g) {
-		my $tracker_id = $1;
+	foreach my $allele_hash (@$seq_group) {
 		
-		next if $conversions{$tracker_id}; # Already looked up new Id
+		my $header = $allele_hash->{header};
+		my $displayId = $allele_hash->{public} ? 'public_':'private_';
+		$displayId .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
 		
-		# Retrieve contig_collection feature IDs
-		my $contig_num = 1; # Use arbitrary contig
-		my ($contig_collection_id, $contig_id) = $chado->retrieve_contig_info($tracker_id, $contig_num);
-		croak "Missing feature IDs in pipeline cache for tracker ID $tracker_id and contig $contig_num.\n" unless $contig_collection_id;
+		# Many updated sequences will have the correct headers,
+		# but just in case, update the tree if they do not match
+		next if $header eq $displayId; 
+		
+		if($conversions{$header}) {
+			warn "Duplicate headers $header. Headers must be unique in locus_alleles.fasta.";  # Already looked up new Id
+			next;
+		}
 	
-		$conversions{$tracker_id} = "private_$contig_collection_id";
+		$conversions{$header} = $displayId;
 	}
 	
 	foreach my $old (keys %conversions) {
 		my $new = $conversions{$old};
-		$tree =~ s/$old/$new/g;
+		my $num_repl = $tree =~ s/$old/$new/g;
+		warn "No replacements made in phylogenetic tree. $old not found." unless $num_repl;
+		warn "Multiple replacements made in phylogenetic tree. $old is not unique." unless $num_repl;
 	}
 	
-	# store tree in tables
+	# add tree in tables
 	$chado->handle_phylogeny($tree, $query_id, $seq_group);
 	
 }
@@ -590,6 +600,9 @@ sub load_snps {
 	# At the end of handle_insert_blocks, all gaps in these regions will be added as snp_core entries.
 	my $ambiguous_regions = $chado->snp_audit($query_id, $refseq);
 	if(@$ambiguous_regions) {
+		
+		my %snp_alignment_sequences;
+		
 		# Need to load new alignments into memory
 		my $snp_aln_file = "$snp_alignments_dir/$query_id\_snp.ffn";
 		my $fasta = Bio::SeqIO->new(-file   => $snp_aln_file,
@@ -599,22 +612,18 @@ sub load_snps {
 			my $id = $entry->display_id;
 			
 			next if $id =~ m/^refseq/; # already have refseq in memory
-			
-			croak "Error: Unrecognized genome $id in alignment file" unless defined $sequence_group->{$id};
-			
-			$sequence_group->{$id}->{seq} = $entry->seq;
+			$snp_alignment_sequences{$id}->{seq} = $entry->seq;
 		}
 		
-		$chado->handle_insert_blocks($ambiguous_regions, $query_id, $refseq, $sequence_group);
+		$chado->handle_insert_blocks($ambiguous_regions, $query_id, $refseq, \%snp_alignment_sequences);
 	}
 	
 
 	# Compute snps relative to the reference alignment for all new loci
 	# Performed by parallel script, load data for each genome
-	foreach my $id (keys %$sequence_group) {
-		if($sequence_group->{$id}->{is_new}) {
-			my $ghash = $sequence_group->{$id};
-			find_snps($snp_positions_dir, $query_id, $id, $ghash);
+	foreach my $ghash (@$sequence_group) {
+		if($ghash->{is_new}) {
+			find_snps($snp_positions_dir, $query_id, $ghash);
 		}
 	}
 }
@@ -623,10 +632,9 @@ sub load_snps {
 sub find_snps {
 	my $data_dir = shift;
 	my $ref_id = shift;
-	my $genome = shift;
 	my $genome_info = shift;
 	
-	my $comp_seq = $genome_info->{seq};
+	my $genome = $genome_info->{header};
 	my $contig_collection = $genome_info->{genome};
 	my $contig = $genome_info->{contig};
 	my $locus = $genome_info->{allele};

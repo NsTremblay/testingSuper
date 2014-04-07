@@ -18,8 +18,6 @@
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
-  jQuery;
-
 
   /*
    CLASS SuperphyError
@@ -127,7 +125,13 @@
     };
 
     ViewController.prototype.select = function(g, checked) {
+      var v, _i, _len, _ref;
       this.genomeController.select(g, checked);
+      _ref = this.views;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        v = _ref[_i];
+        v.select(g, checked);
+      }
       return true;
     };
 
@@ -213,7 +217,7 @@
 
     ViewController.prototype.metaForm = function(elem) {
       var form;
-      form = '<div style="display:inline-block;">' + '<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#meta-display">' + '<i class=" icon-eye-open icon-white"></i>' + '<span class="caret"></span>' + '</button>' + '<div id="meta-display" class="collapse out">' + '<div style="padding:10px;">Change meta-data displayed:</div>' + '<form class="form-horizontal">' + '<fieldset>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label>' + '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label>' + '</fieldset>' + '</form>' + '</div>' + '</div>' + '</div>';
+      form = '<div id="meta-display">' + '<h4><i class="fa fa-eye"></i> Meta-data</h4>' + '<p>Change meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '</fieldset>' + '</form>' + '</div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -223,21 +227,25 @@
 
     ViewController.prototype.filterViews = function(filterForm) {
       var searchTerms, term, v, _i, _len, _ref;
-      searchTerms = null;
-      if (filterForm === 'fast') {
-        term = jQuery("#fast-filter > input").val().toLowerCase();
-        if ((term != null) && term.length) {
-          searchTerms = [];
-          searchTerms.push({
-            searchTerm: term,
-            dataField: 'displayname',
-            negate: false
-          });
-        }
+      if (filterForm === 'selection') {
+        this.genomeController.filterBySelection();
       } else {
-        searchTerms = this._parseFilterForm();
+        searchTerms = null;
+        if (filterForm === 'fast') {
+          term = jQuery("#fast-filter > input").val().toLowerCase();
+          if ((term != null) && term.length) {
+            searchTerms = [];
+            searchTerms.push({
+              searchTerm: term,
+              dataField: 'displayname',
+              negate: false
+            });
+          }
+        } else {
+          searchTerms = this._parseFilterForm();
+        }
+        this.genomeController.filter(searchTerms);
       }
-      this.genomeController.filter(searchTerms);
       this._toggleFilterStatus();
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -262,41 +270,18 @@
     };
 
     ViewController.prototype.filterForm = function(elem) {
-      var advForm, advLab, advRadio, delFilterButton, fastLab, fastRadio, filtType, filterOff, filterOn, filterStatus, numVisible, sf;
-      filtType = jQuery('<div id="select-filter-form"></div>');
-      fastLab = jQuery('<label class="radio">Basic</label>');
-      fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>');
-      fastRadio.change(function(e) {
-        if (this.checked != null) {
-          jQuery("#fast-filter").show();
-          jQuery("#adv-filter").hide();
-        }
-        return true;
-      });
-      fastLab.append(fastRadio);
-      filtType.append(fastLab);
-      advLab = jQuery('<label class="radio">Advanced</label>');
-      advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">');
-      advRadio.change(function(e) {
-        if (this.checked != null) {
-          jQuery("#fast-filter").hide();
-          jQuery("#adv-filter").show();
-        }
-        return true;
-      });
-      advLab.append(advRadio);
-      filtType.append(advLab);
-      elem.append(filtType);
+      var advForm, advLab, advRadio, delButton, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, numVisible, selLab, selRadio, sf;
+      elem.append('<h4><i class="fa fa-filter"></i> Filter</h4>');
       numVisible = this.genomeController.filtered;
       filterStatus = jQuery('<div id="filter-status"></div>');
-      filterOn = jQuery("<div id='filter-on'>Filter active. " + numVisible + " genomes visible.</div>");
+      filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-info'>Filter active. " + numVisible + " genomes visible.</div></div>");
       filterOff = jQuery('<div id="filter-off"></div>');
-      delFilterButton = jQuery('<button id="remove-filter" type="button">Clear</button>');
-      delFilterButton.click(function(e) {
+      delButton = jQuery('<button id="remove-filter" type="button" class="btn btn-sm">Clear</button>');
+      delButton.click(function(e) {
         e.preventDefault();
         return viewController.resetFilter();
       });
-      filterOn.append(delFilterButton);
+      delButton.appendTo(filterOn);
       if (numVisible > 0) {
         filterOn.show();
         filterOff.hide();
@@ -307,6 +292,45 @@
       filterStatus.append(filterOn);
       filterStatus.append(filterOff);
       elem.append(filterStatus);
+      elem.append('<p>Limit genomes displayed in views by:</p>');
+      filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>');
+      fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>');
+      fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>');
+      fastRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").show();
+          jQuery("#adv-filter").hide();
+          jQuery("#selection-filter").hide();
+        }
+        return true;
+      });
+      fastLab.prepend(fastRadio);
+      filtType.append(fastLab);
+      advLab = jQuery('<div class="form-group"><label class="radio">Advanced</label></div>');
+      advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">');
+      advRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").hide();
+          jQuery("#adv-filter").show();
+          jQuery("#selection-filter").hide();
+        }
+        return true;
+      });
+      advLab.prepend(advRadio);
+      filtType.append(advLab);
+      selLab = jQuery('<div class="form-group"><label class="radio">By Selection</label></div>');
+      selRadio = jQuery('<input type="radio" name="filter-form-type" value="selection">');
+      selRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").hide();
+          jQuery("#adv-filter").hide();
+          jQuery("#selection-filter").show();
+        }
+        return true;
+      });
+      selLab.prepend(selRadio);
+      filtType.append(selLab);
+      elem.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);
       elem.append(sf);
@@ -314,6 +338,15 @@
       this.addAdvancedFilter(advForm);
       advForm.hide();
       elem.append(advForm);
+      fbs = jQuery("<div id='selection-filter'>" + "<p>A selection in one of the views (i.e. genomes selected in a clade or map region)</p>" + "</div>");
+      filtButton = jQuery('<button id="filter-selection-button" type="button" class="btn btn-sm">Filter by Selection</button>');
+      filtButton.click(function(e) {
+        e.preventDefault();
+        return viewController.filterViews('selection');
+      });
+      fbs.append(filtButton);
+      fbs.hide();
+      elem.append(fbs);
       return true;
     };
 
@@ -323,7 +356,7 @@
       filterOn = jQuery('#filter-on');
       filterOff = jQuery('#filter-off');
       if (numVisible > 0) {
-        filterOn.text("Filter active. " + numVisible + " genomes visible.");
+        filterOn.find('#filter-on-text').text("Filter active. " + numVisible + " genomes visible.");
         filterOn.show();
         filterOff.hide();
       } else {
@@ -346,10 +379,11 @@
 
     ViewController.prototype.addAdvancedFilter = function(elem) {
       var addRow, advButton, advRows;
+      elem.append("<p>Boolean keyword search of specified meta-data fields</p>");
       advRows = jQuery("<div id='adv-filter-rows'></div>");
       elem.append(advRows);
       this.addFilterRow(advRows, 1);
-      advButton = jQuery('<button id="adv-filter-submit" type="button">Filter</button>');
+      advButton = jQuery('<button id="adv-filter-submit" type="button" class="btn btn-sm">Filter</button>');
       elem.append(advButton);
       advButton.click(function(e) {
         e.preventDefault;
@@ -417,8 +451,9 @@
 
     ViewController.prototype.addFastFilter = function(elem) {
       var fastButton, tBox;
+      elem.append("<p>Basic genome name filter</p>");
       tBox = jQuery('<input type="text" name="fast-filter-term" placeholder="Filter by..."></input>');
-      fastButton = jQuery('<button id="fast-filter-submit" type="button">Filter</button>');
+      fastButton = jQuery('<button id="fast-filter-submit" type="button" class="btn btn-sm">Filter</button>');
       fastButton.click(function(e) {
         e.preventDefault;
         return viewController.filterViews('fast');
@@ -577,6 +612,13 @@
       return false;
     };
 
+    ViewTemplate.prototype.viewAction = function() {
+      var args, genomes;
+      genomes = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      throw new SuperphyError("viewAction method has not been defined in child class (" + this.type + ").");
+      return false;
+    };
+
     ViewTemplate.prototype.cssClass = function() {
       return this.elName + '_item';
     };
@@ -708,6 +750,23 @@
         liEl = itemEl.parents().eq(1);
         liEl.attr('class', thiscls);
       }
+      return true;
+    };
+
+    ListView.prototype.select = function(genome, isSelected) {
+      var descriptor, itemEl;
+      itemEl = null;
+      if (this.style === 'select') {
+        descriptor = "li input[value='" + genome + "']";
+        itemEl = jQuery(descriptor);
+      } else {
+        return false;
+      }
+      if (!((itemEl != null) && itemEl.length)) {
+        throw new SuperphyError("List element for genome " + genome + " not found in ListView " + this.elID);
+        return false;
+      }
+      itemEl.prop('checked', isSelected);
       return true;
     };
 
@@ -955,6 +1014,49 @@
           return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
         };
       })(this));
+      return true;
+    };
+
+    GenomeController.prototype.filterBySelection = function() {
+      var g, gset, i, pubGenomeIds, pvtGenomeIds, _i, _j, _len, _len1, _ref, _ref1;
+      gset = this.selected();
+      pubGenomeIds = gset["public"];
+      pvtGenomeIds = gset["private"];
+      this.filtered = pubGenomeIds.length + pvtGenomeIds.length;
+      if (this.filtered === 0) {
+        this.filter();
+      } else {
+        _ref = this.public_genomes;
+        for (i in _ref) {
+          g = _ref[i];
+          g.visible = false;
+        }
+        _ref1 = this.private_genomes;
+        for (i in _ref1) {
+          g = _ref1[i];
+          g.visible = false;
+        }
+        for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
+          g = pubGenomeIds[_i];
+          this.public_genomes[g].visible = true;
+          this.public_genomes[g].isSelected = false;
+        }
+        for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
+          g = pvtGenomeIds[_j];
+          this.private_genomes[g].visible = true;
+          this.private_genomes[g].isSelected = false;
+        }
+        this.pubVisible = pubGenomeIds.sort((function(_this) {
+          return function(a, b) {
+            return cmp(_this.public_genomes[a].viewname, _this.public_genomes[b].viewname);
+          };
+        })(this));
+        this.pvtVisible = pvtGenomeIds.sort((function(_this) {
+          return function(a, b) {
+            return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
+          };
+        })(this));
+      }
       return true;
     };
 
@@ -1450,6 +1552,12 @@
    Date: March 20th, 2013
    */
 
+  d3.selection.prototype.moveToFront = function() {
+    return this.each(function() {
+      return this.parentNode.appendChild(this);
+    });
+  };
+
 
   /*
    CLASS TreeView
@@ -1468,7 +1576,7 @@
       if (!(treeArgs.length > 0)) {
         throw new SuperphyError('Missing argument. TreeView constructor requires JSON tree object.');
       }
-      this.root = treeArgs[0];
+      this.root = this.trueRoot = treeArgs[0];
       this.dim = {
         w: 500,
         h: 800
@@ -1515,16 +1623,18 @@
             buttons: {
               Select: function() {
                 var node;
-                node = $(this).data("clade-node");
-                return viewController.getView(num).selectClade(node, true);
+                node = jQuery(this).data("clade-node");
+                viewController.getView(num).selectClade(node, true);
+                return jQuery(this).dialog("close");
               },
               Unselect: function() {
                 var node;
-                node = $(this).data("clade-node");
-                return viewController.getView(num).selectClade(node, false);
+                node = jQuery(this).data("clade-node");
+                viewController.getView(num).selectClade(node, false);
+                return jQuery(this).dialog("close");
               },
               Cancel: function() {
-                return $(this).dialog("close");
+                return jQuery(this).dialog("close");
               }
             }
           });
@@ -1543,11 +1653,12 @@
     TreeView.prototype.duration = 1000;
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var branch_scale_factor_x, branch_scale_factor_y, cladeIcons, cmdBox, dt, farthest, iNodes, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, svgLinks, svgNodes, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
+      var branch_scale_factor_x, branch_scale_factor_y, cladeIcons, cmdBox, currLeaves, dt, elID, farthest, iNodes, id, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
       if (sourceNode == null) {
         sourceNode = null;
       }
       t1 = new Date();
+      oldRoot = this.root;
       this._sync(genomes);
       if (sourceNode == null) {
         sourceNode = this.root;
@@ -1606,7 +1717,7 @@
           });
         };
       })(this)).remove();
-      svgNodes.filter(function(d) {
+      currLeaves = svgNodes.filter(function(d) {
         return d.leaf;
       }).attr("class", (function(_this) {
         return function(d) {
@@ -1618,11 +1729,15 @@
         } else {
           return null;
         }
-      }).select("text").text(function(d) {
-        if (d.leaf) {
-          return d.viewname;
+      });
+      currLeaves.select("text").text(function(d) {
+        return d.viewname;
+      });
+      currLeaves.select("circle").style("fill", function(d) {
+        if (d.selected) {
+          return "lightsteelblue";
         } else {
-          return d.label;
+          return "#fff";
         }
       });
       nodesEnter = svgNodes.enter().append("g").attr("class", (function(_this) {
@@ -1640,10 +1755,11 @@
         return d.leaf;
       });
       leaves.append("circle").attr("r", 1e-6).style("fill", function(d) {
-        var _ref1;
-        return (_ref1 = d.selected) != null ? _ref1 : {
-          "lightsteelblue": "#fff"
-        };
+        if (d.selected) {
+          return "lightsteelblue";
+        } else {
+          return "#fff";
+        }
       });
       if (this.style === 'select') {
         leaves.on("click", function(d) {
@@ -1663,16 +1779,16 @@
           return d.label;
         }
       }).style("fill-opacity", 1e-6);
-      num = this.elNum - 1;
       iNodes = nodesEnter.filter(function(n) {
         return !n.leaf && !n.root;
       });
-      cmdBox = iNodes.append("rect").attr("width", 1e-6).attr("height", 1e-6).attr("y", -4).attr("x", -14).style("fill", "#fff");
+      num = this.elNum - 1;
+      cmdBox = iNodes.append("rect").attr("width", 1e-6).attr("height", 1e-6).attr("y", -4).attr("x", -12).style("fill", "#fff");
       cmdBox.on("click", function(d) {
         return viewController.viewAction(num, 'expand_collapse', d, this.parentNode);
       });
       if (this.style === 'select') {
-        cladeIcons = iNodes.append('text').attr("class", "treeicon").attr("text-anchor", 'middle').attr("y", 4).attr("x", -23).text(function(d) {
+        cladeIcons = iNodes.append('text').attr("class", "treeicon").attr("text-anchor", 'middle').attr("y", 4).attr("x", -20).text(function(d) {
           return "\uf058";
         });
         cladeIcons.on("click", function(d) {
@@ -1701,6 +1817,12 @@
       nodesExit.select("circle").attr("r", 1e-6);
       nodesExit.select("text").style("fill-opacity", 1e-6);
       nodesExit.select("rect").attr("width", 1e-6).attr("height", 1e-6);
+      if (!oldRoot.root && this.root !== oldRoot) {
+        id = oldRoot.id;
+        elID = "treenode" + id;
+        svgNode = this.canvas.select("#" + elID);
+        svgNode.moveToFront();
+      }
       _ref1 = this.nodes;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         n = _ref1[_j];
@@ -1735,11 +1857,8 @@
         return genomeList[d.name] != null;
       }).attr("class", (function(_this) {
         return function(d) {
-          var _ref2;
           g = genomeList[d.name];
-          d.selected = (_ref2 = (g.isSelected != null) && g.isSelected) != null ? _ref2 : {
-            "true": false
-          };
+          d.selected = (g.isSelected != null) && g.isSelected;
           d.assignedGroup = g.assignedGroup;
           return _this._classList(d);
         };
@@ -1792,15 +1911,70 @@
       }
     };
 
+    TreeView.prototype.select = function(genome, isSelected) {
+      var svgNodes, updateNode;
+      svgNodes = this.canvas.selectAll("g.treenode");
+      updateNode = svgNodes.filter(function(d) {
+        return d.name === genome;
+      }).attr("class", (function(_this) {
+        return function(d) {
+          d.selected = isSelected;
+          return _this._classList(d);
+        };
+      })(this));
+      updateNode.select("circle").style("fill", function(d) {
+        if (d.selected) {
+          return "lightsteelblue";
+        } else {
+          return "#fff";
+        }
+      });
+      return true;
+    };
+
+    TreeView.prototype.dump = function(genomes) {
+      var output, tokens;
+      tokens = [];
+      this._printNode(genomes, this.root, tokens);
+      output = tokens.join('');
+      return {
+        ext: 'newick',
+        type: 'text/plain',
+        data: output
+      };
+    };
+
+    TreeView.prototype._printNode = function(genomes, node, tokens) {
+      var c, g, lab, _i, _len, _ref;
+      if (node.leaf) {
+        g = genomes.genome(node.name);
+        lab = genomes.label(g, genomes.visibleMeta);
+        tokens.push("\"" + lab + "\"", ':', node.length);
+      } else {
+        if (node.daycare != null) {
+          tokens.push('(');
+          _ref = node.daycare;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            c = _ref[_i];
+            this._printNode(genomes, c, tokens);
+            tokens.push(',');
+          }
+          tokens[tokens.length - 1] = ')';
+        }
+        tokens.push("\"" + node.name + "\"", ':', node.length);
+      }
+      return true;
+    };
+
     TreeView.prototype._step = function(d) {
       return "M" + d.source.y + "," + d.source.x + "L" + d.source.y + "," + d.target.x + "L" + d.target.y + "," + d.target.x;
     };
 
     TreeView.prototype._prepTree = function() {
-      this.root.root = true;
-      this.root.x0 = this.height / 2;
-      this.root.y0 = 0;
-      return this._assignKeys(this.root, 0);
+      this.trueRoot.root = true;
+      this.trueRoot.x0 = this.height / 2;
+      this.trueRoot.y0 = 0;
+      return this._assignKeys(this.trueRoot, 0);
     };
 
     TreeView.prototype._assignKeys = function(n, i) {
@@ -1827,21 +2001,19 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
-      this.root = this._syncNode(this.root, genomes, 0);
+      this.root = this._syncNode(this.trueRoot, genomes, 0);
       return true;
     };
 
     TreeView.prototype._syncNode = function(node, genomes, sumLengths) {
-      var c, child, children, g, isExpanded, u, _i, _len, _ref, _ref1;
+      var c, child, children, g, isExpanded, u, _i, _len, _ref;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
       if ((node.leaf != null) && node.leaf === "true") {
         g = genomes.genome(node.name);
         if (g.visible) {
           node.viewname = g.viewname;
-          node.selected = (_ref = (g.isSelected != null) && g.isSelected) != null ? _ref : {
-            "true": false
-          };
+          node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
         } else {
@@ -1853,9 +2025,9 @@
           isExpanded = false;
         }
         children = [];
-        _ref1 = node.daycare;
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          c = _ref1[_i];
+        _ref = node.daycare;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          c = _ref[_i];
           u = this._syncNode(c, genomes, node.sum_length);
           if (!u.hidden) {
             children.push(u);
@@ -1957,166 +2129,6 @@
       }
       return clsList.join(' ');
     };
-
-
-    /*
-    
-    _appendGenomes: (el, visibleG, genomes, style) ->
-      
-       * View class
-      cls = @cssClass()
-      
-      for g in visibleG
-        
-        thiscls = cls
-        thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
-        
-        if style == 'redirect'
-           * Links
-          
-           * Create elements
-          listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
-          actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
-          
-           * Set behaviour
-          actionEl.click (e) ->
-            e.preventDefault()
-            gid = @.dataset.genome
-            viewController.redirect(gid)
-          
-           * Append to list
-          listEl.append(actionEl)
-          el.append(listEl)
-          
-        else if style == 'select'
-           * Checkboxes
-          
-           * Create elements
-          checked = ''
-          checked = 'checked' if genomes[g].isSelected
-          listEl = jQuery("<li class='#{thiscls}'></li>")
-          labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
-          actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
-          
-           * Set behaviour
-          actionEl.change (e) ->
-            e.preventDefault()
-            viewController.select(@.value, @.checked)
-          
-           * Append to list
-          labEl.append(actionEl)
-          listEl.append(labEl)
-          el.append(listEl)
-          
-        else
-          return false
-        
-      true
-      
-     * FUNC updateCSS
-     * Change CSS class for selected genomes to match underlying genome properties
-     *
-     * PARAMS
-     * simple hash object with private and public list of genome Ids to update
-     * genomeController object
-     * 
-     * RETURNS
-     * boolean 
-     *      
-    updateCSS: (gset, genomes) ->
-      
-       * Retrieve list DOM element    
-      listEl = jQuery("##{@elID}")
-      throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
-      
-       * append genomes to list
-      @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public? and typeof gset.public isnt 'undefined'
-      
-      @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private? and typeof gset.private isnt 'undefined'
-      
-      true # return success
-      
-    
-    _updateGenomeCSS: (el, changedG, genomes) ->
-      
-       * View class
-      cls = @cssClass()
-      
-      for g in changedG
-        
-        thiscls = cls
-        thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-        itemEl = null
-        
-        if @style == 'redirect'
-           * Link style
-          
-           * Find element
-          descriptor = "li > a[data-genome='#{g}']"
-          itemEl = el.find(descriptor)
-         
-        else if @style == 'select'
-           * Checkbox style
-          
-           * Find element
-          descriptor = "li input[value='#{g}']"
-          itemEl = el.find(descriptor)
-     
-        else
-          return false
-        
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
-          return false
-        
-        console.log("Updating class to #{thiscls}")
-        liEl = itemEl.parents().eq(1)
-         *console.log("Current class for list li: "+liEl.class)  
-        liEl.attr('class', thiscls)
-         *console.log("Updated class for list li: "+liEl.class())  
-          
-          
-      true # success
-    
-     * FUNC dump
-     * Generate CSV tab-delimited representation of all genomes and meta-data
-     *
-     * PARAMS
-     * genomeController object
-     * 
-     * RETURNS
-     * object containing:
-     *   ext[string] - a suitable file extension (e.g. csv)
-     *   type[string] - a MIME type
-     *   data[string] - a string containing data in final format
-     *      
-    dump: (genomes) ->
-      
-       * Create complete list of meta-types
-       * make all visible
-      fullMeta = {}
-      fullMeta[k] = true for k of genomes.visibleMeta
-      
-      output = ''
-       * Output header
-      header = (genomes.metaMap[k] for k of fullMeta)
-      header.unshift "Genome name"
-      output += "#" + header.join("\t") + "\n"
-      
-       * Output public set
-      for id,g of genomes.public_genomes
-        output += genomes.label(g,fullMeta,"\t") + "\n"
-        
-       * Output private set
-      for id,g of genomes.private_genomes
-        output += genomes.label(g,fullMeta,"\t") + "\n"
-        
-      return {
-        ext: 'csv'
-        type: 'text/plain'
-        data: output 
-      }
-     */
 
     return TreeView;
 

@@ -14,6 +14,11 @@ use Sys::Hostname;
 use File::Temp;
 use Time::HiRes qw( time );
 use Data::Dumper;
+use File::Basename;
+use lib dirname (__FILE__) . "/../";
+use Phylogeny::Typer;
+use Phylogeny::Tree;
+use Phylogeny::TreeBuilder;
 
 =head1 NAME
 
@@ -129,7 +134,9 @@ my %table_ids = (
 my %fp_types = (
 	copy_number_increase => 'sequence',
 	match => 'sequence',
-	panseq_function => 'local'
+	panseq_function => 'local',
+	stx1_subtype => 'local',
+	stx2_subtype => 'local'
 	
 );
 
@@ -357,6 +364,22 @@ sub initialize_ontology {
     $fp_sth->execute('core_genome', 'local');
     my ($core) = $fp_sth->fetchrow_array();
     
+    # Typing gene ID
+    $fp_sth->execute('typing_sequence', 'local');
+    my ($typing) = $fp_sth->fetchrow_array();
+    
+    # Allele fusion ID
+    $fp_sth->execute('allele_fusion', 'local');
+    my ($fusion) = $fp_sth->fetchrow_array();
+    
+    # Fusion of relationship ID
+    $fp_sth->execute('fusion_of', 'local');
+    my ($fusion_of) = $fp_sth->fetchrow_array();
+    
+    # Variant of relationship ID
+    $fp_sth->execute('variant_of', 'sequence');
+    my ($variant_of) = $fp_sth->fetchrow_array();
+    
     
     $self->{feature_types} = {
     	contig_collection => $contig_col,
@@ -366,7 +389,9 @@ sub initialize_ontology {
     	snp => $snp,
     	locus => $locus,
     	pangenome => $pan,
-    	core_genome => $core
+    	core_genome => $core,
+    	typing_sequence => $typing,
+    	allele_fusion => $fusion
     };
     
 	$self->{relationship_types} = {
@@ -374,7 +399,9 @@ sub initialize_ontology {
     	similar_to => $similar_to,
     	located_in => $located_in,
     	derives_from => $derives_from,
-    	contained_id => $contained_in
+    	contained_in => $contained_in,
+    	fusion_of => $fusion_of,
+    	variant_of => $variant_of
     };
     
     # Feature property types
@@ -505,17 +532,17 @@ sub update_sequences {
 }
 
 
-=head2 initialize_uniquename_cache
+=head2 initialize_db_cache
 
 =over
 
 =item Usage
 
-  $obj->initialize_uniquename_cache()
+  $obj->initialize_db_cache()
 
 =item Function
 
-Creates the uniquename cache tables in the database
+Creates an intermediary cache of all key features to ensure no dublication in the DB
 
 =item Returns
 
@@ -588,6 +615,19 @@ sub initialize_db_caches {
 		  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
 		  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
         $dbh->do($sql);
+        
+        # Add typing features if working with gene alleles
+        unless ($is_pg) {
+        	$type_id = 'allele_fusion';
+        	$reltype = 'variant_of';
+        	$sql = "INSERT INTO $table
+			SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE
+			FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2
+			WHERE f.type_id = $type_id AND
+			  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
+			  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
+	        $dbh->do($sql);
+        }
        	
        	# Build indices
         print STDERR "Creating indexes...\n";
@@ -611,6 +651,49 @@ sub initialize_db_caches {
 	);
 	chmod 0644, $tmpfile;
 	$self->{loci_cache}{fh} = $tmpfile;
+	
+	unless($is_pg) {
+		# Cache allele data needed for typing
+		
+		# Retrieve query gene Ids needed in typing
+		$type_id = $self->feature_types('typing_sequence');
+		my $rel_id = $self->relationship_types('fusion_of');
+		
+		my $sql = "SELECT r.object_id, r.subject_id, r.rank, f.uniquename
+		FROM feature f, feature_relationship r 
+		WHERE f.type_id = $type_id AND
+		  r.subject_id = f.feature_id AND
+		  r.type_id = $rel_id";
+		  
+		my $feature_arrayref = $dbh->selectall_arrayref($sql);
+		
+		my %typing_constructs;
+		my %typing_watchlists;
+		my %typing_seq_names;
+		
+		map { 
+			$typing_constructs{$_->[1]}{$_->[2]} = $_->[0]; 
+			$typing_watchlists{$_->[0]} = {}; 
+			$typing_seq_names{$_->[1]} = $_->[3]; 
+		} @$feature_arrayref;
+		
+		# Record order that alleles are concatenated to form typing sequence
+		$self->{loci_cache}{typing_construct} = \%typing_constructs;
+		
+		# Record query gene IDs to watch for to build typing sequences
+		$self->{loci_cache}{typing_watchlist} = \%typing_watchlists;
+		
+		# Name to ID mapping
+		$self->{loci_cache}{typing_names} = \%typing_seq_names;
+		
+		# Name to Featureprop mapping
+		$self->{loci_cache}{typing_featureprops} = {
+			'stx1_subunit' => 'stx1_subtype',
+			'stx2_subunit' => 'stx2_subtype',
+		};
+		
+		
+	}
 	
     $dbh->commit;
     
@@ -2174,7 +2257,7 @@ Nothing
 
 =item Arguments
 
-Hash containing headers pointing to FASTA alignment sequences
+??
 
 =back
 
@@ -2195,10 +2278,10 @@ sub handle_phylogeny {
 		$self->print_utree($tree_id, $tree_name, $tree);
 		
 		# add new tree-feature relationships
-		foreach my $genome (keys %$seq_group) {
-			my $allele_id = $seq_group->{$genome}->{allele};
-			if($seq_group->{$genome}->{is_new}) {
-				my $pub = $seq_group->{$genome}->{public};
+		foreach my $genome_hash (@$seq_group) {
+			my $allele_id = $genome_hash->{allele};
+			if($genome_hash->{is_new}) {
+				my $pub = $genome_hash->{public};
 				my $table = $pub ? 'feature_tree' : 'private_feature_tree';
 				
 				$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
@@ -2218,9 +2301,9 @@ sub handle_phylogeny {
 		$self->nextoid('feature_tree','++');
 		
 		# alleles
-		foreach my $genome (keys %$seq_group) {
-			my $allele_id = $seq_group->{$genome}->{allele};
-			my $pub = $seq_group->{$genome}->{public};
+		foreach my $genome_hash (@$seq_group) {
+			my $allele_id = $genome_hash->{allele};
+			my $pub = $genome_hash->{public};
 			my $table = $pub ? 'feature_tree' : 'private_feature_tree';
 			                              	
 			$self->print_ftree($self->nextoid($table),$tree_id,$allele_id,'allele',$pub);
@@ -3709,7 +3792,7 @@ sub handle_insert_blocks {
 			my $col_match = 1;
 			foreach my $genome_label (keys %$insert_column) {
 				my $c1 = $insert_column->{$genome_label};
-				my $c2 = substr($loci_hash->{$genome_label}->{seq}, $aln+$i-1,1);
+				my $c2 = substr($loci_hash->{$genome_label}, $aln+$i-1,1);
 				
 				print "Genome $genome_label -- SNP char: $c1, alignment char: $c2 for column: $i, $aln, ",$aln+$i-1,"\n" if $v;
 				
@@ -3811,6 +3894,367 @@ sub print_alignment_lengths {
 		print "$n - $b: $len\n";
 	}
 	print "\n";
+}
+
+=head2 record_typing_sequences
+
+Checks if query gene is needed to generate a in silico
+subtype classification. If yes, the sequence_group hash
+is cached. The hash, used elsewhere, includes key/values:
+
+  genome => contig_collection feature ID
+  public => T/F indicating if private/public feature
+  allele => the allele feature ID
+  seq    => the allele sequence
+  is_new => T/F indicating if new sequence
+
+=cut
+
+sub record_typing_sequences {
+	my $self = shift;
+	my $query_id = shift;
+	my $sequence_group = shift;
+	
+	return 0 unless defined $self->{loci_cache}{typing_watchlist}{$query_id};
+	
+	my $genome_id = $sequence_group->{genome};
+	my $public = $sequence_group->{public};
+	my $genome = $public ? 'public_' : 'private_';
+	$genome .= $genome_id;
+	
+	$self->{loci_cache}{typing_watchlist}{$query_id}{$genome} = [] unless defined
+		$self->{loci_cache}{typing_watchlist}{$query_id}{$genome};
+	
+	push @{$self->{loci_cache}{typing_watchlist}{$query_id}{$genome}}, $sequence_group;
+	
+	print "Recording $genome set for $query_id\n";
+}
+
+=head2 is_typing_sequence
+
+Checks if query gene is needed to generate a in silico
+subtype classification.
+
+=cut
+
+sub is_typing_sequence {
+	my $self = shift;
+	my $query_id = shift;
+	
+	return defined $self->{loci_cache}{typing_watchlist}{$query_id};
+}
+
+=head2 typing
+
+Perform typing and load data and results into DB
+
+=cut
+
+sub typing {
+	my $self = shift;
+	my $work_dir = shift;
+	
+	# Prepare aligned concatenated sequences for each typing segment
+	my $typing_sets = $self->construct_typing_sequences();
+	print "Construction complete\n";
+	
+	# Typing and Tree objects
+	my $typer = Phylogeny::Typer->new(tmp_dir => $work_dir);
+	my $tree_builder = Phylogeny::TreeBuilder->new();
+	my $tree_io = Phylogeny::Tree->new(dbix => undef);
+	
+	# Run insilico typing on each typing segment
+	foreach my $typing_ref_seq (keys %$typing_sets) {
+		
+		print "Number of typable subunits for $typing_ref_seq: ". scalar(@{$typing_sets->{$typing_ref_seq}}),"\n";
+		
+		my %waiting_subtype;
+		my %fasta;
+		my @sequence_group;
+		foreach my $typing_hashref (@{$typing_sets->{$typing_ref_seq}}) {
+			# Prepare fasta inputs
+			# Only include allele_fusions not currently in the DB
+			
+			my $is_new = 0;
+			
+			my $typing_ref_seq = $typing_hashref->{typing_ref_seq};
+			my $genome_id = $typing_hashref->{genome};
+			my $public = $typing_hashref->{public};
+			my $uniquename = $typing_hashref->{uniquename};
+			
+			# Check if typing_seq is in cache
+			# Check if this allele is already in DB
+			my ($result, $alleleset_id) = $self->validate_feature($typing_ref_seq,$genome_id,$uniquename,$public);
+			
+			if($result eq 'new_conflict') {
+				warn "Attempt to add allele_fusion feature multiple times. Dropping duplicate of allele_fusion $uniquename.";
+				next;
+			}
+			if($result eq 'db_conflict') {
+				warn "Attempt to update existing allele_fusion multiple times. Skipping duplicate allele_fusion $uniquename.";
+				next;
+			}
+			
+			unless($alleleset_id) {
+				# A typing feature matching this one has not been loaded before
+				# Add to list of type-ready sequences
+				my $header = $typing_hashref->{header};
+				$waiting_subtype{$header} = $typing_hashref;
+				$fasta{$header} = $typing_hashref->{seq};
+				$is_new = 1;
+			}
+			
+			$typing_hashref->{allele} = $alleleset_id;
+			$typing_hashref->{is_new} = $is_new;
+			
+			push @sequence_group, $typing_hashref;
+			
+		}
+		
+		# Run typing
+		my $typing_unit_name = $self->{loci_cache}{typing_names}{$typing_ref_seq};
+		my $typing_results_file = "$work_dir/$typing_unit_name\_subtypes.txt";
+		my $typing_tree_file = "$work_dir/$typing_unit_name\_subtypes.phy";
+		my $subtype_prop = $self->{loci_cache}{typing_featureprops}{$typing_unit_name};
+		
+		$typer->subtype($typing_unit_name, \%fasta, $typing_tree_file, $typing_results_file);
+		
+		# Load subtype assignments
+		open(my $in, "<", $typing_results_file) or croak "Error: unable to read file $typing_results_file ($!).\n";
+		
+		while(my $row = <$in>) {
+			chomp $row;
+			my ($header, $assignment) = split("\t", $row);
+			
+			$self->handle_typing_sequence($subtype_prop, $typing_ref_seq, $assignment, $waiting_subtype{$header});
+		}
+		
+		close $in;
+		
+		# Build tree
+		
+		# write alignment file
+		my $tmp_file = $work_dir . '/genodo_allele_aln.txt';
+		open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
+		foreach my $allele_hash (@sequence_group) {
+			my $header = $allele_hash->{public} ? 'public_':'private_';
+			$header .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
+			print $out join("\n",">".$header,$allele_hash->{seq}),"\n";
+		}
+		close $out;
+		
+		# clear output file for safety
+		my $tree_file = $work_dir . '/genodo_allele_tree.txt';
+		open($out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+		close $out;
+		
+		# build newick tree
+		$tree_builder->build_tree($tmp_file, $tree_file) or croak;
+		
+		# slurp tree and convert to perl format
+		my $tree = $tree_io->newickToPerlString($tree_file);
+		
+		# store tree in tables
+		$self->handle_phylogeny($tree, $typing_ref_seq, \@sequence_group);
+		
+	}
+}
+
+=head2 construct_typing_sequences
+
+Produces a typing sequence by concatenating the individual aligned 
+allele sequences that make up a typing sequence
+
+=cut
+
+sub construct_typing_sequences {
+	my $self = shift;
+	
+	my %typing_sets;
+	
+	foreach my $typing_ref_gene (keys %{$self->{loci_cache}{typing_construct}}) {
+		print "Construction step for SUBUNIT: $typing_ref_gene\n";
+		
+		$typing_sets{$typing_ref_gene} = [];
+		my @ordered_keys = sort keys %{$self->{loci_cache}{typing_construct}{$typing_ref_gene}};
+		my @ordered_seqs;
+		
+		# Record the order of the query genes in this typing sequence
+		foreach my $i (@ordered_keys) {
+			my $query_id = $self->{loci_cache}{typing_construct}{$typing_ref_gene}{$i};
+			
+			push @ordered_seqs, $query_id;
+		}
+		
+		print "Alleles in subunit: ".join(', ',@ordered_seqs),"\n";
+		
+		# Iterate through each genome, concatenting the sequences
+		# Skip genomes that do not have all needed sequences
+		my $query_gene1 = $ordered_seqs[0];
+		my @genome_list = keys %{$self->{loci_cache}{typing_watchlist}{$query_gene1}};
+		print "Number of potential genomes: ".scalar(@genome_list)."\n";
+		
+		foreach my $genome (@genome_list) {
+			
+			# Typing sequence properties
+			my @seqs = ();
+			my @headers = ();
+			my @alleles = ();
+			my $public;
+			my $genome_id;
+			my $missing = 0;
+			
+			# Concatenate all alleles for each query gene in typing sequence
+			foreach my $query_gene (@ordered_seqs) {
+				my $alleles_list = $self->{loci_cache}{typing_watchlist}{$query_gene}{$genome};
+				
+				unless(defined $alleles_list) {
+					# One of the needed alleles is missing in the genome, skip genome
+					$missing = 1;
+					last;
+					
+				} else {
+					
+					# Iterate through each allele copy for this query gene
+					my @next_seqs;
+					my @next_headers;
+					my @next_alleles;
+					
+					foreach my $allele_data (@$alleles_list) {
+						
+						if(@seqs) {
+							my $allele_id = $allele_data->{allele};
+							
+							# Concatenate this set of alleles with all earlier alleles in construct
+							foreach my $s (@seqs) {
+								push @next_seqs, $s.$allele_data->{seq};
+							}
+							foreach my $a (@alleles) {
+								push @next_alleles, [@$a, $allele_id];
+							}
+							foreach my $h (@headers) {
+								my $thish = "|$query_gene\_$allele_id";
+								push @next_headers, $h.$thish;
+							}
+							
+						} else {
+							# Start of typing sequence, record all alleles in first position
+							my $allele_id = $allele_data->{allele};
+							@next_seqs =  ($allele_data->{seq});
+							@next_alleles = ([$allele_id]);
+							@next_headers = ("$query_gene\_$allele_id");
+							$public = $allele_data->{public};
+							$genome_id = $allele_data->{genome};
+						}
+						
+						@seqs = @next_seqs;
+						@headers = @next_headers;
+						@alleles = @next_alleles;
+						
+					}
+				}
+			}
+					
+			# Finalize typing sequence data
+			# Each array row represent a single typing sequence in a genome
+			if(!$missing) {
+				while (@seqs) {
+					my $seq = shift @seqs;
+					my $h = shift @headers;
+					my $allele_list = shift @alleles;
+						
+					my $uniquename = "typer:$h";
+					my $header = "$genome|$h";
+					
+					my $typing_hash = {
+						genome => $genome_id,
+						uniquename => $uniquename,
+						public => $public,
+						alleles => $allele_list,
+						header => $header,
+						seq => $seq
+					};
+					
+					push @{$typing_sets{$typing_ref_gene}}, $typing_hash;
+				}
+			}
+			
+		}
+						
+		
+	}
+	
+	return(\%typing_sets);
+
+}
+
+sub handle_typing_sequence {
+	my $self = shift;
+	my ($subtype_name, $typing_ref_id, $subtype_asmt, $typing_dataset) = @_;
+	
+	my $contig_collection_id = $typing_dataset->{genome};
+	my $uniquename = $typing_dataset->{uniquename};
+	my $is_public = $typing_dataset->{public}; 
+	my $alleles_list = $typing_dataset->{alleles};
+	my $upload_id = undef;
+	$upload_id = $typing_dataset->{upload_id} unless $is_public;
+	
+	# Create allele_fusion feature
+		
+	# ID
+	my $curr_feature_id = $self->nextfeature($is_public);
+
+	# Use default organism
+	my $organism = $self->organism_id();
+	
+	# external accessions
+	my $dbxref = '\N';
+	
+	# name
+	my $name = "$subtype_name subtype for genome $contig_collection_id";
+	
+	# Feature relationships
+	my $rank = 0;
+    my $table = $is_public ? 'feature_relationship' : 'private_feature_relationship';
+	
+	# Link to contig_collection
+	my $rtype = $self->relationship_types('part_of');
+    $self->print_frel($self->nextoid($table),$curr_feature_id,$contig_collection_id,$rtype,$rank,$is_public);
+	$self->nextoid($table,'++');
+	
+	# Link to typing reference gene
+	$rtype = $self->relationship_types('variant_of');
+    $self->print_frel($self->nextoid($table),$curr_feature_id,$typing_ref_id,$rtype,$rank,$is_public);
+	$self->nextoid($table,'++');
+	
+	# Link to alleles
+	$rtype = $self->relationship_types('fusion_of');
+	foreach my $allele_id (@$alleles_list) {
+    	$self->print_frel($self->nextoid($table),$curr_feature_id,$allele_id,$rtype,$rank,$is_public);
+		$self->nextoid($table,'++');
+		$rank++
+	}
+	
+	# Feature property
+	# save subtype classification
+ 	my $property_cvterm_id = $self->featureprop_types($subtype_name);
+	unless($property_cvterm_id) {
+		croak "Unrecognized feature property type $subtype_name.";
+	}
+ 	
+ 	$rank=0;
+    $table = $is_public ? 'featureprop' : 'private_featureprop';
+	                        	
+	$self->print_fprop($self->nextoid($table),$curr_feature_id,$property_cvterm_id,$subtype_asmt,$rank,$is_public,$upload_id);
+    $self->nextoid($table,'++');
+	
+	# Print feature
+	my $seq = $typing_dataset->{seq};
+	my $seqlen = length($seq);
+	my $type = $self->feature_types('allele_fusion');
+	$self->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
+	$self->nextfeature($is_public, '++');
+		
 }
 
 1;

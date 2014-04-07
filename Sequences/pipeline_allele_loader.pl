@@ -133,7 +133,6 @@ GetOptions(
 or pod2usage(-verbose => 1, -exitval => 1);
 pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
 
-
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
 
@@ -436,13 +435,15 @@ sub allele {
 	$chado->loci_cache('insert' => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
 	
-	$seq_group->{$header} = {
-		genome => $contig_collection_id,
-		allele => $allele_id,
-		#copy => $allele_num,
-		public => $is_public,
-		is_new => 1
-	};
+	push @$seq_group,
+		{
+			genome => $contig_collection_id,
+			allele => $allele_id,
+			header => $header,
+			#copy => $allele_num,
+			public => $is_public,
+			is_new => 1
+		};
 	
 	return 1;
 	
@@ -470,14 +471,16 @@ sub update_allele_sequence {
 	
 	# Only residues and seqlen get updated, the other values are non-null placeholders in the tmp table
 	$chado->print_uf($allele_id,$allele_id,$type,$seqlen,$residues,$is_public);
-		
-	$seq_group->{$header} = {
-		genome => $contig_collection_id,
-		allele => $allele_id,
-		#copy => 1,
-		public => $is_public,
-		is_new => 0
-	};
+
+	push @$seq_group,
+		{
+			genome => $contig_collection_id,
+			allele => $allele_id,
+			header => $header,
+			#copy => 1,
+			public => $is_public,
+			is_new => 0
+		};
 }
 
 sub load_tree {
@@ -491,24 +494,32 @@ sub load_tree {
 	chomp $tree;
 	close $tfh;
 	
-	# convert the temporary Ids to the final DB Ids
+	# Swap the headers in the tree with consistent tree names
+	# Assumes headers are unique
 	my %conversions;
-	while($tree =~ m/upl_(\d+)/g) {
-		my $tracker_id = $1;
+	foreach my $allele_hash (@$seq_group) {
 		
-		next if $conversions{$tracker_id}; # Already looked up new Id
+		my $header = $allele_hash->{header};
+		my $displayId = $allele_hash->{public} ? 'public_':'private_';
+		$displayId .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
 		
-		# Retrieve contig_collection feature IDs
-		my $contig_num = 1; # Use arbitrary contig
-		my ($contig_collection_id, $contig_id) = $chado->retrieve_contig_info($tracker_id, $contig_num);
-		croak "Missing feature IDs in pipeline cache for tracker ID $tracker_id and contig $contig_num.\n" unless $contig_collection_id;
+		# Many updated sequences will have the correct headers,
+		# but just in case, update the tree if they do not match
+		next if $header eq $displayId; 
+		
+		if($conversions{$header}) {
+			warn "Duplicate headers $header. Headers must be unique in locus_alleles.fasta.";  # Already looked up new Id
+			next;
+		}
 	
-		$conversions{$tracker_id} = "private_$contig_collection_id";
+		$conversions{$header} = $displayId;
 	}
 	
 	foreach my $old (keys %conversions) {
 		my $new = $conversions{$old};
-		$tree =~ s/$old/$new/g;
+		my $num_repl = $tree =~ s/$old/$new/g;
+		warn "No replacements made in phylogenetic tree. $old not found." unless $num_repl;
+		warn "Multiple replacements made in phylogenetic tree. $old is not unique." unless $num_repl;
 	}
 	
 	# store tree in tables

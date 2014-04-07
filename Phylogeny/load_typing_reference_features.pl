@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-$0 - Computes stx types for all public genomes in DB and loads type.
+$0 - Loads the reference typing features into DB
 
 =head1 SYNOPSIS
 
@@ -10,12 +10,13 @@ $0 - Computes stx types for all public genomes in DB and loads type.
 
 =head1 OPTIONS
 
- --tree      Newick-format tree file
+ --config     Config file containing DB connection parameters
 
 =head1 DESCRIPTION
 
-This is the bulk loader/analysis script that computes stx1/2 type and then
-loads results into DB.
+Needs only be called once. Script inserts the features used as references
+in the Stx typing if not found. Variant features in individual genomes 
+are linked to these reference features.
 
 =head1 AUTHORS
 
@@ -47,11 +48,7 @@ my %args;
 $args{config} = $config_file if $config_file;
 my $t = Phylogeny::Typer->new(%args);
 
-# Retrieve stx alignment from database
-my ($stx1_file, $stx2_file) = $t->dbAlignments('/tmp/genodo2');
-
-# Compute types
-$t->stxTyping('/tmp/genodo2',$stx1_file, $stx2_file);
+$t->insertTypingObjects();
 
 
 

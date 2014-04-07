@@ -13,8 +13,6 @@
 root = exports ? this
 #root.Superphy or= {}
 
-jQuery
-
 ###
  CLASS SuperphyError
  
@@ -124,6 +122,8 @@ class ViewController
   
   select: (g, checked) ->
     @genomeController.select(g, checked)
+    
+    v.select(g, checked) for v in @views
  
     true
     
@@ -217,25 +217,20 @@ class ViewController
   metaForm: (elem) ->
     
     # Build & attach form
-    form = '<div style="display:inline-block;">'+  
-    '<button type="button" class="btn btn-mini btn-info" data-toggle="collapse" data-target="#meta-display">'+
-    '<i class=" icon-eye-open icon-white"></i>'+
-    '<span class="caret"></span>'+
-    '</button>'+
-    '<div id="meta-display" class="collapse out">'+
-    '<div style="padding:10px;">Change meta-data displayed:</div>'+
-    '<form class="form-horizontal">'+
+    form = 
+    '<div id="meta-display">'+
+    '<h4><i class="fa fa-eye"></i> Meta-data</h4>'+
+    '<p>Change meta-data displayed:</p>'+
+    '<form class="form-inline">'+
     '<fieldset>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label>'+
-    '<label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label>'+                                                    
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+                                                    
     '</fieldset>'+
     '</form>'+
-    '</div>'+
-    '</div>'+
     '</div>'
     
     elem.append(form)
@@ -260,23 +255,33 @@ class ViewController
   #      
   filterViews: (filterForm) ->
     
-    searchTerms = null
-    
-    if filterForm is 'fast'
-      # Fast form - basic filtering of name
+    if filterForm is 'selection'
+      # Update filter settings to so only selected genomes are visible
+      @genomeController.filterBySelection()
       
-      # retrieve search term
-      term = jQuery("#fast-filter > input").val().toLowerCase()
-      
-      if term? and term.length
-        searchTerms = []
-        searchTerms.push { searchTerm: term, dataField: 'displayname', negate: false }
-        
     else
-      # Advanced form - specified fields, terms
-      searchTerms = @_parseFilterForm()
-    
-    @genomeController.filter(searchTerms)
+      # Form based search
+      searchTerms = null
+      
+      # Parse input
+      if filterForm is 'fast'
+        # Fast form - basic filtering of name
+        
+        # retrieve search term
+        term = jQuery("#fast-filter > input").val().toLowerCase()
+        
+        if term? and term.length
+          searchTerms = []
+          searchTerms.push { searchTerm: term, dataField: 'displayname', negate: false }
+          
+      else
+        # Advanced form - specified fields, terms
+        searchTerms = @_parseFilterForm()
+      
+      # Perform search
+      @genomeController.filter(searchTerms)
+      
+    # Update Views  
     @_toggleFilterStatus()
     v.update(@genomeController) for v in @views
     
@@ -305,43 +310,21 @@ class ViewController
   #      
   filterForm: (elem) ->
     
-    # Add form selector
-    filtType = jQuery('<div id="select-filter-form"></div>')
-    fastLab = jQuery('<label class="radio">Basic</label>')
-    fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>')
-    
-    fastRadio.change (e) ->
-      if this.checked?
-        jQuery("#fast-filter").show()
-        jQuery("#adv-filter").hide()
-      true
-    
-    fastLab.append(fastRadio)
-    filtType.append(fastLab)
-    
-    advLab = jQuery('<label class="radio">Advanced</label>')
-    advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">')
-    
-    advRadio.change (e) ->
-      if this.checked?
-        jQuery("#fast-filter").hide()
-        jQuery("#adv-filter").show()
-      true
-    
-    advLab.append(advRadio)
-    filtType.append(advLab)
-    elem.append(filtType)
+    # Title
+    elem.append('<h4><i class="fa fa-filter"></i> Filter</h4>')
     
     # Add filter status bar
     numVisible = @genomeController.filtered
     filterStatus = jQuery('<div id="filter-status"></div>')
-    filterOn = jQuery("<div id='filter-on'>Filter active. #{numVisible} genomes visible.</div>")
+    filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-info'>Filter active. #{numVisible} genomes visible.</div></div>")
     filterOff = jQuery('<div id="filter-off"></div>')
-    delFilterButton = jQuery('<button id="remove-filter" type="button">Clear</button>')
-    delFilterButton.click (e) ->
+    
+    delButton = jQuery('<button id="remove-filter" type="button" class="btn btn-sm">Clear</button>')
+    delButton.click (e) ->
       e.preventDefault()
       viewController.resetFilter()  
-    filterOn.append(delFilterButton)
+      
+    delButton.appendTo(filterOn)
     
     if numVisible > 0
       filterOn.show()
@@ -354,6 +337,51 @@ class ViewController
     filterStatus.append(filterOff)
     elem.append(filterStatus)
     
+    # Desc
+    elem.append('<p>Limit genomes displayed in views by:</p>')
+    
+    # Add form selector
+    filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>')
+    fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>')
+    fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>')
+    
+    fastRadio.change (e) ->
+      if this.checked?
+        jQuery("#fast-filter").show()
+        jQuery("#adv-filter").hide()
+        jQuery("#selection-filter").hide()
+      true
+    
+    fastLab.prepend(fastRadio)
+    filtType.append(fastLab)
+    
+    advLab = jQuery('<div class="form-group"><label class="radio">Advanced</label></div>')
+    advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">')
+    
+    advRadio.change (e) ->
+      if this.checked?
+        jQuery("#fast-filter").hide()
+        jQuery("#adv-filter").show()
+        jQuery("#selection-filter").hide()
+      true
+    
+    advLab.prepend(advRadio)
+    filtType.append(advLab)
+    
+    selLab = jQuery('<div class="form-group"><label class="radio">By Selection</label></div>')
+    selRadio = jQuery('<input type="radio" name="filter-form-type" value="selection">')
+    
+    selRadio.change (e) ->
+      if this.checked?
+        jQuery("#fast-filter").hide()
+        jQuery("#adv-filter").hide()
+        jQuery("#selection-filter").show()
+      true
+    
+    selLab.prepend(selRadio)
+    filtType.append(selLab)
+    
+    elem.append(filtType)
     
     # Build & attach simple fast form
     sf = jQuery("<div id='fast-filter'></div>")
@@ -366,6 +394,18 @@ class ViewController
     advForm.hide()
     elem.append(advForm)
     
+    # Add filter by selection button
+    fbs = jQuery("<div id='selection-filter'>"+
+      "<p>A selection in one of the views (i.e. genomes selected in a clade or map region)</p>"+
+      "</div>")
+    filtButton = jQuery('<button id="filter-selection-button" type="button" class="btn btn-sm">Filter by Selection</button>')
+    filtButton.click (e) ->
+      e.preventDefault()
+      viewController.filterViews('selection')
+    fbs.append(filtButton)
+    fbs.hide()
+    elem.append(fbs)
+    
     true
       
   _toggleFilterStatus: ->
@@ -375,7 +415,7 @@ class ViewController
     filterOff = jQuery('#filter-off')
     
     if numVisible > 0
-      filterOn.text("Filter active. #{numVisible} genomes visible.")
+      filterOn.find('#filter-on-text').text("Filter active. #{numVisible} genomes visible.")
       filterOn.show()
       filterOff.hide()
     else 
@@ -400,12 +440,14 @@ class ViewController
     
   addAdvancedFilter: (elem) ->
     
+    elem.append("<p>Boolean keyword search of specified meta-data fields</p>")
+    
     advRows = jQuery("<div id='adv-filter-rows'></div>")
     elem.append(advRows)
     @addFilterRow(advRows, 1)
     
     # Create execution button
-    advButton = jQuery('<button id="adv-filter-submit" type="button">Filter</button>')
+    advButton = jQuery('<button id="adv-filter-submit" type="button" class="btn btn-sm">Filter</button>')
     elem.append(advButton)
     advButton.click (e) ->
       e.preventDefault
@@ -510,6 +552,9 @@ class ViewController
   #       
   addFastFilter: (elem) ->
     
+    # Desc
+    elem.append("<p>Basic genome name filter</p>");
+    
     # Search term box
     tBox = jQuery('<input type="text" name="fast-filter-term" placeholder="Filter by..."></input>')
     
@@ -518,7 +563,7 @@ class ViewController
     #  viewController.filterViews('fast')
       
     # Create execution button
-    fastButton = jQuery('<button id="fast-filter-submit" type="button">Filter</button>')
+    fastButton = jQuery('<button id="fast-filter-submit" type="button" class="btn btn-sm">Filter</button>')
     fastButton.click (e) ->
       e.preventDefault
       viewController.filterViews('fast')
@@ -681,6 +726,10 @@ class ViewTemplate
   
   dump: (genomes) ->
     throw new SuperphyError "ViewTemplate method dump() must be defined in child class (#{this.type})."
+    false # return fail
+    
+  viewAction: (genomes, args...) ->
+    throw new SuperphyError "viewAction method has not been defined in child class (#{this.type})."
     false # return fail
     
   cssClass: ->
@@ -849,6 +898,28 @@ class ListView extends ViewTemplate
       #console.log("Updated class for list li: "+liEl.class())  
         
         
+    true # success
+    
+  select: (genome, isSelected) ->
+    
+    itemEl = null
+    
+    if @style == 'select'
+      # Checkbox style, othe styles do not have 'select' behavior
+      
+      # Find element
+      descriptor = "li input[value='#{genome}']"
+      itemEl = jQuery(descriptor)
+ 
+    else
+      return false
+    
+    unless itemEl? and itemEl.length
+      throw new SuperphyError "List element for genome #{genome} not found in ListView #{@elID}"
+      return false
+        
+    itemEl.prop('checked', isSelected);
+    
     true # success
   
   # FUNC dump
@@ -1116,6 +1187,50 @@ class GenomeController
     
     true
     
+  # FUNC filterBySelection
+  # Updates the pubVisable and pvtVisable id lists to match currently selected genomes
+  # If no genomes are selected, resets filter to show all genomes
+  #
+  # PARAMS
+  # none
+  # 
+  # RETURNS
+  # boolean
+  #
+  filterBySelection: ->
+    
+    gset = @selected()
+    
+    pubGenomeIds = gset.public;
+    pvtGenomeIds = gset.private;
+    
+    @filtered = pubGenomeIds.length + pvtGenomeIds.length
+    
+    if @filtered == 0
+      # No genomes selected, reset filter
+      @filter()
+    else
+      # Filter based on selection
+      
+      # Reset visible variable for all genomes
+      g.visible = false for i,g of @public_genomes
+      g.visible = false for i,g of @private_genomes
+      
+      # Set visible variable for genomes that are selected
+      # Also unselect at this point
+      for g in pubGenomeIds
+        @public_genomes[g].visible = true 
+        @public_genomes[g].isSelected = false
+        
+      for g in pvtGenomeIds
+        @private_genomes[g].visible = true
+        @private_genomes[g].isSelected = false
+      
+      # Sort
+      @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
+      @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
+    
+    true
   
   # FUNC _runFilter
   # Calls match function for each search term and combines results for multi-term queries

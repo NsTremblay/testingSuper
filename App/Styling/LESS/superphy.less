@@ -8,9 +8,13 @@
  
  * */
 
+
+
 @import "superphy_tree";
+@import "search_utilities";
 
 /** Colors ********************************/
+  
 // The following colors are assigned to groups1,2,...7   
 @blue: #3366AA;
 @green: #66AA55;
@@ -28,7 +32,14 @@
 @group6-color: @red;
 @group7-color: @orange;
 
-
+// General website colors
+@border-color: #d3d3d3;
 
 /** Mixins ********************************/
+
+.borderStyle {
+  border-style:solid; 
+  border-width:1px; 
+  border-color:@border-color;
+}
 

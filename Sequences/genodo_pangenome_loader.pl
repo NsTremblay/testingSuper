@@ -40,7 +40,6 @@ use Phylogeny::Tree;
 use IO::CaptureOutput qw(capture_exec);
 use Time::HiRes qw( time );
 
-
 # Globals (set these to match local values)
 my $muscle_exe = '/usr/bin/muscle';
 my $mummer_dir = '/home/matt/MUMmer3.23/';
@@ -51,7 +50,6 @@ my $panseq_exe = '/home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl';
 my $align_script = "$FindBin::Bin/parallel_tree_builder.pl";
 
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
-
 
 # Parse command-line
 my ($panseq_dir, $config_file,
@@ -401,14 +399,14 @@ foreach my $tarray (@tasks) {
 	
 	# Load sequences from file
 	my $num_ok = 0;  # Some locus sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
-	my %sequence_group;
+	my @sequence_group;
 	my $fasta_file = $fastadir . "/$pg_id.ffn";
 	my $fasta = Bio::SeqIO->new(-file   => $fasta_file,
 								-format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
 	while(my $entry = $fasta->next_seq()) {
 		my $header = $entry->display_id;
 		my $seq = $entry->seq;
-		$num_ok++ if pangenome_locus($pg_id,$locus_id,$header,$seq,\%sequence_group);
+		$num_ok++ if pangenome_locus($pg_id,$locus_id,$header,$seq,\@sequence_group);
 	}
 	
 	if($do_tree && $num_ok > 2) {
@@ -418,16 +416,43 @@ foreach my $tarray (@tasks) {
 		chomp $tree;
 		close $in;
 		
-		$chado->handle_phylogeny($tree, $pg_id, \%sequence_group);
+		# Swap the headers in the tree with consistent tree names
+		# Assumes headers are unique
+		my %conversions;
+		foreach my $allele_hash (@sequence_group) {
+			
+			my $header = $allele_hash->{header};
+			my $displayId = $allele_hash->{public} ? 'public_':'private_';
+			$displayId .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
+			
+			# Many updated sequences will have the correct headers,
+			# but just in case, update the tree if they do not match
+			next if $header eq $displayId; 
+			
+			if($conversions{$header}) {
+				warn "Duplicate headers $header. Headers must be unique in locus_alleles.fasta.";  # Already looked up new Id
+				next;
+			}
+		
+			$conversions{$header} = $displayId;
+		}
+		
+		foreach my $old (keys %conversions) {
+			my $new = $conversions{$old};
+			my $num_repl = $tree =~ s/$old/$new/g;
+			warn "No replacements made in phylogenetic tree. $old not found." unless $num_repl;
+			warn "Multiple replacements made in phylogenetic tree. $old is not unique." unless $num_repl;
+		}
+		
+		$chado->handle_phylogeny($tree, $pg_id, \@sequence_group);
 	}
 	
 	if($do_snps && $num_ok > 1) {		
 		# Compute snps relative to the reference alignment for all new loci
 		# Performed by parallel script, load data for each genome
-		foreach my $id (keys %sequence_group) {
-			if($sequence_group{$id}->{is_new}) {
-				my $ghash = $sequence_group{$id};
-				find_snps($posdir, $pg_id, $id, $ghash);
+		foreach my $ghash (@sequence_group) {
+			if($ghash->{is_new}) {
+				find_snps($posdir, $pg_id, $ghash);
 			}
 		}
 	}
@@ -502,9 +527,8 @@ sub pangenome_locus {
 	# Parse input
 	
 	# contig_collection
-	my $contig_collection = $header;
-	my ($access, $contig_collection_id) = ($contig_collection =~ m/(public|private)_(\d+)/);
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	my ($access, $contig_collection_id) = ($header =~ m/(public|private)_(\d+)/);
+	croak "Invalid contig_collection ID format: $header\n" unless $access;
 	
 	# privacy setting
 	my $is_public = $access eq 'public' ? 1 : 0;
@@ -616,8 +640,9 @@ sub pangenome_locus {
 	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
 	
-	$seq_group->{$contig_collection} = {
+	push @$seq_group, {
 		genome => $contig_collection_id,
+		header => $header,
 		allele => $allele_id,
 		#copy => $allele_num,
 		contig => $contig_id,
@@ -631,9 +656,9 @@ sub pangenome_locus {
 sub find_snps {
 	my $data_dir = shift;
 	my $ref_id = shift;
-	my $genome = shift;
 	my $genome_info = shift;
 	
+	my $genome = $genome_info->{header};
 	my $contig_collection = $genome_info->{genome};
 	my $contig = $genome_info->{contig};
 	my $locus = $genome_info->{allele};
