@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	
+</head>
+
+<body>
+	<TMPL_INCLUDE NAME="nav_bar2.tmpl">
+
+	<div class="container" >
+		<div class="title">
+			<h1><span class="title_part1">SHIGA-TOXIN</span> <span class="title_part2">SUBTYPING</span></h1>
+		</div>
+		<p>We have developed an in silico method to generate and predict the standardized subtype nomenclature 
+		used for Shiga toxin-producing Escherichia coli (STEC). The current protocal assigns subtypes by PCR detection of
+		characteristic motifs in Stx1 and Stx2 holotoxin amino-acid sequences. Our method examines the phylogenetic placement
+		of untyped holotoxin sequences in relation to holotoxins of known subtype, transfering the subtype assignments
+		from closely related sequences in homogenous clades.
+		</p>
+		
+		
+		<div>
+			<ul id="stx_tabs" class="nav nav-tabs">
+	      		<li class="active"><a href="#stx1_tab" data-toggle="tab">Stx1</a></li>
+	      		<li><a href="#stx2_tab" data-toggle="tab">Stx2</a></li>
+    		</ul>
+		    <div id="view_content" class="tab-content">
+		      <div class="tab-pane active" id="stx1_tab">
+		      	
+		      	<div id="stx1_msa" class="superphy-msa">
+		      	</div>
+		      </div>
+		      <div class="tab-pane " id="stx2_tab">
+		      	<div id="stx2_msa" class="superphy-msa">
+		      	</div>
+		      </div>
+		    </div>
+			
+		</div>
+	</div>
+
+	<script type="text/javascript">	
+		// Initialize JSON data objcts
+		var stx = <TMPL_VAR stx_json>;
+		var locus_data = <TMPL_VAR locus_json>;
+		var public_genomes = <TMPL_VAR public_genomes>;
+		var private_genomes = <TMPL_VAR private_genomes>;
+		
+		var stx1_subunit_tree = null;
+		var stx2_subunit_tree = null;
+		var stx1_subunit_msa = null;
+		var stx2_subunit_msa = null; 
+		<TMPL_IF stx1_subunit_tree>
+		stx1_subunit_tree = <TMPL_VAR stx1_subunit_tree>;
+		</TMPL_IF>
+		<TMPL_IF stx2_subunit_tree>
+		stx2_subunit_tree = <TMPL_VAR stx2_subunit_tree>;
+		</TMPL_IF>
+		<TMPL_IF stx1_subunit_msa>
+		stx1_subunit_msa = <TMPL_VAR stx1_subunit_msa>;
+		</TMPL_IF>
+		<TMPL_IF stx2_subunit_msa>
+		stx2_subunit_msa = <TMPL_VAR stx2_subunit_msa>;
+		</TMPL_IF>
+		
+		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info');
+		
+		if(stx1_subunit_msa) {
+			viewController.createView('msa', $('#stx1_msa'), stx1_subunit_msa);
+		}
+		if(stx2_subunit_msa) {
+			viewController.createView('msa', $('#stx2_msa'), stx2_subunit_msa);
+		}
+		
+		
+		//viewController.createView('list', $('#strains_list'));
+		
+		//viewController.metaForm($('#meta-display-form'));
+		
+		//viewController.filterForm($('#filter-form'));
+		
+		//viewController.createView('tree', $('#strains_tree'), tree);
+		
+	</script>
+</body>
+
+</html>

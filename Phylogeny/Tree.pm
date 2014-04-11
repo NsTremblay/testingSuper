@@ -631,17 +631,15 @@ sub geneTree {
 	my $tree;
 	eval $tree_row->tree_string;
 	
-	{
-		$Data::Dumper::Indent = 1;
-		$Data::Dumper::Sortkeys = 1;
-		get_logger->debug(Dumper $tree);
-		
-	}
+#	{
+#		$Data::Dumper::Indent = 1;
+#		$Data::Dumper::Sortkeys = 1;
+#		get_logger->debug(Dumper $tree);
+#		
+#	}
 	
 	# Remove genomes not visable to user
 	my $user_tree = $self->pruneTree($tree, $visable);
-	
-	get_logger->debug('UT'.$user_tree);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);

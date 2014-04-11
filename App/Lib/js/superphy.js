@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var GenomeController, GroupView, ListView, SuperphyError, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, root, trimInput, typeIsArray,
+  var GenomeController, GroupView, ListView, MsaView, SuperphyError, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -79,7 +79,7 @@
     };
 
     ViewController.prototype.createView = function() {
-      var clickStyle, downloadElem, elem, listView, treeView, vNum, viewArgs, viewType;
+      var clickStyle, downloadElem, elem, listView, msaView, treeView, vNum, viewArgs, viewType;
       viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
@@ -104,6 +104,10 @@
         treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
         treeView.update(this.genomeController);
         this.views.push(treeView);
+      } else if (viewType === 'msa') {
+        msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
+        msaView.update(this.genomeController);
+        this.views.push(msaView);
       } else {
         throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
         return false;
@@ -1502,11 +1506,18 @@
 
   })();
 
+  ({
 
-  /*
-  
-    HELPER FUNCTIONS
-   */
+    /*
+    
+      HELPER FUNCTIONS
+     */
+    parseHeader: function(str) {
+      var match;
+      match = /^((?:public|private)_\d+)\|(\d+)/.exec(str);
+      return match;
+    }
+  });
 
   typeIsArray = Array.isArray || function(value) {
     return {}.toString.call(value) === '[object Array]';
@@ -2131,6 +2142,388 @@
     };
 
     return TreeView;
+
+  })(ViewTemplate);
+
+
+  /*
+  
+  
+   File: superphy_msa.coffee
+   Desc: Multiple Sequence Alignment View Class
+   Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+   Date: April 9th, 2013
+   */
+
+
+  /*
+   CLASS MsaView
+    
+   Multiple Sequence Alignment view
+   */
+
+  MsaView = (function(_super) {
+    __extends(MsaView, _super);
+
+    function MsaView(parentElem, style, elNum, msaArgs) {
+      var alignmentJSON;
+      this.parentElem = parentElem;
+      this.style = style;
+      this.elNum = elNum;
+      if (!(msaArgs.length > 0)) {
+        throw new SuperphyError('Missing argument. MsaView constructor requires JSON alignment object.');
+      }
+      alignmentJSON = msaArgs[0];
+      if (msaArgs[1]) {
+        this.locusData = msaArgs[1];
+      }
+      MsaView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+      this._formatAlignment(alignmentJSON);
+    }
+
+    MsaView.prototype.type = 'msa';
+
+    MsaView.prototype.elName = 'genome_msa';
+
+    MsaView.prototype.blockLen = 70;
+
+    MsaView.prototype.nameLen = 25;
+
+    MsaView.prototype.consLine = 'conservation_line';
+
+    MsaView.prototype.posLine = 'position_line';
+
+    MsaView.prototype.nuclClasses = {
+      'A': 'nuclA',
+      'G': 'nuclG',
+      'C': 'nuclC',
+      'T': 'nuclT',
+      '*': 'consM',
+      ' ': 'consMM',
+      '-': 'nuclGAP'
+    };
+
+    MsaView.prototype.cssClass = 'msa_row_name';
+
+    MsaView.prototype._formatAlignment = function(alignmentJSON) {
+      var g, i, j, n, pos, posElem, seq, seqLen, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
+      this.rowIDs = (function() {
+        var _results;
+        _results = [];
+        for (g in alignmentJSON) {
+          _results.push(g);
+        }
+        return _results;
+      })();
+      i = this.rowIDs.indexOf(this.consLine);
+      if (!(i >= 0)) {
+        throw new SuperphyError('Alignment Object missing "conservation_line".');
+      }
+      this.rowIDs.splice(i, 1);
+      seqLen = alignmentJSON[this.rowIDs[0]]['seq'].length;
+      this.alignment = {};
+      _ref = this.rowIDs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        n = _ref[_i];
+        this.alignment[n] = {
+          'alignment': [],
+          'seq': alignmentJSON[n]['seq'],
+          'genome': alignmentJSON[n]['genome'],
+          'locus': alignmentJSON[n]['locus']
+        };
+      }
+      this.alignment[this.consLine] = {
+        'alignment': []
+      };
+      this.alignment[this.posLine] = {
+        'alignment': []
+      };
+      this.numBlock = 0;
+      for (j = _j = 0, _ref1 = this.blockLen; _ref1 > 0 ? _j <= seqLen : _j >= seqLen; j = _j += _ref1) {
+        this.numBlock++;
+        _ref2 = this.rowIDs;
+        for (_k = 0, _len1 = _ref2.length; _k < _len1; _k++) {
+          n = _ref2[_k];
+          seq = alignmentJSON[n]['seq'];
+          this.alignment[n]['alignment'].push(this._formatBlock(seq.substr(j, this.blockLen)));
+        }
+        seq = alignmentJSON[this.consLine]['seq'];
+        this.alignment[this.consLine]['alignment'].push(this._formatBlock(seq.substr(j, this.blockLen)));
+        pos = j + 1;
+        posElem = "<td class='msaPosition'>" + pos + "</td>";
+        this.alignment[this.posLine]['alignment'].push(posElem);
+      }
+      return true;
+    };
+
+    MsaView.prototype._formatBlock = function(seq) {
+      var c, chr, cls, html, _i, _ref;
+      html = '';
+      seq.toUpperCase();
+      for (c = _i = 0, _ref = seq.length; 0 <= _ref ? _i <= _ref : _i >= _ref; c = 0 <= _ref ? ++_i : --_i) {
+        chr = seq.charAt(c);
+        cls = this.nuclClasses[chr];
+        html += "<td class='" + cls + "'>" + chr + "</td>";
+      }
+      return html;
+    };
+
+    MsaView.prototype.update = function(genomes) {
+      var ft, msaElem, t1, t2;
+      msaElem = jQuery("#" + this.elID);
+      if (msaElem.length) {
+        msaElem.empty();
+      } else {
+        msaElem = jQuery("<table id='" + this.elID + "'><tbody></tbody></table>");
+        jQuery(this.parentElem).append(msaElem);
+      }
+      t1 = new Date();
+      this._appendRows(msaElem, genomes);
+      t2 = new Date();
+      ft = t2 - t1;
+      console.log('MsaView update elapsed time: ' + ft);
+      return true;
+    };
+
+    MsaView.prototype._appendRows = function(el, genomes) {
+      var a, g, genomeElem, genomeID, i, j, name, nameCell, rowEl, thiscls, tmp, visibleRows, _i, _j, _k, _len, _len1, _ref, _ref1;
+      genomeElem = {};
+      visibleRows = [];
+      tmp = {};
+      _ref = this.rowIDs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        i = _ref[_i];
+        a = this.alignment[i];
+        genomeID = a['genome'];
+        g = genomes.genome(genomeID);
+        if (g.visible) {
+          visibleRows.push(i);
+          name = g.viewname;
+          tmp[i] = name;
+          if ((this.locusData != null) && (this.locusData[i] != null)) {
+            name += this.locusData[i];
+          }
+          thiscls = this.cssClass;
+          if (g.cssClass != null) {
+            thiscls = this.cssClass + ' ' + g.cssClass;
+          }
+          nameCell = "<td class='" + thiscls + "' data-genome='" + genomeID + "'>" + name + "</td>";
+          genomeElem[i] = nameCell;
+        }
+      }
+      visibleRows.sort(function(a, b) {
+        var aname, bname;
+        aname = tmp[a];
+        bname = tmp[b];
+        if (aname > bname) {
+          return 1;
+        } else if (aname < bname) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
+      console.log(this.numBlock);
+      console.log(visibleRows);
+      for (j = _j = 0, _ref1 = this.numBlock; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+        for (_k = 0, _len1 = visibleRows.length; _k < _len1; _k++) {
+          i = visibleRows[_k];
+          rowEl = jQuery('<tr></tr>');
+          rowEl.append(genomeElem[i] + this.alignment[i]['alignment'][j]);
+          el.append(rowEl);
+        }
+        rowEl = jQuery('<tr></tr>');
+        rowEl.append('<td></td>' + this.alignment[this.consLine]['alignment'][j]);
+        el.append(rowEl);
+        rowEl = jQuery('<tr></tr>');
+        rowEl.append(this.alignment[this.posLine]['alignment'][j]);
+        el.append(rowEl);
+      }
+      return true;
+
+      /* 
+        
+        _appendGenomes: (el, visibleG, genomes, style) ->
+      
+       * View class
+      cls = @cssClass()
+      
+      for g in visibleG
+        
+        thiscls = cls
+        thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
+        
+        if style == 'redirect'
+           * Links
+          
+           * Create elements
+          listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
+          actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
+          
+           * Set behaviour
+          actionEl.click (e) ->
+            e.preventDefault()
+            gid = @.dataset.genome
+            viewController.redirect(gid)
+          
+           * Append to list
+          listEl.append(actionEl)
+          el.append(listEl)
+          
+        else if style == 'select'
+           * Checkboxes
+          
+           * Create elements
+          checked = ''
+          checked = 'checked' if genomes[g].isSelected
+          listEl = jQuery("<li class='#{thiscls}'></li>")
+          labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
+          actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
+          
+           * Set behaviour
+          actionEl.change (e) ->
+            e.preventDefault()
+            viewController.select(@.value, @.checked)
+          
+           * Append to list
+          labEl.append(actionEl)
+          listEl.append(labEl)
+          el.append(listEl)
+          
+        else
+          return false
+        
+      true
+      
+         * FUNC updateCSS
+         * Change CSS class for selected genomes to match underlying genome properties
+         *
+         * PARAMS
+         * simple hash object with private and public list of genome Ids to update
+         * genomeController object
+         * 
+         * RETURNS
+         * boolean 
+         *      
+        updateCSS: (gset, genomes) ->
+      
+       * Retrieve list DOM element    
+      listEl = jQuery("##{@elID}")
+      throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
+      
+       * append genomes to list
+      @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public?
+      
+      @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private?
+      
+      true # return success
+      
+        
+        _updateGenomeCSS: (el, changedG, genomes) ->
+      
+       * View class
+      cls = @cssClass()
+      
+      for g in changedG
+        
+        thiscls = cls
+        thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
+        itemEl = null
+        
+        if @style == 'redirect'
+           * Link style
+          
+           * Find element
+          descriptor = "li > a[data-genome='#{g}']"
+          itemEl = el.find(descriptor)
+         
+        else if @style == 'select'
+           * Checkbox style
+          
+           * Find element
+          descriptor = "li input[value='#{g}']"
+          itemEl = el.find(descriptor)
+         
+        else
+          return false
+        
+        unless itemEl? and itemEl.length
+          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
+          return false
+        
+        console.log("Updating class to #{thiscls}")
+        liEl = itemEl.parents().eq(1)
+         *console.log("Current class for list li: "+liEl.class)  
+        liEl.attr('class', thiscls)
+         *console.log("Updated class for list li: "+liEl.class())  
+          
+          
+      true # success
+      
+        select: (genome, isSelected) ->
+      
+      itemEl = null
+      
+      if @style == 'select'
+         * Checkbox style, othe styles do not have 'select' behavior
+        
+         * Find element
+        descriptor = "li input[value='#{genome}']"
+        itemEl = jQuery(descriptor)
+       
+      else
+        return false
+      
+      unless itemEl? and itemEl.length
+        throw new SuperphyError "List element for genome #{genome} not found in ListView #{@elID}"
+        return false
+          
+      itemEl.prop('checked', isSelected);
+      
+      true # success
+        
+         * FUNC dump
+         * Generate CSV tab-delimited representation of all genomes and meta-data
+         *
+         * PARAMS
+         * genomeController object
+         * 
+         * RETURNS
+         * object containing:
+         *   ext[string] - a suitable file extension (e.g. csv)
+         *   type[string] - a MIME type
+         *   data[string] - a string containing data in final format
+         *      
+        dump: (genomes) ->
+      
+       * Create complete list of meta-types
+       * make all visible
+      fullMeta = {}
+      fullMeta[k] = true for k of genomes.visibleMeta
+      
+      output = ''
+       * Output header
+      header = (genomes.metaMap[k] for k of fullMeta)
+      header.unshift "Genome name"
+      output += "#" + header.join("\t") + "\n"
+      
+       * Output public set
+      for id,g of genomes.public_genomes
+        output += genomes.label(g,fullMeta,"\t") + "\n"
+        
+       * Output private set
+      for id,g of genomes.private_genomes
+        output += genomes.label(g,fullMeta,"\t") + "\n"
+        
+      return {
+        ext: 'csv'
+        type: 'text/plain'
+        data: output 
+      }
+       */
+    };
+
+    return MsaView;
 
   })(ViewTemplate);
 

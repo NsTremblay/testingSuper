@@ -609,7 +609,7 @@ sub initialize_db_caches {
 		  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
         $dbh->do($sql);
         $sql = "INSERT INTO $table
-		SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE
+		SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, FALSE
 		FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2
 		WHERE f.type_id = $type_id AND
 		  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
@@ -618,10 +618,17 @@ sub initialize_db_caches {
         
         # Add typing features if working with gene alleles
         unless ($is_pg) {
-        	$type_id = 'allele_fusion';
+        	$type_id = $self->feature_types('allele_fusion');
         	$reltype = 'variant_of';
         	$sql = "INSERT INTO $table
 			SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, TRUE
+			FROM feature f, feature_relationship f1, feature_relationship f2
+			WHERE f.type_id = $type_id AND
+			  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
+			  f2.type_id = ".$self->relationship_types($reltype)." AND f2.subject_id = f.feature_id";
+	        $dbh->do($sql);
+	        $sql = "INSERT INTO $table
+			SELECT f.feature_id, f.uniquename, f1.object_id, f2.object_id, FALSE
 			FROM private_feature f, private_feature_relationship f1, private_feature_relationship f2
 			WHERE f.type_id = $type_id AND
 			  f1.type_id = ".$self->relationship_types('part_of')." AND f1.subject_id = f.feature_id AND
@@ -3961,7 +3968,7 @@ sub typing {
 	# Typing and Tree objects
 	my $typer = Phylogeny::Typer->new(tmp_dir => $work_dir);
 	my $tree_builder = Phylogeny::TreeBuilder->new();
-	my $tree_io = Phylogeny::Tree->new(dbix => undef);
+	my $tree_io = Phylogeny::Tree->new(dbix_schema => 1);
 	
 	# Run insilico typing on each typing segment
 	foreach my $typing_ref_seq (keys %$typing_sets) {
@@ -3977,7 +3984,6 @@ sub typing {
 			
 			my $is_new = 0;
 			
-			my $typing_ref_seq = $typing_hashref->{typing_ref_seq};
 			my $genome_id = $typing_hashref->{genome};
 			my $public = $typing_hashref->{public};
 			my $uniquename = $typing_hashref->{uniquename};
@@ -4038,6 +4044,7 @@ sub typing {
 		open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
 		foreach my $allele_hash (@sequence_group) {
 			my $header = $allele_hash->{public} ? 'public_':'private_';
+
 			$header .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
 			print $out join("\n",">".$header,$allele_hash->{seq}),"\n";
 		}

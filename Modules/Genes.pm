@@ -4,31 +4,24 @@
 
 =head1 NAME
 
-Modules::VirulenceFactors
+Modules::Genes
 
 =head1 DESCRIPTION
 
-=head1 ACKNOWLEDGMENTS
-
-Thank you to Dr. Chad Laing and Dr. Matthew Whiteside, for all their assistance on this project
+For display of Virulence factors, AMR genes and Stx typing data
 
 =head1 COPYRIGHT
 
 This work is released under the GNU General Public License v3  http://www.gnu.org/licenses/gpl.htm
 
-=head1 AVAILABILITY
-
-The most recent version of the code may be found at:
-
 =head1 AUTHOR
 
 Akiff Manji (akiff.manji@gmail.com)
-
-=head1 Methods
+Matthew Whiteside (matthew.whiteside@phac-aspc.gov.ca)
 
 =cut
 
-package Modules::VirulenceFactors;
+package Modules::Genes;
 
 use strict;
 use warnings;
@@ -36,18 +29,191 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use parent 'Modules::App_Super';
 use Modules::FormDataGenerator;
+use Modules::GenomeWarden;
 use Phylogeny::Tree;
 use HTML::Template::HashWrapper;
 use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Carp;
 use JSON;
+use Data::Dump qw(dump);
 
 sub setup {
 	my $self=shift;
-	my $logger = Log::Log4perl->get_logger();
-	$logger->info("Logger initialized in Modules::VirulenceFactors");
+
 }
+
+=head2 stx
+
+Summary of stx subtypes across genomes
+
+=cut
+
+sub stx : Runmode {
+	my $self = shift;
+	
+	# Params
+	my $query = $self->query();
+	
+	my @genomes = $query->param("genome");
+
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema);
+	
+	# User
+	my $user = $self->authen->username;
+	
+	# Obtain reference typing sequence
+	my @subunits;
+	foreach my $uniquename (qw/stx1_subunit stx2_subunit/) {
+		my $refseq = $self->dbixSchema->resultset('Feature')->find(
+			{
+				uniquename => $uniquename
+			}
+		);
+		my $ref_id = $refseq->feature_id;
+		push @subunits, $ref_id;
+	}
+	
+	# Validate genomes
+	my $warden;
+	if(@genomes) {
+		
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => \@genomes, user => $user);
+		my ($err, $bad1, $bad2) = $warden->error; 
+		if($err) {
+			# User requested invalid strains or strains that they do not have permission to view
+			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+			return $self->redirect( $self->home_page );
+		}
+		
+	} else {
+		
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user);
+	}
+	
+	# Template
+	my $template = $self->load_tmpl('genes_stx.tmpl' , die_on_bad_params => 0);
+	
+	# Retrieve presence / absence
+	my $results = _genomeStx($data, \@subunits, $warden);
+	
+	my $stx = $results->{stx};
+	my $locus_data = $results->{alleles};
+	my $stx_json = encode_json($stx);
+	my $locus_json = encode_json($locus_data);
+	$template->param(stx_json => $stx_json);
+	$template->param(locus_json => $locus_json);
+	
+	# Retrieve meta info
+	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
+	# Trees / MSA for each subunit
+	my $stx_names = $results->{names};
+	get_logger->debug(dump($stx_names));
+	foreach my $ref_id (@subunits) {
+		my $key = $stx_names->{$ref_id};
+		my $num_alleles = $results->{counts}->{$key};
+		
+		# Retrieve tree
+		if($num_alleles > 2) {
+			my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+			my $tree_string = $tree->geneTree($ref_id, 1, $warden->genomeLookup());
+			my $param = "$key\_tree";
+			$template->param($param => $tree_string);
+		}
+		
+		# Retrieve MSA
+		if($num_alleles > 1) {
+			my $is_typing = 1;
+			my $msa = $data->seqAlignment2(
+				locus => $ref_id, 
+				warden => $warden,
+				typing => $is_typing
+			);
+			if($msa) {
+				my $param = "$key\_msa";
+				my $msa_json = encode_json($msa);
+				$template->param($param => $msa_json);
+			}
+		}
+		
+	}
+		
+	return $template->output();
+}
+
+=head2 _genomeStx
+
+Obtain genome feature IDs and subtype
+for genomes that contain an Stx typing sequence.
+
+=cut
+
+sub _genomeStx {
+	my $fdg         = shift;
+	my $subunit_ids = shift;
+	my $warden      = shift;
+	
+	my %args;
+	$args{warden} = $warden;
+	$args{markers} = $subunit_ids;
+	
+	my $result_hash = $fdg->getStxData(%args);
+
+	# List format
+	my %stx_lists;
+	my %stx_counts;
+	my %stx_alleles;
+	my $stx_hash = $result_hash->{stx};
+	my $stx_names = $result_hash->{names};
+	my @genome_list;
+	
+	foreach my $g (keys %$stx_hash) {
+		push @genome_list, $g;
+		
+		foreach my $r_id (@$subunit_ids) {
+			
+			my $subu = $stx_names->{$r_id};
+			my $num = 0;
+				
+			if(defined($stx_hash->{$g})) {
+				# genome has some subtypes
+				if(defined($stx_hash->{$g}->{$r_id})) {
+					# genome has subtype for this ref gene
+					my @subt;
+					my $copy = 1;
+					foreach my $hr (sort @{$stx_hash->{$g}->{$r_id}}) {
+						push @subt, $hr->{subtype};
+						my $h = "$g|".$hr->{allele};
+						my $allele_data = "";
+						$allele_data .= "(copy $copy)" if $copy > 1;
+						$allele_data .= " - Stx".$hr->{subtype};
+						$stx_alleles{$h} = $allele_data;
+						$copy++;
+					}
+					$num = @subt;
+					$stx_lists{$subu}->{$g} = join(',',@subt);
+				} else {
+					# genome does not have stx for this ref gene
+					$stx_lists{$subu}->{$g} = 'NA';
+				}
+			} else {
+				# genome has no stx
+				$stx_lists{$subu}->{$g} = 'NA';
+			}
+			
+			$stx_counts{$subu} += $num;
+		}
+	}
+		
+	return { stx => \%stx_lists, genome_list => \@genome_list, counts => \%stx_counts, names => $stx_names, alleles => \%stx_alleles };
+}
+
+
+# NOTHING BEYOND THIS POINT HAS BEEN UPDATED
 
 =head2 virulenceFactors
 
@@ -642,6 +808,7 @@ sub view : Runmode {
 	my %public_genomes;
 	my %private_genomes;
 	my $subset_genomes = 0;
+	my $public_ref;
 	if(@genomes) {
 		$subset_genomes = 1;
 		my @private_ids = map m/private_(\d+)/ ? $1 : (), @genomes;
@@ -662,12 +829,16 @@ sub view : Runmode {
 			return $self->redirect( $self->home_page );
 		}
 		
+		$public_ref = \%public_genomes;
+		
 	} else {
 		# Default is to show all viewable genomes
 		$data->publicGenomes(\%public_genomes);
 		$data->privateGenomes($user, \%private_genomes);
 		
 		%visable_genomes = (%public_genomes, %private_genomes);
+		
+		$public_ref = 'all';
 	}
 	
 	# Template
@@ -681,7 +852,7 @@ sub view : Runmode {
 	$template->param(gene_info => $qgene_info);
 
 	# Retrieve presence / absence
-	my $all_alleles = _getResidentGenomes($data, \@amr, \@vf, $subset_genomes, \%private_genomes, \%public_genomes);
+	my $all_alleles = _getResidentGenomes($data, \@amr, \@vf, $subset_genomes, \%private_genomes, $public_ref);
 	my $gene_alleles = $all_alleles->{$qtype}->{$qgene};
 	
 	my $num_alleles = 0;
@@ -745,9 +916,14 @@ sub _getResidentGenomes {
 	
 	my @genome_order;
 	if($pub_ref) {
-		my @tmp = map { $pub_ref->{$_}->{feature_id}} keys %$pub_ref;
-		$args{public_genomes} = \@tmp;
-		@genome_order = keys %$pub_ref;
+		unless(ref($pub_ref) eq 'HASH') {
+			$args{public_genomes} = $pub_ref;
+		} else {
+			my @tmp = map { $pub_ref->{$_}->{feature_id}} keys %$pub_ref;
+			$args{public_genomes} = \@tmp;
+			@genome_order = keys %$pub_ref;
+		}
+		
 	}
 	if($pvt_ref) {
 		my @tmp = map { $pvt_ref->{$_}->{feature_id}} keys %$pvt_ref;

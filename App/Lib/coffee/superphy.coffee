@@ -97,6 +97,12 @@ class ViewController
       treeView.update(@genomeController)
       @views.push treeView
       
+    else if viewType is 'msa'
+      # New multiple sequence alignment view
+      msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
+      msaView.update(@genomeController)
+      @views.push msaView
+      
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
       return false
@@ -754,7 +760,6 @@ class ListView extends ViewTemplate
   # Update genome list view
   #
   # PARAMS
-  # parent jQuery element object
   # genomeController object
   # 
   # RETURNS
@@ -1528,18 +1533,23 @@ class GenomeController
     return { public: pub, private: pvt }
     
   genome: (gid) ->
-    
     if @publicRegexp.test(gid)
       return @public_genomes[gid]
     else
       return @private_genomes[gid]
-    
+      
     
 ###
 
   HELPER FUNCTIONS
   
-### 
+###
+
+parseHeader: (str) ->
+  match =  /^((?:public|private)_\d+)\|(\d+)/.exec(str)
+  
+  match
+  
 
 # FUNC typeIsArray
 # A safer way to check if variable is array

@@ -34,6 +34,7 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
+use Modules::GenomeWarden;
 use Log::Log4perl qw/get_logger :easy/;
 use Carp;
 use Time::HiRes qw( gettimeofday tv_interval );
@@ -903,6 +904,9 @@ sub verifyMultipleAccess {
 
 =head2 seqAlignment
 
+SOON TO BE OBSOLETE
+Replaced by seqAlignment2
+
 seqAlignent(feature_id, visable_hash)
 
 Inputs:
@@ -922,8 +926,6 @@ Returns:
 
 sub seqAlignment {
 	my ($self, $locus, $visable) = @_;
-	
-	get_logger->debug("multiple sequence alignment");  
 	
 	my @private_ids = map m/private_(\d+)/ ? $1 : (), keys %$visable;
 	my @public_ids = map m/public_(\d+)/ ? $1 : (), keys %$visable;
@@ -1009,23 +1011,179 @@ sub seqAlignment {
 	
 }
 
+=head2 seqAlignment2
+
+seqAlignent2(hash)
+
+Input:
+Hash with keys:
+  locus        => A query gene feature_id 
+  warden       => GenomeWarden instance
+  typing       => Indicates looking up typing sequences
+                  rather than alleles
+                  	                                
+Returns: 
+  a hash-ref representing a multiple
+  sequence alignment of gene alleles.
+
+=cut
+
+sub seqAlignment2 {
+	my ($self, %args) = @_;
+	
+	my $locus   = $args{locus};
+	my $warden  = $args{warden};
+	my $typing  = (defined($args{typing}) && $args{typing});
+	
+	my %alignment;
+	
+	my $type_name = 'similar_to';
+	$type_name = 'variant_of' if $typing;
+	
+	if($warden->numPrivate) {
+		
+		my $feature_rs = $self->dbixSchema->resultset('PrivateFeature')->search(
+			{
+				'private_feature_relationship_subjects.object_id' => $locus,
+				'type.name' => $type_name, 
+				'private_feature_relationship_subjects_2.object_id' => { '-in' => $warden->featureList('private') },
+				'type_2.name' => 'part_of'
+			},
+			{
+				join => [
+					{ 'private_feature_relationship_subjects' => 'type' },
+					{ 'private_feature_relationship_subjects' => 'type' }
+				],
+				columns => [qw/residues feature_id/],
+				'+select' => ['private_feature_relationship_subjects_2.object_id'],
+				'+as' => ['collection_id']
+			}
+		);
+		
+		while(my $feature = $feature_rs->next) {
+			my $genome = 'private_'.$feature->get_column('collection_id');
+			my $allele = $feature->feature_id;
+			my $header = "$genome|$allele";
+			$alignment{$header} = {
+				seq => $feature->residues,
+				genome => $genome,
+				locus => $allele,
+			};
+		}
+	}
+	
+	if($warden->numPublic) {
+		my $select_stmt = {
+			'feature_relationship_subjects.object_id' => $locus,
+			'type.name' => $type_name,
+			'type_2.name' => 'part_of'
+		};
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects_2.object_id'} = { '-in' => $warden->featureList('public') };
+		}
+		my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
+			$select_stmt,
+			{
+				join => [
+					{ 'feature_relationship_subjects' => 'type' },
+					{ 'feature_relationship_subjects' => 'type' }
+				],
+				columns => [qw/residues feature_id/],
+				'+select' => ['feature_relationship_subjects_2.object_id'],
+				'+as' => ['collection_id']
+			}
+		);
+		
+		while(my $feature = $feature_rs->next) {
+			my $genome = 'public_'.$feature->get_column('collection_id');
+			my $allele = $feature->feature_id;
+			my $header = "$genome|$allele";
+			$alignment{$header} = {
+				seq => $feature->residues,
+				genome => $genome,
+				locus => $allele,
+			};
+		}
+	}
+	
+	my @sets = values(%alignment);
+	return 0 unless @sets > 1 && @sets < 21;
+	
+	# Compute conservation line
+	my $sequence = $sets[0]->{seq};
+	my $len = length($sequence);
+	$self->logger->debug('BEFORE'.length($sequence));
+	map { croak "Error: sequence alignment lengths are not equal." unless length($_->{seq}) == $len } @sets[1..$#sets];
+	
+	my $cons;
+	my @removeCols;
+	my $firstSeq = '';
+	
+	for(my $i = 0; $i < $len; $i++) {
+		my $m = 1;
+		my $symbol = substr($sequence, $i, 1);
+		
+		foreach my $s (@sets[1..$#sets]) {
+			if($symbol ne substr($s->{seq},$i,1)) {
+				# mismatch
+				$cons .= ' ';
+				$m = 0;
+				last;
+			}
+		}
+		
+		# match
+		if($symbol eq '-') {
+			# Gap column needs to be spliced out
+			push @removeCols, $i;
+		} 
+		
+		$cons .= '*' if $m;
+		
+	}
+	$alignment{conservation_line}{seq} = $cons;
+	
+	# Remove gap columns
+	foreach my $s (values %alignment) {
+		my $seq = '';
+		my $p = 0;
+		foreach my $r (@removeCols) {
+			my $l = $r-$p;
+			$seq .= substr $s->{seq}, $p, $l;
+			$self->logger->debug("$p,$l,$r:".length($seq));
+			$p = $r+1;
+		}
+		my $l = $len-$p+1;
+		$seq .= substr $s->{seq}, $p, $l if $l;
+		$self->logger->debug("FINAL-$p,$l,$len:".length($seq));;
+		$s->{seq} = $seq;
+	}
+
+	return \%alignment;
+	
+}
+
+
 =head2 getGeneAlleleData
 
-seqAlignent(feature_id, visable_hash)
+getGeneAlleleData(%args)
 
 Inputs:
- -feature_id       A query gene feature_id. 
-                    Must be 'query_gene' type.
- -visable_hash     Hash containing
-	                 public_/private_feature_ids => uniquename
+hash containing possible key -value pairs:
+ -markers          Array-ref of query gene feature ids    
+ -public_genomes   Array-ref of genome feature ids OR a string 'all' to retrieve all genomes
+ -private_genoems  Array-ref of genome private_feature ids
 	                                
 MAKE SURE THE USER CAN ACCESS THESE GENOMES
 DO NOT RELEASE PRIVATE SEQUENCES!	                                
 
-Returns: 
-  a JSON string representing a multiple
-  sequence alignment of gene alleles.
-
+Returns:
+Hash containing key - value pairs:
+  name - hash mapping query gene feature ids to names
+  amr  - hash mapping allele feature ids to genome ids and query gene ids
+         for AMR genes   
+  vf   - hash mapping allele feature ids to genome ids and query gene ids
+         for virulence factors  
 =cut
 
 sub getGeneAlleleData {
@@ -1033,15 +1191,12 @@ sub getGeneAlleleData {
 	my (%args) = @_;
 	
 	get_logger->debug(%args);
-#	$self->dbixSchema->storage->debug(1);
-#	$self->dbixSchema->storage->debugfh(IO::File->new('/tmp/trace.out', 'w'));
-	
+
 	# A subset of genomes must be defined
-	# If no 
 	my $public_genomes = $args{public_genomes};
 	my $private_genomes = $args{private_genomes};
 	
-	unless(($public_genomes && ref($public_genomes) eq 'ARRAY') || ($private_genomes && ref($private_genomes) eq 'ARRAY')) {
+	unless(($public_genomes && (ref($public_genomes) eq 'ARRAY' || $public_genomes eq 'all')) || ($private_genomes && ref($private_genomes) eq 'ARRAY')) {
 		croak "Error: must provide array reference 'public_genomes' or 'private_genomes' as an argument."
 	}
 	
@@ -1074,13 +1229,16 @@ sub getGeneAlleleData {
 		my $select_stmt = {
 			'me.type_id' => $types{'similar_to'},
 			'feature_relationship_subjects.type_id' => $types{'part_of'},
-			'feature_relationship_subjects.object_id' => {'-in' => $public_genomes}
 		};
 		
 		# Select only for specific AMR/VF genes
 		if($args{markers}) {
 			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
 			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		# Subset of public genomes
+		if(ref($public_genomes)) {
+			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
 		}
 		
 		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
@@ -1172,5 +1330,151 @@ sub getGeneAlleleData {
 	
 	return({names => \%gene_names, amr => \%amr_alleles, vf => \%vf_alleles});
 }
+
+=head2 getStxData
+
+getStxData(%args)
+
+Inputs:
+hash containing possible key -value pairs:
+ -markers          Array-ref of typing sequence feature ids    
+ -public_genomes   Array-ref of genome feature ids OR a string 'all' to retrieve all genomes
+ -private_genoems  Array-ref of genome private_feature ids
+	                                
+MAKE SURE THE USER CAN ACCESS THESE GENOMES
+DO NOT RELEASE PRIVATE SEQUENCES!	                                
+
+Returns:
+Hash containing key - value pairs:
+  name - hash mapping typing reference sequence feature ids to names 
+  stx  - hash mapping allele_fusion feature ids to genome ids and ref sequence ids
+
+=cut
+
+
+sub getStxData {
+	my $self = shift;
+	my (%args) = @_;
+	
+	$self->dbixSchema->storage->debug(1);
+	
+	# The set of genomes must be defined
+	my $warden = $args{warden};
+	
+	my ($public_genomes, $private_genomes) = $warden->featureList();
+	
+	# Grab some type IDs
+	# Probably should have this hard-coded somewhere
+	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
+		{
+			name => [qw(variant_of part_of typing_sequence allele_fusion stx1_subtype stx2_subtype)]
+		},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			columns => [qw/cvterm_id name/]
+	    }
+	);
+	my %types;
+	while (my $hashref = $type_rs->next) {
+		$types{$hashref->{'name'}} = $hashref->{'cvterm_id'}
+	}
+	
+	my %subunit_names;
+	my %subtypes;
+	
+	if($warden->numPublic) {
+		
+		# Retreive allele_fusion hits for each reference gene
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $types{'variant_of'},
+			'feature_relationship_subjects.type_id' => $types{'part_of'},
+			'featureprops.type_id' => [$types{'stx1_subtype'}, $types{'stx2_subtype'}]
+		};
+		
+		# Select only for specific typing reference sequences
+		if($args{markers}) {
+			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		# Subset of public genomes
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => ['feature_relationship_subjects', 'featureprops']},
+					'object'
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $ref_id = $allele_row->object_id;
+			my $ref_name = $allele_row->object->uniquename;
+			my $subt = $allele_row->subject->featureprops->first->value;
+			
+			$subunit_names{$ref_id} = $ref_name;
+			
+			$subtypes{$genome_label}->{$ref_id} = [] unless defined($subtypes{$genome_label}->{$ref_id});
+			push @{$subtypes{$genome_label}->{$ref_id}}, { allele => $allele_id, subtype => $subt};
+		}
+	}
+	
+	if($warden->numPrivate) {
+		
+		# Retreive allele_fusion hits for each reference gene
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $types{'variant_of'},
+			'private_feature_relationship_subjects.type_id' => $types{'part_of'},
+			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes},
+			'private_featureprops.type_id' => [$types{'stx1_subtype'}, $types{'stx2_subtype'}]
+		};
+		
+		# Select only for specific typing reference sequences
+		if($args{markers}) {
+			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('PripubFeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => ['private_feature_relationship_subjects', 'private_featureprops']},
+					'object'
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'private_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $ref_id = $allele_row->object_id;
+			my $ref_name = $allele_row->object->uniquename;
+			my $subt = $allele_row->subject->featureprops->first->value;
+			
+			$subunit_names{$ref_id} = $ref_name;
+			
+			$subtypes{$genome_label}->{$ref_id} = [] unless defined($subtypes{$genome_label}->{$ref_id});
+			push @{$subtypes{$genome_label}->{$ref_id}}, { allele => $allele_id, subtype => $subt};
+		}
+		
+	}
+	
+	return({names => \%subunit_names, stx => \%subtypes});
+}
+
 
 1;

@@ -228,3 +228,21 @@
   border-width: 1px;
   border-color: #d3d3d3;
 }
+/** Styles ********************************/
+body {
+  padding-top: 70px;
+}
+.title {
+  margin: 10px;
+  padding: 10px;
+}
+.titleText {
+  font-weight: bold;
+}
+.title_part1 {
+  font-weight: bold;
+}
+.title_part2 {
+  font-weight: bold;
+  color: #d41616;
+}

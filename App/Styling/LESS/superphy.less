@@ -34,6 +34,7 @@
 
 // General website colors
 @border-color: #d3d3d3;
+@title-color2: #d41616;
 
 /** Mixins ********************************/
 
@@ -43,3 +44,28 @@
   border-color:@border-color;
 }
 
+/** Styles ********************************/
+body {
+  padding-top:70px; 
+}
+
+
+// Page title
+.title {
+  margin:10px;
+  padding:10px;
+  
+}
+
+.titleText {
+  font-weight: bold;
+}
+
+.title_part1 {
+  .titleText;
+}
+
+.title_part2 {
+  .titleText;
+  color:@title-color2;
+}

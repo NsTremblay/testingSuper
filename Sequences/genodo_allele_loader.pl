@@ -535,15 +535,6 @@ sub allele {
 	my $event = $is_new ? 'insert' : 'update';
 	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
-			
-#	$seq_group->{$contig_collection} = {
-#		genome => $contig_collection_id,
-#		allele => $allele_id,
-#		#copy => $allele_num,
-#		public => $is_public,
-#		is_new => $is_new,
-#		seq => $seq
-#	};
 
 	my $allele_hash = {
 		genome => $contig_collection_id,
