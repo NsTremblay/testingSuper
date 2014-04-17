@@ -4,6 +4,7 @@
 <head>
 
 	<TMPL_INCLUDE NAME="header2.tmpl">
+	<link rel="stylesheet" href="/App/Styling/css/genes_stx.css">
 	
 </head>
 
@@ -22,20 +23,84 @@
 		</p>
 		
 		
+		<TMPL_INCLUDE NAME="search_utilities.tmpl">
 		<div>
 			<ul id="stx_tabs" class="nav nav-tabs">
 	      		<li class="active"><a href="#stx1_tab" data-toggle="tab">Stx1</a></li>
 	      		<li><a href="#stx2_tab" data-toggle="tab">Stx2</a></li>
     		</ul>
 		    <div id="view_content" class="tab-content">
-		      <div class="tab-pane active" id="stx1_tab">
+		      <div class="tab-pane active stx_tab" id="stx1_tab">
+		      
+		      	<h4>Shiga-toxin 1 Subtypes (Stx1)</h4>
 		      	
+		      	<p>The following provide a summary of SuperPhy Stx1 predictions:</p> 
+		      	<ul>
+		      		<li><a href="#stx1_list">List</a> of Stx1 subtype predictions for each genome</li>
+		      		<li><a href="#stx1_tree">Phylogenetic Tree</a> of Stx1 holotoxin DNA sequences</li>
+		      		<li><a href="#stx1_msa">Multiple Sequence Alignment</a> of of Stx1 holotoxin DNA sequences</li>
+		      	</ul>
+		      	
+		      	<hr/>
+		      
+		      	<h5>Predicted Stx1 subtypes:</h5>
+		      	<div id="stx1_list" class="superphy-list">
+		      	</div>
+		      	
+		      	<hr/>
+		      	
+		      	<h5>Stx1 DNA Sequence Phylogenetic Tree:</h5>
+		      	<div id="stx1_tree" class="superphy-tree">
+		      		<div id="stx1_tree_psa">
+		      			<p>Too few sequences. Tree unavailable.</p>
+		      		</div>
+		      	</div>
+		      	
+		      	<hr/>
+		      
+		      	<h5>Stx1 DNA Sequence Multiple Sequence Alignment:</h5>
 		      	<div id="stx1_msa" class="superphy-msa">
+		      		<div id="stx1_msa_psa">
+		      			<p>Too few/many sequences. Alignment unavailable.</p>
+		      		</div>
 		      	</div>
+		      	
 		      </div>
-		      <div class="tab-pane " id="stx2_tab">
-		      	<div id="stx2_msa" class="superphy-msa">
+		      <div class="tab-pane stx_tab" id="stx2_tab">
+		      
+		      	<h4>Shiga-toxin 2 Subtypes (Stx2)</h4>
+		      	
+		      	<p>The following provide a summary of SuperPhy Stx2 predictions:</p> 
+		      	<ul>
+		      		<li><a href="#stx2_list">List</a> of Stx2 subtype predictions for each genome</li>
+		      		<li><a href="#stx2_tree">Phylogenetic Tree</a> of Stx2 holotoxin DNA sequences</li>
+		      		<li><a href="#stx2_msa">Multiple Sequence Alignment</a> of of Stx2 holotoxin DNA sequences</li>
+		      	</ul>
+		      	
+		      	<hr/>
+		      
+		      	<h5>Predicted Stx2 subtypes:</h5>
+		      	<div id="stx2_list" class="superphy-list">
 		      	</div>
+		      	
+		      	<hr/>
+		      	
+		      	<h5>Stx2 DNA Sequence Phylogenetic Tree:</h5>
+		      	<div id="stx2_tree" class="superphy-tree">
+		      		<div id="stx2_tree_psa">
+		      			<p>Too few sequences. Tree unavailable.</p>
+		      		</div>
+		      	</div>
+		      	
+		      	<hr/>
+		      
+		      	<h5>Stx2 DNA Sequence Multiple Sequence Alignment:</h5>
+		      	<div id="stx2_msa" class="superphy-msa">
+		      		<div id="stx2_msa_psa">
+		      			<p>Too few/many sequences. Alignment unavailable.</p>
+		      		</div>
+		      	</div>
+		      	
 		      </div>
 		    </div>
 			
@@ -43,7 +108,7 @@
 	</div>
 
 	<script type="text/javascript">	
-		// Initialize JSON data objcts
+		// Copy of superphy_msa.lessInitialize JSON data objcts
 		var stx = <TMPL_VAR stx_json>;
 		var locus_data = <TMPL_VAR locus_json>;
 		var public_genomes = <TMPL_VAR public_genomes>;
@@ -68,23 +133,34 @@
 		
 		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info');
 		
+		viewController.createView('list', $('#stx1_list'), stx['stx1_subunit']);
+		
+		viewController.createView('list', $('#stx2_list'), stx['stx2_subunit']);
+		
 		if(stx1_subunit_msa) {
-			viewController.createView('msa', $('#stx1_msa'), stx1_subunit_msa);
+			$('#stx1_msa_psa').hide();
+			viewController.createView('msa', $('#stx1_msa'), stx1_subunit_msa, locus_data);
 		}
 		if(stx2_subunit_msa) {
-			viewController.createView('msa', $('#stx2_msa'), stx2_subunit_msa);
+			$('#stx2_msa_psa').hide();
+			viewController.createView('msa', $('#stx2_msa'), stx2_subunit_msa, locus_data);
+		}
+		if(stx1_subunit_tree) {
+			$('#stx1_tree_psa').hide();
+			viewController.createView('tree', $('#stx1_tree'), stx1_subunit_tree, locus_data);
+		}
+		if(stx2_subunit_tree) {
+			$('#stx2_tree_psa').hide();
+			viewController.createView('tree', $('#stx2_tree'), stx2_subunit_tree, locus_data);
 		}
 		
-		
-		//viewController.createView('list', $('#strains_list'));
-		
-		//viewController.metaForm($('#meta-display-form'));
-		
-		//viewController.filterForm($('#filter-form'));
+		viewController.metaForm($('#meta-display-form'));
+		viewController.filterForm($('#filter-form'));
 		
 		//viewController.createView('tree', $('#strains_tree'), tree);
 		
 	</script>
+	<TMPL_INCLUDE NAME="footer2.tmpl">
 </body>
 
 </html>

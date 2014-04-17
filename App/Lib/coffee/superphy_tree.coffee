@@ -18,6 +18,9 @@ d3.selection.prototype.moveToFront = ->
   
  Phylogenetic tree view
  
+ Can be genome- or locus-based
+ Returns genome ID to redirect/select if leaf node is clicked
+ 
 ###
 
 class TreeView extends ViewTemplate
@@ -29,8 +32,9 @@ class TreeView extends ViewTemplate
     
     @dim={w: 500, h: 800}
     @margin={top: 20, right: 180, bottom: 20, left: 20}
-    @dim = treeArgs[1] if treeArgs[1]?
-    @margin = treeArgs[2] if treeArgs[2]?
+    @locusData = treeArgs[1] if treeArgs[1]?
+    @dim = treeArgs[2] if treeArgs[2]?
+    @margin = treeArgs[3] if treeArgs[3]?
                   
     # Call default constructor - creates unique element ID                  
     super(@parentElem, @style, @elNum)
@@ -51,8 +55,8 @@ class TreeView extends ViewTemplate
       .separation((a, b) -> 1)
     
     # SVG layer
-    @parentElem.append("<div id='tree-viewport'></div>")
-    @wrap = d3.select("#tree-viewport").append("svg")
+    @parentElem.append("<div id='#{@elID}'></div>")
+    @wrap = d3.select("##{@elID}").append("svg")
       .attr("width", @dim.w)
       .attr("height", @dim.h)
       .style("-webkit-backface-visibility", "hidden")
@@ -188,7 +192,7 @@ class TreeView extends ViewTemplate
       .attr("class", (d) => @_classList(d))
       .on("click", (d) ->
         unless d.assignedGroup?
-          viewController.select(d.name, !d.selected)
+          viewController.select(d.genome, !d.selected)
         else
           null
       )
@@ -228,12 +232,14 @@ class TreeView extends ViewTemplate
     if @style is 'select'
       leaves.on("click", (d) ->
         unless d.assignedGroup?
-          viewController.select(d.name, !d.selected)
+          viewController.select(d.genome, !d.selected)
         else
           null
       )
     else
-      leaves.on("click", viewController.redirect(d.name))
+      leaves.on("click", (d) ->
+        viewController.redirect(d.genome)
+      )
       
     nodesEnter
       .append("text")
@@ -374,9 +380,9 @@ class TreeView extends ViewTemplate
     svgNodes = @canvas.selectAll("g.treenode")
     
     # Filter elements to those that are in set
-    updateNodes = svgNodes.filter((d) -> genomeList[d.name]?)
+    updateNodes = svgNodes.filter((d) -> genomeList[d.genome]?)
       .attr("class", (d) =>
-        g = genomeList[d.name]
+        g = genomeList[d.genome]
         d.selected = (g.isSelected? and g.isSelected)
         d.assignedGroup = g.assignedGroup
         @_classList(d)
@@ -384,14 +390,12 @@ class TreeView extends ViewTemplate
       
     updateNodes.on("click", (d) ->
       unless d.assignedGroup?
-        viewController.select(d.name, !d.selected)
+        viewController.select(d.genome, !d.selected)
       else
         null
     )
       
-    # Disable select on nodes assigned to groups
-    
-    
+  
     true
     
   
@@ -413,8 +417,6 @@ class TreeView extends ViewTemplate
     
     if event is 'expand_collapse'
       @_expandCollapse(genomes, argArray[0], argArray[1])
-    else if event is 'select_clade'
-      console.log('SC')
     else
       throw new SuperphyError "Unrecognized event type: #{event} in TreeView viewAction method."
     
@@ -423,7 +425,7 @@ class TreeView extends ViewTemplate
   selectClade: (node, checked) ->
     
     if node.leaf
-      viewController.select(node.name, checked)
+      viewController.select(node.genome, checked)
     
     else
       if node.children?
@@ -436,7 +438,7 @@ class TreeView extends ViewTemplate
     svgNodes = @canvas.selectAll("g.treenode")
     
     # Find element matching genome
-    updateNode = svgNodes.filter((d) -> d.name is genome)
+    updateNode = svgNodes.filter((d) -> d.genome is genome)
       .attr("class", (d) =>
         d.selected = isSelected
         @_classList(d)
@@ -482,7 +484,7 @@ class TreeView extends ViewTemplate
     
     if node.leaf
       # Genome node
-      g = genomes.genome(node.name)
+      g = genomes.genome(node.genome)
       lab = genomes.label(g, genomes.visibleMeta)
       
       tokens.push("\"#{lab}\"",':',node.length)
@@ -515,13 +517,15 @@ class TreeView extends ViewTemplate
     
     # Set starting position of root
     @trueRoot.root = true
-    @trueRoot.x0 = @height / 2;
-    @trueRoot.y0 = 0;
+    @trueRoot.x0 = @height / 2
+    @trueRoot.y0 = 0
     
-    @_assignKeys(@trueRoot, 0)
+    gPattern = /^((?:public_|private_)\d+)\|/
+    
+    @_assignKeys(@trueRoot, 0, gPattern)
   
 
-  _assignKeys: (n, i) ->
+  _assignKeys: (n, i, gPattern) ->
     
     n.id = i
     n.storage = n.length*1 # save original value
@@ -532,14 +536,25 @@ class TreeView extends ViewTemplate
       n.daycare = n.children.slice() # clone array
       
       for m in n.children
-        i = @_assignKeys(m, i)
+        i = @_assignKeys(m, i, gPattern)
         
     else if n._children?
       # Save original children array
       n.daycare = n._children.slice() # clone array
       
       for m in n._children
-        i = @_assignKeys(m, i)
+        i = @_assignKeys(m, i, gPattern)
+    
+    
+    if n.leaf? and n.leaf is "true"
+      if @locusData?
+        # Nodes are keyed: genome|locus
+        res = gPattern.exec(n.name)
+        throw new SuperphyError "Invalid tree node key. Expecting: genome|locus. Recieved: #{n.name}" unless res?
+        n.genome = res[1]
+      else
+        # Nodes are keyed: genome
+        n.genome = n.name
     
     i
   
@@ -570,11 +585,17 @@ class TreeView extends ViewTemplate
     
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
-      g = genomes.genome(node.name)
+      g = genomes.genome(node.genome)
      
       if g.visible
         # Update node with sync'd genome properties
+        
         node.viewname = g.viewname
+        
+        # Append locus data
+        if @locusData? && @locusData[node.name]?
+          node.viewname += @locusData[node.name]
+        
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false

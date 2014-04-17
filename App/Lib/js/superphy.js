@@ -83,7 +83,7 @@
       viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
-      downloadElem = jQuery("<a href='#' data-genome-view='" + vNum + "'>Download</a>");
+      downloadElem = jQuery("<div class='download-view'><a class='download-view-link' href='#' data-genome-view='" + vNum + "'>Download <i class='fa fa-download'></a></div>");
       downloadElem.click(function(e) {
         var data, viewNum;
         viewNum = parseInt(this.dataset.genomeView);
@@ -97,7 +97,7 @@
         clickStyle = 'redirect';
       }
       if (viewType === 'list') {
-        listView = new ListView(elem, clickStyle, vNum);
+        listView = new ListView(elem, clickStyle, vNum, viewArgs);
         listView.update(this.genomeController);
         this.views.push(listView);
       } else if (viewType === 'tree') {
@@ -130,11 +130,15 @@
 
     ViewController.prototype.select = function(g, checked) {
       var v, _i, _len, _ref;
-      this.genomeController.select(g, checked);
-      _ref = this.views;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        v = _ref[_i];
-        v.select(g, checked);
+      if (this.actionMode === 'single_select') {
+        this.redirect(g);
+      } else {
+        this.genomeController.select(g, checked);
+        _ref = this.views;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          v = _ref[_i];
+          v.select(g, checked);
+        }
       }
       return true;
     };
@@ -221,7 +225,7 @@
 
     ViewController.prototype.metaForm = function(elem) {
       var form;
-      form = '<div id="meta-display">' + '<h4><i class="fa fa-eye"></i> Meta-data</h4>' + '<p>Change meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '</fieldset>' + '</form>' + '</div>';
+      form = '<div id="meta-display">' + '<h4><i class="fa fa-eye"></i> Meta-data</h4>' + '<p>Change meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -636,13 +640,22 @@
    CLASS ListView
    
    Genome list
+   
+   Always genome-based
+   Returns genome ID to redirect/select when genome list item is clicked
    */
 
   ListView = (function(_super) {
     __extends(ListView, _super);
 
-    function ListView() {
-      return ListView.__super__.constructor.apply(this, arguments);
+    function ListView(parentElem, style, elNum, listArgs) {
+      this.parentElem = parentElem;
+      this.style = style;
+      this.elNum = elNum;
+      if ((listArgs != null) && (listArgs[0] != null)) {
+        this.genomeData = listArgs[0];
+      }
+      ListView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
     }
 
     ListView.prototype.type = 'list';
@@ -659,34 +672,46 @@
         jQuery(this.parentElem).append(listElem);
       }
       t1 = new Date();
-      this._appendGenomes(listElem, genomes.pubVisible, genomes.public_genomes, this.style);
-      listElem.append(function() {
-        return "<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>";
-      });
-      this._appendGenomes(listElem, genomes.pvtVisible, genomes.private_genomes, this.style);
+      this._appendGenomes(listElem, genomes.pubVisible, genomes.public_genomes, this.style, false);
+      this._appendGenomes(listElem, genomes.pvtVisible, genomes.private_genomes, this.style, true);
       t2 = new Date();
       ft = t2 - t1;
       console.log('ListView update elapsed time: ' + ft);
       return true;
     };
 
-    ListView.prototype._appendGenomes = function(el, visibleG, genomes, style) {
-      var actionEl, checked, cls, g, labEl, listEl, thiscls, _i, _len;
+    ListView.prototype._appendGenomes = function(el, visibleG, genomes, style, priv) {
+      var actionEl, checked, cls, dataObj, g, labEl, listEl, name, thiscls, _i, _len;
       cls = this.cssClass();
+      if (this.genomeData != null) {
+        dataObj = this.genomeData;
+        visibleG = visibleG.filter(function(i) {
+          var found;
+          found = i in dataObj;
+          return found;
+        });
+      }
+      if (priv && visibleG.length) {
+        el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>");
+      }
       for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
         g = visibleG[_i];
         thiscls = cls;
         if (genomes[g].cssClass != null) {
           thiscls = cls + ' ' + genomes[g].cssClass;
         }
+        name = genomes[g].viewname;
+        if (this.genomeData != null) {
+          name += this.genomeData[g];
+        }
         if (style === 'redirect') {
-          listEl = jQuery(("<li class='" + thiscls + "'>") + genomes[g].viewname + '</li>');
+          listEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
           actionEl = jQuery("<a href='#' data-genome='" + g + "'><i class='icon-search'></i> info</a>");
           actionEl.click(function(e) {
             var gid;
             e.preventDefault();
             gid = this.dataset.genome;
-            return viewController.redirect(gid);
+            return viewController.select(gid, true);
           });
           listEl.append(actionEl);
           el.append(listEl);
@@ -696,7 +721,7 @@
             checked = 'checked';
           }
           listEl = jQuery("<li class='" + thiscls + "'></li>");
-          labEl = jQuery("<label class='checkbox'>" + genomes[g].viewname + "</label>");
+          labEl = jQuery("<label class='checkbox'>" + name + "</label>");
           actionEl = jQuery("<input class='checkbox' type='checkbox' value='" + g + "' " + checked + "/>");
           actionEl.change(function(e) {
             e.preventDefault();
@@ -930,7 +955,10 @@
       isolation_host: false,
       isolation_source: false,
       isolation_date: false,
-      accession: false
+      accession: false,
+      syndrome: false,
+      stx1_subtype: false,
+      stx2_subtype: false
     };
 
     GenomeController.prototype.metaMap = {
@@ -939,7 +967,10 @@
       'isolation_host': 'Host',
       'isolation_source': 'Source',
       'isolation_date': 'Date of isolation',
-      'accession': 'Accession ID'
+      'accession': 'Accession ID',
+      'syndrome': 'Symptom / Disease',
+      'stx1_subtype': 'Stx1 Subtype',
+      'stx2_subtype': 'Stx2 Subtype'
     };
 
     GenomeController.prototype.publicRegexp = new RegExp('^public_');
@@ -1290,7 +1321,7 @@
       }
       na = 'NA';
       lab = [genome.displayname];
-      mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date'];
+      mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
       for (_i = 0, _len = mtypes.length; _i < _len; _i++) {
         t = mtypes[_i];
         if (visibleMeta[t]) {
@@ -1304,12 +1335,13 @@
     };
 
     GenomeController.prototype.updateMeta = function(option, checked) {
+      console.log(option);
       if (this.visibleMeta[option] == null) {
-        throw new SuperphyError('unrecognized option in GenomeController method updateVisibleMeta()');
+        throw new SuperphyError('unrecognized option in GenomeController method updateMeta()');
         return false;
       }
       if (!(checked === true || checked === false)) {
-        throw new SuperphyError('invalid checked argument in GenomeController method updateVisibleMeta()');
+        throw new SuperphyError('invalid checked argument in GenomeController method updateMeta()');
         return false;
       }
       this.visibleMeta[option] = checked;
@@ -1574,6 +1606,9 @@
    CLASS TreeView
     
    Phylogenetic tree view
+   
+   Can be genome- or locus-based
+   Returns genome ID to redirect/select if leaf node is clicked
    */
 
   TreeView = (function(_super) {
@@ -1599,10 +1634,13 @@
         left: 20
       };
       if (treeArgs[1] != null) {
-        this.dim = treeArgs[1];
+        this.locusData = treeArgs[1];
       }
       if (treeArgs[2] != null) {
-        this.margin = treeArgs[2];
+        this.dim = treeArgs[2];
+      }
+      if (treeArgs[3] != null) {
+        this.margin = treeArgs[3];
       }
       TreeView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
       this.width = this.dim.w - this.margin.right - this.margin.left;
@@ -1614,8 +1652,8 @@
       }).separation(function(a, b) {
         return 1;
       });
-      this.parentElem.append("<div id='tree-viewport'></div>");
-      this.wrap = d3.select("#tree-viewport").append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
+      this.parentElem.append("<div id='" + this.elID + "'></div>");
+      this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
       this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
       num = this.elNum - 1;
       this.wrap.call(d3.behavior.zoom().x(this.xzoom).y(this.yzoom).scaleExtent([1, 8]).on("zoom", function() {
@@ -1736,7 +1774,7 @@
         };
       })(this)).on("click", function(d) {
         if (d.assignedGroup == null) {
-          return viewController.select(d.name, !d.selected);
+          return viewController.select(d.genome, !d.selected);
         } else {
           return null;
         }
@@ -1775,13 +1813,15 @@
       if (this.style === 'select') {
         leaves.on("click", function(d) {
           if (d.assignedGroup == null) {
-            return viewController.select(d.name, !d.selected);
+            return viewController.select(d.genome, !d.selected);
           } else {
             return null;
           }
         });
       } else {
-        leaves.on("click", viewController.redirect(d.name));
+        leaves.on("click", function(d) {
+          return viewController.redirect(d.genome);
+        });
       }
       nodesEnter.append("text").attr("class", "treelabel").attr("dx", ".6em").attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
         if (d.leaf) {
@@ -1865,10 +1905,10 @@
       }
       svgNodes = this.canvas.selectAll("g.treenode");
       updateNodes = svgNodes.filter(function(d) {
-        return genomeList[d.name] != null;
+        return genomeList[d.genome] != null;
       }).attr("class", (function(_this) {
         return function(d) {
-          g = genomeList[d.name];
+          g = genomeList[d.genome];
           d.selected = (g.isSelected != null) && g.isSelected;
           d.assignedGroup = g.assignedGroup;
           return _this._classList(d);
@@ -1876,7 +1916,7 @@
       })(this));
       updateNodes.on("click", function(d) {
         if (d.assignedGroup == null) {
-          return viewController.select(d.name, !d.selected);
+          return viewController.select(d.genome, !d.selected);
         } else {
           return null;
         }
@@ -1889,8 +1929,6 @@
       event = argArray.shift();
       if (event === 'expand_collapse') {
         this._expandCollapse(genomes, argArray[0], argArray[1]);
-      } else if (event === 'select_clade') {
-        console.log('SC');
       } else {
         throw new SuperphyError("Unrecognized event type: " + event + " in TreeView viewAction method.");
       }
@@ -1900,7 +1938,7 @@
     TreeView.prototype.selectClade = function(node, checked) {
       var c, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
       if (node.leaf) {
-        return viewController.select(node.name, checked);
+        return viewController.select(node.genome, checked);
       } else {
         if (node.children != null) {
           _ref = node.children;
@@ -1926,7 +1964,7 @@
       var svgNodes, updateNode;
       svgNodes = this.canvas.selectAll("g.treenode");
       updateNode = svgNodes.filter(function(d) {
-        return d.name === genome;
+        return d.genome === genome;
       }).attr("class", (function(_this) {
         return function(d) {
           d.selected = isSelected;
@@ -1958,7 +1996,7 @@
     TreeView.prototype._printNode = function(genomes, node, tokens) {
       var c, g, lab, _i, _len, _ref;
       if (node.leaf) {
-        g = genomes.genome(node.name);
+        g = genomes.genome(node.genome);
         lab = genomes.label(g, genomes.visibleMeta);
         tokens.push("\"" + lab + "\"", ':', node.length);
       } else {
@@ -1982,14 +2020,16 @@
     };
 
     TreeView.prototype._prepTree = function() {
+      var gPattern;
       this.trueRoot.root = true;
       this.trueRoot.x0 = this.height / 2;
       this.trueRoot.y0 = 0;
-      return this._assignKeys(this.trueRoot, 0);
+      gPattern = /^((?:public_|private_)\d+)\|/;
+      return this._assignKeys(this.trueRoot, 0, gPattern);
     };
 
-    TreeView.prototype._assignKeys = function(n, i) {
-      var m, _i, _j, _len, _len1, _ref, _ref1;
+    TreeView.prototype._assignKeys = function(n, i, gPattern) {
+      var m, res, _i, _j, _len, _len1, _ref, _ref1;
       n.id = i;
       n.storage = n.length * 1;
       i++;
@@ -1998,14 +2038,25 @@
         _ref = n.children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           m = _ref[_i];
-          i = this._assignKeys(m, i);
+          i = this._assignKeys(m, i, gPattern);
         }
       } else if (n._children != null) {
         n.daycare = n._children.slice();
         _ref1 = n._children;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           m = _ref1[_j];
-          i = this._assignKeys(m, i);
+          i = this._assignKeys(m, i, gPattern);
+        }
+      }
+      if ((n.leaf != null) && n.leaf === "true") {
+        if (this.locusData != null) {
+          res = gPattern.exec(n.name);
+          if (res == null) {
+            throw new SuperphyError("Invalid tree node key. Expecting: genome|locus. Recieved: " + n.name);
+          }
+          n.genome = res[1];
+        } else {
+          n.genome = n.name;
         }
       }
       return i;
@@ -2021,9 +2072,12 @@
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
       if ((node.leaf != null) && node.leaf === "true") {
-        g = genomes.genome(node.name);
+        g = genomes.genome(node.genome);
         if (g.visible) {
           node.viewname = g.viewname;
+          if ((this.locusData != null) && (this.locusData[node.name] != null)) {
+            node.viewname += this.locusData[node.name];
+          }
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
@@ -2160,6 +2214,9 @@
    CLASS MsaView
     
    Multiple Sequence Alignment view
+   
+   Always locus-based
+   Returns nothing to redirect/select (no click behavior defined)
    */
 
   MsaView = (function(_super) {
@@ -2174,7 +2231,7 @@
         throw new SuperphyError('Missing argument. MsaView constructor requires JSON alignment object.');
       }
       alignmentJSON = msaArgs[0];
-      if (msaArgs[1]) {
+      if (msaArgs[1] != null) {
         this.locusData = msaArgs[1];
       }
       MsaView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
@@ -2273,6 +2330,7 @@
       msaElem = jQuery("#" + this.elID);
       if (msaElem.length) {
         msaElem.empty();
+        msaElem.append('<tbody></tbody>');
       } else {
         msaElem = jQuery("<table id='" + this.elID + "'><tbody></tbody></table>");
         jQuery(this.parentElem).append(msaElem);
@@ -2323,8 +2381,6 @@
           return 0;
         }
       });
-      console.log(this.numBlock);
-      console.log(visibleRows);
       for (j = _j = 0, _ref1 = this.numBlock; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
         for (_k = 0, _len1 = visibleRows.length; _k < _len1; _k++) {
           i = visibleRows[_k];
@@ -2340,187 +2396,72 @@
         el.append(rowEl);
       }
       return true;
+    };
 
-      /* 
-        
-        _appendGenomes: (el, visibleG, genomes, style) ->
-      
-       * View class
-      cls = @cssClass()
-      
-      for g in visibleG
-        
-        thiscls = cls
-        thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
-        
-        if style == 'redirect'
-           * Links
-          
-           * Create elements
-          listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
-          actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
-          
-           * Set behaviour
-          actionEl.click (e) ->
-            e.preventDefault()
-            gid = @.dataset.genome
-            viewController.redirect(gid)
-          
-           * Append to list
-          listEl.append(actionEl)
-          el.append(listEl)
-          
-        else if style == 'select'
-           * Checkboxes
-          
-           * Create elements
-          checked = ''
-          checked = 'checked' if genomes[g].isSelected
-          listEl = jQuery("<li class='#{thiscls}'></li>")
-          labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
-          actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
-          
-           * Set behaviour
-          actionEl.change (e) ->
-            e.preventDefault()
-            viewController.select(@.value, @.checked)
-          
-           * Append to list
-          labEl.append(actionEl)
-          listEl.append(labEl)
-          el.append(listEl)
-          
-        else
-          return false
-        
-      true
-      
-         * FUNC updateCSS
-         * Change CSS class for selected genomes to match underlying genome properties
-         *
-         * PARAMS
-         * simple hash object with private and public list of genome Ids to update
-         * genomeController object
-         * 
-         * RETURNS
-         * boolean 
-         *      
-        updateCSS: (gset, genomes) ->
-      
-       * Retrieve list DOM element    
-      listEl = jQuery("##{@elID}")
-      throw new SuperphyError "DOM element for list view #{@elID} not found. Cannot call ListView method updateCSS()." unless listEl? and listEl.length
-      
-       * append genomes to list
-      @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public?
-      
-      @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private?
-      
-      true # return success
-      
-        
-        _updateGenomeCSS: (el, changedG, genomes) ->
-      
-       * View class
-      cls = @cssClass()
-      
-      for g in changedG
-        
-        thiscls = cls
-        thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-        itemEl = null
-        
-        if @style == 'redirect'
-           * Link style
-          
-           * Find element
-          descriptor = "li > a[data-genome='#{g}']"
-          itemEl = el.find(descriptor)
-         
-        else if @style == 'select'
-           * Checkbox style
-          
-           * Find element
-          descriptor = "li input[value='#{g}']"
-          itemEl = el.find(descriptor)
-         
-        else
-          return false
-        
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
-          return false
-        
-        console.log("Updating class to #{thiscls}")
-        liEl = itemEl.parents().eq(1)
-         *console.log("Current class for list li: "+liEl.class)  
-        liEl.attr('class', thiscls)
-         *console.log("Updated class for list li: "+liEl.class())  
-          
-          
-      true # success
-      
-        select: (genome, isSelected) ->
-      
-      itemEl = null
-      
-      if @style == 'select'
-         * Checkbox style, othe styles do not have 'select' behavior
-        
-         * Find element
-        descriptor = "li input[value='#{genome}']"
-        itemEl = jQuery(descriptor)
-       
-      else
-        return false
-      
-      unless itemEl? and itemEl.length
-        throw new SuperphyError "List element for genome #{genome} not found in ListView #{@elID}"
-        return false
-          
-      itemEl.prop('checked', isSelected);
-      
-      true # success
-        
-         * FUNC dump
-         * Generate CSV tab-delimited representation of all genomes and meta-data
-         *
-         * PARAMS
-         * genomeController object
-         * 
-         * RETURNS
-         * object containing:
-         *   ext[string] - a suitable file extension (e.g. csv)
-         *   type[string] - a MIME type
-         *   data[string] - a string containing data in final format
-         *      
-        dump: (genomes) ->
-      
-       * Create complete list of meta-types
-       * make all visible
-      fullMeta = {}
-      fullMeta[k] = true for k of genomes.visibleMeta
-      
-      output = ''
-       * Output header
-      header = (genomes.metaMap[k] for k of fullMeta)
-      header.unshift "Genome name"
-      output += "#" + header.join("\t") + "\n"
-      
-       * Output public set
-      for id,g of genomes.public_genomes
-        output += genomes.label(g,fullMeta,"\t") + "\n"
-        
-       * Output private set
-      for id,g of genomes.private_genomes
-        output += genomes.label(g,fullMeta,"\t") + "\n"
-        
-      return {
-        ext: 'csv'
-        type: 'text/plain'
-        data: output 
+    MsaView.prototype.updateCSS = function(gset, genomes) {
+      var msaEl;
+      msaEl = jQuery("#" + this.elID);
+      if (!((msaEl != null) && msaEl.length)) {
+        throw new SuperphyError("DOM element for Msa view " + this.elID + " not found. Cannot call MsaView method updateCSS().");
       }
-       */
+      if (gset["public"] != null) {
+        this._updateGenomeCSS(listEl, gset["public"], genomes.public_genomes);
+      }
+      if (gset["private"] != null) {
+        this._updateGenomeCSS(listEl, gset["private"], genomes.private_genomes);
+      }
+      return true;
+    };
+
+    MsaView.prototype._updateGenomeCSS = function(el, changedG, genomes) {
+      var cls, descriptor, g, itemEl, liEl, thiscls, _i, _len;
+      cls = this.cssClass();
+      for (_i = 0, _len = changedG.length; _i < _len; _i++) {
+        g = changedG[_i];
+        thiscls = cls;
+        if (genomes[g].cssClass != null) {
+          thiscls = cls + ' ' + genomes[g].cssClass;
+        }
+        descriptor = "td[data-genome='" + g + "']";
+        itemEl = el.find(descriptor);
+        if (!((itemEl != null) && itemEl.length)) {
+          throw new SuperphyError("Msa element for genome " + g + " not found in MsaView " + this.elID);
+          return false;
+        }
+        console.log("Updating class to " + thiscls);
+        liEl = itemEl.parents().eq(1);
+        liEl.attr('class', thiscls);
+      }
+      return true;
+    };
+
+    MsaView.prototype.select = function(genome, isSelected) {
+      return true;
+    };
+
+    MsaView.prototype.dump = function(genomes) {
+      var a, g, genomeID, i, name, output, seq, _i, _len, _ref;
+      output = '';
+      _ref = this.rowIDs;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        i = _ref[_i];
+        a = this.alignment[i];
+        genomeID = a['genome'];
+        g = genomes.genome(genomeID);
+        if (g.visible) {
+          name = g.viewname;
+          if ((this.locusData != null) && (this.locusData[i] != null)) {
+            name += this.locusData[i];
+          }
+          seq = a['seq'];
+          output += ">" + name + "\n" + seq + "\n";
+        }
+      }
+      return {
+        ext: 'fasta',
+        type: 'text/plain',
+        data: output
+      };
     };
 
     return MsaView;

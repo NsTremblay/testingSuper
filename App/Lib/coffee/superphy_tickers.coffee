@@ -1,30 +1,48 @@
 ###
 
 
- File: superphy_msa.coffee
- Desc: Multiple Sequence Alignment View Class
+ File: superphy_tickers.coffee
+ Desc: Multiple Superphy Ticker Classes. Tickers are single line summaries of current genome data
  Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
- Date: April 9th, 2013
+ Date: April 16th, 2013
  
  
 ###
- 
+
 ###
- CLASS MsaView
+ CLASS TickerTemplate
+ 
+ Template object for tickers. Defines required and
+ common properties/methods. All ticker objects
+ are descendants of the TickerTemplate.
+
+###
+class TickerTemplate
+  constructor: (@parentElem, @flavor='select', @elNum=1) ->
+    @elID = @elName + @elNum
   
- Multiple Sequence Alignment view
+  elNum: 1
+  elName: 'ticker'
+  elID: undefined
+  parentElem: undefined
+  
+  update: (genomes) ->
+    throw new SuperphyError "TickerTemplate method update() must be defined in child class (#{this.flavor})."
+    false # return fail
  
- Always locus-based
- Returns nothing to redirect/select (no click behavior defined)
+###
+ CLASS StxTicker
+  
+ Counts number of each subtype
 
 ###
 
-class MsaView extends ViewTemplate
-  constructor: (@parentElem, @style, @elNum, msaArgs) ->
+class StxView extends TickerTemplate
+  constructor: (@parentElem, @flavor, @elNum, tickerArgs) ->
     
     throw new SuperphyError 'Missing argument. MsaView constructor requires JSON alignment object.' unless msaArgs.length > 0
     
-    alignmentJSON = msaArgs[0]
+    alignmentJSON = tickerArgs[0]
     
     # Additional data to append to node names
     # Keys are genome|locus IDs
@@ -39,87 +57,11 @@ class MsaView extends ViewTemplate
   
   type: 'msa'
   
-  elName: 'genome_msa'
+  elName: 'stx_ticker'
   
-  blockLen: 70
-  
-  nameLen: 25
-  
-  consLine: 'conservation_line'
-  
-  posLine: 'position_line'
-  
-  nuclClasses: { 'A': 'nuclA', 'G': 'nuclG', 'C': 'nuclC', 'T':'nuclT', '*': 'consM', ' ':'consMM', '-':'nuclGAP'}
-  
-  cssClass: 'msa_row_name'
-    
-  
-  # FUNC _formatAlignment
-  # Splits alignment strings into even-length
-  # rows. Called once in constructor since
-  # alignments do not change during lifetime of
-  # of view. Stores final alignment in @alignment
-  #
-  # PARAMS
-  # none
-  # 
-  # RETURNS
-  # boolean 
-  #      
-  _formatAlignment: (alignmentJSON) ->
- 
-    # Loci in alignment
-    @rowIDs = (g for g of alignmentJSON)
-    
-    # Splice out the match line
-    i =  @rowIDs.indexOf(@consLine)
-    throw new SuperphyError 'Alignment Object missing "conservation_line".' unless i >= 0
-    @rowIDs.splice(i,1)
-    
-    # Initialise the alignment data
-    seqLen = alignmentJSON[@rowIDs[0]]['seq'].length
-    @alignment = {};
-    for n in @rowIDs
-      @alignment[n] = {
-        'alignment': [],
-        'seq': alignmentJSON[n]['seq']
-        'genome': alignmentJSON[n]['genome']
-        'locus': alignmentJSON[n]['locus']    
-      }
-      
-    @alignment[@consLine] = { 'alignment': [] }
-    @alignment[@posLine] = { 'alignment': [] }
-    
-    @numBlock = 0
-    for j in [0..seqLen] by @blockLen
-      @numBlock++
-      for n in @rowIDs
-        seq = alignmentJSON[n]['seq']
-        @alignment[n]['alignment'].push(@_formatBlock(seq.substr(j,@blockLen)))
-     
-       # Conservation line 
-       seq = alignmentJSON[@consLine]['seq']
-       @alignment[@consLine]['alignment'].push(@_formatBlock(seq.substr(j,@blockLen)))
-       # Position Line
-       pos = j+1
-       posElem = "<td class='msaPosition'>#{pos}</td>"
-       @alignment[@posLine]['alignment'].push(posElem)
-       
-    true
-    
-  _formatBlock: (seq) ->
-    html = '';
-    seq.toUpperCase()
-    
-    for c in [0..seq.length]
-      chr = seq.charAt(c)
-      cls = @nuclClasses[chr]
-      html += "<td class='#{cls}'>#{chr}</td>"
-    
-    html
   
   # FUNC update
-  # Update MSA view
+  # Update Ticker
   #
   # PARAMS
   # genomeController object
@@ -127,7 +69,6 @@ class MsaView extends ViewTemplate
   # RETURNS
   # boolean 
   # 
-  
   update: (genomes) ->
     
     # create or find MSA table

@@ -37,7 +37,7 @@ use lib "$FindBin::Bin/../";
 use Modules::GenomeWarden;
 use Log::Log4perl qw/get_logger :easy/;
 use Carp;
-use Time::HiRes qw( gettimeofday tv_interval );
+use Time::HiRes qw( time );
 use JSON;
 
 #One time use
@@ -57,6 +57,8 @@ sub new {
     my $public_suffix = ' [G]';
     $self->{private_suffix} = $private_suffix;
     $self->{public_suffix} = $public_suffix;
+    
+    $self->{now} = time();
     
 	
 	return $self;
@@ -680,6 +682,10 @@ sub genomeInfo {
 
 sub _runGenomeQuery {
 	my ($self, $public, $username) = @_;
+	
+	#$self->dbixSchema->storage->debug(1);
+	
+	#$self->elapsed_time('Start of meta-data query');
 
 	my %fp_types = (
 		serotype            => 1,
@@ -689,28 +695,57 @@ sub _runGenomeQuery {
 		isolation_location  => 1,
 		isolation_latlng    => 1,
 		isolation_date      => 1,
+		syndrome            => 1,
+	);
+	
+	my %st_types = (
+		stx1_subtype        => 1,
+		stx2_subtype        => 1,
 	);
 
 	# Table and relationship names
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
+	my $feature_relationship_rel_name = 'feature_relationship_objects';
 	my $order_name = { '-asc' => ['featureprops.rank'] };
 	unless($public) {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
+		$feature_relationship_rel_name = 'private_feature_relationship_objects';
 		$order_name = { '-asc' => ['private_featureprops.rank'] };
 	}
 	
 	# Query
-	my $query = {
+#	my $query = {
+#		'type.name'      => 'contig_collection',
+#		'type_2.name'      => { '-in' => [ keys %fp_types ] }
+#    };
+#    my $join = ['type'];
+#    my $prefetch = [
+#	    { 'dbxref' => 'db' },
+#	    { $featureprop_rel_name => 'type' },
+#    ];
+    
+    my $query = {
 		'type.name'      => 'contig_collection',
-		'type_2.name'      => { '-in' => [ keys %fp_types ] }
+		'type_2.name'    => { '-in' => [ keys %fp_types ] },
     };
     my $join = ['type'];
     my $prefetch = [
 	    { 'dbxref' => 'db' },
-	    { $featureprop_rel_name => 'type' },
+	    { $featureprop_rel_name => 'type' }
     ];
+    
+    # Subtypes needs separate query
+    my $query2 = {
+    	'type.name'        => 'part_of',
+		'type_2.name'      => 'allele_fusion',
+		'type_3.name'      => { '-in' => [ keys %st_types ] },
+    };
+    my $join2 = [];
+    my $prefetch2 = [
+	    { $feature_relationship_rel_name  => [ 'type', { 'subject' => [ 'type', { $featureprop_rel_name => 'type' } ] } ] }
+	];
 
 	# Query data in private tables
 	unless($public) {
@@ -720,27 +755,55 @@ sub _runGenomeQuery {
             	{
 					'login.username'     => $username,
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+					'type_2.name'        => { '-in' => [ keys %fp_types ] },
+					
              	},
              	{
 					'upload.category'    => 'public',
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+					'type_2.name'        => { '-in' => [ keys %fp_types ] },
 				}
 			];
 
 			push @$prefetch, 'upload';
+			
+			$query2 = [
+            	{
+					'login.username'     => $username,
+					'type.name'          => 'part_of',
+					'type_2.name'        => 'allele_fusion',
+					'type_3.name'        => { '-in' => [ keys %st_types ] },
+					
+             	},
+             	{
+					'upload.category'    => 'public',
+					'type.name'          => 'part_of',
+					'type_2.name'        => 'allele_fusion',
+					'type_3.name'        => { '-in' => [ keys %st_types ] },
+				}
+			];
+		    push @$prefetch2, 'upload';
+			
 		} else {
 			$query = {
 				'upload.category'    => 'public',
 				'type.name'          => 'contig_collection',
 				'type_2.name'        => { '-in' => [ keys %fp_types ] }
             };
+            
+            $query2 = {
+				'upload.category'    => 'public',
+				'type.name'          => 'part_of',
+				'type_2.name'        => 'allele_fusion',
+				'type_3.name'        => { '-in' => [ keys %st_types ] },
+            };
         }
 
         push @$join, { 'upload' => { 'permissions' => 'login'} };
+        push @$join2, { 'upload' => { 'permissions' => 'login'} };
     }
 
+	#$self->elapsed_time('Begin query 1');
     my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
 		$query,	
 		{
@@ -749,10 +812,21 @@ sub _runGenomeQuery {
 			#order_by => $order_name
 		}
      );
+     
+     #$self->elapsed_time('Begin query 2');
+     my $feature_rs2 = $self->dbixSchema->resultset($feature_table_name)->search(
+		$query2,	
+		{
+			join => $join2,
+			prefetch => $prefetch2,
+			#order_by => $order_name
+		}
+     );
 
 	# Create hash from all results
 	my %genome_info;
 	
+	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
 		my %feature_hash;
 		
@@ -803,6 +877,34 @@ sub _runGenomeQuery {
 		
 		$genome_info{$k} = \%feature_hash;
 	}
+	
+	#$self->elapsed_time('Hash query 2');
+	while(my $feature = $feature_rs2->next) {
+		
+		my $k = ($public) ? 'public_' : 'private_';
+		$k .= $feature->feature_id;
+		
+		my $feature_hash = $genome_info{$k};
+		croak "Error: something strange is going on... genome with subtype properties but no other properties.\n" unless defined $feature_hash;
+		
+		my $typing_feature_relationships =  $feature->$feature_relationship_rel_name;
+		while(my $fr = $typing_feature_relationships->next ) {
+			# Iterate through typing sequences linked to genome
+			
+			my $typing_properties = $fr->subject->$featureprop_rel_name;
+			while(my $st = $typing_properties->next){
+				# Iterate through types assigned to sequence
+				my $type = $st->type->name;
+
+				$feature_hash->{$type} = [] unless defined $feature_hash->{$type};
+				push @{$feature_hash->{$type}}, $st->value;
+			}
+			
+		}
+		
+	}
+
+	#$self->elapsed_time('End');
 	
 	return(\%genome_info);
 }
@@ -1474,6 +1576,16 @@ sub getStxData {
 	}
 	
 	return({names => \%subunit_names, stx => \%subtypes});
+}
+
+sub elapsed_time {
+	my ($self, $mes) = @_;
+	
+	my $time = $self->{now};
+	$self->{now} = time();
+	printf("$mes: %.2f\n", $self->{now} - $time); 
+	$self->logger->debug(sprintf("$mes: %.2f", $self->{now} - $time));
+	
 }
 
 

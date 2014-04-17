@@ -70,9 +70,8 @@ class ViewController
     vNum = @views.length + 1
     
     # Create download link
-    downloadElem = jQuery("<a href='#' data-genome-view='#{vNum}'>Download</a>")
+    downloadElem = jQuery("<div class='download-view'><a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a></div>")
     downloadElem.click (e) ->
-      #e.preventDefault
       viewNum = parseInt(@.dataset.genomeView)
       data = viewController.downloadViews(viewNum)
       @.href = data.href
@@ -87,19 +86,19 @@ class ViewController
     
     if viewType is 'list'
       # New list view
-      listView = new ListView(elem, clickStyle, vNum)
+      listView = new ListView(elem, clickStyle, vNum, viewArgs)
       listView.update(@genomeController)
       @views.push listView
       
     else if viewType is 'tree'
       # New tree view
-      treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
+      treeView = new TreeView(elem, clickStyle, vNum, viewArgs)
       treeView.update(@genomeController)
       @views.push treeView
       
     else if viewType is 'msa'
       # New multiple sequence alignment view
-      msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
+      msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
       msaView.update(@genomeController)
       @views.push msaView
       
@@ -127,9 +126,14 @@ class ViewController
     return true # return success
   
   select: (g, checked) ->
-    @genomeController.select(g, checked)
     
-    v.select(g, checked) for v in @views
+    if @actionMode is 'single_select'
+      @redirect(g)
+      
+    else
+      @genomeController.select(g, checked)
+    
+      v.select(g, checked) for v in @views
  
     true
     
@@ -234,7 +238,10 @@ class ViewController
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+                                                    
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
+    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
     '</fieldset>'+
     '</form>'+
     '</div>'
@@ -748,10 +755,23 @@ class ViewTemplate
 ###
  CLASS ListView
  
- Genome list 
+ Genome list
+ 
+ Always genome-based
+ Returns genome ID to redirect/select when genome list item is clicked
 
 ###
 class ListView extends ViewTemplate
+  constructor: (@parentElem, @style, @elNum, listArgs) ->
+    
+    # Additional data to append to node names
+    # Keys are genome IDs
+    if listArgs? and listArgs[0]?
+      @genomeData = listArgs[0]
+      
+    # Call default constructor - creates unique element ID                  
+    super(@parentElem, @style, @elNum)
+  
   type: 'list'
   
   elName: 'genome_list'
@@ -777,10 +797,8 @@ class ListView extends ViewTemplate
    
     # append genomes to list
     t1 = new Date()
-    @_appendGenomes(listElem, genomes.pubVisible, genomes.public_genomes, @style)
-    listElem.append ->
-      "<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>"
-    @_appendGenomes(listElem, genomes.pvtVisible, genomes.private_genomes, @style)
+    @_appendGenomes(listElem, genomes.pubVisible, genomes.public_genomes, @style, false)
+    @_appendGenomes(listElem, genomes.pvtVisible, genomes.private_genomes, @style, true)
     t2 = new Date()
     
     ft = t2-t1
@@ -788,28 +806,42 @@ class ListView extends ViewTemplate
     
     true # return success
   
-  _appendGenomes: (el, visibleG, genomes, style) ->
+  _appendGenomes: (el, visibleG, genomes, style, priv) ->
     
     # View class
     cls = @cssClass()
     
+    # Only append genomes in locus dataset
+    if @genomeData?
+      dataObj = @genomeData
+      visibleG = visibleG.filter (i) ->
+        found = i of dataObj
+        found
+        
+    if priv && visibleG.length
+      el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>")
+      
     for g in visibleG
       
       thiscls = cls
       thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
       
+      name = genomes[g].viewname
+      if @genomeData?
+        name += @genomeData[g]
+      
       if style == 'redirect'
         # Links
         
         # Create elements
-        listEl = jQuery("<li class='#{thiscls}'>"+genomes[g].viewname+'</li>')
+        listEl = jQuery("<li class='#{thiscls}'>#{name}</li>")
         actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
         
         # Set behaviour
         actionEl.click (e) ->
           e.preventDefault()
           gid = @.dataset.genome
-          viewController.redirect(gid)
+          viewController.select(gid, true)
         
         # Append to list
         listEl.append(actionEl)
@@ -822,7 +854,7 @@ class ListView extends ViewTemplate
         checked = ''
         checked = 'checked' if genomes[g].isSelected
         listEl = jQuery("<li class='#{thiscls}'></li>")
-        labEl = jQuery("<label class='checkbox'>"+genomes[g].viewname+"</label>")
+        labEl = jQuery("<label class='checkbox'>#{name}</label>")
         actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
         
         # Set behaviour
@@ -904,7 +936,17 @@ class ListView extends ViewTemplate
         
         
     true # success
-    
+  
+  # FUNC select
+  # Change style to indicate its selection status
+  #
+  # PARAMS
+  # genome object from GenomeController list
+  # boolean indicating if selected/unselected
+  # 
+  # RETURNS
+  # boolean 
+  #       
   select: (genome, isSelected) ->
     
     itemEl = null
@@ -1102,6 +1144,9 @@ class GenomeController
     isolation_source: false
     isolation_date: false
     accession: false
+    syndrome: false
+    stx1_subtype: false
+    stx2_subtype: false
     
   metaMap:
     'strain': 'Strain',
@@ -1110,6 +1155,9 @@ class GenomeController
     'isolation_source': 'Source',
     'isolation_date': 'Date of isolation',
     'accession': 'Accession ID'
+    'syndrome': 'Symptom / Disease',
+    'stx1_subtype': 'Stx1 Subtype',
+    'stx2_subtype': 'Stx2 Subtype'
     
   publicRegexp: new RegExp('^public_')
   privateRegexp: new RegExp('^private_')
@@ -1434,7 +1482,7 @@ class GenomeController
     
     # Add visible meta-data to label is specific order
     # Array values
-    mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date']
+    mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype']
     for t in mtypes
       lab.push (genome[t] ? [na]).join(' ') if visibleMeta[t]
     
@@ -1446,12 +1494,14 @@ class GenomeController
     
   updateMeta: (option, checked) ->
     
+    console.log(option)
+    
     unless @visibleMeta[option]?
-      throw new SuperphyError 'unrecognized option in GenomeController method updateVisibleMeta()'
+      throw new SuperphyError 'unrecognized option in GenomeController method updateMeta()'
       return false
       
     unless checked is true or checked is false
-      throw new SuperphyError 'invalid checked argument in GenomeController method updateVisibleMeta()'
+      throw new SuperphyError 'invalid checked argument in GenomeController method updateMeta()'
       return false
     
     # toggle value
@@ -1601,4 +1651,3 @@ trimInput = (str, field) ->
   else
     alert("Error: #{field} is empty.")
     return null
-        

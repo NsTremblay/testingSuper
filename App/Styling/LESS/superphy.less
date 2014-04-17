@@ -11,6 +11,8 @@
 
 
 @import "superphy_tree";
+@import "superphy_msa";
+@import "superphy_list";
 @import "search_utilities";
 
 /** Colors ********************************/
@@ -45,16 +47,16 @@
 }
 
 /** Styles ********************************/
+  
 body {
-  padding-top:70px; 
+  padding-top:70px;
+  padding-bottom: 70px;
 }
-
 
 // Page title
 .title {
   margin:10px;
   padding:10px;
-  
 }
 
 .titleText {
@@ -69,3 +71,20 @@ body {
   .titleText;
   color:@title-color2;
 }
+
+// Download link in Views
+.download-view {
+  margin-left: auto;
+  margin-right: 0;
+  margin-top: 5px;
+  margin-bottom: 5px;
+}
+.download-view-link {
+  clear: both;
+  float: right;
+  padding-top: 0px;
+  padding-bottom: 10px;
+  padding-left: 40px;
+  padding-right: 10px;
+}
+

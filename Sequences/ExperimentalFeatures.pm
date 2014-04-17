@@ -4259,7 +4259,7 @@ sub handle_typing_sequence {
 	my $seq = $typing_dataset->{seq};
 	my $seqlen = length($seq);
 	my $type = $self->feature_types('allele_fusion');
-	$self->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
+	$self->print_f($curr_feature_id,$organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
 	$self->nextfeature($is_public, '++');
 		
 }

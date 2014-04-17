@@ -190,19 +190,34 @@ sub _genomeStx {
 						my $h = "$g|".$hr->{allele};
 						my $allele_data = "";
 						$allele_data .= "(copy $copy)" if $copy > 1;
-						$allele_data .= " - Stx".$hr->{subtype};
+						my $st = $hr->{subtype};
+						if($st eq 'multiple') {
+							$st = 'multiple subtypes predicted'
+						} else {
+							$st = " - Stx".$st;
+						}
+						$allele_data .= $st;
 						$stx_alleles{$h} = $allele_data;
 						$copy++;
 					}
 					$num = @subt;
-					$stx_lists{$subu}->{$g} = join(',',@subt);
+					
+					for(my $i=0; $i < @subt; $i++) {
+						if($subt[$i] eq 'multiple') {
+							$subt[$i] = 'multiple subtypes predicted'
+						} else {
+							$subt[$i] = 'Stx'.$subt[$i]
+						}
+					}
+					
+					$stx_lists{$subu}->{$g} = ' - '.join(', ',@subt);
 				} else {
 					# genome does not have stx for this ref gene
-					$stx_lists{$subu}->{$g} = 'NA';
+					$stx_lists{$subu}->{$g} = ' - NA';
 				}
 			} else {
 				# genome has no stx
-				$stx_lists{$subu}->{$g} = 'NA';
+				$stx_lists{$subu}->{$g} = ' - NA';
 			}
 			
 			$stx_counts{$subu} += $num;
