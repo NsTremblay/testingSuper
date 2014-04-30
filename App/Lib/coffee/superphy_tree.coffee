@@ -27,7 +27,6 @@ class TreeView extends ViewTemplate
   constructor: (@parentElem, @style, @elNum, treeArgs) ->
     
     throw new SuperphyError 'Missing argument. TreeView constructor requires JSON tree object.' unless treeArgs.length > 0
-    
     @root = @trueRoot = treeArgs[0]
     
     @dim={w: 500, h: 800}
@@ -114,7 +113,6 @@ class TreeView extends ViewTemplate
   nodeId: 0
   
   duration: 1000
-  
   
   
   # FUNC update
@@ -592,13 +590,16 @@ class TreeView extends ViewTemplate
         
         node.viewname = g.viewname
         
-        # Append locus data
-        if @locusData? && @locusData[node.name]?
-          node.viewname += @locusData[node.name]
-        
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
+        
+        # Append locus data
+        # This will overwrite assignedGroup
+        if @locusData?
+          ld = @locusData.locusNode(node.name)
+          node.viewname += ld[0]
+          node.assignedGroup = ld[1]
         
       else
         # Mask filtered node

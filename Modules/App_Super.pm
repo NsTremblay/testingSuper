@@ -17,6 +17,7 @@ use Carp qw/croak carp/;
 use HTML::Template;
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
+with 'Roles::CVMemory';
 use Log::Log4perl qw(:easy);
 
 # get script location via File::Basename

@@ -36,10 +36,21 @@
 		      	
 		      	<p>The following provide a summary of SuperPhy Stx1 predictions:</p> 
 		      	<ul>
+		      		<li><a href="#stx1_summary">Table</a> of counts for each Stx1 subtype</li>
 		      		<li><a href="#stx1_list">List</a> of Stx1 subtype predictions for each genome</li>
 		      		<li><a href="#stx1_tree">Phylogenetic Tree</a> of Stx1 holotoxin DNA sequences</li>
 		      		<li><a href="#stx1_msa">Multiple Sequence Alignment</a> of of Stx1 holotoxin DNA sequences</li>
 		      	</ul>
+		      	
+		      	<hr/>
+		      	
+		      	<div id='stx1_summary'>
+		      		<h5>Summary of Stx1 Numbers</h5>
+		      		<div id='stx1_summary_table'>
+		      			
+		      		</div>
+		      		<p class='footnote'>NA = no subtype assigned</p>
+		      	</div>
 		      	
 		      	<hr/>
 		      
@@ -72,10 +83,20 @@
 		      	
 		      	<p>The following provide a summary of SuperPhy Stx2 predictions:</p> 
 		      	<ul>
+		      		<li><a href="#stx2_summary">Table</a> of counts for each Stx2 subtype</li>
 		      		<li><a href="#stx2_list">List</a> of Stx2 subtype predictions for each genome</li>
 		      		<li><a href="#stx2_tree">Phylogenetic Tree</a> of Stx2 holotoxin DNA sequences</li>
 		      		<li><a href="#stx2_msa">Multiple Sequence Alignment</a> of of Stx2 holotoxin DNA sequences</li>
 		      	</ul>
+		      	
+		      	<hr/>
+		      	
+		      	<div id='stx2_summary'>
+		      		<h5>Summary of Stx1 Numbers</h5>
+		      		<div id='stx2_summary_table'>
+		      			
+		      		</div>
+		      	</div>
 		      	
 		      	<hr/>
 		      
@@ -108,16 +129,16 @@
 	</div>
 
 	<script type="text/javascript">	
-		// Copy of superphy_msa.lessInitialize JSON data objcts
+		// Initialise JSON data objects
 		var stx = <TMPL_VAR stx_json>;
-		var locus_data = <TMPL_VAR locus_json>;
 		var public_genomes = <TMPL_VAR public_genomes>;
 		var private_genomes = <TMPL_VAR private_genomes>;
 		
 		var stx1_subunit_tree = null;
 		var stx2_subunit_tree = null;
 		var stx1_subunit_msa = null;
-		var stx2_subunit_msa = null; 
+		var stx2_subunit_msa = null;
+		var genome_subset = null;
 		<TMPL_IF stx1_subunit_tree>
 		stx1_subunit_tree = <TMPL_VAR stx1_subunit_tree>;
 		</TMPL_IF>
@@ -130,37 +151,48 @@
 		<TMPL_IF stx2_subunit_msa>
 		stx2_subunit_msa = <TMPL_VAR stx2_subunit_msa>;
 		</TMPL_IF>
+		<TMPL_IF genomes_json>
+		genome_subset = <TMPL_VAR genomes_json>;
+		</TMPL_IF>
 		
-		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info');
+		// Data objects
+		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
+		var locusData1 = new LocusController(stx['stx1_subunit']);
+		var locusData2 = new LocusController(stx['stx2_subunit']);
 		
-		viewController.createView('list', $('#stx1_list'), stx['stx1_subunit']);
-		
-		viewController.createView('list', $('#stx2_list'), stx['stx2_subunit']);
+		// View objects
+		viewController.createView('list', $('#stx1_list'), locusData1);
+		viewController.createView('list', $('#stx2_list'), locusData2);
 		
 		if(stx1_subunit_msa) {
 			$('#stx1_msa_psa').hide();
-			viewController.createView('msa', $('#stx1_msa'), stx1_subunit_msa, locus_data);
+			viewController.createView('msa', $('#stx1_msa'), stx1_subunit_msa, locusData1);
 		}
 		if(stx2_subunit_msa) {
 			$('#stx2_msa_psa').hide();
-			viewController.createView('msa', $('#stx2_msa'), stx2_subunit_msa, locus_data);
+			viewController.createView('msa', $('#stx2_msa'), stx2_subunit_msa, locusData2);
 		}
 		if(stx1_subunit_tree) {
 			$('#stx1_tree_psa').hide();
-			viewController.createView('tree', $('#stx1_tree'), stx1_subunit_tree, locus_data);
+			viewController.createView('tree', $('#stx1_tree'), stx1_subunit_tree, locusData1);
 		}
 		if(stx2_subunit_tree) {
 			$('#stx2_tree_psa').hide();
-			viewController.createView('tree', $('#stx2_tree'), stx2_subunit_tree, locus_data);
+			viewController.createView('tree', $('#stx2_tree'), stx2_subunit_tree, locusData2);
 		}
 		
+		// Search forms
 		viewController.metaForm($('#meta-display-form'));
 		viewController.filterForm($('#filter-form'));
 		
-		//viewController.createView('tree', $('#strains_tree'), tree);
+		// Ticker objects
+		viewController.createTicker('locus', $("#stx1_summary_table"), locusData1);
+		viewController.createTicker('locus', $("#stx2_summary_table"), locusData2);
 		
 	</script>
+	
 	<TMPL_INCLUDE NAME="footer2.tmpl">
+	
 </body>
 
 </html>

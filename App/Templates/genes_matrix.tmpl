@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<link rel="stylesheet" href="/App/Styling/css/genes_matrix.css">
+	
+</head>
+
+<body>
+	<TMPL_INCLUDE NAME="nav_bar2.tmpl">
+
+	<div class="container" >
+		<div class="title">
+			<h1><span class="title_part1">VIRULENCE & AMR GENE</span> <span class="title_part2">DETECTION</span></h1>
+		</div>
+		<p>Curated virulence factor and antimicrobial resistance (AMR) genes are detected in the individual genomes using the BLAST-based module in Panseq.
+		</p>
+		
+		
+		<TMPL_INCLUDE NAME="search_utilities.tmpl">
+		
+		<div>
+			
+			<hr/>
+			
+			<div id="vf_results">
+				<h4>Detected Virulence Factor Alleles</h4>
+				<div id="vf_result_matrix">
+				</div>
+			</div>
+		      	
+		   	<hr/>
+		   	
+		    
+		    <div id="amr_results">
+				<h4>Detected AMR Alleles</h4>
+				<div id="amr_result_matrix">
+				</div>
+			</div>
+			
+		</div>
+	</div>
+
+	<script type="text/javascript">	
+		// Initialise JSON data objects
+		var alleles = <TMPL_VAR allele_json>;
+		var genes = <TMPL_VAR gene_json>;
+		var public_genomes = <TMPL_VAR public_genomes>;
+		var private_genomes = <TMPL_VAR private_genomes>;
+		var genome_subset = null;
+		
+		<TMPL_IF genome_json>
+		genome_subset = <TMPL_VAR genome_json>;
+		</TMPL_IF>
+		
+		// Data objects
+		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
+		
+		// Views
+		matrixObj = { 
+			nodes: genes.vf,
+			links: alleles
+		};
+		viewController.createView('matrix', $('#vf_result_matrix'), matrixObj);
+		
+		// Search forms
+		viewController.metaForm($('#meta-display-form'));
+		viewController.filterForm($('#filter-form'));
+		
+		
+	</script>
+	
+	<TMPL_INCLUDE NAME="footer2.tmpl">
+	
+</body>
+
+</html>

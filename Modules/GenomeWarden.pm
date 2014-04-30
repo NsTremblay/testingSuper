@@ -72,9 +72,10 @@ sub _initialize {
     my %params = @_;
 
     # Set all parameters
-    
     $self->schema($params{schema});
     croak "Error: 'schema' is a required parameter" unless $self->schema;
+    $self->cvmemory($params{cvmemory});
+    croak "Error: 'cvmemory' is a required parameter" unless $self->cvmemory;
     $self->requestingUser($params{user}) if $params{user};
     
     # Has subset been requested?
@@ -177,13 +178,24 @@ sub requestingUser {
 
 =head2 schema
 
-DBIX::Class schema pointer
+DBIx::Class schema pointer
 
 =cut
 
 sub schema {
 	my $self = shift;
 	$self->{'_schema'} = shift // return $self->{'_schema'};
+}
+
+=head2 cvmemory
+
+cvterm hashref
+
+=cut
+
+sub cvmemory {
+	my $self = shift;
+	$self->{'_cvmemory'} = shift // return $self->{'_cvmemory'};
 }
 
 =head2 subset
@@ -315,6 +327,20 @@ sub genomeLookup {
 	return(\%tmp);
 }
 
+=head2 genomeList
+
+Returns array-ref of genome labels (e.g. public_123456). 
+
+=cut
+
+sub genomeList {
+	my $self = shift;
+	
+	my $tmp = $self->genomeLookup(@_);
+	
+	return([keys %$tmp]);
+}
+
 
 
 =head2 _publicGenomes
@@ -329,7 +355,7 @@ sub _publicGenomes {
 	my $subset_ids = shift;
 	
 	my $select_stmt = {
-		'type.name' =>  'contig_collection'
+		'type_id' =>  $self->cvmemory->{'contig_collection'}
 	};
 	if($subset_ids) {
 		croak unless ref($subset_ids) eq 'ARRAY';
@@ -342,7 +368,7 @@ sub _publicGenomes {
 		{
 			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
 			columns => [qw/feature_id uniquename name dbxref.accession/],
-			join => ['type' , 'dbxref'],
+			join => ['dbxref'],
 			order_by    => {-asc => ['me.uniquename']}
 	    }
 	);
@@ -383,11 +409,11 @@ sub _privateGenomes {
 		my $select_stmt = [
 			{
 	             'login.username' => $username,
-	             'type.name'      => 'contig_collection',
+	             'type_id' =>  $self->cvmemory->{'contig_collection'}
 			},
 			{
 				'upload.category' => 'public',
-				'type.name'       => 'contig_collection',
+				'type_id' =>  $self->cvmemory->{'contig_collection'}
 			},
 		];
 		
@@ -397,12 +423,12 @@ sub _privateGenomes {
 			$select_stmt = [
 				{
 		             'login.username' => $username,
-		             'type.name'      => 'contig_collection',
+		             'type_id' =>  $self->cvmemory->{'contig_collection'},
 		             'feature_id'     => { '-in' => $subset_ids }
 				},
 				{
 					'upload.category' => 'public',
-					'type.name'       => 'contig_collection',
+					'type_id' =>  $self->cvmemory->{'contig_collection'},
 					'feature_id'     => { '-in' => $subset_ids }
 				},
 			];
@@ -415,8 +441,7 @@ sub _privateGenomes {
 				columns => [qw/feature_id uniquename/],
 				'+columns' => [qw/upload.category login.username/],
 				join => [
-					{ 'upload' => { 'permissions' => 'login'} },
-					'type'
+					{ 'upload' => { 'permissions' => 'login'} }
 				]
 
 			}
@@ -453,7 +478,7 @@ sub _privateGenomes {
 		# Return user-uploaded public genome names as list of hash-refs
 		my $select_stmt = {
 			'upload.category' => 'public',
-			'type.name'       => 'contig_collection',
+			'type_id' =>  $self->cvmemory->{'contig_collection'}
 		};
 		
 		if($subset_ids) {
@@ -468,7 +493,6 @@ sub _privateGenomes {
 	            columns => [qw/feature_id uniquename/],
 	            join => [
 					{ 'upload' => 'permissions' },
-					'type'
 				]
 	
 	        }

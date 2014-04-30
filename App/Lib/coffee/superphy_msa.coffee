@@ -28,6 +28,7 @@ class MsaView extends ViewTemplate
     
     # Additional data to append to node names
     # Keys are genome|locus IDs
+    @locusData = null
     if msaArgs[1]?
       @locusData = msaArgs[1]
       
@@ -52,8 +53,8 @@ class MsaView extends ViewTemplate
   nuclClasses: { 'A': 'nuclA', 'G': 'nuclG', 'C': 'nuclC', 'T':'nuclT', '*': 'consM', ' ':'consMM', '-':'nuclGAP'}
   
   cssClass: 'msa_row_name'
-    
   
+
   # FUNC _formatAlignment
   # Splits alignment strings into even-length
   # rows. Called once in constructor since
@@ -173,8 +174,8 @@ class MsaView extends ViewTemplate
         tmp[i] = name
         
         # Append locus data
-        if @locusData? && @locusData[i]?
-          name += @locusData[i]
+        if @locusData?
+          name += @locusData.locusString(i)
         
         # Class data for row name
         thiscls = @cssClass

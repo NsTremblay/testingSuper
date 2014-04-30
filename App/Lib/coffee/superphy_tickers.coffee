@@ -18,46 +18,41 @@
 
 ###
 class TickerTemplate
-  constructor: (@parentElem, @flavor='select', @elNum=1) ->
+  constructor: (@parentElem, @elNum=1) ->
     @elID = @elName + @elNum
   
   elNum: 1
   elName: 'ticker'
   elID: undefined
   parentElem: undefined
+  cssClass: undefined
+  flavor: undefined
   
   update: (genomes) ->
     throw new SuperphyError "TickerTemplate method update() must be defined in child class (#{this.flavor})."
     false # return fail
  
 ###
- CLASS StxTicker
+ CLASS MetaTicker
   
- Counts number of each subtype
+ Counts number of a specified meta-data item
 
 ###
 
-class StxView extends TickerTemplate
-  constructor: (@parentElem, @flavor, @elNum, tickerArgs) ->
+class MetaTicker extends TickerTemplate
+  constructor: (@parentElem, @elNum, tickerArgs) ->
     
-    throw new SuperphyError 'Missing argument. MsaView constructor requires JSON alignment object.' unless msaArgs.length > 0
+    super(@parentElem, @elNum)
     
-    alignmentJSON = tickerArgs[0]
+    throw new SuperphyError 'Missing argument. MetaTicker constructor requires a string indicating meta-data type.' unless tickerArgs.length == 1
     
-    # Additional data to append to node names
-    # Keys are genome|locus IDs
-    if msaArgs[1]?
-      @locusData = msaArgs[1]
-      
-    # Call default constructor - creates unique element ID                  
-    super(@parentElem, @style, @elNum)
+    @metaType = tickerArgs[0]
     
-    # Format alignment object into rows of even length
-    @_formatAlignment(alignmentJSON)
   
-  type: 'msa'
-  
-  elName: 'stx_ticker'
+  elName: 'meta_ticker'
+  cssClass: 'superphy_ticker_table'
+  flavor: 'meta'
+  noDataLabel: 'Not available'
   
   
   # FUNC update
@@ -72,181 +67,154 @@ class StxView extends TickerTemplate
   update: (genomes) ->
     
     # create or find MSA table
-    msaElem = jQuery("##{@elID}")
-    if msaElem.length
-      msaElem.empty()
-      msaElem.append('<tbody></tbody>')
+    tickerElem = jQuery("##{@elID}")
+    if tickerElem.length
+      tickerElem.empty()
     else      
-      msaElem = jQuery("<table id='#{@elID}'><tbody></tbody></table>")
-      jQuery(@parentElem).append(msaElem)
+      tickerElem = jQuery("<table id='#{@elID}' class='#{@cssClass}'></table>")
+      jQuery(@parentElem).append(tickerElem)
    
-    # append alignment rows to table
     t1 = new Date()
     
-    # obtain current names and sort
-    @_appendRows(msaElem, genomes)
+    # Update totals
+    countObj = {}
+    @_updateCounts(countObj, genomes.pubVisible, genomes.public_genomes)
+    @_updateCounts(countObj, genomes.pvtVisible, genomes.private_genomes)
+    
+    # Add to table
+    headElem = jQuery('<thead><tr></tr></thead>').appendTo(tickerElem)
+    bodyElem = jQuery('<tbody><tr></tr></tbody>').appendTo(tickerElem)
+    headRow = jQuery('<tr></tr>').appendTo(headElem)
+    bodyRow = jQuery('<tr></tr>').appendTo(bodyElem)
+    
+    ks = (k for k of countObj).sort(a, b) ->
+      if a is @noDataLabel
+        return 1
+      if b is @noDataLabel
+        return -1
+      
+      if a < b
+        return -1
+      else if a > b
+        return 1
+      else
+        return 0
+      
+        
+    for k in ks
+      v = countObj[k]
+      headRow.append("<th>#{k}</th>")
+      bodyRow.append("<td>#{v}</td>") 
     
     t2 = new Date()
     
     ft = t2-t1
-    console.log('MsaView update elapsed time: '+ft)
+    console.log('MetaTicker update elapsed time: '+ft)
    
     true # return success
     
 
-  _appendRows: (el, genomes) ->
+  _updateCounts: (counts, visibleG, genomes) ->
     
-    genomeElem = {}
-    visibleRows = []
-    tmp = {}
+    meta = @metaType
     
-    for i in @rowIDs
-      a = @alignment[i]
-      genomeID = a['genome']
-      g = genomes.genome(genomeID)
+    console.log('META'+meta)
+
+    for g in visibleG
       
-      if g.visible
-        
-        visibleRows.push i
-        
-        # MSA row name
-        name = g.viewname
-        tmp[i] = name
-        
-        # Append locus data
-        if @locusData? && @locusData[i]?
-          name += @locusData[i]
-        
-        # Class data for row name
-        thiscls = @cssClass
-        thiscls = @cssClass+' '+g.cssClass if g.cssClass?
-        
-        nameCell = "<td class='#{thiscls}' data-genome='#{genomeID}'>#{name}</td>";
-        
-        genomeElem[i] = nameCell
-        
-    # Sort alphabetically
-    visibleRows.sort (a,b) ->
-      aname = tmp[a]
-      bname = tmp[b]
-      if aname > bname then 1 else if aname < bname then -1 else 0
-    
-    # Spit out each block row
-    for j in [0...@numBlock]
-      for i in visibleRows
-        rowEl = jQuery('<tr></tr>')
-        rowEl.append(genomeElem[i] + @alignment[i]['alignment'][j])
-        el.append(rowEl)
-      # Add conservation row and position row
-      rowEl = jQuery('<tr></tr>')
-      rowEl.append('<td></td>' + @alignment[@consLine]['alignment'][j])
-      el.append(rowEl)
-      rowEl = jQuery('<tr></tr>')
-      rowEl.append(@alignment[@posLine]['alignment'][j])
-      el.append(rowEl)
+      if genomes[g][meta]?
+        if counts[genomes[g][meta]]?
+          counts[genomes[g][meta]]++
+        else
+          counts[genomes[g][meta]] = 1
+      else
+        if counts[@noDataLabel]?
+          counts[@noDataLabel]++
+        else
+          counts[@noDataLabel] = 1
       
     true
     
-  # FUNC updateCSS
-  # Change CSS class for selected genomes to match underlying genome properties
+
+###
+ CLASS LocusTicker
+  
+ Counts number of a specified meta-data item
+
+###
+
+class LocusTicker extends TickerTemplate
+  constructor: (@parentElem, @elNum, tickerArgs) ->
+    
+    super(@parentElem, @elNum, @elNum)
+    
+    throw new SuperphyError 'Missing argument. LocusTicker constructor requires a LocusController object.' unless tickerArgs.length == 1
+    
+    @locusData = tickerArgs[0]
+    
+  
+  elName: 'locus_ticker'
+  cssClass: 'superphy_ticker_table'
+  flavor: 'locus'
+  noDataLabel: 'NA'
+  
+  
+  # FUNC update
+  # Update Ticker
   #
   # PARAMS
-  # simple hash object with private and public list of genome Ids to update
   # genomeController object
   # 
   # RETURNS
   # boolean 
-  #      
-  updateCSS: (gset, genomes) ->
+  # 
+  update: (genomes) ->
     
-    # Retrieve list DOM element    
-    msaEl = jQuery("##{@elID}")
-    throw new SuperphyError "DOM element for Msa view #{@elID} not found. Cannot call MsaView method updateCSS()." unless msaEl? and msaEl.length
+    # create or find MSA table
+    tickerElem = jQuery("##{@elID}")
+    if tickerElem.length
+      tickerElem.empty()
+    else      
+      tickerElem = jQuery("<table id='#{@elID}' class='#{@cssClass}'></table>")
+      jQuery(@parentElem).append(tickerElem)
+   
+    t1 = new Date()
     
-    # append genomes to list
-    @_updateGenomeCSS(listEl, gset.public, genomes.public_genomes) if gset.public?
+    # Update totals
+    countObj = @locusData.count(genomes)
     
-    @_updateGenomeCSS(listEl, gset.private, genomes.private_genomes) if gset.private?
+    # Add to table
+    headElem = jQuery('<thead></thead>').appendTo(tickerElem)
+    bodyElem = jQuery('<tbody></tbody>').appendTo(tickerElem)
+    headRow = jQuery('<tr></tr>').appendTo(headElem)
+    bodyRow = jQuery('<tr></tr>').appendTo(bodyElem)
     
+    ks = (k for k of countObj)
+    ks.sort (a, b) ->
+      if a is @noDataLabel
+        return 1
+      if b is @noDataLabel
+        return -1
+      
+      if a < b
+        return -1
+      else if a > b
+        return 1
+      else
+        return 0
+      
+        
+    for k in ks
+      v = countObj[k]
+      headRow.append("<th>#{k}</th>")
+      bodyRow.append("<td>#{v}</td>") 
+    
+    t2 = new Date()
+    
+    ft = t2-t1
+    console.log('LocusTicker update elapsed time: '+ft)
+   
     true # return success
-    
-  
-  _updateGenomeCSS: (el, changedG, genomes) ->
-    
-    # View class
-    cls = @cssClass()
-    
-    for g in changedG
-      
-      thiscls = cls
-      thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-     
-      # Find element
-      descriptor = "td[data-genome='#{g}']"
-      itemEl = el.find(descriptor)
-      
-      unless itemEl? and itemEl.length
-        throw new SuperphyError "Msa element for genome #{g} not found in MsaView #{@elID}"
-        return false
-      
-      console.log("Updating class to #{thiscls}")
-      liEl = itemEl.parents().eq(1)
-      liEl.attr('class', thiscls)
-     
-    true # success
-  
-  # FUNC select
-  # No function in a MSA, always returns true
-  #
-  # RETURNS
-  # boolean 
-  #        
-  select: (genome, isSelected) ->
-    
-    true # success
-  
-  # FUNC dump
-  # Generate fasta file of visible sequences in MSA
-  #
-  # PARAMS
-  # genomeController object
-  # 
-  # RETURNS
-  # object containing:
-  #   ext[string] - a suitable file extension (e.g. csv)
-  #   type[string] - a MIME type
-  #   data[string] - a string containing data in final format
-  #      
-  dump: (genomes) ->
-    
-    # Get the sequences and headers
-    output = ''
-    
-    for i in @rowIDs
-      a = @alignment[i]
-      genomeID = a['genome']
-      g = genomes.genome(genomeID)
-      
-      if g.visible
-        
-        # Fasta header
-        name = g.viewname
-        
-        if @locusData? && @locusData[i]?
-          name += @locusData[i]
-          
-        # Fasta sequence
-        seq = a['seq']
-        output += ">#{name}\n#{seq}\n"
-        
-        
-    return {
-      ext: 'fasta'
-      type: 'text/plain'
-      data: output 
-    }
-    
-  
     
     
   

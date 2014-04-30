@@ -1,20 +1,28 @@
 /*
  
- File: superphy_tree.less
- Desc: Stylesheet for TreeView.
+ File: superphy_matrix.less
+ Desc: Stylesheet for MatrixView.
  Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
- Date: March 27th, 2013
+ Date: April 27th, 2013
  
  * */
 
+/** Background ****************************/
+.matrixBackground {
+    fill: #EEEEEE;
+}
 
 
-/** Text **********************************/
-@textfont: 12px sans-serif;
-@selectedfont: italic bold 12px sans-serif;
+/*line {
+    stroke: #FFFFFF;
+}
 
 
-/** Nodes *********************************/ 
+
+text.matrixActive {
+  fill: #FF0000;
+}
+
 
 // Node style mixins
 .nodeShape(@color: steelblue, @fill: #fff, @width: 1.5px) {
@@ -85,10 +93,9 @@
 // Define color schemes for up to 10 groups
 .treenodeGroupConstructor(@group-num);
 
-/** Links *********************************/ 
 
 .treelink {
   fill: none;
   stroke: #ccc;
   stroke-width: 1.5px;
-}
+}*/

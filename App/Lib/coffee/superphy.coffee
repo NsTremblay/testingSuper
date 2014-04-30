@@ -41,6 +41,7 @@ class ViewController
   # View objects in window
   views: []
   groups: []
+  tickers: []
   
   # Main action triggered by clicking on genome
   actionMode: false
@@ -49,11 +50,11 @@ class ViewController
   genomeController: undefined
   
   # Methods
-  init: (publicGenomes, privateGenomes, @actionMode, @action) ->
+  init: (publicGenomes, privateGenomes, @actionMode, @action, subset=null) ->
     unless @actionMode is 'single_select' or @actionMode is 'multi_select' or @actionMode is 'two_groups'
       throw new SuperphyError 'Unrecognized actionMode in ViewController init() method.'
        
-    @genomeController = new GenomeController(publicGenomes, privateGenomes)
+    @genomeController = new GenomeController(publicGenomes, privateGenomes, subset)
     
     # Reset view and group lists
     @views = []
@@ -70,7 +71,8 @@ class ViewController
     vNum = @views.length + 1
     
     # Create download link
-    downloadElem = jQuery("<div class='download-view'><a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a></div>")
+    downloadElemDiv = jQuery("<div class='download-view'></div>")
+    downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
     downloadElem.click (e) ->
       viewNum = parseInt(@.dataset.genomeView)
       data = viewController.downloadViews(viewNum)
@@ -78,7 +80,8 @@ class ViewController
       @.download = data.file
       true
     
-    elem.append(downloadElem)
+    downloadElemDiv.append(downloadElem)
+    elem.append(downloadElemDiv)
     
     if @actionMode is 'single_select'
       # single_select behaviour: user clicks on single genome for more info
@@ -101,6 +104,13 @@ class ViewController
       msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
       msaView.update(@genomeController)
       @views.push msaView
+      
+    else if viewType is 'matrix'
+      # New matrix view
+      # Genome list is needed to compute matrix size
+      matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
+      matView.update(@genomeController)
+      @views.push matView
       
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
@@ -158,6 +168,63 @@ class ViewController
     
     # Update views (class, checked, etc)
     v.update(@genomeController) for v in @views
+    
+  createTicker: (tickerType, elem, tickerArgs...) ->
+    
+    # Current view number
+    tNum = @tickers.length + 1
+    
+    if tickerType is 'meta'
+      # New meta ticker
+      metaTicker = new MetaTicker(elem, tNum, tickerArgs)
+      metaTicker.update(@genomeController)
+      @tickers.push metaTicker
+      
+    else if tickerType is 'locus'
+      # New locus ticker
+      locTicker = new LocusTicker(elem, tNum, tickerArgs)
+      locTicker.update(@genomeController)
+      @tickers.push locTicker
+      
+    else
+      throw new SuperphyError 'Unrecognized tickerType in ViewController createTicker() method.'
+      return false
+      
+    return true # return success
+    
+    
+  createGroup: (boxEl, buttonEl) ->
+    
+    # Current view number
+    gNum = @groups.length + 1
+    
+    # New list view
+    grpView = new GroupView(boxEl, 'select', gNum)
+    grpView.update(@genomeController)
+    @groups.push grpView
+    
+    # Add response to button click
+    buttonEl.click (e) ->
+      e.preventDefault()
+      viewController.addToGroup(gNum)
+      
+    return true # return success
+  
+  select: (g, checked) ->
+    
+    if @actionMode is 'single_select'
+      @redirect(g)
+      
+    else
+      @genomeController.select(g, checked)
+    
+      v.select(g, checked) for v in @views
+ 
+    true
+    
+  redirect: (g) ->
+    alert('Genome '+g+' redirected!')
+    true
     
   removeFromGroup: (genomeID, grp) ->
     # Remove single genome from list
@@ -767,7 +834,7 @@ class ListView extends ViewTemplate
     # Additional data to append to node names
     # Keys are genome IDs
     if listArgs? and listArgs[0]?
-      @genomeData = listArgs[0]
+      @locusData = listArgs[0]
       
     # Call default constructor - creates unique element ID                  
     super(@parentElem, @style, @elNum)
@@ -775,6 +842,8 @@ class ListView extends ViewTemplate
   type: 'list'
   
   elName: 'genome_list'
+  
+  locusData: null
   
   # FUNC update
   # Update genome list view
@@ -810,13 +879,6 @@ class ListView extends ViewTemplate
     
     # View class
     cls = @cssClass()
-    
-    # Only append genomes in locus dataset
-    if @genomeData?
-      dataObj = @genomeData
-      visibleG = visibleG.filter (i) ->
-        found = i of dataObj
-        found
         
     if priv && visibleG.length
       el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>")
@@ -827,8 +889,8 @@ class ListView extends ViewTemplate
       thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
       
       name = genomes[g].viewname
-      if @genomeData?
-        name += @genomeData[g]
+      if @locusData?
+        name += @locusData.genomeString(g)
       
       if style == 'redirect'
         # Links
@@ -1127,7 +1189,24 @@ class GroupView extends ViewTemplate
 
 ###
 class GenomeController
-  constructor: (@public_genomes, @private_genomes) ->
+  constructor: (@public_genomes, @private_genomes, subset=null) ->
+    
+    if subset?
+      # Only a subset of all genomes are in use
+      # Probably should be managed on server-side
+      # but this is easier
+      newPub = {}
+      newPri = {}
+      
+      for i in subset
+        
+        if @public_genomes[i]?
+          newPub[i] = @public_genomes[i]
+        else if @private_genomes[i]?
+          newPri[i] = @private_genomes[i]
+          
+      @public_genomes = newPub
+      @private_genomes = newPri
  
     @update() # Initialize the viewname field
     @filter() # Initialize the visible genomes
@@ -1587,16 +1666,206 @@ class GenomeController
       return @public_genomes[gid]
     else
       return @private_genomes[gid]
-      
+
+
+###
+ CLASS LocusController
+ 
+ Manages locus data 
+
+###
+class LocusController
+  constructor: (@locusData) ->
+ 
+    @dataValues = {}
+    @format() # Initialise the dataString field
     
+    
+  emptyString: "<span class='locus_group0'>NA</span>"
+  
+ 
+  # FUNC format
+  # Format the locus data HTML strings
+  # Record unique data values
+  #
+  # PARAMS
+  # none
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  format: ->
+    
+    for g of @locusData
+      for k,o of @locusData[g]
+      
+        val = o.data
+        
+        dataGroup = 0
+        if @dataValues[val]?
+          dataGroup = @dataValues[val]
+          
+        else
+          grpNum = Object.keys(@dataValues).length
+          grpNum++
+          @dataValues[val] = grpNum
+          dataGroup = grpNum
+         
+        o.cls = "locus_group#{dataGroup}"
+        o.group = dataGroup
+        o.dataString = "<span class='#{o.cls}'>#{val}</span>"
+        
+    true
+    
+  # FUNC locusString
+  # return string for single allele/locus 
+  #
+  # PARAMS
+  # Either
+  # 1. single argument with ID format: genomeID|locusID
+  #   -or-
+  # 2. two arguments: genomeID, locusID
+  #   -where-
+  # genomeID = public_1234
+  # locusID = 1234
+  # 
+  # RETURNS
+  # string
+  #      
+  locusString: (id, locusID=null) ->
+    
+    genomeID
+    if locusID?
+      genomeID = id
+    else
+      res = parseHeader(id)
+      genomeID = res[1]
+      locusID = res[2]
+      throw new SuperphyError "Invalid locus ID format: #{id}." unless genomeID? and locusID?
+      
+    g = @locusData[genomeID]
+    throw new SuperphyError "Unknown genome: #{genomeID}." unless g?
+    
+    l = g[locusID]
+    throw new SuperphyError "Unknown locus: #{locusID} for genome #{genomeID}." unless l?
+    
+    str
+    if l.copy > 1
+      str = " (#{l.copy} copy) -  #{l.dataString}"
+    else 
+      str = ' - ' + l.dataString
+    
+    str
+    
+  # FUNC locusNode
+  # return text/class associated with locus 
+  #
+  # PARAMS
+  # Either
+  # 1. single argument with ID format: genomeID|locusID
+  #   -or-
+  # 2. two arguments: genomeID, locusID
+  #   -where-
+  # genomeID = public_1234
+  # locusID = 1234
+  # 
+  # RETURNS
+  # string
+  #      
+  locusNode: (id, locusID=null) ->
+    
+    genomeID
+    if locusID?
+      genomeID = id
+    else
+      res = parseHeader(id)
+      genomeID = res[1]
+      locusID = res[2]
+      throw new SuperphyError "Invalid locus ID format: #{id}." unless genomeID? and locusID?
+      
+    g = @locusData[genomeID]
+    throw new SuperphyError "Unknown genome: #{genomeID}." unless g?
+    
+    l = g[locusID]
+    throw new SuperphyError "Unknown locus: #{locusID} for genome #{genomeID}." unless l?
+    
+    str
+    if l.copy > 1
+      str = " (#{l.copy} copy) -  #{l.data}"
+    else 
+      str = ' - ' + l.data
+    
+    return [str, l.group]
+    
+
+  # FUNC genomeString
+  # return string for genome (merging multiple loci/allele 
+  # data strings for genome) 
+  #
+  # PARAMS
+  # genomeID with format: public_1234
+  #
+  # RETURNS
+  # string
+  #      
+  genomeString: (genomeID) ->
+    
+    str = ' - '
+    g = @locusData[genomeID]
+    
+    if g?
+      ds = (v.dataString for k,v of g)
+      str += ds.join(',')
+      
+    else
+      str += @emptyString
+    
+    str
+    
+    
+  # FUNC count
+  # Counts unique locus data values for a set of genomes
+  #
+  # PARAMS
+  # genomeController object
+  #
+  # RETURNS
+  # string
+  #      
+  count: (genomes) ->
+    
+    uniqueValues = {'NA': 0}
+    
+    @_count(genomes.pubVisible, uniqueValues)
+    @_count(genomes.pvtVisible, uniqueValues)
+    
+    uniqueValues
+    
+  _count: (genomeList, uniqueValues) ->
+    
+    for gID in genomeList
+      g = @locusData[gID]
+      if g?
+        for k,v of g
+          if uniqueValues[v.data]?
+            uniqueValues[v.data]++
+          else
+            uniqueValues[v.data] = 1
+      else
+        uniqueValues['NA']++
+    
+# Return instance of a ViewController
+unless root.LocusController
+  root.LocusController = LocusController
+
 ###
 
   HELPER FUNCTIONS
   
 ###
 
-parseHeader: (str) ->
-  match =  /^((?:public|private)_\d+)\|(\d+)/.exec(str)
+parseHeader = (str) ->
+  match = /^((?:public|private)_\d+)\|(\d+)/.exec(str)
   
   match
   

@@ -91,7 +91,8 @@ sub _initialize {
             #logconfess calls the confess of Carp package, as well as logging to Log4perl
             $self->logger->logconfess("$key is not a valid parameter in Modules::FormDataGenerator");
         }
-    }   
+    }
+    
 }
 
 =head2 dbixSchema
@@ -103,6 +104,17 @@ sub dbixSchema {
 	my $self = shift;
 	
 	$self->{_dbixSchema} = shift // return $self->{_dbixSchema};
+}
+
+=head2 cvmemory
+
+A pointer to the hashref of cvterm IDs
+
+=cut
+sub cvmemory {
+	my $self = shift;
+	
+	$self->{_cvmemory} = shift // return $self->{_cvmemory};
 }
 
 =head2 logger
@@ -1433,6 +1445,178 @@ sub getGeneAlleleData {
 	return({names => \%gene_names, amr => \%amr_alleles, vf => \%vf_alleles});
 }
 
+=head2 getGeneAlleleData2
+
+getGeneAlleleData(%args)
+
+Inputs:
+hash containing key-value pairs:
+ -markers [optional]  Array-ref of query gene feature ids 
+ -warden              GenomeWarden object
+ -cvmemory            Hashref of cvterm IDs                                
+
+Returns:
+Hash containing key-value pairs:
+  name - hash mapping query gene feature ids to names
+  amr  - hash mapping allele feature ids to genome ids and query gene ids
+         for AMR genes   
+  vf   - hash mapping allele feature ids to genome ids and query gene ids
+         for virulence factors
+         
+	
+	-- NEW VERSION --
+	
+!!drop getGeneAlleleData when old code is fased out!!
+
+=cut
+
+sub getGeneAlleleData2 {
+	my $self = shift;
+	my (%args) = @_;
+	
+	# Params
+	get_logger->debug(%args);
+	my $cvmemory = $args{cvmemory};
+	croak "Error: must provide hash reference 'cvmemory' as an argument." unless $cvmemory && ref($cvmemory) eq 'HASH';
+	my $warden = $args{warden};
+	croak "Error: must provide GenomeWarden object 'warden' as an argument." unless $warden;
+	
+	# Get query genes
+	my $amr_type = $cvmemory->{'antimicrobial_resistance_gene'};
+	my $vf_type = $cvmemory->{'virulence_factor'};
+	my %query_genes;
+	
+	my $select_stmt;
+	if($args{markers}) {
+		# Lookup specific genes
+		croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+		$select_stmt->{'feature_id'} = {'-in' => $args{markers}};
+	} else {
+		# Lookup all genes
+		$select_stmt->{'type_id'} = {'-in' => [$amr_type, $vf_type]};
+	}
+	
+	my $query_rs = $self->dbixSchema->resultset('Feature')->search(
+		$select_stmt,
+		{
+			columns => [qw/feature_id uniquename type_id/]
+		}
+	);
+	
+	while( my $query_row = $query_rs->next) {
+		
+		my $type_id = $query_row->type_id;
+		my $gene_name = $query_row->uniquename;
+		my $gene_id = $query_row->feature_id;
+		
+		if($type_id == $vf_type) {
+			$query_genes{vf}{$gene_id} = $gene_name;
+		} elsif($type_id == $amr_type) {
+			$query_genes{amr}{$gene_id} = $gene_name;
+		} else {
+			get_logger->warn("Unrecognized query gene type $type_id.\n");
+		}
+	}
+	
+	# Get alleles
+	my ($public_genomes, $private_genomes) = $warden->featureList();
+	my %alleles;
+	
+	$self->dbixSchema->storage->debug(1);
+	
+	if($warden->numPublic) {
+		
+		# Retreive allele hits for each query gene (can be AMR/VF)
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $cvmemory->{'similar_to'},
+			'feature_relationship_subjects.type_id' => $cvmemory->{'part_of'},
+		};
+		
+		# Select only for specific AMR/VF genes
+		if($args{markers}) {
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		# Subset of public genomes
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
+			$select_stmt,
+			{
+				join => [
+					{'subject' => 'feature_relationship_subjects'},
+				],
+				columns => [qw/subject_id object_id/],
+				'+columns' => [
+					{
+						'subject.feature_id' => 'subject.feature_id'
+					},
+					{ 
+						'subject.feature_relationship_subjects.object_id' => 'feature_relationship_subjects.object_id',
+					    'subject.feature_relationship_subjects.feature_relationship_id' => 'feature_relationship_subjects.feature_relationship_id'
+					}
+                 ],
+				collapse => 1
+			}
+		);
+		
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			
+			$alleles{$genome_label}->{$gene_id} = [] unless defined($alleles{$genome_label}->{$gene_id});
+			push @{$alleles{$genome_label}->{$gene_id}}, $allele_id;
+		}
+	}
+	
+	if($warden->numPrivate) {
+		
+		# Retreive allele hits for each query gene (can be AMR/VF)
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $cvmemory->{'similar_to'},
+			'private_feature_relationship_subjects.type_id' => $cvmemory->{'part_of'},
+			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
+		};
+		
+		# Select only for specific AMR/VF genes
+		if($args{markers}) {
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('PripubFeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => 'private_feature_relationship_subjects'},
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'private_'.$allele_row->subject->private_feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			
+			$alleles{$genome_label}->{$gene_id} = [] unless defined $alleles{$genome_label}->{$gene_id};
+			push @{$alleles{$genome_label}->{$gene_id}}, $allele_id;
+		}
+		
+	}
+	
+	return({ genes => \%query_genes, alleles => \%alleles });
+}
+
+
 =head2 getStxData
 
 getStxData(%args)
@@ -1465,22 +1649,6 @@ sub getStxData {
 	
 	my ($public_genomes, $private_genomes) = $warden->featureList();
 	
-	# Grab some type IDs
-	# Probably should have this hard-coded somewhere
-	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
-		{
-			name => [qw(variant_of part_of typing_sequence allele_fusion stx1_subtype stx2_subtype)]
-		},
-		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			columns => [qw/cvterm_id name/]
-	    }
-	);
-	my %types;
-	while (my $hashref = $type_rs->next) {
-		$types{$hashref->{'name'}} = $hashref->{'cvterm_id'}
-	}
-	
 	my %subunit_names;
 	my %subtypes;
 	
@@ -1489,9 +1657,9 @@ sub getStxData {
 		# Retreive allele_fusion hits for each reference gene
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $types{'variant_of'},
-			'feature_relationship_subjects.type_id' => $types{'part_of'},
-			'featureprops.type_id' => [$types{'stx1_subtype'}, $types{'stx2_subtype'}]
+			'me.type_id' => $self->cvmemory->{'variant_of'},
+			'feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
+			'featureprops.type_id' => [$self->cvmemory->{'stx1_subtype'}, $self->cvmemory->{'stx2_subtype'}]
 		};
 		
 		# Select only for specific typing reference sequences
@@ -1536,10 +1704,10 @@ sub getStxData {
 		# Retreive allele_fusion hits for each reference gene
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $types{'variant_of'},
-			'private_feature_relationship_subjects.type_id' => $types{'part_of'},
+			'me.type_id' => $self->cvmemory->{'variant_of'},
+			'private_feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
 			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes},
-			'private_featureprops.type_id' => [$types{'stx1_subtype'}, $types{'stx2_subtype'}]
+			'private_featureprops.type_id' => [$self->cvmemory->{'stx1_subtype'}, $self->cvmemory->{'stx2_subtype'}]
 		};
 		
 		# Select only for specific typing reference sequences

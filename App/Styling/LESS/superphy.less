@@ -14,6 +14,8 @@
 @import "superphy_msa";
 @import "superphy_list";
 @import "search_utilities";
+@import "superphy_ticker";
+@import "superphy_matrix";
 
 /** Colors ********************************/
   
@@ -25,14 +27,20 @@
 @purple: #992288;
 @red: #EE3333;
 @orange: #EE7722;
-@group-num: 7;
+@grey: #B9BDBD;
+@skyblue: #B5F4F5;
+@pink: #F032A1;
+@group-num: 10;
 @group1-color: @blue;
 @group2-color: @green;
 @group3-color: @yellow;
 @group4-color: @aqua;
 @group5-color: @purple;
-@group6-color: @red;
-@group7-color: @orange;
+@group6-color: @orange;
+@group7-color: @red;
+@group8-color: @grey;
+@group9-color: @pink;
+@group10-color: @skyblue;
 
 // General website colors
 @border-color: #d3d3d3;
@@ -72,6 +80,12 @@ body {
   color:@title-color2;
 }
 
+// Font classes
+.footnote {
+  font-size: 80%;
+  padding: 10px;
+}
+
 // Download link in Views
 .download-view {
   margin-left: auto;
@@ -88,3 +102,18 @@ body {
   padding-right: 10px;
 }
 
+// Locus value styles
+.locusGroupConstructor (@index) when (@index > 0) {
+  
+   @color: "group@{index}-color";
+   @dark-color: darken(@@color, 10%);
+  
+  .locus_group@{index} {
+    color: @dark-color;
+  }
+  
+  .locusGroupConstructor(@index - 1);
+}
+
+// Define color schemes for up to 10 groups
+.locusGroupConstructor(@group-num);

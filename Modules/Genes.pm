@@ -58,7 +58,7 @@ sub stx : Runmode {
 	my @genomes = $query->param("genome");
 
 	# Data object
-	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema);
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
 	
 	# User
 	my $user = $self->authen->username;
@@ -79,7 +79,7 @@ sub stx : Runmode {
 	my $warden;
 	if(@genomes) {
 		
-		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => \@genomes, user => $user);
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => \@genomes, user => $user, cvmemory => $self->cvmemory);
 		my ($err, $bad1, $bad2) = $warden->error; 
 		if($err) {
 			# User requested invalid strains or strains that they do not have permission to view
@@ -89,7 +89,7 @@ sub stx : Runmode {
 		
 	} else {
 		
-		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user);
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user, cvmemory => $self->cvmemory);
 	}
 	
 	# Template
@@ -99,11 +99,15 @@ sub stx : Runmode {
 	my $results = _genomeStx($data, \@subunits, $warden);
 	
 	my $stx = $results->{stx};
-	my $locus_data = $results->{alleles};
 	my $stx_json = encode_json($stx);
-	my $locus_json = encode_json($locus_data);
 	$template->param(stx_json => $stx_json);
-	$template->param(locus_json => $locus_json);
+	
+	# Only need to display subset of all genomes
+	if(@genomes) {
+		my $genome_list = $warden->genomeList();
+		my $gl_json = encode_json($genome_list);
+		$template->param(genomes_json => $gl_json);
+	}
 	
 	# Retrieve meta info
 	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
@@ -112,7 +116,7 @@ sub stx : Runmode {
 	
 	# Trees / MSA for each subunit
 	my $stx_names = $results->{names};
-	get_logger->debug(dump($stx_names));
+	
 	foreach my $ref_id (@subunits) {
 		my $key = $stx_names->{$ref_id};
 		my $num_alleles = $results->{counts}->{$key};
@@ -166,66 +170,126 @@ sub _genomeStx {
 	# List format
 	my %stx_lists;
 	my %stx_counts;
-	my %stx_alleles;
 	my $stx_hash = $result_hash->{stx};
 	my $stx_names = $result_hash->{names};
-	my @genome_list;
 	
 	foreach my $g (keys %$stx_hash) {
-		push @genome_list, $g;
 		
 		foreach my $r_id (@$subunit_ids) {
 			
 			my $subu = $stx_names->{$r_id};
 			my $num = 0;
+			my %allele_data;
 				
 			if(defined($stx_hash->{$g})) {
 				# genome has some subtypes
 				if(defined($stx_hash->{$g}->{$r_id})) {
 					# genome has subtype for this ref gene
-					my @subt;
 					my $copy = 1;
+					
 					foreach my $hr (sort @{$stx_hash->{$g}->{$r_id}}) {
-						push @subt, $hr->{subtype};
-						my $h = "$g|".$hr->{allele};
-						my $allele_data = "";
-						$allele_data .= "(copy $copy)" if $copy > 1;
+						
 						my $st = $hr->{subtype};
 						if($st eq 'multiple') {
 							$st = 'multiple subtypes predicted'
 						} else {
-							$st = " - Stx".$st;
+							$st = "Stx".$st;
 						}
-						$allele_data .= $st;
-						$stx_alleles{$h} = $allele_data;
+						
+						my $al = $hr->{allele};
+						$allele_data{allele} = $al;
+						$allele_data{copy} = $copy;
+						$allele_data{data} = $st;
+						$stx_lists{$subu}->{$g}->{$al} = \%allele_data;
+			
 						$copy++;
 					}
-					$num = @subt;
 					
-					for(my $i=0; $i < @subt; $i++) {
-						if($subt[$i] eq 'multiple') {
-							$subt[$i] = 'multiple subtypes predicted'
-						} else {
-							$subt[$i] = 'Stx'.$subt[$i]
-						}
-					}
-					
-					$stx_lists{$subu}->{$g} = ' - '.join(', ',@subt);
-				} else {
-					# genome does not have stx for this ref gene
-					$stx_lists{$subu}->{$g} = ' - NA';
+					$num += $copy;
 				}
-			} else {
-				# genome has no stx
-				$stx_lists{$subu}->{$g} = ' - NA';
 			}
 			
 			$stx_counts{$subu} += $num;
 		}
 	}
 		
-	return { stx => \%stx_lists, genome_list => \@genome_list, counts => \%stx_counts, names => $stx_names, alleles => \%stx_alleles };
+	return {stx => \%stx_lists, counts => \%stx_counts, names => $stx_names};
 }
+
+=head2 matrix
+
+Display a cardinality matrix for a set of 
+selected genes/genomes
+
+=cut
+
+sub matrix : Runmode {
+	my $self = shift;
+	
+	# Params
+	my $query = $self->query();
+	my @genomes = $query->param("genome");
+	my @genes = $query->param("gene");
+
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
+	
+	# User
+	my $user = $self->authen->username;
+	
+	# Validate genomes
+	my $warden;
+	if(@genomes) {
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => \@genomes, user => $user, cvmemory => $self->cvmemory);
+		my ($err, $bad1, $bad2) = $warden->error; 
+		if($err) {
+			# User requested invalid strains or strains that they do not have permission to view
+			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+			return $self->redirect( $self->home_page );
+		}
+		
+	} else {
+		
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user, cvmemory => $self->cvmemory);
+	}
+	
+	# Template
+	my $template = $self->load_tmpl('genes_matrix.tmpl' , die_on_bad_params => 0);
+	
+	# Retrieve presence / absence of alleles for query genes
+	my %args = (
+		warden => $warden,
+		cvmemory => $self->cvmemory
+	);
+	
+	if(@genes) {
+		$args{markers} = \@genes
+	}
+	
+	my $results = $data->getGeneAlleleData2(%args);
+	
+	my $gene_list = $results->{genes};
+	my $gene_json = encode_json($gene_list);
+	$template->param(gene_json => $gene_json);
+	
+	my $alleles = $results->{alleles};
+	my $allele_json = encode_json($alleles);
+	$template->param(allele_json => $allele_json);
+	
+	if(@genomes) {
+		my $genome_list = $warden->genomeList();
+		my $gl_json = encode_json($genome_list);
+		$template->param(genome_json => $gl_json);
+	}
+	
+	# Retrieve meta info
+	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+		
+	return $template->output();
+}
+
 
 
 # NOTHING BEYOND THIS POINT HAS BEEN UPDATED
