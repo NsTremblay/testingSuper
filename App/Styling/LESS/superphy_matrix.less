@@ -9,93 +9,55 @@
 
 /** Background ****************************/
 .matrixBackground {
-    fill: #EEEEEE;
+  fill: #EEEEEE;
 }
 
-
-/*line {
-    stroke: #FFFFFF;
+/** Styles ********************************/
+  
+.allele_histogram {
+  padding: 10px;
 }
 
-
+line {
+  stroke: #FFFFFF;
+}
 
 text.matrixActive {
   fill: #FF0000;
 }
 
-
-// Node style mixins
-.nodeShape(@color: steelblue, @fill: #fff, @width: 1.5px) {
-  fill: @fill;
-  stroke: @color;
-  stroke-width: @width;
-}
-
-.groupedStyle(@color) {
+.groupedMatrixStyle(@color) {
   @light-color: lighten(@color, 10%);
   @dark-color: darken(@color, 10%);
   
-  .treelabel {
-    //font: @selectedfont;
-  }
-
-  circle {
-    .nodeShape(@dark-color, @light-color, 3px);
-  }
-  
+  fill: @dark-color;
 }
 
-// Create looping constructor to create styles for groups1-7
-.treenodeGroupConstructor (@index) when (@index > 0) {
+// Create looping constructor to create styles for groups1-10
+.matrixGroupConstructor (@index) when (@index > 0) {
 
   // create style
   //(~".groupedNode@{index}") {
-  .groupedNode@{index} {
+  .groupedRow@{index} rect.matrixcell {
    
     @color: "group@{index}-color";
-    .groupedStyle(@@color);
+    .groupedMatrixStyle(@@color);
   }
 
   // next iteration
-  .treenodeGroupConstructor(@index - 1);
+  .matrixGroupConstructor(@index - 1);
 }
 
-
-.treenode {
-  
-  .treeicon {
-    font-family: FontAwesome;
-    font-size: 12px;
-  }
-  
-  .treelabel {
-    font: @textfont;
-  }
-
-  circle {
-    .nodeShape;
-  }
-  
-  rect {
-    .nodeShape(red);
-  }
-  
-}
-
-.selectedNode {
-  
-  .treelabel {
-    color: grey;
-  }
-  
+.groupedRow0 rect.matrixcell {
+  fill: #000;
 }
 
 // Define color schemes for up to 10 groups
-.treenodeGroupConstructor(@group-num);
+.matrixGroupConstructor(@group-num);
 
 
-.treelink {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
-}*/
+/** Drop down *****************************/
+  
+div.matrixSort {
+  padding: 20px;
+}

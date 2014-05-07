@@ -38,53 +38,53 @@
   color: grey;
 }
 .groupedNode10 circle {
-  fill: #e2fbfb;
-  stroke: #88edef;
+  fill: #dadb37;
+  stroke: #91921a;
   stroke-width: 3px;
 }
 .groupedNode9 circle {
-  fill: #f362b7;
-  stroke: #df1089;
+  fill: #31d7e8;
+  stroke: #1294a1;
   stroke-width: 3px;
 }
 .groupedNode8 circle {
-  fill: #d3d6d6;
-  stroke: #9fa4a4;
+  fill: #999999;
+  stroke: #666666;
   stroke-width: 3px;
 }
 .groupedNode7 circle {
-  fill: #f26262;
-  stroke: #dc1212;
+  fill: #aa6d60;
+  stroke: #6b4239;
   stroke-width: 3px;
 }
 .groupedNode6 circle {
-  fill: #f29451;
-  stroke: #cd5f10;
+  fill: #eca1d5;
+  stroke: #da4daf;
   stroke-width: 3px;
 }
 .groupedNode5 circle {
-  fill: #c32bad;
-  stroke: #6f1963;
+  fill: #ad8bcc;
+  stroke: #7b49a8;
   stroke-width: 3px;
 }
 .groupedNode4 circle {
-  fill: #16d8c3;
-  stroke: #0c7c6f;
+  fill: #df5152;
+  stroke: #ab1f20;
   stroke-width: 3px;
 }
 .groupedNode3 circle {
-  fill: #f9f386;
-  stroke: #f5e924;
+  fill: #37c837;
+  stroke: #217821;
   stroke-width: 3px;
 }
 .groupedNode2 circle {
-  fill: #85bb77;
-  stroke: #528844;
+  fill: #ff9a41;
+  stroke: #da6600;
   stroke-width: 3px;
 }
 .groupedNode1 circle {
-  fill: #487fc8;
-  stroke: #274e83;
+  fill: #2b93db;
+  stroke: #185a88;
   stroke-width: 3px;
 }
 /** Links *********************************/
@@ -192,6 +192,76 @@ td.msaPosition {
   border-style: solid;
   border-width: 1px;
   border-color: #d3d3d3;
+}
+li.genome_group10 {
+  color: #91921a;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group10 input {
+  visibility: hidden;
+}
+li.genome_group9 {
+  color: #1294a1;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group9 input {
+  visibility: hidden;
+}
+li.genome_group8 {
+  color: #666666;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group8 input {
+  visibility: hidden;
+}
+li.genome_group7 {
+  color: #6b4239;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group7 input {
+  visibility: hidden;
+}
+li.genome_group6 {
+  color: #da4daf;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group6 input {
+  visibility: hidden;
+}
+li.genome_group5 {
+  color: #7b49a8;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group5 input {
+  visibility: hidden;
+}
+li.genome_group4 {
+  color: #ab1f20;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group4 input {
+  visibility: hidden;
+}
+li.genome_group3 {
+  color: #217821;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group3 input {
+  visibility: hidden;
+}
+li.genome_group2 {
+  color: #da6600;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group2 input {
+  visibility: hidden;
+}
+li.genome_group1 {
+  color: #185a88;
+  font: italic bold 13px sans-serif;
+}
+li.genome_group1 input {
+  visibility: hidden;
 }
 /*
  
@@ -328,6 +398,22 @@ td.msaPosition {
 .superphy_ticker_table th {
   padding: 5px;
   text-align: center;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+.histobar rect {
+  fill: steelblue;
+  shape-rendering: crispEdges;
+}
+.histobar text {
+  fill: #000;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
 }
 /*
  
@@ -341,92 +427,53 @@ td.msaPosition {
 .matrixBackground {
   fill: #EEEEEE;
 }
-/*line {
-    stroke: #FFFFFF;
+/** Styles ********************************/
+.allele_histogram {
+  padding: 10px;
 }
-
-
-
+line {
+  stroke: #FFFFFF;
+}
 text.matrixActive {
   fill: #FF0000;
 }
-
-
-// Node style mixins
-.nodeShape(@color: steelblue, @fill: #fff, @width: 1.5px) {
-  fill: @fill;
-  stroke: @color;
-  stroke-width: @width;
+.groupedRow0 rect.matrixcell {
+  fill: #000;
 }
-
-.groupedStyle(@color) {
-  @light-color: lighten(@color, 10%);
-  @dark-color: darken(@color, 10%);
-  
-  .treelabel {
-    //font: @selectedfont;
-  }
-
-  circle {
-    .nodeShape(@dark-color, @light-color, 3px);
-  }
-  
+.groupedRow10 rect.matrixcell {
+  fill: #91921a;
 }
-
-// Create looping constructor to create styles for groups1-7
-.treenodeGroupConstructor (@index) when (@index > 0) {
-
-  // create style
-  //(~".groupedNode@{index}") {
-  .groupedNode@{index} {
-   
-    @color: "group@{index}-color";
-    .groupedStyle(@@color);
-  }
-
-  // next iteration
-  .treenodeGroupConstructor(@index - 1);
+.groupedRow9 rect.matrixcell {
+  fill: #1294a1;
 }
-
-
-.treenode {
-  
-  .treeicon {
-    font-family: FontAwesome;
-    font-size: 12px;
-  }
-  
-  .treelabel {
-    font: @textfont;
-  }
-
-  circle {
-    .nodeShape;
-  }
-  
-  rect {
-    .nodeShape(red);
-  }
-  
+.groupedRow8 rect.matrixcell {
+  fill: #666666;
 }
-
-.selectedNode {
-  
-  .treelabel {
-    color: grey;
-  }
-  
+.groupedRow7 rect.matrixcell {
+  fill: #6b4239;
 }
-
-// Define color schemes for up to 10 groups
-.treenodeGroupConstructor(@group-num);
-
-
-.treelink {
-  fill: none;
-  stroke: #ccc;
-  stroke-width: 1.5px;
-}*/
+.groupedRow6 rect.matrixcell {
+  fill: #da4daf;
+}
+.groupedRow5 rect.matrixcell {
+  fill: #7b49a8;
+}
+.groupedRow4 rect.matrixcell {
+  fill: #ab1f20;
+}
+.groupedRow3 rect.matrixcell {
+  fill: #217821;
+}
+.groupedRow2 rect.matrixcell {
+  fill: #da6600;
+}
+.groupedRow1 rect.matrixcell {
+  fill: #185a88;
+}
+/** Drop down *****************************/
+div.matrixSort {
+  padding: 20px;
+}
 /** Colors ********************************/
 /** Mixins ********************************/
 .borderStyle {
@@ -472,32 +519,88 @@ body {
   padding-right: 10px;
 }
 .locus_group10 {
-  color: #88edef;
+  color: #91921a;
 }
 .locus_group9 {
-  color: #df1089;
+  color: #1294a1;
 }
 .locus_group8 {
-  color: #9fa4a4;
+  color: #666666;
 }
 .locus_group7 {
-  color: #dc1212;
+  color: #6b4239;
 }
 .locus_group6 {
-  color: #cd5f10;
+  color: #da4daf;
 }
 .locus_group5 {
-  color: #6f1963;
+  color: #7b49a8;
 }
 .locus_group4 {
-  color: #0c7c6f;
+  color: #ab1f20;
 }
 .locus_group3 {
-  color: #f5e924;
+  color: #217821;
 }
 .locus_group2 {
-  color: #528844;
+  color: #da6600;
 }
 .locus_group1 {
-  color: #274e83;
+  color: #185a88;
+}
+.group-form-row {
+  padding-top: 20px;
+  padding-bottom: 10px;
+}
+.add-genome-groups > div {
+  padding-top: 20px;
+  padding-bottom: 30px;
+}
+.add-genome-groups > div button {
+  float: right;
+}
+.genome-group-list {
+  list-style-type: none;
+  display: block;
+  max-height: 500px;
+  max-width: 350px;
+  min-height: 50px;
+  width: 350px;
+  overflow: auto;
+  padding: 10px;
+  margin: 10px;
+  white-space: nowrap;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+#genome-group-add10 {
+  background-color: #e2e362;
+}
+#genome-group-add9 {
+  background-color: #5fe0ed;
+}
+#genome-group-add8 {
+  background-color: #b2b2b2;
+}
+#genome-group-add7 {
+  background-color: #bc8b81;
+}
+#genome-group-add6 {
+  background-color: #f4cce8;
+}
+#genome-group-add5 {
+  background-color: #c6aedc;
+}
+#genome-group-add4 {
+  background-color: #e77c7d;
+}
+#genome-group-add3 {
+  background-color: #5fd35f;
+}
+#genome-group-add2 {
+  background-color: #ffb574;
+}
+#genome-group-add1 {
+  background-color: #57a9e2;
 }

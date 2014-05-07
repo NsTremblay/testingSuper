@@ -34,19 +34,8 @@
 		
 		<TMPL_INCLUDE NAME="search_utilities.tmpl">
 	
-		<div>
-			<ul id="view_tabs" class="nav nav-tabs">
-	      		<li><a href="#strains_list" data-toggle="tab">Genome List</a></li>
-	      		<li class="active"><a href="#strains_tree" data-toggle="tab">Phylogenetic Tree</a></li>
-    		</ul>
-		    <div id="view_content" class="tab-content">
-		      <div class="tab-pane active" id="strains_tree">
-		      </div>
-		      <div class="tab-pane " id="strains_list">
-		      </div>
-		    </div>
-			
-		</div>
+		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
+		
 	</div>
 
 	<script type="text/javascript">

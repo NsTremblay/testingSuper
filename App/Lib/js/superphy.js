@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var GenomeController, GroupView, ListView, LocusController, LocusTicker, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, GenomeController, GroupView, ListView, LocusController, LocusTicker, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -66,6 +66,8 @@
     ViewController.prototype.actionMode = false;
 
     ViewController.prototype.action = false;
+
+    ViewController.prototype.maxGroups = 10;
 
     ViewController.prototype.genomeController = void 0;
 
@@ -129,6 +131,10 @@
     ViewController.prototype.createGroup = function(boxEl, buttonEl) {
       var gNum, grpView;
       gNum = this.groups.length + 1;
+      if (gNum > this.maxGroups) {
+        console.log('DIE');
+        return false;
+      }
       grpView = new GroupView(boxEl, 'select', gNum);
       grpView.update(this.genomeController);
       this.groups.push(grpView);
@@ -177,7 +183,7 @@
     };
 
     ViewController.prototype.createTicker = function() {
-      var elem, locTicker, metaTicker, tNum, tickerArgs, tickerType;
+      var alTicker, elem, locTicker, metaTicker, tNum, tickerArgs, tickerType;
       tickerType = arguments[0], elem = arguments[1], tickerArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       tNum = this.tickers.length + 1;
       if (tickerType === 'meta') {
@@ -188,23 +194,14 @@
         locTicker = new LocusTicker(elem, tNum, tickerArgs);
         locTicker.update(this.genomeController);
         this.tickers.push(locTicker);
+      } else if (tickerType === 'allele') {
+        alTicker = new AlleleTicker(elem, tNum, this.genomeController, tickerArgs);
+        alTicker.update(this.genomeController);
+        this.tickers.push(alTicker);
       } else {
         throw new SuperphyError('Unrecognized tickerType in ViewController createTicker() method.');
         return false;
       }
-      return true;
-    };
-
-    ViewController.prototype.createGroup = function(boxEl, buttonEl) {
-      var gNum, grpView;
-      gNum = this.groups.length + 1;
-      grpView = new GroupView(boxEl, 'select', gNum);
-      grpView.update(this.genomeController);
-      this.groups.push(grpView);
-      buttonEl.click(function(e) {
-        e.preventDefault();
-        return viewController.addToGroup(gNum);
-      });
       return true;
     };
 
@@ -243,6 +240,50 @@
       return true;
     };
 
+    ViewController.prototype.groupForm = function(elem, addMoreOpt) {
+      var addEl, blockEl, buttEl, divEl;
+      blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem);
+      this.addGroupFormRow(blockEl);
+      if (addMoreOpt) {
+        addEl = jQuery("<div class='add-genome-groups row'></div>");
+        divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl);
+        buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl);
+        buttEl.click(function(e) {
+          var reachedMax;
+          reachedMax = viewController.addGroupFormRow(jQuery("#group-form-block"));
+          if (!reachedMax) {
+            jQuery(this).text('Max groups reached').css('color', 'darkgrey');
+            return e.preventDefault();
+          }
+        });
+        elem.append(addEl);
+      }
+      return true;
+    };
+
+    ViewController.prototype.addGroupFormRow = function(elem) {
+      var buttEl, formEl, gNum, i, listEl, ok, rowEl, _i, _len, _ref;
+      if (typeof elem === 'string') {
+        elem = jQuery(elem);
+      }
+      gNum = this.groups.length + 1;
+      if (gNum > this.maxGroups) {
+        return false;
+      }
+      rowEl = jQuery("<div class='group-form-row row'></div>").appendTo(elem);
+      ok = true;
+      _ref = [gNum, gNum + 1];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        i = _ref[_i];
+        formEl = jQuery("<div id='genome-group-form" + i + "' class='genome-group-form col-md-6'></div>");
+        listEl = jQuery("<div id='genome-group-list" + i + "'></div>").appendTo(formEl);
+        buttEl = jQuery("<button id='genome-group-add" + i + "' class='btn' type='button'>Add to Group " + i + "</button>").appendTo(formEl);
+        rowEl.append(formEl);
+        ok = this.createGroup(listEl, buttEl);
+      }
+      return ok;
+    };
+
     ViewController.prototype.viewAction = function() {
       var vNum, viewArgs;
       vNum = arguments[0], viewArgs = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
@@ -255,7 +296,7 @@
     };
 
     ViewController.prototype.updateViews = function(option, checked) {
-      var v, _i, _j, _len, _len1, _ref, _ref1;
+      var t, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       this.genomeController.updateMeta(option, checked);
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -266,6 +307,11 @@
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         v = _ref1[_j];
         v.update(this.genomeController);
+      }
+      _ref2 = this.tickers;
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        t = _ref2[_k];
+        t.update(this.genomeController);
       }
       return true;
     };
@@ -297,7 +343,7 @@
     };
 
     ViewController.prototype.filterViews = function(filterForm) {
-      var searchTerms, term, v, _i, _len, _ref;
+      var searchTerms, t, term, v, _i, _j, _len, _len1, _ref, _ref1;
       if (filterForm === 'selection') {
         this.genomeController.filterBySelection();
       } else {
@@ -323,19 +369,29 @@
         v = _ref[_i];
         v.update(this.genomeController);
       }
+      _ref1 = this.tickers;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        t = _ref1[_j];
+        t.update(this.genomeController);
+      }
       return true;
     };
 
     ViewController.prototype.resetFilter = function() {
-      var v, _i, _len, _ref, _results;
+      var t, v, _i, _j, _len, _len1, _ref, _ref1, _results;
       this.genomeController.filter();
       this._toggleFilterStatus();
       this._clearFilterForm();
       _ref = this.views;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         v = _ref[_i];
-        _results.push(v.update(this.genomeController));
+        v.update(this.genomeController);
+      }
+      _ref1 = this.tickers;
+      _results = [];
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        t = _ref1[_j];
+        _results.push(t.update(this.genomeController));
       }
       return _results;
     };
@@ -832,7 +888,6 @@
           throw new SuperphyError("List element for genome " + g + " not found in ListView " + this.elID);
           return false;
         }
-        console.log("Updating class to " + thiscls);
         liEl = itemEl.parents().eq(1);
         liEl.attr('class', thiscls);
       }
@@ -922,7 +977,7 @@
       if (listElem.length) {
         listElem.empty();
       } else {
-        listElem = jQuery("<ul id='" + this.elID + "'/>");
+        listElem = jQuery("<ul id='" + this.elID + "' class='genome-group-list'/>");
         jQuery(this.parentElem).append(listElem);
       }
       ingrp = genomes.grouped(this.elNum);
@@ -935,7 +990,7 @@
       var listElem;
       listElem = jQuery("#" + this.elID);
       if (!listElem.length) {
-        listElem = jQuery("<ul id='" + this.elID + "'/>");
+        listElem = jQuery("<ul id='" + this.elID + "' class='genome-group-list'/>");
         jQuery(this.parentElem).append(listElem);
       }
       if (genomeSet["public"] != null) {
@@ -2319,7 +2374,7 @@
       node.sum_length = sumLengths + node.length;
       if ((node.leaf != null) && node.leaf === "true") {
         g = genomes.genome(node.genome);
-        if (g.visible) {
+        if ((g != null) && g.visible) {
           node.viewname = g.viewname;
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
@@ -2954,6 +3009,185 @@
 
 
   /*
+   CLASS AlleleTicker
+    
+   Histogram of allele frequency for one or more genes
+   */
+
+  AlleleTicker = (function(_super) {
+    __extends(AlleleTicker, _super);
+
+    function AlleleTicker(parentElem, elNum, genomes, tickerArgs) {
+      var alleles, bins, genes, margin, tmp;
+      this.parentElem = parentElem;
+      this.elNum = elNum;
+      AlleleTicker.__super__.constructor.call(this, this.parentElem, this.elNum, this.elNum);
+      if (genomes == null) {
+        throw new SuperphyError('Missing argument. AlleleTicker constructor requires GenomeController object.');
+      }
+      if (tickerArgs.length !== 1) {
+        throw new SuperphyError('Missing argument. AlleleTicker constructor requires a JSON object containing: nodes, linksobject.');
+      }
+      tmp = tickerArgs[0];
+      genes = tmp['nodes'];
+      alleles = tmp['links'];
+      this._doCounts(genomes, genes, alleles);
+      margin = {
+        top: 40,
+        right: 30,
+        bottom: 40,
+        left: 30
+      };
+      this.width = 200 - margin.left - margin.right;
+      this.height = 200 - margin.top - margin.bottom;
+      bins = [
+        {
+          'val': 0,
+          'key': '0'
+        }, {
+          'val': 1,
+          'key': '1'
+        }, {
+          'val': 2,
+          'key': '2'
+        }, {
+          'val': 3,
+          'key': '3'
+        }, {
+          'val': 4,
+          'key': '4'
+        }, {
+          'val': 5,
+          'key': '>=5'
+        }
+      ];
+      this.x = d3.scale.ordinal().domain(bins.map(function(d) {
+        return d.val;
+      })).rangeRoundBands([0, this.width], .05);
+      this.x2 = d3.scale.ordinal().domain(bins.map(function(d) {
+        return d.key;
+      })).rangeRoundBands([0, this.width], .05);
+      this.xAxis = d3.svg.axis().scale(this.x2).orient("bottom");
+      this.histogram = d3.layout.histogram().bins([0, 1, 2, 3, 4, 5, 6]);
+      this.parentElem.append("<div id='" + this.elID + "' class='" + this.cssClass + "'></div>");
+      this.canvas = d3.select("#" + this.elID).append("svg").attr("width", this.width + margin.left + margin.right).attr("height", this.height + margin.top + margin.bottom).append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      this.formatCount = d3.format(",.0f");
+      this.canvas.append("g").attr("class", "x axis").attr("transform", "translate(0," + this.height + ")").call(this.xAxis).append("text").attr("dy", ".75em").attr("y", 23).attr("x", this.width / 2).attr("text-anchor", "middle").text('Number of Alleles');
+    }
+
+    AlleleTicker.prototype.elName = 'allele_ticker';
+
+    AlleleTicker.prototype.cssClass = 'allele_histogram';
+
+    AlleleTicker.prototype.flavor = 'allele';
+
+    AlleleTicker.prototype.noDataLabel = 'NA';
+
+    AlleleTicker.prototype.update = function(genomes) {
+      var ft, g, histData, i, maxSteps, maxY, n, newBars, steps, svgBars, t1, t2, values, yTop, _i, _j, _k, _len, _len1, _ref, _ref1;
+      t1 = new Date();
+      values = [];
+      _ref = genomes.pubVisible.concat(genomes.pvtVisible);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        g = _ref[_i];
+        _ref1 = this.geneList;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          n = _ref1[_j];
+          if (!((this.counts[g] != null) && (this.counts[g][n] != null))) {
+            throw new SuperphyError("Count not defined for genome " + g + " and gene " + n + ".");
+          }
+          values.push(this.counts[g][n]);
+        }
+      }
+      histData = this.histogram(values);
+      steps = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
+      maxSteps = steps.length;
+      maxY = d3.max(histData, function(d) {
+        return d.y;
+      });
+      yTop = NaN;
+      for (i = _k = 0; _k <= maxSteps; i = _k += 1) {
+        if (maxY < steps[i]) {
+          yTop = steps[i];
+          break;
+        }
+      }
+      this.y = d3.scale.linear().domain([0, yTop]).range([this.height, 0]);
+      svgBars = this.canvas.selectAll("g.histobar").data(histData);
+      svgBars.attr("transform", (function(_this) {
+        return function(d) {
+          return "translate(" + _this.x(d.x) + "," + _this.y(d.y) + ")";
+        };
+      })(this));
+      svgBars.select("rect").attr("x", 0).attr("width", this.x.rangeBand()).attr("height", (function(_this) {
+        return function(d) {
+          return _this.height - _this.y(d.y);
+        };
+      })(this));
+      svgBars.select("text").attr("dy", ".75em").attr("y", -14).attr("x", this.x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
+        return function(d) {
+          if (d.y > 0) {
+            return _this.formatCount(d.y);
+          } else {
+            return '';
+          }
+        };
+      })(this));
+      svgBars.exit().remove();
+      newBars = svgBars.enter().append("g").attr("class", "histobar").attr("transform", (function(_this) {
+        return function(d) {
+          return "translate(" + _this.x(d.x) + "," + _this.y(d.y) + ")";
+        };
+      })(this));
+      newBars.append("rect").attr("x", 0).attr("width", this.x.rangeBand()).attr("height", (function(_this) {
+        return function(d) {
+          return _this.height - _this.y(d.y);
+        };
+      })(this));
+      newBars.append("text").attr("dy", ".75em").attr("y", -14).attr("x", this.x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
+        return function(d) {
+          if (d.y > 0) {
+            return _this.formatCount(d.y);
+          } else {
+            return '';
+          }
+        };
+      })(this));
+      t2 = new Date();
+      ft = t2 - t1;
+      console.log('AlleleTicker update elapsed time: ' + ft);
+      return true;
+    };
+
+    AlleleTicker.prototype._doCounts = function(genomes, genes, alleles) {
+      var g, gList, n, numAlleles, _i, _j, _len, _len1, _ref;
+      gList = Object.keys(genomes.public_genomes).concat(Object.keys(genomes.private_genomes));
+      this.geneList = Object.keys(genes);
+      console.log(alleles);
+      this.counts = {};
+      for (_i = 0, _len = gList.length; _i < _len; _i++) {
+        g = gList[_i];
+        this.counts[g] = {};
+        _ref = this.geneList;
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          n = _ref[_j];
+          numAlleles = 0;
+          if ((alleles[g] != null) && (alleles[g][n] != null)) {
+            numAlleles = alleles[g][n].length;
+          }
+          this.counts[g][n] = numAlleles;
+        }
+      }
+      console.log(this.counts);
+      return true;
+    };
+
+    return AlleleTicker;
+
+  })(TickerTemplate);
+
+
+  /*
   
   
    File: superphy_matrix.coffee
@@ -2976,7 +3210,7 @@
     __extends(MatrixView, _super);
 
     function MatrixView(parentElem, style, elNum, genomes, matrixArgs) {
-      var alleles, gList, genes, nList, tmp;
+      var alleles, dd, ddDiv, dialog, dialog2, gList, genes, nList, num, tmp;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
@@ -2991,15 +3225,15 @@
       alleles = tmp['links'];
       gList = Object.keys(genomes.public_genomes).concat(Object.keys(genomes.private_genomes));
       nList = Object.keys(genes);
-      this.cellWidth = 10;
+      this.cellWidth = 20;
       this.margin = {
-        top: 20,
+        top: 150,
         right: 0,
         bottom: 0,
-        left: 20
+        left: 250
       };
-      this.height = 72;
-      this.width = 72;
+      this.height = gList.length * this.cellWidth;
+      this.width = nList.length * this.cellWidth;
       this.dim = {
         w: this.width + this.margin.right + this.margin.left,
         h: this.height + this.margin.top + this.margin.bottom
@@ -3018,19 +3252,75 @@
           };
         })(this))
       };
+      this.geneOrders['group'] = this.geneOrders['count'];
       this.orderType = 'name';
       this.z = d3.scale.linear().domain([0, 4]).clamp(true);
       this.x = d3.scale.ordinal().rangeBands([0, this.width]);
       this.parentElem.append("<div id='" + this.elID + "'></div>");
-      this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("margin-left", -this.margin.left + "px");
+      ddDiv = jQuery('<div class="matrixSort"><span>Order:</span> </div>').appendTo("#" + this.elID);
+      dd = jQuery('<select name="matrix-sort">' + '<option value="name" selected="selected"> by Name</option>' + '<option value="count"> by Frequency</option>' + '<option value="group"> by Group</option>' + '</select>').appendTo(ddDiv);
+      num = this.elNum - 1;
+      dd.change(function() {
+        var sortType;
+        sortType = this.value;
+        return viewController.viewAction(num, 'matrix_sort', sortType);
+      });
+      this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h);
       this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
       this.canvas.append("rect").attr("class", "matrixBackground").attr("width", this.width).attr("height", this.height);
+      this.formatCount = d3.format(",.0f");
+      dialog = jQuery('#dialog-matrix-row-select');
+      if (!dialog.length) {
+        dialog = jQuery('<div id="dialog-matrix-row-select"></div>').appendTo('body');
+        dialog.text("Jump to genome information page?").dialog({
+          title: 'Genome Information',
+          autoOpen: false,
+          resizable: false,
+          height: 160,
+          modal: true,
+          buttons: {
+            Yes: function() {
+              var id;
+              id = jQuery(this).data("row-id");
+              console.log("Redirect to " + id + " strain info page");
+              return jQuery(this).dialog("close");
+            },
+            Cancel: function() {
+              return jQuery(this).dialog("close");
+            }
+          }
+        });
+      }
+      dialog2 = jQuery('#dialog-matrix-col-select');
+      if (!dialog2.length) {
+        dialog2 = jQuery('<div id="dialog-matrix-col-select"></div>').appendTo('body');
+        dialog2.text("Jump to gene page?").dialog({
+          title: 'Detailed Gene Information',
+          autoOpen: false,
+          resizable: false,
+          height: 160,
+          modal: true,
+          buttons: {
+            Yes: function() {
+              var id;
+              id = jQuery(this).data("col-id");
+              console.log("Redirect to " + id + " gene info page");
+              return jQuery(this).dialog("close");
+            },
+            Cancel: function() {
+              return jQuery(this).dialog("close");
+            }
+          }
+        });
+      }
       true;
     }
 
     MatrixView.prototype.type = 'matrix';
 
     MatrixView.prototype.elName = 'genome_matrix';
+
+    MatrixView.prototype.duration = 500;
 
     MatrixView.prototype._computeMatrix = function(gList, genes, alleles) {
       var g, gObj, i, n, nList, numAlleles, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1;
@@ -3043,7 +3333,7 @@
       for (_i = 0, _len = gList.length; _i < _len; _i++) {
         g = gList[_i];
         gObj = {
-          index: i,
+          id: i,
           genome: g,
           count: 0
         };
@@ -3058,13 +3348,12 @@
         });
         i++;
       }
-      console.log(this.genomeNodes);
       this.geneNodes = [];
       i = 0;
       for (_j = 0, _len1 = nList.length; _j < _len1; _j++) {
         g = nList[_j];
         gObj = {
-          index: i,
+          id: i,
           gene: g,
           name: genes[g],
           count: 0
@@ -3085,8 +3374,8 @@
           }
           g.count += numAlleles;
           n.count += numAlleles;
-          this.matrix[g.index][n.index].z = numAlleles;
-          this.matrix[g.index][n.index].i = i;
+          this.matrix[g.id][n.id].z = numAlleles;
+          this.matrix[g.id][n.id].i = i;
           i++;
         }
       }
@@ -3094,23 +3383,60 @@
     };
 
     MatrixView.prototype.update = function(genomes) {
-      var dt, svgGenes, t1, t2, that;
+      var dt, genomesExit, newCols, newRows, svgGenes, svgGenomes, t1, t2, that;
       t1 = new Date();
       this._sync(genomes);
-      svgGenes = this.canvas.selectAll("g.matrixrows").data(this.currNodes, function(d) {
-        return d.index;
+      this.height = this.cellWidth * this.currN;
+      this.y = d3.scale.ordinal().rangeBands([0, this.height]);
+      this.y.domain(this.genomeOrders[this.orderType]);
+      this.x.domain(this.geneOrders[this.orderType]);
+      this.canvas.selectAll(".matrixBackground").attr("height", this.height);
+      svgGenomes = this.canvas.selectAll("g.matrixrow").data(this.currNodes, function(d) {
+        return d.id;
+      });
+      svgGenomes.attr("class", (function(_this) {
+        return function(d) {
+          return _this._classList(d);
+        };
+      })(this)).select("text.matrixlabel").text(function(d) {
+        return d.viewname;
       });
       that = this;
-      svgGenes.enter().append("g").attr("class", "matrixrow").attr("transform", (function(_this) {
-        return function(d, i) {
-          return "translate(0," + _this.y(i) + ")";
+      newRows = svgGenomes.enter().append("g").attr("class", (function(_this) {
+        return function(d) {
+          return _this._classList(d);
         };
-      })(this)).each(function(d) {
-        return that._row(this, that.matrix[d.index], that.x, that.y, that.z);
+      })(this)).attr("transform", function(d, i) {
+        return "translate(0,0)";
+      }).each(function(d) {
+        return that._row(this, that.matrix[d.id], that.x, that.y, that.z);
       });
+      newRows.append("line").attr("x2", this.width);
+      newRows.append("text").attr("class", "matrixlabel").attr("x", -6).attr("y", this.y.rangeBand() / 2).attr("dy", ".32em").attr("text-anchor", "end").text(function(d) {
+        return d.viewname;
+      }).on("click", function(d) {
+        return jQuery('#dialog-matrix-row-select').data('row-id', d.genome).dialog('open');
+      });
+      svgGenes = this.canvas.selectAll("g.matrixcolumn").data(this.geneNodes, function(d) {
+        return d.id;
+      });
+      svgGenes.selectAll("line").attr("x1", -this.height);
+      newCols = svgGenes.enter().append("g").attr("class", "matrixcolumn").attr("transform", function(d, i) {
+        return "translate(" + 0 + ")rotate(-90)";
+      });
+      newCols.append("line").attr("x1", -this.height);
+      newCols.append("text").attr("class", "matrixlabel").attr("x", 6).attr("y", this.y.rangeBand() / 2).attr("dy", ".32em").attr("text-anchor", "start").text(function(d) {
+        return d.name;
+      }).on("click", function(d) {
+        return jQuery('#dialog-matrix-col-select').data('col-id', d.gene).dialog('open');
+      });
+      this._assumePositions();
+      genomesExit = svgGenomes.exit().transition().duration(this.duration).attr("transform", function(d) {
+        return "translate(0,0)";
+      }).remove();
       t2 = new Date();
       dt = new Date(t2 - t1);
-      console.log('MatrixView update elapsed time (s): ' + dt.getMillieconds);
+      console.log('MatrixView update elapsed time (s): ' + dt.getMilliseconds());
       return true;
     };
 
@@ -3121,7 +3447,6 @@
       _ref = this.genomeNodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         n = _ref[_i];
-        console.log(n);
         g = genomes.genome(n.genome);
         if (g.visible) {
           n.viewname = g.viewname;
@@ -3129,8 +3454,9 @@
           if (g.assignedGroup != null) {
             n.assignedGroup = g.assignedGroup;
           } else {
-            n.assignedGroup = -1;
+            n.assignedGroup = 0;
           }
+          n.index = this.currN;
           this.currNodes.push(n);
           this.currN++;
         }
@@ -3149,7 +3475,7 @@
         group: d3.range(this.currN).sort((function(_this) {
           return function(a, b) {
             var gdiff;
-            gdiff = _this.currNodes[b].group - _this.currNodes[a].group;
+            gdiff = _this.currNodes[b].assignedGroup - _this.currNodes[a].assignedGroup;
             if (gdiff === 0) {
               return _this.currNodes[b].count - _this.currNodes[a].count;
             } else {
@@ -3158,22 +3484,170 @@
           };
         })(this))
       };
-      this.y = d3.scale.ordinal().rangeBands([0, this.height]);
-      this.y.domain(this.genomeOrders[this.orderType]);
-      this.x.domain(this.geneOrders[this.orderType]);
       return true;
     };
 
     MatrixView.prototype._row = function(svgRow, rowData, x, y, z) {
-      var svgCells;
+      var newCells, num, svgCells;
       svgCells = d3.select(svgRow).selectAll(".matrixcell").data(rowData, function(d) {
         return d.i;
       });
-      svgCells.enter().append("rect").attr("class", "matrixcell").attr("x", function(d) {
-        return x(d.x);
-      }).attr("width", x.rangeBand()).attr("height", y.rangeBand()).style("fill-opacity", function(d) {
+      num = this.elNum - 1;
+      newCells = svgCells.enter().append("g").attr("class", "matrixcell").attr("transform", (function(_this) {
+        return function(d, i) {
+          return "translate(" + _this.x(d.x) + ",0)";
+        };
+      })(this));
+      newCells.append("rect").attr("x", 0).attr("width", x.rangeBand()).attr("height", y.rangeBand()).style("fill-opacity", function(d) {
         return z(d.z);
-      }).style("fill", 'blue');
+      }).on("mouseover", (function(_this) {
+        return function(p) {
+          return _this._mouseover(p);
+        };
+      })(this)).on("mouseout", this._mouseout);
+      newCells.append("text").attr("dy", ".32em").attr("y", x.rangeBand() / 2).attr("x", x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
+        return function(d) {
+          if (d.z > 0) {
+            return _this.formatCount(d.z);
+          } else {
+            return '';
+          }
+        };
+      })(this));
+      return true;
+    };
+
+    MatrixView.prototype._assumePositions = function() {
+      var that, transit;
+      that = this;
+      transit = this.canvas.transition().duration(this.duration);
+      transit.selectAll(".matrixrow").delay(function(d, i) {
+        return that.y(d.index) * 4;
+      }).attr("transform", function(d, i) {
+        return "translate(0," + that.y(d.index) + ")";
+      }).selectAll(".matrixcell").delay(function(d) {
+        return that.x(d.x) * 4;
+      }).attr("transform", (function(_this) {
+        return function(d, i) {
+          return "translate(" + that.x(d.x) + ",0)";
+        };
+      })(this));
+      transit.selectAll(".matrixcolumn").delay(function(d, i) {
+        return that.x(i) * 4;
+      }).attr("transform", function(d, i) {
+        return "translate(" + that.x(i) + ")rotate(-90)";
+      });
+      return true;
+    };
+
+    MatrixView.prototype._mouseover = function(p) {
+      d3.selectAll(".matrixrow text").classed("matrixActive", function(d, i) {
+        return d.index === p.y;
+      });
+      return d3.selectAll(".matrixcolumn text").classed("matrixActive", function(d, i) {
+        return i === p.x;
+      });
+    };
+
+    MatrixView.prototype._mouseout = function() {
+      return d3.selectAll("text").classed("matrixActive", false);
+    };
+
+    MatrixView.prototype._classList = function(d) {
+      var clsList;
+      clsList = ['matrixrow'];
+      if (d.selected) {
+        clsList.push("selectedRow");
+      }
+      if (d.assignedGroup != null) {
+        clsList.push("groupedRow" + d.assignedGroup);
+      }
+      return clsList.join(' ');
+    };
+
+    MatrixView.prototype.viewAction = function(genomes, argArray) {
+      var event, _ref;
+      event = argArray.shift();
+      if (event === 'matrix_sort') {
+        this.orderType = argArray[0];
+        if (_ref = this.orderType, __indexOf.call(Object.keys(this.geneOrders), _ref) < 0) {
+          throw new SuperphyError("Unrecognized order type: " + this.orderType + " in MatrixView viewAction method.");
+        }
+        this.update(genomes);
+      } else {
+        throw new SuperphyError("Unrecognized event type: " + event + " in MatrixView viewAction method.");
+      }
+      return true;
+    };
+
+    MatrixView.prototype.dump = function(genomes) {
+      var g, n, numAlleles, row, rows, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      rows = [];
+      row = [];
+      row.push("#");
+      _ref = this.geneNodes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        n = _ref[_i];
+        row.push(n.name);
+      }
+      rows.push(row.join("\t"));
+      _ref1 = this.currNodes;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        g = _ref1[_j];
+        row = [];
+        row.push(g.viewname);
+        _ref2 = this.geneNodes;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          n = _ref2[_k];
+          numAlleles = this.matrix[g.id][n.id].z;
+          row.push(numAlleles);
+        }
+        rows.push(row.join("\t"));
+      }
+      return {
+        ext: 'csv',
+        type: 'text/plain',
+        data: rows.join("\n")
+      };
+    };
+
+    MatrixView.prototype.updateCSS = function(gset, genomes) {
+      var g, genomeList, svgNodes, _i, _j, _len, _len1, _ref, _ref1;
+      genomeList = {};
+      if (gset["public"] != null) {
+        _ref = gset["public"];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          g = _ref[_i];
+          genomeList[g] = genomes.public_genomes[g];
+        }
+      }
+      if (gset["private"] != null) {
+        _ref1 = gset["private"];
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          g = _ref1[_j];
+          genomeList[g] = genomes.private_genomes[g];
+        }
+      }
+      svgNodes = this.canvas.selectAll("g.matrixrow");
+      svgNodes.filter(function(d) {
+        return genomeList[d.genome] != null;
+      }).attr("class", (function(_this) {
+        return function(d) {
+          g = genomeList[d.genome];
+          d.viewname = g.viewname;
+          d.selected = (g.isSelected != null) && g.isSelected;
+          if (g.assignedGroup != null) {
+            d.assignedGroup = g.assignedGroup;
+          } else {
+            d.assignedGroup = 0;
+          }
+          return _this._classList(d);
+        };
+      })(this));
+      return true;
+    };
+
+    MatrixView.prototype.select = function(genome, isSelected) {
       return true;
     };
 

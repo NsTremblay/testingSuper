@@ -7,6 +7,8 @@
  
  * */
 
+@selectedListFont: italic bold 13px sans-serif;
+
 .superphy-list {
   padding: 20px;
   ul {
@@ -19,5 +21,24 @@
     .borderStyle;
   }
 }
+
+.listGroupConstructor (@index) when (@index > 0) {
+  
+   @color: "group@{index}-color";
+   @dark-color: darken(@@color, 10%);
+  
+  li.genome_group@{index} {
+    color: @dark-color;
+    font: @selectedListFont;
+    input {
+      visibility: hidden;
+    }
+  }
+  
+  .listGroupConstructor(@index - 1);
+}
+
+// Define color schemes for up to 10 groups
+.listGroupConstructor(@group-num);
 
 

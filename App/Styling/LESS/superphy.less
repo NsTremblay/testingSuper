@@ -19,28 +19,29 @@
 
 /** Colors ********************************/
   
-// The following colors are assigned to groups1,2,...7   
-@blue: #3366AA;
-@green: #66AA55;
-@yellow: #F7EE55;
-@aqua: #11AA99;
-@purple: #992288;
-@red: #EE3333;
-@orange: #EE7722;
-@grey: #B9BDBD;
-@skyblue: #B5F4F5;
-@pink: #F032A1;
+// The following colors are assigned to groups1,2,...10
+         
+@blue: #1f77b4;
+@orange: #ff7f0e;
+@green: #2ca02c;
+@red: #d62728;
+@purple: #9467bd;
+@brown: #8c564b;
+@pink: #e377c2;
+@grey: #7f7f7f;
+@lime: #bcbd22;
+@aqua: #17becf;
 @group-num: 10;
 @group1-color: @blue;
-@group2-color: @green;
-@group3-color: @yellow;
-@group4-color: @aqua;
+@group2-color: @orange;
+@group3-color: @green;
+@group4-color: @red;
 @group5-color: @purple;
-@group6-color: @orange;
-@group7-color: @red;
+@group6-color: @pink;
+@group7-color: @brown;
 @group8-color: @grey;
-@group9-color: @pink;
-@group10-color: @skyblue;
+@group9-color: @aqua;
+@group10-color: @lime;
 
 // General website colors
 @border-color: #d3d3d3;
@@ -117,3 +118,53 @@ body {
 
 // Define color schemes for up to 10 groups
 .locusGroupConstructor(@group-num);
+
+
+// Group box styles
+
+// Group box row
+.group-form-row {
+  padding-top: 20px;
+  padding-bottom: 10px;
+}
+
+// Add group row button
+.add-genome-groups > div {
+  padding-top: 20px;
+  padding-bottom: 30px;
+  
+  button {
+    float: right
+  }
+}
+
+// Group box list
+.genome-group-list {
+  list-style-type: none;
+  display: block;
+  max-height: 500px;
+  max-width: 350px;
+  min-height: 50px;
+  width: 350px;
+  overflow: auto;
+  padding: 10px;
+  margin: 10px;
+  white-space: nowrap;
+  .borderStyle;
+}
+
+// Group button styles
+.buttonGroupConstructor (@index) when (@index > 0) {
+  
+  @color: "group@{index}-color";
+  @light-color: lighten(@@color, 20%);
+  
+  #genome-group-add@{index} {
+    background-color: @light-color;
+  }
+  
+  .buttonGroupConstructor(@index - 1);
+}
+
+// Define color schemes for up to 10 groups
+.buttonGroupConstructor(@group-num);

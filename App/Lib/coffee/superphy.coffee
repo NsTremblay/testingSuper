@@ -47,6 +47,8 @@ class ViewController
   actionMode: false
   action: false
   
+  maxGroups: 10
+  
   genomeController: undefined
   
   # Methods
@@ -123,6 +125,10 @@ class ViewController
     # Current view number
     gNum = @groups.length + 1
     
+    if gNum > @maxGroups
+      console.log 'DIE'
+      return false
+    
     # New list view
     grpView = new GroupView(boxEl, 'select', gNum)
     grpView.update(@genomeController)
@@ -186,30 +192,18 @@ class ViewController
       locTicker.update(@genomeController)
       @tickers.push locTicker
       
+    else if tickerType is 'allele'
+      # New allele ticker/histogram
+      alTicker = new AlleleTicker(elem, tNum, @genomeController, tickerArgs)
+      alTicker.update(@genomeController)
+      @tickers.push alTicker
+      
     else
       throw new SuperphyError 'Unrecognized tickerType in ViewController createTicker() method.'
       return false
       
     return true # return success
     
-    
-  createGroup: (boxEl, buttonEl) ->
-    
-    # Current view number
-    gNum = @groups.length + 1
-    
-    # New list view
-    grpView = new GroupView(boxEl, 'select', gNum)
-    grpView.update(@genomeController)
-    @groups.push grpView
-    
-    # Add response to button click
-    buttonEl.click (e) ->
-      e.preventDefault()
-      viewController.addToGroup(gNum)
-      
-    return true # return success
-  
   select: (g, checked) ->
     
     if @actionMode is 'single_select'
@@ -244,7 +238,52 @@ class ViewController
     v.updateCSS(gset, @genomeController) for v in @views
 
     true
+  
+  groupForm: (elem, addMoreOpt) ->
+    
+    # There can be only one
+    blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem)
+    @addGroupFormRow(blockEl)
+    
+    if addMoreOpt
+      addEl = jQuery("<div class='add-genome-groups row'></div>")
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl);
+      buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl)
+      buttEl.click( (e) ->
+        reachedMax = viewController.addGroupFormRow(jQuery("#group-form-block"))
+        if !reachedMax
+          jQuery(@).text('Max groups reached')
+            .css('color','darkgrey')
+          e.preventDefault()
+      )
+      elem.append(addEl)
+        
+    true
      
+  addGroupFormRow: (elem) ->
+    
+    if typeof elem is 'string'
+      elem = jQuery(elem)
+    
+    gNum = @groups.length + 1
+    
+    if gNum > @maxGroups
+      return false
+    
+    # Create row
+    rowEl = jQuery("<div class='group-form-row row'></div>").appendTo(elem)
+    ok = true
+      
+    for i in [gNum, gNum+1]
+      formEl = jQuery("<div id='genome-group-form#{i}' class='genome-group-form col-md-6'></div>")
+      listEl = jQuery("<div id='genome-group-list#{i}'></div>").appendTo(formEl)
+      buttEl = jQuery("<button id='genome-group-add#{i}' class='btn' type='button'>Add to Group #{i}</button>").appendTo(formEl)
+      rowEl.append(formEl)
+      
+      ok = @createGroup(listEl,buttEl)
+      
+    ok  
+            
     
   #submit:
   
@@ -262,6 +301,7 @@ class ViewController
     
     v.update(@genomeController) for v in @views
     v.update(@genomeController) for v in @groups
+    t.update(@genomeController) for t in @tickers
     
     true
     
@@ -364,6 +404,7 @@ class ViewController
     # Update Views  
     @_toggleFilterStatus()
     v.update(@genomeController) for v in @views
+    t.update(@genomeController) for t in @tickers
     
     true
     
@@ -378,6 +419,7 @@ class ViewController
     @_toggleFilterStatus()
     @_clearFilterForm()
     v.update(@genomeController) for v in @views
+    t.update(@genomeController) for t in @tickers
     
   # FUNC filterForm
   # Build and attach form used to filter genome by name/property
@@ -990,11 +1032,8 @@ class ListView extends ViewTemplate
         throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
         return false
       
-      console.log("Updating class to #{thiscls}")
       liEl = itemEl.parents().eq(1)
-      #console.log("Current class for list li: "+liEl.class)  
       liEl.attr('class', thiscls)
-      #console.log("Updated class for list li: "+liEl.class())  
         
         
     true # success
@@ -1102,7 +1141,7 @@ class GroupView extends ViewTemplate
     if listElem.length
       listElem.empty()
     else      
-      listElem = jQuery("<ul id='#{@elID}'/>")
+      listElem = jQuery("<ul id='#{@elID}' class='genome-group-list'/>")
       jQuery(@parentElem).append(listElem)
    
     # append group genomes to list
@@ -1127,7 +1166,7 @@ class GroupView extends ViewTemplate
     # create or find list element
     listElem = jQuery("##{@elID}")
     if not listElem.length    
-      listElem = jQuery("<ul id='#{@elID}'/>")
+      listElem = jQuery("<ul id='#{@elID}' class='genome-group-list'/>")
       jQuery(@parentElem).append(listElem)
     
     if genomeSet.public?
@@ -1854,7 +1893,7 @@ class LocusController
       else
         uniqueValues['NA']++
     
-# Return instance of a ViewController
+# Return instance of a LocusController
 unless root.LocusController
   root.LocusController = LocusController
 

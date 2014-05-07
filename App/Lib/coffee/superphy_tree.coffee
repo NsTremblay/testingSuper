@@ -584,8 +584,10 @@ class TreeView extends ViewTemplate
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
       g = genomes.genome(node.genome)
-     
-      if g.visible
+
+      # Genome can be missing if a subset of genomes was used
+      # Or if it was filtered     
+      if g? and g.visible
         # Update node with sync'd genome properties
         
         node.viewname = g.viewname

@@ -13,34 +13,72 @@
 
 	<div class="container" >
 		<div class="title">
-			<h1><span class="title_part1">VIRULENCE & AMR GENE</span> <span class="title_part2">DETECTION</span></h1>
+			<h1><span class="title_part1">VIRULENCE & AMR</span> <span class="title_part2">RESULTS</span></h1>
 		</div>
-		<p>Curated virulence factor and antimicrobial resistance (AMR) genes are detected in the individual genomes using the BLAST-based module in Panseq.
-		</p>
-		
+		<div id="vf_result_legend" class="legend" style="display: none;">
+			<p>Virulence Factor Gene Search Results:</p> 
+	      	<ul>
+	      		<li><a href="#vf_result_matrix">Matrix</a> showing presence / absence of searched VF gene(s)</li>
+	      		<li><a href="#vf_result_histogram">Histogram</a> showing distribution of VF gene copy number in genomes</li>
+	      	</ul>
+      	</div>
+      	<div id="amr_result_legend" class="legend" style="display: none;">
+			<p>Antimicrobial Resistance Gene Search Results:</p> 
+	      	<ul>
+	      		<li><a href="#amr_result_matrix">Matrix</a> showing presence / absence of searched AMR gene(s)</li>
+	      		<li><a href="#amr_result_histogram">Histogram</a> showing distribution of AMR gene copy number in genomes</li>
+	      	</ul>
+      	</div>
+      	<div id="group_legend" class="legend">
+			<p>For advanced clustering of genomes, assign genomes to groups in this <a href="#groups">form</a></p> 
+      	</div>
 		
 		<TMPL_INCLUDE NAME="search_utilities.tmpl">
 		
-		<div>
-			
-			<hr/>
-			
-			<div id="vf_results">
+		<div id="results">
+					
+			<div id="vf_results" style="display: none;">
+				<hr/>
 				<h4>Detected Virulence Factor Alleles</h4>
+				<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
 				<div id="vf_result_matrix">
+				</div>
+				<div class="row histogram-row">
+					<div class="col-md-4 histogram-description">
+						<span>Histogram showing the distribution of VF gene copy number in the genomes:</span>
+					</div>
+					<div id="vf_result_histogram" class="col-md-8 histogram-container">
+					</div>
 				</div>
 			</div>
 		      	
-		   	<hr/>
-		   	
-		    
-		    <div id="amr_results">
-				<h4>Detected AMR Alleles</h4>
+		    <div id="amr_results" style="display: none;">
+		    	<hr/>
+				<h4>Detected Antimicrobial Resistance Gene Alleles</h4>
+				<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
 				<div id="amr_result_matrix">
+				</div>
+				<div class="row histogram-row">
+					<div class="col-md-4 histogram-description">
+						<span>Histogram showing the distribution of AMR gene copy number in the genomes:</span>
+					</div>
+					<div id="amr_result_histogram" class="col-md-8 histogram-container">
+					</div>
 				</div>
 			</div>
 			
 		</div>
+		
+		<div id="groups">
+			<hr/>
+			<h4>Assign Genome Groups</h4>
+			<div id="expanding_groups">
+				<p>To order genomes by selected properties (i.e. phylogenetic clade, meta-data property, geographical location), first assign genomes to groups and then select <code>by Group</code> as matrix order.</p>
+			</div>
+			
+			<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
+		
+		</div> 
 	</div>
 
 	<script type="text/javascript">	
@@ -50,24 +88,53 @@
 		var public_genomes = <TMPL_VAR public_genomes>;
 		var private_genomes = <TMPL_VAR private_genomes>;
 		var genome_subset = null;
+		var tree = <TMPL_VAR tree_json>;
 		
 		<TMPL_IF genome_json>
 		genome_subset = <TMPL_VAR genome_json>;
 		</TMPL_IF>
 		
 		// Data objects
-		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
+		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info', genome_subset);
 		
 		// Views
-		matrixObj = { 
-			nodes: genes.vf,
-			links: alleles
-		};
-		viewController.createView('matrix', $('#vf_result_matrix'), matrixObj);
+		if(!jQuery.isEmptyObject( genes.vf )) {
+			
+			var matrixObj1 = { 
+				nodes: genes.vf,
+				links: alleles
+			};
+			viewController.createView('matrix', $('#vf_result_matrix'), matrixObj1);
+			viewController.createTicker('allele', $("#vf_result_histogram"), matrixObj1);
+			$('#vf_result_legend').show()
+			$('#vf_results').show()
+		}
+		
+		if(!jQuery.isEmptyObject( genes.amr )) {
+			
+			var matrixObj2 = { 
+				nodes: genes.amr,
+				links: alleles
+			};
+			viewController.createView('matrix', $('#amr_result_matrix'), matrixObj2);
+			viewController.createTicker('allele', $("#amr_result_histogram"), matrixObj2);
+			
+			// Unhide
+			$('#amr_result_legend').show()
+			$('#amr_results').show()
+		}
 		
 		// Search forms
 		viewController.metaForm($('#meta-display-form'));
 		viewController.filterForm($('#filter-form'));
+		
+		// Genome selection form
+		viewController.createView('list', $('#strains_list'));
+		//viewController.createView('tree', $('#strains_tree'), tree);
+		
+		// Code to create groups
+		var addMore = true;
+		viewController.groupForm($('#expanding_groups'), addMore);
 		
 		
 	</script>

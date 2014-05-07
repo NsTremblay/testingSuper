@@ -282,10 +282,21 @@ sub matrix : Runmode {
 		$template->param(genome_json => $gl_json);
 	}
 	
-	# Retrieve meta info
+	# Retrieve genome meta info
 	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
+	# Retrieve genome tree
+	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+	my $tree_string;
+	if($warden->hasPersonal) {
+		$tree_string = $tree->fullTree($warden->genomeLookup());
+	} else {
+		$tree_string = $tree->fullTree();
+	}
+	$template->param(tree_json => $tree_string);
+	
 		
 	return $template->output();
 }
