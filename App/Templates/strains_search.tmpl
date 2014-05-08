@@ -11,52 +11,45 @@
 	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
 	
 	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
-	<!--<script src="http://d3js.org/d3.v3.min.js" ></script>-->
-	
+
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+
+
 	<script src="/App/Lib/js/superphy.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
 	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
-	
-
 	
 </head>
 
 <body>
 	<div class="container" >
-	
-		
-	
-		<div id="genome-group1-form">
-			<div id="genome-group1-list">
-			</div>
-			<button id="genome-group1-add" class="btn" type="button">Add to Group 1</button>
-		</div>
-		
+
 		<TMPL_INCLUDE NAME="search_utilities.tmpl">
-	
+
 		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 		
 	</div>
 
 	<script type="text/javascript">
 	
-		var public_genomes = <TMPL_VAR public_genomes>;
-		var private_genomes = <TMPL_VAR private_genomes>;
-		var tree = <TMPL_VAR tree_json>;
-		
-		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info/');
-		
-		viewController.createView('list', $('#strains_list'));
-		
-		viewController.metaForm($('#meta-display-form'));
-		
-		viewController.filterForm($('#filter-form'));
-		
-		viewController.createGroup($('#genome-group1-list'),$('#genome-group1-add'));
-		
-		viewController.createView('tree', $('#strains_tree'), tree);
-		
+	var public_genomes = <TMPL_VAR public_genomes>;
+	var private_genomes = <TMPL_VAR private_genomes>;
+	var tree = <TMPL_VAR tree_json>;
+
+	viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+
+	viewController.createView('list', $('#strains_list'));
+
+	viewController.metaForm($('#meta-display-form'));
+
+	viewController.filterForm($('#filter-form'));
+
+	viewController.createView('tree', $('#strains_tree'), tree);
+
+	viewController.createView('map', $('#strains_map'));
+	
 	</script>
+
 </body>
 
 </html>

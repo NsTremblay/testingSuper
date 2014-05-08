@@ -113,6 +113,13 @@ class ViewController
       matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
       matView.update(@genomeController)
       @views.push matView
+
+    else if viewType is 'map'
+      #New map view
+      mapView = new MapView(elem, clickStyle, vNum, viewArgs)
+      mapView.conscriptCartographger()
+      mapView.update(@genomeController)
+      @views.push mapView
       
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
@@ -392,7 +399,8 @@ class ViewController
         
         if term? and term.length
           searchTerms = []
-          searchTerms.push { searchTerm: term, dataField: 'displayname', negate: false }
+          #searchTerms.push { searchTerm: term, dataField: 'displayname', negate: false }
+          searchTerms.push { searchTerm: term, dataField: 'viewname', negate: false }
           
       else
         # Advanced form - specified fields, terms
@@ -1295,10 +1303,11 @@ class GenomeController
     # Update public set
     for id,g of @public_genomes
       g.viewname = @label(g,@visibleMeta)
-      
+      g.htmlname = @labelHTML(g,@visibleMeta)
     # Update private set
     for id,g of @private_genomes
       g.viewname = @label(g,@visibleMeta)
+      g.htmlname = @labelHTML(g,@visibleMeta)
       
     true
     
@@ -1603,6 +1612,29 @@ class GenomeController
     mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype']
     for t in mtypes
       lab.push (genome[t] ? [na]).join(' ') if visibleMeta[t]
+    
+    # Scalar values
+    lab.push genome.primary_dbxref ? na if visibleMeta.accession
+    
+    # Return string
+    lab.join(joinStr)
+
+  labelHTML: (genome, visibleMeta, joinStr = ' ') ->
+    na = 'NA'
+    lab = [genome.displayname]
+    
+    # Add visible meta-data to label is specific order
+    # Array values
+    mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype']
+    for t in mtypes
+      #lab.push (genome[t] ? [na]).join(' ') if visibleMeta[t]
+      if visibleMeta[t]
+        if genome[t]?
+          for i in genome[t]
+            lab.push('<span class="label label-default">'+i+'</span>')
+        else
+          lab.push('<span class="label label-default">'+[na]+'</span>')
+
     
     # Scalar values
     lab.push genome.primary_dbxref ? na if visibleMeta.accession

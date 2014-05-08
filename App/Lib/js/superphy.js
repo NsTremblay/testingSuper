@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, GenomeController, GroupView, ListView, LocusController, LocusTicker, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, ClickCartographer, GenomeController, GroupView, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -86,7 +86,7 @@
     };
 
     ViewController.prototype.createView = function() {
-      var clickStyle, downloadElem, downloadElemDiv, elem, listView, matView, msaView, treeView, vNum, viewArgs, viewType;
+      var clickStyle, downloadElem, downloadElemDiv, elem, listView, mapView, matView, msaView, treeView, vNum, viewArgs, viewType;
       viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
@@ -121,6 +121,11 @@
         matView = new MatrixView(elem, clickStyle, vNum, this.genomeController, viewArgs);
         matView.update(this.genomeController);
         this.views.push(matView);
+      } else if (viewType === 'map') {
+        mapView = new MapView(elem, clickStyle, vNum, viewArgs);
+        mapView.conscriptCartographger();
+        mapView.update(this.genomeController);
+        this.views.push(mapView);
       } else {
         throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
         return false;
@@ -354,7 +359,7 @@
             searchTerms = [];
             searchTerms.push({
               searchTerm: term,
-              dataField: 'displayname',
+              dataField: 'viewname',
               negate: false
             });
           }
@@ -1115,11 +1120,13 @@
       for (id in _ref) {
         g = _ref[id];
         g.viewname = this.label(g, this.visibleMeta);
+        g.htmlname = this.labelHTML(g, this.visibleMeta);
       }
       _ref1 = this.private_genomes;
       for (id in _ref1) {
         g = _ref1[id];
         g.viewname = this.label(g, this.visibleMeta);
+        g.htmlname = this.labelHTML(g, this.visibleMeta);
       }
       return true;
     };
@@ -1456,6 +1463,34 @@
         t = mtypes[_i];
         if (visibleMeta[t]) {
           lab.push(((_ref = genome[t]) != null ? _ref : [na]).join(' '));
+        }
+      }
+      if (visibleMeta.accession) {
+        lab.push((_ref1 = genome.primary_dbxref) != null ? _ref1 : na);
+      }
+      return lab.join(joinStr);
+    };
+
+    GenomeController.prototype.labelHTML = function(genome, visibleMeta, joinStr) {
+      var i, lab, mtypes, na, t, _i, _j, _len, _len1, _ref, _ref1;
+      if (joinStr == null) {
+        joinStr = ' ';
+      }
+      na = 'NA';
+      lab = [genome.displayname];
+      mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+      for (_i = 0, _len = mtypes.length; _i < _len; _i++) {
+        t = mtypes[_i];
+        if (visibleMeta[t]) {
+          if (genome[t] != null) {
+            _ref = genome[t];
+            for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+              i = _ref[_j];
+              lab.push('<span class="label label-default">' + i + '</span>');
+            }
+          } else {
+            lab.push('<span class="label label-default">' + [na] + '</span>');
+          }
         }
       }
       if (visibleMeta.accession) {
@@ -3654,5 +3689,206 @@
     return MatrixView;
 
   })(ViewTemplate);
+
+
+  /*
+  
+   File: superphy_map.coffee
+   Desc: Objects & functions for managing geospatial views in Superphy
+   Author: Akiff Manji akiff.manji@gmail.com
+   Date: May 6, 2014
+   */
+
+  MapView = (function(_super) {
+    __extends(MapView, _super);
+
+    function MapView(parentElem, style, elNum, mapArgs) {
+      this.parentElem = parentElem;
+      this.style = style;
+      this.elNum = elNum;
+      MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+    }
+
+    MapView.prototype.type = 'map';
+
+    MapView.prototype.elName = 'genome_map';
+
+    MapView.prototype.update = function(genomes) {
+      var ft, mapElem, t1, t2;
+      mapElem = jQuery("#" + this.elID);
+      if (mapElem.length) {
+        mapElem.empty();
+      } else {
+        mapElem = jQuery("<ul id='" + this.elID + "' />");
+        jQuery(this.parentElem).find('.map-manifest').append(mapElem);
+      }
+      t1 = new Date();
+      this._appendGenomes(mapElem, genomes.pubVisible, genomes.public_genomes, this.style, false);
+      this._appendGenomes(mapElem, genomes.pvtVisible, genomes.private_genomes, this.style, true);
+      t2 = new Date();
+      ft = t2 - t1;
+      console.log('List view elapsed time: ' + ft);
+      return true;
+    };
+
+    MapView.prototype._appendGenomes = function(el, visibleG, genomes, style, priv) {
+      var actionEl, checked, cls, g, labEl, mapEl, name, thiscls, _i, _len;
+      cls = this.cssClass();
+      if (priv && visibleG.length) {
+        el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>");
+      }
+      for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
+        g = visibleG[_i];
+        thiscls = cls;
+        if (genomes[g].cssClass != null) {
+          thiscls = cls + ' ' + genomes[g].cssClass;
+        }
+        name = genomes[g].htmlname;
+        if (style = 'redirect') {
+          mapEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
+          actionEl = jQuery("<a href='#' data-genome='" + g + "'><span class='fa fa-search'></span> info</a>");
+          actionEl.click(function(e) {
+            var gid;
+            e.preventDefault();
+            gid = this.dataset.genome;
+            return viewController.select(gid, true);
+          });
+          mapEl.append(actionEl);
+          el.append(mapEl);
+        } else if (style === 'select') {
+          checked = '';
+          if (genomes[g].isSelected) {
+            checked = 'checked';
+          }
+          mapEl = jQuery("<li class='" + thiscls + "'></li>");
+          labEl = jQuery("<label class='checkbox'>" + name + "</label>");
+          actionEl = jQuery("<input class='checkbox' type='checkbox' value='" + g + "' " + checked + "/>");
+          actionEl.change(function(e) {
+            e.preventDefault();
+            return viewController.select(this.value, this.checked);
+          });
+          labEl.append(actionEl);
+          mapEl.append(labEl);
+          el.append(mapEl);
+        } else {
+          return false;
+        }
+        true;
+      }
+    };
+
+    MapView.prototype.updateCSS = function(gset, genomes) {
+      var mapEl;
+      mapEl = jQuery("#" + this.elID);
+      if (!((mapEl != null) && mapEl.length)) {
+        throw new SuperphyError(" DOM element for map view " + this.elID + " not found. Cannot call MapView method updateCSS().");
+      }
+      return true;
+    };
+
+    MapView.prototype.select = function(genome, isSelected) {
+      var descriptor, itemEl;
+      itemEl = null;
+      if (this.style === 'select') {
+        descriptor = "li input[value='" + genome + "']";
+        itemEl = jQuery(descriptor);
+      } else {
+        return false;
+      }
+      if (!((itemEl != null) && itemEl.length)) {
+        throw new SuperphyError(" Map element for genome " + genome + " not found in MapView " + this.elID);
+        return false;
+      }
+      itemEl.prop('checked', isSelected);
+      return true;
+    };
+
+    MapView.prototype.dump = function(genomes) {};
+
+    MapView.prototype.conscriptCartographger = function() {
+      var cartographer, map, splitLayout;
+      splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div> <div class="map-manifest"></div>';
+      jQuery(this.parentElem).append(splitLayout);
+      cartographer = new ClickCartographer(jQuery(this.parentElem).find('.map-canvas'));
+      map = cartographer.cartograPhy();
+      jQuery('.map-search-button').click(function(e) {
+        var queryLocation;
+        queryLocation = jQuery('.map-search-location').val();
+        e.preventDefault();
+        return cartographer.pinPoint(queryLocation, map);
+      });
+      return true;
+    };
+
+    return MapView;
+
+  })(ViewTemplate);
+
+  Cartographer = (function() {
+    function Cartographer() {
+      var cartograhOpt, cartographDiv;
+      cartographDiv = arguments[0], cartograhOpt = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      this.cartographDiv = cartographDiv;
+      this.cartograhOpt = cartograhOpt;
+    }
+
+    Cartographer.prototype.cartograPhy = function() {
+      var cartograhOpt;
+      cartograhOpt = {
+        center: new google.maps.LatLng(-0.000, 0.000),
+        zoom: 1,
+        streetViewControl: false,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      };
+      return new google.maps.Map(this.cartographDiv[0], cartograhOpt);
+    };
+
+    Cartographer.prototype.reCartograPhy = function() {
+      return true;
+    };
+
+    Cartographer.prototype.pinPoint = function(address, map) {
+      var geocoder;
+      geocoder = new google.maps.Geocoder();
+      geocoder.geocode({
+        'address': address
+      }, function(results, status) {
+        if (status === google.maps.GeocoderStatus.OK) {
+          map.setCenter(results[0].geometry.location);
+          return map.fitBounds(results[0].geometry.viewport);
+        } else {
+          return alert("Location " + address + " could not be found. Please enter a proper location");
+        }
+      });
+      return true;
+    };
+
+    return Cartographer;
+
+  })();
+
+  ClickCartographer = (function(_super) {
+    __extends(ClickCartographer, _super);
+
+    function ClickCartographer() {
+      var clickCartograhOpt, clickCartographDiv;
+      clickCartographDiv = arguments[0], clickCartograhOpt = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
+      this.clickCartographDiv = clickCartographDiv;
+      this.clickCartograhOpt = clickCartograhOpt;
+      ClickCartographer.__super__.constructor.call(this, this.clickCartographDiv, this.clickCartograhOpt);
+    }
+
+    ClickCartographer.prototype.cartograPhy = function() {
+      return ClickCartographer.__super__.cartograPhy.apply(this, arguments);
+    };
+
+    ClickCartographer.prototype.pinPoint = function(address, map) {
+      ClickCartographer.__super__.pinPoint.call(this, address, map);
+      return alert("Hello");
+    };
+
+    return ClickCartographer;
+
+  })(Cartographer);
 
 }).call(this);
