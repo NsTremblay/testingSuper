@@ -164,7 +164,16 @@ class MapView extends ViewTemplate
     return
 
   conscriptCartographger: () ->
-    splitLayout = '
+    cartographer = new DotCartographer(jQuery(@parentElem))
+    cartographer.cartograPhy()
+true
+
+#Base class for map functions
+class Cartographer
+  constructor: (@cartographDiv, @cartograhOpt) ->
+  map: null
+  latLng: null
+  splitLayout: '
       <div>
         <form class="form">
           <fieldset>
@@ -180,24 +189,8 @@ class MapView extends ViewTemplate
           </fieldset>
         </form>
         <div class="map-canvas" style="height:200px;width:200px"></div>
-      </div>
-      <div class="map-manifest"></div>'
+      </div>'
 
-    jQuery(@parentElem).append(splitLayout)
-
-    cartographer = new ClickCartographer(jQuery(@parentElem).find('.map-canvas'))
-    map = cartographer.cartograPhy()
-
-    jQuery('.map-search-button').click (e) ->
-      queryLocation = jQuery('.map-search-location').val()
-      e.preventDefault()
-      cartographer.pinPoint(queryLocation, map)
-
-    true
-
-#Base class for map functions
-class Cartographer
-  constructor: (@cartographDiv, @cartograhOpt) ->
 
   # FUNC cartograPhy
   # initializes map in specified map div
@@ -206,62 +199,105 @@ class Cartographer
   #
   # RETURNS
   # google map object drawn into specified div
+  #
   cartograPhy: () ->
+    jQuery(@cartographDiv).prepend(@.splitLayout)
+    @.map = null if @.map?
     cartograhOpt = {
       center: new google.maps.LatLng(-0.000, 0.000),
       zoom: 1,
       streetViewControl: false,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     }
-    return new google.maps.Map(@cartographDiv[0], cartograhOpt);
+    @.map = new google.maps.Map(jQuery(@cartographDiv).find('.map-canvas')[0], cartograhOpt);
+    jQuery('.map-search-button').bind('click', {context: @}, @.pinPoint)
+    true
 
   reCartograPhy: () ->
     true
 
   # FUNC pinPoint
   # geocodes an address from the map search query
+  # centers the map at specified area, and stores the latLng info in the database if it doesnt already exist
   #
   # PARAMS
   # address string
   # 
   # RETURNS
-  # latLng coordiantes
-  # centers the map at specified area, and stores the latLng info in the database if it doesnt already exist
   #
-  pinPoint: (address, map) ->
-    # TODO: ability to store latlngs in the database
+  pinPoint: (e) ->
+    # TODO: ability to check and store latlngs in the database
+    e.preventDefault()
+    self = e.data.context
     geocoder = new google.maps.Geocoder();
-    geocoder.geocode({'address': address}, (results, status) ->
+    queryLocation = jQuery('.map-search-location').val()
+    geocoder.geocode({'address': queryLocation}, (results, status) ->
         if status is google.maps.GeocoderStatus.OK
-          map.setCenter(results[0].geometry.location)
-          map.fitBounds(results[0].geometry.viewport)
+          self.latLng = results[0].geometry.location
+          self.map.setCenter(results[0].geometry.location)
+          self.map.fitBounds(results[0].geometry.viewport)
         else
           alert("Location #{address} could not be found. Please enter a proper location")
     )
     true
 
-class ClickCartographer extends Cartographer
-  constructor: (@clickCartographDiv, @clickCartograhOpt) ->
-
+class DotCartographer extends Cartographer
+  constructor: (@dotCartographDiv, @dotCartograhOpt) ->
     # Call default constructor
-    super(@clickCartographDiv, @clickCartograhOpt)
+    super(@dotCartographDiv, @dotCartograhOpt)
+  
+  marker: null
 
+  # FUNC cartograPhy overrides Cartographer
+  # initializes map in specified map div
+  # binds click listener to map for dropping a map marker
+  #
+  # PARAMS
+  #
+  # RETURNS
+  # google map object drawn into specified div
+  #
   cartograPhy: () ->
     super
+    google.maps.event.addListener(@.map , 'click', (event) ->
+      DotCartographer::plantFlag(event.latLng, @)
+      )
+    true
 
   reCartograPhy: () ->
     super
 
   # FUNC pinPoint overrides Cartographer
   # geocodes an address from the map search query
+  # centers the map at specified area, and stores the latLng info in the database if it doesnt already exist
+  # adds marker to center of map (i.e. queried location)
   #
   # PARAMS
   # address string
+  # 
+  # RETURNS
+  #
+  pinPoint: (e) ->
+    super(e)
+    self = e.data.context
+    DotCartographer::plantFlag(self.latLng, self.map)
+    true
+
+  # FUNC plantFlag
+  # sets new marker on map on click event
+  # removes old marker off of map if defined
+  #
+  # PARAMS
+  # location latLng, map map
   #
   # RETURNS
-  # latLng coordinates
-  # centers the map at the specified area and stores the latlng info in the database if it doesnt already exist
-  # creates and overlays a marker on the map at center point
-  pinPoint: (address, map) ->
-    # TODO:
-    super(address, map)
+  #
+  plantFlag: (location, map) ->
+    @.marker.setMap(null) if @.marker?
+    @.marker = new google.maps.Marker({
+      position: location,
+      map: map
+      });
+    @.marker.setTitle(@.marker.getPosition().toString())
+    map.panTo(@.marker.getPosition())
+    true

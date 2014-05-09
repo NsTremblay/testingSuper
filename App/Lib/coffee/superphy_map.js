@@ -7,7 +7,7 @@
  Author: Akiff Manji akiff.manji@gmail.com
  Date: May 6, 2014
  */
-var Cartographer, ClickCartographer, MapView,
+var Cartographer, DotCartographer, MapView,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -118,23 +118,16 @@ MapView = (function(_super) {
   MapView.prototype.dump = function(genomes) {};
 
   MapView.prototype.conscriptCartographger = function() {
-    var cartographer, map, splitLayout;
-    splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div> <div class="map-manifest"></div>';
-    jQuery(this.parentElem).append(splitLayout);
-    cartographer = new ClickCartographer(jQuery(this.parentElem).find('.map-canvas'));
-    map = cartographer.cartograPhy();
-    jQuery('.map-search-button').click(function(e) {
-      var queryLocation;
-      queryLocation = jQuery('.map-search-location').val();
-      e.preventDefault();
-      return cartographer.pinPoint(queryLocation, map);
-    });
-    return true;
+    var cartographer;
+    cartographer = new DotCartographer(jQuery(this.parentElem));
+    return cartographer.cartograPhy();
   };
 
   return MapView;
 
 })(ViewTemplate);
+
+true;
 
 Cartographer = (function() {
   function Cartographer(cartographDiv, cartograhOpt) {
@@ -142,30 +135,48 @@ Cartographer = (function() {
     this.cartograhOpt = cartograhOpt;
   }
 
+  Cartographer.prototype.map = null;
+
+  Cartographer.prototype.latLng = null;
+
+  Cartographer.prototype.splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div>';
+
   Cartographer.prototype.cartograPhy = function() {
     var cartograhOpt;
+    jQuery(this.cartographDiv).prepend(this.splitLayout);
+    if (this.map != null) {
+      this.map = null;
+    }
     cartograhOpt = {
       center: new google.maps.LatLng(-0.000, 0.000),
       zoom: 1,
       streetViewControl: false,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     };
-    return new google.maps.Map(this.cartographDiv[0], cartograhOpt);
+    this.map = new google.maps.Map(jQuery(this.cartographDiv).find('.map-canvas')[0], cartograhOpt);
+    jQuery('.map-search-button').bind('click', {
+      context: this
+    }, this.pinPoint);
+    return true;
   };
 
   Cartographer.prototype.reCartograPhy = function() {
     return true;
   };
 
-  Cartographer.prototype.pinPoint = function(address, map) {
-    var geocoder;
+  Cartographer.prototype.pinPoint = function(e) {
+    var geocoder, queryLocation, self;
+    e.preventDefault();
+    self = e.data.context;
     geocoder = new google.maps.Geocoder();
+    queryLocation = jQuery('.map-search-location').val();
     geocoder.geocode({
-      'address': address
+      'address': queryLocation
     }, function(results, status) {
       if (status === google.maps.GeocoderStatus.OK) {
-        map.setCenter(results[0].geometry.location);
-        return map.fitBounds(results[0].geometry.viewport);
+        self.latLng = results[0].geometry.location;
+        self.map.setCenter(results[0].geometry.location);
+        return self.map.fitBounds(results[0].geometry.viewport);
       } else {
         return alert("Location " + address + " could not be found. Please enter a proper location");
       }
@@ -177,27 +188,50 @@ Cartographer = (function() {
 
 })();
 
-ClickCartographer = (function(_super) {
-  __extends(ClickCartographer, _super);
+DotCartographer = (function(_super) {
+  __extends(DotCartographer, _super);
 
-  function ClickCartographer(clickCartographDiv, clickCartograhOpt) {
-    this.clickCartographDiv = clickCartographDiv;
-    this.clickCartograhOpt = clickCartograhOpt;
-    ClickCartographer.__super__.constructor.call(this, this.clickCartographDiv, this.clickCartograhOpt);
+  function DotCartographer(dotCartographDiv, dotCartograhOpt) {
+    this.dotCartographDiv = dotCartographDiv;
+    this.dotCartograhOpt = dotCartograhOpt;
+    DotCartographer.__super__.constructor.call(this, this.dotCartographDiv, this.dotCartograhOpt);
   }
 
-  ClickCartographer.prototype.cartograPhy = function() {
-    return ClickCartographer.__super__.cartograPhy.apply(this, arguments);
+  DotCartographer.prototype.marker = null;
+
+  DotCartographer.prototype.cartograPhy = function() {
+    DotCartographer.__super__.cartograPhy.apply(this, arguments);
+    google.maps.event.addListener(this.map, 'click', function(event) {
+      return DotCartographer.prototype.plantFlag(event.latLng, this);
+    });
+    return true;
   };
 
-  ClickCartographer.prototype.reCartograPhy = function() {
-    return ClickCartographer.__super__.reCartograPhy.apply(this, arguments);
+  DotCartographer.prototype.reCartograPhy = function() {
+    return DotCartographer.__super__.reCartograPhy.apply(this, arguments);
   };
 
-  ClickCartographer.prototype.pinPoint = function(address, map) {
-    return ClickCartographer.__super__.pinPoint.call(this, address, map);
+  DotCartographer.prototype.pinPoint = function(e) {
+    var self;
+    DotCartographer.__super__.pinPoint.call(this, e);
+    self = e.data.context;
+    DotCartographer.prototype.plantFlag(self.latLng, self.map);
+    return true;
   };
 
-  return ClickCartographer;
+  DotCartographer.prototype.plantFlag = function(location, map) {
+    if (this.marker != null) {
+      this.marker.setMap(null);
+    }
+    this.marker = new google.maps.Marker({
+      position: location,
+      map: map
+    });
+    this.marker.setTitle(this.marker.getPosition().toString());
+    map.panTo(this.marker.getPosition());
+    return true;
+  };
+
+  return DotCartographer;
 
 })(Cartographer);
