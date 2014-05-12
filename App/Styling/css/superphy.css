@@ -271,45 +271,122 @@ li.genome_group1 input {
  Date: March 28th, 2013
  
  * */
-/** Top Button ****************************/
-#utility-button {
-  font-size: 12pt;
-  padding: 10px;
+/** Body **********************************/
+body {
+  padding-top: 70px;
+  padding-bottom: 70px;
+}
+#wrapper {
+  padding-left: 300px;
+  transition: all 0.4s ease 0s;
+}
+#sidebar-wrapper {
+  margin-left: -300px;
+  left: 300px;
+  width: 300px;
+  background: #FFF;
+  position: fixed;
+  height: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: all 0.4s ease 0s;
+}
+#page-content-wrapper {
+  width: 100%;
+}
+.content-header {
+  line-height: 65px;
+  padding-bottom: 30px;
+}
+.content-header h1 {
+  display: inline-block;
+  line-height: 65px;
+  margin: 0 0 0 20px;
+}
+#menu-toggle {
+  display: none;
+}
+.inset {
+  padding: 20px;
+}
+.navbar-toggle {
+  color: #d3d3d3;
+}
+@media (max-width: 767px) {
+  #wrapper {
+    padding-left: 0;
+  }
+  #sidebar-wrapper {
+    left: 0;
+  }
+  #wrapper.active {
+    position: relative;
+    left: 300px;
+  }
+  #wrapper.active #sidebar-wrapper {
+    left: 300px;
+    width: 300px;
+    transition: all 0.4s ease 0s;
+  }
+  #menu-toggle {
+    display: inline-block;
+    color: #d3d3d3;
+  }
+  .inset {
+    padding: 15px;
+  }
+  #footer {
+    display: none;
+  }
+}
+/** Side bar ******************************/
+.sidebar {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  padding: 5px 5px 70px 5px;
+  border-right: 1px solid #d3d3d3;
+  min-height: 350px;
+}
+.sidebar #sidebar-accordion {
+  padding-bottom: 20px;
+}
+.sidebar #sidebar-accordion .panel {
+  margin: 5px;
 }
 /** Filter Status *************************/
-#filter-status div {
-  display: inline-block;
-  margin: 5px;
-  padding-left: 15px;
+#filter-status {
+  margin: 10px;
 }
 #filter-status button {
   display: inline-block;
   margin: 10px;
 }
+#filter-status #filter-on #filter-on-text {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+/** TOC ***********************************/
+.toc {
+  margin-left: 50px;
+}
+.toc .toc-well {
+  display: inline-block;
+}
 /** Meta-Display **************************/
-#meta-display-form {
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
-  min-height: 200px;
-}
-#meta-display h4 {
+#meta-form > div p {
   padding-left: 10px;
-}
-#meta-display p {
-  padding-left: 20px;
-  padding-top: 5px;
+  padding-top: 0px;
   padding-bottom: 5px;
 }
-#meta-display div {
-  padding-bottom: 5px;
-  padding-left: 15px;
+#meta-form > div div {
+  padding-bottom: 0px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 /** Filter Form ***************************/
 #filter-form {
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
   min-height: 200px;
 }
 #filter-form h4 {
@@ -440,34 +517,34 @@ text.matrixActive {
 .groupedRow0 rect.matrixcell {
   fill: #000;
 }
-.groupedRow10 rect.matrixcell {
+.groupedRow10 g.matrixcell rect {
   fill: #91921a;
 }
-.groupedRow9 rect.matrixcell {
+.groupedRow9 g.matrixcell rect {
   fill: #1294a1;
 }
-.groupedRow8 rect.matrixcell {
+.groupedRow8 g.matrixcell rect {
   fill: #666666;
 }
-.groupedRow7 rect.matrixcell {
+.groupedRow7 g.matrixcell rect {
   fill: #6b4239;
 }
-.groupedRow6 rect.matrixcell {
+.groupedRow6 g.matrixcell rect {
   fill: #da4daf;
 }
-.groupedRow5 rect.matrixcell {
+.groupedRow5 g.matrixcell rect {
   fill: #7b49a8;
 }
-.groupedRow4 rect.matrixcell {
+.groupedRow4 g.matrixcell rect {
   fill: #ab1f20;
 }
-.groupedRow3 rect.matrixcell {
+.groupedRow3 g.matrixcell rect {
   fill: #217821;
 }
-.groupedRow2 rect.matrixcell {
+.groupedRow2 g.matrixcell rect {
   fill: #da6600;
 }
-.groupedRow1 rect.matrixcell {
+.groupedRow1 g.matrixcell rect {
   fill: #185a88;
 }
 /** Drop down *****************************/
@@ -482,14 +559,6 @@ div.matrixSort {
   border-color: #d3d3d3;
 }
 /** Styles ********************************/
-body {
-  padding-top: 70px;
-  padding-bottom: 70px;
-}
-.title {
-  margin: 10px;
-  padding: 10px;
-}
 .titleText {
   font-weight: bold;
 }
@@ -603,4 +672,7 @@ body {
 }
 #genome-group-add1 {
   background-color: #57a9e2;
+}
+.toc-well {
+  display: inline-block;
 }

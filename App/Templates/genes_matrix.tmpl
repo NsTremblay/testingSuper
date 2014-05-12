@@ -9,77 +9,77 @@
 </head>
 
 <body>
-	<TMPL_INCLUDE NAME="nav_bar2.tmpl">
 
-	<div class="container" >
-		<div class="title">
-			<h1><span class="title_part1">VIRULENCE & AMR</span> <span class="title_part2">RESULTS</span></h1>
-		</div>
+	<TMPL_INCLUDE NAME="page_top.tmpl">
+	
+	<div class="toc">	
+	<div class="well toc-well" >
 		<div id="vf_result_legend" class="legend" style="display: none;">
 			<p>Virulence Factor Gene Search Results:</p> 
 	      	<ul>
 	      		<li><a href="#vf_result_matrix">Matrix</a> showing presence / absence of searched VF gene(s)</li>
 	      		<li><a href="#vf_result_histogram">Histogram</a> showing distribution of VF gene copy number in genomes</li>
 	      	</ul>
-      	</div>
-      	<div id="amr_result_legend" class="legend" style="display: none;">
+	  	</div>
+	  	<div id="amr_result_legend" class="legend" style="display: none;">
 			<p>Antimicrobial Resistance Gene Search Results:</p> 
 	      	<ul>
 	      		<li><a href="#amr_result_matrix">Matrix</a> showing presence / absence of searched AMR gene(s)</li>
 	      		<li><a href="#amr_result_histogram">Histogram</a> showing distribution of AMR gene copy number in genomes</li>
 	      	</ul>
-      	</div>
-      	<div id="group_legend" class="legend">
+	  	</div>
+	  	<div id="group_legend" class="legend">
 			<p>For advanced clustering of genomes, assign genomes to groups in this <a href="#groups">form</a></p> 
-      	</div>
-		
-		<TMPL_INCLUDE NAME="search_utilities.tmpl">
-		
-		<div id="results">
-					
-			<div id="vf_results" style="display: none;">
-				<hr/>
-				<h4>Detected Virulence Factor Alleles</h4>
-				<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
-				<div id="vf_result_matrix">
+	  	</div>
+  	</div>
+  	</div>
+	
+	<div id="results">
+				
+		<div id="vf_results" style="display: none;">
+			<hr/>
+			<h4>Detected Virulence Factor Alleles</h4>
+			<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
+			<div id="vf_result_matrix">
+			</div>
+			<div class="row histogram-row">
+				<div class="col-md-4 histogram-description">
+					<span>Histogram showing the distribution of VF gene copy number in the genomes:</span>
 				</div>
-				<div class="row histogram-row">
-					<div class="col-md-4 histogram-description">
-						<span>Histogram showing the distribution of VF gene copy number in the genomes:</span>
-					</div>
-					<div id="vf_result_histogram" class="col-md-8 histogram-container">
-					</div>
+				<div id="vf_result_histogram" class="col-md-8 histogram-container">
 				</div>
 			</div>
-		      	
-		    <div id="amr_results" style="display: none;">
-		    	<hr/>
-				<h4>Detected Antimicrobial Resistance Gene Alleles</h4>
-				<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
-				<div id="amr_result_matrix">
+		</div>
+	      	
+	    <div id="amr_results" style="display: none;">
+	    	<hr/>
+			<h4>Detected Antimicrobial Resistance Gene Alleles</h4>
+			<p>Matrix indicates presence / absence of detected gene alleles for each genome:</p>
+			<div id="amr_result_matrix">
+			</div>
+			<div class="row histogram-row">
+				<div class="col-md-4 histogram-description">
+					<span>Histogram showing the distribution of AMR gene copy number in the genomes:</span>
 				</div>
-				<div class="row histogram-row">
-					<div class="col-md-4 histogram-description">
-						<span>Histogram showing the distribution of AMR gene copy number in the genomes:</span>
-					</div>
-					<div id="amr_result_histogram" class="col-md-8 histogram-container">
-					</div>
+				<div id="amr_result_histogram" class="col-md-8 histogram-container">
 				</div>
 			</div>
-			
 		</div>
 		
-		<div id="groups">
-			<hr/>
-			<h4>Assign Genome Groups</h4>
-			<div id="expanding_groups">
-				<p>To order genomes by selected properties (i.e. phylogenetic clade, meta-data property, geographical location), first assign genomes to groups and then select <code>by Group</code> as matrix order.</p>
-			</div>
-			
-			<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
-		
-		</div> 
 	</div>
+	
+	<div id="groups">
+		<hr/>
+		<h4>Create Groups</h4>
+		<div id="expanding_groups">
+			<p>To order genomes by selected properties (i.e. phylogenetic clade, meta-data property, geographical location), first assign genomes to groups and then select <code>by Group</code> as matrix order.</p>
+		</div>
+		
+		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
+	
+	<div>
+	
+	<TMPL_INCLUDE NAME="page_bottom.tmpl">
 
 	<script type="text/javascript">	
 		// Initialise JSON data objects
@@ -125,8 +125,7 @@
 		}
 		
 		// Search forms
-		viewController.metaForm($('#meta-display-form'));
-		viewController.filterForm($('#filter-form'));
+		viewController.sideBar($('#search-utilities'));
 		
 		// Genome selection form
 		viewController.createView('list', $('#strains_list'));
@@ -136,10 +135,8 @@
 		var addMore = true;
 		viewController.groupForm($('#expanding_groups'), addMore);
 		
-		
 	</script>
 	
-	<TMPL_INCLUDE NAME="footer2.tmpl">
 	
 </body>
 

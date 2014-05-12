@@ -82,7 +82,8 @@
       }
       this.genomeController = new GenomeController(publicGenomes, privateGenomes, subset);
       this.views = [];
-      return this.groups = [];
+      this.groups = [];
+      return this.tickers = [];
     };
 
     ViewController.prototype.createView = function() {
@@ -142,26 +143,6 @@
         e.preventDefault();
         return viewController.addToGroup(gNum);
       });
-      return true;
-    };
-
-    ViewController.prototype.select = function(g, checked) {
-      var v, _i, _len, _ref;
-      if (this.actionMode === 'single_select') {
-        this.redirect(g);
-      } else {
-        this.genomeController.select(g, checked);
-        _ref = this.views;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          v = _ref[_i];
-          v.select(g, checked);
-        }
-      }
-      return true;
-    };
-
-    ViewController.prototype.redirect = function(g) {
-      alert('Genome ' + g + ' redirected!');
       return true;
     };
 
@@ -332,9 +313,23 @@
       };
     };
 
-    ViewController.prototype.metaForm = function(elem) {
+    ViewController.prototype.sideBar = function(elem) {
+      var form1, form2, parentTarget, wrapper;
+      parentTarget = 'sidebar-accordion';
+      wrapper = jQuery('<div class="panel-group" id="' + parentTarget + '"></div>');
+      elem.append(wrapper);
+      form1 = jQuery('<div class="panel panel-default"></div>');
+      wrapper.append(form1);
+      this.metaForm(form1, parentTarget);
+      form2 = jQuery('<div class="panel panel-default"></div>');
+      wrapper.append(form2);
+      this.filterForm(form2, parentTarget);
+      return true;
+    };
+
+    ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div id="meta-display">' + '<h4><i class="fa fa-eye"></i> Meta-data</h4>' + '<p>Change meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -396,12 +391,13 @@
       return _results;
     };
 
-    ViewController.prototype.filterForm = function(elem) {
-      var advForm, advLab, advRadio, delButton, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, numVisible, selLab, selRadio, sf;
-      elem.append('<h4><i class="fa fa-filter"></i> Filter</h4>');
+    ViewController.prototype.filterForm = function(elem, parentStr) {
+      var advForm, advLab, advRadio, container, delButton, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selLab, selRadio, sf;
+      header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
+      container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>');
       numVisible = this.genomeController.filtered;
       filterStatus = jQuery('<div id="filter-status"></div>');
-      filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-info'>Filter active. " + numVisible + " genomes visible.</div></div>");
+      filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-warning'>Filter active. " + numVisible + " genomes visible.</div></div>");
       filterOff = jQuery('<div id="filter-off"></div>');
       delButton = jQuery('<button id="remove-filter" type="button" class="btn btn-sm">Clear</button>');
       delButton.click(function(e) {
@@ -418,8 +414,8 @@
       }
       filterStatus.append(filterOn);
       filterStatus.append(filterOff);
-      elem.append(filterStatus);
-      elem.append('<p>Limit genomes displayed in views by:</p>');
+      container.append(filterStatus);
+      container.append('<p>Limit genomes displayed in views by:</p>');
       filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>');
       fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>');
       fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>');
@@ -457,14 +453,14 @@
       });
       selLab.prepend(selRadio);
       filtType.append(selLab);
-      elem.append(filtType);
+      container.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);
-      elem.append(sf);
+      container.append(sf);
       advForm = jQuery("<div id='adv-filter'></div>");
       this.addAdvancedFilter(advForm);
       advForm.hide();
-      elem.append(advForm);
+      container.append(advForm);
       fbs = jQuery("<div id='selection-filter'>" + "<p>A selection in one of the views (i.e. genomes selected in a clade or map region)</p>" + "</div>");
       filtButton = jQuery('<button id="filter-selection-button" type="button" class="btn btn-sm">Filter by Selection</button>');
       filtButton.click(function(e) {
@@ -473,7 +469,8 @@
       });
       fbs.append(filtButton);
       fbs.hide();
-      elem.append(fbs);
+      container.append(fbs);
+      container.appendTo(elem);
       return true;
     };
 

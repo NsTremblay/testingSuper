@@ -13,7 +13,7 @@
 @import "superphy_tree";
 @import "superphy_msa";
 @import "superphy_list";
-@import "search_utilities";
+@import "page_layout";
 @import "superphy_ticker";
 @import "superphy_matrix";
 
@@ -46,6 +46,7 @@
 // General website colors
 @border-color: #d3d3d3;
 @title-color2: #d41616;
+@font-color2: #d3d3d3;
 
 /** Mixins ********************************/
 
@@ -56,18 +57,8 @@
 }
 
 /** Styles ********************************/
-  
-body {
-  padding-top:70px;
-  padding-bottom: 70px;
-}
 
 // Page title
-.title {
-  margin:10px;
-  padding:10px;
-}
-
 .titleText {
   font-weight: bold;
 }
@@ -168,3 +159,5 @@ body {
 
 // Define color schemes for up to 10 groups
 .buttonGroupConstructor(@group-num);
+
+

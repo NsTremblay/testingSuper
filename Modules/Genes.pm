@@ -145,7 +145,7 @@ sub stx : Runmode {
 		}
 		
 	}
-		
+	
 	return $template->output();
 }
 
@@ -297,6 +297,9 @@ sub matrix : Runmode {
 	}
 	$template->param(tree_json => $tree_string);
 	
+
+	$template->param(title1 => 'VIRULENCE &amp; AMR');
+	$template->param(title2 => 'RESULTS');
 		
 	return $template->output();
 }

@@ -61,6 +61,7 @@ class ViewController
     # Reset view and group lists
     @views = []
     @groups = []
+    @tickers = []
  
  
   createView: (viewType, elem, viewArgs...) ->
@@ -140,22 +141,7 @@ class ViewController
       viewController.addToGroup(gNum)
       
     return true # return success
-  
-  select: (g, checked) ->
     
-    if @actionMode is 'single_select'
-      @redirect(g)
-      
-    else
-      @genomeController.select(g, checked)
-    
-      v.select(g, checked) for v in @views
- 
-    true
-    
-  redirect: (g) ->
-    alert('Genome '+g+' redirected!')
-    true
     
   addToGroup: (grp) ->
     # Get all currently selected genomes
@@ -322,22 +308,55 @@ class ViewController
       file: file
     }
   
-  # FUNC metaForm
-  # Build and attach form used to alter genome meta-data displayed
+  # FUNC sideBar
+  # Build and attach sideBar
   #
   # PARAMS
-  # jQuery element object to pin form to
+  # jQuery element object to pin bar to
   # 
   # RETURNS
   # boolean 
   #      
-  metaForm: (elem) ->
+  sideBar: (elem) ->
+    
+    # Build & attach
+    parentTarget = 'sidebar-accordion'
+    wrapper = jQuery('<div class="panel-group" id="'+parentTarget+'"></div>')
+    elem.append(wrapper)
+      
+    # Meta-data form
+    form1 = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form1)
+    @metaForm(form1, parentTarget)
+    
+    
+    # Filter form
+    form2 = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form2)
+    @filterForm(form2, parentTarget)
+    
+    
+    # Group form
+    # form3 = jQuery('<div class="panel panel-default"></div>')
+    # @groupForm(form3, parentTarget)
+    # wrapper.append(form3)
+    
+   
+    true
+    
+    
+  metaForm: (elem, parentStr) ->
     
     # Build & attach form
     form = 
-    '<div id="meta-display">'+
-    '<h4><i class="fa fa-eye"></i> Meta-data</h4>'+
-    '<p>Change meta-data displayed:</p>'+
+    '<div class="panel-heading">'+
+    '<div class="panel-title">'+
+    '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#meta-form"><i class="fa fa-eye"></i> Meta-data '+
+    '<span class="caret"></span></a>'+
+    '</div></div>'+
+    '<div id="meta-form" class="panel-collapse collapse out">'+
+    '<div class="panel-body">'+
+    '<p>Select meta-data displayed:</p>'+
     '<form class="form-inline">'+
     '<fieldset>'+
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
@@ -351,13 +370,13 @@ class ViewController
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
     '</fieldset>'+
     '</form>'+
-    '</div>'
+    '</div></div>'
     
     elem.append(form)
     
     # Set response
     jQuery('input[name="meta-option"]').change ->
-      #alert(@.value, @.checked)
+      # alert(@.value, @.checked)
       viewController.updateViews(@.value, @.checked)
       
     true
@@ -430,15 +449,22 @@ class ViewController
   # RETURNS
   # boolean 
   #      
-  filterForm: (elem) ->
+  filterForm: (elem, parentStr) ->
     
-    # Title
-    elem.append('<h4><i class="fa fa-filter"></i> Filter</h4>')
+    # Header
+    header = jQuery('<div class="panel-heading">'+
+      '<div class="panel-title">'+
+      '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
+      '<span class="caret"></span></a>'+
+      '</div></div>'
+    ).appendTo(elem)
+      
+    container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>')
     
     # Add filter status bar
     numVisible = @genomeController.filtered
     filterStatus = jQuery('<div id="filter-status"></div>')
-    filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-info'>Filter active. #{numVisible} genomes visible.</div></div>")
+    filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-warning'>Filter active. #{numVisible} genomes visible.</div></div>")
     filterOff = jQuery('<div id="filter-off"></div>')
     
     delButton = jQuery('<button id="remove-filter" type="button" class="btn btn-sm">Clear</button>')
@@ -457,10 +483,10 @@ class ViewController
       
     filterStatus.append(filterOn)
     filterStatus.append(filterOff)
-    elem.append(filterStatus)
+    container.append(filterStatus)
     
     # Desc
-    elem.append('<p>Limit genomes displayed in views by:</p>')
+    container.append('<p>Limit genomes displayed in views by:</p>')
     
     # Add form selector
     filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>')
@@ -503,18 +529,18 @@ class ViewController
     selLab.prepend(selRadio)
     filtType.append(selLab)
     
-    elem.append(filtType)
+    container.append(filtType)
     
     # Build & attach simple fast form
     sf = jQuery("<div id='fast-filter'></div>")
     @addFastFilter(sf)
-    elem.append(sf)
+    container.append(sf)
     
     # Build & attach advanced form
     advForm = jQuery("<div id='adv-filter'></div>")
     @addAdvancedFilter(advForm)
     advForm.hide()
-    elem.append(advForm)
+    container.append(advForm)
     
     # Add filter by selection button
     fbs = jQuery("<div id='selection-filter'>"+
@@ -526,7 +552,9 @@ class ViewController
       viewController.filterViews('selection')
     fbs.append(filtButton)
     fbs.hide()
-    elem.append(fbs)
+    container.append(fbs)
+    
+    container.appendTo(elem)
     
     true
       
