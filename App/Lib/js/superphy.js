@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, DotCartographer, GenomeController, GroupView, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, DotCartographer, GenomeController, GroupView, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -124,7 +124,7 @@
       } else if (viewType === 'map') {
         mapView = new MapView(elem, clickStyle, vNum, viewArgs);
         mapView.conscriptCartographger();
-        mapView.update(this.genomeController);
+        mapView.update(this.genomeController, mapView.cartographer);
         this.views.push(mapView);
       } else {
         throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
@@ -3713,8 +3713,10 @@
 
     MapView.prototype.elName = 'genome_map';
 
+    MapView.prototype.cartographer = null;
+
     MapView.prototype.update = function(genomes) {
-      var ft, mapElem, t1, t2;
+      var ft, mapElem, pubVis, pvtVis, t1, t2;
       mapElem = jQuery("#" + this.elID);
       if (mapElem.length) {
         mapElem.empty();
@@ -3722,9 +3724,19 @@
         mapElem = jQuery("<ul id='" + this.elID + "' />");
         jQuery(this.parentElem).find('.map-manifest').append(mapElem);
       }
+      if ((this.cartographer != null) && this.cartographer.visibleManifest) {
+        pubVis = this.cartographer.visibileStrainLocations.pubVisible;
+        pvtVis = this.cartographer.visibileStrainLocations.pvtVisible;
+      } else if (!this.cartographer.visibleManifest) {
+        pubVis = [];
+        pvtVis = [];
+      } else {
+        pubVis = genomes.pubVisible;
+        pvtVis = genomes.pvtVisible;
+      }
       t1 = new Date();
-      this._appendGenomes(mapElem, genomes.pubVisible, genomes.public_genomes, this.style, false);
-      this._appendGenomes(mapElem, genomes.pvtVisible, genomes.private_genomes, this.style, true);
+      this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
+      this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
       t2 = new Date();
       ft = t2 - t1;
       console.log('List view elapsed time: ' + ft);
@@ -3806,16 +3818,15 @@
     MapView.prototype.dump = function(genomes) {};
 
     MapView.prototype.conscriptCartographger = function() {
-      var cartographer;
-      cartographer = new DotCartographer(jQuery(this.parentElem));
-      return cartographer.cartograPhy();
+      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem));
+      return this.cartographer.cartograPhy();
     };
+
+    true;
 
     return MapView;
 
   })(ViewTemplate);
-
-  true;
 
   Cartographer = (function() {
     function Cartographer(cartographDiv, cartograhOpt) {
@@ -3823,9 +3834,9 @@
       this.cartograhOpt = cartograhOpt;
     }
 
-    Cartographer.prototype.map = null;
+    Cartographer.prototype.visibleManifest = false;
 
-    Cartographer.prototype.latLng = null;
+    Cartographer.prototype.map = null;
 
     Cartographer.prototype.splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div>';
 
@@ -3853,24 +3864,21 @@
     };
 
     Cartographer.prototype.pinPoint = function(e) {
-      var classLatLng, geocoder, queryLocation, self;
+      var geocoder, queryLocation, self;
       e.preventDefault();
       self = e.data.context;
-      classLatLng = self.latLng;
       geocoder = new google.maps.Geocoder();
       queryLocation = jQuery('.map-search-location').val();
       geocoder.geocode({
         'address': queryLocation
-      }, function(results, status, classLatLng) {
+      }, function(results, status) {
         if (status === google.maps.GeocoderStatus.OK) {
-          classLatLng = results[0].geometry.location;
           self.map.setCenter(results[0].geometry.location);
           return self.map.fitBounds(results[0].geometry.viewport);
         } else {
           return alert("Location " + address + " could not be found. Please enter a proper location");
         }
       });
-      console.log(classLatLng);
       return true;
     };
 
@@ -3887,6 +3895,8 @@
       DotCartographer.__super__.constructor.call(this, this.dotCartographDiv, this.dotCartograhOpt);
     }
 
+    DotCartographer.prototype.latLng = null;
+
     DotCartographer.prototype.marker = null;
 
     DotCartographer.prototype.cartograPhy = function() {
@@ -3897,15 +3907,24 @@
       return true;
     };
 
-    DotCartographer.prototype.reCartograPhy = function() {
-      return DotCartographer.__super__.reCartograPhy.apply(this, arguments);
-    };
-
     DotCartographer.prototype.pinPoint = function(e) {
-      var self;
-      DotCartographer.__super__.pinPoint.call(this, e);
+      var geocoder, queryLocation, self;
+      e.preventDefault();
       self = e.data.context;
-      DotCartographer.prototype.plantFlag(self.latLng, self.map);
+      geocoder = new google.maps.Geocoder();
+      queryLocation = jQuery('.map-search-location').val();
+      geocoder.geocode({
+        'address': queryLocation
+      }, function(results, status) {
+        if (status === google.maps.GeocoderStatus.OK) {
+          self.latLng = results[0].geometry.location;
+          self.map.setCenter(results[0].geometry.location);
+          self.map.fitBounds(results[0].geometry.viewport);
+          return DotCartographer.prototype.plantFlag(self.latLng, self.map);
+        } else {
+          return alert("Location " + address + " could not be found. Please enter a proper location");
+        }
+      });
       return true;
     };
 
@@ -3923,6 +3942,138 @@
     };
 
     return DotCartographer;
+
+  })(Cartographer);
+
+  SatelliteCartographer = (function(_super) {
+    __extends(SatelliteCartographer, _super);
+
+    function SatelliteCartographer(satelliteCartographDiv, satelliteCartograhOpt) {
+      this.satelliteCartographDiv = satelliteCartographDiv;
+      this.satelliteCartograhOpt = satelliteCartograhOpt;
+      SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
+    }
+
+    SatelliteCartographer.prototype.visibleManifest = true;
+
+    SatelliteCartographer.prototype.visibileStrainLocations = {};
+
+    SatelliteCartographer.prototype.visibleMarkers = {};
+
+    SatelliteCartographer.prototype.clusterList = [];
+
+    SatelliteCartographer.prototype.markerClusterer = null;
+
+    SatelliteCartographer.prototype.cartograPhy = function() {
+      SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
+      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController);
+      SatelliteCartographer.prototype.markerClusterer(this.map);
+      return google.maps.event.addListener(this.map, 'bounds_changed', function() {});
+    };
+
+    SatelliteCartographer.prototype.updateMarkerLists = function(genomes) {
+      var circleIcon, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
+      this.visibleMarkers.pubVisible = [];
+      this.visibleMarkers.pvtVisible = [];
+      this.clusterList = [];
+      this.visibileStrainLocations.pubVisible = [];
+      this.visibileStrainLocations.pvtVisible = [];
+      _ref = genomes.public_genomes;
+      for (pubGenomeId in _ref) {
+        public_genome = _ref[pubGenomeId];
+        if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
+          pubMarkerObj = SatelliteCartographer.prototype.parseLocation(public_genome);
+          circleIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#FF0000',
+            fillOpacity: 0.8,
+            scale: 5,
+            strokeColor: '#FF0000',
+            strokeWeight: 1
+          };
+          pubMarker = new google.maps.Marker({
+            map: this.map,
+            icon: circleIcon,
+            position: pubMarkerObj['centerLatLng'],
+            title: public_genome.uniquename,
+            feature_id: pubGenomeId,
+            uniquename: public_genome.uniquename,
+            location: pubMarkerObj['locationName']
+          });
+          this.clusterList.push(pubMarker);
+          this.visibileStrainLocations.pubVisible.push(pubGenomeId);
+        }
+      }
+      _ref1 = genomes.private_genomes;
+      for (pvtGenomeId in _ref1) {
+        private_genome = _ref1[pvtGenomeId];
+        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
+          pvtMarkerObj = SatelliteCartographer.prototype.parseLocation(private_genome);
+          circleIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: '#000000',
+            fillOpacity: 0.8,
+            scale: 5,
+            strokeColor: '#FF0000',
+            strokeWeight: 1
+          };
+          pvtMarker = new google.maps.Marker({
+            map: this.map,
+            position: pvtMarkerObj['centerLatLng'],
+            title: private_genome.uniquename,
+            feature_id: pvtGenomeId,
+            uniquename: private_genome.uniquename,
+            location: pvtMarkerObj['locationName']
+          });
+          this.clusterList.push(pvtMarker);
+          this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
+        }
+      }
+      return true;
+    };
+
+    SatelliteCartographer.prototype.markerClusterer = function(map) {
+      var mcOptions;
+      mcOptions = {
+        gridSize: 50,
+        maxZoom: 15
+      };
+      this.markerClusterer = new MarkerClusterer(map, this.clusterList, mcOptions);
+      return true;
+    };
+
+    SatelliteCartographer.prototype.parseLocation = function(genome) {
+      var centerLatLng, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
+      locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
+      locationName = locationName.replace(/<location>/, '').replace(/<\/location>/, '').replace(/<[\/]+[\w\d]*>/g, '').replace(/<[\w\d]*>/g, ', ').replace(/, /, '');
+      locationCoordinates = genome.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+      locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
+      locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+      locationCenterLat = locationCenterLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+      locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+      locationCenterLng = locationCenterLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+      locationViewPortSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
+      locationViewPortSWLat = locationViewPortSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+      locationViewPortSWLat = locationViewPortSWLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+      locationViewPortSWLng = locationViewPortSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+      locationViewPortSWLng = locationViewPortSWLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+      locationViewPortNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
+      locationViewPortNELat = locationViewPortNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+      locationViewPortNELat = locationViewPortNELat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+      locationViewPortNELng = locationViewPortNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+      locationViewPortNELng = locationViewPortNELng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+      centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
+      swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
+      neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);
+      markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
+      markerObj = {};
+      markerObj['locationName'] = locationName;
+      markerObj['centerLatLng'] = centerLatLng;
+      markerObj['markerBounds'] = markerBounds;
+      return markerObj;
+    };
+
+    return SatelliteCartographer;
 
   })(Cartographer);
 

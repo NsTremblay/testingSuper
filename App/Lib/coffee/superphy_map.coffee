@@ -18,6 +18,8 @@ class MapView extends ViewTemplate
 
   elName: 'genome_map'
 
+  cartographer: null
+
   #Create layout for map and list
   #console.log @parentElem.selector
 
@@ -40,10 +42,20 @@ class MapView extends ViewTemplate
       mapElem = jQuery("<ul id='#{@elID}' />")
       jQuery(@parentElem).find('.map-manifest').append(mapElem)
 
+    if @cartographer? && @cartographer.visibleManifest
+      pubVis = @cartographer.visibileStrainLocations.pubVisible
+      pvtVis = @cartographer.visibileStrainLocations.pvtVisible
+    else if !@cartographer.visibleManifest
+      pubVis = []
+      pvtVis = []
+    else 
+      pubVis = genomes.pubVisible
+      pvtVis = genomes.pvtVisible
+
     #append genomes to list
     t1 = new Date()
-    @_appendGenomes(mapElem, genomes.pubVisible, genomes.public_genomes, @style, false)
-    @_appendGenomes(mapElem, genomes.pvtVisible, genomes.private_genomes, @style, true)
+    @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)
+    @_appendGenomes(mapElem, pvtVis, genomes.private_genomes, @style, true)
     t2 = new Date()
     ft = t2-t1
 
@@ -82,7 +94,6 @@ class MapView extends ViewTemplate
 
       else if style == 'select'
         # Checkboxes
-
         # Create elements
         checked = ''
         checked = 'checked' if genomes[g].isSelected
@@ -164,15 +175,16 @@ class MapView extends ViewTemplate
     return
 
   conscriptCartographger: () ->
-    cartographer = new DotCartographer(jQuery(@parentElem))
-    cartographer.cartograPhy()
-true
+    @cartographer = new SatelliteCartographer(jQuery(@parentElem))
+    @cartographer.cartograPhy()
+  true
 
 #Base class for map functions
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
+
+  visibleManifest: false
   map: null
-  latLng: null
   splitLayout: '
       <div>
         <form class="form">
@@ -201,19 +213,20 @@ class Cartographer
   # google map object drawn into specified div
   #
   cartograPhy: () ->
-    jQuery(@cartographDiv).prepend(@.splitLayout)
-    @.map = null if @.map?
+    jQuery(@cartographDiv).prepend(@splitLayout)
+    @map = null if @map?
     cartograhOpt = {
       center: new google.maps.LatLng(-0.000, 0.000),
       zoom: 1,
       streetViewControl: false,
       mapTypeId: google.maps.MapTypeId.ROADMAP
     }
-    @.map = new google.maps.Map(jQuery(@cartographDiv).find('.map-canvas')[0], cartograhOpt);
-    jQuery('.map-search-button').bind('click', {context: @}, @.pinPoint)
+    @map = new google.maps.Map(jQuery(@cartographDiv).find('.map-canvas')[0], cartograhOpt)
+    jQuery('.map-search-button').bind('click', {context: @}, @pinPoint)
     true
 
   reCartograPhy: () ->
+    #TODO:
     true
 
   # FUNC pinPoint
@@ -233,7 +246,6 @@ class Cartographer
     queryLocation = jQuery('.map-search-location').val()
     geocoder.geocode({'address': queryLocation}, (results, status) ->
         if status is google.maps.GeocoderStatus.OK
-          self.latLng = results[0].geometry.location
           self.map.setCenter(results[0].geometry.location)
           self.map.fitBounds(results[0].geometry.viewport)
         else
@@ -246,6 +258,7 @@ class DotCartographer extends Cartographer
     # Call default constructor
     super(@dotCartographDiv, @dotCartograhOpt)
   
+  latLng: null
   marker: null
 
   # FUNC cartograPhy overrides Cartographer
@@ -259,13 +272,10 @@ class DotCartographer extends Cartographer
   #
   cartograPhy: () ->
     super
-    google.maps.event.addListener(@.map , 'click', (event) ->
+    google.maps.event.addListener(@map , 'click', (event) ->
       DotCartographer::plantFlag(event.latLng, @)
       )
     true
-
-  reCartograPhy: () ->
-    super
 
   # FUNC pinPoint overrides Cartographer
   # geocodes an address from the map search query
@@ -278,9 +288,20 @@ class DotCartographer extends Cartographer
   # RETURNS
   #
   pinPoint: (e) ->
-    super(e)
+    # TODO: ability to check and store latlngs in the database
+    e.preventDefault()
     self = e.data.context
-    DotCartographer::plantFlag(self.latLng, self.map)
+    geocoder = new google.maps.Geocoder();
+    queryLocation = jQuery('.map-search-location').val()
+    geocoder.geocode({'address': queryLocation}, (results, status) ->
+        if status is google.maps.GeocoderStatus.OK
+          self.latLng = results[0].geometry.location
+          self.map.setCenter(results[0].geometry.location)
+          self.map.fitBounds(results[0].geometry.viewport)
+          DotCartographer::plantFlag(self.latLng, self.map)
+        else
+          alert("Location #{address} could not be found. Please enter a proper location")
+    )
     true
 
   # FUNC plantFlag
@@ -293,11 +314,171 @@ class DotCartographer extends Cartographer
   # RETURNS
   #
   plantFlag: (location, map) ->
-    @.marker.setMap(null) if @.marker?
-    @.marker = new google.maps.Marker({
+    @marker.setMap(null) if @marker?
+    @marker = new google.maps.Marker({
       position: location,
       map: map
       });
-    @.marker.setTitle(@.marker.getPosition().toString())
-    map.panTo(@.marker.getPosition())
+    @marker.setTitle(@marker.getPosition().toString())
+    map.panTo(@marker.getPosition())
     true
+
+class SatelliteCartographer extends Cartographer
+  constructor: (@satelliteCartographDiv, @satelliteCartograhOpt) ->
+    # Call default constructor
+    super(@satelliteCartographDiv, @satelliteCartograhOpt)
+
+  visibleManifest: true
+
+  visibileStrainLocations: {}
+  visibleMarkers: {}
+  
+  # This can stay populated only need to update the visible list
+  clusterList: []
+
+  markerClusterer: null
+
+  cartograPhy: () ->
+    # Init the map
+    super
+    # Init the visible list of strains and convert these to markers
+    SatelliteCartographer::updateMarkerLists(viewController.genomeController)
+    # Init the marker clusterer
+    SatelliteCartographer::markerClusterer(@map)
+    # Map viewport change event
+    google.maps.event.addListener(@map, 'bounds_changed', () ->
+      # TODO: update visible markers
+      )
+    
+  updateMarkerLists: (genomes) ->
+    # TODO: will have to change this to accept a list of genomes visible in the view port
+    # Init public strains
+    @visibleMarkers.pubVisible = []
+    @visibleMarkers.pvtVisible = []
+    @clusterList = []
+    @visibileStrainLocations.pubVisible = []
+    @visibileStrainLocations.pvtVisible = []
+
+    for pubGenomeId, public_genome of genomes.public_genomes
+      if public_genome.isolation_location? && public_genome.isolation_location != ""
+        pubMarkerObj = SatelliteCartographer::parseLocation(public_genome)
+
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE
+          fillColor: '#FF0000'
+          fillOpacity: 0.8
+          scale: 5
+          strokeColor: '#FF0000'
+          strokeWeight: 1
+        }
+
+        pubMarker = new google.maps.Marker({
+          map: @map
+          icon: circleIcon
+          position: pubMarkerObj['centerLatLng']
+          title: public_genome.uniquename
+          feature_id: pubGenomeId
+          uniquename: public_genome.uniquename
+          location: pubMarkerObj['locationName']
+          })
+
+        @clusterList.push(pubMarker)
+        @visibileStrainLocations.pubVisible.push(pubGenomeId)
+
+    for pvtGenomeId, private_genome of genomes.private_genomes
+      if private_genome.isolation_location? && private_genome.isolation_location != ""
+        pvtMarkerObj = SatelliteCartographer::parseLocation(private_genome)
+
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE
+          fillColor: '#000000'
+          fillOpacity: 0.8
+          scale: 5
+          strokeColor: '#FF0000'
+          strokeWeight: 1
+        }
+
+        pvtMarker = new google.maps.Marker({
+          map: @map
+          position: pvtMarkerObj['centerLatLng']
+          title: private_genome.uniquename
+          feature_id: pvtGenomeId
+          uniquename: private_genome.uniquename
+          location: pvtMarkerObj['locationName']
+          })
+
+        @clusterList.push(pvtMarker)
+        @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
+    true
+
+  markerClusterer: (map) ->
+    mcOptions = {gridSize: 50, maxZoom: 15}
+    @markerClusterer = new MarkerClusterer(map, @clusterList, mcOptions)
+    true
+
+  parseLocation: (genome) ->
+    # Get location from genome
+    locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0]
+    
+    # Remove markup tags
+    locationName = locationName.replace(/<location>/, '').replace(/<\/location>/, '').replace(/<[\/]+[\w\d]*>/g, '').replace(/<[\w\d]*>/g, ', ').replace(/, /, '')
+    
+    # Get location coordinates
+    locationCoordinates = genome.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0]
+
+    # Get location center
+    locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0]
+
+    # Get center lat
+    locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
+    
+    # Remove markup tags
+    locationCenterLat = locationCenterLat.replace(/<lat>/, '').replace(/<\/lat>/, '')
+
+    # Get center Lng
+    locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
+
+    # Remove markup tags
+    locationCenterLng = locationCenterLng.replace(/<lng>/, '').replace(/<\/lng>/, '')
+
+    # Get location SW boundary
+    locationViewPortSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0]
+
+    # Get SW boundary lat
+    locationViewPortSWLat = locationViewPortSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
+
+    # Remove markup tags
+    locationViewPortSWLat = locationViewPortSWLat.replace(/<lat>/, '').replace(/<\/lat>/, '')
+
+    # Get SW boundary Lng
+    locationViewPortSWLng = locationViewPortSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
+
+    # Remove markup tags
+    locationViewPortSWLng = locationViewPortSWLng.replace(/<lng>/, '').replace(/<\/lng>/, '')
+
+    # Get location NE boundary
+    locationViewPortNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0]
+
+    # Get NE boundary lat
+    locationViewPortNELat = locationViewPortNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
+
+    # Remove markup tags
+    locationViewPortNELat = locationViewPortNELat.replace(/<lat>/, '').replace(/<\/lat>/, '')
+
+    # Get NE boundary lng
+    locationViewPortNELng = locationViewPortNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
+
+    # Remove tags
+    locationViewPortNELng = locationViewPortNELng.replace(/<lng>/, '').replace(/<\/lng>/, '')
+
+    centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng)
+    swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng)
+    neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng)
+    markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng)
+
+    markerObj = {}
+    markerObj['locationName'] = locationName
+    markerObj['centerLatLng'] = centerLatLng
+    markerObj['markerBounds'] = markerBounds
+
+    return markerObj

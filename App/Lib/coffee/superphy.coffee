@@ -118,7 +118,7 @@ class ViewController
       #New map view
       mapView = new MapView(elem, clickStyle, vNum, viewArgs)
       mapView.conscriptCartographger()
-      mapView.update(@genomeController)
+      mapView.update(@genomeController, mapView.cartographer)
       @views.push mapView
       
     else
