@@ -68,6 +68,7 @@ class MapView extends ViewTemplate
     console.log 'MapView update elapsed time: ' +ft
     true # return success
 
+  # Helper function for update
   _appendGenomes: (el, visibleG, genomes, style, priv) -> 
 
     # View class
@@ -181,8 +182,11 @@ class MapView extends ViewTemplate
     return
 
   conscriptCartographger: () ->
+    downloadView = jQuery(@parentElem).find('.download-view')
+    downloadView.remove();
     @cartographer = new SatelliteCartographer(jQuery(@parentElem))
     @cartographer.cartograPhy()
+    jQuery(@parentElem).prepend(downloadView)
   true
 
 #Base class for map functions
@@ -192,21 +196,31 @@ class Cartographer
   visibleStrains: false
   map: null
   splitLayout: '
-      <div>
-        <form class="form">
-          <fieldset>
-            <div>
-              <div class="input-group">
-                <input type="text" class="form-control map-search-location" placeholder="Enter a search location">
-                  <span class="input-group-btn">
-                    <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </fieldset>
-        </form>
-        <div class="map-canvas" style="height:200px;width:200px"></div>
+      <div class="col-md-6 map-search-div">
+        <table class="table map-search-table">
+          <tr>
+            <td>
+              <form class="form">
+                <fieldset>
+                  <div>
+                    <div class="input-group">
+                      <input type="text" class="form-control map-search-location" placeholder="Enter a search location">
+                        <span class="input-group-btn">
+                          <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </fieldset>
+              </form>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div class="map-canvas"></div>
+            </td>
+          </tr>
+        </table>
       </div>'
 
 
@@ -231,10 +245,6 @@ class Cartographer
     jQuery('.map-search-button').bind('click', {context: @}, @pinPoint)
     true
 
-  reCartograPhy: () ->
-    #TODO:
-    true
-
   # FUNC pinPoint
   # geocodes an address from the map search query
   # centers the map at specified area, and stores the latLng info in the database if it doesnt already exist
@@ -255,7 +265,7 @@ class Cartographer
           self.map.setCenter(results[0].geometry.location)
           self.map.fitBounds(results[0].geometry.viewport)
         else
-          alert("Location #{address} could not be found. Please enter a proper location")
+          alert("Location "+queryLocation+" could not be found. Please enter a proper location")
     )
     true
 
@@ -306,7 +316,7 @@ class DotCartographer extends Cartographer
           self.map.fitBounds(results[0].geometry.viewport)
           DotCartographer::plantFlag(self.latLng, self.map)
         else
-          alert("Location #{address} could not be found. Please enter a proper location")
+          alert("Location "+queryLocation+" could not be found. Please enter a proper location")
     )
     true
 
@@ -341,6 +351,9 @@ class SatelliteCartographer extends Cartographer
   markerClusterer: null
 
   cartograPhy: () ->
+    # Init strain list
+    jQuery(@satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>')
+
     # Init the map
     super
     # Init the visible list of strains and convert these to markers
@@ -349,9 +362,6 @@ class SatelliteCartographer extends Cartographer
     SatelliteCartographer::markerCluster(@map)
     # Map viewport change event
     google.maps.event.addListener(@map, 'zoom_changed', () ->
-      SatelliteCartographer::markerClusterer.clearMarkers()
-      )
-    google.maps.event.addListener(@map, 'click', () ->
       SatelliteCartographer::markerClusterer.clearMarkers()
       )
     google.maps.event.addListener(@map, 'bounds_changed', () ->
@@ -426,7 +436,6 @@ class SatelliteCartographer extends Cartographer
 
         if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
           @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
-
     true
 
   markerCluster: (map) ->

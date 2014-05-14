@@ -3829,8 +3829,12 @@
     MapView.prototype.dump = function(genomes) {};
 
     MapView.prototype.conscriptCartographger = function() {
-      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem));
-      return this.cartographer.cartograPhy();
+      var downloadView;
+      downloadView = jQuery(this.parentElem).find('.download-view');
+      downloadView.remove();
+      this.cartographer = new DotCartographer(jQuery(this.parentElem));
+      this.cartographer.cartograPhy();
+      return jQuery(this.parentElem).prepend(downloadView);
     };
 
     true;
@@ -3849,7 +3853,7 @@
 
     Cartographer.prototype.map = null;
 
-    Cartographer.prototype.splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div>';
+    Cartographer.prototype.splitLayout = '<div class="col-md-6 map-search-div"> <table class="table map-search-table"> <tr> <td> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> </td> </tr> <tr> <td> <div class="map-canvas"></div> </td> </tr> </table> </div>';
 
     Cartographer.prototype.cartograPhy = function() {
       var cartograhOpt;
@@ -3887,7 +3891,7 @@
           self.map.setCenter(results[0].geometry.location);
           return self.map.fitBounds(results[0].geometry.viewport);
         } else {
-          return alert("Location " + address + " could not be found. Please enter a proper location");
+          return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
         }
       });
       return true;
@@ -3933,7 +3937,7 @@
           self.map.fitBounds(results[0].geometry.viewport);
           return DotCartographer.prototype.plantFlag(self.latLng, self.map);
         } else {
-          return alert("Location " + address + " could not be found. Please enter a proper location");
+          return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
         }
       });
       return true;
@@ -3974,13 +3978,11 @@
     SatelliteCartographer.prototype.markerClusterer = null;
 
     SatelliteCartographer.prototype.cartograPhy = function() {
+      jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
       SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
       SatelliteCartographer.prototype.markerCluster(this.map);
       google.maps.event.addListener(this.map, 'zoom_changed', function() {
-        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
-      });
-      google.maps.event.addListener(this.map, 'click', function() {
         return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
       });
       google.maps.event.addListener(this.map, 'bounds_changed', function() {
