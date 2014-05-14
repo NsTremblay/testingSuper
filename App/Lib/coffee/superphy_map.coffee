@@ -42,17 +42,22 @@ class MapView extends ViewTemplate
       mapElem = jQuery("<ul id='#{@elID}' />")
       jQuery(@parentElem).find('.map-manifest').append(mapElem)
 
-    #Need to fix this so it works with filtering functions
-    if @cartographer? && @cartographer.visibleStrains
-      pubVis = @cartographer.visibileStrainLocations.pubVisible
-      pvtVis = @cartographer.visibileStrainLocations.pvtVisible
-    else if !@cartographer.visibleStrains
-      pubVis = []
-      pvtVis = []
-    else 
+    pubVis = []
+    pvtVis = []
+
+    if !@cartographer?
       pubVis = genomes.pubVisible
       pvtVis = genomes.pvtVisible
+    else if @cartographer? && @cartographer.visibleStrains
 
+      for i in @cartographer.visibileStrainLocations.pubVisible
+        if i in genomes.pubVisible
+          pubVis.push i
+    
+      for i in @cartographer.visibileStrainLocations.pvtVisible
+        if i in genomes.pvtVisible
+          pvtVis.push i
+    
     #append genomes to list
     t1 = new Date()
     @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)

@@ -3716,7 +3716,7 @@
     MapView.prototype.cartographer = null;
 
     MapView.prototype.update = function(genomes) {
-      var ft, mapElem, pubVis, pvtVis, t1, t2;
+      var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
       mapElem = jQuery("#" + this.elID);
       if (mapElem.length) {
         mapElem.empty();
@@ -3724,8 +3724,27 @@
         mapElem = jQuery("<ul id='" + this.elID + "' />");
         jQuery(this.parentElem).find('.map-manifest').append(mapElem);
       }
-      pubVis = genomes.pubVisible;
-      pvtVis = genomes.pvtVisible;
+      pubVis = [];
+      pvtVis = [];
+      if (this.cartographer == null) {
+        pubVis = genomes.pubVisible;
+        pvtVis = genomes.pvtVisible;
+      } else if ((this.cartographer != null) && this.cartographer.visibleStrains) {
+        _ref = this.cartographer.visibileStrainLocations.pubVisible;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          i = _ref[_i];
+          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+            pubVis.push(i);
+          }
+        }
+        _ref1 = this.cartographer.visibileStrainLocations.pvtVisible;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          i = _ref1[_j];
+          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+            pvtVis.push(i);
+          }
+        }
+      }
       t1 = new Date();
       this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
       this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
