@@ -3724,22 +3724,14 @@
         mapElem = jQuery("<ul id='" + this.elID + "' />");
         jQuery(this.parentElem).find('.map-manifest').append(mapElem);
       }
-      if ((this.cartographer != null) && this.cartographer.visibleManifest) {
-        pubVis = this.cartographer.visibileStrainLocations.pubVisible;
-        pvtVis = this.cartographer.visibileStrainLocations.pvtVisible;
-      } else if (!this.cartographer.visibleManifest) {
-        pubVis = [];
-        pvtVis = [];
-      } else {
-        pubVis = genomes.pubVisible;
-        pvtVis = genomes.pvtVisible;
-      }
+      pubVis = genomes.pubVisible;
+      pvtVis = genomes.pvtVisible;
       t1 = new Date();
       this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
       this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
       t2 = new Date();
       ft = t2 - t1;
-      console.log('List view elapsed time: ' + ft);
+      console.log('MapView update elapsed time: ' + ft);
       return true;
     };
 
@@ -3834,7 +3826,7 @@
       this.cartograhOpt = cartograhOpt;
     }
 
-    Cartographer.prototype.visibleManifest = false;
+    Cartographer.prototype.visibleStrains = false;
 
     Cartographer.prototype.map = null;
 
@@ -3954,27 +3946,36 @@
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
     }
 
-    SatelliteCartographer.prototype.visibleManifest = true;
-
-    SatelliteCartographer.prototype.visibileStrainLocations = {};
-
-    SatelliteCartographer.prototype.visibleMarkers = {};
+    SatelliteCartographer.prototype.visibleStrains = true;
 
     SatelliteCartographer.prototype.clusterList = [];
+
+    SatelliteCartographer.prototype.visibileStrainLocations = {};
 
     SatelliteCartographer.prototype.markerClusterer = null;
 
     SatelliteCartographer.prototype.cartograPhy = function() {
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
-      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController);
-      SatelliteCartographer.prototype.markerClusterer(this.map);
-      return google.maps.event.addListener(this.map, 'bounds_changed', function() {});
+      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
+      SatelliteCartographer.prototype.markerCluster(this.map);
+      google.maps.event.addListener(this.map, 'zoom_changed', function() {
+        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+      });
+      google.maps.event.addListener(this.map, 'click', function() {
+        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+      });
+      google.maps.event.addListener(this.map, 'bounds_changed', function() {
+        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+      });
+      return google.maps.event.addListener(this.map, 'idle', function() {
+        SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
+        viewController.getView(2).update(viewController.genomeController);
+        return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
+      });
     };
 
-    SatelliteCartographer.prototype.updateMarkerLists = function(genomes) {
+    SatelliteCartographer.prototype.updateMarkerLists = function(genomes, map) {
       var circleIcon, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
-      this.visibleMarkers.pubVisible = [];
-      this.visibleMarkers.pvtVisible = [];
       this.clusterList = [];
       this.visibileStrainLocations.pubVisible = [];
       this.visibileStrainLocations.pvtVisible = [];
@@ -3992,7 +3993,7 @@
             strokeWeight: 1
           };
           pubMarker = new google.maps.Marker({
-            map: this.map,
+            map: map,
             icon: circleIcon,
             position: pubMarkerObj['centerLatLng'],
             title: public_genome.uniquename,
@@ -4001,7 +4002,9 @@
             location: pubMarkerObj['locationName']
           });
           this.clusterList.push(pubMarker);
-          this.visibileStrainLocations.pubVisible.push(pubGenomeId);
+          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+            this.visibileStrainLocations.pubVisible.push(pubGenomeId);
+          }
         }
       }
       _ref1 = genomes.private_genomes;
@@ -4018,7 +4021,7 @@
             strokeWeight: 1
           };
           pvtMarker = new google.maps.Marker({
-            map: this.map,
+            map: map,
             position: pvtMarkerObj['centerLatLng'],
             title: private_genome.uniquename,
             feature_id: pvtGenomeId,
@@ -4026,13 +4029,15 @@
             location: pvtMarkerObj['locationName']
           });
           this.clusterList.push(pvtMarker);
-          this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
+          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+            this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
+          }
         }
       }
       return true;
     };
 
-    SatelliteCartographer.prototype.markerClusterer = function(map) {
+    SatelliteCartographer.prototype.markerCluster = function(map) {
       var mcOptions;
       mcOptions = {
         gridSize: 50,

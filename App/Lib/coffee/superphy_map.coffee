@@ -42,10 +42,11 @@ class MapView extends ViewTemplate
       mapElem = jQuery("<ul id='#{@elID}' />")
       jQuery(@parentElem).find('.map-manifest').append(mapElem)
 
-    if @cartographer? && @cartographer.visibleManifest
+    #Need to fix this so it works with filtering functions
+    if @cartographer? && @cartographer.visibleStrains
       pubVis = @cartographer.visibileStrainLocations.pubVisible
       pvtVis = @cartographer.visibileStrainLocations.pvtVisible
-    else if !@cartographer.visibleManifest
+    else if !@cartographer.visibleStrains
       pubVis = []
       pvtVis = []
     else 
@@ -59,7 +60,7 @@ class MapView extends ViewTemplate
     t2 = new Date()
     ft = t2-t1
 
-    console.log 'List view elapsed time: ' +ft
+    console.log 'MapView update elapsed time: ' +ft
     true # return success
 
   _appendGenomes: (el, visibleG, genomes, style, priv) -> 
@@ -183,7 +184,7 @@ class MapView extends ViewTemplate
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
 
-  visibleManifest: false
+  visibleStrains: false
   map: null
   splitLayout: '
       <div>
@@ -328,13 +329,9 @@ class SatelliteCartographer extends Cartographer
     # Call default constructor
     super(@satelliteCartographDiv, @satelliteCartograhOpt)
 
-  visibleManifest: true
-
-  visibileStrainLocations: {}
-  visibleMarkers: {}
-  
-  # This can stay populated only need to update the visible list
+  visibleStrains: true
   clusterList: []
+  visibileStrainLocations: {}
 
   markerClusterer: null
 
@@ -342,19 +339,29 @@ class SatelliteCartographer extends Cartographer
     # Init the map
     super
     # Init the visible list of strains and convert these to markers
-    SatelliteCartographer::updateMarkerLists(viewController.genomeController)
+    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
     # Init the marker clusterer
-    SatelliteCartographer::markerClusterer(@map)
+    SatelliteCartographer::markerCluster(@map)
     # Map viewport change event
+    google.maps.event.addListener(@map, 'zoom_changed', () ->
+      SatelliteCartographer::markerClusterer.clearMarkers()
+      )
+    google.maps.event.addListener(@map, 'click', () ->
+      SatelliteCartographer::markerClusterer.clearMarkers()
+      )
     google.maps.event.addListener(@map, 'bounds_changed', () ->
+      SatelliteCartographer::markerClusterer.clearMarkers()
+      )
+    google.maps.event.addListener(@map, 'idle', () ->
       # TODO: update visible markers
+      SatelliteCartographer::updateMarkerLists(viewController.genomeController, @)
+      viewController.getView(2).update(viewController.genomeController)
+      SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
       )
     
-  updateMarkerLists: (genomes) ->
+  updateMarkerLists: (genomes, map) ->
     # TODO: will have to change this to accept a list of genomes visible in the view port
     # Init public strains
-    @visibleMarkers.pubVisible = []
-    @visibleMarkers.pvtVisible = []
     @clusterList = []
     @visibileStrainLocations.pubVisible = []
     @visibileStrainLocations.pvtVisible = []
@@ -373,7 +380,7 @@ class SatelliteCartographer extends Cartographer
         }
 
         pubMarker = new google.maps.Marker({
-          map: @map
+          map: map
           icon: circleIcon
           position: pubMarkerObj['centerLatLng']
           title: public_genome.uniquename
@@ -383,7 +390,10 @@ class SatelliteCartographer extends Cartographer
           })
 
         @clusterList.push(pubMarker)
-        @visibileStrainLocations.pubVisible.push(pubGenomeId)
+
+        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
+          @visibileStrainLocations.pubVisible.push(pubGenomeId)
+
 
     for pvtGenomeId, private_genome of genomes.private_genomes
       if private_genome.isolation_location? && private_genome.isolation_location != ""
@@ -399,7 +409,7 @@ class SatelliteCartographer extends Cartographer
         }
 
         pvtMarker = new google.maps.Marker({
-          map: @map
+          map: map
           position: pvtMarkerObj['centerLatLng']
           title: private_genome.uniquename
           feature_id: pvtGenomeId
@@ -408,10 +418,13 @@ class SatelliteCartographer extends Cartographer
           })
 
         @clusterList.push(pvtMarker)
-        @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
+
+        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
+          @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
+
     true
 
-  markerClusterer: (map) ->
+  markerCluster: (map) ->
     mcOptions = {gridSize: 50, maxZoom: 15}
     @markerClusterer = new MarkerClusterer(map, @clusterList, mcOptions)
     true
