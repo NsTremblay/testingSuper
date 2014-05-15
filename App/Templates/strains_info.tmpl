@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+    <script src="/App/Styling/js/jquery-1.9.1.js"></script>
+    <script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+    
+    <script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
+    
+    <script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
+
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+    <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+
+    <script src="/App/Lib/js/superphy.js"></script>
+    <link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="/App/Styling/css/superphy.css">
+
+    <script type="text/javascript">
+    var page_name = "strains";
+
+    var public_genomes = <TMPL_VAR public_genomes>;
+    var private_genomes = <TMPL_VAR private_genomes>;
+    var tree = <TMPL_VAR tree_json>;
+
+    viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+
+    $(document).ready(function(){
+        $('a[href="#overview-panel"]').click();
+    });
+    </script>
+    
+</head>
+<body>
+    <!-- Navbar -->
+    <TMPL_INCLUDE NAME="superphy_nav_bar.tmpl">
+
+    <div class="container">
+
+        <h1><span>STRAIN</span> <span style="color:#d41616">INFORMATION</span></h1>
+
+        <TMPL_IF strainData>
+        <!-- Shows only if there is strain data -->
+        <div class="panel-group" id="accordian">
+
+            <!-- Collapsible overview panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#overview-panel">
+                            Overview
+                        </a>
+                    </h4>
+                </div>
+                <div id="overview-panel" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <TMPL_INCLUDE NAME="strains_info_overview_tab.tmpl">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collapsible tree panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#tree-panel">
+                            Phylogenetic Tree
+                        </a>
+                    </h4>
+                </div>
+                <div id="tree-panel" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <script>
+                            var smallTreeWindow = true;
+                            var centreOnSelectedNode = true;
+                        </script>
+                        <TMPL_INCLUDE NAME="strains_info_phylogeny.tmpl">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Collapsible virulence panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#vf-amr-panel">
+                            VF and AMR
+                        </a>
+                    </h4>
+                </div>
+                <div id="vf-amr-panel" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <TMPL_INCLUDE NAME="strains_info_vf_amr.tmpl">
+                    </div>
+                </div>
+            </div>
+
+            <TMPL_IF NAME=LOCATION>
+            <!-- Collapsible map panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#geospatial-panel">
+                            Geospatial
+                        </a>
+                    </h4>
+                </div>
+                <div id="geospatial-panel" class="panel-collapse collapse">
+                    <div class="panel-body" id="strains-info-map">
+                        <script type="text/javascript">
+                            viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+                            viewController.createView('map', $('#strains-info-map'));
+                        </script>
+                    </div>
+                </div>
+            </div>
+            </TMPL_IF>
+
+            <TMPL_IF references>
+            <!-- Collapsible references panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#references-panel">
+                            References
+                        </a>
+                    </h4>
+                </div>
+                <div id="references-panel" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        
+                        <TMPL_IF owners>
+                            <div class="span11">
+                                <span class="muted">Original submitter / Owner of genome: </span>
+                            </div>
+                            <div class="span11">
+                                <ol>
+                                    <TMPL_LOOP owners>
+                                        <li><TMPL_VAR owner></li>
+                                    </TMPL_LOOP>
+                                </ol>
+                            </div>
+                        <hr>
+                        </TMPL_IF>
+                        <TMPL_IF pmid_list>
+                            <div class="span11">
+                                <span class="muted">Pubmed References: </span>
+                            </div>
+                            <div id="pmid_results" class="span11">
+                            </div>
+                            <div id="pmid_error" style="display:none">
+                                Error occurred retrieving pubmed summaries.
+                            </div>
+                        </TMPL_IF>
+                    </div>
+                </div>
+            </div>
+            </TMPL_IF>
+
+            <TMPL_IF comments>
+            <!-- Collapsible comments panel -->
+            <div class="panel panel-default">
+                <div class="panel-heading">
+                    <h4 class="panel-title">
+                        <a data-toggle="collapse" data-parent="#accordian" href="#comments-panel">
+                            Comments
+                        </a>
+                    </h4>
+                </div>
+                <div id="comments-panel" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <ol>
+                            <TMPL_LOOP comments>
+                                <li><TMPL_VAR comment></li>
+                            </TMPL_LOOP>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            </TMPL_IF>
+
+        </div>
+        </TMPL_IF>
+
+    </div>
+</body>
+</html>
+
+<script type="text/javascript">
+//pubmed IDs for Entrez search
+var pmidList = "";
+<TMPL_IF pmid_list>
+pmidList = <TMPL_VAR pmid_list>;
+</TMPL_IF>
+$(document).ready(function() {
+    
+    if(pmidList != "") {
+        var entrezArgs = {
+            'apikey' : '847d6279e0c5c435df1bd425c1628778',
+            'db'     : 'pubmed',
+            'id'     : pmidList
+        };
+
+        $.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
+            if(data.entrezajax.error) {
+                $('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
+            }
+            $.each(data.result, function(i, item) {
+                var author_list = '';
+                for(var i = 0; i < item.AuthorList.length; i ++) {
+                    if(i != 0) {
+                        author_list += ', ';
+                    }
+                    author_list += item.AuthorList[i];
+                }
+                var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
+                $("<div/>").html(html).appendTo('#pmid_results');
+            });
+        });
+    }
+});
+</script>

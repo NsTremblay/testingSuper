@@ -403,7 +403,7 @@ class SatelliteCartographer extends Cartographer
       SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
       )
     true
-  
+
   # FUNC updateMarkerLists
   # Initializes and sets lists of genomes with known locations
   # Initializes and sets lists of markers for google maps and marker clusterer

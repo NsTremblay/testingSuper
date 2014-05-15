@@ -4011,11 +4011,25 @@
         return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
       });
       google.maps.event.addListener(this.map, 'idle', function() {
+        var index;
         SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
+        index = SatelliteCartographer.prototype.getIndex(viewController.views, MapView);
+        console.log(index);
         viewController.getView(2).update(viewController.genomeController);
         return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
       });
       return true;
+    };
+
+    SatelliteCartographer.prototype.getIndex = function(array, value) {
+      var i, _i, _len;
+      for (_i = 0, _len = array.length; _i < _len; _i++) {
+        i = array[_i];
+        if (array[i] === value) {
+          return i;
+        }
+      }
+      return null;
     };
 
     SatelliteCartographer.prototype.updateMarkerLists = function(genomes, map) {

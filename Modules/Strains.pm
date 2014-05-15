@@ -118,7 +118,7 @@ sub info : Runmode {
 		
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+		$template = $self->load_tmpl( 'strains_info.tmpl' ,
 			associate => HTML::Template::HashWrapper->new( $strainInfoRef ),
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 1);
@@ -247,7 +247,7 @@ sub info : Runmode {
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
 	} else {
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+		$template = $self->load_tmpl( 'strains_info.tmpl' ,
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 0);
 	}

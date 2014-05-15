@@ -7,9 +7,10 @@
  Author: Akiff Manji akiff.manji@gmail.com
  Date: May 6, 2014
  */
-var Cartographer, DotCartographer, MapView,
+var Cartographer, DotCartographer, MapView, SatelliteCartographer,
   __hasProp = {}.hasOwnProperty,
-  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
+  __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
 MapView = (function(_super) {
   __extends(MapView, _super);
@@ -25,8 +26,10 @@ MapView = (function(_super) {
 
   MapView.prototype.elName = 'genome_map';
 
+  MapView.prototype.cartographer = null;
+
   MapView.prototype.update = function(genomes) {
-    var ft, mapElem, t1, t2;
+    var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
     mapElem = jQuery("#" + this.elID);
     if (mapElem.length) {
       mapElem.empty();
@@ -34,12 +37,33 @@ MapView = (function(_super) {
       mapElem = jQuery("<ul id='" + this.elID + "' />");
       jQuery(this.parentElem).find('.map-manifest').append(mapElem);
     }
+    pubVis = [];
+    pvtVis = [];
+    if (this.cartographer == null) {
+      pubVis = genomes.pubVisible;
+      pvtVis = genomes.pvtVisible;
+    } else if ((this.cartographer != null) && this.cartographer.visibleStrains) {
+      _ref = this.cartographer.visibileStrainLocations.pubVisible;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        i = _ref[_i];
+        if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+          pubVis.push(i);
+        }
+      }
+      _ref1 = this.cartographer.visibileStrainLocations.pvtVisible;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        i = _ref1[_j];
+        if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+          pvtVis.push(i);
+        }
+      }
+    }
     t1 = new Date();
-    this._appendGenomes(mapElem, genomes.pubVisible, genomes.public_genomes, this.style, false);
-    this._appendGenomes(mapElem, genomes.pvtVisible, genomes.private_genomes, this.style, true);
+    this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
+    this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
     t2 = new Date();
     ft = t2 - t1;
-    console.log('List view elapsed time: ' + ft);
+    console.log('MapView update elapsed time: ' + ft);
     return true;
   };
 
@@ -118,16 +142,26 @@ MapView = (function(_super) {
   MapView.prototype.dump = function(genomes) {};
 
   MapView.prototype.conscriptCartographger = function() {
-    var cartographer;
-    cartographer = new DotCartographer(jQuery(this.parentElem));
-    return cartographer.cartograPhy();
+    var downloadView;
+    downloadView = jQuery(this.parentElem).find('.download-view');
+    downloadView.remove();
+    this.cartographer = new SatelliteCartographer(jQuery(this.parentElem));
+    this.cartographer.cartograPhy();
+    return jQuery(this.parentElem).prepend(downloadView);
   };
+
+  true;
 
   return MapView;
 
 })(ViewTemplate);
 
-true;
+
+/*
+  CLASS Cartographer
+
+  Handles map drawing and location searching
+ */
 
 Cartographer = (function() {
   function Cartographer(cartographDiv, cartograhOpt) {
@@ -135,11 +169,11 @@ Cartographer = (function() {
     this.cartograhOpt = cartograhOpt;
   }
 
+  Cartographer.prototype.visibleStrains = false;
+
   Cartographer.prototype.map = null;
 
-  Cartographer.prototype.latLng = null;
-
-  Cartographer.prototype.splitLayout = '<div> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> <div class="map-canvas" style="height:200px;width:200px"></div> </div>';
+  Cartographer.prototype.splitLayout = '<div class="col-md-6 map-search-div"> <table class="table map-search-table"> <tr> <td> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> </td> </tr> <tr> <td> <div class="map-canvas"></div> </td> </tr> </table> </div>';
 
   Cartographer.prototype.cartograPhy = function() {
     var cartograhOpt;
@@ -160,10 +194,6 @@ Cartographer = (function() {
     return true;
   };
 
-  Cartographer.prototype.reCartograPhy = function() {
-    return true;
-  };
-
   Cartographer.prototype.pinPoint = function(e) {
     var geocoder, queryLocation, self;
     e.preventDefault();
@@ -174,11 +204,10 @@ Cartographer = (function() {
       'address': queryLocation
     }, function(results, status) {
       if (status === google.maps.GeocoderStatus.OK) {
-        self.latLng = results[0].geometry.location;
         self.map.setCenter(results[0].geometry.location);
         return self.map.fitBounds(results[0].geometry.viewport);
       } else {
-        return alert("Location " + address + " could not be found. Please enter a proper location");
+        return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
       }
     });
     return true;
@@ -188,6 +217,14 @@ Cartographer = (function() {
 
 })();
 
+
+/*
+  CLASS DotCartographer
+
+  Handles map drawing and location searching
+  Allows for pinpointing locations
+ */
+
 DotCartographer = (function(_super) {
   __extends(DotCartographer, _super);
 
@@ -196,6 +233,8 @@ DotCartographer = (function(_super) {
     this.dotCartograhOpt = dotCartograhOpt;
     DotCartographer.__super__.constructor.call(this, this.dotCartographDiv, this.dotCartograhOpt);
   }
+
+  DotCartographer.prototype.latLng = null;
 
   DotCartographer.prototype.marker = null;
 
@@ -207,15 +246,24 @@ DotCartographer = (function(_super) {
     return true;
   };
 
-  DotCartographer.prototype.reCartograPhy = function() {
-    return DotCartographer.__super__.reCartograPhy.apply(this, arguments);
-  };
-
   DotCartographer.prototype.pinPoint = function(e) {
-    var self;
-    DotCartographer.__super__.pinPoint.call(this, e);
+    var geocoder, queryLocation, self;
+    e.preventDefault();
     self = e.data.context;
-    DotCartographer.prototype.plantFlag(self.latLng, self.map);
+    geocoder = new google.maps.Geocoder();
+    queryLocation = jQuery('.map-search-location').val();
+    geocoder.geocode({
+      'address': queryLocation
+    }, function(results, status) {
+      if (status === google.maps.GeocoderStatus.OK) {
+        self.latLng = results[0].geometry.location;
+        self.map.setCenter(results[0].geometry.location);
+        self.map.fitBounds(results[0].geometry.viewport);
+        return DotCartographer.prototype.plantFlag(self.latLng, self.map);
+      } else {
+        return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
+      }
+    });
     return true;
   };
 
@@ -233,5 +281,160 @@ DotCartographer = (function(_super) {
   };
 
   return DotCartographer;
+
+})(Cartographer);
+
+
+/*
+  CLASS Cartographer
+
+  Handles map drawing and location searching
+  Displays multiple markers on map
+  Handles marker clustering
+  Displays list of genomes 
+  Alters genome list when map viewport changes
+ */
+
+SatelliteCartographer = (function(_super) {
+  __extends(SatelliteCartographer, _super);
+
+  function SatelliteCartographer(satelliteCartographDiv, satelliteCartograhOpt) {
+    this.satelliteCartographDiv = satelliteCartographDiv;
+    this.satelliteCartograhOpt = satelliteCartograhOpt;
+    SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
+  }
+
+  SatelliteCartographer.prototype.visibleStrains = true;
+
+  SatelliteCartographer.prototype.clusterList = [];
+
+  SatelliteCartographer.prototype.visibileStrainLocations = {};
+
+  SatelliteCartographer.prototype.markerClusterer = null;
+
+  SatelliteCartographer.prototype.cartograPhy = function() {
+    jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
+    SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
+    SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
+    SatelliteCartographer.prototype.markerCluster(this.map);
+    google.maps.event.addListener(this.map, 'zoom_changed', function() {
+      return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+    });
+    google.maps.event.addListener(this.map, 'bounds_changed', function() {
+      return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+    });
+    google.maps.event.addListener(this.map, 'idle', function() {
+      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
+      viewController.getView(2).update(viewController.genomeController);
+      return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
+    });
+    return true;
+  };
+
+  SatelliteCartographer.prototype.updateMarkerLists = function(genomes, map) {
+    var circleIcon, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
+    this.clusterList = [];
+    this.visibileStrainLocations.pubVisible = [];
+    this.visibileStrainLocations.pvtVisible = [];
+    _ref = genomes.public_genomes;
+    for (pubGenomeId in _ref) {
+      public_genome = _ref[pubGenomeId];
+      if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
+        pubMarkerObj = SatelliteCartographer.prototype.parseLocation(public_genome);
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: '#FF0000',
+          fillOpacity: 0.8,
+          scale: 5,
+          strokeColor: '#FF0000',
+          strokeWeight: 1
+        };
+        pubMarker = new google.maps.Marker({
+          map: map,
+          icon: circleIcon,
+          position: pubMarkerObj['centerLatLng'],
+          title: public_genome.uniquename,
+          feature_id: pubGenomeId,
+          uniquename: public_genome.uniquename,
+          location: pubMarkerObj['locationName']
+        });
+        this.clusterList.push(pubMarker);
+        if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+          this.visibileStrainLocations.pubVisible.push(pubGenomeId);
+        }
+      }
+    }
+    _ref1 = genomes.private_genomes;
+    for (pvtGenomeId in _ref1) {
+      private_genome = _ref1[pvtGenomeId];
+      if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
+        pvtMarkerObj = SatelliteCartographer.prototype.parseLocation(private_genome);
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: '#000000',
+          fillOpacity: 0.8,
+          scale: 5,
+          strokeColor: '#FF0000',
+          strokeWeight: 1
+        };
+        pvtMarker = new google.maps.Marker({
+          map: map,
+          position: pvtMarkerObj['centerLatLng'],
+          title: private_genome.uniquename,
+          feature_id: pvtGenomeId,
+          uniquename: private_genome.uniquename,
+          location: pvtMarkerObj['locationName']
+        });
+        this.clusterList.push(pvtMarker);
+        if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+          this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
+        }
+      }
+    }
+    return true;
+  };
+
+  SatelliteCartographer.prototype.markerCluster = function(map) {
+    var mcOptions;
+    mcOptions = {
+      gridSize: 50,
+      maxZoom: 15
+    };
+    this.markerClusterer = new MarkerClusterer(map, this.clusterList, mcOptions);
+    return true;
+  };
+
+  SatelliteCartographer.prototype.parseLocation = function(genome) {
+    var centerLatLng, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
+    locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
+    locationName = locationName.replace(/<location>/, '').replace(/<\/location>/, '').replace(/<[\/]+[\w\d]*>/g, '').replace(/<[\w\d]*>/g, ', ').replace(/, /, '');
+    locationCoordinates = genome.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
+    locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
+    locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+    locationCenterLat = locationCenterLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+    locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+    locationCenterLng = locationCenterLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+    locationViewPortSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
+    locationViewPortSWLat = locationViewPortSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+    locationViewPortSWLat = locationViewPortSWLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+    locationViewPortSWLng = locationViewPortSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+    locationViewPortSWLng = locationViewPortSWLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+    locationViewPortNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
+    locationViewPortNELat = locationViewPortNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
+    locationViewPortNELat = locationViewPortNELat.replace(/<lat>/, '').replace(/<\/lat>/, '');
+    locationViewPortNELng = locationViewPortNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
+    locationViewPortNELng = locationViewPortNELng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+    centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
+    swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
+    neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);
+    markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
+    markerObj = {};
+    markerObj['locationName'] = locationName;
+    markerObj['centerLatLng'] = centerLatLng;
+    markerObj['markerBounds'] = markerBounds;
+    return markerObj;
+  };
+
+  return SatelliteCartographer;
 
 })(Cartographer);
