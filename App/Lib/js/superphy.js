@@ -3832,7 +3832,7 @@
       var downloadView;
       downloadView = jQuery(this.parentElem).find('.download-view');
       downloadView.remove();
-      this.cartographer = new DotCartographer(jQuery(this.parentElem));
+      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem));
       this.cartographer.cartograPhy();
       return jQuery(this.parentElem).prepend(downloadView);
     };
@@ -3842,6 +3842,13 @@
     return MapView;
 
   })(ViewTemplate);
+
+
+  /*
+    CLASS Cartographer
+  
+    Handles map drawing and location searching
+   */
 
   Cartographer = (function() {
     function Cartographer(cartographDiv, cartograhOpt) {
@@ -3874,10 +3881,6 @@
       return true;
     };
 
-    Cartographer.prototype.reCartograPhy = function() {
-      return true;
-    };
-
     Cartographer.prototype.pinPoint = function(e) {
       var geocoder, queryLocation, self;
       e.preventDefault();
@@ -3900,6 +3903,14 @@
     return Cartographer;
 
   })();
+
+
+  /*
+    CLASS DotCartographer
+  
+    Handles map drawing and location searching
+    Allows for pinpointing locations
+   */
 
   DotCartographer = (function(_super) {
     __extends(DotCartographer, _super);
@@ -3960,6 +3971,17 @@
 
   })(Cartographer);
 
+
+  /*
+    CLASS Cartographer
+  
+    Handles map drawing and location searching
+    Displays multiple markers on map
+    Handles marker clustering
+    Displays list of genomes 
+    Alters genome list when map viewport changes
+   */
+
   SatelliteCartographer = (function(_super) {
     __extends(SatelliteCartographer, _super);
 
@@ -3988,11 +4010,12 @@
       google.maps.event.addListener(this.map, 'bounds_changed', function() {
         return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
       });
-      return google.maps.event.addListener(this.map, 'idle', function() {
+      google.maps.event.addListener(this.map, 'idle', function() {
         SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
         viewController.getView(2).update(viewController.genomeController);
         return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
       });
+      return true;
     };
 
     SatelliteCartographer.prototype.updateMarkerLists = function(genomes, map) {

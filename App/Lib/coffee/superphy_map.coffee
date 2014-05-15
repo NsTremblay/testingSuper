@@ -20,9 +20,6 @@ class MapView extends ViewTemplate
 
   cartographer: null
 
-  #Create layout for map and list
-  #console.log @parentElem.selector
-
   # FUNC update
   # Update genome list view
   #
@@ -123,19 +120,8 @@ class MapView extends ViewTemplate
 
       true
 
-  # FUNC updateCSS
-  # Change  CSS class for selected genomes to match underlying genome properties
-  #
-  # PARAMS
-  # simple hash object with private and public list of genome Ids to update
-  # genomeController object
-  # 
-  # RETURNS
-  # boolean
-  #
   updateCSS: (gset, genomes) -> 
     #TODO: modify the helper functions for updating CSS
-
     #Retrieve list DOM element
     mapEl = jQuery("##{@elID}")
     throw new SuperphyError " DOM element for map view #{@elID} not found. Cannot call MapView method updateCSS()." unless mapEl? and mapEl.length
@@ -181,6 +167,15 @@ class MapView extends ViewTemplate
     #TODO: Download the set of genomes and their coordinates into a table
     return
 
+  # FUNC conscriptCartographer
+  # creates a new cartographer object
+  # reappends download-view dive for better display
+  #
+  # PARAMS
+  #
+  # RETURNS
+  # boolean
+  #
   conscriptCartographger: () ->
     downloadView = jQuery(@parentElem).find('.download-view')
     downloadView.remove();
@@ -189,7 +184,12 @@ class MapView extends ViewTemplate
     jQuery(@parentElem).prepend(downloadView)
   true
 
-#Base class for map functions
+###
+  CLASS Cartographer
+
+  Handles map drawing and location searching
+
+###
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
 
@@ -269,6 +269,13 @@ class Cartographer
     )
     true
 
+###
+  CLASS DotCartographer
+
+  Handles map drawing and location searching
+  Allows for pinpointing locations
+
+###
 class DotCartographer extends Cartographer
   constructor: (@dotCartographDiv, @dotCartograhOpt) ->
     # Call default constructor
@@ -339,6 +346,16 @@ class DotCartographer extends Cartographer
     map.panTo(@marker.getPosition())
     true
 
+###
+  CLASS Cartographer
+
+  Handles map drawing and location searching
+  Displays multiple markers on map
+  Handles marker clustering
+  Displays list of genomes 
+  Alters genome list when map viewport changes
+
+###
 class SatelliteCartographer extends Cartographer
   constructor: (@satelliteCartographDiv, @satelliteCartograhOpt) ->
     # Call default constructor
@@ -350,6 +367,18 @@ class SatelliteCartographer extends Cartographer
 
   markerClusterer: null
 
+  # FUNC cartograPhy overrides Cartographer
+  # initializes map in specified map div
+  # initializs manifest list of genomes
+  # displays genomes on map with known locations
+  # clusters markers to reduces drawing overhead
+  # binds listen-handlers to map to alter list with map view-port changes
+  #
+  # PARAMS
+  # 
+  # RETURNS
+  # google map object drawn into specified div
+  #
   cartograPhy: () ->
     # Init strain list
     jQuery(@satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>')
@@ -373,9 +402,19 @@ class SatelliteCartographer extends Cartographer
       viewController.getView(2).update(viewController.genomeController)
       SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
       )
-    
+    true
+  
+  # FUNC updateMarkerLists
+  # Initializes and sets lists of genomes with known locations
+  # Initializes and sets lists of markers for google maps and marker clusterer
+  # Resets lists to contain only those markers visible in the viewport of the map
+  #
+  # PARAMS
+  # list of genomeContorller genomes, map 
+  #
+  # RETURNS
+  #
   updateMarkerLists: (genomes, map) ->
-    # TODO: will have to change this to accept a list of genomes visible in the view port
     # Init public strains
     @clusterList = []
     @visibileStrainLocations.pubVisible = []
@@ -438,11 +477,29 @@ class SatelliteCartographer extends Cartographer
           @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
     true
 
+  # FUNC markerClusterer
+  # creates a new marker clusterer object
+  #
+  # PARAMS
+  # google maps map
+  # 
+  # RETURNS
+  #
   markerCluster: (map) ->
     mcOptions = {gridSize: 50, maxZoom: 15}
     @markerClusterer = new MarkerClusterer(map, @clusterList, mcOptions)
     true
 
+  # FUNC parseLocation
+  # parses the location out from a genome object
+  # parses location name, center latLng point, SW and NE boundary latLng points
+  #
+  # PARAMS
+  # genomeController genome
+  #
+  # RETURNS
+  # marker object
+  #
   parseLocation: (genome) ->
     # Get location from genome
     locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0]

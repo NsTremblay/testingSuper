@@ -492,7 +492,7 @@ div.matrixSort {
 .map-search-div {
   margin-top: 20px;
 }
-.map-manifest > ul {
+.map-manifest ul {
   list-style-type: none;
   display: block;
   max-height: 500px;
