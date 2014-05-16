@@ -20,6 +20,8 @@ class MapView extends ViewTemplate
 
   cartographer: null
 
+  mapView: true
+
   # FUNC update
   # Update genome list view
   #
@@ -181,6 +183,7 @@ class MapView extends ViewTemplate
     downloadView.remove();
     @cartographer = new SatelliteCartographer(jQuery(@parentElem))
     @cartographer.cartograPhy()
+    #Remove the download view for the results page
     jQuery(@parentElem).prepend(downloadView)
   true
 
@@ -192,7 +195,6 @@ class MapView extends ViewTemplate
 ###
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
-
   visibleStrains: false
   map: null
   splitLayout: '
@@ -360,12 +362,30 @@ class SatelliteCartographer extends Cartographer
   constructor: (@satelliteCartographDiv, @satelliteCartograhOpt) ->
     # Call default constructor
     super(@satelliteCartographDiv, @satelliteCartograhOpt)
+    @mapViewIndex = @satelliteCartograhOpt
 
   visibleStrains: true
   clusterList: []
   visibileStrainLocations: {}
 
   markerClusterer: null
+
+  mapViewIndex: null
+
+  findMapViewIndex: (views) ->
+    for v, index in views
+      if v.mapView?
+        return index
+    return null
+
+  resetMap: ()  ->
+    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
+    x = @map.getZoom();
+    c = @map.getCenter();
+    google.maps.event.trigger(@map, 'resize');
+    @map.setZoom(x);
+    @map.setCenter(c);
+    SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
 
   # FUNC cartograPhy overrides Cartographer
   # initializes map in specified map div
@@ -380,15 +400,24 @@ class SatelliteCartographer extends Cartographer
   # google map object drawn into specified div
   #
   cartograPhy: () ->
-    # Init strain list
+    
+    # Init strain lis
     jQuery(@satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>')
-
+      
     # Init the map
     super
+    
     # Init the visible list of strains and convert these to markers
     SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
+    
     # Init the marker clusterer
     SatelliteCartographer::markerCluster(@map)
+    
+    # Set mapViewIndex for easy lookup
+    index = SatelliteCartographer::findMapViewIndex(viewController.views)
+    SatelliteCartographer::mapViewIndex = index
+    jQuery(@satelliteCartographDiv).data("viewsIndex", index);
+
     # Map viewport change event
     google.maps.event.addListener(@map, 'zoom_changed', () ->
       SatelliteCartographer::markerClusterer.clearMarkers()
@@ -396,10 +425,12 @@ class SatelliteCartographer extends Cartographer
     google.maps.event.addListener(@map, 'bounds_changed', () ->
       SatelliteCartographer::markerClusterer.clearMarkers()
       )
+    google.maps.event.addListener(@map, 'resize', () ->
+      SatelliteCartographer::markerClusterer.clearMarkers()
+      )
     google.maps.event.addListener(@map, 'idle', () ->
-      # TODO: update visible markers
       SatelliteCartographer::updateMarkerLists(viewController.genomeController, @)
-      viewController.getView(2).update(viewController.genomeController)
+      viewController.getView(SatelliteCartographer::mapViewIndex).update(viewController.genomeController)
       SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
       )
     true

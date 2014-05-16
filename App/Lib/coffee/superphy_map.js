@@ -28,6 +28,8 @@ MapView = (function(_super) {
 
   MapView.prototype.cartographer = null;
 
+  MapView.prototype.mapView = true;
+
   MapView.prototype.update = function(genomes) {
     var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
     mapElem = jQuery("#" + this.elID);
@@ -302,6 +304,7 @@ SatelliteCartographer = (function(_super) {
     this.satelliteCartographDiv = satelliteCartographDiv;
     this.satelliteCartograhOpt = satelliteCartograhOpt;
     SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
+    this.mapViewIndex = this.satelliteCartograhOpt;
   }
 
   SatelliteCartographer.prototype.visibleStrains = true;
@@ -312,20 +315,51 @@ SatelliteCartographer = (function(_super) {
 
   SatelliteCartographer.prototype.markerClusterer = null;
 
+  SatelliteCartographer.prototype.mapViewIndex = null;
+
+  SatelliteCartographer.prototype.findMapViewIndex = function(views) {
+    var index, v, _i, _len;
+    for (index = _i = 0, _len = views.length; _i < _len; index = ++_i) {
+      v = views[index];
+      if (v.mapView != null) {
+        return index;
+      }
+    }
+    return null;
+  };
+
+  SatelliteCartographer.prototype.resetMap = function() {
+    var c, x;
+    SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
+    x = this.map.getZoom();
+    c = this.map.getCenter();
+    google.maps.event.trigger(this.map, 'resize');
+    this.map.setZoom(x);
+    this.map.setCenter(c);
+    return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
+  };
+
   SatelliteCartographer.prototype.cartograPhy = function() {
+    var index;
     jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
     SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
     SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
     SatelliteCartographer.prototype.markerCluster(this.map);
+    index = SatelliteCartographer.prototype.findMapViewIndex(viewController.views);
+    SatelliteCartographer.prototype.mapViewIndex = index;
+    jQuery(this.satelliteCartographDiv).data("viewsIndex", index);
     google.maps.event.addListener(this.map, 'zoom_changed', function() {
       return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
     });
     google.maps.event.addListener(this.map, 'bounds_changed', function() {
       return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
     });
+    google.maps.event.addListener(this.map, 'resize', function() {
+      return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
+    });
     google.maps.event.addListener(this.map, 'idle', function() {
       SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
-      viewController.getView(2).update(viewController.genomeController);
+      viewController.getView(SatelliteCartographer.prototype.mapViewIndex).update(viewController.genomeController);
       return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
     });
     return true;

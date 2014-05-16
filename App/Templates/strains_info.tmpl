@@ -28,8 +28,17 @@
     viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
     $(document).ready(function(){
+        $('.map-canvas').hide();
         $('a[href="#overview-panel"]').click();
+        $('#geospatial-panel').on('hidden.bs.collapse', function () {
+            viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.markerClusterer.clearMarkers();
+        });
+        $('#geospatial-panel').on('shown.bs.collapse', function () {
+            $('.map-canvas').show();
+            viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.resetMap();
+        });
     });
+
     </script>
     
 </head>
@@ -73,8 +82,8 @@
                 <div id="tree-panel" class="panel-collapse collapse">
                     <div class="panel-body">
                         <script>
-                            var smallTreeWindow = true;
-                            var centreOnSelectedNode = true;
+                        var smallTreeWindow = true;
+                        var centreOnSelectedNode = true;
                         </script>
                         <TMPL_INCLUDE NAME="strains_info_phylogeny.tmpl">
                     </div>
@@ -110,8 +119,8 @@
                 <div id="geospatial-panel" class="panel-collapse collapse">
                     <div class="panel-body" id="strains-info-map">
                         <script type="text/javascript">
-                            viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
-                            viewController.createView('map', $('#strains-info-map'));
+                        viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+                        viewController.createView('map', $('#strains-info-map'));
                         </script>
                     </div>
                 </div>
@@ -130,29 +139,29 @@
                 </div>
                 <div id="references-panel" class="panel-collapse collapse">
                     <div class="panel-body">
-                        
+
                         <TMPL_IF owners>
-                            <div class="span11">
-                                <span class="muted">Original submitter / Owner of genome: </span>
-                            </div>
-                            <div class="span11">
-                                <ol>
-                                    <TMPL_LOOP owners>
-                                        <li><TMPL_VAR owner></li>
-                                    </TMPL_LOOP>
-                                </ol>
-                            </div>
+                        <div class="span11">
+                            <span class="muted">Original submitter / Owner of genome: </span>
+                        </div>
+                        <div class="span11">
+                            <ol>
+                                <TMPL_LOOP owners>
+                                <li><TMPL_VAR owner></li>
+                                </TMPL_LOOP>
+                            </ol>
+                        </div>
                         <hr>
                         </TMPL_IF>
                         <TMPL_IF pmid_list>
-                            <div class="span11">
-                                <span class="muted">Pubmed References: </span>
-                            </div>
-                            <div id="pmid_results" class="span11">
-                            </div>
-                            <div id="pmid_error" style="display:none">
-                                Error occurred retrieving pubmed summaries.
-                            </div>
+                        <div class="span11">
+                            <span class="muted">Pubmed References: </span>
+                        </div>
+                        <div id="pmid_results" class="span11">
+                        </div>
+                        <div id="pmid_error" style="display:none">
+                            Error occurred retrieving pubmed summaries.
+                        </div>
                         </TMPL_IF>
                     </div>
                 </div>
@@ -173,7 +182,7 @@
                     <div class="panel-body">
                         <ol>
                             <TMPL_LOOP comments>
-                                <li><TMPL_VAR comment></li>
+                            <li><TMPL_VAR comment></li>
                             </TMPL_LOOP>
                         </ol>
                     </div>
@@ -195,7 +204,7 @@ var pmidList = "";
 pmidList = <TMPL_VAR pmid_list>;
 </TMPL_IF>
 $(document).ready(function() {
-    
+
     if(pmidList != "") {
         var entrezArgs = {
             'apikey' : '847d6279e0c5c435df1bd425c1628778',

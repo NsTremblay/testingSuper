@@ -58,6 +58,11 @@
 
 	viewController.createView('map', $('#strains_map'));
 	
+	$(document).ready(function(){
+		$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+			viewController.getView($('#strains_map').data("viewsIndex")).cartographer.resetMap();
+		});
+	});
 	</script>
 
 </body>

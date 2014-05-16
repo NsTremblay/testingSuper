@@ -117,9 +117,10 @@ class ViewController
     else if viewType is 'map'
       #New map view
       mapView = new MapView(elem, clickStyle, vNum, viewArgs)
+      #Mapview needs to be pushed prior to constructing the cartographer otherwise the cartographer will not know which index of the views the map view is in to update
+      @views.push mapView
       mapView.conscriptCartographger()
       mapView.update(@genomeController, mapView.cartographer)
-      @views.push mapView
       
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'

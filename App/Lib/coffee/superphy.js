@@ -121,9 +121,9 @@ ViewController = (function() {
       this.views.push(matView);
     } else if (viewType === 'map') {
       mapView = new MapView(elem, clickStyle, vNum, viewArgs);
-      mapView.conscriptCartographger();
-      mapView.update(this.genomeController);
       this.views.push(mapView);
+      mapView.conscriptCartographger();
+      mapView.update(this.genomeController, mapView.cartographer);
     } else {
       throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
       return false;
