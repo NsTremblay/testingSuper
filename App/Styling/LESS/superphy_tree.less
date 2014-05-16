@@ -7,11 +7,57 @@
  
  * */
 
+/** Legend Link ***************************/
+.tree_legend_link {
+  margin-left: 30px;
+  margin-right: 30px;
+  width: 700px;
+  padding-top: 20px;
+  padding-bottom: 0;
+  a {
+    float: right;
+    font-size: 90%;
+  }
+}
 
+/** Top Div *******************************/ 
+  
+.genomeTreeDivs {
+  
+  margin-left: 30px;
+  margin-right: 30px;
+  
+  svg {
+    display: block;
+    margin: auto;
+    top:0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+.genome_tree_item {
+  .genomeTreeDivs;
+  height: 800px;
+  width: 700px;
+  margin-top: 25px;
+  margin-bottom: 0px;
+  .borderStyle;
+  
+}
+.genome_tree_legend {
+  .genomeTreeDivs;
+  // .borderStyle;
+  height: 100px;
+  width: 700px;
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
 
 /** Text **********************************/
 @textfont: 12px sans-serif;
-@selectedfont: italic bold 12px sans-serif;
+@selectedfont: italic normal 12px sans-serif;
 
 
 /** Nodes *********************************/ 
@@ -28,7 +74,7 @@
   @dark-color: darken(@color, 10%);
   
   .treelabel {
-    //font: @selectedfont;
+    font: @selectedfont;
   }
 
   circle {
@@ -52,7 +98,7 @@
   .treenodeGroupConstructor(@index - 1);
 }
 
-
+// Default node styles
 .treenode {
   
   .treeicon {
@@ -63,21 +109,62 @@
   .treelabel {
     font: @textfont;
   }
+  
+  .slash {
+    font: @selectedfont;
+    fill: #737373;
+  }
 
   circle {
     .nodeShape;
   }
   
-  rect {
+  rect.selectClade {
     .nodeShape(red);
   }
-  
 }
 
+// Selected node styles
 .selectedNode {
   
   .treelabel {
     color: grey;
+  }
+  
+}
+
+// Focus node styles
+@focus-color1: orange;
+@focus-color2: lighten(@focus-color1, 20%);
+.focusNode {
+  
+  .treelabel {
+    font: @selectedfont;
+  }
+  
+  circle {
+    .nodeShape(@focus-color1, @focus-color2, 3px);
+  }
+  
+}
+
+
+// Internal node selected styles
+@part-fill-color: #d7d7d7;
+@full-fill-color: #969696;
+
+.internalSNodePart {
+  
+  rect.selectClade {
+    fill: @part-fill-color;
+  }
+  
+}
+
+.internalSNodeFull {
+  
+  rect.selectClade {
+    fill: @full-fill-color;
   }
   
 }
@@ -92,3 +179,21 @@
   stroke: #ccc;
   stroke-width: 1.5px;
 }
+
+/** Dialog ********************************/
+  
+.noTitleStuff .ui-dialog-titlebar {
+  display:none
+}
+
+/** Legend ********************************/
+  
+.legendlabel2 {
+  font: @textfont;
+  fill: #696969;
+}
+
+.legendlabel1 {
+  font: @textfont;
+}
+

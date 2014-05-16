@@ -146,6 +146,10 @@ sub stx : Runmode {
 		
 	}
 	
+	# Title
+	$template->param(title1 => 'SHIGA-TOXIN');
+	$template->param(title2 => 'SUBTYPE');
+	
 	return $template->output();
 }
 
@@ -258,8 +262,7 @@ sub matrix : Runmode {
 	
 	# Retrieve presence / absence of alleles for query genes
 	my %args = (
-		warden => $warden,
-		cvmemory => $self->cvmemory
+		warden => $warden
 	);
 	
 	if(@genes) {
@@ -297,11 +300,65 @@ sub matrix : Runmode {
 	}
 	$template->param(tree_json => $tree_string);
 	
-
 	$template->param(title1 => 'VIRULENCE &amp; AMR');
 	$template->param(title2 => 'RESULTS');
 		
 	return $template->output();
+}
+
+=head2 search
+
+Search for for VF/AMR matrix
+
+=cut
+
+sub search : StartRunmode {
+	my $self = shift;
+	
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
+	
+	# User
+	my $user = $self->authen->username;
+	
+	# Genomes
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user, cvmemory => $self->cvmemory);
+
+	# Template
+	my $template = $self->load_tmpl('genes_search.tmpl' , die_on_bad_params => 0);
+	
+	# Genome meta info
+	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
+	$template->param(public_genomes => $pub_json);
+	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	
+	# Genome tree
+	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+	my $tree_string;
+	if($warden->hasPersonal) {
+		$tree_string = $tree->fullTree($warden->genomeLookup());
+	} else {
+		$tree_string = $tree->fullTree();
+	}
+	$template->param(tree_json => $tree_string);
+	
+	# AMR/VF categores
+	my $categoriesRef = $self->categories();
+	$template->param(categories => $categoriesRef);
+	
+	# AMR/VF Lists
+	my $vfRef = $data->getVirulenceFormData();
+	my $amrRef = $data->getAmrFormData();
+
+	$template->param(vf => $vfRef);
+	$template->param(amr => $amrRef);
+	
+	# Title
+	$template->param(title1 => 'VIRULENCE &amp; AMR');
+	$template->param(title2 => 'GENES');
+	
+	return $template->output();
+	
 }
 
 
@@ -314,11 +371,11 @@ Run mode for the virulence factor page
 
 =cut
 
-sub virulence_factors : StartRunmode {
+sub virulence_factors : Runmode {
 	my $self = shift;
 	
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
+	my $formDataGenerator = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
+	#$formDataGenerator->dbixSchema();
 	
 	
 	#my ($pubDataRef, $priDataRef , $pubStrainJsonDataRef) = $formDataGenerator->getFormData();

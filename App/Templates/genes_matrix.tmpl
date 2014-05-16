@@ -95,7 +95,7 @@
 		</TMPL_IF>
 		
 		// Data objects
-		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info', genome_subset);
+		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
 		
 		// Views
 		if(!jQuery.isEmptyObject( genes.vf )) {
@@ -129,7 +129,7 @@
 		
 		// Genome selection form
 		viewController.createView('list', $('#strains_list'));
-		//viewController.createView('tree', $('#strains_tree'), tree);
+		viewController.createView('tree', $('#strains_tree'), tree);
 		
 		// Code to create groups
 		var addMore = true;

@@ -414,6 +414,5 @@ class AlleleTicker extends TickerTemplate
         
     console.log @counts
         
-    true      
-    
-  
+    true
+   

@@ -9,21 +9,17 @@
 </head>
 
 <body>
-	<TMPL_INCLUDE NAME="nav_bar2.tmpl">
-
-	<div class="container" >
-		<div class="title">
-			<h1><span class="title_part1">SHIGA-TOXIN</span> <span class="title_part2">SUBTYPING</span></h1>
-		</div>
+	<TMPL_INCLUDE NAME="page_top.tmpl">
+	
+	<div class="intro">
 		<p>We have developed an in silico method to generate and predict the standardized subtype nomenclature 
 		used for Shiga toxin-producing Escherichia coli (STEC). The current protocal assigns subtypes by PCR detection of
 		characteristic motifs in Stx1 and Stx2 holotoxin amino-acid sequences. Our method examines the phylogenetic placement
 		of untyped holotoxin sequences in relation to holotoxins of known subtype, transfering the subtype assignments
 		from closely related sequences in homogenous clades.
 		</p>
+	</div>
 		
-		
-		<TMPL_INCLUDE NAME="search_utilities.tmpl">
 		<div>
 			<ul id="stx_tabs" class="nav nav-tabs">
 	      		<li class="active"><a href="#stx1_tab" data-toggle="tab">Stx1</a></li>
@@ -127,6 +123,8 @@
 			
 		</div>
 	</div>
+	
+	<TMPL_INCLUDE NAME="page_bottom.tmpl">
 
 	<script type="text/javascript">	
 		// Initialise JSON data objects
@@ -182,8 +180,7 @@
 		}
 		
 		// Search forms
-		viewController.metaForm($('#meta-display-form'));
-		viewController.filterForm($('#filter-form'));
+		viewController.sideBar($('#search-utilities'));
 		
 		// Ticker objects
 		viewController.createTicker('locus', $("#stx1_summary_table"), locusData1);
@@ -191,7 +188,6 @@
 		
 	</script>
 	
-	<TMPL_INCLUDE NAME="footer2.tmpl">
 	
 </body>
 

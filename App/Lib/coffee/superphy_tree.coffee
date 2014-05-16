@@ -29,7 +29,10 @@ class TreeView extends ViewTemplate
     throw new SuperphyError 'Missing argument. TreeView constructor requires JSON tree object.' unless treeArgs.length > 0
     @root = @trueRoot = treeArgs[0]
     
-    @dim={w: 500, h: 800}
+    # Tracks changes in underlying visible genome set
+    @currentGenomeSet = -1;
+    
+    @dim={w: 700, h: 800}
     @margin={top: 20, right: 180, bottom: 20, left: 20}
     @locusData = treeArgs[1] if treeArgs[1]?
     @dim = treeArgs[2] if treeArgs[2]?
@@ -53,8 +56,12 @@ class TreeView extends ViewTemplate
       .value((d) -> Number(d.length) )
       .separation((a, b) -> 1)
     
+    # Link to legend
+    legendID = "tree_legend#{@elNum}"
+    @parentElem.append("<div class='tree_legend_link'><a href='##{legendID}'>Functions List</a></div>")
+    
     # SVG layer
-    @parentElem.append("<div id='#{@elID}'></div>")
+    @parentElem.append("<div id='#{@elID}' class='#{@cssClass()}'></div>")
     @wrap = d3.select("##{@elID}").append("svg")
       .attr("width", @dim.w)
       .attr("height", @dim.h)
@@ -73,6 +80,20 @@ class TreeView extends ViewTemplate
         .scaleExtent([1,8]).on("zoom", -> viewController.getView(num).zoomed())
     )
     
+    # Legend SVG
+    
+    jQuery("<div id='#{legendID}' class='genome_tree_legend'></div>").appendTo(@parentElem)
+    @wrap2 = d3.select("##{legendID}").append("svg")
+      .attr("width", @dim.w)
+      .attr("height", 100)
+      .style("-webkit-backface-visibility", "hidden")
+    
+    @legend = @wrap2.append("g")
+      .attr("transform", "translate(" + 5 + "," + 5 + ")")
+    
+    @_legend(@legend)  
+    
+    
     # Attach a clade dialog
     if @style is 'select'
       dialog = jQuery('#dialog-clade-select')
@@ -81,10 +102,11 @@ class TreeView extends ViewTemplate
         dialog
           .text("Select/unselect genomes in clade:")
           .dialog({
-            title: 'Select clade',
+            #title: 'Select clade',
+            dialogClass: 'noTitleStuff',
             autoOpen: false,
             resizable: false,
-            height:160,
+            height: 120,
             modal: true,
             buttons: {
               Select: ->
@@ -114,6 +136,10 @@ class TreeView extends ViewTemplate
   
   duration: 1000
   
+  expandDepth: 5
+  
+  x_factor: 1.5
+  y_factor: 5000
   
   # FUNC update
   # Update genome tree view
@@ -135,19 +161,32 @@ class TreeView extends ViewTemplate
     # changes @root object
     @_sync(genomes)
     
-    # find starting point to launch new nodes/links
-    sourceNode = @root unless sourceNode?
-    @launchPt = {x: sourceNode.x, y: sourceNode.y, x0: sourceNode.x0, y0: sourceNode.y0}
-    
     # Compute layout, return D3 node objects
     @nodes = @cluster.nodes(@root)
+    
+     # find starting point to launch new nodes/links
+    sourceNode = @root unless sourceNode?
+    @launchPt = {x: sourceNode.x, y: sourceNode.y, x0: sourceNode.x0, y0: sourceNode.y0}
     
     # Scale branch lengths
     farthest = d3.max(@nodes, (d) -> d.sum_length * 1)
     lowest = d3.max(@nodes, (d) -> d.x )
-  
-    branch_scale_factor_y = (@width - 20)/farthest
-    branch_scale_factor_x = (@height - 20)/lowest
+    yedge = @width - 20
+    xedge = @height - 20
+    
+    # Start with default scale values,
+    # If tree is larger than window, shrink scale
+    branch_scale_factor_y = @y_factor
+    if (branch_scale_factor_y * farthest) > yedge
+      branch_scale_factor_y = yedge/farthest
+      
+    branch_scale_factor_x = @x_factor
+    if (branch_scale_factor_x * lowest) > xedge
+      branch_scale_factor_x = xedge/lowest
+      
+      
+    console.log 'y'+branch_scale_factor_y
+    console.log 'x'+branch_scale_factor_x
     
     for n in @nodes
       n.y = n.sum_length * branch_scale_factor_y
@@ -194,19 +233,24 @@ class TreeView extends ViewTemplate
         else
           null
       )
-      
-    currLeaves.select("text")
-      .text((d) ->
-        d.viewname
-      )
-       
+          
     currLeaves.select("circle")
       .style("fill", (d) -> 
         if d.selected
           "lightsteelblue"
         else
           "#fff"
-      )   
+      )
+    
+    # Update text if meta-labels
+    # or filter changed them
+    svgNodes.select("text")
+      .text((d) ->
+        if d.leaf
+          d.viewname
+        else
+          d.label
+      )
 
     # Insert nodes
     # Enter any new nodes at the parent's previous position.
@@ -256,32 +300,48 @@ class TreeView extends ViewTemplate
     # Append command elements to new internal nodes
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
-    
-    # expand/collapse box
+      
     cmdBox = iNodes
-      .append("rect")
-      .attr("width", 1e-6)
-      .attr("height",1e-6)
-      .attr("y", -4)
-      .attr("x", -12)
-      .style("fill", "#fff")
+      .append('text')
+      .attr("class","treeicon expandcollapse")
+      .attr("text-anchor", 'middle')
+      .attr("y", 4)
+      .attr("x", -8)
+      .text((d) -> "\uf0fe")
   
     cmdBox.on("click", (d) -> 
       viewController.viewAction(num, 'expand_collapse', d, @.parentNode) 
     )
     
-    # select/unselect clade
+    # # select/unselect clade
+    # if @style is 'select'
+      # # select
+      # cladeIcons = iNodes
+        # .append('text')
+        # .attr("class","treeicon selectclade")
+        # .attr("text-anchor", 'middle')
+        # .attr("y", 4)
+        # .attr("x", -20)
+        # .text((d) -> "\uf058")
+#         
+      # cladeIcons.on("click", (d) ->
+        # jQuery('#dialog-clade-select')
+          # .data('clade-node', d)
+          # .dialog('open')
+      # )
+      
+     # select/unselect clade
     if @style is 'select'
       # select
-      cladeIcons = iNodes
-        .append('text')
-        .attr("class","treeicon")
-        .attr("text-anchor", 'middle')
-        .attr("y", 4)
-        .attr("x", -20)
-        .text((d) -> "\uf058")
+      cladeSelect = iNodes
+        .append('rect')
+        .attr("class","selectClade")
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("y", -4)
+        .attr("x", -25)
         
-      cladeIcons.on("click", (d) ->
+      cladeSelect.on("click", (d) ->
         jQuery('#dialog-clade-select')
           .data('clade-node', d)
           .dialog('open')
@@ -299,14 +359,12 @@ class TreeView extends ViewTemplate
       .select("text")
         .style("fill-opacity", 1)
     
-    nodesUpdate.select("rect")
-      .attr("width", 8)
-      .attr("height",8)
-      .style("fill", (d) ->
+    nodesUpdate.select(".expandcollapse")
+      .text((d) ->
         if d._children? 
-          "lightsteelblue"
+          "\uf0fe"
         else
-          "#fff"
+          "\uf146"
       )
     
     # Transition exiting ndoes to the parent's new position.
@@ -420,6 +478,16 @@ class TreeView extends ViewTemplate
     
     true
     
+  # FUNC selectCladed
+  # Call select on every leaf node in clade
+  #
+  # PARAMS
+  # Data object representing node
+  # boolean indicating select/unselect
+  # 
+  # RETURNS
+  # boolean 
+  #        
   selectClade: (node, checked) ->
     
     if node.leaf
@@ -430,7 +498,19 @@ class TreeView extends ViewTemplate
         @selectClade(c, checked) for c in node.children
       else if node._children?
         @selectClade(c, checked) for c in node._children
-        
+  
+  # FUNC select
+  # Changes css classes for selected genome in tree
+  # Also updates coloring of selectClade command icons
+  # to indicate presence of selected genome
+  #
+  # PARAMS
+  # Data object representing node
+  # boolean indicating select/unselect
+  # 
+  # RETURNS
+  # boolean 
+  #              
   select: (genome, isSelected) ->
     
     svgNodes = @canvas.selectAll("g.treenode")
@@ -449,8 +529,53 @@ class TreeView extends ViewTemplate
         else
           "#fff" 
       )
-        
+    
+    # Push selection up tree
+    d = updateNode.datum()
+    console.log updateNode
+    console.log d.parent
+    @_percolateSelected(d.parent, isSelected)
+    
+    # update classes
+    svgNodes.filter((d) -> !d.leaf)
+      .attr("class", (d) =>
+        @_classList(d)
+      )
+      
     true
+    
+    
+  # FUNC _percolateSelected
+  # Updates internal nodes up the tree
+  # changing classes based on if 
+  #
+  # PARAMS
+  # Data object representing node
+  # boolean indicating select/unselect
+  # 
+  # RETURNS
+  # boolean 
+  #
+  _percolateSelected: (node, checked) ->
+    
+    return true unless node?
+  
+    if checked
+      node.num_selected++
+    else
+      node.num_selected--
+    
+    if node.num_selected == node.num_leaves
+      node.internal_node_selected = 2
+    else if node.num_selected > 0
+      node.internal_node_selected = 1
+    else
+      node.internal_node_selected = 0
+       
+    @_percolateSelected(node.parent, checked)
+    
+    true
+    
     
   # FUNC dump
   # Generate a Newick formatted tree of all genomes (ignores any filters)
@@ -491,14 +616,16 @@ class TreeView extends ViewTemplate
       # Internal node
       
       # Add all children
-      if node.daycare?
-        tokens.push('(')
+      children = node.children
+      children = node._children if node._children?
+      
+      tokens.push('(')
         
-        for c in node.daycare
-          @_printNode(genomes, c, tokens)
-          tokens.push(',')
+      for c in children
+        @_printNode(genomes, c, tokens)
+        tokens.push(',')
           
-        tokens[tokens.length-1] = ')' # replace last comma with closing bracket
+      tokens[tokens.length-1] = ')' # replace last comma with closing bracket
       
       tokens.push("\"#{node.name}\"",':',node.length)
     
@@ -530,6 +657,8 @@ class TreeView extends ViewTemplate
     i++
     
     if n.children?
+      n.num_selected = 0
+      
       # Save original children array
       n.daycare = n.children.slice() # clone array
       
@@ -537,6 +666,8 @@ class TreeView extends ViewTemplate
         i = @_assignKeys(m, i, gPattern)
         
     else if n._children?
+      n.num_selected = 0
+    
       # Save original children array
       n.daycare = n._children.slice() # clone array
       
@@ -569,8 +700,17 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
     
+    console.log 'sync'
+    
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0)
+    
+    # Check if genome set has changed
+    if genomes.genomeSetId != @currentGenomeSet
+      # Need to set starting expansion layout
+      @_expansionLayout()
+      @currentGenomeSet = genomes.genomeSetId
+    
 
     true
     
@@ -579,7 +719,7 @@ class TreeView extends ViewTemplate
     # Restore to original branch length
     # Compute cumulative branch length
     node.length = node.storage*1
-    node.sum_length = sumLengths + node.length;
+    node.sum_length = sumLengths + node.length
     
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
@@ -623,11 +763,13 @@ class TreeView extends ViewTemplate
           
       if children.length == 0
         node.hidden = true
+        
       else if children.length == 1
         # Child replaces this node
         node.hidden = true
         child = children[0]
         child.length += node.length
+        
         return child
         
       else
@@ -636,10 +778,10 @@ class TreeView extends ViewTemplate
           node.children = children
         else
           node._children = children
-        
-    node
+          
     
-    
+    node  
+  
   # FUNC _cloneNode
   # Creates copy of node object by copying properties
   # 
@@ -662,6 +804,121 @@ class TreeView extends ViewTemplate
         copy[k] = v
     
     copy
+    
+  
+  # FUNC _expansionLayout
+  # Set internal node names, set initial expanded
+  # nodes 
+  # 
+  # PARAMS
+  # javascript object representing tree node
+  # 
+  # RETURNS
+  # boolean
+  #  
+  _expansionLayout: (focusNode=null) ->
+    
+    @_formatNode(@root, 0, focusNode)
+    
+    @root.x0 = @height / 2
+    @root.y0 = 0
+    @root.root = true
+    
+    true
+  
+  # FUNC _formatNode
+  # Recursive function that sets expand / collapse setting 
+  # based on level and if on path to focus node.
+  # Also sets interactive internal node names.
+  # 
+  # PARAMS
+  # javascript object representing tree node
+  # Int for tree level
+  # Reference to parent node
+  # String indicating 
+  # 
+  # RETURNS
+  # JS object
+  #  
+  _formatNode: (node, depth, parentNode=null, focusNode=null) ->
+    
+    # There shouldn't be any hidden nodes in the
+    # traversal
+    return null if node.hidden
+    
+    current_depth = depth+1
+    record = {}
+    node.parent = parentNode
+    node.root = false
+    
+    if node.leaf? and node.leaf is "true"
+      # Genome leaf node
+      
+      record['num_leaves'] = 1
+      record['outgroup'] = node.label
+      record['depth'] = current_depth
+      record['length'] = node.length
+      record['num_selected'] = (node.selected ? 1 : 0)
+      
+      return record
+       
+    else
+      # Internal node
+      
+      # Set expand / collapse setting
+      isExpanded = true
+      children = node.children
+      if node._children?
+        isExpanded = false
+        children = node._children
+        
+      if current_depth < @expandDepth
+        # Expand upper level
+        node.children = children
+        node._children = null
+      else if isExpanded
+        # Maintain existing setting
+        node.children = children
+        node._children = null
+      else
+        # Maintain existing setting
+        node._children = children
+        node.children = null
+      
+      # Iterate through the children array
+      record = {
+        num_leaves: 0
+        num_selected: 0
+        outgroup: ''
+        depth: 1e6
+        length: 0 
+      }
+      for c in children
+        r = @_formatNode(c, current_depth, node, focusNode)
+        
+        record['num_leaves'] += r['num_leaves']
+        record['num_leaves'] += r['num_selected']
+      
+        # Compare to existing outgroup
+        if (record['depth'] > r['depth']) || (record['depth'] == r['depth'] && record['length'] < r['length']) 
+          # new outgroup found
+          record['depth'] = r['depth']
+          record['length'] = r['length']
+          record['outgroup'] = r['outgroup']
+          
+      # Assign node node
+      node.label = "#{record['num_leaves']} genomes (outgroup: #{record['outgroup']})";
+      node.num_leaves = record['num_leaves']
+      node.num_selected = record['num_selected']
+      
+      if node.num_selected == node.num_leaves
+        node.internal_node_selected = 2
+      else if node.num_selected > 0
+        node.internal_node_selected = 1
+      else
+        node.internal_node_selected = 0
+           
+    record
              
   _expandCollapse: (genomes, d, el) ->
     
@@ -729,7 +986,370 @@ class TreeView extends ViewTemplate
     clsList.push("focusNode") if d.focus
     clsList.push("groupedNode#{d.assignedGroup}") if d.assignedGroup?
     
+    if d.internal_node_selected?
+      if d.internal_node_selected == 2
+        clsList.push("internalSNodeFull")
+      else if d.internal_node_selected == 1
+        clsList.push("internalSNodePart")
+      
     clsList.join(' ')
+ 
+  # FUNC _legend
+  # Attach legend for tree manipulations
+  # 
+  # PARAMS
+  # D3 svg element to attach legend elements to
+  # 
+  # RETURNS
+  # boolean
+  #   
+  _legend: (el) ->
     
+    lineh = 25
+    lineh2 = 40
+    lineh3 = 55
+    lineh4 = 80
+    textdx = ".6em"
+    textdx2= "2.5em"
+    textdy = ".4em"
+    pzdx   = "3.2em"
+    pzdx2  = "3.7em"
+    pzdy   = ".5em"
+    indent = 8
+    colw = 245
+    colw2 = 480
     
-  
+    if @style is 'select'
+      
+      # Genome select column
+      gsColumn = el.append("g")
+        .attr("transform", "translate(5,"+lineh+")" )
+        
+      genomeSelect = gsColumn.append("g")
+        .attr("class", 'treenode')
+        
+      genomeSelect.append("circle")
+        .attr("r", 4)
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .style("fill", "#fff")
+        
+      genomeSelect.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Click to select / unselect genome')
+        
+      genomeSelect = gsColumn.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+indent+","+lineh+")" )
+        
+      genomeSelect.append("circle")
+        .attr("r", 4)
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .style("fill", "lightsteelblue")
+        
+      genomeSelect.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Selected genome')
+        
+      genomeSelect = gsColumn.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+indent+","+lineh2+")" )
+        
+      genomeSelect.append("circle")
+        .attr("r", 4)
+        .attr("cx", 0)
+        .attr("cy", 0)
+        .style("fill", "#fff")
+        
+      genomeSelect.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Unselected genome')
+        
+      # Clade select column
+      csColumn = el.append("g")
+        .attr("transform", "translate("+colw+","+lineh+")" )
+        
+      cladeSelect = csColumn.append("g")
+        .attr("class", 'treenode')
+        
+      cladeSelect.append('rect')
+        .attr("class","selectClade")
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("y", -4)
+        .attr("x", -4)
+        
+      cladeSelect.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Click to select / unselect clade')
+        
+      cladeSelect = csColumn.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+indent+","+lineh+")" )
+        
+      cladeSelect.append('rect')
+        .attr("class","selectClade")
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("y", -4)
+        .attr("x", -4)
+        
+      cladeSelect.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('No genomes selected in clade')
+        
+      cladeSelect = csColumn.append("g")
+        .attr("class", 'treenode internalSNodePart')
+        .attr("transform", "translate("+indent+","+lineh2+")" )
+        
+      cladeSelect.append('rect')
+        .attr("class","selectClade")
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("y", -4)
+        .attr("x", -4)
+        
+      cladeSelect.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Some genomes selected in clade')
+        
+      cladeSelect = csColumn.append("g")
+        .attr("class", 'treenode internalSNodeFull')
+        .attr("transform", "translate("+indent+","+lineh3+")" )
+        
+      cladeSelect.append('rect')
+        .attr("class","selectClade")
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("y", -4)
+        .attr("x", -4)
+        
+      cladeSelect.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('All genomes selected in clade')
+      
+      # clade expand/collapse  
+      ecColumn = el.append("g")
+        .attr("transform", "translate("+colw2+","+lineh+")" )
+        
+      expandCollapse = ecColumn.append("g")
+        .attr("class", 'treenode')
+          
+      expandCollapse.append('text')
+        .attr("class","treeicon expandcollapse")
+        .attr("text-anchor", 'middle')
+        .attr("dy", 4)
+        .attr("dx", -1)
+        .text((d) -> "\uf0fe")
+        
+      expandCollapse.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Click to collapse / expand clade')
+        
+      expandCollapse = ecColumn.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+indent+","+lineh+")" )
+        
+      expandCollapse.append('text')
+        .attr("class","treeicon expandcollapse")
+        .attr("text-anchor", 'middle')
+        .attr("dy", 4)
+        .attr("dx", -1)
+        .text((d) -> "\uf146")
+        
+      expandCollapse.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Expanded clade')
+        
+      expandCollapse = ecColumn.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+indent+","+lineh2+")" )
+        
+      expandCollapse.append('text')
+        .attr("class","treeicon expandcollapse")
+        .attr("text-anchor", 'middle')
+        .attr("dy", 4)
+        .attr("dx", -1)
+        .text((d) -> "\uf0fe")
+        
+      expandCollapse.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", textdx)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Collapsed clade')
+        
+      # Pan / zoom
+      pzRow = el.append("g")
+        .attr("transform", "translate(0,0)" )
+      
+      panZoom = pzRow.append("g") 
+        .attr("class", 'treenode')
+        
+      panZoom.append("text")
+        .attr("class","slash")
+        .attr("dx", 0)
+        .attr("dy", ".5em")
+        .attr("text-anchor", "start")
+        .text('Pan')
+        
+      panZoom.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", pzdx)
+        .attr("dy", pzdy)
+        .attr("text-anchor", "start")
+        .text('Click & Drag')
+        
+      panZoom = pzRow.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+colw+",0)" )
+        
+      panZoom.append("text")
+        .attr("class","slash")
+        .attr("dx", "-.4em")
+        .attr("dy", ".5em")
+        .attr("text-anchor", "start")
+        .text('Zoom')
+        
+      panZoom.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", pzdx)
+        .attr("dy", pzdy)
+        .attr("text-anchor", "start")
+        .text('Scroll')
+        
+    else
+      # Genome select
+      genomeSelect = el.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate(5,0)" )
+        
+      genomeSelect.append("circle")
+        .attr("r", 4)
+        .attr("cx", 8)
+        .attr("cy", 0)
+        .style("fill", "#fff")
+        
+      genomeSelect.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx2)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Select genome')
+        
+      # Clade expand
+      cladeExpand = el.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate(5, "+lineh+")" )
+      
+      cladeExpand.append('text')
+        .attr("class","treeicon expandcollapse")
+        .attr("text-anchor", 'middle')
+        .attr("y", 4)
+        .attr("x", -1)
+        .text((d) -> "\uf0fe")
+        
+      cladeExpand.append("text")
+        .attr("class","slash")
+        .attr("dx", ".5em")
+        .attr("dy", ".5em")
+        .attr("text-anchor", "start")
+        .text('/')
+        
+      cladeExpand.append('text')
+        .attr("class","treeicon expandcollapse")
+        .attr("text-anchor", 'middle')
+        .attr("y", 8)
+        .attr("x", 17)
+        .text((d) -> "\uf146")
+        
+      cladeExpand.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx2)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Expand / Collapse clade')
+        
+      # Pan / zoom
+      panZoom = el.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+colw+",0)" )
+        
+      panZoom.append("text")
+        .attr("class","slash")
+        .attr("dx", 0)
+        .attr("dy", ".5em")
+        .attr("text-anchor", "start")
+        .text('Pan ')
+        
+      panZoom.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", pzdx2)
+        .attr("dy", pzdy)
+        .attr("text-anchor", "start")
+        .text('Click & Drag')
+        
+      panZoom = el.append("g")
+        .attr("class", 'treenode')
+        .attr("transform", "translate("+colw+","+lineh+")" )
+        
+      panZoom.append("text")
+        .attr("class","slash")
+        .attr("dx", 0)
+        .attr("dy", ".5em")
+        .attr("text-anchor", "start")
+        .text('Zoom')
+        
+      panZoom.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", pzdx2)
+        .attr("dy", pzdy)
+        .attr("text-anchor", "start")
+        .text('Scroll')
+        
+        
+      # Focus node
+      focusNode = el.append("g")
+        .attr("class", 'treenode focusNode')
+        .attr("transform", "translate("+colw2+",0)" )
+        
+      focusNode.append("circle")
+        .attr("r", 4)
+        .attr("cx", 8)
+        .attr("cy", 2)
+        #.style("fill", "#fff")
+        
+      focusNode.append("text")
+        .attr("class","legendlabel1")
+        .attr("dx", textdx2)
+        .attr("dy", textdy)
+        .attr("text-anchor", "start")
+        .text('Target genome')

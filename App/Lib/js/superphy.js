@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, GenomeController, GroupView, ListView, LocusController, LocusTicker, MatrixView, MetaTicker, MsaView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, GenomeController, GroupView, ListView, LocusController, LocusTicker, MatrixView, MetaTicker, MsaView, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -62,6 +62,8 @@
     ViewController.prototype.groups = [];
 
     ViewController.prototype.tickers = [];
+
+    ViewController.prototype.selectedBox = null;
 
     ViewController.prototype.actionMode = false;
 
@@ -133,10 +135,9 @@
       var gNum, grpView;
       gNum = this.groups.length + 1;
       if (gNum > this.maxGroups) {
-        console.log('DIE');
         return false;
       }
-      grpView = new GroupView(boxEl, 'select', gNum);
+      grpView = new GroupView(boxEl, gNum);
       grpView.update(this.genomeController);
       this.groups.push(grpView);
       buttonEl.click(function(e) {
@@ -147,7 +148,7 @@
     };
 
     ViewController.prototype.addToGroup = function(grp) {
-      var i, selected, v, _i, _len, _ref, _results;
+      var i, selected, v, _i, _len, _ref;
       selected = this.genomeController.selected();
       console.log(selected);
       this.genomeController.assignGroup(selected, grp);
@@ -155,12 +156,13 @@
       i = grp - 1;
       this.groups[i].add(selected, this.genomeController);
       _ref = this.views;
-      _results = [];
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         v = _ref[_i];
-        _results.push(v.update(this.genomeController));
+        v.update(this.genomeController);
       }
-      return _results;
+      if (this.selectedBox != null) {
+        return this.selectedBox.update(this.genomeController);
+      }
     };
 
     ViewController.prototype.createTicker = function() {
@@ -196,6 +198,9 @@
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           v = _ref[_i];
           v.select(g, checked);
+        }
+        if (this.selectedBox != null) {
+          this.selectedBox.select(g, this.genomeController, checked);
         }
       }
       return true;
@@ -293,6 +298,9 @@
       for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
         t = _ref2[_k];
         t.update(this.genomeController);
+      }
+      if (this.selectedBox != null) {
+        this.selectedBox.update(this.genomeController);
       }
       return true;
     };
@@ -679,6 +687,20 @@
       return searchTerms;
     };
 
+    ViewController.prototype.createSelectionView = function(boxEl, countEl) {
+      var selView;
+      if (countEl == null) {
+        countEl = null;
+      }
+      if (this.selectedBox != null) {
+        throw new SuperphyError('Existing SelectionView. Cannot create multiple views of this type.');
+      }
+      selView = new SelectionView(boxEl, countEl);
+      selView.update(this.genomeController);
+      this.selectedBox = selView;
+      return true;
+    };
+
     return ViewController;
 
   })();
@@ -957,16 +979,20 @@
    Will be updated by changes to the meta-display options but not by filtering.
    */
 
-  GroupView = (function(_super) {
-    __extends(GroupView, _super);
-
-    function GroupView() {
-      return GroupView.__super__.constructor.apply(this, arguments);
+  GroupView = (function() {
+    function GroupView(parentElem, elNum) {
+      this.parentElem = parentElem;
+      this.elNum = elNum != null ? elNum : 1;
+      this.elID = this.elName + this.elNum;
     }
 
     GroupView.prototype.type = 'group';
 
-    GroupView.prototype.elName = 'group';
+    GroupView.prototype.elNum = 1;
+
+    GroupView.prototype.elName = 'genome_group';
+
+    GroupView.prototype.elID = void 0;
 
     GroupView.prototype.update = function(genomes) {
       var ingrp, listElem;
@@ -1004,7 +1030,7 @@
       for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
         g = visibleG[_i];
         listEl = jQuery(("<li class='" + cls + "'>") + genomes[g].viewname + '</li>');
-        actionEl = jQuery("<a href='#' data-genome='" + g + "' data-genome-group='" + this.elNum + "'> remove</a>");
+        actionEl = jQuery("<a href='#' data-genome='" + g + "' data-genome-group='" + this.elNum + "'> <i class='fa fa-times'></a>");
         actionEl.click(function(e) {
           var gid, grp;
           e.preventDefault();
@@ -1035,9 +1061,13 @@
       return true;
     };
 
+    GroupView.prototype.cssClass = function() {
+      return this.elName + '_item';
+    };
+
     return GroupView;
 
-  })(ViewTemplate);
+  })();
 
 
   /*
@@ -1070,6 +1100,7 @@
       }
       this.update();
       this.filter();
+      this.genomeSetId = 0;
     }
 
     GenomeController.prototype.pubVisible = [];
@@ -1176,6 +1207,7 @@
           return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
         };
       })(this));
+      this.genomeSetId++;
       return true;
     };
 
@@ -1232,7 +1264,6 @@
       firstTerm = true;
       for (_i = 0, _len = searchTerms.length; _i < _len; _i++) {
         t = searchTerms[_i];
-        console.log(t);
         if (firstTerm) {
           if (t.op != null) {
             throw new SuperphyError("Invalid filter input. First search term object cannot contain an operator property 'op'.");
@@ -1661,6 +1692,8 @@
       }
     };
 
+    GenomeController.prototype.selectionView = function(parentElem) {};
+
     return GenomeController;
 
   })();
@@ -1839,6 +1872,139 @@
 
 
   /*
+   CLASS SelectionView
+   
+   A special type of genome list that is used to temporarily store the user's
+   selected genomes.
+   
+   Only one 'style' which provides a remove button to remove group from group.
+   Will be updated by changes to the meta-display options but not by filtering.
+   */
+
+  SelectionView = (function() {
+    function SelectionView(parentElem, countElem, elNum) {
+      this.parentElem = parentElem;
+      this.countElem = countElem != null ? countElem : null;
+      this.elNum = elNum != null ? elNum : 1;
+      this.elID = this.elName + this.elNum;
+      this.count = 0;
+    }
+
+    SelectionView.prototype.type = 'selected';
+
+    SelectionView.prototype.elNum = 1;
+
+    SelectionView.prototype.elName = 'selected_genomes';
+
+    SelectionView.prototype.elID = void 0;
+
+    SelectionView.prototype.update = function(genomes) {
+      var ingrp, listElem;
+      listElem = jQuery("#" + this.elID);
+      if (listElem.length) {
+        listElem.empty();
+      } else {
+        listElem = jQuery("<ul id='" + this.elID + "' class='selected-group-list'/>");
+        jQuery(this.parentElem).append(listElem);
+      }
+      ingrp = genomes.selected();
+      this._appendGenomes(listElem, ingrp["public"], genomes.public_genomes);
+      this._appendGenomes(listElem, ingrp["private"], genomes.private_genomes);
+      this.count = ingrp["public"].length;
+      this.count += ingrp["private"].length;
+      this._updateCount();
+      return true;
+    };
+
+    SelectionView.prototype._appendGenomes = function(el, visibleG, genomes) {
+      var actionEl, cls, g, listEl, _i, _len;
+      cls = this.cssClass();
+      for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
+        g = visibleG[_i];
+        listEl = jQuery(("<li class='" + cls + "'>") + genomes[g].viewname + '</li>');
+        actionEl = jQuery("<a href='#' data-genome='" + g + "'> <i class='fa fa-times'></a>");
+        actionEl.click(function(e) {
+          var gid;
+          e.preventDefault();
+          gid = this.dataset.genome;
+          console.log('clicked unselect on ' + gid);
+          return viewController.select(gid, false);
+        });
+        listEl.append(actionEl);
+        el.append(listEl);
+      }
+      return true;
+    };
+
+    SelectionView.prototype.select = function(genomeID, genomes, checked) {
+      var gset;
+      if (checked) {
+        gset = genomes.genomeSet([genomeID]);
+        this.add(gset, genomes);
+      } else {
+        this.remove(genomeID);
+      }
+      return true;
+    };
+
+    SelectionView.prototype.add = function(genomeSet, genomes) {
+      var listElem;
+      listElem = jQuery("#" + this.elID);
+      if (!listElem.length) {
+        listElem = jQuery("<ul id='" + this.elID + "' class='selected-group-list'/>");
+        jQuery(this.parentElem).append(listElem);
+      }
+      if (genomeSet["public"] != null) {
+        this._appendGenomes(listElem, genomeSet["public"], genomes.public_genomes);
+      }
+      if (genomeSet["private"] != null) {
+        this._appendGenomes(listElem, genomeSet["private"], genomes.private_genomes);
+      }
+      this.count += genomeSet["public"].length;
+      this.count += genomeSet["private"].length;
+      return this._updateCount();
+    };
+
+    SelectionView.prototype.remove = function(gid) {
+      var descriptor, linkEl, listEl;
+      listEl = jQuery("#" + this.elID);
+      if (!((listEl != null) && listEl.length)) {
+        throw new SuperphyError("DOM element for group view " + this.elID + " not found. Cannot call SelectionView method remove().");
+      }
+      descriptor = "li > a[data-genome='" + gid + "']";
+      linkEl = listEl.find(descriptor);
+      if (!((linkEl != null) && linkEl.length)) {
+        throw new SuperphyError("List item element for genome " + gid + " not found in SelectionView");
+        return false;
+      }
+      linkEl.parent('li').remove();
+      this.count--;
+      this._updateCount();
+      return true;
+    };
+
+    SelectionView.prototype.cssClass = function() {
+      return this.elName + '_item';
+    };
+
+    SelectionView.prototype._updateCount = function() {
+      var innerElem;
+      if (this.countElem != null) {
+        innerElem = this.countElem.find('span.selected_genome_count_text');
+        if (!innerElem.length) {
+          innerElem = jQuery("<span class='selected_genome_count_text'></span>").appendTo(this.countElem);
+        }
+        innerElem.text("" + this.count + " genomes selected");
+      }
+      return true;
+    };
+
+    return SelectionView;
+
+  })();
+
+
+  /*
   
     HELPER FUNCTIONS
    */
@@ -1913,7 +2079,7 @@
     __extends(TreeView, _super);
 
     function TreeView(parentElem, style, elNum, treeArgs) {
-      var dialog, num;
+      var dialog, legendID, num;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
@@ -1921,8 +2087,9 @@
         throw new SuperphyError('Missing argument. TreeView constructor requires JSON tree object.');
       }
       this.root = this.trueRoot = treeArgs[0];
+      this.currentGenomeSet = -1;
       this.dim = {
-        w: 500,
+        w: 700,
         h: 800
       };
       this.margin = {
@@ -1950,22 +2117,28 @@
       }).separation(function(a, b) {
         return 1;
       });
-      this.parentElem.append("<div id='" + this.elID + "'></div>");
+      legendID = "tree_legend" + this.elNum;
+      this.parentElem.append("<div class='tree_legend_link'><a href='#" + legendID + "'>Functions List</a></div>");
+      this.parentElem.append("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>");
       this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
       this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
       num = this.elNum - 1;
       this.wrap.call(d3.behavior.zoom().x(this.xzoom).y(this.yzoom).scaleExtent([1, 8]).on("zoom", function() {
         return viewController.getView(num).zoomed();
       }));
+      jQuery("<div id='" + legendID + "' class='genome_tree_legend'></div>").appendTo(this.parentElem);
+      this.wrap2 = d3.select("#" + legendID).append("svg").attr("width", this.dim.w).attr("height", 100).style("-webkit-backface-visibility", "hidden");
+      this.legend = this.wrap2.append("g").attr("transform", "translate(" + 5 + "," + 5 + ")");
+      this._legend(this.legend);
       if (this.style === 'select') {
         dialog = jQuery('#dialog-clade-select');
         if (!dialog.length) {
           dialog = jQuery('<div id="dialog-clade-select"></div>').appendTo('body');
           dialog.text("Select/unselect genomes in clade:").dialog({
-            title: 'Select clade',
+            dialogClass: 'noTitleStuff',
             autoOpen: false,
             resizable: false,
-            height: 160,
+            height: 120,
             modal: true,
             buttons: {
               Select: function() {
@@ -1999,14 +2172,21 @@
 
     TreeView.prototype.duration = 1000;
 
+    TreeView.prototype.expandDepth = 5;
+
+    TreeView.prototype.x_factor = 1.5;
+
+    TreeView.prototype.y_factor = 5000;
+
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var branch_scale_factor_x, branch_scale_factor_y, cladeIcons, cmdBox, currLeaves, dt, elID, farthest, iNodes, id, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
+      var branch_scale_factor_x, branch_scale_factor_y, cladeSelect, cmdBox, currLeaves, dt, elID, farthest, iNodes, id, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, xedge, yedge, _i, _j, _len, _len1, _ref, _ref1;
       if (sourceNode == null) {
         sourceNode = null;
       }
       t1 = new Date();
       oldRoot = this.root;
       this._sync(genomes);
+      this.nodes = this.cluster.nodes(this.root);
       if (sourceNode == null) {
         sourceNode = this.root;
       }
@@ -2016,15 +2196,24 @@
         x0: sourceNode.x0,
         y0: sourceNode.y0
       };
-      this.nodes = this.cluster.nodes(this.root);
       farthest = d3.max(this.nodes, function(d) {
         return d.sum_length * 1;
       });
       lowest = d3.max(this.nodes, function(d) {
         return d.x;
       });
-      branch_scale_factor_y = (this.width - 20) / farthest;
-      branch_scale_factor_x = (this.height - 20) / lowest;
+      yedge = this.width - 20;
+      xedge = this.height - 20;
+      branch_scale_factor_y = this.y_factor;
+      if ((branch_scale_factor_y * farthest) > yedge) {
+        branch_scale_factor_y = yedge / farthest;
+      }
+      branch_scale_factor_x = this.x_factor;
+      if ((branch_scale_factor_x * lowest) > xedge) {
+        branch_scale_factor_x = xedge / lowest;
+      }
+      console.log('y' + branch_scale_factor_y);
+      console.log('x' + branch_scale_factor_x);
       _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         n = _ref[_i];
@@ -2132,15 +2321,15 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      cmdBox = iNodes.append("rect").attr("width", 1e-6).attr("height", 1e-6).attr("y", -4).attr("x", -12).style("fill", "#fff");
+      cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
+        return "\uf0fe";
+      });
       cmdBox.on("click", function(d) {
         return viewController.viewAction(num, 'expand_collapse', d, this.parentNode);
       });
       if (this.style === 'select') {
-        cladeIcons = iNodes.append('text').attr("class", "treeicon").attr("text-anchor", 'middle').attr("y", 4).attr("x", -20).text(function(d) {
-          return "\uf058";
-        });
-        cladeIcons.on("click", function(d) {
+        cladeSelect = iNodes.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -25);
+        cladeSelect.on("click", function(d) {
           return jQuery('#dialog-clade-select').data('clade-node', d).dialog('open');
         });
       }
@@ -2151,11 +2340,11 @@
       nodesUpdate.filter(function(d) {
         return !d.children;
       }).select("text").style("fill-opacity", 1);
-      nodesUpdate.select("rect").attr("width", 8).attr("height", 8).style("fill", function(d) {
+      nodesUpdate.select(".expandcollapse").text(function(d) {
         if (d._children != null) {
-          return "lightsteelblue";
+          return "\uf0fe";
         } else {
-          return "#fff";
+          return "\uf146";
         }
       });
       nodesExit = svgNodes.exit().transition().duration(this.duration).attr("transform", (function(_this) {
@@ -2259,7 +2448,7 @@
     };
 
     TreeView.prototype.select = function(genome, isSelected) {
-      var svgNodes, updateNode;
+      var d, svgNodes, updateNode;
       svgNodes = this.canvas.selectAll("g.treenode");
       updateNode = svgNodes.filter(function(d) {
         return d.genome === genome;
@@ -2276,6 +2465,37 @@
           return "#fff";
         }
       });
+      d = updateNode.datum();
+      console.log(updateNode);
+      console.log(d.parent);
+      this._percolateSelected(d.parent, isSelected);
+      svgNodes.filter(function(d) {
+        return !d.leaf;
+      }).attr("class", (function(_this) {
+        return function(d) {
+          return _this._classList(d);
+        };
+      })(this));
+      return true;
+    };
+
+    TreeView.prototype._percolateSelected = function(node, checked) {
+      if (node == null) {
+        return true;
+      }
+      if (checked) {
+        node.num_selected++;
+      } else {
+        node.num_selected--;
+      }
+      if (node.num_selected === node.num_leaves) {
+        node.internal_node_selected = 2;
+      } else if (node.num_selected > 0) {
+        node.internal_node_selected = 1;
+      } else {
+        node.internal_node_selected = 0;
+      }
+      this._percolateSelected(node.parent, checked);
       return true;
     };
 
@@ -2292,22 +2512,23 @@
     };
 
     TreeView.prototype._printNode = function(genomes, node, tokens) {
-      var c, g, lab, _i, _len, _ref;
+      var c, children, g, lab, _i, _len;
       if (node.leaf) {
         g = genomes.genome(node.genome);
         lab = genomes.label(g, genomes.visibleMeta);
         tokens.push("\"" + lab + "\"", ':', node.length);
       } else {
-        if (node.daycare != null) {
-          tokens.push('(');
-          _ref = node.daycare;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            c = _ref[_i];
-            this._printNode(genomes, c, tokens);
-            tokens.push(',');
-          }
-          tokens[tokens.length - 1] = ')';
+        children = node.children;
+        if (node._children != null) {
+          children = node._children;
         }
+        tokens.push('(');
+        for (_i = 0, _len = children.length; _i < _len; _i++) {
+          c = children[_i];
+          this._printNode(genomes, c, tokens);
+          tokens.push(',');
+        }
+        tokens[tokens.length - 1] = ')';
         tokens.push("\"" + node.name + "\"", ':', node.length);
       }
       return true;
@@ -2332,6 +2553,7 @@
       n.storage = n.length * 1;
       i++;
       if (n.children != null) {
+        n.num_selected = 0;
         n.daycare = n.children.slice();
         _ref = n.children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -2339,6 +2561,7 @@
           i = this._assignKeys(m, i, gPattern);
         }
       } else if (n._children != null) {
+        n.num_selected = 0;
         n.daycare = n._children.slice();
         _ref1 = n._children;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
@@ -2361,7 +2584,12 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
+      console.log('sync');
       this.root = this._syncNode(this.trueRoot, genomes, 0);
+      if (genomes.genomeSetId !== this.currentGenomeSet) {
+        this._expansionLayout();
+        this.currentGenomeSet = genomes.genomeSetId;
+      }
       return true;
     };
 
@@ -2429,6 +2657,90 @@
       return copy;
     };
 
+    TreeView.prototype._expansionLayout = function(focusNode) {
+      if (focusNode == null) {
+        focusNode = null;
+      }
+      this._formatNode(this.root, 0, focusNode);
+      this.root.x0 = this.height / 2;
+      this.root.y0 = 0;
+      this.root.root = true;
+      return true;
+    };
+
+    TreeView.prototype._formatNode = function(node, depth, parentNode, focusNode) {
+      var c, children, current_depth, isExpanded, r, record, _i, _len, _ref;
+      if (parentNode == null) {
+        parentNode = null;
+      }
+      if (focusNode == null) {
+        focusNode = null;
+      }
+      if (node.hidden) {
+        return null;
+      }
+      current_depth = depth + 1;
+      record = {};
+      node.parent = parentNode;
+      node.root = false;
+      if ((node.leaf != null) && node.leaf === "true") {
+        record['num_leaves'] = 1;
+        record['outgroup'] = node.label;
+        record['depth'] = current_depth;
+        record['length'] = node.length;
+        record['num_selected'] = (_ref = node.selected) != null ? _ref : {
+          1: 0
+        };
+        return record;
+      } else {
+        isExpanded = true;
+        children = node.children;
+        if (node._children != null) {
+          isExpanded = false;
+          children = node._children;
+        }
+        if (current_depth < this.expandDepth) {
+          node.children = children;
+          node._children = null;
+        } else if (isExpanded) {
+          node.children = children;
+          node._children = null;
+        } else {
+          node._children = children;
+          node.children = null;
+        }
+        record = {
+          num_leaves: 0,
+          num_selected: 0,
+          outgroup: '',
+          depth: 1e6,
+          length: 0
+        };
+        for (_i = 0, _len = children.length; _i < _len; _i++) {
+          c = children[_i];
+          r = this._formatNode(c, current_depth, node, focusNode);
+          record['num_leaves'] += r['num_leaves'];
+          record['num_leaves'] += r['num_selected'];
+          if ((record['depth'] > r['depth']) || (record['depth'] === r['depth'] && record['length'] < r['length'])) {
+            record['depth'] = r['depth'];
+            record['length'] = r['length'];
+            record['outgroup'] = r['outgroup'];
+          }
+        }
+        node.label = "" + record['num_leaves'] + " genomes (outgroup: " + record['outgroup'] + ")";
+        node.num_leaves = record['num_leaves'];
+        node.num_selected = record['num_selected'];
+        if (node.num_selected === node.num_leaves) {
+          node.internal_node_selected = 2;
+        } else if (node.num_selected > 0) {
+          node.internal_node_selected = 1;
+        } else {
+          node.internal_node_selected = 0;
+        }
+      }
+      return record;
+    };
+
     TreeView.prototype._expandCollapse = function(genomes, d, el) {
       var c, svgNode, _i, _len, _ref;
       svgNode = d3.select(el);
@@ -2492,7 +2804,101 @@
       if (d.assignedGroup != null) {
         clsList.push("groupedNode" + d.assignedGroup);
       }
+      if (d.internal_node_selected != null) {
+        if (d.internal_node_selected === 2) {
+          clsList.push("internalSNodeFull");
+        } else if (d.internal_node_selected === 1) {
+          clsList.push("internalSNodePart");
+        }
+      }
       return clsList.join(' ');
+    };
+
+    TreeView.prototype._legend = function(el) {
+      var cladeExpand, cladeSelect, colw, colw2, csColumn, ecColumn, expandCollapse, focusNode, genomeSelect, gsColumn, indent, lineh, lineh2, lineh3, lineh4, panZoom, pzRow, pzdx, pzdx2, pzdy, textdx, textdx2, textdy;
+      lineh = 25;
+      lineh2 = 40;
+      lineh3 = 55;
+      lineh4 = 80;
+      textdx = ".6em";
+      textdx2 = "2.5em";
+      textdy = ".4em";
+      pzdx = "3.2em";
+      pzdx2 = "3.7em";
+      pzdy = ".5em";
+      indent = 8;
+      colw = 245;
+      colw2 = 480;
+      if (this.style === 'select') {
+        gsColumn = el.append("g").attr("transform", "translate(5," + lineh + ")");
+        genomeSelect = gsColumn.append("g").attr("class", 'treenode');
+        genomeSelect.append("circle").attr("r", 4).attr("cx", 0).attr("cy", 0).style("fill", "#fff");
+        genomeSelect.append("text").attr("class", "legendlabel1").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Click to select / unselect genome');
+        genomeSelect = gsColumn.append("g").attr("class", 'treenode').attr("transform", "translate(" + indent + "," + lineh + ")");
+        genomeSelect.append("circle").attr("r", 4).attr("cx", 0).attr("cy", 0).style("fill", "lightsteelblue");
+        genomeSelect.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Selected genome');
+        genomeSelect = gsColumn.append("g").attr("class", 'treenode').attr("transform", "translate(" + indent + "," + lineh2 + ")");
+        genomeSelect.append("circle").attr("r", 4).attr("cx", 0).attr("cy", 0).style("fill", "#fff");
+        genomeSelect.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Unselected genome');
+        csColumn = el.append("g").attr("transform", "translate(" + colw + "," + lineh + ")");
+        cladeSelect = csColumn.append("g").attr("class", 'treenode');
+        cladeSelect.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -4);
+        cladeSelect.append("text").attr("class", "legendlabel1").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Click to select / unselect clade');
+        cladeSelect = csColumn.append("g").attr("class", 'treenode').attr("transform", "translate(" + indent + "," + lineh + ")");
+        cladeSelect.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -4);
+        cladeSelect.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('No genomes selected in clade');
+        cladeSelect = csColumn.append("g").attr("class", 'treenode internalSNodePart').attr("transform", "translate(" + indent + "," + lineh2 + ")");
+        cladeSelect.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -4);
+        cladeSelect.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Some genomes selected in clade');
+        cladeSelect = csColumn.append("g").attr("class", 'treenode internalSNodeFull').attr("transform", "translate(" + indent + "," + lineh3 + ")");
+        cladeSelect.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -4);
+        cladeSelect.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('All genomes selected in clade');
+        ecColumn = el.append("g").attr("transform", "translate(" + colw2 + "," + lineh + ")");
+        expandCollapse = ecColumn.append("g").attr("class", 'treenode');
+        expandCollapse.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("dy", 4).attr("dx", -1).text(function(d) {
+          return "\uf0fe";
+        });
+        expandCollapse.append("text").attr("class", "legendlabel1").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Click to collapse / expand clade');
+        expandCollapse = ecColumn.append("g").attr("class", 'treenode').attr("transform", "translate(" + indent + "," + lineh + ")");
+        expandCollapse.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("dy", 4).attr("dx", -1).text(function(d) {
+          return "\uf146";
+        });
+        expandCollapse.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Expanded clade');
+        expandCollapse = ecColumn.append("g").attr("class", 'treenode').attr("transform", "translate(" + indent + "," + lineh2 + ")");
+        expandCollapse.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("dy", 4).attr("dx", -1).text(function(d) {
+          return "\uf0fe";
+        });
+        expandCollapse.append("text").attr("class", "legendlabel2").attr("dx", textdx).attr("dy", textdy).attr("text-anchor", "start").text('Collapsed clade');
+        pzRow = el.append("g").attr("transform", "translate(0,0)");
+        panZoom = pzRow.append("g").attr("class", 'treenode');
+        panZoom.append("text").attr("class", "slash").attr("dx", 0).attr("dy", ".5em").attr("text-anchor", "start").text('Pan');
+        panZoom.append("text").attr("class", "legendlabel1").attr("dx", pzdx).attr("dy", pzdy).attr("text-anchor", "start").text('Click & Drag');
+        panZoom = pzRow.append("g").attr("class", 'treenode').attr("transform", "translate(" + colw + ",0)");
+        panZoom.append("text").attr("class", "slash").attr("dx", "-.4em").attr("dy", ".5em").attr("text-anchor", "start").text('Zoom');
+        return panZoom.append("text").attr("class", "legendlabel1").attr("dx", pzdx).attr("dy", pzdy).attr("text-anchor", "start").text('Scroll');
+      } else {
+        genomeSelect = el.append("g").attr("class", 'treenode').attr("transform", "translate(5,0)");
+        genomeSelect.append("circle").attr("r", 4).attr("cx", 8).attr("cy", 0).style("fill", "#fff");
+        genomeSelect.append("text").attr("class", "legendlabel1").attr("dx", textdx2).attr("dy", textdy).attr("text-anchor", "start").text('Select genome');
+        cladeExpand = el.append("g").attr("class", 'treenode').attr("transform", "translate(5, " + lineh + ")");
+        cladeExpand.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -1).text(function(d) {
+          return "\uf0fe";
+        });
+        cladeExpand.append("text").attr("class", "slash").attr("dx", ".5em").attr("dy", ".5em").attr("text-anchor", "start").text('/');
+        cladeExpand.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 8).attr("x", 17).text(function(d) {
+          return "\uf146";
+        });
+        cladeExpand.append("text").attr("class", "legendlabel1").attr("dx", textdx2).attr("dy", textdy).attr("text-anchor", "start").text('Expand / Collapse clade');
+        panZoom = el.append("g").attr("class", 'treenode').attr("transform", "translate(" + colw + ",0)");
+        panZoom.append("text").attr("class", "slash").attr("dx", 0).attr("dy", ".5em").attr("text-anchor", "start").text('Pan ');
+        panZoom.append("text").attr("class", "legendlabel1").attr("dx", pzdx2).attr("dy", pzdy).attr("text-anchor", "start").text('Click & Drag');
+        panZoom = el.append("g").attr("class", 'treenode').attr("transform", "translate(" + colw + "," + lineh + ")");
+        panZoom.append("text").attr("class", "slash").attr("dx", 0).attr("dy", ".5em").attr("text-anchor", "start").text('Zoom');
+        panZoom.append("text").attr("class", "legendlabel1").attr("dx", pzdx2).attr("dy", pzdy).attr("text-anchor", "start").text('Scroll');
+        focusNode = el.append("g").attr("class", 'treenode focusNode').attr("transform", "translate(" + colw2 + ",0)");
+        focusNode.append("circle").attr("r", 4).attr("cx", 8).attr("cy", 2);
+        return focusNode.append("text").attr("class", "legendlabel1").attr("dx", textdx2).attr("dy", textdy).attr("text-anchor", "start").text('Target genome');
+      }
     };
 
     return TreeView;

@@ -8,8 +8,6 @@
  
  * */
 
-
-
 @import "superphy_tree";
 @import "superphy_msa";
 @import "superphy_list";
@@ -56,9 +54,8 @@
   border-color:@border-color;
 }
 
-/** Styles ********************************/
+/** Page Title ****************************/
 
-// Page title
 .titleText {
   font-weight: bold;
 }
@@ -72,13 +69,15 @@
   color:@title-color2;
 }
 
-// Font classes
+/** General Font Classes ******************/
+  
 .footnote {
   font-size: 80%;
   padding: 10px;
 }
 
-// Download link in Views
+/** Download Links in Views ***************/
+  
 .download-view {
   margin-left: auto;
   margin-right: 0;
@@ -94,7 +93,8 @@
   padding-right: 10px;
 }
 
-// Locus value styles
+/** Locus styles **************************/
+  
 .locusGroupConstructor (@index) when (@index > 0) {
   
    @color: "group@{index}-color";
@@ -111,7 +111,7 @@
 .locusGroupConstructor(@group-num);
 
 
-// Group box styles
+/** Group box styles **********************/
 
 // Group box row
 .group-form-row {
