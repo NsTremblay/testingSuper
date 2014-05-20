@@ -179,9 +179,10 @@ class MapView extends ViewTemplate
   # boolean
   #
   conscriptCartographger: () ->
+    # TODO: Change this to account for different map views
     downloadView = jQuery(@parentElem).find('.download-view')
-    downloadView.remove();
-    @cartographer = new SatelliteCartographer(jQuery(@parentElem))
+    downloadView.remove()
+    @cartographer = new InfoSatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
     @cartographer.cartograPhy()
     #Remove the download view for the results page
     jQuery(@parentElem).prepend(downloadView)
@@ -195,6 +196,7 @@ class MapView extends ViewTemplate
 ###
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
+  
   visibleStrains: false
   map: null
   splitLayout: '
@@ -349,7 +351,7 @@ class DotCartographer extends Cartographer
     true
 
 ###
-  CLASS Cartographer
+  CLASS SatelliteCartographer
 
   Handles map drawing and location searching
   Displays multiple markers on map
@@ -362,7 +364,6 @@ class SatelliteCartographer extends Cartographer
   constructor: (@satelliteCartographDiv, @satelliteCartograhOpt) ->
     # Call default constructor
     super(@satelliteCartographDiv, @satelliteCartograhOpt)
-    @mapViewIndex = @satelliteCartograhOpt
 
   visibleStrains: true
   clusterList: []
@@ -371,21 +372,6 @@ class SatelliteCartographer extends Cartographer
   markerClusterer: null
 
   mapViewIndex: null
-
-  findMapViewIndex: (views) ->
-    for v, index in views
-      if v.mapView?
-        return index
-    return null
-
-  resetMap: ()  ->
-    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
-    x = @map.getZoom();
-    c = @map.getCenter();
-    google.maps.event.trigger(@map, 'resize');
-    @map.setZoom(x);
-    @map.setCenter(c);
-    SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
 
   # FUNC cartograPhy overrides Cartographer
   # initializes map in specified map div
@@ -521,6 +507,39 @@ class SatelliteCartographer extends Cartographer
     @markerClusterer = new MarkerClusterer(map, @clusterList, mcOptions)
     true
 
+  # FUNC findMapViewIndex
+  # gets the index of MapView object from the list of views
+  #
+  # PARAMS
+  # list of views
+  #
+  # RETURNS
+  # index of MapView
+  #
+  findMapViewIndex: (views) ->
+    for v, index in views
+      if v.mapView?
+        return index
+    return null
+
+  # FUNC resetMap
+  # recenters the map in the map-canvas div when bootstrap map-tab and map-panel divs clicked
+  # circumvents issues with rendering maps in bootstraps hidden tab and panel divs
+  # resets and reinitlializes a new list of markers on the map
+  #
+  # PARAMS
+  #
+  # RETURNS
+  #
+  resetMap: ()  ->
+    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
+    x = @map.getZoom();
+    c = @map.getCenter();
+    google.maps.event.trigger(@map, 'resize');
+    @map.setZoom(x);
+    @map.setCenter(c);
+    SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
+
   # FUNC parseLocation
   # parses the location out from a genome object
   # parses location name, center latLng point, SW and NE boundary latLng points
@@ -597,3 +616,77 @@ class SatelliteCartographer extends Cartographer
     markerObj['markerBounds'] = markerBounds
 
     return markerObj
+
+###
+  CLASS InfoSatelliteCartographer
+
+  Handles map drawing and location searching
+  Displays multiple markers on map
+  Handles marker clustering
+  Displays list of genomes 
+  Alters genome list when map viewport changes
+  Highlights selected genome on map from search query
+
+###
+class InfoSatelliteCartographer extends SatelliteCartographer
+  constructor: (@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt, @infoSelectedGenome) ->
+    # Call default constructor
+    super(@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt, @infoSelectedGenome)
+
+  selectedGenomeLocation: null
+  genomeMarkerOverlay: null
+
+  cartograPhy: () ->
+    super
+    @selectedGenomeLocation = @parseLocation(@infoSelectedGenome)
+    @genomeMarkerOverlay = @showSelectedGenome(@selectedGenomeLocation ,@map)
+
+  showSelectedGenome: (location, map) ->
+    unless location?
+      throw new SuperphyError('Location cannot be determined or location is undefined (not specified)!')
+      return 0
+
+    maxZndex = google.maps.Marker.MAX_ZINDEX
+    zInd = maxZndex + 1
+    markerLatLng = new google.maps.LatLng(location.centerLatLng)
+    overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName)
+    return overlay
+
+class CartographerOverlay
+  constructor: (@map, @latLng, @title) ->
+    @markerLayer = jQuery('<div />').addClass('overlay')
+    @setMap(@map)
+    
+  CartographerOverlay:: = new google.maps.OverlayView()
+
+  onAdd: () ->
+    $pane = jQuery(@getPanes().floatPane)
+    $pane.append(@markerLayer)
+
+  onRemove: () ->
+    @markerLayer.remove()
+
+  draw: () ->
+    overlayProjection = @getProjection()
+    fragment = document.createDocumentFragment()
+    @markerLayer.empty()
+    location = overlayProjection.fromLatLngToDivPixel(@latLng)
+    
+    $point = jQuery('
+      <div 
+      class="map-point" 
+      title="'+@title+'" 
+      style="width:22px; 
+      height:40px; 
+      left:'+location.x+'px; 
+      top:'+location.y+'; 
+      position:absolute; 
+      cursor:pointer;">
+      <img src="/App/Pictures/marker_icon_green.png" style="position:absolute; top:-40px; left:-11px" />
+      </div>')
+      #<svg height="15px" width="15px">
+      #<circle cx="7.5" cy="7.5" r="5px" stroke="#00FF00" stroke-width="1" fill="#00FF00" fill-opacity="0.8"/> 
+      #</svg> 
+      #</div>')
+    fragment.appendChild($point.get(0))
+    @markerLayer.append(fragment)

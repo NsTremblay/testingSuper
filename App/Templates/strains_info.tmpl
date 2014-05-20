@@ -24,10 +24,12 @@
     var public_genomes = <TMPL_VAR public_genomes>;
     var private_genomes = <TMPL_VAR private_genomes>;
     var tree = <TMPL_VAR tree_json>;
+    var selectedGenome = "";
 
     viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
     $(document).ready(function(){
+        //Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
         $('.map-canvas').hide();
         $('a[href="#overview-panel"]').click();
         $('#geospatial-panel').on('hidden.bs.collapse', function () {
@@ -82,6 +84,7 @@
                 <div id="tree-panel" class="panel-collapse collapse">
                     <div class="panel-body">
                         <script>
+                        //TODO: This needs to be changed
                         var smallTreeWindow = true;
                         var centreOnSelectedNode = true;
                         </script>
@@ -119,6 +122,15 @@
                 <div id="geospatial-panel" class="panel-collapse collapse">
                     <div class="panel-body" id="strains-info-map">
                         <script type="text/javascript">
+                        var selectedGenomeHasLocation = "<TMPL_VAR strainLocation>";
+                        //Determine whether public or private
+                        var pvtLocation = selectedGenomeHasLocation.match(/private_/g);
+                        if (selectedGenomeHasLocation.match(/private_/g)) {
+                            selectedGenome = private_genomes[selectedGenomeHasLocation];
+                        }
+                        else if (selectedGenomeHasLocation.match(/public_/g)) {
+                            selectedGenome = public_genomes[selectedGenomeHasLocation];
+                        }
                         viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
                         viewController.createView('map', $('#strains-info-map'));
                         </script>

@@ -115,6 +115,7 @@ class ViewController
       @views.push matView
 
     else if viewType is 'map'
+      # TODO: Need to change this to account for the different maps
       #New map view
       mapView = new MapView(elem, clickStyle, vNum, viewArgs)
       #Mapview needs to be pushed prior to constructing the cartographer otherwise the cartographer will not know which index of the views the map view is in to update

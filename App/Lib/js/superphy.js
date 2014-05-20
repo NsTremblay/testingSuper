@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, DotCartographer, GenomeController, GroupView, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -3834,7 +3834,7 @@
       var downloadView;
       downloadView = jQuery(this.parentElem).find('.download-view');
       downloadView.remove();
-      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem));
+      this.cartographer = new InfoSatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome);
       this.cartographer.cartograPhy();
       return jQuery(this.parentElem).prepend(downloadView);
     };
@@ -3975,7 +3975,7 @@
 
 
   /*
-    CLASS Cartographer
+    CLASS SatelliteCartographer
   
     Handles map drawing and location searching
     Displays multiple markers on map
@@ -3991,7 +3991,6 @@
       this.satelliteCartographDiv = satelliteCartographDiv;
       this.satelliteCartograhOpt = satelliteCartograhOpt;
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
-      this.mapViewIndex = this.satelliteCartograhOpt;
     }
 
     SatelliteCartographer.prototype.visibleStrains = true;
@@ -4004,32 +4003,9 @@
 
     SatelliteCartographer.prototype.mapViewIndex = null;
 
-    SatelliteCartographer.prototype.findMapViewIndex = function(views) {
-      var index, v, _i, _len;
-      for (index = _i = 0, _len = views.length; _i < _len; index = ++_i) {
-        v = views[index];
-        if (v.mapView != null) {
-          return index;
-        }
-      }
-      return null;
-    };
-
-    SatelliteCartographer.prototype.resetMap = function() {
-      var c, x;
-      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
-      x = this.map.getZoom();
-      c = this.map.getCenter();
-      google.maps.event.trigger(this.map, 'resize');
-      this.map.setZoom(x);
-      this.map.setCenter(c);
-      return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
-    };
-
     SatelliteCartographer.prototype.cartograPhy = function() {
       var index;
       jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
-      console.log(jQuery('.map-canvas'));
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
       SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
       SatelliteCartographer.prototype.markerCluster(this.map);
@@ -4126,6 +4102,28 @@
       return true;
     };
 
+    SatelliteCartographer.prototype.findMapViewIndex = function(views) {
+      var index, v, _i, _len;
+      for (index = _i = 0, _len = views.length; _i < _len; index = ++_i) {
+        v = views[index];
+        if (v.mapView != null) {
+          return index;
+        }
+      }
+      return null;
+    };
+
+    SatelliteCartographer.prototype.resetMap = function() {
+      var c, x;
+      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
+      x = this.map.getZoom();
+      c = this.map.getCenter();
+      google.maps.event.trigger(this.map, 'resize');
+      this.map.setZoom(x);
+      this.map.setCenter(c);
+      return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
+    };
+
     SatelliteCartographer.prototype.parseLocation = function(genome) {
       var centerLatLng, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
       locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
@@ -4160,5 +4158,91 @@
     return SatelliteCartographer;
 
   })(Cartographer);
+
+
+  /*
+    CLASS InfoSatelliteCartographer
+  
+    Handles map drawing and location searching
+    Displays multiple markers on map
+    Handles marker clustering
+    Displays list of genomes 
+    Alters genome list when map viewport changes
+    Highlights selected genome on map from search query
+   */
+
+  InfoSatelliteCartographer = (function(_super) {
+    __extends(InfoSatelliteCartographer, _super);
+
+    function InfoSatelliteCartographer(infoSatelliteCartographDiv, infoSatelliteCartograhOpt, infoSelectedGenome) {
+      this.infoSatelliteCartographDiv = infoSatelliteCartographDiv;
+      this.infoSatelliteCartograhOpt = infoSatelliteCartograhOpt;
+      this.infoSelectedGenome = infoSelectedGenome;
+      InfoSatelliteCartographer.__super__.constructor.call(this, this.infoSatelliteCartographDiv, this.infoSatelliteCartograhOpt, this.infoSelectedGenome);
+    }
+
+    InfoSatelliteCartographer.prototype.selectedGenomeLocation = null;
+
+    InfoSatelliteCartographer.prototype.genomeMarkerOverlay = null;
+
+    InfoSatelliteCartographer.prototype.cartograPhy = function() {
+      InfoSatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
+      this.selectedGenomeLocation = this.parseLocation(this.infoSelectedGenome);
+      return this.genomeMarkerOverlay = this.showSelectedGenome(this.selectedGenomeLocation, this.map);
+    };
+
+    InfoSatelliteCartographer.prototype.showSelectedGenome = function(location, map) {
+      var markerLatLng, maxZndex, overlay, zInd;
+      if (location == null) {
+        throw new SuperphyError('Location cannot be determined or location is undefined (not specified)!');
+        return 0;
+      }
+      maxZndex = google.maps.Marker.MAX_ZINDEX;
+      zInd = maxZndex + 1;
+      markerLatLng = new google.maps.LatLng(location.centerLatLng);
+      overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName);
+      return overlay;
+    };
+
+    return InfoSatelliteCartographer;
+
+  })(SatelliteCartographer);
+
+  CartographerOverlay = (function() {
+    function CartographerOverlay(map, latLng, title) {
+      this.map = map;
+      this.latLng = latLng;
+      this.title = title;
+      this.markerLayer = jQuery('<div />').addClass('overlay');
+      this.setMap(this.map);
+    }
+
+    CartographerOverlay.prototype = new google.maps.OverlayView();
+
+    CartographerOverlay.prototype.onAdd = function() {
+      var $pane;
+      console.log(this);
+      $pane = jQuery(this.getPanes().floatPane);
+      return $pane.append(this.markerLayer);
+    };
+
+    CartographerOverlay.prototype.onRemove = function() {
+      return this.markerLayer.remove();
+    };
+
+    CartographerOverlay.prototype.draw = function() {
+      var $point, fragment, location, overlayProjection;
+      overlayProjection = this.getProjection();
+      fragment = document.createDocumentFragment();
+      this.markerLayer.empty();
+      location = overlayProjection.fromLatLngToDivPixel(this.latLng);
+      $point = jQuery('<div class="map-point" title="' + this.title + '" style="width:22px; height:40px; left:' + location.x + 'px; top:' + location.y + '; position:absolute; cursor:pointer;"> <img src="/App/Pictures/marker_icon_green.png" style="position:absolute; top:-40px; left:-11px" /> </div>');
+      fragment.appendChild($point.get(0));
+      return this.markerLayer.append(fragment);
+    };
+
+    return CartographerOverlay;
+
+  })();
 
 }).call(this);

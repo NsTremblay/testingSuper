@@ -474,6 +474,14 @@ text.matrixActive {
 div.matrixSort {
   padding: 20px;
 }
+/*
+ 
+ File: superphy_map.less
+ Desc: Superphy stylesheet for map views.
+ Author: Akiff Manji akiff.manji@gmail.com
+ Date: May 20th, 2014
+ 
+ * */
 .map-canvas {
   height: 300px;
 }
@@ -503,6 +511,40 @@ div.matrixSort {
   border-width: 1px;
   border-color: #d3d3d3;
 }
+/*
+ 
+ File: superphy_strains_search.less
+ Desc: Superphy stylesheet for strains search page
+ Author: Akiff Manji akiff.manji@gmail.com
+ Date: May 20th, 2014
+ 
+ * */
+.nav-pills > li > a {
+  -webkit-transition: color 1s ease-out;
+  -moz-transition: color 1s ease-out;
+  -o-transition: color 1s ease-out;
+  transition: color 1s ease-out;
+  border-radius: 0px;
+  color: #777;
+}
+.nav-pills > li > a:hover {
+  color: #333;
+  background-color: #FFF;
+}
+.nav-pills > li.active > a,
+.nav-pills > li.active > a:hover,
+.nav-pills > li.active > a:focus {
+  color: #555;
+  background-color: #e7e7e7;
+}
+/*
+ 
+ File: superphy_strains_info.less
+ Desc: Superphy stylesheet for strains info page
+ Author: Akiff Manji akiff.manji@gmail.com
+ Date: May 20th, 2014
+ 
+ * */
 .panel-group .panel {
   border-radius: 0px;
 }
