@@ -38,15 +38,23 @@
 			<p>Select one or more virulence factors or amr genes from the list:</p>
 		 	
 			<div id="vfgenes">
+			
+				<div class="row">
+					<div class="col-md-6">
+						<ul id="vf-selected">
+						</ul> 
+					</div>
+				</div>
+			
 		 		<div class="row">
 		  	
-					<div class="col-md-4">
-						<input id="virulence-autocomplete" type="text" class="input-xlarge" placeholder="Filter virulence factors in list" onkeyup="filterVirulenceList(current_virulence_category_id)"/>
+					<div class="col-md-3">
+						<input id="vf-autocomplete" type="text" class="form-control" placeholder="Filter virulence factors in list"/>
 					</div>
 						
-					<div class="col-md-2">
-						<label class="checkbox" for="select-all-virulence">
-							<input id="select-all-virulence" type="checkbox" onclick="selectAll('virulence')"/> Select All 
+					<div class="col-md-2 col-md-offset-1">
+						<label class="checkbox" for="vf-select-all">
+							<input id="vf-select-all" type="checkbox"/> Select All 
 						</label>
 					</div>
 				</div>
@@ -56,51 +64,91 @@
 						<div style="padding:10px">
 						<fieldset>
 							<span>Select on one or more virulence factors</span>
-								<ul id="vf_list" style="padding:0px;margin:0px">
+								<ul id="vf-list" style="padding:0px;margin:0px">
 								</ul>
 						</fieldset>
 						</div>
 					</div>
 					<div class="col-md-6">
-						<div id="virulence-categories" style="padding:10px">
+						<div id="vf-categories" style="padding:10px">
 						</div>
-						<div><button class="btn btn-link" type="button" onclick="changeVirulenceList(virulence_factors, 'virulence', metaTabSelections, 'undefined', true)">Show all genes in list</button></div>
+					
 					</div>
 				</div>
 			
+			</div>
+			
+			<div id="amrgenes">
+			
 				<div class="row">
-					
-					<div style="display:none;border:solid;border-width:1px;border-color:#d3d3d3;max-height:400px;overflow:auto" class="col-md-12">
-					<div style="padding:10px">
-						<fieldset>
-							<ul id="selectedVirList" style="padding:0px;margin:0px">
-								<li style="list-style-type:none">
-								</li>
-							</ul>
-						</fieldset>
-					</div>
+					<div class="col-md-6">
+						<ul id="amr-selected">
+						</ul> 
 					</div>
 				</div>
+			
+		 		<div class="row">
+		  	
+					<div class="col-md-3">
+						<input id="amr-autocomplete" type="text" class="form-control" placeholder="Filter AMR genes in list"/>
+					</div>
+						
+					<div class="col-md-2 col-md-offset-1">
+						<label class="checkbox" for="amr-select-all">
+							<input id="amr-select-all" type="checkbox"/> Select All 
+						</label>
+					</div>
+				</div>
+		
+				<div class="row">
+					<div class="col-md-6" style="border:solid;border-width:1px;border-color:#d3d3d3;max-height:650px;overflow:auto">
+						<div style="padding:10px">
+						<fieldset>
+							<span>Select on one or more AMR genes</span>
+								<ul id="amr-list" style="padding:0px;margin:0px">
+								</ul>
+						</fieldset>
+						</div>
+					</div>
+					<div class="col-md-6">
+						<div id="amr-categories" style="padding:10px">
+						</div>
+					
+					</div>
+				</div>
+			
 			</div>
+			
 		</div>
 		  
-		  <div class="tab-pane" id="genomes">
+		<div class="tab-pane" id="genomes">
 		  	<p>Select one or more genomes from the list, phylogenetic tree or map:</p>
 		  	<div id="selected_genomes">
 		  		
 		  	</div>
 		  	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
-		  </div>
-		  <div class="tab-pane" id="finalize">
-		  	<div id="selected_gene_count"></div>
+		</div>
+		
+		<div class="tab-pane" id="finalize">
+			<div id="vf-selected-count"></div>
+		  	<div id="amr-selected-count"></div>
 		  	<div id="selected_genome_count"></div>
 		  	<p>Click <code>Submit</code> below or return to <code>Select Genes</code> tab or 
 		  	   <code>Select Genomes</code> tab to modify query.</p>
+		  	   
+		  	<form id='query-gene-form'>
+		  		<div class="row">
+		  		
+		  			<div class="col-xs-2">
+		  				<button class="btn btn-primary" type="submit" value="Submit">Submit</button>
+		  			</div>
+		  			<div class="col-xs-2">
+		  				<button class="btn btn-danger" type="reset" onclick="history.go(0)" value="Reset">Reset</button>
+		  			</div>
+		  		</div>
+		  	</form>
 		  	
-		  	<div id="submit_button">
-		  		<button class="btn" type="submit">Submit</button>
-		  	</div>
-		  
+		  	
 		  </div>
 		</div>
 
@@ -134,136 +182,21 @@
 		// Gene selection form
 		
 		// Initialisation
-		initGeneList(vf);
-		initGeneList(amr);
-		appendGeneList(vf, $('#vf_list'), 'vf')
-		
-		
-		
-		
-		
-		
-		// VF
-		var virulenceCategories = categories.vfCats;
-		var category_list;
-		var current_virulence_category_id = "undefined";
-		$('#virulence-categories').append('<span>Select from categories below to refine list of virulence genes</span>');
-		$.each(virulenceCategories, function(index, object) {
-			var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
-			var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
-			$('#virulence-categories').append(titleDiv);
-			$('a[id="more-info-'+index+'"]').attr('title', object.parent_definition);
-			$('#virulence-categories').append('<select name="virulence-categories" id="'+index+'" class="input-xlarge" onchange="changeVirulenceCats(this)"></select>');
-			$('#virulence-categories select[id="'+index+'"]').append('<option name="virulence-category" value="undefined"><strong>--Select a Category--</strong></option>');
-			$.each(object.subcategories, function(index, object) {
-				object.category_definition == null ? object.category_definition = "" : 0;
-				var convertedDef = convertCategoryDefinition(object.category_definition.toString());
-				$('#virulence-categories select[id="'+object.parent_id+'"]').append(
-				   '<option id="virulence-category-'+object.category_name+'" name="virulence-category" value="'+index+'" title="'+convertedDef+'">'+capitaliseFirstLetter(object.category_name)+'</option>'
-				);
-			});
+		var vfData = initGeneList(vf, 'vf', categories.vfCats, $('#vf-list'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'));
+		var amrData = initGeneList(amr, 'amr', categories.amrCats, $('#amr-list'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'));
+		appendGeneList(vfData);
+		appendCategories(vfData);
+		appendGeneList(amrData);
+		appendCategories(amrData);
+		$('#amr-autocomplete').keyup(function () {
+			filterGeneList(vfData);	
 		});
-		
-		function capitaliseFirstLetter(string) {
-			return string.charAt(0).toUpperCase() + string.slice(1);
-		}
-		
-		function changeVirulenceList(list, listName, selectedMetaTabs, value, boolReset) {
-			if (boolReset) {
-				current_virulence_category_id = value;
-			}
-			$('select[name="virulence-categories"]').val(value);
-			appendFilteredList(list, listName, selectedMetaTabs);
-			$('#virulence-autocomplete').val('');
-		}
-		
-		function filterVirulenceList (id) {
-			if (id != "undefined") {
-				metaTab.filterList('virulence', category_list, undefined, metaTabSelections);
-			}
-			else {
-				metaTab.filterList('virulence', virulence_factors, undefined, metaTabSelections);
-			}
-		}
-		
-		function changeVirulenceCats (select) {
-			var parentId = select.id;
-			var optionId = select.value;
-			current_virulence_category_id = optionId;
-			category_list = {};
-			if (select.value == "undefined") {
-				changeVirulenceList(virulence_factors, 'virulence', metaTabSelections, optionId);
-			}
-			else {
-				var gene_list = virulenceCategories[parentId].subcategories[optionId].gene_ids;
-				$.each(gene_list, function(index, value){
-					category_list[value] = virulence_factors[value];
-				});
-				changeVirulenceList(category_list, 'virulence', metaTabSelections, optionId);
-			}
-		}
-		
-		function convertCategoryDefinition (string) {
-			//Need to remove all instances of '.n[' and replace it with a space or return line
-			var newString = string.replace(/\.n/g, ". &#13;");
-			console.log(newString);
-			return newString;
-		}
-		
-		// AMR
-		// var amrCategories = categories.amrCats;
-		// var category_list;
-		// var current_amr_category_id = "undefined";
-		// $('#amr-categories').append('<span class="help-block">Select from categories below to filter list of AMR genes</span>');
-		// $.each(amrCategories, function(index, object) {
-			// var categoryTitle = capitaliseFirstLetter(object.parent_name.toString());
-			// var titleDiv = '<span class="help-block">'+categoryTitle+': '+' <a id="more-info-'+index+'" href="javascript:void(0);" data-toggle="tooltip"><i i class="icon-info-sign"></i></a></span>';
-			// $('#amr-categories').append(titleDiv);
-			// $('a[id="more-info-'+index+'"]').attr('title', object.parent_definition);
-			// $('#amr-categories').append('<select name="amr-categories" id="'+index+'" class="input-xlarge" onchange="changeAmrCats(this)"></select>');
-			// $('#amr-categories select[id="'+index+'"]').append('<option name="amr-category" value="undefined"><strong>--Select a Category--</strong></option>');
-			// $.each(object.subcategories, function(index, object) {
-				// $('#amr-categories select[id="'+object.parent_id+'"]').append(
-					// '<option id="amr-category-'+object.category_name+'" name="amr-category" value="'+index+'" title="'+object.category_definition+'">'+capitaliseFirstLetter(object.category_name)+'</option>'
-					// );
-			// });
-		// });
-		// function capitaliseFirstLetter(string) {
-			// return string.charAt(0).toUpperCase() + string.slice(1);
-		// }
-		// function changeAmrList(list, listName, selectedMetaTabs, value, boolReset) {
-			// if (boolReset) {
-				// current_amr_category_id = value;
-			// }
-			// $('select[name="amr-categories"]').val(value);
-			// appendFilteredList(list, listName, selectedMetaTabs);
-			// $('#amr-autocomplete').val('');
-		// }
-		// function filterAmrList (id) {
-			// if (id != "undefined") {
-				// metaTab.filterList('amr', category_list, undefined, metaTabSelections);
-			// }
-			// else {
-				// metaTab.filterList('amr', amr_genes, undefined, metaTabSelections);
-			// }
-		// }
-		// function changeAmrCats (select) {
-			// var parentId = select.id;
-			// var optionId = select.value;
-			// current_amr_category_id = optionId;
-			// category_list = {};
-			// if (select.value == "undefined") {
-				// changeAmrList(amr_genes, 'amr', metaTabSelections, optionId);
-			// }
-			// else {
-				// var gene_list = amrCategories[parentId].subcategories[optionId].gene_ids;
-				// $.each(gene_list, function(index, value){
-					// category_list[value] = amr_genes[value];
-				// });
-				// changeAmrList(category_list, 'amr', metaTabSelections, optionId);
-			// }
-		// }
-		
+		$('#amr-autocomplete').keyup(function () {
+			filterGeneList(vfData);	
+		});
+		$('#query-gene-form').submit(function(e)
+			console.log('submitting')
+		);
 		
 	</script>
 	

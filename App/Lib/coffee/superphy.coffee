@@ -1766,8 +1766,6 @@ class GenomeController
     else
       return @private_genomes[gid]
       
-  selectionView: (parentElem) ->
-
 
 ###
  CLASS LocusController
