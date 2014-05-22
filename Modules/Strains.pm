@@ -256,6 +256,9 @@ sub info : Runmode {
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 
+	$template->param(title1 => 'STRAIN');
+	$template->param(title2 => 'INFORMATION');
+
 	return $template->output();
 }
 
@@ -292,6 +295,9 @@ sub search : StartRunmode {
 		my $tree_string = $tree->fullTree();
 		$template->param(tree_json => $tree_string);
 	}
+
+	$template->param(title1 => 'STRAIN');
+	$template->param(title2 => 'SEARCH');
 	
 	return $template->output();
 } 

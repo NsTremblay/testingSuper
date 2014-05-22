@@ -27,45 +27,36 @@
 
 <body>
 
-	<!-- Navbar -->
-	<TMPL_INCLUDE NAME="superphy_nav_bar.tmpl">
+	<TMPL_INCLUDE NAME="page_top.tmpl">
 
-	<div class="container" >
+	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 
-		<h1><span>STRAIN</span> <span style="color:#d41616">INFORMATION</span></h1>
+	<TMPL_INCLUDE NAME="page_bottom.tmpl">
 
-		<TMPL_INCLUDE NAME="search_utilities.tmpl">
+</body>
 
-		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
-		
-	</div>
+<script type="text/javascript">
 
-	<script type="text/javascript">
-	
-	var public_genomes = <TMPL_VAR public_genomes>;
-	var private_genomes = <TMPL_VAR private_genomes>;
-	var tree = <TMPL_VAR tree_json>;
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var tree = <TMPL_VAR tree_json>;
 
-	viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
-	viewController.createView('list', $('#strains_list'));
+viewController.createView('list', $('#strains_list'));
 
-	viewController.metaForm($('#meta-display-form'));
+viewController.createView('tree', $('#strains_tree'), tree);
 
-	viewController.filterForm($('#filter-form'));
+viewController.createView('map', $('#strains_map'));
 
-	viewController.createView('tree', $('#strains_tree'), tree);
+viewController.sideBar($('#search-utilities'));
 
-	viewController.createView('map', $('#strains_map'));
-	
-	$(document).ready(function(){
+$(document).ready(function(){
 		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
 		$('a[href="#strains_map"]').on('shown.bs.tab', function () {
 			viewController.getView($('#strains_map').data("viewsIndex")).cartographer.resetMap();
 		});
 	});
-	</script>
-
-</body>
+</script>
 
 </html>

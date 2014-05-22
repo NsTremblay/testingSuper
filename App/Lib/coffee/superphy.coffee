@@ -215,7 +215,53 @@ class ViewController
     true
     
   redirect: (g) ->
-    alert('Genome '+g+' redirected!')
+    displayName = @.genomeController.private_genomes[g]?.displayname ? @.genomeController.public_genomes[g].displayname
+
+    modalView = jQuery(
+      '<div class="modal fade" id="view-redirect-modal" tabindex="-1" role="dialog" aria-labelledby="viewRedirectModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-sm">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" id="viewRedirectModalLabel">Retrieve selected genome?</h4>
+            </div>
+            <div class="modal-body">
+              Would you like to retrieve genome information for the selected genome: 
+                <form id="view-redirect-form">
+                  <div class="well well-sm">'+displayName+'</div>
+                  <input type="hidden" name="genome" value="'+g+'"/>
+                </form>
+            </div>
+            <div class="modal-footer">
+            </div>
+          </div>
+        </div>
+      </div>'
+      )
+
+    buttonCloseEl = jQuery('<button type="button" class="btn btn-danger" data-dismiss="modal" form="view-redirect-form" value="Cancel">Cancel</button>')
+    buttonSubmitEl = jQuery(
+      '<button 
+      type="submit" 
+      id="view-redirect-submit" 
+      class="btn btn-success" 
+      value="Submit" 
+      form="view-redirect-form" 
+      formmethod="post" 
+      formaction="'+viewController.action+'">
+        Submit
+        </button>'
+    )
+
+    buttonSubmitEl.click(() ->
+      modalView.find('.modal-body').append('<div class="alert alert-success">Retrieving genome, please dont hit the ESC key</div>')
+      )
+
+    modalView.find('.modal-footer').append(buttonCloseEl);
+    modalView.find('.modal-footer').append(buttonSubmitEl);
+
+    modalView.modal('show')
+
     true
     
   removeFromGroup: (genomeID, grp) ->
