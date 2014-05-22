@@ -562,6 +562,10 @@ div.matrixSort {
   max-height: 500px;
   overflow: auto;
 }
+.well {
+  border-radius: 0px;
+  border: none;
+}
 /** Colors ********************************/
 /** Mixins ********************************/
 .borderStyle {

@@ -82,13 +82,7 @@
                     </h4>
                 </div>
                 <div id="tree-panel" class="panel-collapse collapse">
-                    <div class="panel-body">
-                        <script>
-                        //TODO: This needs to be changed
-                        var smallTreeWindow = true;
-                        var centreOnSelectedNode = true;
-                        </script>
-                        <TMPL_INCLUDE NAME="strains_info_phylogeny.tmpl">
+                    <div class="panel-body" id="strains-info-tree">
                     </div>
                 </div>
             </div>
@@ -121,19 +115,6 @@
                 </div>
                 <div id="geospatial-panel" class="panel-collapse collapse">
                     <div class="panel-body" id="strains-info-map">
-                        <script type="text/javascript">
-                        var selectedGenomeHasLocation = "<TMPL_VAR strainLocation>";
-                        //Determine whether public or private
-                        var pvtLocation = selectedGenomeHasLocation.match(/private_/g);
-                        if (selectedGenomeHasLocation.match(/private_/g)) {
-                            selectedGenome = private_genomes[selectedGenomeHasLocation];
-                        }
-                        else if (selectedGenomeHasLocation.match(/public_/g)) {
-                            selectedGenome = public_genomes[selectedGenomeHasLocation];
-                        }
-                        viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
-                        viewController.createView('map', $('#strains-info-map'));
-                        </script>
                     </div>
                 </div>
             </div>
@@ -242,4 +223,18 @@ $(document).ready(function() {
         });
     }
 });
+
+
+var selectedGenomeHasLocation = "<TMPL_VAR strainLocation>";
+//Determine whether public or private
+var pvtLocation = selectedGenomeHasLocation.match(/private_/g);
+if (selectedGenomeHasLocation.match(/private_/g)) {
+    selectedGenome = private_genomes[selectedGenomeHasLocation];
+}
+else if (selectedGenomeHasLocation.match(/public_/g)) {
+    selectedGenome = public_genomes[selectedGenomeHasLocation];
+}
+viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+viewController.createView('map', $('#strains-info-map'));
+viewController.createView('tree', $('#strains-info-tree'), tree);
 </script>

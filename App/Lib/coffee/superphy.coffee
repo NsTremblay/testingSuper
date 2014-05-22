@@ -949,7 +949,7 @@ class ListView extends ViewTemplate
         
         # Create elements
         listEl = jQuery("<li class='#{thiscls}'>#{name}</li>")
-        actionEl = jQuery("<a href='#' data-genome='#{g}'><i class='icon-search'></i> info</a>")
+        actionEl = jQuery("<a href='#' data-genome='#{g}'> <span class='fa fa-search'></span>info</a>")
         
         # Set behaviour
         actionEl.click (e) ->

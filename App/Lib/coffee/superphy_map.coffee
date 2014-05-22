@@ -86,7 +86,7 @@ class MapView extends ViewTemplate
 
         # Create elements
         mapEl = jQuery("<li class='#{thiscls}'>#{name}</li>")
-        actionEl = jQuery("<a href='#' data-genome='#{g}'><span class='fa fa-search'></span> info</a>")
+        actionEl = jQuery("<a href='#' data-genome='#{g}'> <span class='fa fa-search'></span>info</a>")
 
         # Set behavior
         actionEl.click (e) -> 
@@ -182,7 +182,7 @@ class MapView extends ViewTemplate
     # TODO: Change this to account for different map views
     downloadView = jQuery(@parentElem).find('.download-view')
     downloadView.remove()
-    @cartographer = new InfoSatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
+    @cartographer = new SatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
     @cartographer.cartograPhy()
     #Remove the download view for the results page
     jQuery(@parentElem).prepend(downloadView)
@@ -634,12 +634,11 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     super(@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt, @infoSelectedGenome)
 
   selectedGenomeLocation: null
-  genomeMarkerOverlay: null
 
   cartograPhy: () ->
     super
     @selectedGenomeLocation = @parseLocation(@infoSelectedGenome)
-    @genomeMarkerOverlay = @showSelectedGenome(@selectedGenomeLocation ,@map)
+    @showSelectedGenome(@selectedGenomeLocation ,@map)
 
   showSelectedGenome: (location, map) ->
     unless location?
@@ -650,43 +649,61 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     zInd = maxZndex + 1
     markerLatLng = new google.maps.LatLng(location.centerLatLng)
     overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName)
-    return overlay
 
 class CartographerOverlay
   constructor: (@map, @latLng, @title) ->
-    @markerLayer = jQuery('<div />').addClass('overlay')
     @setMap(@map)
+    @div = null;
     
   CartographerOverlay:: = new google.maps.OverlayView()
 
   onAdd: () ->
-    $pane = jQuery(@getPanes().floatPane)
-    $pane.append(@markerLayer)
+    div = document.createElement('div')
+    div.id = "selectedGenome"
+    div.style.borderStyle = 'none'
+    div.style.borderWidth = '0px'
+    div.style.position = 'absolute'
+    div.style.width = '22px'
+    div.style.height = '40px' 
+    div.style.cursor = 'pointer'
+
+    # We initially created an svg circle marker but it didnt look very good on the map so were using the default image
+    # svg = d3.select(div).append('svg')
+    #   .attr('height', '15px')
+    #   .attr('width', '15px')
+    #
+    # selectedMarker = svg.append("g")
+    #   .attr('transform', 'translate(0,0)')
+    #
+    # selectedMarker.append("circle")
+    #   .attr('cx', 7.5)
+    #   .attr('cy', 7.5)
+    #   .attr('r', '5px')
+    #   .style({'fill': '#00FF00', 'stroke': '#00FF00', 'stroke-width': '1px', 'fill-opacity': '0.0'})
+
+    img = document.createElement('img')
+    img.src = '/App/Pictures/marker_icon_green.png'
+    img.style.width = '100%'
+    img.style.height = '100%'
+    img.style.position = 'absolute'
+    img.id = "selectedGenomeMarker"
+    img.title = @title
+    div.appendChild(img)
+
+    @div = div
+
+    panes = @getPanes()
+    panes.floatPane.appendChild(div)
 
   onRemove: () ->
-    @markerLayer.remove()
+    @div.parentNode.removeChild(@div)
+    @div = null
 
   draw: () ->
     overlayProjection = @getProjection()
-    fragment = document.createDocumentFragment()
-    @markerLayer.empty()
     location = overlayProjection.fromLatLngToDivPixel(@latLng)
     
-    $point = jQuery('
-      <div 
-      class="map-point" 
-      title="'+@title+'" 
-      style="width:22px; 
-      height:40px; 
-      left:'+location.x+'px; 
-      top:'+location.y+'; 
-      position:absolute; 
-      cursor:pointer;">
-      <img src="/App/Pictures/marker_icon_green.png" style="position:absolute; top:-40px; left:-11px" />
-      </div>')
-      #<svg height="15px" width="15px">
-      #<circle cx="7.5" cy="7.5" r="5px" stroke="#00FF00" stroke-width="1" fill="#00FF00" fill-opacity="0.8"/> 
-      #</svg> 
-      #</div>')
-    fragment.appendChild($point.get(0))
-    @markerLayer.append(fragment)
+    div = @div
+
+    div.style.left = (location.x - 11) + 'px'
+    div.style.top = (location.y - 40) + 'px'

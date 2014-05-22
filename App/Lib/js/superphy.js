@@ -166,7 +166,10 @@
     };
 
     ViewController.prototype.redirect = function(g) {
-      alert('Genome ' + g + ' redirected!');
+      var modalView;
+      modalView = jQuery('<div class="modal fade" id="view-redirect-modal" tabindex="-1" role="dialog" aria-labelledby="viewRedirectModalLabel" aria-hidden="true"> <div class="modal-dialog modal-sm"> <div class="modal-header"> <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button> <h4 class="modal-title" id="viewRedirectModalLabel">Title Goes here</h4> </div> <div class="modal-body"> ... </div> <div> <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button> <button type="button" class="btn btn-success">Submit</button> </div> </div> </div>');
+      console.log("Something");
+      jQuery('#view-redirect-modal').show();
       return true;
     };
 
@@ -824,7 +827,7 @@
         }
         if (style === 'redirect') {
           listEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
-          actionEl = jQuery("<a href='#' data-genome='" + g + "'><i class='icon-search'></i> info</a>");
+          actionEl = jQuery("<a href='#' data-genome='" + g + "'> <span class='fa fa-search'></span>info</a>");
           actionEl.click(function(e) {
             var gid;
             e.preventDefault();
@@ -3771,7 +3774,7 @@
         name = genomes[g].htmlname;
         if (style = 'redirect') {
           mapEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
-          actionEl = jQuery("<a href='#' data-genome='" + g + "'><span class='fa fa-search'></span> info</a>");
+          actionEl = jQuery("<a href='#' data-genome='" + g + "'> <span class='fa fa-search'></span>info</a>");
           actionEl.click(function(e) {
             var gid;
             e.preventDefault();
@@ -3834,7 +3837,7 @@
       var downloadView;
       downloadView = jQuery(this.parentElem).find('.download-view');
       downloadView.remove();
-      this.cartographer = new InfoSatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome);
+      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome);
       this.cartographer.cartograPhy();
       return jQuery(this.parentElem).prepend(downloadView);
     };
@@ -4183,12 +4186,10 @@
 
     InfoSatelliteCartographer.prototype.selectedGenomeLocation = null;
 
-    InfoSatelliteCartographer.prototype.genomeMarkerOverlay = null;
-
     InfoSatelliteCartographer.prototype.cartograPhy = function() {
       InfoSatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
       this.selectedGenomeLocation = this.parseLocation(this.infoSelectedGenome);
-      return this.genomeMarkerOverlay = this.showSelectedGenome(this.selectedGenomeLocation, this.map);
+      return this.showSelectedGenome(this.selectedGenomeLocation, this.map);
     };
 
     InfoSatelliteCartographer.prototype.showSelectedGenome = function(location, map) {
@@ -4200,8 +4201,7 @@
       maxZndex = google.maps.Marker.MAX_ZINDEX;
       zInd = maxZndex + 1;
       markerLatLng = new google.maps.LatLng(location.centerLatLng);
-      overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName);
-      return overlay;
+      return overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName);
     };
 
     return InfoSatelliteCartographer;
@@ -4213,32 +4213,47 @@
       this.map = map;
       this.latLng = latLng;
       this.title = title;
-      this.markerLayer = jQuery('<div />').addClass('overlay');
       this.setMap(this.map);
+      this.div = null;
     }
 
     CartographerOverlay.prototype = new google.maps.OverlayView();
 
     CartographerOverlay.prototype.onAdd = function() {
-      var $pane;
-      console.log(this);
-      $pane = jQuery(this.getPanes().floatPane);
-      return $pane.append(this.markerLayer);
+      var div, img, panes;
+      div = document.createElement('div');
+      div.id = "selectedGenome";
+      div.style.borderStyle = 'none';
+      div.style.borderWidth = '0px';
+      div.style.position = 'absolute';
+      div.style.width = '22px';
+      div.style.height = '40px';
+      div.style.cursor = 'pointer';
+      img = document.createElement('img');
+      img.src = '/App/Pictures/marker_icon_green.png';
+      img.style.width = '100%';
+      img.style.height = '100%';
+      img.style.position = 'absolute';
+      img.id = "selectedGenomeMarker";
+      img.title = this.title;
+      div.appendChild(img);
+      this.div = div;
+      panes = this.getPanes();
+      return panes.floatPane.appendChild(div);
     };
 
     CartographerOverlay.prototype.onRemove = function() {
-      return this.markerLayer.remove();
+      this.div.parentNode.removeChild(this.div);
+      return this.div = null;
     };
 
     CartographerOverlay.prototype.draw = function() {
-      var $point, fragment, location, overlayProjection;
+      var div, location, overlayProjection;
       overlayProjection = this.getProjection();
-      fragment = document.createDocumentFragment();
-      this.markerLayer.empty();
       location = overlayProjection.fromLatLngToDivPixel(this.latLng);
-      $point = jQuery('<div class="map-point" title="' + this.title + '" style="width:22px; height:40px; left:' + location.x + 'px; top:' + location.y + '; position:absolute; cursor:pointer;"> <img src="/App/Pictures/marker_icon_green.png" style="position:absolute; top:-40px; left:-11px" /> </div>');
-      fragment.appendChild($point.get(0));
-      return this.markerLayer.append(fragment);
+      div = this.div;
+      div.style.left = (location.x - 11) + 'px';
+      return div.style.top = (location.y - 40) + 'px';
     };
 
     return CartographerOverlay;
