@@ -1692,8 +1692,6 @@
       }
     };
 
-    GenomeController.prototype.selectionView = function(parentElem) {};
-
     return GenomeController;
 
   })();
@@ -2266,14 +2264,18 @@
           return null;
         }
       });
-      currLeaves.select("text").text(function(d) {
-        return d.viewname;
-      });
       currLeaves.select("circle").style("fill", function(d) {
         if (d.selected) {
           return "lightsteelblue";
         } else {
           return "#fff";
+        }
+      });
+      svgNodes.select("text").text(function(d) {
+        if (d.leaf) {
+          return d.viewname;
+        } else {
+          return d.label;
         }
       });
       nodesEnter = svgNodes.enter().append("g").attr("class", (function(_this) {

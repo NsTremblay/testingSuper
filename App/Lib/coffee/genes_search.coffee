@@ -93,7 +93,6 @@ root.appendGeneList = (d) ->
 root.filterGeneList = (d) ->
   
   searchTerm = d.element.autocomplete.val()
-  console.log 'SEARCHING '+searchTerm
   
   matching(d.genes, searchTerm)
   
@@ -142,6 +141,12 @@ root.appendCategories = (d) ->
   categoryE = d.element.category
   categoryE.append('<span>Select category to refine list of virulence factors to genes of specific function / type:</span>')
  
+  resetDiv = jQuery('<div class="genes-search-reset-categories"></div>').appendTo(categoryE)
+  resetButt = jQuery("<button id='#{d.type}-reset-category' class='btn btn-link'>Reset</button>").appendTo(resetDiv)
+  resetButt.click( (e) ->
+    e.preventDefault()
+    filterByCategory(-1,-1,d)
+  )
   
   for k,o of d.categories
     
@@ -185,17 +190,23 @@ root.appendCategories = (d) ->
 # FUNC filterByCategory
 # Find genes belong to category and
 # append to list
-# USAGE filterByCategory data_object
+#
+# USAGE filterByCategory int int data_object
+# if catId == -1, reset of visible is performed
 # 
 # RETURNS
 # boolean
 #    
 root.filterByCategory = (catId, subcatId, d) ->
   
-  geneIds = d.categories[catId].subcategories[subcatId].gene_ids
-  throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
-  
-  o.visible = false for k,o of d.genes
+  geneIds = []
+  if catId is -1
+    geneIds = Object.keys(d.genes)
+    
+  else
+    geneIds = d.categories[catId].subcategories[subcatId].gene_ids
+    throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
+    o.visible = false for k,o of d.genes
   
   for g in geneIds
     o = d.genes[g]
@@ -208,7 +219,8 @@ root.filterByCategory = (catId, subcatId, d) ->
   true
   
 # FUNC selectGene
-# Update data object and elements for checked / unchecked genes
+# Update data object and elements for checked / unchecked genes\
+#
 # USAGE selectGene array, boolean, data_object
 # 
 # RETURNS
@@ -237,7 +249,15 @@ root.selectGene = (geneIds, checked, d) ->
       
     
   true
-    
+
+# FUNC updateCount
+# Update displayed # of genes selected
+# 
+# USAGE updateCount data_object
+#
+# RETURNS
+# boolean
+#    
 root.updateCount = (d) ->
   
   # Stick in inner span
@@ -253,7 +273,14 @@ root.updateCount = (d) ->
       
   true
 
-
+# FUNC addSelectedGenes
+# Add genes to selected box elment
+# 
+# USAGE addSelectedGenes array data_object
+#
+# RETURNS
+# boolean
+#    
 root.addSelectedGenes = (geneIds, d) ->
   
   cls = 'selected-gene-item'
@@ -278,20 +305,32 @@ root.addSelectedGenes = (geneIds, d) ->
       
   true 
 
-
+# FUNC removeSelectedGenes
+# Remove genes from selected box element
+# 
+# USAGE removeSelectedGenes array data_object
+#
+# RETURNS
+# boolean
+#    
 root.removeSelectedGenes = (geneIds, d) ->
   
   for g in geneIds
     listEl = d.element.select.find("li > a[data-gene='#{g}']")
     listEl.parent().remove()
     
-      
   true
   
-root.submitGeneQuery = (formElem, vfData, amrData, viewController) ->
-  
-  
-  
+# FUNC submitGeneQuery
+# Submit by dynamically building form with hidden
+# input params
+# 
+# USAGE submitGeneQuery data_object data_object viewController
+#
+# RETURNS
+# boolean
+#    
+root.submitGeneQuery = (vfData, amrData, viewController) ->
   
   
 # FUNC capitaliseFirstLetter

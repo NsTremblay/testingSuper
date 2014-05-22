@@ -837,7 +837,14 @@ class ViewController
         searchTerms.unshift t
         
     searchTerms
-    
+  
+  # FUNC createSelectionView
+  # Creates a unique view-type object that tracks currently selected
+  # genomes
+  #
+  # RETURNS
+  # boolean
+  # 
   createSelectionView: (boxEl, countEl=null) ->
     
     # Existing selection window?
@@ -849,6 +856,53 @@ class ViewController
     @selectedBox = selView
       
     return true # return success
+    
+    
+  # FUNC submitGenomes
+  # To do a form submission, selected or grouped
+  # genomes are added as hidden parameters to a form
+  #
+  # USAGE submitGenomes jQuery_element string
+  # if paramType = 'selected'
+  #   all selected genomes will be added as genome=public_12344
+  # if paramType = 'grouped'
+  #   all grouped genomes will be added as group1=public_12344
+  # RETURNS
+  # boolean
+  # 
+  submitGenomes: (formEl, paramType='selected') ->
+    
+    if paramType is 'selected'
+      
+      gset = @genomeController.selected()
+      genomes = gset.public.concat gset.private
+      
+      for g in genomes
+        input = jQuery('<input></input>')
+        input.attr('type','hidden')
+        input.attr('name', 'genome')
+        input.val(g)
+        formEl.append(input)
+          
+    else if paramType is 'grouped'
+      
+      for k,v of @genomeController.public_genomes when v.assignedGroup?
+        input = jQuery('<input></input>')
+        input.attr('type', 'hidden')
+        input.attr('name', "group#{v.assignedGroup}")
+        input.val(g)
+        formEl.append(input)
+     
+      for k,v of @genomeController.private_genomes when v.assignedGroup?
+        input = jQuery('<input></input>')
+        input.attr('type', 'hidden')
+        input.attr('name', "group#{v.assignedGroup}")
+        input.val(g)
+        formEl.append(input)
+      
+    else
+      throw new SuperphyError "Unknown paramType parameter: #{paramType}"
+    
 
 # Return instance of a ViewController
 unless root.ViewController

@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="/App/Styling/css/genes_search.css">
 	<script src="/App/Lib/js/genes_search.js"></script>
 	
+	<script>var page_name = 'genes';</script>
 	
 </head>
 
@@ -27,14 +28,14 @@
 	
 	<div id="search">
 		
-		<ul class="nav nav-pills nav-justified">
-		  <li class="active"><a href="#querygenes" data-toggle="tab">1. Select Genes</a></li>
-		  <li><a href="#genomes" data-toggle="tab">2. Select Genomes</a></li>
-		  <li><a href="#finalize" data-toggle="tab">3. Submit Query</a></li>
+		<ul id="gene-search-tabs" class="nav nav-pills nav-justified">
+		  <li class="active"><a href="#gene-search-querygenes" data-toggle="tab">1. Select Genes</a></li>
+		  <li><a href="#gene-search-genomes" data-toggle="tab">2. Select Genomes</a></li>
+		  <li><a href="#gene-search-submit" data-toggle="tab">3. Submit Query</a></li>
 		</ul>
 		
 		<div class="tab-content">
-		<div class="tab-pane active" id="querygenes">
+		<div class="tab-pane active" id="gene-search-querygenes">
 			<p>Select one or more virulence factors or amr genes from the list:</p>
 		 	
 			<div id="vfgenes">
@@ -70,6 +71,7 @@
 						</div>
 					</div>
 					<div class="col-md-6">
+						
 						<div id="vf-categories" style="padding:10px">
 						</div>
 					
@@ -118,18 +120,26 @@
 				</div>
 			
 			</div>
+			<div id='gene-search-move-to-genomes-tab' class='row'>
+				<button class="btn btn-primary">Next</button>
+			</div>
+
 			
 		</div>
 		  
-		<div class="tab-pane" id="genomes">
+		<div class="tab-pane" id="gene-search-genomes">
 		  	<p>Select one or more genomes from the list, phylogenetic tree or map:</p>
 		  	<div id="selected_genomes">
 		  		
 		  	</div>
 		  	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
+
+			<div id='gene-search-move-to-submit-tab' class='row'>
+                                <button class="btn btn-primary">Next</button>
+                        </div>
 		</div>
 		
-		<div class="tab-pane" id="finalize">
+		<div class="tab-pane" id="gene-search-submit">
 			<div id="vf-selected-count"></div>
 		  	<div id="amr-selected-count"></div>
 		  	<div id="selected_genome_count"></div>
@@ -188,15 +198,33 @@
 		appendCategories(vfData);
 		appendGeneList(amrData);
 		appendCategories(amrData);
-		$('#amr-autocomplete').keyup(function () {
+		
+		$('#vf-autocomplete').keyup(function () {
 			filterGeneList(vfData);	
 		});
+		
 		$('#amr-autocomplete').keyup(function () {
-			filterGeneList(vfData);	
+			filterGeneList(amrData);	
 		});
-		$('#query-gene-form').submit(function(e)
-			console.log('submitting')
-		);
+		
+		$('#query-gene-form').submit(function(e) {
+			console.log('submitting');
+		
+		});
+
+		$('#gene-search-move-to-genomes-tab').click(function(e) {
+			e.preventDefault();
+			$('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show')	
+		});
+		
+		$('#gene-search-move-to-submit-tab').click(function(e) {
+         	e.preventDefault();
+            $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show')       
+		});
+		
+		
+
+
 		
 	</script>
 	

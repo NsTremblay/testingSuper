@@ -74,7 +74,6 @@
   root.filterGeneList = function(d) {
     var searchTerm;
     searchTerm = d.element.autocomplete.val();
-    console.log('SEARCHING ' + searchTerm);
     matching(d.genes, searchTerm);
     d.element.list.empty();
     appendGeneList(d);
@@ -97,9 +96,15 @@
   };
 
   root.appendCategories = function(d) {
-    var cTitle, categoryE, col2, def, id, k, moreInfo, moreInfoId, name, o, row1, row2, s, sel, t, titleDiv, _ref, _ref1;
+    var cTitle, categoryE, col2, def, id, k, moreInfo, moreInfoId, name, o, resetButt, resetDiv, row1, row2, s, sel, t, titleDiv, _ref, _ref1;
     categoryE = d.element.category;
     categoryE.append('<span>Select category to refine list of virulence factors to genes of specific function / type:</span>');
+    resetDiv = jQuery('<div class="genes-search-reset-categories"></div>').appendTo(categoryE);
+    resetButt = jQuery("<button id='" + d.type + "-reset-category' class='btn btn-link'>Reset</button>").appendTo(resetDiv);
+    resetButt.click(function(e) {
+      e.preventDefault();
+      return filterByCategory(-1, -1, d);
+    });
     _ref = d.categories;
     for (k in _ref) {
       o = _ref[k];
@@ -146,14 +151,19 @@
 
   root.filterByCategory = function(catId, subcatId, d) {
     var g, geneIds, k, o, _i, _len, _ref;
-    geneIds = d.categories[catId].subcategories[subcatId].gene_ids;
-    if (!((geneIds != null) && typeIsArray(geneIds))) {
-      throw new Error("Invalid category or subcategory ID: " + catId + " / " + subcatId + ".");
-    }
-    _ref = d.genes;
-    for (k in _ref) {
-      o = _ref[k];
-      o.visible = false;
+    geneIds = [];
+    if (catId === -1) {
+      geneIds = Object.keys(d.genes);
+    } else {
+      geneIds = d.categories[catId].subcategories[subcatId].gene_ids;
+      if (!((geneIds != null) && typeIsArray(geneIds))) {
+        throw new Error("Invalid category or subcategory ID: " + catId + " / " + subcatId + ".");
+      }
+      _ref = d.genes;
+      for (k in _ref) {
+        o = _ref[k];
+        o.visible = false;
+      }
     }
     for (_i = 0, _len = geneIds.length; _i < _len; _i++) {
       g = geneIds[_i];
@@ -235,8 +245,6 @@
     }
     return true;
   };
-
-  root.submitGeneQuery = function(formElem, vfData, amrData, viewController) {};
 
   root.capitaliseFirstLetter = function(str) {
     return str[0].toUpperCase() + str.slice(1);

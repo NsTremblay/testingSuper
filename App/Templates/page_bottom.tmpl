@@ -6,11 +6,18 @@
 </div>
 </div>
 </div>
-<TMPL_INCLUDE NAME="footer2.tmpl">
 <script>
-	$("#menu-toggle").click(function(e) {
+	$("#sidebar-expand").click(function(e) {
 		e.preventDefault();
 		$("#wrapper").toggleClass("active");
+		$(this).hide()
+		$("#sidebar-collapse").show()
+	});
+	$("#sidebar-collapse").click(function(e) {
+		e.preventDefault();
+		$("#wrapper").toggleClass("active");
+		$("#sidebar-expand").show()
+		$(this).hide()
 	});
 </script>
 		
