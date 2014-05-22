@@ -42,6 +42,7 @@ class ViewController
   views: []
   groups: []
   tickers: []
+  selectedBox: null 
   
   # Main action triggered by clicking on genome
   actionMode: false
@@ -61,6 +62,7 @@ class ViewController
     # Reset view and group lists
     @views = []
     @groups = []
+    @tickers = []
  
  
   createView: (viewType, elem, viewArgs...) ->
@@ -135,11 +137,10 @@ class ViewController
     gNum = @groups.length + 1
     
     if gNum > @maxGroups
-      console.log 'DIE'
       return false
     
     # New list view
-    grpView = new GroupView(boxEl, 'select', gNum)
+    grpView = new GroupView(boxEl, gNum)
     grpView.update(@genomeController)
     @groups.push grpView
     
@@ -149,22 +150,7 @@ class ViewController
       viewController.addToGroup(gNum)
       
     return true # return success
-  
-  select: (g, checked) ->
     
-    if @actionMode is 'single_select'
-      @redirect(g)
-      
-    else
-      @genomeController.select(g, checked)
-    
-      v.select(g, checked) for v in @views
- 
-    true
-    
-  redirect: (g) ->
-    alert('Genome '+g+' redirected!')
-    true
     
   addToGroup: (grp) ->
     # Get all currently selected genomes
@@ -183,6 +169,8 @@ class ViewController
     
     # Update views (class, checked, etc)
     v.update(@genomeController) for v in @views
+    @selectedBox.update(@genomeController) if @selectedBox?
+    
     
   createTicker: (tickerType, elem, tickerArgs...) ->
     
@@ -222,6 +210,7 @@ class ViewController
       @genomeController.select(g, checked)
     
       v.select(g, checked) for v in @views
+      @selectedBox.select(g, @genomeController, checked) if @selectedBox?
  
     true
     
@@ -311,6 +300,7 @@ class ViewController
     v.update(@genomeController) for v in @views
     v.update(@genomeController) for v in @groups
     t.update(@genomeController) for t in @tickers
+    @selectedBox.update(@genomeController) if @selectedBox?
     
     true
     
@@ -331,22 +321,55 @@ class ViewController
       file: file
     }
   
-  # FUNC metaForm
-  # Build and attach form used to alter genome meta-data displayed
+  # FUNC sideBar
+  # Build and attach sideBar
   #
   # PARAMS
-  # jQuery element object to pin form to
+  # jQuery element object to pin bar to
   # 
   # RETURNS
   # boolean 
   #      
-  metaForm: (elem) ->
+  sideBar: (elem) ->
+    
+    # Build & attach
+    parentTarget = 'sidebar-accordion'
+    wrapper = jQuery('<div class="panel-group" id="'+parentTarget+'"></div>')
+    elem.append(wrapper)
+      
+    # Meta-data form
+    form1 = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form1)
+    @metaForm(form1, parentTarget)
+    
+    
+    # Filter form
+    form2 = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form2)
+    @filterForm(form2, parentTarget)
+    
+    
+    # Group form
+    # form3 = jQuery('<div class="panel panel-default"></div>')
+    # @groupForm(form3, parentTarget)
+    # wrapper.append(form3)
+    
+   
+    true
+    
+    
+  metaForm: (elem, parentStr) ->
     
     # Build & attach form
     form = 
-    '<div id="meta-display">'+
-    '<h4><i class="fa fa-eye"></i> Meta-data</h4>'+
-    '<p>Change meta-data displayed:</p>'+
+    '<div class="panel-heading">'+
+    '<div class="panel-title">'+
+    '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#meta-form"><i class="fa fa-eye"></i> Meta-data '+
+    '<span class="caret"></span></a>'+
+    '</div></div>'+
+    '<div id="meta-form" class="panel-collapse collapse out">'+
+    '<div class="panel-body">'+
+    '<p>Select meta-data displayed:</p>'+
     '<form class="form-inline">'+
     '<fieldset>'+
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
@@ -360,13 +383,13 @@ class ViewController
     '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
     '</fieldset>'+
     '</form>'+
-    '</div>'
+    '</div></div>'
     
     elem.append(form)
     
     # Set response
     jQuery('input[name="meta-option"]').change ->
-      #alert(@.value, @.checked)
+      # alert(@.value, @.checked)
       viewController.updateViews(@.value, @.checked)
       
     true
@@ -440,15 +463,22 @@ class ViewController
   # RETURNS
   # boolean 
   #      
-  filterForm: (elem) ->
+  filterForm: (elem, parentStr) ->
     
-    # Title
-    elem.append('<h4><i class="fa fa-filter"></i> Filter</h4>')
+    # Header
+    header = jQuery('<div class="panel-heading">'+
+      '<div class="panel-title">'+
+      '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
+      '<span class="caret"></span></a>'+
+      '</div></div>'
+    ).appendTo(elem)
+      
+    container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>')
     
     # Add filter status bar
     numVisible = @genomeController.filtered
     filterStatus = jQuery('<div id="filter-status"></div>')
-    filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-info'>Filter active. #{numVisible} genomes visible.</div></div>")
+    filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-warning'>Filter active. #{numVisible} genomes visible.</div></div>")
     filterOff = jQuery('<div id="filter-off"></div>')
     
     delButton = jQuery('<button id="remove-filter" type="button" class="btn btn-sm">Clear</button>')
@@ -467,10 +497,10 @@ class ViewController
       
     filterStatus.append(filterOn)
     filterStatus.append(filterOff)
-    elem.append(filterStatus)
+    container.append(filterStatus)
     
     # Desc
-    elem.append('<p>Limit genomes displayed in views by:</p>')
+    container.append('<p>Limit genomes displayed in views by:</p>')
     
     # Add form selector
     filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>')
@@ -513,18 +543,18 @@ class ViewController
     selLab.prepend(selRadio)
     filtType.append(selLab)
     
-    elem.append(filtType)
+    container.append(filtType)
     
     # Build & attach simple fast form
     sf = jQuery("<div id='fast-filter'></div>")
     @addFastFilter(sf)
-    elem.append(sf)
+    container.append(sf)
     
     # Build & attach advanced form
     advForm = jQuery("<div id='adv-filter'></div>")
     @addAdvancedFilter(advForm)
     advForm.hide()
-    elem.append(advForm)
+    container.append(advForm)
     
     # Add filter by selection button
     fbs = jQuery("<div id='selection-filter'>"+
@@ -536,7 +566,9 @@ class ViewController
       viewController.filterViews('selection')
     fbs.append(filtButton)
     fbs.hide()
-    elem.append(fbs)
+    container.append(fbs)
+    
+    container.appendTo(elem)
     
     true
       
@@ -815,6 +847,72 @@ class ViewController
         searchTerms.unshift t
         
     searchTerms
+  
+  # FUNC createSelectionView
+  # Creates a unique view-type object that tracks currently selected
+  # genomes
+  #
+  # RETURNS
+  # boolean
+  # 
+  createSelectionView: (boxEl, countEl=null) ->
+    
+    # Existing selection window?
+    throw new SuperphyError 'Existing SelectionView. Cannot create multiple views of this type.' if @selectedBox?
+    
+    # New list view
+    selView = new SelectionView(boxEl, countEl)
+    selView.update(@genomeController)
+    @selectedBox = selView
+      
+    return true # return success
+    
+    
+  # FUNC submitGenomes
+  # To do a form submission, selected or grouped
+  # genomes are added as hidden parameters to a form
+  #
+  # USAGE submitGenomes jQuery_element string
+  # if paramType = 'selected'
+  #   all selected genomes will be added as genome=public_12344
+  # if paramType = 'grouped'
+  #   all grouped genomes will be added as group1=public_12344
+  # RETURNS
+  # boolean
+  # 
+  submitGenomes: (formEl, paramType='selected') ->
+    
+    if paramType is 'selected'
+      
+      gset = @genomeController.selected()
+      genomes = gset.public.concat gset.private
+      
+      for g in genomes
+        input = jQuery('<input></input>')
+        input.attr('type','hidden')
+        input.attr('name', 'genome')
+        input.val(g)
+        formEl.append(input)
+          
+    else if paramType is 'grouped'
+      
+      for k,v of @genomeController.public_genomes when v.assignedGroup?
+        input = jQuery('<input></input>')
+        input.attr('type', 'hidden')
+        input.attr('name', "group#{v.assignedGroup}")
+        input.val(g)
+        formEl.append(input)
+     
+      for k,v of @genomeController.private_genomes when v.assignedGroup?
+        input = jQuery('<input></input>')
+        input.attr('type', 'hidden')
+        input.attr('name', "group#{v.assignedGroup}")
+        input.val(g)
+        formEl.append(input)
+      
+    else
+      throw new SuperphyError "Unknown paramType parameter: #{paramType}"
+    
 
 # Return instance of a ViewController
 unless root.ViewController
@@ -1130,10 +1228,15 @@ class ListView extends ViewTemplate
  Will be updated by changes to the meta-display options but not by filtering.
 
 ###
-class GroupView extends ViewTemplate
-  type: 'group'
+class GroupView
+  constructor: (@parentElem, @elNum=1) ->
+    @elID = @elName + @elNum
   
-  elName: 'group'
+  
+  type: 'group'
+  elNum: 1
+  elName: 'genome_group'
+  elID: undefined
   
   # FUNC update
   # Update genome list view
@@ -1195,7 +1298,7 @@ class GroupView extends ViewTemplate
       
       # Create elements
       listEl = jQuery("<li class='#{cls}'>"+genomes[g].viewname+'</li>')
-      actionEl = jQuery("<a href='#' data-genome='#{g}' data-genome-group='#{@elNum}'> remove</a>")
+      actionEl = jQuery("<a href='#' data-genome='#{g}' data-genome-group='#{@elNum}'> <i class='fa fa-times'></a>")
       
       # Set behaviour
       actionEl.click (e) ->
@@ -1230,6 +1333,10 @@ class GroupView extends ViewTemplate
       
     true
     
+  cssClass: ->
+    # For each list element
+    @elName + '_item'
+    
 
 ###
  CLASS GenomeController
@@ -1260,6 +1367,9 @@ class GenomeController
     @update() # Initialize the viewname field
     @filter() # Initialize the visible genomes
     
+    # Track changes in the set of visible genomes through
+    # incremental ID
+    @genomeSetId = 0
     
   pubVisible: []
   
@@ -1291,6 +1401,8 @@ class GenomeController
   privateRegexp: new RegExp('^private_')
   
   filtered: 0
+  
+  
    
   # FUNC update
   # Update genome names displayed to user
@@ -1366,6 +1478,9 @@ class GenomeController
     
     @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
     @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
+    
+    # Changed the visible genomes, so views need to reset to default starting view
+    @genomeSetId++
     
     true
     
@@ -1446,8 +1561,7 @@ class GenomeController
     firstTerm = true
     
     for t in searchTerms
-      console.log(t)
-     
+      
       if firstTerm
         # Validate the first term just to do a quick check that input type is correct
         throw new SuperphyError("Invalid filter input. First search term object cannot contain an operator property 'op'.") if t.op?
@@ -1739,7 +1853,7 @@ class GenomeController
       return @public_genomes[gid]
     else
       return @private_genomes[gid]
-
+      
 
 ###
  CLASS LocusController
@@ -1930,6 +2044,196 @@ class LocusController
 # Return instance of a LocusController
 unless root.LocusController
   root.LocusController = LocusController
+  
+  
+###
+ CLASS SelectionView
+ 
+ A special type of genome list that is used to temporarily store the user's
+ selected genomes.
+ 
+ Only one 'style' which provides a remove button to remove group from group.
+ Will be updated by changes to the meta-display options but not by filtering.
+
+###
+class SelectionView
+  constructor: (@parentElem, @countElem=null, @elNum=1) ->
+    @elID = @elName + @elNum
+    @count = 0
+  
+  
+  type: 'selected'
+  elNum: 1
+  elName: 'selected_genomes'
+  elID: undefined
+  
+  
+  # FUNC update
+  # Update genome list view
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  update: (genomes) ->
+    
+    # create or find list element
+    listElem = jQuery("##{@elID}")
+    if listElem.length
+      listElem.empty()
+    else      
+      listElem = jQuery("<ul id='#{@elID}' class='selected-group-list'/>")
+      jQuery(@parentElem).append(listElem)
+   
+    # append selected genomes to list
+    ingrp = genomes.selected()
+    @_appendGenomes(listElem, ingrp.public, genomes.public_genomes)
+    @_appendGenomes(listElem, ingrp.private, genomes.private_genomes)
+    
+    @count = ingrp.public.length
+    @count += ingrp.private.length
+    @_updateCount()
+    
+          
+    true # return success
+  
+  _appendGenomes: (el, visibleG, genomes) ->
+    
+    # View class
+    cls = @cssClass()
+    
+    for g in visibleG
+      # Includes remove links
+      
+      # Create elements
+      listEl = jQuery("<li class='#{cls}'>"+genomes[g].viewname+'</li>')
+      actionEl = jQuery("<a href='#' data-genome='#{g}'> <i class='fa fa-times'></a>")
+      
+      # Set behaviour
+      actionEl.click (e) ->
+        e.preventDefault()
+        gid = @.dataset.genome
+        console.log('clicked unselect on '+gid)
+        viewController.select(gid, false)
+      
+      # Append to list
+      listEl.append(actionEl)
+      el.append(listEl)
+      
+    true
+    
+  # FUNC select
+  # Add/remove selected/unselected genomes
+  # to list
+  #
+  # PARAMS
+  # genomeID
+  # genomeController object
+  # boolean indicating if selected/unselected
+  #
+  # RETURNS
+  # boolean 
+  #      
+  select: (genomeID, genomes, checked) ->
+    
+    if checked
+      gset = genomes.genomeSet([genomeID])
+      @add(gset, genomes)
+    else
+      @remove(genomeID)
+      
+    true
+    
+  # FUNC add
+  # Add single genome to list view
+  # Should be faster than calling update (which will reinsert all genomes)
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  add: (genomeSet, genomes) ->
+    
+    # create or find list element
+    listElem = jQuery("##{@elID}")
+    if not listElem.length    
+      listElem = jQuery("<ul id='#{@elID}' class='selected-group-list'/>")
+      jQuery(@parentElem).append(listElem)
+    
+    if genomeSet.public?
+      @_appendGenomes(listElem, genomeSet.public, genomes.public_genomes)
+        
+    if genomeSet.private?
+      @_appendGenomes(listElem, genomeSet.private, genomes.private_genomes)
+      
+    @count += genomeSet.public.length
+    @count += genomeSet.private.length
+    @_updateCount()
+  
+  
+  # FUNC remove
+  # Remove single genome to list view
+  # Should be faster than calling update (which will reinsert all genomes)
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #        
+  remove: (gid) ->
+
+    # Retrieve list DOM element    
+    listEl = jQuery("##{@elID}")
+    throw new SuperphyError "DOM element for group view #{@elID} not found. Cannot call SelectionView method remove()." unless listEl? and listEl.length
+    
+    # Find genome DOM element
+    descriptor = "li > a[data-genome='#{gid}']"
+    linkEl = listEl.find(descriptor)
+    
+    unless linkEl? and linkEl.length
+      throw new SuperphyError "List item element for genome #{gid} not found in SelectionView"
+      return false
+      
+    # Remove list item element from selected list
+    linkEl.parent('li').remove()
+    
+    @count--
+    @_updateCount()
+      
+    true
+    
+  cssClass: ->
+    # For each list element
+    @elName + '_item'
+    
+  # FUNC _updateCount
+  # update the count element with the current # of selected
+  #
+  # PARAMS
+  # genome object set with public/private t
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  _updateCount: ->
+    
+    # Update count element
+    if @countElem?
+      # Stick in inner span
+      innerElem = @countElem.find('span.selected_genome_count_text')
+      unless innerElem.length
+        innerElem = jQuery("<span class='selected_genome_count_text'></span>").appendTo(@countElem)
+      
+      innerElem.text("#{@count} genomes selected")
+      
+    true 
+
+ 
 
 ###
 

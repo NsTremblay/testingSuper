@@ -15,6 +15,66 @@
  Date: March 27th, 2013
  
  * */
+/** Legend Link ***************************/
+.tree_legend_link {
+  margin-left: 30px;
+  margin-right: 30px;
+  width: 700px;
+  padding-top: 20px;
+  padding-bottom: 0;
+}
+.tree_legend_link a {
+  float: right;
+  font-size: 90%;
+}
+/** Top Div *******************************/
+.genomeTreeDivs {
+  margin-left: 30px;
+  margin-right: 30px;
+}
+.genomeTreeDivs svg {
+  display: block;
+  margin: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.genome_tree_item {
+  margin-left: 30px;
+  margin-right: 30px;
+  height: 800px;
+  width: 700px;
+  margin-top: 25px;
+  margin-bottom: 0px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+.genome_tree_item svg {
+  display: block;
+  margin: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+.genome_tree_legend {
+  margin-left: 30px;
+  margin-right: 30px;
+  height: 100px;
+  width: 700px;
+  margin-top: 5px;
+  margin-bottom: 30px;
+}
+.genome_tree_legend svg {
+  display: block;
+  margin: auto;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
 /** Text **********************************/
 /** Nodes *********************************/
 .treenode .treeicon {
@@ -24,12 +84,16 @@
 .treenode .treelabel {
   font: 12px sans-serif;
 }
+.treenode .slash {
+  font: italic normal 12px sans-serif;
+  fill: #737373;
+}
 .treenode circle {
   fill: #ffffff;
   stroke: #4682b4;
   stroke-width: 1.5px;
 }
-.treenode rect {
+.treenode rect.selectClade {
   fill: #ffffff;
   stroke: #ff0000;
   stroke-width: 1.5px;
@@ -37,50 +101,94 @@
 .selectedNode .treelabel {
   color: grey;
 }
+.focusNode .treelabel {
+  font: italic normal 12px sans-serif;
+}
+.focusNode circle {
+  fill: #ffc966;
+  stroke: #ffa500;
+  stroke-width: 3px;
+}
+.internalSNodePart rect.selectClade {
+  fill: #d7d7d7;
+}
+.internalSNodeFull rect.selectClade {
+  fill: #969696;
+}
+.groupedNode10 .treelabel {
+  font: italic normal 12px sans-serif;
+}
 .groupedNode10 circle {
   fill: #dadb37;
   stroke: #91921a;
   stroke-width: 3px;
+}
+.groupedNode9 .treelabel {
+  font: italic normal 12px sans-serif;
 }
 .groupedNode9 circle {
   fill: #31d7e8;
   stroke: #1294a1;
   stroke-width: 3px;
 }
+.groupedNode8 .treelabel {
+  font: italic normal 12px sans-serif;
+}
 .groupedNode8 circle {
   fill: #999999;
   stroke: #666666;
   stroke-width: 3px;
+}
+.groupedNode7 .treelabel {
+  font: italic normal 12px sans-serif;
 }
 .groupedNode7 circle {
   fill: #aa6d60;
   stroke: #6b4239;
   stroke-width: 3px;
 }
+.groupedNode6 .treelabel {
+  font: italic normal 12px sans-serif;
+}
 .groupedNode6 circle {
   fill: #eca1d5;
   stroke: #da4daf;
   stroke-width: 3px;
+}
+.groupedNode5 .treelabel {
+  font: italic normal 12px sans-serif;
 }
 .groupedNode5 circle {
   fill: #ad8bcc;
   stroke: #7b49a8;
   stroke-width: 3px;
 }
+.groupedNode4 .treelabel {
+  font: italic normal 12px sans-serif;
+}
 .groupedNode4 circle {
   fill: #df5152;
   stroke: #ab1f20;
   stroke-width: 3px;
+}
+.groupedNode3 .treelabel {
+  font: italic normal 12px sans-serif;
 }
 .groupedNode3 circle {
   fill: #37c837;
   stroke: #217821;
   stroke-width: 3px;
 }
+.groupedNode2 .treelabel {
+  font: italic normal 12px sans-serif;
+}
 .groupedNode2 circle {
   fill: #ff9a41;
   stroke: #da6600;
   stroke-width: 3px;
+}
+.groupedNode1 .treelabel {
+  font: italic normal 12px sans-serif;
 }
 .groupedNode1 circle {
   fill: #2b93db;
@@ -92,6 +200,18 @@
   fill: none;
   stroke: #ccc;
   stroke-width: 1.5px;
+}
+/** Dialog ********************************/
+.noTitleStuff .ui-dialog-titlebar {
+  display: none;
+}
+/** Legend ********************************/
+.legendlabel2 {
+  font: 12px sans-serif;
+  fill: #696969;
+}
+.legendlabel1 {
+  font: 12px sans-serif;
 }
 /*
  
@@ -265,51 +385,156 @@ li.genome_group1 input {
 }
 /*
  
- File: search_utilities.less
- Desc: Stylesheet for the meta-display and filter form
+ File: page_layout.less
+ Desc: Stylesheet for the meta-display and filter form, body and wrapper elements
  Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
  Date: March 28th, 2013
  
  * */
-/** Top Button ****************************/
-#utility-button {
-  font-size: 12pt;
-  padding: 10px;
+/** Body **********************************/
+body {
+  padding-top: 70px;
+  padding-bottom: 30px;
+}
+#wrapper {
+  padding-left: 300px;
+  transition: all 0.4s ease 0s;
+}
+#sidebar-wrapper {
+  margin-left: -300px;
+  left: 300px;
+  width: 300px;
+  background: #FFF;
+  position: fixed;
+  height: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: all 0.4s ease 0s;
+}
+#wrapper.active {
+  padding-left: 30px;
+  transition: all 0.4s ease 0s;
+}
+#wrapper.active #sidebar-wrapper {
+  left: 30px;
+  transition: all 0.4s ease 0s;
+}
+#page-content-wrapper {
+  width: 100%;
+}
+.content-header {
+  line-height: 65px;
+  padding-bottom: 30px;
+}
+.content-header h1 {
+  display: inline-block;
+  line-height: 65px;
+  margin: 0 0 0 20px;
+}
+.inset {
+  padding: 20px;
+}
+.navbar-toggle {
+  color: #d3d3d3;
+}
+@media (max-width: 768px) {
+  #wrapper {
+    padding-left: 30px;
+  }
+  #sidebar-wrapper {
+    left: 30px;
+  }
+  #wrapper.active {
+    position: relative;
+    left: 300px;
+  }
+  #wrapper.active #sidebar-wrapper {
+    left: 300px;
+    width: 300px;
+    transition: all 0.4s ease 0s;
+  }
+  #sidebar-expand {
+    display: inline-block;
+  }
+  #sidebar-collapse {
+    display: none;
+  }
+  .inset {
+    padding: 15px;
+  }
+  #footer {
+    display: none;
+  }
+}
+/** Side bar ******************************/
+.sidebar {
+  position: absolute;
+  top: 0;
+  width: 300px;
+  padding: 5px 5px 70px 5px;
+  border-right: 1px solid #d3d3d3;
+  min-height: 350px;
+}
+.sidebar #sidebar-expand-collapse {
+  position: absolute;
+  right: -2px;
+  top: 20px;
+}
+.sidebar #sidebar-expand-collapse button {
+  padding: 20px 2px 20px 2px;
+  border-radius: 0;
+}
+.sidebar #sidebar-expand-collapse #sidebar-expand {
+  display: none;
+}
+.sidebar #sidebar-expand-collapse #sidebar-collapse {
+  display: inline-block;
+}
+.sidebar #sidebar-accordion {
+  padding-bottom: 20px;
+  padding-right: 8px;
+}
+.sidebar #sidebar-accordion .panel {
+  margin: 5px;
+  box-shadow: none;
+  border-radius: 0;
+}
+.sidebar #sidebar-accordion .panel .panel-heading .panel-title {
+  color: #777;
 }
 /** Filter Status *************************/
-#filter-status div {
-  display: inline-block;
-  margin: 5px;
-  padding-left: 15px;
+#filter-status {
+  margin: 10px;
 }
 #filter-status button {
   display: inline-block;
   margin: 10px;
 }
+#filter-status #filter-on #filter-on-text {
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+/** TOC ***********************************/
+.toc {
+  margin-left: 50px;
+}
+.toc .toc-well {
+  display: inline-block;
+}
 /** Meta-Display **************************/
-#meta-display-form {
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
-  min-height: 200px;
-}
-#meta-display h4 {
+#meta-form > div p {
   padding-left: 10px;
-}
-#meta-display p {
-  padding-left: 20px;
-  padding-top: 5px;
+  padding-top: 0px;
   padding-bottom: 5px;
 }
-#meta-display div {
-  padding-bottom: 5px;
-  padding-left: 15px;
+#meta-form > div div {
+  padding-bottom: 0px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 /** Filter Form ***************************/
 #filter-form {
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
   min-height: 200px;
 }
 #filter-form h4 {
@@ -440,34 +665,34 @@ text.matrixActive {
 .groupedRow0 rect.matrixcell {
   fill: #000;
 }
-.groupedRow10 rect.matrixcell {
+.groupedRow10 g.matrixcell rect {
   fill: #91921a;
 }
-.groupedRow9 rect.matrixcell {
+.groupedRow9 g.matrixcell rect {
   fill: #1294a1;
 }
-.groupedRow8 rect.matrixcell {
+.groupedRow8 g.matrixcell rect {
   fill: #666666;
 }
-.groupedRow7 rect.matrixcell {
+.groupedRow7 g.matrixcell rect {
   fill: #6b4239;
 }
-.groupedRow6 rect.matrixcell {
+.groupedRow6 g.matrixcell rect {
   fill: #da4daf;
 }
-.groupedRow5 rect.matrixcell {
+.groupedRow5 g.matrixcell rect {
   fill: #7b49a8;
 }
-.groupedRow4 rect.matrixcell {
+.groupedRow4 g.matrixcell rect {
   fill: #ab1f20;
 }
-.groupedRow3 rect.matrixcell {
+.groupedRow3 g.matrixcell rect {
   fill: #217821;
 }
-.groupedRow2 rect.matrixcell {
+.groupedRow2 g.matrixcell rect {
   fill: #da6600;
 }
-.groupedRow1 rect.matrixcell {
+.groupedRow1 g.matrixcell rect {
   fill: #185a88;
 }
 /** Drop down *****************************/
@@ -573,15 +798,7 @@ div.matrixSort {
   border-width: 1px;
   border-color: #d3d3d3;
 }
-/** Styles ********************************/
-body {
-  padding-top: 70px;
-  padding-bottom: 70px;
-}
-.title {
-  margin: 10px;
-  padding: 10px;
-}
+/** Page Title ****************************/
 .titleText {
   font-weight: bold;
 }
@@ -592,10 +809,12 @@ body {
   font-weight: bold;
   color: #d41616;
 }
+/** General Font Classes ******************/
 .footnote {
   font-size: 80%;
   padding: 10px;
 }
+/** Download Links in Views ***************/
 .download-view {
   margin-left: auto;
   margin-right: 0;
@@ -610,6 +829,7 @@ body {
   padding-left: 40px;
   padding-right: 10px;
 }
+/** Locus styles **************************/
 .locus_group10 {
   color: #91921a;
 }
@@ -640,6 +860,7 @@ body {
 .locus_group1 {
   color: #185a88;
 }
+/** Group box styles **********************/
 .group-form-row {
   padding-top: 20px;
   padding-bottom: 10px;

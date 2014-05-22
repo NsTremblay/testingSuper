@@ -392,11 +392,10 @@ sub getVirulenceFormData {
     my $self = shift;
     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
 		{
-        	'type.name' => "virulence_factor"
+        	'type_id' => $self->cvmemory->{'virulence_factor'}
         },
         {
 			column  => [qw/feature_id type_id name uniquename/],
-            join        => ['type'],
             order_by    => { -asc => ['name'] }
         }
 	);
@@ -416,11 +415,10 @@ sub getAmrFormData {
     my $self = shift;
     my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
     	{
-			'type.name' => "antimicrobial_resistance_gene"
+			'type_id' => $self->cvmemory->{'antimicrobial_resistance_gene'}
         },
         {
 			column  => [qw/feature_id type_id name uniquename/],
-            join        => ['type'],
         	order_by    => { -asc => ['name'] }
 		}
 	);
@@ -1452,8 +1450,7 @@ getGeneAlleleData(%args)
 Inputs:
 hash containing key-value pairs:
  -markers [optional]  Array-ref of query gene feature ids 
- -warden              GenomeWarden object
- -cvmemory            Hashref of cvterm IDs                                
+ -warden              GenomeWarden object                         
 
 Returns:
 Hash containing key-value pairs:
@@ -1476,14 +1473,12 @@ sub getGeneAlleleData2 {
 	
 	# Params
 	get_logger->debug(%args);
-	my $cvmemory = $args{cvmemory};
-	croak "Error: must provide hash reference 'cvmemory' as an argument." unless $cvmemory && ref($cvmemory) eq 'HASH';
 	my $warden = $args{warden};
 	croak "Error: must provide GenomeWarden object 'warden' as an argument." unless $warden;
 	
 	# Get query genes
-	my $amr_type = $cvmemory->{'antimicrobial_resistance_gene'};
-	my $vf_type = $cvmemory->{'virulence_factor'};
+	my $amr_type = $self->cvmemory->{'antimicrobial_resistance_gene'};
+	my $vf_type = $self->cvmemory->{'virulence_factor'};
 	my %query_genes;
 	
 	my $select_stmt;
@@ -1529,8 +1524,8 @@ sub getGeneAlleleData2 {
 		# Retreive allele hits for each query gene (can be AMR/VF)
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $cvmemory->{'similar_to'},
-			'feature_relationship_subjects.type_id' => $cvmemory->{'part_of'},
+			'me.type_id' => $self->cvmemory->{'similar_to'},
+			'feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
 		};
 		
 		# Select only for specific AMR/VF genes
@@ -1581,8 +1576,8 @@ sub getGeneAlleleData2 {
 		# Retreive allele hits for each query gene (can be AMR/VF)
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $cvmemory->{'similar_to'},
-			'private_feature_relationship_subjects.type_id' => $cvmemory->{'part_of'},
+			'me.type_id' => $self->cvmemory->{'similar_to'},
+			'private_feature_relationship_subjects.type_id' => $self-cvmemory->{'part_of'},
 			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
 		};
 		
