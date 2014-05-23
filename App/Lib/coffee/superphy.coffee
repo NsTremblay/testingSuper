@@ -83,13 +83,20 @@ class ViewController
       listView = new ListView(elem, clickStyle, vNum, viewArgs)
       listView.update(@genomeController)
       @views.push listView
+
+    else if viewType is 'jump2list'
+      # New list view
+      listView = new ListView(elem, clickStyle, vNum, viewArgs)
+      listView.update(@genomeController)
+      @views.push listView
+      return
       
     else if viewType is 'tree'
       # New tree view
       treeView = new TreeView(elem, clickStyle, vNum, viewArgs)
       treeView.update(@genomeController)
       @views.push treeView
-      
+
     else if viewType is 'msa'
       # New multiple sequence alignment view
       msaView = new MsaView(elem, clickStyle, vNum, viewArgs)

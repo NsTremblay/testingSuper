@@ -100,11 +100,15 @@
         listView = new ListView(elem, clickStyle, vNum, viewArgs);
         listView.update(this.genomeController);
         this.views.push(listView);
+      } else if (viewType === 'jump2list') {
+        listView = new ListView(elem, clickStyle, vNum, viewArgs);
+        listView.update(this.genomeController);
+        this.views.push(listView);
+        return;
       } else if (viewType === 'tree') {
         treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
         treeView.update(this.genomeController);
         this.views.push(treeView);
-        return;
       } else if (viewType === 'msa') {
         msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
         msaView.update(this.genomeController);
@@ -4176,7 +4180,8 @@
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
-      MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+      this.mapArgs = mapArgs;
+      MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum, this.mapArgs);
     }
 
     MapView.prototype.type = 'map';
@@ -4301,11 +4306,20 @@
     MapView.prototype.dump = function(genomes) {};
 
     MapView.prototype.conscriptCartographger = function() {
-      this.cartographer = new SatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome);
-      return this.cartographer.cartograPhy();
+      var cartographerTypes, elem, _ref;
+      elem = this.parentElem;
+      this.mapArgs[0] = (_ref = this.mapArgs[0]) != null ? _ref : 'base';
+      cartographerTypes = {
+        'base': new Cartographer(jQuery(elem)),
+        'dot': new DotCartographer(jQuery(elem)),
+        'satellite': new SatelliteCartographer(jQuery(this.parentElem)),
+        'infoSatellite': new InfoSatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome)
+      };
+      this.cartographer = cartographerTypes[this.mapArgs[0]];
+      console.log(this.cartographer);
+      this.cartographer.cartograPhy();
+      return true;
     };
-
-    true;
 
     return MapView;
 

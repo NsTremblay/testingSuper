@@ -98,6 +98,11 @@ ViewController = (function() {
       listView = new ListView(elem, clickStyle, vNum, viewArgs);
       listView.update(this.genomeController);
       this.views.push(listView);
+    } else if (viewType === 'jump2list') {
+      listView = new ListView(elem, clickStyle, vNum, viewArgs);
+      listView.update(this.genomeController);
+      this.views.push(listView);
+      return;
     } else if (viewType === 'tree') {
       treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
       treeView.update(this.genomeController);

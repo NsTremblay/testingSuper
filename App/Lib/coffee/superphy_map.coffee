@@ -8,11 +8,11 @@
 ###
 
 class MapView extends ViewTemplate
-  constructor: (@parentElem, @style , @elNum, mapArgs) ->
+  constructor: (@parentElem, @style , @elNum, @mapArgs) ->
     #add map args to mapArgs list 
 
     # Call default constructor - creates unique element ID                  
-    super(@parentElem, @style, @elNum)
+    super(@parentElem, @style, @elNum, @mapArgs)
   
   type: 'map'
 
@@ -179,10 +179,18 @@ class MapView extends ViewTemplate
   # boolean
   #
   conscriptCartographger: () ->
-    # TODO: Change this to account for different map views
-    @cartographer = new SatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
+    elem = @parentElem
+    @mapArgs[0] = @mapArgs[0] ? 'base'
+    cartographerTypes = {
+      'base': new Cartographer(jQuery(elem))
+      'dot': new DotCartographer(jQuery(elem))
+      'satellite': new SatelliteCartographer(jQuery(@parentElem))
+      'infoSatellite': new InfoSatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
+    }
+    @cartographer = cartographerTypes[@mapArgs[0]];
+    console.log @cartographer
     @cartographer.cartograPhy()
-  true
+    true
 
 ###
   CLASS Cartographer

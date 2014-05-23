@@ -315,8 +315,8 @@ td.msaPosition {
 }
 .superphy-jump2-list {
   padding-bottom: 20px;
-  padding-left: 8px;
-  margin-left: 5px;
+  padding-right: 8px;
+  margin: 5px;
 }
 .superphy-jump2-list ul {
   list-style-type: none;
@@ -507,7 +507,6 @@ body {
   display: inline-block;
 }
 .sidebar #sidebar-accordion {
-  padding-bottom: 20px;
   padding-right: 8px;
 }
 .sidebar #sidebar-accordion .panel {
@@ -824,64 +823,6 @@ Date: May 20th, 2014
 .well {
   border-radius: 0px;
   border: none;
-}
-#wrapper.right-active {
-  padding-right: 30px;
-  transition: all 0.4s ease 0s;
-}
-#page-content-wrapper.right-inactive {
-  padding-right: 300px;
-}
-#wrapper.right-active #sidebar-right-wrapper {
-  right: 30px;
-  transition: all 0.4s ease 0s;
-}
-/****** Right panel for Info page ******/
-.sidebar-right {
-  position: absolute;
-  top: 0;
-  width: 300px;
-  padding: 5px 5px 0px 5px;
-  border-left: 1px solid #d3d3d3;
-  min-height: 350px;
-}
-#sidebar-right-wrapper {
-  margin-right: -300px;
-  right: 300px;
-  width: 300px;
-  background: #FFF;
-  position: fixed;
-  height: 100%;
-  overflow-y: auto;
-  z-index: 1000;
-  transition: all 0.4s ease 0s;
-}
-#sidebar-right-expand-collapse {
-  position: absolute;
-  left: -2px;
-  top: 20px;
-}
-#sidebar-right-expand-collapse button {
-  padding: 20px 2px 20px 2px;
-  border-radius: 0;
-}
-#sidebar-right-expand-collapse #sidebar-right-expand {
-  display: none;
-}
-#sidebar-right-expand-collapse #sidebar-right-collapse {
-  display: inline-block;
-}
-#sidebar-right-accordion {
-  padding-bottom: 20px;
-  padding-left: 8px;
-}
-#sidebar-right-accordion .panel {
-  margin: 5px;
-  box-shadow: none;
-  border-radius: 0;
-}
-#sidebar-right-accordion .panel .panel-heading .panel-title {
-  color: #777;
 }
 /** Colors ********************************/
 /** Mixins ********************************/

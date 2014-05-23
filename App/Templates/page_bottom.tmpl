@@ -20,20 +20,5 @@ $("#sidebar-collapse").click(function(e) {
 	$("#sidebar-expand").show();
 	$(this).hide();
 });
-//Right sidebar
-$("#sidebar-right-expand").click(function(e) {
-	e.preventDefault();
-	$("#wrapper").toggleClass("right-active");
-	$("#page-content-wrapper").toggleClass("right-inactive");
-	$(this).hide();
-	$("#sidebar-right-collapse").show();
-});
-$("#sidebar-right-collapse").click(function(e) {
-	e.preventDefault();
-	$("#wrapper").toggleClass("right-active");
-	$("#page-content-wrapper").toggleClass("right-inactive");
-	$("#sidebar-right-expand").show();
-	$(this).hide();
-});
 </script>
 
