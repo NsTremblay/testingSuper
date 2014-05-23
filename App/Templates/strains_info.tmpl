@@ -236,6 +236,12 @@ else if (selectedGenomeHasLocation.match(/public_/g)) {
 
 selectedGenomeHasLocation != "" ? viewController.createView('map', $('#strains-info-map')) : 0;
 
+//Sidebar actions
 viewController.sideBar($('#search-utilities'));
+viewController.sideBarRight($('#strains-list'));
+viewController.createView('list', $('#strains-list'));
+
+$('#sidebar-right-wrapper').show();
+$("#page-content-wrapper").toggleClass("right-inactive");
 
 </script>

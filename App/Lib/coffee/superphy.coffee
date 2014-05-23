@@ -73,20 +73,7 @@ class ViewController
     
     # Current view number
     vNum = @views.length + 1
-    
-    # Create download link
-    downloadElemDiv = jQuery("<div class='download-view'></div>")
-    downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
-    downloadElem.click (e) ->
-      viewNum = parseInt(@.dataset.genomeView)
-      data = viewController.downloadViews(viewNum)
-      @.href = data.href
-      @.download = data.file
-      true
-    
-    downloadElemDiv.append(downloadElem)
-    elem.append(downloadElemDiv)
-    
+        
     if @actionMode is 'single_select'
       # single_select behaviour: user clicks on single genome for more info
       clickStyle = 'redirect'
@@ -128,6 +115,20 @@ class ViewController
     else
       throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
       return false
+
+    # Create download link
+    # Will be created by default unless a return statement is specified in the conditional clauses
+    downloadElemDiv = jQuery("<div class='download-view'></div>")
+    downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
+    downloadElem.click (e) ->
+      viewNum = parseInt(@.dataset.genomeView)
+      data = viewController.downloadViews(viewNum)
+      @.href = data.href
+      @.download = data.file
+      true
+    
+    downloadElemDiv.append(downloadElem)
+    elem.prepend(downloadElemDiv)
       
     return true # return success
     
@@ -401,6 +402,10 @@ class ViewController
     # wrapper.append(form3)
     
    
+    true
+
+  sideBarRight: (elem) ->
+    #Build and attach
     true
     
     

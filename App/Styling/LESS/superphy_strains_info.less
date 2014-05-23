@@ -1,34 +1,111 @@
 /*
- 
- File: superphy_strains_info.less
- Desc: Superphy stylesheet for strains info page
- Author: Akiff Manji akiff.manji@gmail.com
- Date: May 20th, 2014
- 
- * */
+
+File: superphy_strains_info.less
+Desc: Superphy stylesheet for strains info page
+Author: Akiff Manji akiff.manji@gmail.com
+Date: May 20th, 2014
+
+* */
 
 .panel-group .panel {
-    border-radius: 0px  
+  border-radius: 0px  
 }
 
 .vf-panel-table {
-    border-width: 1px;
-    border-style: solid;
-    padding: 10px;
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px;
 }
 
 .amr-panel-table {
-    border-width: 1px;
-    border-style: solid;
-    padding: 10px;
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px;
 }
 
 .panel-div {
-    max-height: 500px;
-    overflow: auto;
+  max-height: 500px;
+  overflow: auto;
 }
 
 .well {
-    border-radius: 0px;
-    border: none;
+  border-radius: 0px;
+  border: none;
 }
+
+@sidebar-width: 300px;
+@collapsed-width: 30px;
+
+#wrapper.right-active {
+  padding-right: @collapsed-width;
+  transition: all 0.4s ease 0s;
+}
+
+#page-content-wrapper.right-inactive {
+    padding-right: @sidebar-width;
+  }
+
+#wrapper.right-active #sidebar-right-wrapper {
+  right: @collapsed-width;
+  transition: all 0.4s ease 0s;
+}
+
+/****** Right panel for Info page ******/
+
+.sidebar-right {
+  position: absolute;
+  top: 0;
+  width: @sidebar-width;
+  padding: 5px 5px 0px 5px;
+  border-left: 1px solid @border-color;
+  min-height: 350px;
+}
+
+#sidebar-right-wrapper {
+  margin-right: -@sidebar-width;
+  right: @sidebar-width;
+  width: @sidebar-width;
+  background: #FFF;
+  position: fixed;
+  height: 100%;
+  overflow-y: auto;
+  z-index: 1000;
+  transition: all 0.4s ease 0s;
+}
+
+#sidebar-right-expand-collapse {
+  position: absolute;
+  left: -2px;
+  top: 20px;
+    //padding-top: 50px;
+    
+    button {
+      padding: 20px 2px 20px 2px;
+      border-radius: 0;
+    }
+
+    #sidebar-right-expand {
+      display: none;
+    }
+
+    #sidebar-right-collapse {
+      display: inline-block;
+    }
+
+  }
+
+  #sidebar-right-accordion {
+    padding-bottom: 20px;
+    padding-left: 8px;
+    .panel {
+      margin: 5px;
+      box-shadow: none;
+      border-radius: 0;
+      .panel-heading {
+        .panel-title {
+          color: #777;
+        }
+      }
+    }
+  }
+

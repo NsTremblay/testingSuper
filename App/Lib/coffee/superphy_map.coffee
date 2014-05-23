@@ -180,12 +180,8 @@ class MapView extends ViewTemplate
   #
   conscriptCartographger: () ->
     # TODO: Change this to account for different map views
-    downloadView = jQuery(@parentElem).find('.download-view')
-    downloadView.remove()
     @cartographer = new SatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
     @cartographer.cartograPhy()
-    #Remove the download view for the results page
-    jQuery(@parentElem).prepend(downloadView)
   true
 
 ###

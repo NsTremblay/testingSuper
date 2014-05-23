@@ -93,18 +93,6 @@
       viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
-      downloadElemDiv = jQuery("<div class='download-view'></div>");
-      downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='" + vNum + "'>Download <i class='fa fa-download'></a>");
-      downloadElem.click(function(e) {
-        var data, viewNum;
-        viewNum = parseInt(this.dataset.genomeView);
-        data = viewController.downloadViews(viewNum);
-        this.href = data.href;
-        this.download = data.file;
-        return true;
-      });
-      downloadElemDiv.append(downloadElem);
-      elem.append(downloadElemDiv);
       if (this.actionMode === 'single_select') {
         clickStyle = 'redirect';
       }
@@ -116,6 +104,7 @@
         treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
         treeView.update(this.genomeController);
         this.views.push(treeView);
+        return;
       } else if (viewType === 'msa') {
         msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
         msaView.update(this.genomeController);
@@ -133,6 +122,18 @@
         throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
         return false;
       }
+      downloadElemDiv = jQuery("<div class='download-view'></div>");
+      downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='" + vNum + "'>Download <i class='fa fa-download'></a>");
+      downloadElem.click(function(e) {
+        var data, viewNum;
+        viewNum = parseInt(this.dataset.genomeView);
+        data = viewController.downloadViews(viewNum);
+        this.href = data.href;
+        this.download = data.file;
+        return true;
+      });
+      downloadElemDiv.append(downloadElem);
+      elem.prepend(downloadElemDiv);
       return true;
     };
 
@@ -347,6 +348,10 @@
       form2 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form2);
       this.filterForm(form2, parentTarget);
+      return true;
+    };
+
+    ViewController.prototype.sideBarRight = function(elem) {
       return true;
     };
 
@@ -4296,12 +4301,8 @@
     MapView.prototype.dump = function(genomes) {};
 
     MapView.prototype.conscriptCartographger = function() {
-      var downloadView;
-      downloadView = jQuery(this.parentElem).find('.download-view');
-      downloadView.remove();
       this.cartographer = new SatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome);
-      this.cartographer.cartograPhy();
-      return jQuery(this.parentElem).prepend(downloadView);
+      return this.cartographer.cartograPhy();
     };
 
     true;
