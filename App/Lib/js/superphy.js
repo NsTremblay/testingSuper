@@ -4193,7 +4193,7 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
+      var ft, i, mapElem, pubVis, pvtVis, selectedEl, selectedElParent, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
       mapElem = jQuery("#" + this.elID);
       if (mapElem.length) {
         mapElem.empty();
@@ -4225,6 +4225,18 @@
       t1 = new Date();
       this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
       this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
+      if ((window.selectedGenomeHasLocation != null) && window.selectedGenomeHasLocation !== "") {
+        selectedEl = jQuery('.map-manifest ul li a[data-genome=' + selectedGenomeHasLocation + ']');
+        selectedElParent = selectedEl.parent();
+        selectedElParent.remove();
+        jQuery('.map-manifest ul').prepend(selectedElParent);
+        selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>');
+        selectedElParent.css({
+          "font-weight": "bold",
+          "margin-bottom": "5px"
+        });
+        selectedEl.remove();
+      }
       t2 = new Date();
       ft = t2 - t1;
       console.log('MapView update elapsed time: ' + ft);
@@ -4303,7 +4315,29 @@
       return true;
     };
 
-    MapView.prototype.dump = function(genomes) {};
+    MapView.prototype.dump = function(genomes) {
+      var g, header, id, lineOut, output, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+      output = '';
+      header = ["Genome name", "Location"];
+      output += "#" + header.join("\t") + "\n";
+      _ref = genomes.public_genomes;
+      for (id in _ref) {
+        g = _ref[id];
+        lineOut = [g.displayname, (_ref1 = (_ref2 = g.isolation_location) != null ? _ref2[0] : void 0) != null ? _ref1 : "N/A"];
+        output += lineOut.join("\t") + "\n";
+      }
+      _ref3 = genomes.private_genomes;
+      for (id in _ref3) {
+        g = _ref3[id];
+        lineOut = [g.displayname, (_ref4 = (_ref5 = g.isolation_location) != null ? _ref5[0] : void 0) != null ? _ref4 : "N/A"];
+        output += lineOut.join("\t") + "\n";
+      }
+      return {
+        ext: 'csv',
+        type: 'text/plain',
+        data: output
+      };
+    };
 
     MapView.prototype.conscriptCartographger = function() {
       var cartographerTypes, elem, _ref;
@@ -4316,7 +4350,6 @@
         'infoSatellite': new InfoSatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome)
       };
       this.cartographer = cartographerTypes[this.mapArgs[0]];
-      console.log(this.cartographer);
       this.cartographer.cartograPhy();
       return true;
     };
@@ -4666,7 +4699,8 @@
     InfoSatelliteCartographer.prototype.cartograPhy = function() {
       InfoSatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
       this.selectedGenomeLocation = this.parseLocation(this.infoSelectedGenome);
-      return this.showSelectedGenome(this.selectedGenomeLocation, this.map);
+      this.showSelectedGenome(this.selectedGenomeLocation, this.map);
+      return this.showLegend();
     };
 
     InfoSatelliteCartographer.prototype.showSelectedGenome = function(location, map) {
@@ -4679,6 +4713,10 @@
       zInd = maxZndex + 1;
       markerLatLng = new google.maps.LatLng(location.centerLatLng);
       return overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName);
+    };
+
+    InfoSatelliteCartographer.prototype.showLegend = function() {
+      return jQuery('.map-search-table').append('<tr> <td> <div class="map-legend"> <div class="col-md-3"> <div class="row"> <div class="col-xs-3"> <img class="map-legend-marker-img" src="/App/Pictures/marker_icon_green.png"> </div> <div class="col-xs-9"> <p class="legendlabel1">Target genome</p> </div> </div> </div> </div> </td> </tr>');
     };
 
     return InfoSatelliteCartographer;

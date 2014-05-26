@@ -61,6 +61,18 @@ class MapView extends ViewTemplate
     t1 = new Date()
     @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)
     @_appendGenomes(mapElem, pvtVis, genomes.private_genomes, @style, true)
+
+    # For /strains/info page:
+    # If genome is a selected genome add an additional css class to higlight and append to the top of map-manifest list
+    if window.selectedGenomeHasLocation? and window.selectedGenomeHasLocation != ""
+      selectedEl = jQuery('.map-manifest ul li a[data-genome='+selectedGenomeHasLocation+']')
+      selectedElParent = selectedEl.parent()
+      selectedElParent.remove()
+      jQuery('.map-manifest ul').prepend(selectedElParent)
+      selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>')
+      selectedElParent.css({"font-weight":"bold", "margin-bottom":"5px"})
+      selectedEl.remove()
+
     t2 = new Date()
     ft = t2-t1
 
@@ -165,9 +177,40 @@ class MapView extends ViewTemplate
 
     true # success
 
+  # FUNC dump
+  # Generate CSV tab-delimited representation of all genomes with locations
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # object containing:
+  #   ext[string] - a suitable file extension (e.g. csv)
+  #   type[string] - a MIME type
+  #   data[string] - a string containing data in final format
+  #   
   dump: (genomes) -> 
-    #TODO: Download the set of genomes and their coordinates into a table
-    return
+    output = ''
+    # Output header
+    header = ["Genome name","Location"]
+    output += "#" + header.join("\t") + "\n"
+    
+    # Output public set
+    for id,g of genomes.public_genomes
+      lineOut = [g.displayname, g.isolation_location?[0] ? "N/A"]
+      output += lineOut.join("\t") + "\n"
+
+    # Output private set
+    for id,g of genomes.private_genomes
+      lineOut = [g.displayname, g.isolation_location?[0] ? "N/A"]
+      output += lineOut.join("\t") + "\n"
+    
+    return {
+      ext: 'csv'
+      type: 'text/plain'
+      data: output
+    }
+    #return
 
   # FUNC conscriptCartographer
   # creates a new cartographer object
@@ -188,7 +231,6 @@ class MapView extends ViewTemplate
       'infoSatellite': new InfoSatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
     }
     @cartographer = cartographerTypes[@mapArgs[0]];
-    console.log @cartographer
     @cartographer.cartograPhy()
     true
 
@@ -643,6 +685,7 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     super
     @selectedGenomeLocation = @parseLocation(@infoSelectedGenome)
     @showSelectedGenome(@selectedGenomeLocation ,@map)
+    @showLegend()
 
   showSelectedGenome: (location, map) ->
     unless location?
@@ -653,6 +696,26 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     zInd = maxZndex + 1
     markerLatLng = new google.maps.LatLng(location.centerLatLng)
     overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName)
+
+  showLegend: ()  ->
+    jQuery('.map-search-table').append('
+      <tr>
+      <td>
+      <div class="map-legend">
+        <div class="col-md-3">
+          <div class="row">
+            <div class="col-xs-3">
+              <img class="map-legend-marker-img" src="/App/Pictures/marker_icon_green.png">
+            </div>
+            <div class="col-xs-9">
+             <p class="legendlabel1">Target genome</p>
+            </div>          
+          </div>
+        </div>
+      </div>
+      </td>
+      </tr>
+      ')
 
 class CartographerOverlay
   constructor: (@map, @latLng, @title) ->
