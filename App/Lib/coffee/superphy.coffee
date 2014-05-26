@@ -262,7 +262,14 @@ class ViewController
     )
 
     buttonSubmitEl.click(() ->
-      modalView.find('.modal-body').append('<div class="alert alert-success">Retrieving genome, please dont hit the ESC key</div>')
+      modalView.find('.modal-body').append('
+        <div class="alert alert-success">
+          <p style="text-align:center">Retrieving genome</p>
+          <div class="loader">
+            <span></span>
+          </div>
+        </div>
+          ')
       )
 
     modalView.find('.modal-footer').append(buttonCloseEl);

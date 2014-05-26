@@ -795,6 +795,283 @@ div.matrixSort {
 .modal-footer > button {
   border-radius: 0px;
 }
+.loader {
+  background: white;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  margin-left: -20px;
+  margin-top: 5px;
+  width: 40px;
+  border: 2px solid #dff0d8;
+  border-radius: 3px;
+  padding: 1px;
+  -webkit-animation: loader-border 2s ease-in infinite;
+  -o-animation: loader-border 2s ease-in infinite;
+  -ms-animation: loader-border 2s ease-in infinite;
+  animation: loader-border 2s ease-in infinite;
+}
+.loader > span {
+  display: block;
+  width: 0;
+  height: 4px;
+  background: #dff0d8;
+  position: relative;
+  -webkit-animation: loader-slide 1s ease-in infinite;
+  -o-animation: loader-slide 1s ease-in infinite;
+  -ms-animation: loader-slide 1s ease-in infinite;
+  animation: loader-slide 1s ease-in infinite;
+}
+@-webkit-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-moz-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-ms-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-o-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+.loader-border 0% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-border 50% {
+  border-color: #dff0d8;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-border 100% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+@-webkit-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-moz-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-ms-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-o-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
 /*
 
 File: superphy_strains_info.less

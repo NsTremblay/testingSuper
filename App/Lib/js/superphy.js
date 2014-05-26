@@ -223,7 +223,7 @@
       buttonCloseEl = jQuery('<button type="button" class="btn btn-danger" data-dismiss="modal" form="view-redirect-form" value="Cancel">Cancel</button>');
       buttonSubmitEl = jQuery('<button type="submit" id="view-redirect-submit" class="btn btn-success" value="Submit" form="view-redirect-form" formmethod="post" formaction="' + viewController.action + '"> Submit </button>');
       buttonSubmitEl.click(function() {
-        return modalView.find('.modal-body').append('<div class="alert alert-success">Retrieving genome, please dont hit the ESC key</div>');
+        return modalView.find('.modal-body').append('<div class="alert alert-success"> <p style="text-align:center">Retrieving genome</p> <div class="loader"> <span></span> </div> </div>');
       });
       modalView.find('.modal-footer').append(buttonCloseEl);
       modalView.find('.modal-footer').append(buttonSubmitEl);
