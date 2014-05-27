@@ -35,6 +35,7 @@ use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
 use Modules::TreeManipulator;
+use Modules::LocationManager;
 use IO::File;
 use JSON;
 
@@ -89,6 +90,10 @@ sub info : Runmode {
 	
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
+	
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
 	
 	my $username = $self->authen->username;
 	
@@ -162,8 +167,8 @@ sub info : Runmode {
 
 		$template->param(AMRDATA=>\@amrData);
 
-		# Get loacation data for map
-		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
+		# Get location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
@@ -243,7 +248,8 @@ sub info : Runmode {
 
 		$template->param(AMRDATA=>\@amrData);
 
-		my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
+		# Get private location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
 	} else {
@@ -464,27 +470,6 @@ sub _getAmrData {
 	return \@amrData;
 }
 =cut
-
-sub _getStrainLocation {
-	my $self = shift;
-	my $strainID = shift;
-	my $tableName = shift;
-	my $locationFeatureProps = $self->dbixSchema->resultset($tableName)->search(
-		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
-		{
-			column  => [qw/me.feature_id me.value type.name/],
-			join        => ['type']
-		}
-		);
-	my %strainLocation;
-	$strainLocation{'presence'} = 0;
-	while (my $location = $locationFeatureProps->next) {
-		$strainLocation{'presence'} = 1;
-		my $locValue = $location->value;
-		$strainLocation{'location'} = $locValue;
-	}
-	return \%strainLocation;
-}
 
 sub test : Runmode {
 	my $self = shift;
