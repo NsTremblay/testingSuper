@@ -1016,116 +1016,7 @@ sub verifyMultipleAccess {
 
 =head2 seqAlignment
 
-SOON TO BE OBSOLETE
-Replaced by seqAlignment2
-
-seqAlignent(feature_id, visable_hash)
-
-Inputs:
- -feature_id       A query gene feature_id. 
-                    Must be 'query_gene' type.
- -visable_hash     Hash containing
-	                 public_/private_feature_ids => uniquename
-	                                
-MAKE SURE THE USER CAN ACCESS THESE GENOMES
-DO NOT RELEASE PRIVATE SEQUENCES!	                                
-
-Returns: 
-  a JSON string representing a multiple
-  sequence alignment of gene alleles.
-
-=cut
-
-sub seqAlignment {
-	my ($self, $locus, $visable) = @_;
-	
-	my @private_ids = map m/private_(\d+)/ ? $1 : (), keys %$visable;
-	my @public_ids = map m/public_(\d+)/ ? $1 : (), keys %$visable;
-	
-	my %alignment;
-	
-	if(@private_ids) {
-		my $feature_rs = $self->dbixSchema->resultset('PrivateFeature')->search(
-			{
-				'private_feature_relationship_subjects.object_id' => $locus,
-				'type.name' => 'similar_to', 
-				'private_feature_relationship_subjects_2.object_id' => { '-in' => \@private_ids },
-				'type_2.name' => 'part_of'
-			},
-			{
-				join => [
-					{ 'private_feature_relationship_subjects' => 'type' },
-					{ 'private_feature_relationship_subjects' => 'type' }
-				],
-				'+select' => ['private_feature_relationship_subjects_2.object_id'],
-				'+as' => 'collection_id'
-			}
-		);
-		
-		while(my $feature = $feature_rs->next) {
-			$alignment{$visable->{'private_'.$feature->get_column('collection_id')}} = $feature->residues;
-		}
-	}
-	
-	if(@public_ids) {
-		my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
-			{
-				'feature_relationship_subjects.object_id' => $locus,
-				'type.name' => 'similar_to', 
-				'feature_relationship_subjects_2.object_id' => { '-in' => \@public_ids },
-				'type_2.name' => 'part_of'
-			},
-			{
-				join => [
-					{ 'feature_relationship_subjects' => 'type' },
-					{ 'feature_relationship_subjects' => 'type' }
-				],
-				'+select' => ['feature_relationship_subjects_2.object_id'],
-				'+as' => 'collection_id'
-			}
-		);
-		
-		while(my $feature = $feature_rs->next) {
-			$alignment{$visable->{'public_'.$feature->get_column('collection_id')}} = $feature->residues;
-		}
-	}
-	
-	my @sequences = values(%alignment);
-	return 0 unless @sequences > 1 && @sequences < 21;
-	
-	# Compute conservation line
-	
-	my $len = length($sequences[0]);
-	map { croak "Error: sequence alignment lengths are not equal." unless length($_) == $len } @sequences[1..$#sequences];
-	
-	my $cons;
-	for(my $i = 0; $i < $len; $i++) {
-		my $m = 1;
-		my $symbol = substr($sequences[0], $i, 1);
-		
-		foreach my $s (@sequences[1..$#sequences]) {
-			if($symbol ne substr($s,$i,1)) {
-				# mismatch
-				$cons .= ' ';
-				$m = 0;
-				last;
-			}
-			
-		}
-		
-		# match
-		$cons .= '*' if $m;
-	}
-	
-	$alignment{conservation_line} = $cons;
-	
-	return encode_json(\%alignment);
-	
-}
-
-=head2 seqAlignment2
-
-seqAlignent2(hash)
+seqAlignent(hash)
 
 Input:
 Hash with keys:
@@ -1140,7 +1031,7 @@ Returns:
 
 =cut
 
-sub seqAlignment2 {
+sub seqAlignment {
 	my ($self, %args) = @_;
 	
 	my $locus   = $args{locus};
@@ -1276,174 +1167,9 @@ sub seqAlignment2 {
 }
 
 
+
+
 =head2 getGeneAlleleData
-
-getGeneAlleleData(%args)
-
-Inputs:
-hash containing possible key -value pairs:
- -markers          Array-ref of query gene feature ids    
- -public_genomes   Array-ref of genome feature ids OR a string 'all' to retrieve all genomes
- -private_genoems  Array-ref of genome private_feature ids
-	                                
-MAKE SURE THE USER CAN ACCESS THESE GENOMES
-DO NOT RELEASE PRIVATE SEQUENCES!	                                
-
-Returns:
-Hash containing key - value pairs:
-  name - hash mapping query gene feature ids to names
-  amr  - hash mapping allele feature ids to genome ids and query gene ids
-         for AMR genes   
-  vf   - hash mapping allele feature ids to genome ids and query gene ids
-         for virulence factors  
-=cut
-
-sub getGeneAlleleData {
-	my $self = shift;
-	my (%args) = @_;
-	
-	get_logger->debug(%args);
-
-	# A subset of genomes must be defined
-	my $public_genomes = $args{public_genomes};
-	my $private_genomes = $args{private_genomes};
-	
-	unless(($public_genomes && (ref($public_genomes) eq 'ARRAY' || $public_genomes eq 'all')) || ($private_genomes && ref($private_genomes) eq 'ARRAY')) {
-		croak "Error: must provide array reference 'public_genomes' or 'private_genomes' as an argument."
-	}
-	
-	# Grab some type IDs
-	# Probably should have this hard-coded somewhere
-	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
-		{
-			name => [qw(similar_to part_of antimicrobial_resistance_gene virulence_factor allele)]
-		},
-		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			columns => [qw/cvterm_id name/]
-	    }
-	);
-	my %types;
-	while (my $hashref = $type_rs->next) {
-		$types{$hashref->{'name'}} = $hashref->{'cvterm_id'}
-	}
-	my $amr_type = $types{'antimicrobial_resistance_gene'};
-	my $vf_type = $types{'virulence_factor'};
-	
-	my %amr_alleles;
-	my %vf_alleles;
-	my %gene_names;
-	
-	if($public_genomes) {
-		
-		# Retreive allele hits for each query gene (can be AMR/VF)
-		# for selected public genomes
-		my $select_stmt = {
-			'me.type_id' => $types{'similar_to'},
-			'feature_relationship_subjects.type_id' => $types{'part_of'},
-		};
-		
-		# Select only for specific AMR/VF genes
-		if($args{markers}) {
-			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
-			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
-		}
-		# Subset of public genomes
-		if(ref($public_genomes)) {
-			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
-		}
-		
-		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
-			$select_stmt,
-			{
-				prefetch => [
-					{'subject' => 'feature_relationship_subjects'},
-					'object'
-				]
-			}
-		);
-		
-		# Hash results
-		while(my $allele_row = $allelehits_rs->next) {
-			
-			my $type_id = $allele_row->object->type_id;
-			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
-			my $allele_id = $allele_row->subject_id;
-			my $gene_id = $allele_row->object_id;
-			my $gene_name = $allele_row->object->uniquename;
-			
-			$gene_names{$gene_id} = $gene_name;
-			
-			if($type_id == $vf_type) {
-				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
-				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} if($type_id == $amr_type) {
-				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
-				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} else {
-				get_logger->warn("Unrecognized allele type ID $type_id.\n");
-			}
-		}
-	}
-	
-	if($private_genomes) {
-		
-		# Retreive allele hits for each query gene (can be AMR/VF)
-		# for selected public genomes
-		my $select_stmt = {
-			'me.type_id' => $types{'similar_to'},
-			'private_feature_relationship_subjects.type_id' => $types{'part_of'},
-			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
-		};
-		
-		# Select only for specific AMR/VF genes
-		if($args{markers}) {
-			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
-			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
-		}
-		
-		my $allelehits_rs = $self->dbixSchema->resultset('PripubFeatureRelationship')->search(
-			$select_stmt,
-			{
-				prefetch => [
-					{'subject' => 'private_feature_relationship_subjects'},
-					'object'
-				]
-			}
-		);
-		
-		# Hash results
-		while(my $allele_row = $allelehits_rs->next) {
-			
-			my $type_id = $allele_row->object->type_id;
-			my $genome_label = 'private_'.$allele_row->subject->private_feature_relationship_subjects->first->object_id;
-			my $allele_id = $allele_row->subject_id;
-			my $gene_id = $allele_row->object_id;
-			my $gene_name = $allele_row->object->uniquename;
-			
-			$gene_names{$gene_id} = $gene_name;
-			
-			if($type_id == $vf_type) {
-				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
-				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} if($type_id == $amr_type) {
-				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
-				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} else {
-				get_logger->warn("Unrecognized allele type ID $type_id.\n");
-			}
-		}
-		
-	}
-	
-	return({names => \%gene_names, amr => \%amr_alleles, vf => \%vf_alleles});
-}
-
-=head2 getGeneAlleleData2
 
 getGeneAlleleData(%args)
 
@@ -1459,15 +1185,10 @@ Hash containing key-value pairs:
          for AMR genes   
   vf   - hash mapping allele feature ids to genome ids and query gene ids
          for virulence factors
-         
-	
-	-- NEW VERSION --
-	
-!!drop getGeneAlleleData when old code is fased out!!
 
 =cut
 
-sub getGeneAlleleData2 {
+sub getGeneAlleleData {
 	my $self = shift;
 	my (%args) = @_;
 	
@@ -1517,7 +1238,7 @@ sub getGeneAlleleData2 {
 	my ($public_genomes, $private_genomes) = $warden->featureList();
 	my %alleles;
 	
-	$self->dbixSchema->storage->debug(1);
+	#$self->dbixSchema->storage->debug(1);
 	
 	if($warden->numPublic) {
 		
@@ -1577,7 +1298,7 @@ sub getGeneAlleleData2 {
 		# for selected public genomes
 		my $select_stmt = {
 			'me.type_id' => $self->cvmemory->{'similar_to'},
-			'private_feature_relationship_subjects.type_id' => $self-cvmemory->{'part_of'},
+			'private_feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
 			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
 		};
 		
@@ -1620,7 +1341,7 @@ Inputs:
 hash containing possible key -value pairs:
  -markers          Array-ref of typing sequence feature ids    
  -public_genomes   Array-ref of genome feature ids OR a string 'all' to retrieve all genomes
- -private_genoems  Array-ref of genome private_feature ids
+ -private_genomes  Array-ref of genome private_feature ids
 	                                
 MAKE SURE THE USER CAN ACCESS THESE GENOMES
 DO NOT RELEASE PRIVATE SEQUENCES!	                                

@@ -24,7 +24,7 @@ root.numAmrSelected = 0
 # RETURNS
 # Object containing jQuery DOM elements and data object array
 #    
-root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem) ->
+root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem, multi_select=true) ->
   
   throw new Error("Invalid geneType parameter: #{geneType}.") unless geneType is 'vf' or geneType is 'amr'
   
@@ -44,6 +44,7 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
       category: catElem
       autocomplete: autocElem
     }
+    multi_select: multi_select
   }
     
 
@@ -52,7 +53,7 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
 # genes where object.visible = true
 #
 # USAGE appendGeneList data_object
-# 
+#
 # RETURNS
 # boolean
 #    
@@ -64,8 +65,15 @@ root.appendGeneList = (d) ->
   for k,o of d.genes
     if o.visible
       id = "#{d.type}-gene-#{k}"
-      item = jQuery("<li><label class='checkbox'><input id='#{id}' class='checkbox' type='checkbox' name='#{name}' value='#{k}'/>#{o.name} - #{o.uniquename}</label></li>")
-      item.prop('checked', true) if o.selected
+      item
+      link = "<a href='/genes/info?#{d.type}=#{k}'><i class='fa fa-search'></i></a>"
+      if d.multi_select
+        item = jQuery("<li><label class='checkbox'><input id='#{id}' class='checkbox' type='checkbox' name='#{name}' value='#{k}'/>#{o.name} - #{o.uniquename} #{link}</label></li>")
+        item.prop('checked', true) if o.selected
+        
+      else
+         item = jQuery("<li>#{o.name} - #{o.uniquename} #{link}</li>")
+      
       list.append(item)
       
   cboxes = list.find("input[name='#{name}']")
@@ -139,10 +147,11 @@ root.matching = (gList, searchTerm) ->
 root.appendCategories = (d) ->
   
   categoryE = d.element.category
-  categoryE.append('<span>Select category to refine list of virulence factors to genes of specific function / type:</span>')
+  introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE)
+  introDiv.append('<span>Select category to refine list of genes:</span>')
  
-  resetDiv = jQuery('<div class="genes-search-reset-categories"></div>').appendTo(categoryE)
-  resetButt = jQuery("<button id='#{d.type}-reset-category' class='btn btn-link'>Reset</button>").appendTo(resetDiv)
+  
+  resetButt = jQuery("<button id='#{d.type}-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv)
   resetButt.click( (e) ->
     e.preventDefault()
     filterByCategory(-1,-1,d)
@@ -246,7 +255,6 @@ root.selectGene = (geneIds, checked, d) ->
     
   else
     removeSelectedGenes(geneIds, d)
-      
     
   true
 
@@ -321,6 +329,30 @@ root.removeSelectedGenes = (geneIds, d) ->
     
   true
   
+# FUNC selectAllGenes
+# Select all visible genes
+#
+# USAGE selectAllGenes boolean, d
+#
+# if checked==true, 
+#   select all visible genes
+# if checked==false,
+#   unselect all genes 
+#
+# RETURNS
+# boolean
+#    
+root.selectAllGenes = (checked, d) ->
+  
+  if checked
+    visible = (k for k,g of d.genes when g.visible && !g.selected)
+    selectGene(visible, true, d)
+  else
+    all = (k for k,g of d.genes when g.selected)
+    selectGene(all, false, d)
+  
+  true
+  
 # FUNC submitGeneQuery
 # Submit by dynamically building form with hidden
 # input params
@@ -331,6 +363,33 @@ root.removeSelectedGenes = (geneIds, d) ->
 # boolean
 #    
 root.submitGeneQuery = (vfData, amrData, viewController) ->
+  
+  form = jQuery('<form></form')
+  form.attr('method', 'POST')
+  form.attr('action', viewController.action)
+  
+  # Append genome params
+  viewController.submitGenomes(form, 'selected')
+  
+  # Append VF genes
+  for k,g of vfData.genes when g.selected
+    input = jQuery('<input></input>')
+    input.attr('type','hidden')
+    input.attr('name', 'gene')
+    input.val(k)
+    form.append(input)
+      
+  for k,g of amrData.genes when g.selected
+    input = jQuery('<input></input>')
+    input.attr('type','hidden')
+    input.attr('name', 'gene')
+    input.val(k)
+    form.append(input)
+      
+  jQuery('body').append(form)
+  form.submit()
+      
+  true
   
   
 # FUNC capitaliseFirstLetter

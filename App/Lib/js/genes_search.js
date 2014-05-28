@@ -18,8 +18,11 @@
 
   root.numAmrSelected = 0;
 
-  root.initGeneList = function(gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem) {
+  root.initGeneList = function(gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem, multi_select) {
     var dObj, k, o;
+    if (multi_select == null) {
+      multi_select = true;
+    }
     if (!(geneType === 'vf' || geneType === 'amr')) {
       throw new Error("Invalid geneType parameter: " + geneType + ".");
     }
@@ -39,12 +42,13 @@
         count: countElem,
         category: catElem,
         autocomplete: autocElem
-      }
+      },
+      multi_select: multi_select
     };
   };
 
   root.appendGeneList = function(d) {
-    var cboxes, id, item, k, list, name, o, _ref;
+    var cboxes, id, item, k, link, list, name, o, _ref;
     list = d.element.list;
     name = "" + d.type + "-gene";
     _ref = d.genes;
@@ -52,9 +56,15 @@
       o = _ref[k];
       if (o.visible) {
         id = "" + d.type + "-gene-" + k;
-        item = jQuery("<li><label class='checkbox'><input id='" + id + "' class='checkbox' type='checkbox' name='" + name + "' value='" + k + "'/>" + o.name + " - " + o.uniquename + "</label></li>");
-        if (o.selected) {
-          item.prop('checked', true);
+        item;
+        link = "<a href='/genes/info?" + d.type + "=" + k + "'><i class='fa fa-search'></i></a>";
+        if (d.multi_select) {
+          item = jQuery("<li><label class='checkbox'><input id='" + id + "' class='checkbox' type='checkbox' name='" + name + "' value='" + k + "'/>" + o.name + " - " + o.uniquename + " " + link + "</label></li>");
+          if (o.selected) {
+            item.prop('checked', true);
+          }
+        } else {
+          item = jQuery("<li>" + o.name + " - " + o.uniquename + " " + link + "</li>");
         }
         list.append(item);
       }
@@ -96,11 +106,11 @@
   };
 
   root.appendCategories = function(d) {
-    var cTitle, categoryE, col2, def, id, k, moreInfo, moreInfoId, name, o, resetButt, resetDiv, row1, row2, s, sel, t, titleDiv, _ref, _ref1;
+    var cTitle, categoryE, col2, def, id, introDiv, k, moreInfo, moreInfoId, name, o, resetButt, row1, row2, s, sel, t, titleDiv, _ref, _ref1;
     categoryE = d.element.category;
-    categoryE.append('<span>Select category to refine list of virulence factors to genes of specific function / type:</span>');
-    resetDiv = jQuery('<div class="genes-search-reset-categories"></div>').appendTo(categoryE);
-    resetButt = jQuery("<button id='" + d.type + "-reset-category' class='btn btn-link'>Reset</button>").appendTo(resetDiv);
+    introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE);
+    introDiv.append('<span>Select category to refine list of genes:</span>');
+    resetButt = jQuery("<button id='" + d.type + "-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv);
     resetButt.click(function(e) {
       e.preventDefault();
       return filterByCategory(-1, -1, d);
@@ -243,6 +253,75 @@
       listEl = d.element.select.find("li > a[data-gene='" + g + "']");
       listEl.parent().remove();
     }
+    return true;
+  };
+
+  root.selectAllGenes = function(checked, d) {
+    var all, g, k, visible;
+    if (checked) {
+      visible = (function() {
+        var _ref, _results;
+        _ref = d.genes;
+        _results = [];
+        for (k in _ref) {
+          g = _ref[k];
+          if (g.visible && !g.selected) {
+            _results.push(k);
+          }
+        }
+        return _results;
+      })();
+      selectGene(visible, true, d);
+    } else {
+      all = (function() {
+        var _ref, _results;
+        _ref = d.genes;
+        _results = [];
+        for (k in _ref) {
+          g = _ref[k];
+          if (g.selected) {
+            _results.push(k);
+          }
+        }
+        return _results;
+      })();
+      selectGene(all, false, d);
+    }
+    return true;
+  };
+
+  root.submitGeneQuery = function(vfData, amrData, viewController) {
+    var form, g, input, k, _ref, _ref1;
+    form = jQuery('<form></form');
+    form.attr('method', 'POST');
+    form.attr('action', viewController.action);
+    viewController.submitGenomes(form, 'selected');
+    _ref = vfData.genes;
+    for (k in _ref) {
+      g = _ref[k];
+      if (!g.selected) {
+        continue;
+      }
+      input = jQuery('<input></input>');
+      input.attr('type', 'hidden');
+      input.attr('name', 'gene');
+      input.val(k);
+      form.append(input);
+    }
+    _ref1 = amrData.genes;
+    for (k in _ref1) {
+      g = _ref1[k];
+      if (!g.selected) {
+        continue;
+      }
+      input = jQuery('<input></input>');
+      input.attr('type', 'hidden');
+      input.attr('name', 'gene');
+      input.val(k);
+      form.append(input);
+    }
+    jQuery('body').append(form);
+    form.submit();
     return true;
   };
 

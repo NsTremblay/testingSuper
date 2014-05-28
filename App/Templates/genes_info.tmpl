@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<link rel="stylesheet" href="/App/Styling/css/genes_info.css">
+	
+	<script>var page_name = 'genes';</script>
+	
+</head>
+
+<body>
+
+	<TMPL_INCLUDE NAME="page_top.tmpl">
+	
+	<div id="gene-intro" class="intro">
+		
+	</div>
+	
+	
+	<div class="panel panel-default">
+  		<div class="panel-heading">
+    		<h4 class="panel-title">Overview</h4>
+  		</div>
+	  	<div id="gene-info-meta" class="panel-body">
+	  	</div>
+	</div>
+	<div class="panel panel-default">
+  		<div class="panel-heading">
+    		<h4 class="panel-title">Genome Alleles</h4>
+  		</div>
+	  	<div id="gene-info-list" class="panel-body">
+	  		<div id="allele_summary">
+	  		</div>
+	  		<div id="allele_table">
+	  		</div>
+	  	</div>
+	</div>
+	<div class="panel panel-default">
+  		<div class="panel-heading">
+    		<h4 class="panel-title">Gene Tree</h4>
+  		</div>
+	  	<div id="gene-info-tree" class="panel-body ">
+	  		
+      		<div id="tree_psa">
+      			<p>Too few sequences. Tree unavailable.</p>
+      		</div>
+		      	
+	  	</div>
+	</div>
+	<div class="panel panel-default">
+  		<div class="panel-heading">
+    		<h4 class="panel-title">Multiple Sequence Alignment</h4>
+  		</div>
+	  	<div id="gene-info-msa" class="panel-body superphy-msa">
+	  		
+      		<div id="msa_psa">
+      			<p>Too few/many sequences. Alignment unavailable.</p>
+      		</div>
+		      	
+	  	</div>
+	</div>
+	
+	<TMPL_INCLUDE NAME="page_bottom.tmpl">
+
+	<script type="text/javascript">
+		var public_genomes = <TMPL_VAR public_genomes>;
+		var private_genomes = <TMPL_VAR private_genomes>;
+		var alleles = <TMPL_VAR allele_json>;
+		var gene_id = <TMPL_VAR gene_id>;
+		var gene_type = '<TMPL_VAR gene_type>';
+		var gene_info = <TMPL_VAR gene_json>;
+		
+		var allele_tree = null;
+		var allele_msa = null;
+		var genome_subset = null;
+		<TMPL_IF tree_json>
+		allele_tree = tree_json;
+		</TMPL_IF>
+		<TMPL_IF msa_json>
+		allele_msa = <TMPL_VAR msa_json>;
+		</TMPL_IF>
+		<TMPL_IF genomes_json>
+		genome_subset = <TMPL_VAR genomes_json>;
+		</TMPL_IF>
+		
+		// Data objects
+		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info', genome_subset);
+		var locusData = new LocusController(alleles);
+		
+		// Alleles
+		//viewController.createView('list', $('#allele_list'), locusData);
+		viewController.createTicker('allele', $("#allele_summary"), locusData);
+		viewController.createView('table', $('#allele_table'), locusData);
+		
+		// Tree
+		if(allele_tree) {
+			$('#tree_psa').hide();
+			viewController.createView('tree', $('#allele_tree'), allele_tree, locusData);
+		}
+		
+		// MSA
+		if(allele_msa) {
+			$('#msa_psa').hide();
+			viewController.createView('msa', $('#allele_msa'), allele_msa, locusData);
+		}
+		
+		// Search forms
+		viewController.sideBar($('#search-utilities'));
+		
+		// Page
+		var gene_name = gene_info['name']
+		if(gene_type === 'amr') {
+			$('#gene-intro').html('<p>Antimicrobial resistance gene: <span class="intro-gene">'+gene_name+'</span> information page</p>')
+		} else {
+			$('#gene-intro').html('<p>Virulence factor gene: <span class="intro-gene">'+gene_name+'</span> information page</p>')
+		}
+		
+	</script>
+	
+	
+</body>
+
+</html>

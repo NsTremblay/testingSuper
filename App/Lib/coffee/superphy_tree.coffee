@@ -457,12 +457,12 @@ class TreeView extends ViewTemplate
   
   # FUNC viewAction
   # For top-level, global commands in TreeView that require
-  # the genomeController as input the viewAction in viewController.
+  # the genomeController as input use the viewAction in viewController.
   # This method will call the desired method in the TreeView class
   #
   # PARAMS
-  # event[string]: the type of event
-  # eArgs[array]: argument array passed to event method
+  # genomes[obj]: GenomeContoller instance
+  # argArry[array]: argument array passed to event method, first element is the event name
   # 
   # RETURNS
   # boolean 
@@ -741,7 +741,7 @@ class TreeView extends ViewTemplate
         if @locusData?
           ld = @locusData.locusNode(node.name)
           node.viewname += ld[0]
-          node.assignedGroup = ld[1]
+          node.assignedGroup = ld[1] if ld[1]?
         
       else
         # Mask filtered node

@@ -1,0 +1,59 @@
+/*
+ 
+ File: superphy_table.less
+ Desc: Stylesheet for TableView.
+ Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
+ Date: May 27th, 2013
+ 
+ * */
+
+/** Table *********************************/
+
+.superphy-table {
+  
+  max-height: 450px;
+  overflow-y: scroll;
+  display: inline-block;
+  .borderStyle;
+  margin: 20px;
+  
+  table {
+  
+    background-color: #FFF;
+    font-size: 10pt;
+    text-align: left;
+    border-collapse: collapse;
+    margin: auto;
+    
+    thead {
+      th {
+        background-color: #e6EEEE;
+        border: 1px solid #FFF;
+        font-size: 10pt;
+        padding: 4px;
+      }
+    }
+    
+    tbody {
+      td {
+        color: #3D3D3D;
+        padding: 4px;
+        background-color: #FFF;
+        vertical-align: top;
+      }
+      
+      td.genome_table_item {
+        div.checkbox {
+          margin: 0;
+          padding: 0;
+          
+          input[type="checkbox"] {
+            line-height: normal;
+            margin: 0 5px 0 0;
+          }
+        }
+        
+      }
+    }
+  }
+}
