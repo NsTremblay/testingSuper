@@ -597,59 +597,29 @@ class SatelliteCartographer extends Cartographer
   # marker object
   #
   parseLocation: (genome) ->
+    genomeLocation = JSON.parse(genome.isolation_location[0])
     # Get location from genome
-    locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0]
-    
-    # Remove markup tags
-    locationName = locationName.replace(/<location>/, '').replace(/<\/location>/, '').replace(/<[\/]+[\w\d]*>/g, '').replace(/<[\w\d]*>/g, ', ').replace(/, /, '')
-    
+    locationName = genomeLocation.formatted_address
     # Get location coordinates
-    locationCoordinates = genome.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0]
-
+    locationCoordinates = genomeLocation.geometry
     # Get location center
-    locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0]
-
+    locationCenter = locationCoordinates.location
     # Get center lat
-    locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
-    
-    # Remove markup tags
-    locationCenterLat = locationCenterLat.replace(/<lat>/, '').replace(/<\/lat>/, '')
-
+    locationCenterLat = locationCenter.lat
     # Get center Lng
-    locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
-
-    # Remove markup tags
-    locationCenterLng = locationCenterLng.replace(/<lng>/, '').replace(/<\/lng>/, '')
-
+    locationCenterLng = locationCenter.lng
     # Get location SW boundary
-    locationViewPortSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0]
-
+    locationViewPortSW = locationCoordinates.bounds.southwest
     # Get SW boundary lat
-    locationViewPortSWLat = locationViewPortSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
-
-    # Remove markup tags
-    locationViewPortSWLat = locationViewPortSWLat.replace(/<lat>/, '').replace(/<\/lat>/, '')
-
+    locationViewPortSWLat = locationViewPortSW.lat
     # Get SW boundary Lng
-    locationViewPortSWLng = locationViewPortSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
-
-    # Remove markup tags
-    locationViewPortSWLng = locationViewPortSWLng.replace(/<lng>/, '').replace(/<\/lng>/, '')
-
+    locationViewPortSWLng = locationViewPortSW.lng
     # Get location NE boundary
-    locationViewPortNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0]
-
+    locationViewPortNE = locationCoordinates.bounds.northeast
     # Get NE boundary lat
-    locationViewPortNELat = locationViewPortNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0]
-
-    # Remove markup tags
-    locationViewPortNELat = locationViewPortNELat.replace(/<lat>/, '').replace(/<\/lat>/, '')
-
+    locationViewPortNELat = locationViewPortNE.lat
     # Get NE boundary lng
-    locationViewPortNELng = locationViewPortNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0]
-
-    # Remove tags
-    locationViewPortNELng = locationViewPortNELng.replace(/<lng>/, '').replace(/<\/lng>/, '')
+    locationViewPortNELng = locationViewPortNE.lng
 
     centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng)
     swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng)

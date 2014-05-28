@@ -90,26 +90,26 @@ sub logger {
 
 =head2 getStrainLocaion
 
-#TODO:
+# TODO:
 
 =cut
 
 sub getStrainLocation {
-    # TODO: Change the schema to take in JSON
     my ($self, $genomeId, $genomePrivacy) = @_;
-    my $featurepropsTable = 'Featureprop' unless $genomePrivacy and $genomePrivacy ne 'private' // 'PrivateFeatureprop';
-        die "genome privacy could not be determined" unless $ featurepropsTable;
-    my $locationFeatureProps = $self->dbixSchema->resultset($featurepropsTable)->search(
-        {'type.name' => 'isolation_location', 'me.feature_id' => "$genomeId"},
+    
+    my $searchTable = $genomePrivacy eq 'private' ? 'PrivateGenomeLocation' : 'GenomeLocation';
+    die "genome privacy could not be determined" unless $searchTable;
+    my $locationResult = $self->dbixSchema->resultset($searchTable)->search(
+        {'me.feature_id' => "$genomeId"},
         {
-            column => [qw/me.feature_id me.value type.name/],
-            join => ['type']
+            column => [qw/me.feature_id me.geocode_id geocode.location/],
+            join => ['geocode']
         }
         );
     my %strainLocation = ('presence' => 0);
-    while (my $location = $locationFeatureProps->next) {
+    while (my $location = $locationResult->next) {
         $strainLocation{'presence'} = 1;
-        $strainLocation{'location'} = $location->value;
+        $strainLocation{'location'} = $location->geocode->location;
     }
     return \%strainLocation;
 }

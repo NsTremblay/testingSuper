@@ -125,7 +125,7 @@ __PACKAGE__->belongs_to(
   "contig",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "contig_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 contig_collection
@@ -140,7 +140,7 @@ __PACKAGE__->belongs_to(
   "contig_collection",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "contig_collection_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 locus
@@ -155,7 +155,7 @@ __PACKAGE__->belongs_to(
   "locus",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "locus_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 snp
@@ -170,12 +170,12 @@ __PACKAGE__->belongs_to(
   "snp",
   "Database::Chado::Schema::Result::SnpCore",
   { snp_core_id => "snp_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07039 @ 2014-02-03 14:19:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3rCFdncWkwwsoM2scyjGvw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/guGQmHNbl4ARCx+hQKcuA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

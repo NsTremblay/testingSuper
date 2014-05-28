@@ -84,7 +84,7 @@ __PACKAGE__->belongs_to(
   "nd_experiment",
   "Database::Chado::Schema::Result::NdExperiment",
   { nd_experiment_id => "nd_experiment_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 nd_protocol
@@ -99,12 +99,12 @@ __PACKAGE__->belongs_to(
   "nd_protocol",
   "Database::Chado::Schema::Result::NdProtocol",
   { nd_protocol_id => "nd_protocol_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wjqlQAaCdW6je7tvelMxDg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1d6uO0jTVu4v4llkjOB4Wg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

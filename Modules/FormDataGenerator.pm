@@ -469,107 +469,6 @@ sub _getJSONFormat {
     return $_encodedText;
 }
 
-=cut
-
-sub dataViewSerotype {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "serotype";
-    my $serotypeJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $serotypeJson;
-}
-
-sub dataViewIsolationHost {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_host";
-    my $isolationHostJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationHostJson;
-}
-
-sub dataViewIsolationSource {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_source";
-    my $isolationSourceJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationSourceJson;
-}
-
-sub dataViewIsolationDate {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_date";
-    my $isolationDateJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationDateJson;
-}
-
-sub dataViewIsolationLocation {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_location";
-    my $isolationLocationJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationLocationJson;
-}
-=cut
-
-sub publicDataViewList {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = shift;
-    my @publicFeautureIds = @{$publicIdList};
-
-    my $genomes = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'type.name' =>  'contig_collection',
-        },
-        {
-            columns => [qw/feature_id uniquename name dbxref.accession/],
-            join => ['type' , 'dbxref'],
-            order_by    => {-asc => ['me.uniquename']}
-        }
-        );
-
-    my @publicDataViewNames;
-
-    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
-        {'type.name' => $searchParam},
-        {
-            column  => [qw/me.feature_id me.value type.name/],
-            join        => ['type']
-        }
-        );
-
-    foreach my $_pubStrainId (@publicFeautureIds) {
-        my %dataView;
-        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
-        if (!$dataRow) {
-            $dataView{'value'} = "N/A";
-        }
-        else {
-            #Need to parse out tags for location data
-            if ($searchParam eq "isolation_location") {
-                my $markedUpLocation = $1 if $dataRow->value =~ /(<location>[\w\d\W\D]*<\/location>)/;
-                my $noMarkupLocation = $markedUpLocation;
-                $noMarkupLocation =~ s/(<[\/]*location>)//g;
-                $noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
-                $noMarkupLocation =~ s/<[\w\d]*>/, /g;
-                $noMarkupLocation =~ s/, //;
-                $dataView{'value'} = $noMarkupLocation;
-            }
-            else {
-                $dataView{'value'} = $dataRow->value;
-            }
-        }
-        my $featureRow = $genomes->find({'me.feature_id' => "$_pubStrainId"});
-        $dataView{'feature_id'} = $featureRow->feature_id;
-        $dataView{'common_name'} = $featureRow->uniquename;
-        $dataView{'accession'} = $featureRow->dbxref->accession;
-        push(@publicDataViewNames , \%dataView);
-    }
-    my $dataViewJson = $self->_getJSONFormat(\@publicDataViewNames);
-    return $dataViewJson;
-}
-
 sub _getNameMap {
     my $self=shift;
     my $genomes = $self->dbixSchema->resultset('Feature')->search(
@@ -717,11 +616,15 @@ sub _runGenomeQuery {
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
 	my $feature_relationship_rel_name = 'feature_relationship_objects';
+    # Added tables to look up genome locaiton info
+    my $genome_location_table_name = 'genome_locations';
 	my $order_name = { '-asc' => ['featureprops.rank'] };
 	unless($public) {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
 		$feature_relationship_rel_name = 'private_feature_relationship_objects';
+        # Added tables to look up private genome location infoq
+        $genome_location_table_name = "private_genome_locations";
 		$order_name = { '-asc' => ['private_featureprops.rank'] };
 	}
 	
@@ -740,7 +643,8 @@ sub _runGenomeQuery {
 		'type.name'      => 'contig_collection',
 		'type_2.name'    => { '-in' => [ keys %fp_types ] },
     };
-    my $join = ['type'];
+    # Added $genome_location_table_name => 'geocode' to join
+    my $join = ['type', {$genome_location_table_name => 'geocode'}];
     my $prefetch = [
 	    { 'dbxref' => 'db' },
 	    { $featureprop_rel_name => 'type' }
@@ -836,10 +740,11 @@ sub _runGenomeQuery {
 	# Create hash from all results
 	my %genome_info;
 	
+    my $featureCount = 0;
+
 	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
 		my %feature_hash;
-		
 		# Feature data
 		$feature_hash{uniquename} = $feature->uniquename;
 		if($feature->dbxref) {
@@ -873,13 +778,20 @@ sub _runGenomeQuery {
 		
 		# Featureprop data
 		my $featureprops = $feature->$featureprop_rel_name;
-		
+
 		while(my $fp = $featureprops->next) {
 			my $type = $fp->type->name;
-
-			$feature_hash{$type} = [] unless defined $feature_hash{$type};
-			push @{$feature_hash{$type}}, $fp->value;
+			$feature_hash{$type} = [] unless defined $feature_hash{$type} || $type eq 'isolation_location';
+			push @{$feature_hash{$type}}, $fp->value unless $type eq 'isolation_location';
 		}
+
+        # Genome location data
+        my $genomeLocation = $feature->$genome_location_table_name;
+
+        while (my $location = $genomeLocation->next) {
+            $feature_hash{'isolation_location'} = [] unless defined $feature_hash{'isolation_location'} || !($location->geocode->location);
+            push @{$feature_hash{'isolation_location'}}, $location->geocode->location unless !($location->geocode->location);
+        }
 		
 		my $k = ($public) ? 'public_' : 'private_';
 		

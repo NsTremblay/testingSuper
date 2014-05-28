@@ -21,7 +21,6 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
-__PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 
 =head1 TABLE: C<common_ancestor_cvterm>
 
@@ -79,8 +78,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:CzOZvsIZIMfXETmzmTN4OA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:55
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NA4kFc/Az6AcRuWYWXz5sQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

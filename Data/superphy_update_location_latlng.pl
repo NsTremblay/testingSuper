@@ -107,7 +107,7 @@ print "\t...Connected\n";
 #Create new global geocoder
 my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
 populateGeocodedLocations();
-#removeLocationFeatureprops();
+removeLocationFeatureprops();
 #Commit all changes and disconnect
 $dbh->commit or die $dbh->errstr;
 print "\t...Changes committed successfully\n";
@@ -270,14 +270,20 @@ sub _parseLocation {
 
 #Deletes all isolation_locations from the featureprop and private_featureprop tables
 sub removeLocationFeatureprops {
-    my $sqlStmt1 = 'DELETE FROM featureprop USING cvterm WHERE featureprop.type_id = cvterm.cvterm_id AND cvterm.name = "isolation_location"';
+    my $sqlStmt1 = 'DELETE FROM featureprop USING cvterm WHERE featureprop.type_id = cvterm.cvterm_id AND cvterm.name = ?';
     my $sth = $dbh->prepare($sqlStmt1) or die "Error! Could not prepare statement: " . $dbh->errstr;
-    $sth->execute() or die "Error! Could not execute statement: " . $dbh->errstr;
+    $sth->execute('isolation_location') or die "Error! Could not execute statement: " . $dbh->errstr;
 
     #Check that no rows are returned after the delete
-    my $sqlStmt2 = 'SELECT COUNT(*) FROM featureprop JOIN cvterm ON (featureprop.type_id = cvterm.cvterm_id) WHERE cvterm.name = "isolation_location"';
-    my $arr_ref = $dbh->selectrow_arrayref($sqlStmt2);
-    unless ($arr_ref->[0]) {
+    my $sqlStmt2 = 'SELECT COUNT(*) FROM featureprop JOIN cvterm ON (featureprop.type_id = cvterm.cvterm_id) WHERE cvterm.name = ?';
+    $sth = $dbh->prepare($sqlStmt2) or die "Error! Could not prepare statement: " . $dbh->errstr;;
+    my $rv = $sth->execute('isolation_location') or die "Error! Could not execute statement: " . $dbh->errstr;
+    
+    while(my @data = $sth->fetchrow_array()){
+        print $data[0] . " rows found\n";
+    }
+
+    unless($sth->rows > 0) {
         $dbh->rollback;
         $dbh->disconnect;
         die "Error! Could not execute statement: " . $dbh->errstr;

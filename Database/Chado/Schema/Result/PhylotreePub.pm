@@ -107,7 +107,7 @@ __PACKAGE__->belongs_to(
   "phylotree",
   "Database::Chado::Schema::Result::Phylotree",
   { phylotree_id => "phylotree_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -122,12 +122,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jDTYj3rmj9ot9b+uzjv2Bg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:x84GtPkQ351w31ieh93xfQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

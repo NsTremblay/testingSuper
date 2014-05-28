@@ -125,7 +125,7 @@ __PACKAGE__->belongs_to(
   "nd_protocol",
   "Database::Chado::Schema::Result::NdProtocol",
   { nd_protocol_id => "nd_protocol_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -140,12 +140,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8p7aHhdrr4yuy4VhMAphUA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ig9XC5jTyYfSC+HHUUnPkQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

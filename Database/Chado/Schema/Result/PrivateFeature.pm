@@ -231,7 +231,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pripub_feature_relationships
@@ -369,6 +369,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_genome_locations
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGenomeLocation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_genome_locations",
+  "Database::Chado::Schema::Result::PrivateGenomeLocation",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_snp_variation_contig_collections
 
 Type: has_many
@@ -380,7 +395,7 @@ Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
 __PACKAGE__->has_many(
   "private_snp_variation_contig_collections",
   "Database::Chado::Schema::Result::PrivateSnpVariation",
-  { "foreign.contig_collection" => "self.feature_id" },
+  { "foreign.contig_collection_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -395,7 +410,7 @@ Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
 __PACKAGE__->has_many(
   "private_snp_variation_contigs",
   "Database::Chado::Schema::Result::PrivateSnpVariation",
-  { "foreign.contig" => "self.feature_id" },
+  { "foreign.contig_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -410,7 +425,7 @@ Related object: L<Database::Chado::Schema::Result::PrivateSnpVariation>
 __PACKAGE__->has_many(
   "private_snp_variation_loci",
   "Database::Chado::Schema::Result::PrivateSnpVariation",
-  { "foreign.locus" => "self.feature_id" },
+  { "foreign.locus_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -441,7 +456,7 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 upload
@@ -459,9 +474,19 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
+=head2 geocodes
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:59
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:0vH3x27KxzSEe1aPNhGWRw
+Type: many_to_many
+
+Composing rels: L</private_genome_locations> -> geocode
+
+=cut
+
+__PACKAGE__->many_to_many("geocodes", "private_genome_locations", "geocode");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bI/OcGsGF4kSQjoZQViEDg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

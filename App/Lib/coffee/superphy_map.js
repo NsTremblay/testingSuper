@@ -477,25 +477,19 @@ SatelliteCartographer = (function(_super) {
   };
 
   SatelliteCartographer.prototype.parseLocation = function(genome) {
-    var centerLatLng, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
-    locationName = genome.isolation_location[0].match(/<location>[\w\d\W\D]*<\/location>/)[0];
-    locationName = locationName.replace(/<location>/, '').replace(/<\/location>/, '').replace(/<[\/]+[\w\d]*>/g, '').replace(/<[\w\d]*>/g, ', ').replace(/, /, '');
-    locationCoordinates = genome.isolation_location[0].match(/<coordinates>[\w\d\W\D]*<\/coordinates>/)[0];
-    locationCenter = locationCoordinates.match(/<center>[\w\d\W\D]*<\/center>/)[0];
-    locationCenterLat = locationCenter.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-    locationCenterLat = locationCenterLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
-    locationCenterLng = locationCenter.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-    locationCenterLng = locationCenterLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
-    locationViewPortSW = locationCoordinates.match(/<southwest>[\w\d\W\D]*<\/southwest>/)[0];
-    locationViewPortSWLat = locationViewPortSW.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-    locationViewPortSWLat = locationViewPortSWLat.replace(/<lat>/, '').replace(/<\/lat>/, '');
-    locationViewPortSWLng = locationViewPortSW.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-    locationViewPortSWLng = locationViewPortSWLng.replace(/<lng>/, '').replace(/<\/lng>/, '');
-    locationViewPortNE = locationCoordinates.match(/<northeast>[\w\d\W\D]*<\/northeast>/)[0];
-    locationViewPortNELat = locationViewPortNE.match(/<lat>[\w\d\W\D]*<\/lat>/)[0];
-    locationViewPortNELat = locationViewPortNELat.replace(/<lat>/, '').replace(/<\/lat>/, '');
-    locationViewPortNELng = locationViewPortNE.match(/<lng>[\w\d\W\D]*<\/lng>/)[0];
-    locationViewPortNELng = locationViewPortNELng.replace(/<lng>/, '').replace(/<\/lng>/, '');
+    var centerLatLng, genomeLocation, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
+    genomeLocation = JSON.parse(genome.isolation_location[0]);
+    locationName = genomeLocation.formatted_address;
+    locationCoordinates = genomeLocation.geometry;
+    locationCenter = locationCoordinates.location;
+    locationCenterLat = locationCenter.lat;
+    locationCenterLng = locationCenter.lng;
+    locationViewPortSW = locationCoordinates.bounds.southwest;
+    locationViewPortSWLat = locationViewPortSW.lat;
+    locationViewPortSWLng = locationViewPortSW.lng;
+    locationViewPortNE = locationCoordinates.bounds.northeast;
+    locationViewPortNELat = locationViewPortNE.lat;
+    locationViewPortNELng = locationViewPortNE.lng;
     centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
     swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
     neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);

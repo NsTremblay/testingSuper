@@ -111,7 +111,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 studyprop
@@ -126,7 +126,7 @@ __PACKAGE__->belongs_to(
   "studyprop",
   "Database::Chado::Schema::Result::Studyprop",
   { studyprop_id => "studyprop_id" },
-  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -144,14 +144,14 @@ __PACKAGE__->belongs_to(
   {
     is_deferrable => 0,
     join_type     => "LEFT",
-    on_delete     => "CASCADE",
+    on_delete     => "CASCADE,",
     on_update     => "NO ACTION",
   },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:q2egZtSKYpOxNxfytVG2Qg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+CkxDVNqdUnk1cdGZM/9Ag
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
