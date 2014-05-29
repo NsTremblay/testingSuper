@@ -28,6 +28,7 @@ use FindBin;
 use lib "$FindBin::Bin/../";
 use Log::Log4perl qw/get_logger :easy/;
 use Carp;
+use Geo::Coder::Google;
 use JSON;
 
 # Object creation
@@ -115,27 +116,40 @@ sub getStrainLocation {
 }
 
 sub geocodeAddress {
-    # TODO: Change the schema to take in JSON
-    my $markedUpLocation = shift;
-    my $noMarkupLocation = $markedUpLocation;
-    $noMarkupLocation =~ s/(<[\/]*location>)//g;
-    $noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
-    $noMarkupLocation =~ s/<[\w\d]*>/, /g;
-    $noMarkupLocation =~ s/, //;
+    my ($self, $locationQuery) = @_;
+    my $result;
+    
+    #Look up geocoded_location table
+    my $geocodedLocationRs = $self->dbixSchema->resultset('GeocodedLocation')->search(
+        {search_query => "$locationQuery"},
+        {
+            column => [qw/location search_query/]
+        }
+        );
+
+    #Handle error here that db doesnt return result
+    if (defined $geocodedLocationRs && $geocodedLocationRs != 0) {
+        $result = $geocodedLocationRs->first->location;
+        return $result;
+    }
+
+    print STDERR "Address: $locationQuery not found in database\n";
 
     my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
+    $result = $googleGeocoder->geocode($locationQuery);        
+    # If no result is found by Google the server will return a 500 server error
 
-    my $latlong = $googleGeocoder->geocode($noMarkupLocation) or die "$!";
+    my $result_json =  encode_json($result);
 
-    my %location;
-    $location{'coordinates'} = $latlong;
-    
-    my @_coordinates;
-    push(@_coordinates, \%location);
-    
-    $markedUpLocation .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."</lng></northeast></viewport></coordinates>";
+    # Need to store the result in the database
+    $geocodedLocationRs->create({
+        location => $result_json,
+        search_query => "$locationQuery",
+        });
 
-    return $markedUpLocation;
+    print STDERR "Address: $locationQuery added to database\n";
+
+    return $result_json;
 }
 
 1;

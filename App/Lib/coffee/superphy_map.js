@@ -155,21 +155,36 @@ MapView = (function(_super) {
   };
 
   MapView.prototype.dump = function(genomes) {
-    var g, header, id, lineOut, output, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+    var fullMeta, g, header, id, k, output, _ref, _ref1;
+    fullMeta = {};
+    for (k in genomes.visibleMeta) {
+      fullMeta[k] = true;
+    }
     output = '';
-    header = ["Genome name", "Location"];
+    header = (function() {
+      var _results;
+      _results = [];
+      for (k in fullMeta) {
+        _results.push(genomes.metaMap[k]);
+      }
+      return _results;
+    })();
+    header.unshift("Genome name");
+    header.push("Location");
     output += "#" + header.join("\t") + "\n";
     _ref = genomes.public_genomes;
     for (id in _ref) {
       g = _ref[id];
-      lineOut = [g.displayname, (_ref1 = (_ref2 = g.isolation_location) != null ? _ref2[0] : void 0) != null ? _ref1 : "N/A"];
-      output += lineOut.join("\t") + "\n";
+      output += genomes.label(g, fullMeta, "\t") + "\t";
+      output += g.isolation_location ? JSON.parse(g.isolation_location[0]).formatted_address : "N/A";
+      output += "\n";
     }
-    _ref3 = genomes.private_genomes;
-    for (id in _ref3) {
-      g = _ref3[id];
-      lineOut = [g.displayname, (_ref4 = (_ref5 = g.isolation_location) != null ? _ref5[0] : void 0) != null ? _ref4 : "N/A"];
-      output += lineOut.join("\t") + "\n";
+    _ref1 = genomes.private_genomes;
+    for (id in _ref1) {
+      g = _ref1[id];
+      output += genomes.label(g, fullMeta, "\t") + "\t";
+      output += g.isolation_location ? JSON.parse(g.isolation_location[0]).formatted_address : "N/A";
+      output += "\n";
     }
     return {
       ext: 'csv',
@@ -236,21 +251,27 @@ Cartographer = (function() {
   };
 
   Cartographer.prototype.pinPoint = function(e) {
-    var geocoder, queryLocation, self;
+    var queryLocation, self;
     e.preventDefault();
     self = e.data.context;
-    geocoder = new google.maps.Geocoder();
     queryLocation = jQuery('.map-search-location').val();
-    geocoder.geocode({
-      'address': queryLocation
-    }, function(results, status) {
-      if (status === google.maps.GeocoderStatus.OK) {
-        self.map.setCenter(results[0].geometry.location);
-        return self.map.fitBounds(results[0].geometry.viewport);
-      } else {
-        return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
+    jQuery.ajax({
+      type: "POST",
+      url: '/strains/geocode',
+      data: {
+        'address': queryLocation
       }
-    });
+    }).done(function(data) {
+      var bounds, northEast, results, southWest;
+      results = JSON.parse(data);
+      self.map.setCenter(results.geometry.location);
+      northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+      southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+      bounds = new google.maps.LatLngBounds(southWest, northEast);
+      return self.map.fitBounds(bounds);
+    }).fail((function() {
+      return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
+    }));
     return true;
   };
 
@@ -288,23 +309,29 @@ DotCartographer = (function(_super) {
   };
 
   DotCartographer.prototype.pinPoint = function(e) {
-    var geocoder, queryLocation, self;
+    var queryLocation, self;
     e.preventDefault();
     self = e.data.context;
-    geocoder = new google.maps.Geocoder();
     queryLocation = jQuery('.map-search-location').val();
-    geocoder.geocode({
-      'address': queryLocation
-    }, function(results, status) {
-      if (status === google.maps.GeocoderStatus.OK) {
-        self.latLng = results[0].geometry.location;
-        self.map.setCenter(results[0].geometry.location);
-        self.map.fitBounds(results[0].geometry.viewport);
-        return DotCartographer.prototype.plantFlag(self.latLng, self.map);
-      } else {
-        return alert("Location " + queryLocation + " could not be found. Please enter a proper location");
+    jQuery.ajax({
+      type: "POST",
+      url: '/strains/geocode',
+      data: {
+        'address': queryLocation
       }
-    });
+    }).done(function(data) {
+      var bounds, northEast, results, southWest;
+      results = JSON.parse(data);
+      self.latLng = results.geometry.location;
+      self.map.setCenter(results.geometry.location);
+      northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+      southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+      bounds = new google.maps.LatLngBounds(southWest, northEast);
+      self.map.fitBounds(bounds);
+      return DotCartographer.prototype.plantFlag(self.latLng, self.map);
+    }).fail((function() {
+      return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
+    }));
     return true;
   };
 

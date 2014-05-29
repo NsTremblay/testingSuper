@@ -189,28 +189,37 @@ class MapView extends ViewTemplate
   #   type[string] - a MIME type
   #   data[string] - a string containing data in final format
   #   
-  dump: (genomes) -> 
+  dump: (genomes) ->
+
+    # Create complete list of meta-types
+    # make all visible
+    fullMeta = {}
+    fullMeta[k] = true for k of genomes.visibleMeta
+
     output = ''
     # Output header
-    header = ["Genome name","Location"]
+    header = (genomes.metaMap[k] for k of fullMeta)
+    header.unshift "Genome name"
+    header.push "Location"
     output += "#" + header.join("\t") + "\n"
     
     # Output public set
     for id,g of genomes.public_genomes
-      lineOut = [g.displayname, g.isolation_location?[0] ? "N/A"]
-      output += lineOut.join("\t") + "\n"
+      output += genomes.label(g,fullMeta,"\t") + "\t"
+      output += if g.isolation_location then JSON.parse(g.isolation_location[0]).formatted_address else "N/A" 
+      output += "\n"
 
     # Output private set
     for id,g of genomes.private_genomes
-      lineOut = [g.displayname, g.isolation_location?[0] ? "N/A"]
-      output += lineOut.join("\t") + "\n"
-    
+      output += genomes.label(g,fullMeta,"\t") + "\t"
+      output += if g.isolation_location then JSON.parse(g.isolation_location[0]).formatted_address else "N/A" 
+      output += "\n"
+
     return {
       ext: 'csv'
       type: 'text/plain'
       data: output
     }
-    #return
 
   # FUNC conscriptCartographer
   # creates a new cartographer object
@@ -273,7 +282,6 @@ class Cartographer
         </table>
       </div>'
 
-
   # FUNC cartograPhy
   # initializes map in specified map div
   #
@@ -305,18 +313,23 @@ class Cartographer
   # RETURNS
   #
   pinPoint: (e) ->
-    # TODO: ability to check and store latlngs in the database
     e.preventDefault()
     self = e.data.context
-    geocoder = new google.maps.Geocoder();
-    queryLocation = jQuery('.map-search-location').val()
-    geocoder.geocode({'address': queryLocation}, (results, status) ->
-        if status is google.maps.GeocoderStatus.OK
-          self.map.setCenter(results[0].geometry.location)
-          self.map.fitBounds(results[0].geometry.viewport)
-        else
-          alert("Location "+queryLocation+" could not be found. Please enter a proper location")
-    )
+    queryLocation = jQuery('.map-search-location').val();
+    jQuery.ajax({
+      type: "POST",
+      url: '/strains/geocode',
+      data: {'address': queryLocation}
+      }).done( (data) ->
+        results = JSON.parse(data)
+        self.map.setCenter(results.geometry.location)
+        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
+        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng) 
+        bounds = new google.maps.LatLngBounds(southWest, northEast)
+        self.map.fitBounds(bounds);
+        ).fail ( () ->
+          alert "Could not get coordinates for: " +queryLocation+ ". Please enter in another search query"
+          )
     true
 
 ###
@@ -361,20 +374,25 @@ class DotCartographer extends Cartographer
   # RETURNS
   #
   pinPoint: (e) ->
-    # TODO: ability to check and store latlngs in the database
     e.preventDefault()
     self = e.data.context
-    geocoder = new google.maps.Geocoder();
-    queryLocation = jQuery('.map-search-location').val()
-    geocoder.geocode({'address': queryLocation}, (results, status) ->
-        if status is google.maps.GeocoderStatus.OK
-          self.latLng = results[0].geometry.location
-          self.map.setCenter(results[0].geometry.location)
-          self.map.fitBounds(results[0].geometry.viewport)
-          DotCartographer::plantFlag(self.latLng, self.map)
-        else
-          alert("Location "+queryLocation+" could not be found. Please enter a proper location")
-    )
+    queryLocation = jQuery('.map-search-location').val();
+    jQuery.ajax({
+      type: "POST",
+      url: '/strains/geocode',
+      data: {'address': queryLocation}
+      }).done( (data) ->
+        results = JSON.parse(data)
+        self.latLng = results.geometry.location
+        self.map.setCenter(results.geometry.location)
+        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
+        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng) 
+        bounds = new google.maps.LatLngBounds(southWest, northEast)
+        self.map.fitBounds(bounds);
+        DotCartographer::plantFlag(self.latLng, self.map)
+        ).fail ( () ->
+          alert "Could not get coordinates for: " +queryLocation+ ". Please enter in another search query"
+          )
     true
 
   # FUNC plantFlag
@@ -679,7 +697,7 @@ class InfoSatelliteCartographer extends SatelliteCartographer
             </div>
             <div class="col-xs-9">
              <p class="legendlabel1">Target genome</p>
-            </div>          
+            </div>
           </div>
         </div>
       </div>

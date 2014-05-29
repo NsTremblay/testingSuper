@@ -108,6 +108,14 @@ print "\t...Connected\n";
 my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
 populateGeocodedLocations();
 removeLocationFeatureprops();
+
+#Resync database ##DO NOT REMOVE - Need to sync the setValue of the database with the max value of the copied table so postgres can update the next serial id correctly ##
+print "\t...Syncing database\n";
+my $syncStmt = ('SELECT setval(?, (SELECT MAX(geocode_id) FROM geocoded_location)+1)');
+my $sth = $dbh->prepare($syncStmt) or die "Error! Could not prepare statement: " . $dbh->errstr;
+$sth->execute('geocoded_location_geocode_id_seq') or die "Error! Could not execute statement: " . $dbh->errstr;
+$sth->finish;
+
 #Commit all changes and disconnect
 $dbh->commit or die $dbh->errstr;
 print "\t...Changes committed successfully\n";
@@ -195,25 +203,25 @@ sub populateGeocodedLocations {
     close $copyfh2;
 
 
-    # # Populate private_genome_location_table
-    # $dbh->do("COPY private_genome_location(geocode_id, feature_id) FROM STDIN");
+    # Populate private_genome_location_table
+    $dbh->do("COPY private_genome_location(geocode_id, feature_id) FROM STDIN");
 
-    # open my $copyfh3, "<", "temp_private_genomes.txt" or die "Error! Could not open file: $!\n";
+    open my $copyfh3, "<", "temp_private_genomes.txt" or die "Error! Could not open file: $!\n";
 
-    # while (<$copyfh3>) {
-    #     if (!($dbh->pg_putcopydata($_))) {
-    #         $dbh->pg_putcopyend();
-    #         $dbh->rollback;
-    #         $dbh->disconnect;
-    #         die "Error calling pg_putcopydata: $!\n";
-    #     }
-    # }
-    # print "pg_putcopydata completed sucessfully.\n";
+    while (<$copyfh3>) {
+        if (!($dbh->pg_putcopydata($_))) {
+            $dbh->pg_putcopyend();
+            $dbh->rollback;
+            $dbh->disconnect;
+            die "Error calling pg_putcopydata: $!\n";
+        }
+    }
+    print "pg_putcopydata completed sucessfully.\n";
 
-    # $dbh->pg_putcopyend() or die "Error calling pg_putcopyend: $!\n";
-    # print "Data copy completed\n";
+    $dbh->pg_putcopyend() or die "Error calling pg_putcopyend: $!\n";
+    print "Data copy completed\n";
 
-    # close $copyfh3;
+    close $copyfh3;
 
     unlink("temp_geocoded_locations.txt");
     unlink("temp_public_genomes.txt");
@@ -266,7 +274,6 @@ sub _parseLocation {
     $_location =~ s/, //;
     return $_location;
 }
-
 
 #Deletes all isolation_locations from the featureprop and private_featureprop tables
 sub removeLocationFeatureprops {

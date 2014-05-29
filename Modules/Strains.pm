@@ -417,60 +417,6 @@ sub _getStrainInfo {
 	return(\%feature_hash);
 }
 
-=cut
-sub _getVirulenceData {
-	my $self = shift;
-	my $strainID = shift;
-	my $virulence_table_name = 'RawVirulenceData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @virulenceData;
-	my $virCount = 0;
-
-	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $virulenceDataRow = $virulenceData->next) {
-		my %virRow;
-		$virRow{'gene_name'} = $virulenceDataRow->gene->uniquename;
-		$virRow{'feature_id'} = $virulenceDataRow->gene->feature_id;
-		push (@virulenceData, \%virRow);
-	}
-	return \@virulenceData;
-}
-
-sub _getAmrData {
-	my $self = shift;
-	my $strainID = shift;
-	my $amr_table_name = 'RawAmrData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @amrData;
-	my $amrCount = 0;
-
-	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $amrDataRow = $amrData->next) {
-		my %amrRow;
-		$amrRow{'gene_name'} = $amrDataRow->gene->uniquename;
-		$amrRow{'feature_id'} = $amrDataRow->gene->feature_id;
-		push (@amrData , \%amrRow);
-	}
-	return \@amrData;
-}
-=cut
-
 sub test : Runmode {
 	my $self = shift;
 	
@@ -490,6 +436,24 @@ sub test : Runmode {
 	#$template->param('strainData' => 0);
 	
 	return $template->output();
+}
+
+=head2 geocode
+
+=cut
+
+sub geocode : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $address = $q->param("address");
+
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
+
+	my $queryResult = $locationManager->geocodeAddress($address);
+
+	return $queryResult;
 }
 
 1;
