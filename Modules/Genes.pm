@@ -451,17 +451,37 @@ sub info : Runmode {
 	
 	
 	# Gene information
-	my $qgene_info;
+	my $qgene_json;
+	my $gene_name;
+	my @accessions;
+	my $is_amr;
 	if($qtype eq 'amr') {
-		$qgene_info = $self->amr_info($qgene);
+		my $qgene_info = $self->amr_info($qgene);
+		$template->param(gene_synonyms => join(', ', @{$qgene_info->{synonyms}}));
+		
+		$gene_name = $qgene_info->{name};
+		map { push @accessions, {accession => $_} } @{$qgene_info->{accessions}};
+		$is_amr = 1;
+		
 	} elsif($qtype eq 'vf') {
-		$qgene_info = $self->vf_info($qgene);
+		my $qgene_info = $self->vf_info($qgene);
+		$template->param(gene_strain => join(', ', @{$qgene_info->{strain}}));
+		$template->param(gene_plasmid => join(', ', @{$qgene_info->{plasmid}}));
+		
+		$gene_name = $qgene_info->{name};
+		map { push @accessions, {accession => $_} } @{$qgene_info->{vir_id}};
+		$is_amr = 0;
 	} else {
 		croak "Error: unknown query gene type $qtype."
 	}
 	
-	$template->param(gene_json => $qgene_info);
+	$template->param(is_amr => $is_amr);
+	$template->param(gene_name => $gene_name);
+	$template->param(gene_accessions => \@accessions) if @accessions;
 	
+	
+	my $category_json = $self->gene_category($qtype, $qgene);
+	$template->param(category_json => $category_json);
 	
 	# Alleles
 	my $result_hash = _genomeAlleles($data, [$qgene], $warden);
@@ -555,23 +575,26 @@ sub amr_info : Runmode {
 
 	my $fc_rs = $frow->feature_cvterms;
 
+#	while(my $fcrow = $fc_rs->next) {
+#		my $aro_entry = {
+#			accession => 'ARO:'.$fcrow->cvterm->dbxref->accession,
+#			term_name => $fcrow->cvterm->name,
+#			term_defn => $fcrow->cvterm->definition
+#		};
+#		push @aro, $aro_entry;
+#	}
 	while(my $fcrow = $fc_rs->next) {
-		my $aro_entry = {
-			accession => 'ARO:'.$fcrow->cvterm->dbxref->accession,
-			term_name => $fcrow->cvterm->name,
-			term_defn => $fcrow->cvterm->definition
-		};
-		push @aro, $aro_entry;
+		push @aro, 'ARO:'.$fcrow->cvterm->dbxref->accession;
 	}
+	
 
 	my %data_hash = (
-		name => $frow->uniquename,
-		descriptions  => \@desc,
-		synonyms     => \@syn,
-		aro_terms    => \@aro
+		name          => $frow->uniquename,
+		synonyms      => \@syn,
+		accessions    => \@aro
 	);
 	
-	return encode_json(\%data_hash);
+	return \%data_hash;
 }
 
 =head2 vf_info
@@ -638,7 +661,7 @@ sub vf_info : Runmode {
 		organism => \@org 
 	);
 	
-	return encode_json(\%data_hash);
+	return \%data_hash
 
 }
 
@@ -709,7 +732,7 @@ sub categories {
 	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
 		{},
 		{
-			join => ['parent_category', 'gene_cvterm', 'category', 'feature'],
+			join => ['parent_category', 'gene_cvterm', 'category'],
 			select => [
 				'parent_category.cvterm_id',
 				'parent_category.name',
@@ -720,7 +743,7 @@ sub categories {
 				'category.cvterm_id',
 				'category.name',
 				'category.definition',
-				'feature.feature_id'],
+				'feature_id'],
 			as => [
 				'parent_id',
 				'parent_name',
@@ -754,7 +777,7 @@ sub categories {
 	my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
 		{},
 		{
-			join => ['parent_category', 'gene_cvterm', 'category', 'feature'],
+			join => ['parent_category', 'gene_cvterm', 'category'],
 			select => [
 				'parent_category.cvterm_id',
 				'parent_category.name',
@@ -765,7 +788,7 @@ sub categories {
 				'category.cvterm_id',
 				'category.name',
 				'category.definition',
-				'feature.feature_id'],
+				'feature_id'],
 			as => [
 				'parent_id',
 				'parent_name',
@@ -803,6 +826,60 @@ sub categories {
 	my $categories_json = encode_json(\%categories);
 	return $categories_json;
 }
+
+=head2 gene_category
+
+Obtain category/subcategory for a specific gene
+
+
+=cut
+sub gene_category {
+	my $self = shift;
+	my $gtype = shift;
+	my $gene_id = shift;
+	
+	my $table = 'AmrCategory';
+	$table = 'VfCategory' unless $gtype eq 'amr';
+	
+	my $cat_rs = $self->dbixSchema->resultset($table)->search(
+		{
+			'feature_id' => $gene_id
+		},
+		{
+			prefetch => [qw(parent_category gene_cvterm category)]
+		}
+	);
+	
+	my $category_row = $cat_rs->first;
+	
+	my $parent_category = {
+		name => $category_row->parent_category->name,
+		definition => $category_row->parent_category->definition,
+		id => $category_row->parent_category->cvterm_id,
+	};
+	
+	my $category = {
+		name => $category_row->category->name,
+		definition => $category_row->category->definition,
+		id => $category_row->category->cvterm_id,
+	};
+	
+	my $gene_anno = {
+		name => $category_row->gene_cvterm->name,
+		definition => $category_row->gene_cvterm->definition,
+		id => $category_row->feature_id,
+	};
+	
+	my %hierarchy = (
+		top => $parent_category,
+		category => $category,
+		gene => $gene_anno
+	);
+
+	my $category_json = encode_json(\%hierarchy);
+	return $category_json;
+}
+
 
 
 

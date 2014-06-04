@@ -95,7 +95,7 @@
 		</TMPL_IF>
 		
 		// Data objects
-		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
+		viewController.init(public_genomes, private_genomes, 'multi_select', null, genome_subset);
 		
 		// Views
 		if(!jQuery.isEmptyObject( genes.vf )) {
@@ -105,7 +105,7 @@
 				links: alleles
 			};
 			viewController.createView('matrix', $('#vf_result_matrix'), matrixObj1);
-			viewController.createTicker('allele', $("#vf_result_histogram"), matrixObj1);
+			viewController.createTicker('matrix', $("#vf_result_histogram"), matrixObj1);
 			$('#vf_result_legend').show()
 			$('#vf_results').show()
 		}
@@ -117,7 +117,7 @@
 				links: alleles
 			};
 			viewController.createView('matrix', $('#amr_result_matrix'), matrixObj2);
-			viewController.createTicker('allele', $("#amr_result_histogram"), matrixObj2);
+			viewController.createTicker('matrix', $("#amr_result_histogram"), matrixObj2);
 			
 			// Unhide
 			$('#amr_result_legend').show()
@@ -128,7 +128,7 @@
 		viewController.sideBar($('#search-utilities'));
 		
 		// Genome selection form
-		viewController.createView('list', $('#strains_list'));
+		viewController.createView('table', $('#strains_table'));
 		viewController.createView('tree', $('#strains_tree'), tree);
 		
 		// Code to create groups

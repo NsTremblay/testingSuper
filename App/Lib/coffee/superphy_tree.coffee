@@ -55,10 +55,10 @@ class TreeView extends ViewTemplate
       .sort(null)
       .value((d) -> Number(d.length) )
       .separation((a, b) -> 1)
-    
-    # Link to legend
+      
+    # Append tree commands
     legendID = "tree_legend#{@elNum}"
-    @parentElem.append("<div class='tree_legend_link'><a href='##{legendID}'>Functions List</a></div>")
+    @_treeOps(@parentElem, legendID)
     
     # SVG layer
     @parentElem.append("<div id='#{@elID}' class='#{@cssClass()}'></div>")
@@ -67,18 +67,39 @@ class TreeView extends ViewTemplate
       .attr("height", @dim.h)
       .style("-webkit-backface-visibility", "hidden")
     
+    # Scale bar
+    @scalePos = {x: 10, y: 10}
+    @scaleBar = @wrap.append("g")
+      .attr("transform", "translate("+@scalePos.x+","+@scalePos.y+")")
+      .attr("class", "scalebar")
+    
     # Parent element for attaching tree elements
     @canvas = @wrap.append("g")
       .attr("transform", "translate(" + @margin.left + "," + @margin.top + ")")
 
     # Build viewport
     num = @elNum - 1;
-    @wrap.call(
-      d3.behavior.zoom()
+    @zoom = d3.behavior.zoom()
         .x(@xzoom)
         .y(@yzoom)
         .scaleExtent([1,8]).on("zoom", -> viewController.getView(num).zoomed())
+        
+    @wrap.call(
+      @zoom
     )
+    
+    # Scale bar
+    @scaleBar.append('line')
+      .attr('x1',0)
+      .attr('y1',0)
+      .attr('x2',1)
+      .attr('y2',0)
+      
+    @scaleBar.append('text')
+      .attr("dx", "0")
+      .attr("dy", "1em")
+      .attr("text-anchor", "start")
+
     
     # Legend SVG
     
@@ -136,7 +157,7 @@ class TreeView extends ViewTemplate
   
   duration: 1000
   
-  expandDepth: 5
+  expandDepth: 10
   
   x_factor: 1.5
   y_factor: 5000
@@ -168,29 +189,48 @@ class TreeView extends ViewTemplate
     sourceNode = @root unless sourceNode?
     @launchPt = {x: sourceNode.x, y: sourceNode.y, x0: sourceNode.x0, y0: sourceNode.y0}
     
-    # Scale branch lengths
-    farthest = d3.max(@nodes, (d) -> d.sum_length * 1)
-    lowest = d3.max(@nodes, (d) -> d.x )
-    yedge = @width - 20
-    xedge = @height - 20
-    
-    # Start with default scale values,
-    # If tree is larger than window, shrink scale
-    branch_scale_factor_y = @y_factor
-    if (branch_scale_factor_y * farthest) > yedge
-      branch_scale_factor_y = yedge/farthest
+    # Needs to compute some starting values for the tree view
+    # any time tree genome subset changes or is reset
+    if @reformat
+      @_scale() # Set initial branch scale for this current view
       
-    branch_scale_factor_x = @x_factor
-    if (branch_scale_factor_x * lowest) > xedge
-      branch_scale_factor_x = xedge/lowest
+      # Update scale bar
+      targetLen = 30
+      unit = targetLen / @branch_scale_factor_y
+      unit = Math.round(unit * 10000) / 10000
+      @scaleLength = unit * @branch_scale_factor_y
+      @scaleBar.select('line')
+        .attr('x1', 0)
+        .attr('x2', @scaleLength)
+        .attr('y1', 0)
+        .attr('y2', 0)
+      @scaleBar.select('text')
+        .text("#{unit} branch length units")
+        
+      # Reset zoom
+      @zoom.translate([0,0]).scale(1)
+      # Reposition scale bar group
+      @scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
       
-      
-    console.log 'y'+branch_scale_factor_y
-    console.log 'x'+branch_scale_factor_x
+      @reformat = false
     
     for n in @nodes
-      n.y = n.sum_length * branch_scale_factor_y
-      n.x = n.x * branch_scale_factor_x
+      n.y = n.sum_length * @branch_scale_factor_y
+      n.x = n.x * @branch_scale_factor_x
+      
+    
+    # If tree clade expanded / collapsed
+    # shift tree automatically to accommodate new values
+    if @expansionContraction
+      yedge = @width - 30 # subtract buffer
+      ypos = @edgeNode.y
+      if ypos > yedge
+        yshift = ypos-yedge
+        for n in @nodes
+          n.y = n.y - yshift
+        
+      @expansionContraction = false
+      
     
     # Collect existing nodes and create needed new nodes
     svgNodes = @canvas.selectAll("g.treenode")
@@ -251,6 +291,13 @@ class TreeView extends ViewTemplate
         else
           d.label
       )
+    
+    # Hide text for internal nodes with expanded clades 
+    svgNodes.filter((d) -> d.children && !d.leaf )
+        .select("text")
+          .transition()
+          .duration(@duration)
+          .style("fill-opacity", 1e-6)
 
     # Insert nodes
     # Enter any new nodes at the parent's previous position.
@@ -473,6 +520,15 @@ class TreeView extends ViewTemplate
     
     if event is 'expand_collapse'
       @_expandCollapse(genomes, argArray[0], argArray[1])
+    else if event is 'fit_window'
+      @reformat = true
+      @update(genomes)
+    else if event is 'reset_window'
+      @resetWindow = true
+      @update(genomes)
+    else if event is 'expand_tree'
+      @expandTree(genomes)
+    
     else
       throw new SuperphyError "Unrecognized event type: #{event} in TreeView viewAction method."
     
@@ -491,14 +547,22 @@ class TreeView extends ViewTemplate
   selectClade: (node, checked) ->
     
     if node.leaf
-      viewController.select(node.genome, checked)
-    
+      if checked
+        # Select leaf
+        viewController.select(node.genome, checked) unless node.selected
+      else
+        # Unselect leaf if it is currently selected
+        viewController.select(node.genome, checked) if node.selected
+     
     else
-      if node.children?
+      if node.children
         @selectClade(c, checked) for c in node.children
-      else if node._children?
+      
+      else if node._children
         @selectClade(c, checked) for c in node._children
-  
+        
+    true
+    
   # FUNC select
   # Changes css classes for selected genome in tree
   # Also updates coloring of selectClade command icons
@@ -513,34 +577,34 @@ class TreeView extends ViewTemplate
   #              
   select: (genome, isSelected) ->
     
+    d = @_findLeaf(genome)
+    
     svgNodes = @canvas.selectAll("g.treenode")
-    
-    # Find element matching genome
+   
     updateNode = svgNodes.filter((d) -> d.genome is genome)
-      .attr("class", (d) =>
-        d.selected = isSelected
-        @_classList(d)
-      )
+    
+    if updateNode
+      updateNode.attr("class", (d) =>
+          d.selected = isSelected
+          @_classList(d)
+        )
+        
+      updateNode.select("circle")
+        .style("fill", (d) -> 
+          if d.selected
+            "lightsteelblue"
+          else
+            "#fff" 
+        )
       
-    updateNode.select("circle")
-      .style("fill", (d) -> 
-        if d.selected
-          "lightsteelblue"
-        else
-          "#fff" 
-      )
-    
-    # Push selection up tree
-    d = updateNode.datum()
-    console.log updateNode
-    console.log d.parent
-    @_percolateSelected(d.parent, isSelected)
-    
-    # update classes
-    svgNodes.filter((d) -> !d.leaf)
-      .attr("class", (d) =>
-        @_classList(d)
-      )
+      # Push selection up tree
+      @_percolateSelected(d.parent, isSelected)
+      
+      # update classes
+      svgNodes.filter((d) -> !d.leaf)
+        .attr("class", (d) =>
+          @_classList(d)
+        )
       
     true
     
@@ -647,6 +711,8 @@ class TreeView extends ViewTemplate
     
     gPattern = /^((?:public_|private_)\d+)\|/
     
+    # Save pointer to leaves
+    @leaves = []
     @_assignKeys(@trueRoot, 0, gPattern)
   
 
@@ -674,7 +740,8 @@ class TreeView extends ViewTemplate
       for m in n._children
         i = @_assignKeys(m, i, gPattern)
     
-    
+    # Keep record of all leaf nodes
+    # for faster genome searching
     if n.leaf? and n.leaf is "true"
       if @locusData?
         # Nodes are keyed: genome|locus
@@ -684,6 +751,9 @@ class TreeView extends ViewTemplate
       else
         # Nodes are keyed: genome
         n.genome = n.name
+      
+      # Save pointer to this leaf node
+      @leaves.push n
     
     i
   
@@ -700,17 +770,16 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
     
-    console.log 'sync'
-    
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0)
     
     # Check if genome set has changed
-    if genomes.genomeSetId != @currentGenomeSet
+    if (genomes.genomeSetId != @currentGenomeSet) || @resetWindow
       # Need to set starting expansion layout
       @_expansionLayout()
       @currentGenomeSet = genomes.genomeSetId
-    
+      @resetWindow = false
+      @reformat = true
 
     true
     
@@ -816,9 +885,9 @@ class TreeView extends ViewTemplate
   # RETURNS
   # boolean
   #  
-  _expansionLayout: (focusNode=null) ->
+  _expansionLayout: ->
     
-    @_formatNode(@root, 0, focusNode)
+    @_formatNode(@root, 0)
     
     @root.x0 = @height / 2
     @root.y0 = 0
@@ -840,7 +909,7 @@ class TreeView extends ViewTemplate
   # RETURNS
   # JS object
   #  
-  _formatNode: (node, depth, parentNode=null, focusNode=null) ->
+  _formatNode: (node, depth, parentNode=null) ->
     
     # There shouldn't be any hidden nodes in the
     # traversal
@@ -877,9 +946,9 @@ class TreeView extends ViewTemplate
         node.children = children
         node._children = null
       else if isExpanded
-        # Maintain existing setting
-        node.children = children
-        node._children = null
+        # Collapse lower levels
+        node._children = children
+        node.children = null
       else
         # Maintain existing setting
         node._children = children
@@ -894,7 +963,7 @@ class TreeView extends ViewTemplate
         length: 0 
       }
       for c in children
-        r = @_formatNode(c, current_depth, node, focusNode)
+        r = @_formatNode(c, current_depth, node)
         
         record['num_leaves'] += r['num_leaves']
         record['num_leaves'] += r['num_selected']
@@ -919,36 +988,83 @@ class TreeView extends ViewTemplate
         node.internal_node_selected = 0
            
     record
+    
+  # FUNC _scale
+  # Sets branch x and y scale factors. Needs to
+  # be called after tree rendered. Called after
+  # major changes to genomes (filter, reset view)
+  # Stretches tree so that it covers X% of view
+  # area. The X% is determined by the number of
+  # leaves in tree up to a max of 80%
+  # 
+  # PARAMS
+  # Nothing
+  # 
+  # RETURNS
+  # Boolean
+  #
+  _scale: ->
+    
+    # Scale branch lengths based on number of leaves
+    farthest = d3.max(@nodes, (d) -> d.sum_length * 1)
+    lowest = d3.max(@nodes, (d) -> d.x )
+    percCovered = 0.10 * @root.num_leaves
+    percCovered = 0.90 if percCovered > 0.90
+    padding = 20
+    yedge = (@width - padding) * percCovered
+    xedge = (@height - padding) * percCovered
+    
+    @branch_scale_factor_y = yedge/farthest
+    @branch_scale_factor_x = xedge/lowest
+      
+    true
+    
              
   _expandCollapse: (genomes, d, el) ->
     
     svgNode = d3.select(el)
+    @edgeNode = null # Record right-most node
+    maxy = 0
    
     if d.children?
       # Collapse all child nodes into parent
       d._children = d.children
       d.children = null
+      @edgeNode = d
       
     else
-      # Expand 2-levels
+      # Expand 3-levels
       d.children = d._children
       d._children = null
-      
-      # Hide internal label when the node is expanded
-      svgNode.select("text")
-        .transition()
-        .duration(@duration)
-        .style("fill-opacity", 1e-6)
       
       # Expand child nodes
       for c in d.children
         if c._children?
           c.children = c._children
           c._children = null
-          d3.select("#treenode#{c.id}").select("text")
-            .transition()
-            .duration(@duration)
-            .style("fill-opacity", 1e-6)
+            
+        # Expand grandchild nodes
+        if c.children?
+          for c2 in c.children
+            if c2._children?
+              c2.children = c2._children
+              c2._children = null
+                
+            if c2.children?
+              for c3 in c2.children
+                if c3.sum_length > maxy
+                  maxy = c3.sum_length
+                  @edgeNode = c3
+                  
+            if c2.sum_length > maxy
+              maxy = c2.sum_length
+              @edgeNode = c2
+              
+        if c.sum_length > maxy
+          maxy = c.sum_length
+          @edgeNode = c
+                
+    @expansionContraction = true # adjust right shift
             
     @update(genomes, d)
     
@@ -961,6 +1077,11 @@ class TreeView extends ViewTemplate
     
     @canvas.selectAll("path.treelink")
       .attr("d", (d) => @_zTranslate(d, @xzoom, @yzoom))
+      
+    @scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
+    
+    @scaleBar.select("line")
+      .attr('transform','scale('+d3.event.scale+',1)')
       
     true
       
@@ -993,6 +1114,35 @@ class TreeView extends ViewTemplate
         clsList.push("internalSNodePart")
       
     clsList.join(' ')
+    
+  # FUNC _findLeaf
+  # Return data object matching genome ID
+  # 
+  # PARAMS
+  # string for genome ID
+  # 
+  # RETURNS
+  # Genome node object
+  #  
+  _findLeaf: (genome) ->
+    
+    # Find data object
+    n = null
+    found = @leaves.some( (el, i) ->
+      if el.genome is genome
+        n = el
+        return true
+      else
+        return false
+    )
+    
+    unless found
+      throw new SuperphyError "No leaf node matching #{genome} found."
+      return null
+      
+    # The svg element may not exist if it is in collapsed tree clade
+    return n
+    
  
   # FUNC _legend
   # Attach legend for tree manipulations
@@ -1247,6 +1397,8 @@ class TreeView extends ViewTemplate
         .text('Scroll')
         
     else
+      # Redirect
+    
       # Genome select
       genomeSelect = el.append("g")
         .attr("class", 'treenode')
@@ -1353,3 +1505,193 @@ class TreeView extends ViewTemplate
         .attr("dy", textdy)
         .attr("text-anchor", "start")
         .text('Target genome')
+        
+
+  # FUNC _treeOps
+  # Attach buttons for tree manipulations
+  # 
+  # PARAMS
+  # JQuery element to attach legend elements to
+  # 
+  # RETURNS
+  # boolean
+  #   
+  _treeOps: (el, legendID) ->
+      
+    # Additional tree ops (buttons)
+    opsHtml = ''
+    
+    # control form
+    controls = '<div class="row">'
+      
+    controls += "<div class='col-sm-6'><div class='btn-group'>"
+    
+    # Fit to window
+    fitButtonID = "tree_fit_button#{@elNum}"
+    controls += "<button id='#{fitButtonID}' type='button' class='btn btn-default btn-sm'>Fit to window</button>"
+      
+     # Reset to original view
+    resetButtonID = "tree_reset_button#{@elNum}"
+    controls += "<button id='#{resetButtonID}' type='button' class='btn btn-default btn-sm'>Reset window</button>"
+    
+    # Expand all
+    expButtonID = "tree_expand_button#{@elNum}"
+    controls += "<button id='#{expButtonID}' type='button' class='btn btn-default btn-sm'>Expand all</button>"
+      
+    controls += "</div></div>" # End button group, 6-col
+    
+    # Find genome
+    findButtonID = "tree_find_button#{@elNum}"
+    findInputID = "tree_find_input#{@elNum}"
+    controls += "<div class='col-sm-3'><div class='input-group input-group-sm'>"
+    controls += "<span class='input-group-btn'> <button id='#{findButtonID}' class='btn btn-default btn-sm' type='button'>Search</button></span>"
+    controls += "<input id='#{findInputID}' type='text' class='form-control'></div></div>"
+    
+    # Empty
+    controls += "<div class='col-sm-1'></div>"
+    
+    # Link to legend
+    controls += "<div class='col-sm-2'><a href='##{legendID}'>Functions List</a></div>"
+      
+    controls += "</div>" # End row
+      
+    opsHtml += "#{controls}"
+   
+    el.append("<div class='tree_operations'>#{opsHtml}</div>")
+      
+    # Actions
+    num = @elNum-1
+    
+    
+    # Find genome
+    jQuery("##{findButtonID}").click (e) ->
+      e.preventDefault()
+      searchString = jQuery("##{findInputID}").val()
+      viewController.highlightInView(searchString, num)
+    
+    # Fit window
+    jQuery("##{fitButtonID}").click (e) ->
+      e.preventDefault()
+      viewController.viewAction(num, 'fit_window')
+      
+    # Reset window
+    jQuery("##{resetButtonID}").click (e) ->
+      e.preventDefault()
+      viewController.viewAction(num, 'reset_window')
+      
+    # Expand tree
+    jQuery("##{expButtonID}").click (e) ->
+      e.preventDefault()
+      viewController.viewAction(num, 'expand_tree')
+    
+    
+    true
+  
+  # FUNC highlightNode
+  # Find and set focusNode in tree, expanding
+  # internal nodes on path to focusNode
+  # 
+  # PARAMS
+  # GenomeController object
+  # array of genome ID strings
+  # 
+  # RETURNS
+  # boolean
+  #   
+  highlightGenomes: (genomes, targetList) ->
+    
+    # Reset all genomes
+    for l in @leaves
+      l.focus = false
+      
+    targetNodes = @_blowUpPath(targetList)
+    
+    if targetNodes.length
+      maxy = 0
+      @edgeNode = null
+      for n in targetNodes
+        if n.sum_length > maxy
+          maxy = n.sum_length
+          @edgeNode = n
+        
+      @expansionContraction = true
+      @update(genomes)
+      
+    else
+      gs = targetList.join(', ')
+      throw new SuperphyError "TreeView method highlightGenome error. Genome(s) #{gs} not found."
+      
+    
+  # FUNC _blowUpPath
+  # Scans tree for matching genomes. 
+  # When genome found expands all 
+  # internal nodes in path.
+  # 
+  # PARAMS
+  # array of genome ID strings
+  # 
+  # RETURNS
+  # boolean
+  #     
+  _blowUpPath: (targetList) ->
+    
+    targetNodes = []
+    for g in targetList
+      n = @_findLeaf(g)
+      n.focus = true
+      targetNodes.push n
+      
+      # expand path to root
+      curr = n.parent
+      while curr
+        if curr._children?
+          curr.children = curr._children
+          curr._children = null
+          
+        curr = curr.parent
+          
+    targetNodes
+    
+    
+  # FUNC expandTree
+  # Expands all internal nodes in tree
+  # 
+  # PARAMS
+  # genomeController object
+  #
+  # RETURNS
+  # boolean
+  #       
+  expandTree: (genomes) ->
+    
+    @_blowUpAll(@root)
+    
+    @reformat = true
+    @update(genomes)
+    
+    true
+    
+  # FUNC _blowUpAll
+  # Expands all internal nodes in tree
+  # 
+  # PARAMS
+  # Node object
+  # 
+  # RETURNS
+  # boolean
+  #     
+  _blowUpAll: (n) ->
+    
+    # Expand
+    if n._children?
+      n.children = n._children
+      n._children = null
+      
+    if n.children?
+      for c in n.children
+        @_blowUpAll(c)
+        
+    true
+    
+    
+ 

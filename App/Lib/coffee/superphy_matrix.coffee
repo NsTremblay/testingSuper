@@ -413,19 +413,20 @@ class MatrixView extends ViewTemplate
     
     that = @
     transit = @canvas.transition().duration(@duration)
+    #transit = @canvas.transition().
     
     transit.selectAll(".matrixrow")
-        .delay((d, i) -> that.y(d.index) * 4)
+        #.delay((d, i) -> that.y(d.index) * 4)
         .attr("transform", (d, i) ->
           "translate(0," + that.y(d.index) + ")")
       .selectAll(".matrixcell")
-        .delay((d) -> that.x(d.x) * 4)
-        #.attr("x", (d) -> that.x(d.x))
+        #.delay((d) -> that.x(d.x) * 4)
+        .attr("x", (d) -> that.x(d.x))
         .attr("transform", (d, i) =>
           "translate(" + that.x(d.x) + ",0)")
 
     transit.selectAll(".matrixcolumn")
-        .delay((d, i) -> that.x(i) * 4)
+        #.delay((d, i) -> that.x(i) * 4)
         .attr("transform", (d, i) -> "translate(" + that.x(i) + ")rotate(-90)")
         
     true

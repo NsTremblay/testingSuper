@@ -7,6 +7,7 @@
 	<link rel="stylesheet" href="/App/Styling/css/genes_info.css">
 	
 	<script>var page_name = 'genes';</script>
+	<script src="/App/Lib/js/genes_info.js"></script>
 	
 </head>
 
@@ -14,18 +15,105 @@
 
 	<TMPL_INCLUDE NAME="page_top.tmpl">
 	
-	<div id="gene-intro" class="intro">
-		
-	</div>
-	
-	
+	<!--HEADER SECTION-->
 	<div class="panel panel-default">
   		<div class="panel-heading">
     		<h4 class="panel-title">Overview</h4>
   		</div>
 	  	<div id="gene-info-meta" class="panel-body">
+	  	
+			<div class="row" style="margin:20px 0 20px">
+				<div class="col-md-12">
+					<TMPL_IF is_amr>
+					<span class="overview-header">Antimicrobial Resistance Gene: </span>
+					<TMPL_ELSE>
+					<span class="overview-header">Virulence Factor Gene: </span>
+					</TMPL_IF>
+				</div>
+				<div class="col-md-12">
+					<h3><TMPL_VAR gene_name></h3>
+				</div>
+				
+				<TMPL_IF gene_synonyms>
+				
+				<div class="row">
+					<div class="col-md-12">
+						<span class="muted">Synonym(s): </span>
+					</div>
+					<div class="col-md-12">
+						<span style="padding-left:10px"><TMPL_VAR gene_synonyms></span>
+					</div>
+				</div>
+				
+				</TMPL_IF>
+				
+				<div class="col-md-12 horizontal-line"></div>
+			</div>
+			
+	  		<div id='gene-info-category'>
+	  			<div class="row">
+					<div class="col-md-12" style="padding-bottom: 10px"><span class="text-info"><strong>Category Path</strong></span></div>
+				</div>
+	  			
+	  		</div>
+	  		
+	  		
+	  		<div id='gene-info-suppl'>
+	  			<div class="row">
+					<div class="col-md-12" style="padding-bottom: 10px"><span class="text-info"><strong>Supplementary Info</strong></span></div>
+				</div>
+				
+				<TMPL_IF gene_accessions>
+				<div class="row">
+					<div class="col-md-12">
+						<TMPL_IF is_amr>
+						<span class="overview-header">Antimicrobial Resistance Ontology term(s): </span>
+						<TMPL_ELSE>
+						<span class="overview-header">VFDB ID: </span>
+						</TMPL_IF>
+					</div>
+					<div class="col-md-12">
+						<TMPL_LOOP gene_accessions>
+						<span style="padding-left:10px">
+							<TMPL_VAR accession>
+						</span>
+						</TMPL_LOOP>
+					</div>
+				</div>
+				</TMPL_IF>
+				
+				<TMPL_IF gene_strain>
+				<div class="row">
+					<div class="col-md-12">
+						<span class="overview-header">Isolated from:</span>
+					</div>
+					<div class="col-md-12">
+						<span style="padding-left:10px">
+							Escherichia coli <TMPL_VAR gene_strain>
+						</span>
+					</div>
+				</div>
+				</TMPL_IF>
+				
+				<TMPL_IF gene_plasmid>
+				<div class="row">
+					<div class="col-md-12">
+						<span class="overview-header">Source plasmid:</span>
+					</div>
+					<div class="col-md-12">
+						<span style="padding-left:10px">
+							<TMPL_VAR gene_plasmid>
+						</span>
+					</div>
+				</div>
+				</TMPL_IF>
+				
+	  		</div>
+	  		
+	  		
 	  	</div>
 	</div>
+	
 	<div class="panel panel-default">
   		<div class="panel-heading">
     		<h4 class="panel-title">Genome Alleles</h4>
@@ -70,7 +158,7 @@
 		var alleles = <TMPL_VAR allele_json>;
 		var gene_id = <TMPL_VAR gene_id>;
 		var gene_type = '<TMPL_VAR gene_type>';
-		var gene_info = <TMPL_VAR gene_json>;
+		var category = <TMPL_VAR category_json>;
 		
 		var allele_tree = null;
 		var allele_msa = null;
@@ -109,13 +197,10 @@
 		// Search forms
 		viewController.sideBar($('#search-utilities'));
 		
-		// Page
-		var gene_name = gene_info['name']
-		if(gene_type === 'amr') {
-			$('#gene-intro').html('<p>Antimicrobial resistance gene: <span class="intro-gene">'+gene_name+'</span> information page</p>')
-		} else {
-			$('#gene-intro').html('<p>Virulence factor gene: <span class="intro-gene">'+gene_name+'</span> information page</p>')
-		}
+		// Page stuff
+		
+		// Categories
+		categoryView(category, $('#gene-info-category'))
 		
 	</script>
 	

@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, GenomeController, GroupView, Histogram, ListView, LocusController, MatrixTicker, MatrixView, MetaTicker, MsaView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, GenomeController, GroupView, Histogram, ListView, LocusController, MatrixTicker, MatrixView, MetaTicker, MsaView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -124,13 +124,12 @@
         matView = new MatrixView(elem, clickStyle, vNum, this.genomeController, viewArgs);
         matView.update(this.genomeController);
         this.views.push(matView);
-      }
-      if (viewType === 'table') {
+      } else if (viewType === 'table') {
         tableView = new TableView(elem, clickStyle, vNum, viewArgs);
         tableView.update(this.genomeController);
         this.views.push(tableView);
       } else {
-        throw new SuperphyError('Unrecognized viewType in ViewController createView() method.');
+        throw new SuperphyError('Unrecognized viewType <' + viewType + '> in ViewController createView() method.');
         return false;
       }
       return true;
@@ -199,6 +198,7 @@
 
     ViewController.prototype.select = function(g, checked) {
       var v, _i, _len, _ref;
+      console.log(g + ' and ' + checked);
       if (this.actionMode === 'single_select') {
         this.redirect(g);
       } else {
@@ -760,6 +760,20 @@
       }
     };
 
+    ViewController.prototype.highlightInView = function(searchStr, vNum) {
+      var targetList;
+      if (!(searchStr && searchStr.length)) {
+        return false;
+      }
+      targetList = this.genomeController.find(searchStr);
+      if (targetList && targetList.length) {
+        this.views[vNum].highlightGenomes(this.genomeController, targetList);
+      } else {
+        superphyAlert("Search string " + searchStr + " matches no currently visible genomes.", "None Found");
+      }
+      return true;
+    };
+
     return ViewController;
 
   })();
@@ -821,6 +835,13 @@
       var args, genomes;
       genomes = arguments[0], args = 2 <= arguments.length ? __slice.call(arguments, 1) : [];
       throw new SuperphyError("viewAction method has not been defined in child class (" + this.type + ").");
+      return false;
+    };
+
+    ViewTemplate.prototype.highlightGenomes = function() {
+      var args, genomes, targetList;
+      genomes = arguments[0], targetList = arguments[1], args = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
+      throw new SuperphyError("highlightGenomes method has not been defined in child class (" + this.type + ").");
       return false;
     };
 
@@ -1824,6 +1845,38 @@
       return gids;
     };
 
+    GenomeController.prototype.find = function(searchStr) {
+      var genomes, id, pubSet, pvtSet, regex;
+      regex = new RegExp(escapeRegExp(searchStr), "i");
+      pubSet = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.pubVisible;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          id = _ref[_i];
+          if (this.match(this.public_genomes[id], 'displayname', regex, false)) {
+            _results.push(id);
+          }
+        }
+        return _results;
+      }).call(this);
+      pvtSet = (function() {
+        var _i, _len, _ref, _results;
+        _ref = this.pvtVisible;
+        _results = [];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          id = _ref[_i];
+          if (this.match(this.private_genomes[id], 'displayname', regex, false)) {
+            _results.push(id);
+          }
+        }
+        return _results;
+      }).call(this);
+      genomes = pubSet.concat(pvtSet);
+      console.log(genomes);
+      return genomes;
+    };
+
     return GenomeController;
 
   })();
@@ -2301,6 +2354,25 @@
     }
   };
 
+  superphyAlert = function(output_msg, title_msg) {
+    if (output_msg == null) {
+      output_msg = 'No Message to Display.';
+    }
+    if (title_msg == null) {
+      title_msg = 'Alert';
+    }
+    return jQuery("<div></div>").html(output_msg).dialog({
+      title: title_msg,
+      resizable: false,
+      modal: true,
+      buttons: {
+        "Ok": function() {
+          return jQuery(this).dialog("close");
+        }
+      }
+    });
+  };
+
 
   /*
   
@@ -2370,14 +2442,22 @@
         return 1;
       });
       legendID = "tree_legend" + this.elNum;
-      this.parentElem.append("<div class='tree_legend_link'><a href='#" + legendID + "'>Functions List</a></div>");
+      this._treeOps(this.parentElem, legendID);
       this.parentElem.append("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>");
       this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
+      this.scalePos = {
+        x: 10,
+        y: 10
+      };
+      this.scaleBar = this.wrap.append("g").attr("transform", "translate(" + this.scalePos.x + "," + this.scalePos.y + ")").attr("class", "scalebar");
       this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
       num = this.elNum - 1;
-      this.wrap.call(d3.behavior.zoom().x(this.xzoom).y(this.yzoom).scaleExtent([1, 8]).on("zoom", function() {
+      this.zoom = d3.behavior.zoom().x(this.xzoom).y(this.yzoom).scaleExtent([1, 8]).on("zoom", function() {
         return viewController.getView(num).zoomed();
-      }));
+      });
+      this.wrap.call(this.zoom);
+      this.scaleBar.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 1).attr('y2', 0);
+      this.scaleBar.append('text').attr("dx", "0").attr("dy", "1em").attr("text-anchor", "start");
       jQuery("<div id='" + legendID + "' class='genome_tree_legend'></div>").appendTo(this.parentElem);
       this.wrap2 = d3.select("#" + legendID).append("svg").attr("width", this.dim.w).attr("height", 100).style("-webkit-backface-visibility", "hidden");
       this.legend = this.wrap2.append("g").attr("transform", "translate(" + 5 + "," + 5 + ")");
@@ -2424,14 +2504,14 @@
 
     TreeView.prototype.duration = 1000;
 
-    TreeView.prototype.expandDepth = 5;
+    TreeView.prototype.expandDepth = 10;
 
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var branch_scale_factor_x, branch_scale_factor_y, cladeSelect, cmdBox, currLeaves, dt, elID, farthest, iNodes, id, leaves, linksEnter, lowest, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, xedge, yedge, _i, _j, _len, _len1, _ref, _ref1;
+      var cladeSelect, cmdBox, currLeaves, dt, elID, iNodes, id, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -2448,29 +2528,36 @@
         x0: sourceNode.x0,
         y0: sourceNode.y0
       };
-      farthest = d3.max(this.nodes, function(d) {
-        return d.sum_length * 1;
-      });
-      lowest = d3.max(this.nodes, function(d) {
-        return d.x;
-      });
-      yedge = this.width - 20;
-      xedge = this.height - 20;
-      branch_scale_factor_y = this.y_factor;
-      if ((branch_scale_factor_y * farthest) > yedge) {
-        branch_scale_factor_y = yedge / farthest;
+      if (this.reformat) {
+        this._scale();
+        targetLen = 30;
+        unit = targetLen / this.branch_scale_factor_y;
+        unit = Math.round(unit * 10000) / 10000;
+        this.scaleLength = unit * this.branch_scale_factor_y;
+        this.scaleBar.select('line').attr('x1', 0).attr('x2', this.scaleLength).attr('y1', 0).attr('y2', 0);
+        this.scaleBar.select('text').text("" + unit + " branch length units");
+        this.zoom.translate([0, 0]).scale(1);
+        this.scaleBar.attr("transform", "translate(" + this.xzoom(this.scalePos.x) + "," + this.yzoom(this.scalePos.y) + ")");
+        this.reformat = false;
       }
-      branch_scale_factor_x = this.x_factor;
-      if ((branch_scale_factor_x * lowest) > xedge) {
-        branch_scale_factor_x = xedge / lowest;
-      }
-      console.log('y' + branch_scale_factor_y);
-      console.log('x' + branch_scale_factor_x);
       _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         n = _ref[_i];
-        n.y = n.sum_length * branch_scale_factor_y;
-        n.x = n.x * branch_scale_factor_x;
+        n.y = n.sum_length * this.branch_scale_factor_y;
+        n.x = n.x * this.branch_scale_factor_x;
+      }
+      if (this.expansionContraction) {
+        yedge = this.width - 30;
+        ypos = this.edgeNode.y;
+        if (ypos > yedge) {
+          yshift = ypos - yedge;
+          _ref1 = this.nodes;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            n = _ref1[_j];
+            n.y = n.y - yshift;
+          }
+        }
+        this.expansionContraction = false;
       }
       svgNodes = this.canvas.selectAll("g.treenode").data(this.nodes, function(d) {
         return d.id;
@@ -2532,6 +2619,9 @@
           return d.label;
         }
       });
+      svgNodes.filter(function(d) {
+        return d.children && !d.leaf;
+      }).select("text").transition().duration(this.duration).style("fill-opacity", 1e-6);
       nodesEnter = svgNodes.enter().append("g").attr("class", (function(_this) {
         return function(d) {
           return _this._classList(d);
@@ -2617,9 +2707,9 @@
         svgNode = this.canvas.select("#" + elID);
         svgNode.moveToFront();
       }
-      _ref1 = this.nodes;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        n = _ref1[_j];
+      _ref2 = this.nodes;
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        n = _ref2[_k];
         n.x0 = n.x;
         n.y0 = n.y;
       }
@@ -2672,6 +2762,14 @@
       event = argArray.shift();
       if (event === 'expand_collapse') {
         this._expandCollapse(genomes, argArray[0], argArray[1]);
+      } else if (event === 'fit_window') {
+        this.reformat = true;
+        this.update(genomes);
+      } else if (event === 'reset_window') {
+        this.resetWindow = true;
+        this.update(genomes);
+      } else if (event === 'expand_tree') {
+        this.expandTree(genomes);
       } else {
         throw new SuperphyError("Unrecognized event type: " + event + " in TreeView viewAction method.");
       }
@@ -2679,59 +2777,65 @@
     };
 
     TreeView.prototype.selectClade = function(node, checked) {
-      var c, _i, _j, _len, _len1, _ref, _ref1, _results, _results1;
+      var c, _i, _j, _len, _len1, _ref, _ref1;
       if (node.leaf) {
-        return viewController.select(node.genome, checked);
+        if (checked) {
+          if (!node.selected) {
+            viewController.select(node.genome, checked);
+          }
+        } else {
+          if (node.selected) {
+            viewController.select(node.genome, checked);
+          }
+        }
       } else {
-        if (node.children != null) {
+        if (node.children) {
           _ref = node.children;
-          _results = [];
           for (_i = 0, _len = _ref.length; _i < _len; _i++) {
             c = _ref[_i];
-            _results.push(this.selectClade(c, checked));
+            this.selectClade(c, checked);
           }
-          return _results;
-        } else if (node._children != null) {
+        } else if (node._children) {
           _ref1 = node._children;
-          _results1 = [];
           for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
             c = _ref1[_j];
-            _results1.push(this.selectClade(c, checked));
+            this.selectClade(c, checked);
           }
-          return _results1;
         }
       }
+      return true;
     };
 
     TreeView.prototype.select = function(genome, isSelected) {
       var d, svgNodes, updateNode;
+      d = this._findLeaf(genome);
       svgNodes = this.canvas.selectAll("g.treenode");
       updateNode = svgNodes.filter(function(d) {
         return d.genome === genome;
-      }).attr("class", (function(_this) {
-        return function(d) {
-          d.selected = isSelected;
-          return _this._classList(d);
-        };
-      })(this));
-      updateNode.select("circle").style("fill", function(d) {
-        if (d.selected) {
-          return "lightsteelblue";
-        } else {
-          return "#fff";
-        }
       });
-      d = updateNode.datum();
-      console.log(updateNode);
-      console.log(d.parent);
-      this._percolateSelected(d.parent, isSelected);
-      svgNodes.filter(function(d) {
-        return !d.leaf;
-      }).attr("class", (function(_this) {
-        return function(d) {
-          return _this._classList(d);
-        };
-      })(this));
+      if (updateNode) {
+        updateNode.attr("class", (function(_this) {
+          return function(d) {
+            d.selected = isSelected;
+            return _this._classList(d);
+          };
+        })(this));
+        updateNode.select("circle").style("fill", function(d) {
+          if (d.selected) {
+            return "lightsteelblue";
+          } else {
+            return "#fff";
+          }
+        });
+        this._percolateSelected(d.parent, isSelected);
+        svgNodes.filter(function(d) {
+          return !d.leaf;
+        }).attr("class", (function(_this) {
+          return function(d) {
+            return _this._classList(d);
+          };
+        })(this));
+      }
       return true;
     };
 
@@ -2800,6 +2904,7 @@
       this.trueRoot.x0 = this.height / 2;
       this.trueRoot.y0 = 0;
       gPattern = /^((?:public_|private_)\d+)\|/;
+      this.leaves = [];
       return this._assignKeys(this.trueRoot, 0, gPattern);
     };
 
@@ -2835,16 +2940,18 @@
         } else {
           n.genome = n.name;
         }
+        this.leaves.push(n);
       }
       return i;
     };
 
     TreeView.prototype._sync = function(genomes) {
-      console.log('sync');
       this.root = this._syncNode(this.trueRoot, genomes, 0);
-      if (genomes.genomeSetId !== this.currentGenomeSet) {
+      if ((genomes.genomeSetId !== this.currentGenomeSet) || this.resetWindow) {
         this._expansionLayout();
         this.currentGenomeSet = genomes.genomeSetId;
+        this.resetWindow = false;
+        this.reformat = true;
       }
       return true;
     };
@@ -2915,24 +3022,18 @@
       return copy;
     };
 
-    TreeView.prototype._expansionLayout = function(focusNode) {
-      if (focusNode == null) {
-        focusNode = null;
-      }
-      this._formatNode(this.root, 0, focusNode);
+    TreeView.prototype._expansionLayout = function() {
+      this._formatNode(this.root, 0);
       this.root.x0 = this.height / 2;
       this.root.y0 = 0;
       this.root.root = true;
       return true;
     };
 
-    TreeView.prototype._formatNode = function(node, depth, parentNode, focusNode) {
+    TreeView.prototype._formatNode = function(node, depth, parentNode) {
       var c, children, current_depth, isExpanded, r, record, _i, _len, _ref;
       if (parentNode == null) {
         parentNode = null;
-      }
-      if (focusNode == null) {
-        focusNode = null;
       }
       if (node.hidden) {
         return null;
@@ -2961,8 +3062,8 @@
           node.children = children;
           node._children = null;
         } else if (isExpanded) {
-          node.children = children;
-          node._children = null;
+          node._children = children;
+          node.children = null;
         } else {
           node._children = children;
           node.children = null;
@@ -2976,7 +3077,7 @@
         };
         for (_i = 0, _len = children.length; _i < _len; _i++) {
           c = children[_i];
-          r = this._formatNode(c, current_depth, node, focusNode);
+          r = this._formatNode(c, current_depth, node);
           record['num_leaves'] += r['num_leaves'];
           record['num_leaves'] += r['num_selected'];
           if ((record['depth'] > r['depth']) || (record['depth'] === r['depth'] && record['length'] < r['length'])) {
@@ -2999,26 +3100,76 @@
       return record;
     };
 
+    TreeView.prototype._scale = function() {
+      var farthest, lowest, padding, percCovered, xedge, yedge;
+      farthest = d3.max(this.nodes, function(d) {
+        return d.sum_length * 1;
+      });
+      lowest = d3.max(this.nodes, function(d) {
+        return d.x;
+      });
+      percCovered = 0.10 * this.root.num_leaves;
+      if (percCovered > 0.90) {
+        percCovered = 0.90;
+      }
+      padding = 20;
+      yedge = (this.width - padding) * percCovered;
+      xedge = (this.height - padding) * percCovered;
+      this.branch_scale_factor_y = yedge / farthest;
+      this.branch_scale_factor_x = xedge / lowest;
+      return true;
+    };
+
     TreeView.prototype._expandCollapse = function(genomes, d, el) {
-      var c, svgNode, _i, _len, _ref;
+      var c, c2, c3, maxy, svgNode, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       svgNode = d3.select(el);
+      this.edgeNode = null;
+      maxy = 0;
       if (d.children != null) {
         d._children = d.children;
         d.children = null;
+        this.edgeNode = d;
       } else {
         d.children = d._children;
         d._children = null;
-        svgNode.select("text").transition().duration(this.duration).style("fill-opacity", 1e-6);
         _ref = d.children;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           c = _ref[_i];
           if (c._children != null) {
             c.children = c._children;
             c._children = null;
-            d3.select("#treenode" + c.id).select("text").transition().duration(this.duration).style("fill-opacity", 1e-6);
+          }
+          if (c.children != null) {
+            _ref1 = c.children;
+            for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+              c2 = _ref1[_j];
+              if (c2._children != null) {
+                c2.children = c2._children;
+                c2._children = null;
+              }
+              if (c2.children != null) {
+                _ref2 = c2.children;
+                for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+                  c3 = _ref2[_k];
+                  if (c3.sum_length > maxy) {
+                    maxy = c3.sum_length;
+                    this.edgeNode = c3;
+                  }
+                }
+              }
+              if (c2.sum_length > maxy) {
+                maxy = c2.sum_length;
+                this.edgeNode = c2;
+              }
+            }
+          }
+          if (c.sum_length > maxy) {
+            maxy = c.sum_length;
+            this.edgeNode = c;
           }
         }
       }
+      this.expansionContraction = true;
       this.update(genomes, d);
       return true;
     };
@@ -3034,6 +3185,8 @@
           return _this._zTranslate(d, _this.xzoom, _this.yzoom);
         };
       })(this));
+      this.scaleBar.attr("transform", "translate(" + this.xzoom(this.scalePos.x) + "," + this.yzoom(this.scalePos.y) + ")");
+      this.scaleBar.select("line").attr('transform', 'scale(' + d3.event.scale + ',1)');
       return true;
     };
 
@@ -3070,6 +3223,24 @@
         }
       }
       return clsList.join(' ');
+    };
+
+    TreeView.prototype._findLeaf = function(genome) {
+      var found, n;
+      n = null;
+      found = this.leaves.some(function(el, i) {
+        if (el.genome === genome) {
+          n = el;
+          return true;
+        } else {
+          return false;
+        }
+      });
+      if (!found) {
+        throw new SuperphyError("No leaf node matching " + genome + " found.");
+        return null;
+      }
+      return n;
     };
 
     TreeView.prototype._legend = function(el) {
@@ -3157,6 +3328,119 @@
         focusNode.append("circle").attr("r", 4).attr("cx", 8).attr("cy", 2);
         return focusNode.append("text").attr("class", "legendlabel1").attr("dx", textdx2).attr("dy", textdy).attr("text-anchor", "start").text('Target genome');
       }
+    };
+
+    TreeView.prototype._treeOps = function(el, legendID) {
+      var controls, expButtonID, findButtonID, findInputID, fitButtonID, num, opsHtml, resetButtonID;
+      opsHtml = '';
+      controls = '<div class="row">';
+      controls += "<div class='col-sm-6'><div class='btn-group'>";
+      fitButtonID = "tree_fit_button" + this.elNum;
+      controls += "<button id='" + fitButtonID + "' type='button' class='btn btn-default btn-sm'>Fit to window</button>";
+      resetButtonID = "tree_reset_button" + this.elNum;
+      controls += "<button id='" + resetButtonID + "' type='button' class='btn btn-default btn-sm'>Reset window</button>";
+      expButtonID = "tree_expand_button" + this.elNum;
+      controls += "<button id='" + expButtonID + "' type='button' class='btn btn-default btn-sm'>Expand all</button>";
+      controls += "</div></div>";
+      findButtonID = "tree_find_button" + this.elNum;
+      findInputID = "tree_find_input" + this.elNum;
+      controls += "<div class='col-sm-3'><div class='input-group input-group-sm'>";
+      controls += "<span class='input-group-btn'> <button id='" + findButtonID + "' class='btn btn-default btn-sm' type='button'>Search</button></span>";
+      controls += "<input id='" + findInputID + "' type='text' class='form-control'></div></div>";
+      controls += "<div class='col-sm-1'></div>";
+      controls += "<div class='col-sm-2'><a href='#" + legendID + "'>Functions List</a></div>";
+      controls += "</div>";
+      opsHtml += "" + controls;
+      el.append("<div class='tree_operations'>" + opsHtml + "</div>");
+      num = this.elNum - 1;
+      jQuery("#" + findButtonID).click(function(e) {
+        var searchString;
+        e.preventDefault();
+        searchString = jQuery("#" + findInputID).val();
+        return viewController.highlightInView(searchString, num);
+      });
+      jQuery("#" + fitButtonID).click(function(e) {
+        e.preventDefault();
+        return viewController.viewAction(num, 'fit_window');
+      });
+      jQuery("#" + resetButtonID).click(function(e) {
+        e.preventDefault();
+        return viewController.viewAction(num, 'reset_window');
+      });
+      jQuery("#" + expButtonID).click(function(e) {
+        e.preventDefault();
+        return viewController.viewAction(num, 'expand_tree');
+      });
+      return true;
+    };
+
+    TreeView.prototype.highlightGenomes = function(genomes, targetList) {
+      var gs, l, maxy, n, targetNodes, _i, _j, _len, _len1, _ref;
+      _ref = this.leaves;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        l = _ref[_i];
+        l.focus = false;
+      }
+      targetNodes = this._blowUpPath(targetList);
+      if (targetNodes.length) {
+        maxy = 0;
+        this.edgeNode = null;
+        for (_j = 0, _len1 = targetNodes.length; _j < _len1; _j++) {
+          n = targetNodes[_j];
+          if (n.sum_length > maxy) {
+            maxy = n.sum_length;
+            this.edgeNode = n;
+          }
+        }
+        this.expansionContraction = true;
+        return this.update(genomes);
+      } else {
+        gs = targetList.join(', ');
+        throw new SuperphyError("TreeView method highlightGenome error. Genome(s) " + gs + " not found.");
+      }
+    };
+
+    TreeView.prototype._blowUpPath = function(targetList) {
+      var curr, g, n, targetNodes, _i, _len;
+      targetNodes = [];
+      for (_i = 0, _len = targetList.length; _i < _len; _i++) {
+        g = targetList[_i];
+        n = this._findLeaf(g);
+        n.focus = true;
+        targetNodes.push(n);
+        curr = n.parent;
+        while (curr) {
+          if (curr._children != null) {
+            curr.children = curr._children;
+            curr._children = null;
+          }
+          curr = curr.parent;
+        }
+      }
+      return targetNodes;
+    };
+
+    TreeView.prototype.expandTree = function(genomes) {
+      this._blowUpAll(this.root);
+      this.reformat = true;
+      this.update(genomes);
+      return true;
+    };
+
+    TreeView.prototype._blowUpAll = function(n) {
+      var c, _i, _len, _ref;
+      if (n._children != null) {
+        n.children = n._children;
+        n._children = null;
+      }
+      if (n.children != null) {
+        _ref = n.children;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          c = _ref[_i];
+          this._blowUpAll(c);
+        }
+      }
+      return true;
     };
 
     return TreeView;
@@ -4367,20 +4651,16 @@
       var that, transit;
       that = this;
       transit = this.canvas.transition().duration(this.duration);
-      transit.selectAll(".matrixrow").delay(function(d, i) {
-        return that.y(d.index) * 4;
-      }).attr("transform", function(d, i) {
+      transit.selectAll(".matrixrow").attr("transform", function(d, i) {
         return "translate(0," + that.y(d.index) + ")";
-      }).selectAll(".matrixcell").delay(function(d) {
-        return that.x(d.x) * 4;
+      }).selectAll(".matrixcell").attr("x", function(d) {
+        return that.x(d.x);
       }).attr("transform", (function(_this) {
         return function(d, i) {
           return "translate(" + that.x(d.x) + ",0)";
         };
       })(this));
-      transit.selectAll(".matrixcolumn").delay(function(d, i) {
-        return that.x(i) * 4;
-      }).attr("transform", function(d, i) {
+      transit.selectAll(".matrixcolumn").attr("transform", function(d, i) {
         return "translate(" + that.x(i) + ")rotate(-90)";
       });
       return true;
@@ -4715,7 +4995,6 @@
       });
       if (style === 'select') {
         tableEl.find('.genome-table-checkbox').click(function(e) {
-          e.preventDefault();
           return viewController.select(this.value, this.checked);
         });
       }

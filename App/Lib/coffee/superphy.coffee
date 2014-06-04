@@ -116,14 +116,14 @@ class ViewController
       matView.update(@genomeController)
       @views.push matView
       
-    if viewType is 'table'
+    else if viewType is 'table'
       # New table view
       tableView = new TableView(elem, clickStyle, vNum, viewArgs)
       tableView.update(@genomeController)
       @views.push tableView
       
     else
-      throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
+      throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
       return false
       
     return true # return success
@@ -205,6 +205,8 @@ class ViewController
     return true # return success
     
   select: (g, checked) ->
+    
+    console.log g+' and '+checked
     
     if @actionMode is 'single_select'
       @redirect(g)
@@ -914,6 +916,32 @@ class ViewController
       
     else
       throw new SuperphyError "Unknown paramType parameter: #{paramType}"
+
+  # FUNC highlightInView
+  # Identify genomes that match query and update
+  # selected view so that genome(s) are highlighted
+  #
+  # PARAMS
+  # string for search query
+  # int indicating view number
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  highlightInView: (searchStr, vNum) ->
+    
+    unless searchStr and searchStr.length
+      return false
+      
+    targetList = @genomeController.find(searchStr)
+    
+    if targetList and targetList.length
+      @views[vNum].highlightGenomes(@genomeController, targetList)
+      
+    else
+      superphyAlert "Search string #{searchStr} matches no currently visible genomes.", "None Found"
+      
+    true
     
 
 # Return instance of a ViewController
@@ -962,6 +990,10 @@ class ViewTemplate
     
   viewAction: (genomes, args...) ->
     throw new SuperphyError "viewAction method has not been defined in child class (#{this.type})."
+    false # return fail
+    
+  highlightGenomes: (genomes, targetList, args...) ->
+    throw new SuperphyError "highlightGenomes method has not been defined in child class (#{this.type})."
     false # return fail
     
   cssClass: ->
@@ -1922,9 +1954,30 @@ class GenomeController
     gids
           
           
-      
-      
-
+  # FUNC find
+  # Returns list of visible public and private genome IDs \
+  # that have matching names
+  #
+  # PARAMS
+  # searchStr - a string to use in genome name search
+  # 
+  # RETURNS
+  # array of matching genome labels
+  #
+  find: (searchStr) ->
+    
+    regex = new RegExp escapeRegExp(searchStr), "i"
+    pubSet = (id for id in @pubVisible when @match(@public_genomes[id], 'displayname', regex, false))
+    pvtSet = (id for id in @pvtVisible when @match(@private_genomes[id], 'displayname', regex, false))
+    
+ 
+    genomes = pubSet.concat pvtSet
+    
+    console.log genomes
+    
+    genomes
+        
+  
 ###
  CLASS LocusController
  
@@ -2517,3 +2570,24 @@ trimInput = (str, field) ->
   else
     alert("Error: #{field} is empty.")
     return null
+
+# FUNC superphyAlert
+# JQuery UI dialog to use as alert replacement
+#
+# USAGE superphyAlert string, string
+# 
+# RETURNS
+# Boolean
+#      
+superphyAlert = (output_msg='No Message to Display.', title_msg='Alert') ->
+  
+  jQuery("<div></div>")
+    .html(output_msg)
+    .dialog({
+      title: title_msg,
+      resizable: false,
+      modal: true,
+      buttons: {
+        "Ok": -> jQuery( this ).dialog( "close" );
+      }
+    })

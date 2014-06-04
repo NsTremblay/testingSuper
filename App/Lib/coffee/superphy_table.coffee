@@ -209,7 +209,7 @@ class TableView extends ViewTemplate
     if style == 'select' 
       # Cell checkbox
       tableEl.find('.genome-table-checkbox').click (e) ->
-        e.preventDefault()
+        #e.preventDefault()
         viewController.select(@.value, @.checked)
       
     if style == 'redirect'
