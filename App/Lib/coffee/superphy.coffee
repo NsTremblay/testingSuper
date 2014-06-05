@@ -156,7 +156,13 @@ class ViewController
     buttonEl.click (e) ->
       e.preventDefault()
       viewController.addToGroup(gNum)
-      
+    
+    # Update number of groups to the dropdown list in the side bar
+    selectGroupList = jQuery('.group-manager-number');
+    selectGroupList.empty();
+    jQuery('<option value='+"#{group.elNum}"+'>Group '+"#{group.elNum}"+'</option>').appendTo(selectGroupList) for group in @groups
+
+
     return true # return success
     
     
@@ -415,7 +421,128 @@ class ViewController
     # @groupForm(form3, parentTarget)
     # wrapper.append(form3)
     
-   
+    true
+
+  sideBarGroupManager: (elem) ->
+    #Group form
+    parentTarget = 'sidebar-accordion'
+    wrapper = jQuery('#sidebar-accordion')
+
+    form = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form)
+    @groupsSideForm(form, parentTarget)
+    true
+
+  groupsCompareForm: (elem) ->
+    parentTarget = 'groups-compare-panel-body'
+    wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
+    elem.append(wrapper)
+
+    form = jQuery('<div class="panel-body" id="'+parentTarget+'"></div>')
+    wrapper.append(form)
+    @groupForm(form, parentTarget)
+    true
+  
+  groupsSideForm: (elem, parentStr) ->  
+    #Build & attach form
+    form =
+      '<div class="panel-heading">
+      <div class="panel-title">
+      <a data-toggle="collapse" data-parent="#'+parentStr+'" href="#group-manager-form-panel"><span class="fa fa-th-large"></span> Manage Groups <span class="caret"></span></a>
+      </div></div>
+      <div id="group-manager-form-panel" class="panel-collapse collapse out">
+      <div class="panel-body">
+      <form role="form" id="group-manager-form"></form>
+      </div></div>'
+
+    elem.append(form)
+
+    formEl = jQuery('#group-manager-form');
+
+    groupSelectEl = jQuery('<div class="form-group"><label>Select from your custom groups:<select class="form-control input-sm"></select></label></div>').appendTo(formEl)
+
+    formRadioEl = jQuery('<div class="form-group group-manager-options"></div>').appendTo(formEl)
+
+    updateGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="update-group" checked>Update group</label></div>').appendTo(formRadioEl)
+
+    renameGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="rename-group">Rename group</label></div>').appendTo(formRadioEl)
+
+    newGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="new-group">Create a new group</label></div>').appendTo(formRadioEl)
+
+    groupNameInputEl = jQuery('<div class="form-group"><label>Enter a group name:<input type="text" class="form-control input-sm group-manager-name" name="group-name"></label></div>').appendTo(formEl)
+
+    groupNumberInputEl = jQuery('<div class="form-group"><label>Select group number:<select class="form-control input-sm group-manager-number" name="group-number"></select></label></div>').appendTo(formEl)
+ 
+    jQuery('<option value='+"#{group.elNum}"+'>Group '+"#{group.elNum}"+'</option>').appendTo(jQuery('.group-manager-number')) for group in @groups
+
+    buttonGroupEl = jQuery('<div class="form-group"></div>').appendTo(formEl)
+
+    saveGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-floppy-o"></span></button>').appendTo(buttonGroupEl)
+
+    loadGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-folder-open-o"></span></button>').appendTo(buttonGroupEl)
+
+    deleteGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-trash-o"></span></button>').appendTo(buttonGroupEl)
+
+    alertBox = jQuery('<div class="group-manager-alerts"></div>').prependTo(formEl)
+
+    # TODO: update click action elements
+    # Click action for save groups button
+    saveGroupButton.click (e) ->
+      alertBox.empty();
+      
+      form = jQuery('#group-manager-form')
+      serialData = form.serialize();
+
+      maxGroups = window.viewController.groups.length
+      groupNum = jQuery('input[name="group-number"]').val()
+      serialData += '&max-groups='+maxGroups
+
+      e.preventDefault
+      jQuery.ajax({
+      type: "POST",
+      url: '/groups/save',
+      data: serialData
+      }).done( (data) ->
+        alertBox.empty();
+        messages = JSON.parse(data)
+        if messages.error 
+          jQuery('<div class="alert alert-danger">'+messages.error+'</div>').appendTo(alertBox)
+        else
+          jQuery('<div class="alert alert-success">'+messages.success+'</div>').appendTo(alertBox)
+        ).fail ( () ->
+          alert "There was some kind of error. Contact the code doctor."
+          )
+    true
+
+    # Click action for load groups button
+    # TODO
+    loadGroupButton.click (e) ->
+      e.preventDefault
+      jQuery.ajax({
+      type: "POST",
+      url: '/groups/load',
+      data: serialData
+      }).done( () ->
+        console.log "Done and returned"
+        ).fail ( () ->
+          console.log "Error!"
+          )
+    true
+
+    # Click action for delete groups button
+    # TODO
+    deleteGroupButton.click (e) ->
+      serialData = jQuery('#group-manager-form').serialize();
+      e.preventDefault
+      jQuery.ajax({
+      type: "POST",
+      url: '/groups/delete',
+      data: serialData
+      }).done( () ->
+        console.log "Done and returned"
+        ).fail ( () ->
+          console.log "Error!"
+          )
     true
 
   sideBarRight: (elem) ->
