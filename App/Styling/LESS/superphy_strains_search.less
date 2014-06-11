@@ -52,13 +52,14 @@
 // Loading Wheel
 
 @loader-color: #dff0d8;
-@loader-span-color: green;
+@loader-job-color: #f2dede;
 @loader-span-height: 4px;
 @loader-width: 40px;
 @loader-padding: 1px;
 @loader-border-width: 2px;
 @loader-border-style: solid;
 @loader-border-color: @loader-color;
+@loader-job-border-color: @loader-job-color;
 @loader-time: 1s;
 @loader-steps: 3;
 
@@ -75,12 +76,37 @@
   padding: @loader-padding;
   .animation(loader-border 2s ease-in infinite);
  
+
   // Indicator
   > span {
     display: block;
     width: 0;
     height: @loader-span-height;
     background: @loader-color;
+    position: relative;
+    .animation(loader-slide @loader-time ease-in infinite );   
+  }
+}
+
+.loader-job{
+  background: white;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  margin-left: -@loader-width/2;
+  margin-top: 5px;
+  width: @loader-width;
+  border: @loader-border-width @loader-border-style @loader-job-border-color;
+  border-radius: @loader-padding * 3;
+  padding: @loader-padding;
+  .animation(loader-job-border 2s ease-in infinite);
+ 
+  // Indicator
+  > span {
+    display: block;
+    width: 0;
+    height: @loader-span-height;
+    background: @loader-job-color;
     position: relative;
     .animation(loader-slide @loader-time ease-in infinite );   
   }
@@ -110,6 +136,14 @@
   50% { border-color: @loader-color; width: @loader-width; margin-left: -@loader-width/2;}
   100% { border-color: white; width: @max; margin-left: -@max/2;}
 }
+
+.loader-job-border {
+  @max: 40px;
+  0% { border-color: white; width: @max; margin-left: -@max/2;}
+  50% { border-color: @loader-job-color; width: @loader-width; margin-left: -@loader-width/2;}
+  100% { border-color: white; width: @max; margin-left: -@max/2;}
+}
+
 // Generate animation for border
 @-webkit-keyframes loader-border {.loader-border;}
 @-moz-keyframes loader-border {.loader-border;}

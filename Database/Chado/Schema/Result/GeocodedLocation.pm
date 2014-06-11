@@ -134,8 +134,8 @@ Composing rels: L</genome_locations> -> feature
 __PACKAGE__->many_to_many("features_2s", "genome_locations", "feature");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:4wl9WEsIgF05qSeRiNtJaA
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:IiPjG/XLReKV73CyNI0EIw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

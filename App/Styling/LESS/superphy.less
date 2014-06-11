@@ -132,19 +132,25 @@
   }
 }
 
+// Compare groups buttons
+.compare-genome-groups > div > button {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
 // Group box list
 .genome-group-list {
   list-style-type: none;
   display: block;
   max-height: 500px;
-  max-width: 350px;
+  //max-width: 350px;
   min-height: 50px;
-  width: 350px;
+  //width: 350px;
   overflow: auto;
   padding: 10px;
   margin: 10px;
   white-space: nowrap;
-  .borderStyle;
+  //.borderStyle;
 }
 
 // Group button styles
@@ -154,7 +160,26 @@
   @light-color: lighten(@@color, 20%);
   
   #genome-group-add@{index} {
-    background-color: @light-color;
+    background-color: #fff;
+  }
+
+  #genome-group-add@{index} span {
+    color: @light-color;
+  }
+  
+  #genome-group-list@{index} div a span {
+    color: @light-color;
+  }
+  
+  #genome-group@{index}-heading {
+    padding: 0px 10px 0px 10px;
+    color: @light-color;
+  }
+
+  #collapse-group@{index}-options #group@{index}-manager {
+    margin-bottom: 5px;
+    padding-bottom: 5px;
+    .borderStyle;
   }
   
   .buttonGroupConstructor(@index - 1);
@@ -163,4 +188,18 @@
 // Define color schemes for up to 10 groups
 .buttonGroupConstructor(@group-num);
 
+/*Checkbox styles*/
+.radio, .checkbox {
+  min-height: 0px;
+}
 
+// Group box
+.genome-group {
+  margin-bottom: 10px;
+  .borderStyle;
+}
+
+#group-manager-form div.form-group button {
+  margin-left: 2px;
+  margin-right: 2px;
+}

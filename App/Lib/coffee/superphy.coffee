@@ -157,6 +157,7 @@ class ViewController
       e.preventDefault()
       viewController.addToGroup(gNum)
     
+    # Incomplete and on hold for now
     # Update number of groups to the dropdown list in the side bar
     selectGroupList = jQuery('.group-manager-number');
     selectGroupList.empty();
@@ -305,14 +306,13 @@ class ViewController
     true
   
   groupForm: (elem, addMoreOpt) ->
-    
     # There can be only one
     blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem)
     @addGroupFormRow(blockEl)
     
     if addMoreOpt
       addEl = jQuery("<div class='add-genome-groups row'></div>")
-      divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl);
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl)
       buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl)
       buttEl.click( (e) ->
         reachedMax = viewController.addGroupFormRow(jQuery("#group-form-block"))
@@ -322,7 +322,41 @@ class ViewController
           e.preventDefault()
       )
       elem.append(addEl)
-        
+    # Else in the group search page
+    else 
+      # TODO:
+      submitEl = jQuery("<div class='compare-genome-groups row'></div>")
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
+      clearFormEl = jQuery("<button class='btn btn-danger'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl)
+      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl)
+      
+      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='/groups/compare' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
+
+      # Prevent default click action to prepare the groups before submitting
+      buttonEl.click( (e) ->
+        e.preventDefault()
+        alert = jQuery('<div class="alert alert-danger">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        You must have at least one genome in either of the groups to compare to.
+                        </div>')
+        unless jQuery('#genome_group1 li').length > 0 or jQuery('#genome_group2 li').length > 0
+          blockEl.prepend(alert);
+          return false
+
+        # Prepare Group 1
+        group1Genomes = jQuery('#genome_group1 .genome_group_item')
+        jQuery("<input type='hidden' name='group1-genome' value='#{jQuery(genome).find('a').data('genome')}'>").appendTo(hiddenFormEl) for genome in group1Genomes
+        # Prepare Group 2
+        group2Genomes = jQuery('#genome_group2 .genome_group_item')
+        jQuery("<input type='hidden' name='group2-genome' value='#{jQuery(genome).find('a').data('genome')}'>").appendTo(hiddenFormEl) for genome in group2Genomes
+        # Check that both groups arent empty
+        jQuery('#groups-compare-form').submit()
+        )
+
+      elem.append(submitEl)
+
+      #TODO: Add click event for clearing the group form
+
     true
      
   addGroupFormRow: (elem) ->
@@ -341,8 +375,9 @@ class ViewController
       
     for i in [gNum, gNum+1]
       formEl = jQuery("<div id='genome-group-form#{i}' class='genome-group-form col-md-6'></div>")
-      listEl = jQuery("<div id='genome-group-list#{i}'></div>").appendTo(formEl)
-      buttEl = jQuery("<button id='genome-group-add#{i}' class='btn' type='button'>Add to Group #{i}</button>").appendTo(formEl)
+      listEl = jQuery("<div id='genome-group-list#{i}' class='genome-group'></div>").appendTo(formEl)
+      divEl = jQuery('<div></div>').appendTo(listEl)
+      buttEl = jQuery("<button id='genome-group-add#{i}' class='btn' type='button' title='Add genome(s) to Group #{i}'><span class='fa fa-plus'></span> <h4 id='genome-group#{i}-heading'>Group #{i}</h4></button>").appendTo(divEl)
       rowEl.append(formEl)
       
       ok = @createGroup(listEl,buttEl)
@@ -438,11 +473,15 @@ class ViewController
     wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
     elem.append(wrapper)
 
+    # In the groups page we only compare 2 groups
+    # So dont add a second parameter to @groupForm
     form = jQuery('<div class="panel-body" id="'+parentTarget+'"></div>')
     wrapper.append(form)
-    @groupForm(form, parentTarget)
+    #@groupForm(form, parentTarget)
+    @groupForm(form)
     true
   
+  # Incomplete and on hold for now:
   groupsSideForm: (elem, parentStr) ->  
     #Build & attach form
     form =
@@ -1973,10 +2012,10 @@ class GenomeController
     
     if @publicRegexp.test(g)
       @public_genomes[g].isSelected = checked 
-      alert('selected public: '+g+' value:'+checked)
+      #alert('selected public: '+g+' value:'+checked)
     else 
       @private_genomes[g].isSelected = checked
-      alert('selected private: '+g+' value:'+checked)
+      #alert('selected private: '+g+' value:'+checked)
     
     true
     

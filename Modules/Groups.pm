@@ -17,6 +17,9 @@ use Phylogeny::Tree;
 use Modules::TreeManipulator;
 use Modules::LocationManager;
 use JSON;
+use Time::HiRes;
+use Proc::Daemon;
+use String::Random;
 
 =head2 setup
 
@@ -70,59 +73,173 @@ sub search : StartRunmode {
     return $template->output();
 }
 
-# Group Form Functions
-sub save : Runmode {
+sub compare : Runmode {
     my $self = shift;
+
     my $q = $self->query();
 
-    my %status;
-    
-    my $option = $q->param('group-manager-option');
-    my $groupName = $q->param('group-name');
-    my $groupNumber = $q-> param('group-number');
-    my $maxGroups = $q->param('max-groups');
+    my ($username, $userId);
+    #Check if user is logged in (need both username and user id)
+    $username = $self->authen->username;
+    unless ($username) {
+        ($username, $userId) = (undef, undef);
+    }
+    else {
 
-    print STDERR $groupName . "\n";
-    print STDERR $groupNumber . "\n";
+        my $userIdRs = $self->dbixSchema->resultset('Login')->search(
+            {username => $username},
+            {
+                column => [qw/login_id/]
+            }
+            );
 
-    if ($option eq 'new-group') {
-        if (!$groupName) {
-            $status{'error'} = "You must enter a group name to create a new group"; 
-        }
-        elsif (!$groupNumber) {
-            $status{'error'} = "You must specify which group number to save";
-        }
-        elsif ($groupNumber > $maxGroups) {
-            $status{'error'} = "Group $groupNumber is not valid";
-        }
-        else {
-            # TODO
-            $status{'success'} = "Your group has been saved successfully";
-        }
+        $userId = $userIdRs->first->login_id if $userIdRs->first // '';
     }
 
-    return encode_json(\%status);
+    # TODO: Need to check user permissions on genomes with genome warden
+
+    # With the long polling system a user can bookmark the page and come back to it later
+    # Each bookmarked page will have a job id tagged to it. If no job-id exists then
+    #   the job is newly requested and should be created.
+    my $job_id = $q->param("job_id");
+
+    if ($job_id) {
+        my $template = $self->load_tmpl( 'job_in_progress.tmpl' , die_on_bad_params=>0);
+        $template->param(JOB=>1,job_id => $job_id);
+        return $template->output();
+    }
+
+    my @group1Genomes = $q->param('group1-genome');
+    my @group2Genomes = $q->param('group2-genome');
+
+    #Else no job_id so we create a new request
+    $self->_forkJob(\@group1Genomes, \@group2Genomes, $userId, $username, $self->session->remote_addr(), $self->session->id());
+    
+    return;
 }
 
-sub load : Runmode {
-    # TODO:
+sub _forkJob {
+    my ($self, $_group1Genomes, $_group2Genomes, $_userId, $_username, $_remoteAddress, $_sessionId) = @_;
+
+    my %userConfig = ('group1' => $_group1Genomes, 'group2' => $_group2Genomes);
+
+    my $userConfigJson = encode_json(\%userConfig);
+
+    #Generate a new random job id:
+    my @stringRandomInputs = ('C','c','n');
+    my $randomStringLen = 20;
+    my $randomStringInput;
+
+    foreach (1..$randomStringLen) {
+        $randomStringInput.=$stringRandomInputs[rand @stringRandomInputs];
+    }
+
+    my $stringRandomGenerator = new String::Random;
+
+    my $jobCount = $self->dbixSchema->resultset('JobResult')->search(undef, {column => ['job_result_id']})->count;
+
+    my $newJobId = $stringRandomGenerator->randpattern($randomStringInput) . $jobCount;
+
+    my $newJob = $self->dbixSchema->resultset('JobResult')->new({
+        'job_result_id' => $newJobId,
+        'remote_address' => $_remoteAddress,
+        'session_id' => $_sessionId,
+        'user_id' => $_userId,
+        'username' => $_username,
+        'user_config' => $userConfigJson,
+        'job_result_status' => 'Initializing request',
+        'result' => undef
+        });
+
+    $newJob->insert();
+    get_logger->info("New job: $newJobId created") if $newJob->in_storage() // die "Error initializing new groups compare job.\n";
+
+    #Set up daemon proc and fork off!
+    my $config = $self->config;
+    my $logDir = $self->config_param('dir.log');
+
+    my $cmd = "perl $FindBin::Bin/../../Data/groups_forked_job.pl --job_id $newJobId";
+
+    my $daemon = Proc::Daemon->new(
+        work_dir => "$FindBin::Bin/../../Data/",
+        exec_command => $cmd,
+        child_STDERR => "+>>$logDir"."groups.log");
+
+    $self->teardown;
+
+    my $kid_pid = $daemon->Init;
+
+    return $self->redirect('/groups/compare?job_id='.$newJobId);
+}
+
+sub poll : Runmode {
+    # TODO: Need to handle errors and returnig of results
     my $self = shift;
-    return;
-}
-sub delete : Runmode {
-    # TODO:
-    my $self = shift;
-    return;
+    my $q = $self->query();
+    my $_jobId = $q->param('job_id');
+
+    my $statusRs = $self->dbixSchema->resultset('JobResult')->find({job_result_id => $_jobId});
+
+    my $status = {'error' => 'this request does not exist'};
+    $status = {'status' => $statusRs->job_result_status} if $statusRs;
+
+    return encode_json($status);
 }
 
-sub _update {
-    # TODO:
-    return;
-}
+# Incomplete and on hold for now
+# Group Form Functions
+# sub save : Runmode {
+#     my $self = shift;
+#     my $q = $self->query();
 
-sub _rename {
-    # TODO
-    return;
-}
+#     my %status;
+
+#     my $option = $q->param('group-manager-option');
+#     my $groupName = $q->param('group-name');
+#     my $groupNumber = $q-> param('group-number');
+#     my $maxGroups = $q->param('max-groups');
+
+#     print STDERR $groupName . "\n";
+#     print STDERR $groupNumber . "\n";
+
+#     if ($option eq 'new-group') {
+#         if (!$groupName) {
+#             $status{'error'} = "You must enter a group name to create a new group"; 
+#         }
+#         elsif (!$groupNumber) {
+#             $status{'error'} = "You must specify which group number to save";
+#         }
+#         elsif ($groupNumber > $maxGroups) {
+#             $status{'error'} = "Group $groupNumber is not valid";
+#         }
+#         else {
+#             # TODO
+#             $status{'success'} = "Your group has been saved successfully";
+#         }
+#     }
+
+#     return encode_json(\%status);
+# }
+
+# sub load : Runmode {
+#     # TODO:
+#     my $self = shift;
+#     return;
+# }
+# sub delete : Runmode {
+#     # TODO:
+#     my $self = shift;
+#     return;
+# }
+
+# sub _update {
+#     # TODO:
+#     return;
+# }
+
+# sub _rename {
+#     # TODO
+#     return;
+# }
 
 1;
