@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+    <script src="/App/Styling/js/jquery-1.9.1.js"></script>
+    <script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+    
+    <script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
+    
+    <script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
+
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+    <script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+
+    <script src="/App/Lib/js/superphy.js"></script>
+    <link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
+    <link rel="stylesheet" href="/App/Styling/css/superphy.css">
+
+    <script type="text/javascript">
+    var page_name = "geophy";
+    </script>
+
+    <style type="text/css">
+    input[type=checkbox] {
+        float: left;
+        margin-right: 0.4em;
+    }
+    </style>
+    
+</head>
+
+<body>
+
+    <TMPL_INCLUDE NAME="page_top.tmpl">
+
+    <div id="groups-compare"></div>
+
+    <div class="row" id="groups-geophy">
+        <div class="col-md-6" id="groups_map"></div>
+        <div class="col-md-6" id="groups_tree"></div>
+    </div>
+
+    <TMPL_INCLUDE NAME="page_bottom.tmpl">
+
+</body>
+
+<script type="text/javascript">
+
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var tree = <TMPL_VAR tree_json>;
+
+//TODO: This needs to be changed, since were not doing explicit groups comparisons here
+viewController.init(public_genomes, private_genomes, 'two_groups');
+
+viewController.createView('map', $('#groups_map'), ['satellite']);
+
+viewController.createView('tree', $('#groups_tree'), tree);
+//Group Compare form
+viewController.groupsCompareForm($('#groups-compare'), '/groups/geophy');
+
+viewController.sideBar($('#search-utilities'));
+
+//Need to set the css correctly on the map
+$(document).ready( function () {
+    $('.map-manifest').removeClass('col-md-5').addClass('col-md-12');
+    $('.map-search-div').removeClass('col-md-6').addClass('col-md-12');
+    //Removed the dl view for now. Need to set the styling properly on this
+    $('.download-view').empty();
+});
+</script>
+
+</html>

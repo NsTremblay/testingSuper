@@ -186,6 +186,56 @@ sub poll : Runmode {
     return encode_json($status);
 }
 
+sub geophy : Runmode {
+    # TODO: Need to query for strains and return only the subset
+    my $self = shift;
+
+    my $q = $self->query();
+
+    my @group1Genomes = $q->param('group1-genome');
+    my @group2Genomes = $q->param('group2-genome');
+
+    if(scalar(@group1Genomes) gt 0 || scalar(@group2Genomes) gt 0) {
+        print STDERR "Holler at me!\n";
+    }
+
+    my $fdg = Modules::FormDataGenerator->new();
+    $fdg->dbixSchema($self->dbixSchema);
+    
+    my $username = $self->authen->username;
+    my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
+
+    my $template = $self->load_tmpl('groups_geophy.tmpl', die_on_bad_params => 0);
+
+    $template->param(public_genomes => $pub_json);
+    $template->param(private_genomes => $pvt_json) if $pvt_json;
+    
+    # Phylogenetic tree
+    my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+    
+    # find visable nodes for user
+    my $visable_nodes;
+    $fdg->publicGenomes($visable_nodes);
+    my $has_private = $fdg->privateGenomes($username, $visable_nodes);
+    
+    if($has_private) {
+        my $tree_string = $tree->fullTree($visable_nodes);
+        $template->param(tree_json => $tree_string);
+        } else {
+            my $tree_string = $tree->fullTree();
+            $template->param(tree_json => $tree_string);
+        }
+
+    # Groups Manager, only active if user logged in
+    $template->param(groups_manager => 0) unless $username;
+    $template->param(groups_manager => 1) if $username;
+
+    $template->param(title1 => 'GEO');
+    $template->param(title2 => 'PHY');
+
+    return $template->output();
+}
+
 # Incomplete and on hold for now
 # Group Form Functions
 # sub save : Runmode {

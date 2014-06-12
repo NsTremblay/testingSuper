@@ -95,7 +95,7 @@ MapView = (function(_super) {
         thiscls = cls + ' ' + genomes[g].cssClass;
       }
       name = genomes[g].htmlname;
-      if (style = 'redirect') {
+      if (style === 'redirect') {
         mapEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
         actionEl = jQuery("<a href='#' data-genome='" + g + "'> <span class='fa fa-search'></span>info</a>");
         actionEl.click(function(e) {

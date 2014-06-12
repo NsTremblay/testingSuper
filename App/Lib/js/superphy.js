@@ -253,7 +253,7 @@
       return true;
     };
 
-    ViewController.prototype.groupForm = function(elem, addMoreOpt) {
+    ViewController.prototype.groupForm = function(elem, addMoreOpt, action) {
       var addEl, blockEl, buttEl, buttonEl, clearFormEl, divEl, hiddenFormEl, submitEl;
       blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem);
       this.addGroupFormRow(blockEl);
@@ -273,9 +273,9 @@
       } else {
         submitEl = jQuery("<div class='compare-genome-groups row'></div>");
         divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
-        clearFormEl = jQuery("<button class='btn btn-danger'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl);
+        clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl);
         buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
-        hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='/groups/compare' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
+        hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
         buttonEl.click(function(e) {
           var alert, genome, group1Genomes, group2Genomes, _i, _j, _len, _len1;
           e.preventDefault();
@@ -400,14 +400,14 @@
       return true;
     };
 
-    ViewController.prototype.groupsCompareForm = function(elem) {
+    ViewController.prototype.groupsCompareForm = function(elem, action) {
       var form, parentTarget, wrapper;
       parentTarget = 'groups-compare-panel-body';
       wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>');
       elem.append(wrapper);
       form = jQuery('<div class="panel-body" id="' + parentTarget + '"></div>');
       wrapper.append(form);
-      this.groupForm(form);
+      this.groupForm(form, null, action);
       return true;
     };
 
@@ -4389,7 +4389,7 @@
           thiscls = cls + ' ' + genomes[g].cssClass;
         }
         name = genomes[g].htmlname;
-        if (style = 'redirect') {
+        if (style === 'redirect') {
           mapEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
           actionEl = jQuery("<a href='#' data-genome='" + g + "'> <span class='fa fa-search'></span>info</a>");
           actionEl.click(function(e) {

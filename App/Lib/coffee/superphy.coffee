@@ -305,7 +305,7 @@ class ViewController
 
     true
   
-  groupForm: (elem, addMoreOpt) ->
+  groupForm: (elem, addMoreOpt, action) ->
     # There can be only one
     blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem)
     @addGroupFormRow(blockEl)
@@ -327,10 +327,11 @@ class ViewController
       # TODO:
       submitEl = jQuery("<div class='compare-genome-groups row'></div>")
       divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
-      clearFormEl = jQuery("<button class='btn btn-danger'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl)
+      clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl)
       buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl)
       
-      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='/groups/compare' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
+      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
+      #TODO: need to add another form action for geophy only
 
       # Prevent default click action to prepare the groups before submitting
       buttonEl.click( (e) ->
@@ -354,8 +355,6 @@ class ViewController
         )
 
       elem.append(submitEl)
-
-      #TODO: Add click event for clearing the group form
 
     true
      
@@ -450,12 +449,6 @@ class ViewController
     wrapper.append(form2)
     @filterForm(form2, parentTarget)
     
-    
-    # Group form
-    # form3 = jQuery('<div class="panel panel-default"></div>')
-    # @groupForm(form3, parentTarget)
-    # wrapper.append(form3)
-    
     true
 
   sideBarGroupManager: (elem) ->
@@ -468,7 +461,7 @@ class ViewController
     @groupsSideForm(form, parentTarget)
     true
 
-  groupsCompareForm: (elem) ->
+  groupsCompareForm: (elem, action) ->
     parentTarget = 'groups-compare-panel-body'
     wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
     elem.append(wrapper)
@@ -477,8 +470,7 @@ class ViewController
     # So dont add a second parameter to @groupForm
     form = jQuery('<div class="panel-body" id="'+parentTarget+'"></div>')
     wrapper.append(form)
-    #@groupForm(form, parentTarget)
-    @groupForm(form)
+    @groupForm(form, null, action)
     true
   
   # Incomplete and on hold for now:

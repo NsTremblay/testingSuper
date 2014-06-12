@@ -93,7 +93,7 @@ class MapView extends ViewTemplate
       thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
 
       name = genomes[g].htmlname
-      if style = 'redirect'
+      if style == 'redirect'
         # Links
 
         # Create elements

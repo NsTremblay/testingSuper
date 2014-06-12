@@ -50,7 +50,7 @@ var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
 var tree = <TMPL_VAR tree_json>;
 
-viewController.init(public_genomes, private_genomes, 'two_groups', '/groups/info/');
+viewController.init(public_genomes, private_genomes, 'two_groups');
 
 viewController.createView('list', $('#strains_list'));
 
@@ -61,7 +61,7 @@ viewController.createView('map', $('#strains_map'), ['satellite']);
 viewController.sideBar($('#search-utilities'));
 
 //Group Compare form
-viewController.groupsCompareForm($('#groups-compare'));
+viewController.groupsCompareForm($('#groups-compare'), '/groups/compare');
 
 //Change this
 $(document).ready(function(){
