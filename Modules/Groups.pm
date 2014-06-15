@@ -192,11 +192,22 @@ sub geophy : Runmode {
 
     my $q = $self->query();
 
-    my @group1Genomes = $q->param('group1-genome');
-    my @group2Genomes = $q->param('group2-genome');
+    my $template = $self->load_tmpl('groups_geophy.tmpl', die_on_bad_params => 0);
 
-    if(scalar(@group1Genomes) gt 0 || scalar(@group2Genomes) gt 0) {
-        print STDERR "Holler at me!\n";
+    #Change this to take into account any number of genomes
+    my $num_groups = $q->param('num-groups');
+    my %qGroups;
+
+    for (my $i = 0; $i < $num_groups; $i++) {
+        my @newgroup = $q->param('group'.($i+1).'-genome');
+        if (scalar(@newgroup) gt 0) {
+            $qGroups{($i+1)} = \@newgroup;
+        }
+    }
+
+    if(scalar(keys %qGroups) gt 0) {
+        my $groups_json =  encode_json(\%qGroups);
+        $template->param(USER_SELECTIONS => 1, groups => $groups_json, num_groups => $num_groups);
     }
 
     my $fdg = Modules::FormDataGenerator->new();
@@ -204,8 +215,6 @@ sub geophy : Runmode {
     
     my $username = $self->authen->username;
     my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
-
-    my $template = $self->load_tmpl('groups_geophy.tmpl', die_on_bad_params => 0);
 
     $template->param(public_genomes => $pub_json);
     $template->param(private_genomes => $pvt_json) if $pvt_json;

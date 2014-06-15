@@ -253,11 +253,11 @@
       return true;
     };
 
-    ViewController.prototype.groupForm = function(elem, addMoreOpt, action) {
+    ViewController.prototype.groupForm = function(elem, type) {
       var addEl, blockEl, buttEl, buttonEl, clearFormEl, divEl, hiddenFormEl, submitEl;
       blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem);
       this.addGroupFormRow(blockEl);
-      if (addMoreOpt) {
+      if (type === 'multi_select') {
         addEl = jQuery("<div class='add-genome-groups row'></div>");
         divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl);
         buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl);
@@ -270,34 +270,33 @@
           }
         });
         elem.append(addEl);
-      } else {
-        submitEl = jQuery("<div class='compare-genome-groups row'></div>");
-        divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
-        clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Clear Form</button>").appendTo(divEl);
-        buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
-        hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
-        buttonEl.click(function(e) {
-          var alert, genome, group1Genomes, group2Genomes, _i, _j, _len, _len1;
+      }
+      submitEl = jQuery("<div class='compare-genome-groups row'></div>");
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
+      clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl);
+      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
+      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + this.action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
+      buttonEl.click((function(_this) {
+        return function(e) {
+          var alert, genome, groupGenomes, i, _i, _j, _len, _ref;
           e.preventDefault();
           alert = jQuery('<div class="alert alert-danger"> <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> You must have at least one genome in either of the groups to compare to. </div>');
           if (!(jQuery('#genome_group1 li').length > 0 || jQuery('#genome_group2 li').length > 0)) {
             blockEl.prepend(alert);
             return false;
           }
-          group1Genomes = jQuery('#genome_group1 .genome_group_item');
-          for (_i = 0, _len = group1Genomes.length; _i < _len; _i++) {
-            genome = group1Genomes[_i];
-            jQuery("<input type='hidden' name='group1-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
+          for (i = _i = 1, _ref = _this.groups.length; _i <= _ref; i = _i += 1) {
+            groupGenomes = jQuery("#genome_group" + i + " .genome_group_item");
+            for (_j = 0, _len = groupGenomes.length; _j < _len; _j++) {
+              genome = groupGenomes[_j];
+              jQuery("<input type='hidden' name='group" + i + "-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
+            }
           }
-          group2Genomes = jQuery('#genome_group2 .genome_group_item');
-          for (_j = 0, _len1 = group2Genomes.length; _j < _len1; _j++) {
-            genome = group2Genomes[_j];
-            jQuery("<input type='hidden' name='group2-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
-          }
+          jQuery("<input type='hidden' name='num-groups' value='" + _this.groups.length + "'>").appendTo(hiddenFormEl);
           return jQuery('#groups-compare-form').submit();
-        });
-        elem.append(submitEl);
-      }
+        };
+      })(this));
+      elem.append(submitEl);
       return true;
     };
 
@@ -317,7 +316,7 @@
         i = _ref[_i];
         formEl = jQuery("<div id='genome-group-form" + i + "' class='genome-group-form col-md-6'></div>");
         listEl = jQuery("<div id='genome-group-list" + i + "' class='genome-group'></div>").appendTo(formEl);
-        divEl = jQuery('<div></div>').appendTo(listEl);
+        divEl = jQuery('<div class="genome-group-add-controller"></div>').appendTo(listEl);
         buttEl = jQuery("<button id='genome-group-add" + i + "' class='btn' type='button' title='Add genome(s) to Group " + i + "'><span class='fa fa-plus'></span> <h4 id='genome-group" + i + "-heading'>Group " + i + "</h4></button>").appendTo(divEl);
         rowEl.append(formEl);
         ok = this.createGroup(listEl, buttEl);
@@ -400,14 +399,14 @@
       return true;
     };
 
-    ViewController.prototype.groupsCompareForm = function(elem, action) {
+    ViewController.prototype.groupsCompareForm = function(elem) {
       var form, parentTarget, wrapper;
       parentTarget = 'groups-compare-panel-body';
       wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>');
       elem.append(wrapper);
       form = jQuery('<div class="panel-body" id="' + parentTarget + '"></div>');
       wrapper.append(form);
-      this.groupForm(form, null, action);
+      this.groupForm(form, this.actionMode);
       return true;
     };
 
@@ -4385,6 +4384,7 @@
       for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
         g = visibleG[_i];
         thiscls = cls;
+        console.log(thiscls);
         if (genomes[g].cssClass != null) {
           thiscls = cls + ' ' + genomes[g].cssClass;
         }

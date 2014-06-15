@@ -47,30 +47,62 @@
 
 </body>
 
+
 <script type="text/javascript">
-
 var public_genomes = <TMPL_VAR public_genomes>;
-var private_genomes = <TMPL_VAR private_genomes>;
+var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
+</script>
 
-//TODO: This needs to be changed, since were not doing explicit groups comparisons here
-viewController.init(public_genomes, private_genomes, 'two_groups');
+<TMPL_IF USER_SELECTIONS>
+<script type="text/javascript">
+var user_groups = <TMPL_VAR groups>;
+var num_groups = <TMPL_VAR num_groups>;
+</script>
+</TMPL_IF>
 
-viewController.createView('map', $('#groups_map'), ['satellite']);
+<script type="text/javascript">
+if (typeof user_groups == "undefined" || user_groups == null) 
+{
+    viewController.init(public_genomes, private_genomes, 'multi_select', '/groups/geophy');
+    //Group Compare form
+    viewController.groupsCompareForm($('#groups-compare'));
+}
+else 
+{
+    //User selected groups
+    var public_subset_genomes = {};
+    var private_subset_genomes = {};
 
-viewController.createView('tree', $('#groups_tree'), tree);
-//Group Compare form
-viewController.groupsCompareForm($('#groups-compare'), '/groups/geophy');
+    $.each(user_groups, function(gp_num, gp) {
+        $.each(gp, function(i, v) {
+            if (public_genomes[v]) {
+                public_subset_genomes[v] = public_genomes[v];
+            };
+            if (private_genomes[v]) {
+                private_subst_genomes[v] = private_genomes[v];
+            };
+        }); 
+    }); 
+    viewController.init(public_subset_genomes, private_subset_genomes, 'multi_select', '/groups/geophy');
+}
 
 viewController.sideBar($('#search-utilities'));
+viewController.createView('map', $('#groups_map'), ['satellite']);
+viewController.createView('tree', $('#groups_tree'), tree);
 
-//Need to set the css correctly on the map
+viewController.groupsCompareForm($('#groups-compare'));
+
 $(document).ready( function () {
+    //TODO: Need to restablish selected groups
+    
     $('.map-manifest').removeClass('col-md-5').addClass('col-md-12');
     $('.map-search-div').removeClass('col-md-6').addClass('col-md-12');
     //Removed the dl view for now. Need to set the styling properly on this
     $('.download-view').empty();
+
 });
+
 </script>
 
 </html>
