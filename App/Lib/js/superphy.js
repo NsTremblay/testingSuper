@@ -2537,7 +2537,7 @@
         this.scaleBar.select('line').attr('x1', 0).attr('x2', this.scaleLength).attr('y1', 0).attr('y2', 0);
         this.scaleBar.select('text').text("" + unit + " branch length units");
         this.zoom.translate([0, 0]).scale(1);
-        this.scaleBar.attr("transform", "translate(" + this.xzoom(this.scalePos.x) + "," + this.yzoom(this.scalePos.y) + ")");
+        this.scaleBar.select("line").attr('transform', 'scale(1,1)');
         this.reformat = false;
       }
       _ref = this.nodes;
@@ -3185,7 +3185,6 @@
           return _this._zTranslate(d, _this.xzoom, _this.yzoom);
         };
       })(this));
-      this.scaleBar.attr("transform", "translate(" + this.xzoom(this.scalePos.x) + "," + this.yzoom(this.scalePos.y) + ")");
       this.scaleBar.select("line").attr('transform', 'scale(' + d3.event.scale + ',1)');
       return true;
     };
@@ -4001,8 +4000,8 @@
         bottom: 40,
         left: 30
       };
-      this.width = 200 - margin.left - margin.right;
-      this.height = 200 - margin.top - margin.bottom;
+      this.width = 300 - margin.left - margin.right;
+      this.height = 250 - margin.top - margin.bottom;
       bins = [
         {
           'val': 0,
@@ -4041,7 +4040,7 @@
     Histogram.prototype.updateHistogram = function(values) {
       var histData, i, maxSteps, maxY, newBars, steps, svgBars, yTop, _i;
       histData = this.histogram(values);
-      steps = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
+      steps = [10, 50, 100, 200, 500, 800, 1000, 1200, 1500, 2000, 5000, 8000, 10000, 20000, 50000, 80000, 100000];
       maxSteps = steps.length;
       maxY = d3.max(histData, function(d) {
         return d.y;
@@ -4101,11 +4100,18 @@
 
   })();
 
+
+  /*
+   CLASS MatrixTicker
+    
+   Histogram of allele frequency for multiple genes
+   */
+
   MatrixTicker = (function(_super) {
     __extends(MatrixTicker, _super);
 
     function MatrixTicker(parentElem, elNum, genomes, tickerArgs) {
-      var alleles, bins, genes, margin, tmp;
+      var alleles, genes, tmp;
       this.parentElem = parentElem;
       this.elNum = elNum;
       MatrixTicker.__super__.constructor.call(this, this.parentElem, this.elNum, this.elNum);
@@ -4113,65 +4119,25 @@
         throw new SuperphyError('Missing argument. MatrixTicker constructor requires GenomeController object.');
       }
       if (tickerArgs.length !== 1) {
-        throw new SuperphyError('Missing argument. MatrixTicker constructor requires a JSON object containing: nodes, linksobject.');
+        throw new SuperphyError('Missing argument. MatrixTicker constructor requires a JSON object containing: nodes, links object.');
       }
       tmp = tickerArgs[0];
       genes = tmp['nodes'];
       alleles = tmp['links'];
       this._doCounts(genomes, genes, alleles);
-      margin = {
-        top: 40,
-        right: 30,
-        bottom: 40,
-        left: 30
-      };
-      this.width = 200 - margin.left - margin.right;
-      this.height = 200 - margin.top - margin.bottom;
-      bins = [
-        {
-          'val': 0,
-          'key': '0'
-        }, {
-          'val': 1,
-          'key': '1'
-        }, {
-          'val': 2,
-          'key': '2'
-        }, {
-          'val': 3,
-          'key': '3'
-        }, {
-          'val': 4,
-          'key': '4'
-        }, {
-          'val': 5,
-          'key': '>=5'
-        }
-      ];
-      this.x = d3.scale.ordinal().domain(bins.map(function(d) {
-        return d.val;
-      })).rangeRoundBands([0, this.width], .05);
-      this.x2 = d3.scale.ordinal().domain(bins.map(function(d) {
-        return d.key;
-      })).rangeRoundBands([0, this.width], .05);
-      this.xAxis = d3.svg.axis().scale(this.x2).orient("bottom");
-      this.histogram = d3.layout.histogram().bins([0, 1, 2, 3, 4, 5, 6]);
-      this.parentElem.append("<div id='" + this.elID + "' class='" + this.cssClass + "'></div>");
-      this.canvas = d3.select("#" + this.elID).append("svg").attr("width", this.width + margin.left + margin.right).attr("height", this.height + margin.top + margin.bottom).append("g").attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-      this.formatCount = d3.format(",.0f");
-      this.canvas.append("g").attr("class", "x axis").attr("transform", "translate(0," + this.height + ")").call(this.xAxis).append("text").attr("dy", ".75em").attr("y", 23).attr("x", this.width / 2).attr("text-anchor", "middle").text('Number of Alleles');
+      this.init();
     }
 
     MatrixTicker.prototype.elName = 'matrix_ticker';
 
-    MatrixTicker.prototype.cssClass = 'allele_histogram';
+    MatrixTicker.prototype.cssClass = 'matrix_histogram';
 
     MatrixTicker.prototype.flavor = 'matrix';
 
     MatrixTicker.prototype.noDataLabel = 'NA';
 
     MatrixTicker.prototype.update = function(genomes) {
-      var ft, g, histData, i, maxSteps, maxY, n, newBars, steps, svgBars, t1, t2, values, yTop, _i, _j, _k, _len, _len1, _ref, _ref1;
+      var ft, g, n, t1, t2, values, _i, _j, _len, _len1, _ref, _ref1;
       t1 = new Date();
       values = [];
       _ref = genomes.pubVisible.concat(genomes.pvtVisible);
@@ -4186,60 +4152,7 @@
           values.push(this.counts[g][n]);
         }
       }
-      histData = this.histogram(values);
-      steps = [10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000];
-      maxSteps = steps.length;
-      maxY = d3.max(histData, function(d) {
-        return d.y;
-      });
-      yTop = NaN;
-      for (i = _k = 0; _k <= maxSteps; i = _k += 1) {
-        if (maxY < steps[i]) {
-          yTop = steps[i];
-          break;
-        }
-      }
-      this.y = d3.scale.linear().domain([0, yTop]).range([this.height, 0]);
-      svgBars = this.canvas.selectAll("g.histobar").data(histData);
-      svgBars.attr("transform", (function(_this) {
-        return function(d) {
-          return "translate(" + _this.x(d.x) + "," + _this.y(d.y) + ")";
-        };
-      })(this));
-      svgBars.select("rect").attr("x", 0).attr("width", this.x.rangeBand()).attr("height", (function(_this) {
-        return function(d) {
-          return _this.height - _this.y(d.y);
-        };
-      })(this));
-      svgBars.select("text").attr("dy", ".75em").attr("y", -14).attr("x", this.x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
-        return function(d) {
-          if (d.y > 0) {
-            return _this.formatCount(d.y);
-          } else {
-            return '';
-          }
-        };
-      })(this));
-      svgBars.exit().remove();
-      newBars = svgBars.enter().append("g").attr("class", "histobar").attr("transform", (function(_this) {
-        return function(d) {
-          return "translate(" + _this.x(d.x) + "," + _this.y(d.y) + ")";
-        };
-      })(this));
-      newBars.append("rect").attr("x", 0).attr("width", this.x.rangeBand()).attr("height", (function(_this) {
-        return function(d) {
-          return _this.height - _this.y(d.y);
-        };
-      })(this));
-      newBars.append("text").attr("dy", ".75em").attr("y", -14).attr("x", this.x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
-        return function(d) {
-          if (d.y > 0) {
-            return _this.formatCount(d.y);
-          } else {
-            return '';
-          }
-        };
-      })(this));
+      this.updateHistogram(values);
       t2 = new Date();
       ft = t2 - t1;
       console.log('MatrixTicker update elapsed time: ' + ft);
@@ -4264,13 +4177,12 @@
           this.counts[g][n] = numAlleles;
         }
       }
-      console.log(this.counts);
       return true;
     };
 
     return MatrixTicker;
 
-  })(TickerTemplate);
+  })(mixOf(TickerTemplate, Histogram));
 
 
   /*
@@ -4386,7 +4298,8 @@
       this.orderType = 'name';
       this.z = d3.scale.linear().domain([0, 4]).clamp(true);
       this.x = d3.scale.ordinal().rangeBands([0, this.width]);
-      this.parentElem.append("<div id='" + this.elID + "'></div>");
+      this.cssClass = 'superphy-matrix';
+      this.parentElem.append("<div id='" + this.elID + "' class='" + this.cssClass + "'></div>");
       ddDiv = jQuery('<div class="matrixSort"><span>Order:</span> </div>').appendTo("#" + this.elID);
       dd = jQuery('<select name="matrix-sort">' + '<option value="name" selected="selected"> by Name</option>' + '<option value="count"> by Frequency</option>' + '<option value="group"> by Group</option>' + '</select>').appendTo(ddDiv);
       num = this.elNum - 1;
@@ -4395,7 +4308,7 @@
         sortType = this.value;
         return viewController.viewAction(num, 'matrix_sort', sortType);
       });
-      this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h);
+      this.wrap = d3.select("#" + this.elID).append("div").attr("class", "matrix-container").append("svg").attr("width", this.dim.w).attr("height", this.dim.h);
       this.canvas = this.wrap.append("g").attr("transform", "translate(" + this.margin.left + "," + this.margin.top + ")");
       this.canvas.append("rect").attr("class", "matrixBackground").attr("width", this.width).attr("height", this.height);
       this.formatCount = d3.format(",.0f");
@@ -4412,7 +4325,7 @@
             Yes: function() {
               var id;
               id = jQuery(this).data("row-id");
-              console.log("Redirect to " + id + " strain info page");
+              window.location.href = "/strains/info?genome=" + id;
               return jQuery(this).dialog("close");
             },
             Cancel: function() {
@@ -4434,7 +4347,7 @@
             Yes: function() {
               var id;
               id = jQuery(this).data("col-id");
-              console.log("Redirect to " + id + " gene info page");
+              window.location.href = "/genes/info?gene=" + id;
               return jQuery(this).dialog("close");
             },
             Cancel: function() {
@@ -4531,6 +4444,9 @@
       })(this)).select("text.matrixlabel").text(function(d) {
         return d.viewname;
       });
+      svgGenomes.selectAll("g.matrixcell title").text(function(d) {
+        return d.title;
+      });
       that = this;
       newRows = svgGenomes.enter().append("g").attr("class", (function(_this) {
         return function(d) {
@@ -4571,7 +4487,7 @@
     };
 
     MatrixView.prototype._sync = function(genomes) {
-      var g, n, _i, _len, _ref;
+      var c, g, i, n, _i, _j, _len, _len1, _ref, _ref1;
       this.currNodes = [];
       this.currN = 0;
       _ref = this.genomeNodes;
@@ -4589,6 +4505,13 @@
           n.index = this.currN;
           this.currNodes.push(n);
           this.currN++;
+          i = 0;
+          _ref1 = this.matrix[n.id];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            c = _ref1[_j];
+            c.title = "genome: " + n.viewname + ", gene: " + this.geneNodes[i].name;
+            i++;
+          }
         }
       }
       this.genomeOrders = {
@@ -4627,14 +4550,14 @@
         return function(d, i) {
           return "translate(" + _this.x(d.x) + ",0)";
         };
-      })(this));
-      newCells.append("rect").attr("x", 0).attr("width", x.rangeBand()).attr("height", y.rangeBand()).style("fill-opacity", function(d) {
-        return z(d.z);
-      }).on("mouseover", (function(_this) {
+      })(this)).on("mouseover", (function(_this) {
         return function(p) {
           return _this._mouseover(p);
         };
       })(this)).on("mouseout", this._mouseout);
+      newCells.append("rect").attr("x", 0).attr("width", x.rangeBand()).attr("height", y.rangeBand()).style("fill-opacity", function(d) {
+        return z(d.z);
+      });
       newCells.append("text").attr("dy", ".32em").attr("y", x.rangeBand() / 2).attr("x", x.rangeBand() / 2).attr("text-anchor", "middle").text((function(_this) {
         return function(d) {
           if (d.z > 0) {
@@ -4644,6 +4567,9 @@
           }
         };
       })(this));
+      newCells.append("title").text(function(d) {
+        return d.title;
+      });
       return true;
     };
 
@@ -4857,7 +4783,7 @@
       } else if (tmpl === 'td') {
         html = "<td>" + values.data + "</td>";
       } else if (tmpl === 'td1_redirect') {
-        html = "<td class='" + values.klass + "'>" + name + " <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
+        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
       } else if (tmpl === 'td1_select') {
         html = "<td class='" + values.klass + "'><div class='checkbox'><label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label></div></td>";
       } else if (tmpl === 'spacer') {

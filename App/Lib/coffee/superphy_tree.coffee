@@ -210,7 +210,9 @@ class TreeView extends ViewTemplate
       # Reset zoom
       @zoom.translate([0,0]).scale(1)
       # Reposition scale bar group
-      @scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
+      #@scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
+      @scaleBar.select("line")
+        .attr('transform','scale(1,1)')
       
       @reformat = false
     
@@ -1078,7 +1080,7 @@ class TreeView extends ViewTemplate
     @canvas.selectAll("path.treelink")
       .attr("d", (d) => @_zTranslate(d, @xzoom, @yzoom))
       
-    @scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
+    #@scaleBar.attr("transform", "translate(" + @xzoom(@scalePos.x) + "," + @yzoom(@scalePos.y) + ")")
     
     @scaleBar.select("line")
       .attr('transform','scale('+d3.event.scale+',1)')

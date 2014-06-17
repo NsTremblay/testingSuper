@@ -647,6 +647,7 @@ body {
 }
 .histobar text {
   fill: #000;
+  font-size: 9pt;
 }
 .axis path,
 .axis line {
@@ -662,14 +663,22 @@ body {
  Date: April 27th, 2013
  
  * */
+/** Top-level Class ***********************/
+.superphy-matrix .matrix-container {
+  max-height: 800px;
+  max-width: 700px;
+  margin: 10px;
+  padding: 10px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+  overflow: auto;
+}
 /** Background ****************************/
 .matrixBackground {
   fill: #EEEEEE;
 }
 /** Styles ********************************/
-.allele_histogram {
-  padding: 10px;
-}
 line {
   stroke: #FFFFFF;
 }

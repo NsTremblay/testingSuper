@@ -40,8 +40,12 @@ _categoryHtml = (catObj, top=false) ->
   
   header = catObj.name[0].toUpperCase() + catObj.name[1..-1]
   
-  html = "<h5><i class='fa fa-chevron-right'></i> #{header}</h5>"+
-    "<p>#{catObj.definition}</p>"
+  html = "<h5><i class='fa fa-chevron-right'></i> #{header}</h5>"
+    
+  if catObj.definition
+    html += "<p>#{catObj.definition}</p>"
+    
+  html
     
   
 

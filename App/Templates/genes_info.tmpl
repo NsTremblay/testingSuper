@@ -64,7 +64,7 @@
 				</div>
 				
 				<TMPL_IF gene_accessions>
-				<div class="row">
+				<div class="row gene-info-row">
 					<div class="col-md-12">
 						<TMPL_IF is_amr>
 						<span class="overview-header">Antimicrobial Resistance Ontology term(s): </span>
@@ -83,7 +83,7 @@
 				</TMPL_IF>
 				
 				<TMPL_IF gene_strain>
-				<div class="row">
+				<div class="row gene-info-row">
 					<div class="col-md-12">
 						<span class="overview-header">Isolated from:</span>
 					</div>
@@ -96,7 +96,7 @@
 				</TMPL_IF>
 				
 				<TMPL_IF gene_plasmid>
-				<div class="row">
+				<div class="row gene-info-row">
 					<div class="col-md-12">
 						<span class="overview-header">Source plasmid:</span>
 					</div>
@@ -119,10 +119,25 @@
     		<h4 class="panel-title">Genome Alleles</h4>
   		</div>
 	  	<div id="gene-info-list" class="panel-body">
-	  		<div id="allele_summary">
+	  		<div class="row histogram-row">
+		  		<div class="col-md-4 histogram-description">
+					<span>Histogram showing the distribution of gene copy number in the genomes:</span>
+				</div>
+		  		<div id="allele_summary" class="col-md-8 histogram-container">
+		  		</div>
 	  		</div>
-	  		<div id="allele_table">
-	  		</div>
+	  		
+	  		<div class="row">
+	  			<hr/>
+		  		<div class="col-md-12 gene-info-table-description">
+		  			<p>Listing of individual genomes and number of gene alleles:</p>
+		  		</div>
+		  		<div class="col-md-12 gene-info-table">
+			  		<div id="allele_table">
+			  		</div>
+		  		</div>
+		  	</div>
+	  		
 	  	</div>
 	</div>
 	<div class="panel panel-default">
@@ -174,7 +189,7 @@
 		</TMPL_IF>
 		
 		// Data objects
-		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info', genome_subset);
+		viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info', genome_subset);
 		var locusData = new LocusController(alleles);
 		
 		// Alleles

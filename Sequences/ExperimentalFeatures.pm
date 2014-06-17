@@ -58,6 +58,10 @@ my @tables = (
 	"snp_core",
 	"snp_variation",
 	"private_snp_variation",
+	"snp_position",
+	"private_snp_position",
+	"gap_position",
+	"private_gap_position",
 );
 
 # Tables in order that data is updated
@@ -104,6 +108,10 @@ my %sequences = (
   	snp_core                     => "snp_core_snp_core_id_seq",
   	snp_variation                => "snp_variation_snp_variation_id_seq",
   	private_snp_variation        => "private_snp_variation_snp_variation_id_seq",
+  	snp_variation                => "snp_position_snp_position_id_seq",
+  	private_snp_variation        => "private_snp_position_snp_position_id_seq",
+  	gap_variation                => "gap_position_gap_position_id_seq",
+  	private_gap_variation        => "private_gap_position_gap_position_id_seq",
 );
 
 # Primary key ID names
@@ -126,7 +134,11 @@ my %table_ids = (
   	raw_amr_data                 => "serial_id",
   	snp_core                     => "snp_core_id",
   	snp_variation                => "snp_variation_id",
-  	private_snp_variation        => "snp_variation_id"
+  	private_snp_variation        => "snp_variation_id",
+  	snp_variation                => "snp_position_id",
+  	private_snp_variation        => "snp_position_id",
+  	gap_variation                => "gap_position_id",
+  	private_gap_variation        => "gap_position_id"
 );
 
 # Valid cvterm types for featureprops table
@@ -161,6 +173,10 @@ my %copystring = (
    snp_core                     => "(snp_core_id,pangenome_region_id,allele,position,gap_offset,aln_column)",
    snp_variation                => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
    private_snp_variation        => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
+   snp_position                 => "(snp_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,region_start,locus_start,region_end,locus_end,locus_gap_offset)",
+   private_snp_position         => "(snp_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,region_start,locus_start,region_end,locus_end,locus_gap_offset)",
+   gap_position                 => "(gap_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,snp_id,locus_pos)",
+   private_gap_position         => "(gap_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,snp_id,locus_pos)"
 );
 
 my %updatestring = (
@@ -171,7 +187,7 @@ my %updatestring = (
 	tprivate_featureloc           => "fmin = s.fmin, fmax = s.fmin, strand = s.strand, locgroup = s.locgroup, rank = s.rank",
 	tprivate_featureprop          => "value = s.value",
 	ttree                         => "tree_string = s.tree_string",
-	tsnp_core                     => "position = s.position, gap_offset = s.gap_offset"
+	tsnp_core                     => "position = s.position, gap_offset = s.gap_offset",
 );
 
 my %tmpcopystring = (
@@ -2481,6 +2497,64 @@ sub handle_snp {
 	
 }
 
+=cut
+
+=head2 handle_snp_alignment_block
+
+=over
+
+=item Usage
+
+  $obj->handle_snp_alignment_block()
+
+=item Function
+
+  Save pairwise alignment encodings
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+
+
+=back
+
+=cut
+
+sub handle_snp_alignment_block {
+	my $self = shift;
+	my ($contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public) = @_;
+	
+	croak "Positioning violation in reference alignment! gap positions should have length 1." if $gap1 && ($start1 != $end1);
+	croak "Positioning violation in comparison alignment! gap positions should have length 1." if $gap2 && ($start2 != $end2);
+	croak "Positioning violation in snp alignment! received gap column." if $gap2 && $gap1;
+	
+	if($gap1) {
+		# Reference gaps go into 'special' table
+		
+		my $snp_array = $self->cache('core_snp',"$ref_id.$start1.$gap1");
+		croak "Error: SNP in reference pangenome region $ref_id (pos: $start1, gap-offset: $gap1) not found." unless defined $snp_array;
+		my $core_snp_id = $snp_array->[0];
+		
+		my $table = $is_public ? 'gap_position' : 'private_gap_position';
+		$self->print_gp($self->nextoid($table),$contig_collection, $contig, $ref_id, $locus, $core_snp_id, $start2, $is_public);
+		$self->nextoid($table,'++');
+		
+	} else {
+		# Create standard snp position entry: reference nuc aligned to gap or nuc in comparison strain
+		
+		my $table = $is_public ? 'snp_position' : 'private_snp_position';
+		$self->print_sp($self->nextoid($table),$contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap2, $is_public);
+		$self->nextoid($table,'++');
+	}
+	
+	
+	
+}
+
+
 
 
 =head2 add_types
@@ -2721,6 +2795,34 @@ sub print_sv {
 	}	
 
 	print $fh join("\t", ($nextft,$snp_id,$genome_id,$contig_id,$locus,$nuc)),"\n";
+}
+
+sub print_sp {
+	my $self = shift;
+	my ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g1,$g2,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('snp_position');		
+	} else {
+		$fh = $self->file_handles('private_snp_position');
+	}	
+
+	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g1,$g2)),"\n";
+}
+
+sub print_gp {
+	my $self = shift;
+	my ($nextft,$genome_id,$contig_id,$ref,$locus,$s2,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		$fh = $self->file_handles('gap_position');		
+	} else {
+		$fh = $self->file_handles('private_gap_position');
+	}	
+
+	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$s2)),"\n";
 }
 
 

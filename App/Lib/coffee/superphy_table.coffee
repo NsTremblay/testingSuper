@@ -93,7 +93,7 @@ class TableView extends ViewTemplate
       html = "<td>#{values.data}</td>"
     
     else if tmpl is 'td1_redirect'
-      html = "<td class='#{values.klass}'>#{name} <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
+      html = "<td class='#{values.klass}'>#{values.name} <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
         
     else if tmpl is 'td1_select'
       html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label></div></td>"

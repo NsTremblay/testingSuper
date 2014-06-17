@@ -67,7 +67,8 @@ class MatrixView extends ViewTemplate
     # Create gene mapping
     @x = d3.scale.ordinal().rangeBands([0, @width])
     
-    @parentElem.append("<div id='#{@elID}'></div>")
+    @cssClass = 'superphy-matrix'
+    @parentElem.append("<div id='#{@elID}' class='#{@cssClass}'></div>")
     
     # Create sort drop down
     ddDiv = jQuery('<div class="matrixSort"><span>Order:</span> </div>').appendTo("##{@elID}")
@@ -84,10 +85,12 @@ class MatrixView extends ViewTemplate
     )
     
     # Setup and attach SVG viewport
-    @wrap = d3.select("##{@elID}").append("svg")
-      .attr("width", @dim.w)
-      .attr("height", @dim.h)
-      #.style("margin-left", -@margin.left + "px")
+    @wrap = d3.select("##{@elID}")
+      .append("div")
+        .attr("class", "matrix-container")
+      .append("svg")
+        .attr("width", @dim.w)
+        .attr("height", @dim.h)
     
     # Parent element for attaching matrix elements
     @canvas = @wrap.append("g")
@@ -117,7 +120,7 @@ class MatrixView extends ViewTemplate
           buttons: {
             Yes: ->
               id = jQuery( @ ).data("row-id")
-              console.log("Redirect to #{id} strain info page")
+              window.location.href = "/strains/info?genome=#{id}"
               jQuery( @ ).dialog( "close" )
             Cancel: ->
               jQuery( @ ).dialog( "close" )
@@ -139,7 +142,7 @@ class MatrixView extends ViewTemplate
           buttons: {
             Yes: ->
               id = jQuery( @ ).data("col-id")
-              console.log("Redirect to #{id} gene info page")
+              window.location.href = "/genes/info?gene=#{id}"
               jQuery( @ ).dialog( "close" )
             Cancel: ->
               jQuery( @ ).dialog( "close" )
@@ -215,6 +218,7 @@ class MatrixView extends ViewTemplate
            
         @matrix[g.id][n.id].z = numAlleles
         @matrix[g.id][n.id].i = i
+        
         i++
          
     true
@@ -258,6 +262,10 @@ class MatrixView extends ViewTemplate
         .attr("class", (d) => @_classList(d))
       .select("text.matrixlabel")
         .text((d) -> d.viewname )
+      
+    svgGenomes
+      .selectAll("g.matrixcell title")
+        .text((d) -> d.title )
       
     # Insert new rows at origin
     that = @
@@ -349,9 +357,14 @@ class MatrixView extends ViewTemplate
         
         n.index = @currN       
         @currNodes.push n
-        
-        # Record matrix column
         @currN++
+    
+        # Update matrix cells
+        i = 0
+        for c in @matrix[n.id]
+          c.title = "genome: #{n.viewname}, gene: #{@geneNodes[i].name}"
+          i++
+            
         
     # Compute new ordering
     @genomeOrders = {
@@ -377,8 +390,6 @@ class MatrixView extends ViewTemplate
     svgCells = d3.select(svgRow).selectAll(".matrixcell")
       .data(rowData, (d) -> d.i)
       
-    # Update cells
-    
     # Insert new cells
     num = @elNum-1
     
@@ -386,14 +397,14 @@ class MatrixView extends ViewTemplate
       .attr("class", "matrixcell")
       .attr("transform", (d, i) =>
           "translate(" + @x(d.x) + ",0)")
+      .on("mouseover", (p) => @_mouseover(p))
+      .on("mouseout", @_mouseout)
         
     newCells.append("rect")
       .attr("x", 0)
       .attr("width", x.rangeBand())
       .attr("height", y.rangeBand())
       .style("fill-opacity", (d) -> z(d.z))
-      .on("mouseover", (p) => @_mouseover(p))
-      .on("mouseout", @_mouseout)
       
     newCells.append("text")
       .attr("dy", ".32em")
@@ -406,7 +417,10 @@ class MatrixView extends ViewTemplate
         else
           '' 
       )
-     
+      
+    newCells.append("title")
+      .text( (d) -> d.title )
+    
     true
     
   _assumePositions: ->
@@ -434,6 +448,7 @@ class MatrixView extends ViewTemplate
   _mouseover: (p) ->
     d3.selectAll(".matrixrow text").classed("matrixActive", (d, i) -> d.index == p.y)
     d3.selectAll(".matrixcolumn text").classed("matrixActive", (d, i) -> i == p.x)
+      
   
   _mouseout: ->
     d3.selectAll("text").classed("matrixActive", false)

@@ -48,9 +48,10 @@
   };
 
   root.appendGeneList = function(d) {
-    var cboxes, id, item, k, link, list, name, o, _ref;
+    var cboxes, checked, id, item, k, link, list, listHtml, name, o, _ref;
     list = d.element.list;
     name = "" + d.type + "-gene";
+    listHtml = "";
     _ref = d.genes;
     for (k in _ref) {
       o = _ref[k];
@@ -59,19 +60,21 @@
         item;
         link = "<a href='/genes/info?" + d.type + "=" + k + "'><i class='fa fa-search'></i></a>";
         if (d.multi_select) {
-          item = jQuery("<li><label class='checkbox'><input id='" + id + "' class='checkbox' type='checkbox' name='" + name + "' value='" + k + "'/>" + o.name + " - " + o.uniquename + " " + link + "</label></li>");
+          checked = '';
           if (o.selected) {
-            item.prop('checked', true);
+            checked = 'checked';
           }
+          item = "<li><label class='checkbox'>" + ("<input id='" + id + "' class='checkbox gene-search-select' type='checkbox' name='" + name + "' value='" + k + "' " + checked + "/>") + ("" + o.name + " - " + o.uniquename + " " + link) + "</label></li>";
         } else {
-          item = jQuery("<li>" + o.name + " - " + o.uniquename + " " + link + "</li>");
+          item = "<li>" + o.name + " - " + o.uniquename + " " + link + "</li>";
         }
-        list.append(item);
+        listHtml += item;
       }
     }
+    list.append(listHtml);
     cboxes = list.find("input[name='" + name + "']");
     cboxes.change(function() {
-      var checked, geneId, obj;
+      var geneId, obj;
       obj = $(this);
       geneId = obj.val();
       checked = obj.prop('checked');
@@ -113,7 +116,8 @@
     resetButt = jQuery("<button id='" + d.type + "-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv);
     resetButt.click(function(e) {
       e.preventDefault();
-      return filterByCategory(-1, -1, d);
+      filterByCategory(-1, -1, d);
+      return resetNullCategories(d);
     });
     _ref = d.categories;
     for (k in _ref) {
@@ -123,7 +127,7 @@
       titleDiv = jQuery("<div class='category-header col-xs-12'>" + cTitle + ": </div>").appendTo(row1);
       if (o.parent_definition != null) {
         moreInfoId = 'category-info-' + k;
-        moreInfo = jQuery("<a id='" + moreInfoId + "' href='#' data-toggle='tooltip' data-original-title=''" + o.parent_definition + "><i class='fa fa-info-circle'></i></a>");
+        moreInfo = jQuery("<a id='" + moreInfoId + "' href='#' data-toggle='tooltip' data-original-title='" + o.parent_definition + "'><i class='fa fa-info-circle'></i></a>");
         titleDiv.append(moreInfo);
         moreInfo.tooltip({
           placement: 'right'
@@ -131,7 +135,7 @@
       }
       row2 = jQuery('<div class="row"></div>').appendTo(categoryE);
       col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2);
-      sel = jQuery("<select name='vf-category' data-category-id='" + k + "' class='form-control'></select>").appendTo(col2);
+      sel = jQuery("<select name='" + d.type + "-category' data-category-id='" + k + "' class='form-control'></select>").appendTo(col2);
       _ref1 = o.subcategories;
       for (s in _ref1) {
         t = _ref1[s];
@@ -151,7 +155,7 @@
         catId = obj.data('category-id');
         subId = obj.val();
         if (subId !== 'null') {
-          jQuery("select[name='vf-category'][data-category-id!='" + catId + "']").val('null');
+          jQuery("select[name='" + d.type + "-category'][data-category-id!='" + catId + "']").val('null');
           return filterByCategory(catId, subId, d);
         }
       });
@@ -184,6 +188,7 @@
       o.visible = true;
     }
     d.element.list.empty();
+    console.log(d);
     appendGeneList(d);
     return true;
   };
@@ -231,14 +236,14 @@
     for (_i = 0, _len = geneIds.length; _i < _len; _i++) {
       g = geneIds[_i];
       gObj = d.genes[g];
-      listEl = jQuery(("<li class='" + cls + "'>") + gObj.name + '</li>');
+      listEl = jQuery(("<li class='" + cls + "'>") + gObj.name + ' - ' + gObj.uniquename + '</li>');
       actionEl = jQuery("<a href='#' data-gene='" + g + "'> <i class='fa fa-times'></a>");
       actionEl.click(function(e) {
         var gid;
         e.preventDefault();
         gid = this.dataset.gene;
         selectGene([gid], false, d);
-        return $("input[value='" + gid + "']").prop('checked', false);
+        return $("input.gene-search-select[value='" + gid + "']").prop('checked', false);
       });
       listEl.append(actionEl);
       d.element.select.append(listEl);
@@ -257,7 +262,7 @@
   };
 
   root.selectAllGenes = function(checked, d) {
-    var all, g, k, visible;
+    var all, g, k, visible, _i, _j, _len, _len1;
     if (checked) {
       visible = (function() {
         var _ref, _results;
@@ -272,6 +277,10 @@
         return _results;
       })();
       selectGene(visible, true, d);
+      for (_i = 0, _len = visible.length; _i < _len; _i++) {
+        g = visible[_i];
+        $("input.gene-search-select[value='" + g + "']").prop('checked', true);
+      }
     } else {
       all = (function() {
         var _ref, _results;
@@ -286,6 +295,10 @@
         return _results;
       })();
       selectGene(all, false, d);
+      for (_j = 0, _len1 = all.length; _j < _len1; _j++) {
+        g = all[_j];
+        $("input.gene-search-select[value='" + g + "']").prop('checked', false);
+      }
     }
     return true;
   };
@@ -322,6 +335,14 @@
     }
     jQuery('body').append(form);
     form.submit();
+    return true;
+  };
+
+  root.resetNullCategories = function(d) {
+    var el, name;
+    el = d.element.category;
+    name = "" + d.type + "-category";
+    el.find("select[name='" + name + "']").val('null');
     return true;
   };
 

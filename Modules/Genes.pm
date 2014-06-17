@@ -40,6 +40,8 @@ use Data::Dump qw(dump);
 
 sub setup {
 	my $self=shift;
+	
+	get_logger->debug('CGI::Application Genes.pm')
 
 }
 
@@ -270,6 +272,7 @@ sub matrix : Runmode {
 	}
 	
 	my $results = $data->getGeneAlleleData(%args);
+	get_logger->debug('halt1');
 	
 	my $gene_list = $results->{genes};
 	my $gene_json = encode_json($gene_list);
@@ -284,11 +287,13 @@ sub matrix : Runmode {
 		my $gl_json = encode_json($genome_list);
 		$template->param(genome_json => $gl_json);
 	}
+	get_logger->debug('halt2');
 	
 	# Retrieve genome meta info
 	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+	get_logger->debug('halt3');
 	
 	# Retrieve genome tree
 	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
@@ -299,6 +304,7 @@ sub matrix : Runmode {
 		$tree_string = $tree->fullTree();
 	}
 	$template->param(tree_json => $tree_string);
+	get_logger->debug('halt4');
 	
 	$template->param(title1 => 'VIRULENCE &amp; AMR');
 	$template->param(title2 => 'RESULTS');
@@ -409,8 +415,21 @@ sub info : Runmode {
 	my $q = $self->query();
 	my $qgene;
 	my $qtype;
-
-	if($q->param('amr')) {
+	
+	if($q->param('gene')) {
+		$qgene = $q->param('gene');
+		
+		my $type = $self->gene_type($qgene);
+		
+		if($type eq 'antimicrobial_resistance_gene') {
+			$qtype='amr';
+		} elsif($type eq 'virulence_factor') {
+			$qtype='vf';
+		} else {
+			croak "Error: unrecognized gene type for gene ID $qgene."
+		}
+		
+	} elsif($q->param('amr')) {
 		$qtype='amr';
 		$qgene = $q->param('amr');
 	} elsif($q->param('vf')) {
@@ -495,16 +514,18 @@ sub info : Runmode {
 	
 	
 	# Retrieve tree
-	if($num_alleles > 2) {
-		my $public = 1;
-		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
-		my $tree_string = $tree->geneTree($qgene, $public, $warden->genomeLookup());
-		$template->param(tree_json => $tree_string);
-	}
+	# GENE TREES BROKEN - need to reload to remove tmp IDs like upl_4
+#	if($num_alleles > 2) {
+#		my $public = 1;
+#		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+#		my $tree_string = $tree->geneTree($qgene, $public, $warden->genomeLookup());
+#		$template->param(tree_json => $tree_string);
+#	}
 	
 	
 	# Retrieve MSA
 	if($num_alleles > 1) {
+		get_logger->debug('attempt made for alignment');
 		my $is_typing = 0;
 		my $msa = $data->seqAlignment(
 			locus => $qgene, 
@@ -514,6 +535,8 @@ sub info : Runmode {
 		if($msa) {
 			my $msa_json = encode_json($msa);
 			$template->param(msa_json => $msa_json);
+		} else {
+			get_logger->debug('got nothing');
 		}
 	}
 	
@@ -639,7 +662,7 @@ sub vf_info : Runmode {
 		} elsif($fprow->type->name eq "organism") {
 			push @org, $fprow->value;
 		} elsif($fprow->type->name eq "plasmid") {
-			push @plasmid, $fprow->value;
+			push @plasmid, $fprow->value unless $fprow->value eq 'none'
 		} elsif($fprow->type->name eq "strain") {
 			push @strain, $fprow->value;
 		} elsif($fprow->type->name eq "virulence_id") {
@@ -689,7 +712,7 @@ sub _genomeAlleles {
 	my $gene_hash = $result_hash->{alleles};
 	my $gene_names = $result_hash->{names};
 	
-	foreach my $g ($warden->genomeList) {
+	foreach my $g (@{$warden->genomeList}) {
 		
 		foreach my $r_id (@$gene_ids) {
 			
@@ -699,13 +722,13 @@ sub _genomeAlleles {
 			if(defined($gene_hash->{$g}) && defined($gene_hash->{$g}->{$r_id})) {
 				# genome has alleles this ref gene
 				
-				my $copy = 1;
+				my $copy = 0;
 				foreach my $al (sort @{$gene_hash->{$g}->{$r_id}}) {
 					
+					++$copy;
 					$allele_data{copy} = $copy;
 					$gene_lists{$r_id}->{$g}->{$al} = \%allele_data;
-		
-					$copy++;
+					
 				}
 				
 				$num += $copy;
@@ -880,6 +903,34 @@ sub gene_category {
 	return $category_json;
 }
 
+=head2 gene_type
+
+=cut
+sub gene_type {
+	my $self = shift;
+	my $gene_id = shift;
+	
+
+	my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
+		{
+			'me.feature_id' => $gene_id
+		},
+		{
+			join => [
+				'type',
+			],
+			select => [qw/type.name/],
+			as => [qw/gene_type/]
+		}
+	);
+	
+	if (my $gene_row = $feature_rs->first) {
+		return $gene_row->get_column('gene_type')
+	} else {
+		return 0
+	}
+	
+}
 
 
 
