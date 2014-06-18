@@ -30,25 +30,25 @@ __PACKAGE__->table("private_snp_variation");
   is_nullable: 0
   sequence: 'private_snp_variation_snp_variation_id_seq'
 
-=head2 snp
+=head2 snp_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 contig_collection
+=head2 contig_collection_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 contig
+=head2 contig_id
 
   data_type: 'integer'
   is_foreign_key: 1
   is_nullable: 0
 
-=head2 locus
+=head2 locus_id
 
   data_type: 'integer'
   is_foreign_key: 1
@@ -71,13 +71,13 @@ __PACKAGE__->add_columns(
     is_nullable       => 0,
     sequence          => "private_snp_variation_snp_variation_id_seq",
   },
-  "snp",
+  "snp_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "contig_collection",
+  "contig_collection_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "contig",
+  "contig_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
-  "locus",
+  "locus_id",
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "allele",
   { data_type => "char", default_value => "n", is_nullable => 0, size => 1 },
@@ -101,15 +101,18 @@ __PACKAGE__->set_primary_key("snp_variation_id");
 
 =over 4
 
-=item * L</snp>
+=item * L</snp_id>
 
-=item * L</contig_collection>
+=item * L</contig_collection_id>
 
 =back
 
 =cut
 
-__PACKAGE__->add_unique_constraint("private_snp_variation_c1", ["snp", "contig_collection"]);
+__PACKAGE__->add_unique_constraint(
+  "private_snp_variation_c1",
+  ["snp_id", "contig_collection_id"],
+);
 
 =head1 RELATIONS
 
@@ -124,8 +127,8 @@ Related object: L<Database::Chado::Schema::Result::PrivateFeature>
 __PACKAGE__->belongs_to(
   "contig",
   "Database::Chado::Schema::Result::PrivateFeature",
-  { feature_id => "contig" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { feature_id => "contig_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 contig_collection
@@ -139,8 +142,8 @@ Related object: L<Database::Chado::Schema::Result::PrivateFeature>
 __PACKAGE__->belongs_to(
   "contig_collection",
   "Database::Chado::Schema::Result::PrivateFeature",
-  { feature_id => "contig_collection" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { feature_id => "contig_collection_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 locus
@@ -154,8 +157,8 @@ Related object: L<Database::Chado::Schema::Result::PrivateFeature>
 __PACKAGE__->belongs_to(
   "locus",
   "Database::Chado::Schema::Result::PrivateFeature",
-  { feature_id => "locus" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { feature_id => "locus_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 snp
@@ -169,13 +172,13 @@ Related object: L<Database::Chado::Schema::Result::SnpCore>
 __PACKAGE__->belongs_to(
   "snp",
   "Database::Chado::Schema::Result::SnpCore",
-  { snp_core_id => "snp" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { snp_core_id => "snp_id" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:59
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+OnwlskYu4I3tRMZ10O7TQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:R/LUgvTZt6M9PSpFAzQ+zw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

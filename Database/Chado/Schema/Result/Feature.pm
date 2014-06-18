@@ -652,6 +652,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 genome_locations
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GenomeLocation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "genome_locations",
+  "Database::Chado::Schema::Result::GenomeLocation",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 library_features
 
 Type: has_many
@@ -694,7 +709,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 phylonodes
@@ -783,7 +798,7 @@ Related object: L<Database::Chado::Schema::Result::SnpCore>
 __PACKAGE__->has_many(
   "snp_cores",
   "Database::Chado::Schema::Result::SnpCore",
-  { "foreign.pangenome_region" => "self.feature_id" },
+  { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -798,7 +813,7 @@ Related object: L<Database::Chado::Schema::Result::SnpVariation>
 __PACKAGE__->has_many(
   "snp_variation_contig_collections",
   "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.contig_collection" => "self.feature_id" },
+  { "foreign.contig_collection_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -813,7 +828,7 @@ Related object: L<Database::Chado::Schema::Result::SnpVariation>
 __PACKAGE__->has_many(
   "snp_variation_contigs",
   "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.contig" => "self.feature_id" },
+  { "foreign.contig_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -828,7 +843,7 @@ Related object: L<Database::Chado::Schema::Result::SnpVariation>
 __PACKAGE__->has_many(
   "snp_variation_loci",
   "Database::Chado::Schema::Result::SnpVariation",
-  { "foreign.locus" => "self.feature_id" },
+  { "foreign.locus_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -874,7 +889,7 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 vf_categories
@@ -892,9 +907,19 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 geocodes
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-19 22:19:58
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:gPihADplAjr+JsuH5XQjMQ
+Type: many_to_many
+
+Composing rels: L</genome_locations> -> geocode
+
+=cut
+
+__PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AK9ZMbmavyjG+mUh+7Rf3w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -11,52 +11,52 @@
 	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
 	
 	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
-	<!--<script src="http://d3js.org/d3.v3.min.js" ></script>-->
-	
+
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+	<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+
 	<script src="/App/Lib/js/superphy.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
 	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
-	
 
+	<script type="text/javascript">
+	var page_name = "strains";
+	</script>
 	
 </head>
 
 <body>
-	<div class="container" >
-	
-		
-	
-		<div id="genome-group1-form">
-			<div id="genome-group1-list">
-			</div>
-			<button id="genome-group1-add" class="btn" type="button">Add to Group 1</button>
-		</div>
-		
-		<TMPL_INCLUDE NAME="search_utilities.tmpl">
-	
-		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
-		
-	</div>
 
-	<script type="text/javascript">
-	
-		var public_genomes = <TMPL_VAR public_genomes>;
-		var private_genomes = <TMPL_VAR private_genomes>;
-		var tree = <TMPL_VAR tree_json>;
-		
-		viewController.init(public_genomes, private_genomes, 'multi_select', '/strains/info/');
-		
-		viewController.createView('list', $('#strains_list'));
-		
-		viewController.metaForm($('#meta-display-form'));
-		
-		viewController.filterForm($('#filter-form'));
-		
-		viewController.createGroup($('#genome-group1-list'),$('#genome-group1-add'));
-		
-		viewController.createView('tree', $('#strains_tree'), tree);
-		
-	</script>
+	<TMPL_INCLUDE NAME="page_top.tmpl">
+
+	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
+
+	<TMPL_INCLUDE NAME="page_bottom.tmpl">
+
 </body>
+
+<script type="text/javascript">
+
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var tree = <TMPL_VAR tree_json>;
+
+viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
+
+viewController.createView('list', $('#strains_list'));      
+
+viewController.createView('tree', $('#strains_tree'), tree);
+
+viewController.createView('map', $('#strains_map'), ['satellite']);
+
+viewController.sideBar($('#search-utilities'));
+
+$(document).ready(function(){
+		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
+		$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+			viewController.getView($('#strains_map').data("viewsIndex")).cartographer.resetMap();
+		});
+	});
+</script>
 
 </html>

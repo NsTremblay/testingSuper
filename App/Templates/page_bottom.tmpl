@@ -7,17 +7,18 @@
 </div>
 </div>
 <script>
-	$("#sidebar-expand").click(function(e) {
-		e.preventDefault();
-		$("#wrapper").toggleClass("active");
-		$(this).hide()
-		$("#sidebar-collapse").show()
-	});
-	$("#sidebar-collapse").click(function(e) {
-		e.preventDefault();
-		$("#wrapper").toggleClass("active");
-		$("#sidebar-expand").show()
-		$(this).hide()
-	});
+//Left sidebar
+$("#sidebar-expand").click(function(e) {
+	e.preventDefault();
+	$("#wrapper").toggleClass("active");
+	$(this).hide();
+	$("#sidebar-collapse").show();
+});
+$("#sidebar-collapse").click(function(e) {
+	e.preventDefault();
+	$("#wrapper").toggleClass("active");
+	$("#sidebar-expand").show();
+	$(this).hide();
+});
 </script>
-		
+

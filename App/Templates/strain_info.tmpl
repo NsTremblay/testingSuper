@@ -184,7 +184,6 @@ var pmidList = "";
 <TMPL_IF pmid_list>
 pmidList = <TMPL_VAR pmid_list>;
 </TMPL_IF>
-
 $(document).ready(function() {
 	
 	if(pmidList != "") {
@@ -213,11 +212,12 @@ $(document).ready(function() {
 	}
 });
 
-function onLoadCheck() {
+/*function onLoadCheck() {
 	$('#strainInfoTabs').show("slow");
-}
+}*/
 
-$('a[href="#mapTab"]').click( function(){
+//New map features through the map view class
+/*$('a[href="#mapTab"]').click( function(){
 	setTimeout("showMap()", 0);
 });
 
@@ -308,5 +308,5 @@ function appendFilteredList(obj, list, selectedMetaData) {
 			);
 	});
 }
-
+*/
 </script>

@@ -135,7 +135,7 @@ __PACKAGE__->belongs_to(
   "cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "cvterm_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -150,7 +150,7 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 stock
@@ -165,7 +165,7 @@ __PACKAGE__->belongs_to(
   "stock",
   "Database::Chado::Schema::Result::Stock",
   { stock_id => "stock_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 stock_cvtermprops
@@ -184,8 +184,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Lm5V7aZlX4kOzJ3vtGByzg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:awkmfOZ3XNfFGppK8Afskw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -298,34 +298,32 @@ COMMIT;
 
 BEGIN;
 
--- Table: jobs
+-- Table: job_result
 
--- DROP TABLE jobs;
+-- DROP TABLE job_result;
 
-CREATE TABLE jobs
+CREATE TABLE job_result
 (
-  job_id character varying NOT NULL, -- Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.
-  remote_addr character varying NOT NULL, -- IP address of the remote user that requested the job
-  session_id character varying NOT NULL, -- CGI session ID
-  username character varying, -- Username (if user logged in) of site user requesting job
-  status character varying, -- Current status of job. Will either be "in progress" or "completed"
-  user_config character varying NOT NULL,
-  CONSTRAINT jobs_pkey PRIMARY KEY (job_id)
+  job_result_id character varying(255) NOT NULL,
+  remote_address inet,
+  session_id character varying(255),
+  user_id integer,
+  username character varying(255),
+  user_config json NOT NULL,
+  job_result_status character varying(255) NOT NULL,
+  result json,
+  CONSTRAINT job_results_pkey PRIMARY KEY (job_result_id),
+  CONSTRAINT user_id_fkey FOREIGN KEY (user_id)
+      REFERENCES login (login_id) MATCH SIMPLE
+      ON UPDATE NO ACTION ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE jobs
+ALTER TABLE job_result
   OWNER TO postgres;
-COMMENT ON TABLE jobs
-  IS 'Stores id''s and statuses of current groupwise comparison jobs.';
-COMMENT ON COLUMN jobs.job_id IS 'Job ID for currently running process. Combination of concatening the tempfile tag of the user config file to an incerment of the count of current jobs to guarantee uniqueness.';
-COMMENT ON COLUMN jobs.remote_addr IS 'IP address of the remote user that requested the job';
-COMMENT ON COLUMN jobs.session_id IS 'CGI session ID';
-COMMENT ON COLUMN jobs.username IS 'Username (if user logged in) of site user requesting job';
-COMMENT ON COLUMN jobs.status IS 'Current status of job. Will either be "in progress" or "completed"';
-
-
+COMMENT ON TABLE job_result
+  IS 'Table for long-polling group wise comparisons. Stores job requests, user configurations and results (if generated)';
 
 COMMIT;
 

@@ -1,0 +1,237 @@
+<!--HEADER SECTION-->
+<div class="row" style="margin:20px 0 20px">
+	<div class="col-md-12">
+		<span class="muted">Genome Name: </span>
+	</div>
+	<div class="col-md-12"><h3><TMPL_VAR uniquename></h3></div>
+	<TMPL_IF synonyms>
+	<div class="col-md-12">
+		<span class="muted">Synonyms: </span>
+	</div>
+	<TMPL_LOOP synonyms>
+	<span style="padding-left:10px"><TMPL_VAR synonym></span>
+	</TMPL_LOOP>
+	</TMPL_IF>
+	<div class="col-md-12" style="border-bottom:#000;border-bottom-width:1px;border-bottom-style:solid"></div>
+</div>
+
+<TMPL_IF privateGenome>
+<div class="col-md-12">
+	<div class="well">
+		<div class="row">
+			<div class="col-md-12" style="padding-bottom: 10px"><span class="text-info"><strong>User Submitted Genome</strong></span></div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Submitted by: </span>
+			</div>
+			<div class="col-md-12">
+				<span style="padding-left:10px"><TMPL_VAR username></span>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Privacy setting: </span>
+			</div>
+			<div class="col-md-12">
+				<span style="padding-left:10px"><TMPL_VAR privacy></span>
+			</div>
+		</div>
+	</div>
+</div>
+</TMPL_IF>
+
+<!--STRAIN SECTION-->
+<div class="col-md-6">
+	<div class="well">
+
+		<div class="row">
+			<div class="col-md-12" style="padding-bottom: 10px"><span class="text-info"><strong>Strain Information</strong></span></div>
+		</div>
+
+		<TMPL_IF strains>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Strain: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP strains>
+				<span style="padding-left:10px"><TMPL_VAR strain></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF serotypes>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Serotype: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP serotypes>
+				<span style="padding-left:10px"><TMPL_VAR serotype></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF isolation_dates>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Isolation Date: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP isolation_dates>
+				<span style="padding-left:10px"><TMPL_VAR isolation_date></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF isolation_hosts>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Isolation Host: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP isolation_hosts>
+				<span style="padding-left:10px"><TMPL_VAR isolation_host></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF isolation_ages>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Host Age: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP isolation_ages>
+				<span style="padding-left:10px"><TMPL_VAR isolation_age></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF isolation_sources>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Isolation Source: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP isolation_sources>
+				<span style="padding-left:10px"><TMPL_VAR isolation_source></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF syndromes>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Associated Diseases and Symptoms: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP syndromes>
+				<span style="padding-left:10px"><TMPL_VAR syndrome></span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+	</div>
+</div>
+
+<!--GENOME SECTION-->
+<div class="col-md-6">
+	<div class="well">
+
+		<div class="row">
+			<div class="col-md-12" style="padding-bottom: 10px"><span class="text-info"><strong>Genome Information</strong></span></div>
+		</div>
+
+		<TMPL_IF secondary_dbxrefs>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">External IDs: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP secondary_dbxrefs>
+				<span style="padding-left:10px">
+					<TMPL_IF secondary_dbxref_link>
+					<a href='<TMPL_VAR secondary_dbxref_link>'><TMPL_VAR secondary_dbxref></a>
+					<TMPL_ELSE>
+					<TMPL_VAR secondary_dbxref>
+					</TMPL_IF>
+				</span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF mol_types>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Genome Type: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP mol_types>
+				<span style="padding-left:10px">
+					<TMPL_VAR mol_type>
+				</span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF finisheds>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Closed: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP finisheds>
+				<span style="padding-left:10px">
+					<TMPL_VAR finished>
+				</span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF descriptions>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Genome Description: </span>
+			</div>
+			<div class="col-md-12">
+				<ol>
+					<TMPL_LOOP descriptions>
+					<li><TMPL_VAR description></li>
+					</TMPL_LOOP>
+				</ol>
+			</div>
+		</div>
+		</TMPL_IF>
+
+		<TMPL_IF keywordss>
+		<div class="row">
+			<div class="col-md-12">
+				<span class="muted">Keywords: </span>
+			</div>
+			<div class="col-md-12">
+				<TMPL_LOOP keywordss>
+				<span style="padding-left:10px">
+					<TMPL_VAR keywords>
+				</span>
+				</TMPL_LOOP>
+			</div>
+		</div>
+		</TMPL_IF>
+
+	</div>
+</div>
+

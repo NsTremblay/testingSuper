@@ -35,6 +35,7 @@ use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
 use Modules::TreeManipulator;
+use Modules::LocationManager;
 use IO::File;
 use JSON;
 
@@ -90,6 +91,10 @@ sub info : Runmode {
 	my $formDataGenerator = Modules::FormDataGenerator->new();
 	$formDataGenerator->dbixSchema($self->dbixSchema);
 	
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
+	
 	my $username = $self->authen->username;
 	
 	# Retrieve form data
@@ -118,7 +123,7 @@ sub info : Runmode {
 		
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+		$template = $self->load_tmpl( 'strains_info.tmpl' ,
 			associate => HTML::Template::HashWrapper->new( $strainInfoRef ),
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 1);
@@ -162,8 +167,8 @@ sub info : Runmode {
 
 		$template->param(AMRDATA=>\@amrData);
 
-		# Get loacation data for map
-		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
+		# Get location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
@@ -243,11 +248,12 @@ sub info : Runmode {
 
 		$template->param(AMRDATA=>\@amrData);
 
-		my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
+		# Get private location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
 	} else {
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+		$template = $self->load_tmpl( 'strains_info.tmpl' ,
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 0);
 	}
@@ -255,6 +261,9 @@ sub info : Runmode {
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	$template->param(title1 => 'GENOME');
+	$template->param(title2 => 'INFORMATION');
 
 	return $template->output();
 }
@@ -292,6 +301,9 @@ sub search : StartRunmode {
 		my $tree_string = $tree->fullTree();
 		$template->param(tree_json => $tree_string);
 	}
+
+	$template->param(title1 => 'GENOME');
+	$template->param(title2 => 'SEARCH');
 	
 	return $template->output();
 } 
@@ -405,81 +417,6 @@ sub _getStrainInfo {
 	return(\%feature_hash);
 }
 
-=cut
-sub _getVirulenceData {
-	my $self = shift;
-	my $strainID = shift;
-	my $virulence_table_name = 'RawVirulenceData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @virulenceData;
-	my $virCount = 0;
-
-	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $virulenceDataRow = $virulenceData->next) {
-		my %virRow;
-		$virRow{'gene_name'} = $virulenceDataRow->gene->uniquename;
-		$virRow{'feature_id'} = $virulenceDataRow->gene->feature_id;
-		push (@virulenceData, \%virRow);
-	}
-	return \@virulenceData;
-}
-
-sub _getAmrData {
-	my $self = shift;
-	my $strainID = shift;
-	my $amr_table_name = 'RawAmrData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @amrData;
-	my $amrCount = 0;
-
-	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $amrDataRow = $amrData->next) {
-		my %amrRow;
-		$amrRow{'gene_name'} = $amrDataRow->gene->uniquename;
-		$amrRow{'feature_id'} = $amrDataRow->gene->feature_id;
-		push (@amrData , \%amrRow);
-	}
-	return \@amrData;
-}
-=cut
-
-sub _getStrainLocation {
-	my $self = shift;
-	my $strainID = shift;
-	my $tableName = shift;
-	my $locationFeatureProps = $self->dbixSchema->resultset($tableName)->search(
-		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
-		{
-			column  => [qw/me.feature_id me.value type.name/],
-			join        => ['type']
-		}
-		);
-	my %strainLocation;
-	$strainLocation{'presence'} = 0;
-	while (my $location = $locationFeatureProps->next) {
-		$strainLocation{'presence'} = 1;
-		my $locValue = $location->value;
-		$strainLocation{'location'} = $locValue;
-	}
-	return \%strainLocation;
-}
-
 sub test : Runmode {
 	my $self = shift;
 	
@@ -499,6 +436,24 @@ sub test : Runmode {
 	#$template->param('strainData' => 0);
 	
 	return $template->output();
+}
+
+=head2 geocode
+
+=cut
+
+sub geocode : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $address = $q->param("address");
+
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
+
+	my $queryResult = $locationManager->geocodeAddress($address);
+
+	return $queryResult;
 }
 
 1;

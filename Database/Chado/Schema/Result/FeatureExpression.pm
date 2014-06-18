@@ -113,7 +113,7 @@ __PACKAGE__->belongs_to(
   "expression",
   "Database::Chado::Schema::Result::Expression",
   { expression_id => "expression_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 feature
@@ -128,7 +128,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 feature_expressionprops
@@ -158,12 +158,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:FyjQM/4tjNjsUSiNEvVu6A
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xv5mMLHJcGpLuAl18jMF/w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

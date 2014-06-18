@@ -107,7 +107,7 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 stock_relationship
@@ -122,12 +122,12 @@ __PACKAGE__->belongs_to(
   "stock_relationship",
   "Database::Chado::Schema::Result::StockRelationship",
   { stock_relationship_id => "stock_relationship_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:2NRzOWOPuVllvj/mvOpHNw
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:CNN6Q2G3pqePWyNjBP6g4w
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

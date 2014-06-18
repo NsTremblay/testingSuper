@@ -1,0 +1,35 @@
+<div>
+    <span class="help-block">
+        The genome you have selected has been found to encode the following virulence factors and anti-microbial resistance genes. Click on any of the links to view descriptive information about each gene.
+    </span>
+    <div class="col-md-6 panel-div">
+        <table class="table table-hover vf-panel-table">
+            <thead></thead>
+            <tr>
+                <th>Virulence Factors</th>
+            </tr>
+            <TMPL_LOOP NAME=VIRDATA>
+            <tr>
+                <td>
+                    <TMPL_VAR NAME=gene_name> <a href="/genes/view?vf=<TMPL_VAR NAME=feature_id>"><span class="fa fa-search"></span> info</a>
+                </td>
+            </tr>
+            </TMPL_LOOP>
+        </table>
+    </div>
+    <div class="col-md-6 panel-div">
+        <table class="table table-hover amr-panel-table">
+            <thead></thead>
+            <tr>
+                <th>Antimicrobial Resistance Genes</th>
+            </tr>
+            <TMPL_LOOP NAME=AMRDATA>
+            <tr>
+                <td>
+                    <TMPL_VAR NAME=gene_name> <a href="/genes/view?amr=<TMPL_VAR NAME=feature_id>"><span class="fa fa-search"></span> info</a>
+                </td>
+            </tr>
+            </TMPL_LOOP>
+        </table>
+    </div>
+</div>

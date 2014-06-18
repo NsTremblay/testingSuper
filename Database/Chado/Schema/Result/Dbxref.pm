@@ -229,7 +229,7 @@ __PACKAGE__->belongs_to(
   "db",
   "Database::Chado::Schema::Result::Db",
   { db_id => "db_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 dbxrefprops
@@ -503,8 +503,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+N8A3d9qigX9xqrSIqwRWg
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:6eiB3D9AIjr/OrGpXhGZnw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

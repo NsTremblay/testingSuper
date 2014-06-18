@@ -102,7 +102,7 @@ __PACKAGE__->belongs_to(
   "object_reagent",
   "Database::Chado::Schema::Result::NdReagent",
   { nd_reagent_id => "object_reagent_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 subject_reagent
@@ -117,7 +117,7 @@ __PACKAGE__->belongs_to(
   "subject_reagent",
   "Database::Chado::Schema::Result::NdReagent",
   { nd_reagent_id => "subject_reagent_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -132,12 +132,12 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Hg70LZANwjEneAHjPyjQCQ
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LMTDqJ3QIXfj8ShAOUZNQw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

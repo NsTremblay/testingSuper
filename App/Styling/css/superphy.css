@@ -327,6 +327,22 @@ td.msaPosition {
   border-width: 1px;
   border-color: #d3d3d3;
 }
+.superphy-jump2-list {
+  padding-bottom: 20px;
+  padding-right: 8px;
+  margin: 5px;
+}
+.superphy-jump2-list ul {
+  list-style-type: none;
+  display: block;
+  max-height: 300px;
+  overflow: auto;
+  padding: 10px;
+  margin: 0px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
 li.genome_group10 {
   color: #91921a;
   font: italic bold 13px sans-serif;
@@ -505,7 +521,6 @@ body {
   display: inline-block;
 }
 .sidebar #sidebar-accordion {
-  padding-bottom: 20px;
   padding-right: 8px;
 }
 .sidebar #sidebar-accordion .panel {
@@ -782,6 +797,448 @@ div.matrixSort {
   border-width: 1px;
   border-color: #d3d3d3;
 }
+/*
+ 
+ File: superphy_map.less
+ Desc: Superphy stylesheet for map views.
+ Author: Akiff Manji akiff.manji@gmail.com
+ Date: May 20th, 2014
+ 
+ * */
+.map-canvas {
+  height: 300px;
+}
+.map-manifest {
+  pading-top: 0px;
+  margin-top: 0px;
+}
+.map-search-table .table > thead > tr > th,
+.table > tbody > tr > th,
+.table > tfoot > tr > th,
+.table > thead > tr > td,
+.table > tbody > tr > td,
+.table > tfoot > tr > td {
+  border-top: 0px;
+}
+.map-search-div {
+  margin-top: 20px;
+}
+.map-manifest ul {
+  list-style-type: none;
+  display: block;
+  max-height: 500px;
+  overflow: auto;
+  padding: 10px;
+  margin: 0px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+.map-legend-marker-img {
+  width: 15px;
+}
+.map-legend .legendlabel1 {
+  position: relative;
+  top: 5px;
+}
+/*
+ 
+ File: superphy_strains_search.less
+ Desc: Superphy stylesheet for strains search page
+ Author: Akiff Manji akiff.manji@gmail.com
+ Date: May 20th, 2014
+ 
+ * */
+.nav-pills > li > a {
+  -webkit-transition: color 1s ease-out;
+  -moz-transition: color 1s ease-out;
+  -o-transition: color 1s ease-out;
+  transition: color 1s ease-out;
+  border-radius: 0px;
+  color: #777;
+}
+.nav-pills > li > a:hover {
+  color: #333;
+  background-color: #FFF;
+}
+.nav-pills > li.active > a,
+.nav-pills > li.active > a:hover,
+.nav-pills > li.active > a:focus {
+  color: #555;
+  background-color: #e7e7e7;
+}
+.modal-dialog {
+  padding-top: 15%;
+}
+.modal-content {
+  border-radius: 0px;
+}
+.modal-content .alert {
+  border-radius: 0px;
+  margin-top: 10px;
+  margin-bottom: 0px;
+}
+.modal-content .modal-body .well {
+  margin-top: 10px;
+  margin-bottom: 0px;
+}
+.modal-footer > button {
+  border-radius: 0px;
+}
+.loader {
+  background: white;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  margin-left: -20px;
+  margin-top: 5px;
+  width: 40px;
+  border: 2px solid #dff0d8;
+  border-radius: 3px;
+  padding: 1px;
+  -webkit-animation: loader-border 2s ease-in infinite;
+  -o-animation: loader-border 2s ease-in infinite;
+  -ms-animation: loader-border 2s ease-in infinite;
+  animation: loader-border 2s ease-in infinite;
+}
+.loader > span {
+  display: block;
+  width: 0;
+  height: 4px;
+  background: #dff0d8;
+  position: relative;
+  -webkit-animation: loader-slide 1s ease-in infinite;
+  -o-animation: loader-slide 1s ease-in infinite;
+  -ms-animation: loader-slide 1s ease-in infinite;
+  animation: loader-slide 1s ease-in infinite;
+}
+.loader-job {
+  background: white;
+  position: relative;
+  left: 50%;
+  top: 50%;
+  margin-left: -20px;
+  margin-top: 5px;
+  width: 40px;
+  border: 2px solid #f2dede;
+  border-radius: 3px;
+  padding: 1px;
+  -webkit-animation: loader-job-border 2s ease-in infinite;
+  -o-animation: loader-job-border 2s ease-in infinite;
+  -ms-animation: loader-job-border 2s ease-in infinite;
+  animation: loader-job-border 2s ease-in infinite;
+}
+.loader-job > span {
+  display: block;
+  width: 0;
+  height: 4px;
+  background: #f2dede;
+  position: relative;
+  -webkit-animation: loader-slide 1s ease-in infinite;
+  -o-animation: loader-slide 1s ease-in infinite;
+  -ms-animation: loader-slide 1s ease-in infinite;
+  animation: loader-slide 1s ease-in infinite;
+}
+@-webkit-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-moz-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-ms-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@-o-keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+@keyframes loader-slide {
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 0;
+  }
+  0% {
+    width: 0;
+    margin-left: 0;
+    opacity: 1;
+  }
+  50% {
+    width: 0;
+    margin-left: 0;
+  }
+  75% {
+    width: 100%;
+    margin-left: 0;
+  }
+  90% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 1;
+  }
+  100% {
+    width: 0;
+    margin-left: 100%;
+    opacity: 0;
+  }
+}
+.loader-border 0% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-border 50% {
+  border-color: #dff0d8;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-border 100% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-job-border 0% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-job-border 50% {
+  border-color: #f2dede;
+  width: 40px;
+  margin-left: -20px;
+}
+.loader-job-border 100% {
+  border-color: white;
+  width: 40px;
+  margin-left: -20px;
+}
+@-webkit-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-moz-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-ms-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@-o-keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+@keyframes loader-border {
+  0% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+  50% {
+    border-color: #dff0d8;
+    width: 40px;
+    margin-left: -20px;
+  }
+  100% {
+    border-color: white;
+    width: 40px;
+    margin-left: -20px;
+  }
+}
+/*
+
+File: superphy_strains_info.less
+Desc: Superphy stylesheet for strains info page
+Author: Akiff Manji akiff.manji@gmail.com
+Date: May 20th, 2014
+
+* */
+.panel-group .panel {
+  border-radius: 0px;
+}
+.panel-heading {
+  border-radius: 0px;
+}
+.panel-danger {
+  border-radius: 0px;
+}
+.vf-panel-table {
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px;
+}
+.amr-panel-table {
+  border-width: 1px;
+  border-style: solid;
+  padding: 10px;
+}
+.panel-div {
+  max-height: 500px;
+  overflow: auto;
+}
+.well {
+  border-radius: 0px;
+  border: none;
+}
 /** Colors ********************************/
 /** Page Title ****************************/
 .titleText {
@@ -857,48 +1314,262 @@ div.matrixSort {
 .add-genome-groups > div button {
   float: right;
 }
+.compare-genome-groups > div > button {
+  margin-left: 5px;
+  margin-right: 5px;
+}
 .genome-group-list {
   list-style-type: none;
   display: block;
   max-height: 500px;
-  max-width: 350px;
   min-height: 50px;
-  width: 350px;
   overflow: auto;
   padding: 10px;
   margin: 10px;
   white-space: nowrap;
+}
+#genome-group-add10 {
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #bcbd22;
+  margin: 10px;
+}
+#genome-group-add10 span {
+  color: #e2e362;
+}
+#genome-group-list10 div a span {
+  color: #e2e362;
+}
+#genome-group10-heading {
+  padding: 0px 10px 0px 10px;
+  color: #e2e362;
+}
+#collapse-group10-options #group10-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
   border-style: solid;
   border-width: 1px;
   border-color: #d3d3d3;
 }
-#genome-group-add10 {
-  background-color: #e2e362;
-}
 #genome-group-add9 {
-  background-color: #5fe0ed;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #17becf;
+  margin: 10px;
+}
+#genome-group-add9 span {
+  color: #5fe0ed;
+}
+#genome-group-list9 div a span {
+  color: #5fe0ed;
+}
+#genome-group9-heading {
+  padding: 0px 10px 0px 10px;
+  color: #5fe0ed;
+}
+#collapse-group9-options #group9-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add8 {
-  background-color: #b2b2b2;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #7f7f7f;
+  margin: 10px;
+}
+#genome-group-add8 span {
+  color: #b2b2b2;
+}
+#genome-group-list8 div a span {
+  color: #b2b2b2;
+}
+#genome-group8-heading {
+  padding: 0px 10px 0px 10px;
+  color: #b2b2b2;
+}
+#collapse-group8-options #group8-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add7 {
-  background-color: #bc8b81;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #8c564b;
+  margin: 10px;
+}
+#genome-group-add7 span {
+  color: #bc8b81;
+}
+#genome-group-list7 div a span {
+  color: #bc8b81;
+}
+#genome-group7-heading {
+  padding: 0px 10px 0px 10px;
+  color: #bc8b81;
+}
+#collapse-group7-options #group7-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add6 {
-  background-color: #f4cce8;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #e377c2;
+  margin: 10px;
+}
+#genome-group-add6 span {
+  color: #f4cce8;
+}
+#genome-group-list6 div a span {
+  color: #f4cce8;
+}
+#genome-group6-heading {
+  padding: 0px 10px 0px 10px;
+  color: #f4cce8;
+}
+#collapse-group6-options #group6-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add5 {
-  background-color: #c6aedc;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #9467bd;
+  margin: 10px;
+}
+#genome-group-add5 span {
+  color: #c6aedc;
+}
+#genome-group-list5 div a span {
+  color: #c6aedc;
+}
+#genome-group5-heading {
+  padding: 0px 10px 0px 10px;
+  color: #c6aedc;
+}
+#collapse-group5-options #group5-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add4 {
-  background-color: #e77c7d;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #d62728;
+  margin: 10px;
+}
+#genome-group-add4 span {
+  color: #e77c7d;
+}
+#genome-group-list4 div a span {
+  color: #e77c7d;
+}
+#genome-group4-heading {
+  padding: 0px 10px 0px 10px;
+  color: #e77c7d;
+}
+#collapse-group4-options #group4-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add3 {
-  background-color: #5fd35f;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #2ca02c;
+  margin: 10px;
+}
+#genome-group-add3 span {
+  color: #5fd35f;
+}
+#genome-group-list3 div a span {
+  color: #5fd35f;
+}
+#genome-group3-heading {
+  padding: 0px 10px 0px 10px;
+  color: #5fd35f;
+}
+#collapse-group3-options #group3-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add2 {
-  background-color: #ffb574;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #ff7f0e;
+  margin: 10px;
+}
+#genome-group-add2 span {
+  color: #ffb574;
+}
+#genome-group-list2 div a span {
+  color: #ffb574;
+}
+#genome-group2-heading {
+  padding: 0px 10px 0px 10px;
+  color: #ffb574;
+}
+#collapse-group2-options #group2-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
 }
 #genome-group-add1 {
-  background-color: #57a9e2;
+  background-color: #fff;
+  border-radius: 0px;
+  border-color: #1f77b4;
+  margin: 10px;
+}
+#genome-group-add1 span {
+  color: #57a9e2;
+}
+#genome-group-list1 div a span {
+  color: #57a9e2;
+}
+#genome-group1-heading {
+  padding: 0px 10px 0px 10px;
+  color: #57a9e2;
+}
+#collapse-group1-options #group1-manager {
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+/*Checkbox styles*/
+.radio,
+.checkbox {
+  min-height: 0px;
+}
+.genome-group {
+  margin-bottom: 10px;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+}
+#group-manager-form div.form-group button {
+  margin-left: 2px;
+  margin-right: 2px;
 }
