@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, Poller, SatelliteCartographer, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, Poller, SatelliteCartographer, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -167,7 +167,6 @@
     ViewController.prototype.addToGroup = function(grp) {
       var i, selected, v, _i, _len, _ref;
       selected = this.genomeController.selected();
-      console.log(selected);
       this.genomeController.assignGroup(selected, grp);
       this.genomeController.unselectAll();
       i = grp - 1;
@@ -253,7 +252,7 @@
       return true;
     };
 
-    ViewController.prototype.groupForm = function(elem, type) {
+    ViewController.prototype.groupForm = function(elem, type, boolFilter) {
       var addEl, blockEl, buttEl, buttonEl, clearFormEl, divEl, hiddenFormEl, submitEl;
       blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem);
       this.addGroupFormRow(blockEl);
@@ -274,7 +273,12 @@
       submitEl = jQuery("<div class='compare-genome-groups row'></div>");
       divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
       clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl);
-      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
+      if (boolFilter) {
+        buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl);
+      }
+      if (!boolFilter) {
+        buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
+      }
       hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + this.action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
       buttonEl.click((function(_this) {
         return function(e) {
@@ -316,8 +320,8 @@
         i = _ref[_i];
         formEl = jQuery("<div id='genome-group-form" + i + "' class='genome-group-form col-md-6'></div>");
         listEl = jQuery("<div id='genome-group-list" + i + "' class='genome-group'></div>").appendTo(formEl);
-        divEl = jQuery('<div class="genome-group-add-controller"></div>').appendTo(listEl);
-        buttEl = jQuery("<button id='genome-group-add" + i + "' class='btn' type='button' title='Add genome(s) to Group " + i + "'><span class='fa fa-plus'></span> <h4 id='genome-group" + i + "-heading'>Group " + i + "</h4></button>").appendTo(divEl);
+        divEl = jQuery("<div class='genome-group-add-controller'></div>").appendTo(listEl);
+        buttEl = jQuery("<button id='genome-group-add" + i + "' class='btn btn-primary' type='button' title='Add genome(s) to Group " + i + "'><span class='fa fa-plus'></span> <span class='input-lg' id='genome-group" + i + "-heading'>Group " + i + "</span></button>").appendTo(divEl);
         rowEl.append(formEl);
         ok = this.createGroup(listEl, buttEl);
       }
@@ -399,14 +403,14 @@
       return true;
     };
 
-    ViewController.prototype.groupsCompareForm = function(elem) {
+    ViewController.prototype.groupsCompareForm = function(elem, boolFilter) {
       var form, parentTarget, wrapper;
       parentTarget = 'groups-compare-panel-body';
       wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>');
       elem.append(wrapper);
       form = jQuery('<div class="panel-body" id="' + parentTarget + '"></div>');
       wrapper.append(form);
-      this.groupForm(form, this.actionMode);
+      this.groupForm(form, this.actionMode, boolFilter);
       return true;
     };
 
@@ -4384,7 +4388,6 @@
       for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
         g = visibleG[_i];
         thiscls = cls;
-        console.log(thiscls);
         if (genomes[g].cssClass != null) {
           thiscls = cls + ' ' + genomes[g].cssClass;
         }
@@ -4494,8 +4497,9 @@
       cartographerTypes = {
         'base': new Cartographer(jQuery(elem)),
         'dot': new DotCartographer(jQuery(elem)),
-        'satellite': new SatelliteCartographer(jQuery(this.parentElem)),
-        'infoSatellite': new InfoSatelliteCartographer(jQuery(this.parentElem), null, window.selectedGenome)
+        'satellite': new SatelliteCartographer(jQuery(elem)),
+        'infoSatellite': new InfoSatelliteCartographer(jQuery(elem), null, window.selectedGenome),
+        'geophy': new GeophyCartographer(jQuery(elem), null, this.mapArgs[1])
       };
       this.cartographer = cartographerTypes[this.mapArgs[0]];
       this.cartographer.cartograPhy();
@@ -4680,25 +4684,33 @@
       var index;
       jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
-      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
-      SatelliteCartographer.prototype.markerCluster(this.map);
-      index = SatelliteCartographer.prototype.findMapViewIndex(viewController.views);
-      SatelliteCartographer.prototype.mapViewIndex = index;
+      this.updateMarkerLists(viewController.genomeController, this.map);
+      this.markerCluster(this.map);
+      index = this.findMapViewIndex(viewController.views);
+      this.mapViewIndex = index;
       jQuery(this.satelliteCartographDiv).data("viewsIndex", index);
-      google.maps.event.addListener(this.map, 'zoom_changed', function() {
-        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
-      });
-      google.maps.event.addListener(this.map, 'bounds_changed', function() {
-        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
-      });
-      google.maps.event.addListener(this.map, 'resize', function() {
-        return SatelliteCartographer.prototype.markerClusterer.clearMarkers();
-      });
-      google.maps.event.addListener(this.map, 'idle', function() {
-        SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this);
-        viewController.getView(SatelliteCartographer.prototype.mapViewIndex).update(viewController.genomeController);
-        return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
-      });
+      google.maps.event.addListener(this.map, 'zoom_changed', (function(_this) {
+        return function() {
+          return _this.markerClusterer.clearMarkers();
+        };
+      })(this));
+      google.maps.event.addListener(this.map, 'bounds_changed', (function(_this) {
+        return function() {
+          return _this.markerClusterer.clearMarkers();
+        };
+      })(this));
+      google.maps.event.addListener(this.map, 'resize', (function(_this) {
+        return function() {
+          return _this.markerClusterer.clearMarkers();
+        };
+      })(this));
+      google.maps.event.addListener(this.map, 'idle', (function(_this) {
+        return function() {
+          _this.updateMarkerLists(viewController.genomeController, _this.map);
+          viewController.getView(_this.mapViewIndex).update(viewController.genomeController);
+          return _this.markerClusterer.addMarkers(_this.clusterList);
+        };
+      })(this));
       return true;
     };
 
@@ -4711,7 +4723,7 @@
       for (pubGenomeId in _ref) {
         public_genome = _ref[pubGenomeId];
         if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
-          pubMarkerObj = SatelliteCartographer.prototype.parseLocation(public_genome);
+          pubMarkerObj = this.parseLocation(public_genome);
           circleIcon = {
             path: google.maps.SymbolPath.CIRCLE,
             fillColor: '#FF0000',
@@ -4739,7 +4751,7 @@
       for (pvtGenomeId in _ref1) {
         private_genome = _ref1[pvtGenomeId];
         if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
-          pvtMarkerObj = SatelliteCartographer.prototype.parseLocation(private_genome);
+          pvtMarkerObj = this.parseLocation(private_genome);
           circleIcon = {
             path: google.maps.SymbolPath.CIRCLE,
             fillColor: '#000000',
@@ -4788,13 +4800,13 @@
 
     SatelliteCartographer.prototype.resetMap = function() {
       var c, x;
-      SatelliteCartographer.prototype.updateMarkerLists(viewController.genomeController, this.map);
+      this.updateMarkerLists(viewController.genomeController, this.map);
       x = this.map.getZoom();
       c = this.map.getCenter();
       google.maps.event.trigger(this.map, 'resize');
       this.map.setZoom(x);
       this.map.setCenter(c);
-      return SatelliteCartographer.prototype.markerClusterer.addMarkers(SatelliteCartographer.prototype.clusterList);
+      return this.markerClusterer.addMarkers(this.clusterList);
     };
 
     SatelliteCartographer.prototype.parseLocation = function(genome) {
@@ -4929,6 +4941,105 @@
 
   })();
 
+  GeophyCartographer = (function(_super) {
+    __extends(GeophyCartographer, _super);
+
+    function GeophyCartographer(geophyCartographDiv, geophyCartograhOpt, genomeGroupColor) {
+      this.geophyCartographDiv = geophyCartographDiv;
+      this.geophyCartograhOpt = geophyCartograhOpt;
+      this.genomeGroupColor = genomeGroupColor;
+      GeophyCartographer.__super__.constructor.call(this, this.geophyCartographDiv, this.geophyCartograhOpt, this.genomeGroupColor);
+    }
+
+    GeophyCartographer.prototype.updateMarkerLists = function(genomes, map) {
+      var aqua, blue, brown, circleIcon, colors, green, grey, lime, orange, pink, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, purple, pvtGenomeId, pvtMarker, pvtMarkerObj, red, _ref, _ref1;
+      this.clusterList = [];
+      this.visibileStrainLocations.pubVisible = [];
+      this.visibileStrainLocations.pvtVisible = [];
+      blue = '#1f77b4';
+      orange = '#ff7f0e';
+      green = '#2ca02c';
+      red = '#d62728';
+      purple = '#9467bd';
+      brown = '#8c564b';
+      pink = '#e377c2';
+      grey = '#7f7f7f';
+      lime = '#bcbd22';
+      aqua = '#17becf';
+      colors = {
+        'group1Color': blue,
+        'group2Color': orange,
+        'group3Color': green,
+        'group4Color': red,
+        'group5Color': purple,
+        'group6Color': pink,
+        'group7Color': brown,
+        'group8Color': grey,
+        'group9Color': aqua,
+        'group10Color': lime
+      };
+      _ref = genomes.public_genomes;
+      for (pubGenomeId in _ref) {
+        public_genome = _ref[pubGenomeId];
+        if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
+          pubMarkerObj = this.parseLocation(public_genome);
+          circleIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: colors["group" + this.genomeGroupColor[pubGenomeId] + "Color"],
+            fillOpacity: 0.8,
+            scale: 5,
+            strokeColor: colors["group" + this.genomeGroupColor[pubGenomeId] + "Color"],
+            strokeWeight: 1
+          };
+          pubMarker = new google.maps.Marker({
+            map: map,
+            icon: circleIcon,
+            position: pubMarkerObj['centerLatLng'],
+            title: public_genome.uniquename,
+            feature_id: pubGenomeId,
+            uniquename: public_genome.uniquename,
+            location: pubMarkerObj['locationName']
+          });
+          this.clusterList.push(pubMarker);
+          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+            this.visibileStrainLocations.pubVisible.push(pubGenomeId);
+          }
+        }
+      }
+      _ref1 = genomes.private_genomes;
+      for (pvtGenomeId in _ref1) {
+        private_genome = _ref1[pvtGenomeId];
+        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
+          pvtMarkerObj = this.parseLocation(private_genome);
+          circleIcon = {
+            path: google.maps.SymbolPath.CIRCLE,
+            fillColor: colors["group" + this.genomeGroupColor[pvtGenomeId] + "Color"],
+            fillOpacity: 0.8,
+            scale: 5,
+            strokeColor: colors["group" + this.genomeGroupColor[pvtGenomeId] + "Color"],
+            strokeWeight: 1
+          };
+          pvtMarker = new google.maps.Marker({
+            map: map,
+            position: pvtMarkerObj['centerLatLng'],
+            title: private_genome.uniquename,
+            feature_id: pvtGenomeId,
+            uniquename: private_genome.uniquename,
+            location: pvtMarkerObj['locationName']
+          });
+          this.clusterList.push(pvtMarker);
+          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
+            this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
+          }
+        }
+      }
+      return true;
+    };
+
+    return GeophyCartographer;
+
+  })(SatelliteCartographer);
+
 
   /*
       CLASS Poller
@@ -4960,6 +5071,193 @@
     };
 
     return Poller;
+
+  })();
+
+  GeoPhy = (function() {
+    function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv) {
+      this.publicGenomes = publicGenomes;
+      this.privateGenomes = privateGenomes;
+      this.viewController = viewController;
+      this.userGroups = userGroups;
+      this.treeDiv = treeDiv;
+      this.mapDiv = mapDiv;
+    }
+
+    GeoPhy.prototype.publicSubsetGenomes = {};
+
+    GeoPhy.prototype.privateSubsetGenomes = {};
+
+    GeoPhy.prototype.genomeController = null;
+
+    GeoPhy.prototype.init = function(boolShowall) {
+      console.log(boolShowall);
+      if (this.userGroups == null) {
+        this.initReset();
+      } else if ((this.userGroups != null) && boolShowall) {
+        this.initShowall();
+      } else if ((this.userGroups != null) && !boolShowall) {
+        this.initFilter();
+      }
+      this.viewController.sideBar($('#search-utilities'));
+      this.viewController.createView('tree', this.treeDiv, tree);
+      return true;
+    };
+
+    GeoPhy.prototype._getPublicSubset = function(public_genomes, selected_groups) {
+      var public_subset_genomes;
+      public_subset_genomes = {};
+      jQuery.each(selected_groups, function(gp_num, gp) {
+        return jQuery.each(gp, function(i, v) {
+          if (public_genomes[v]) {
+            return public_subset_genomes[v] = public_genomes[v];
+          }
+        });
+      });
+      return public_subset_genomes;
+    };
+
+    GeoPhy.prototype._getPrivateSubset = function(private_genomes, selected_groups) {
+      var private_subset_genomes;
+      private_subset_genomes = {};
+      jQuery.each(selected_groups, function(gp_num, gp) {
+        return jQuery.each(gp, function(i, v) {
+          if (private_genomes[v]) {
+            return private_subset_genomes[v] = private_genomes[v];
+          }
+        });
+      });
+      return private_subset_genomes;
+    };
+
+    GeoPhy.prototype._appendLegend = function(divEl, groups) {
+      var aqua, blue, brown, buttonEl, clearFormEl, colors, div, gList, gNum, green, grey, hiddenFormEl, legendEl, lime, markerLegend, orange, panelEl, pink, purple, red, rowEl, submitEl, svg;
+      blue = '#1f77b4';
+      orange = '#ff7f0e';
+      green = '#2ca02c';
+      red = '#d62728';
+      purple = '#9467bd';
+      brown = '#8c564b';
+      pink = '#e377c2';
+      grey = '#7f7f7f';
+      lime = '#bcbd22';
+      aqua = '#17becf';
+      colors = {
+        'group1Color': blue,
+        'group2Color': orange,
+        'group3Color': green,
+        'group4Color': red,
+        'group5Color': purple,
+        'group6Color': pink,
+        'group7Color': brown,
+        'group8Color': grey,
+        'group9Color': aqua,
+        'group10Color': lime
+      };
+      legendEl = jQuery('<div class="col-md-12 panel panel-default"></div>');
+      panelEl = jQuery('<div class="panel-body"></div>').appendTo(legendEl);
+      rowEl = jQuery('<div class="row"></div>').appendTo(panelEl);
+      divEl.prepend(legendEl);
+      for (gNum in groups) {
+        gList = groups[gNum];
+        console.log(gNum);
+        div = document.createElement('div');
+        div.className = "col-md-1";
+        svg = d3.select(div).append('svg').attr('height', '20px').attr('width', '100px');
+        markerLegend = svg.append("g").attr('transform', 'translate(0,0)');
+        markerLegend.append("circle").attr('cx', 10).attr('cy', 10).attr('r', '5px').style({
+          'fill': colors["group" + gNum + "Color"],
+          'fill-opacity': '1.0'
+        });
+        markerLegend.append("text").attr("class", "legendlabel2").attr("dx", 20).attr("dy", 15).attr("text-anchor", "start").text("Group " + gNum);
+        rowEl.append(div);
+      }
+      submitEl = jQuery("<div class='compare-genome-groups row'></div>").appendTo(panelEl);
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
+      clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl);
+      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Show All Groups</button>").appendTo(divEl);
+      hiddenFormEl = jQuery('#groups-compare-form');
+      buttonEl.click((function(_this) {
+        return function(e) {
+          var genome, groupGenomes, i, _i, _j, _len, _ref;
+          e.preventDefault();
+          jQuery("<input type='hidden' name='show-all' value='1'>").appendTo(hiddenFormEl);
+          for (i = _i = 1, _ref = _this.viewController.groups.length; _i <= _ref; i = _i += 1) {
+            groupGenomes = jQuery("#genome_group" + i + " .genome_group_item");
+            for (_j = 0, _len = groupGenomes.length; _j < _len; _j++) {
+              genome = groupGenomes[_j];
+              jQuery("<input type='hidden' name='group" + i + "-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
+            }
+          }
+          jQuery("<input type='hidden' name='num-groups' value='" + _this.viewController.groups.length + "'>").appendTo(hiddenFormEl);
+          return hiddenFormEl.submit();
+        };
+      })(this));
+      return true;
+    };
+
+    GeoPhy.prototype.initFilter = function() {
+      var gId, gList, gNum, genomeGroupColor, userMaxGroupNum, _i, _len, _ref;
+      this.publicSubsetGenomes = this._getPublicSubset(this.publicGenomes, this.userGroups);
+      this.privateSubsetGenomes = this._getPrivateSubset(this.privateGenomes, this.userGroups);
+      this.viewController.init(this.publicSubsetGenomes, this.privateSubsetGenomes, 'multi_select', '/groups/geophy');
+      this.viewController.groupsCompareForm($('#groups-compare'), true);
+      jQuery('#groups-compare').hide();
+      genomeGroupColor = {};
+      userMaxGroupNum = Math.max.apply(Math, Object.keys(this.userGroups));
+      while (userMaxGroupNum > this.viewController.groups.length) {
+        this.viewController.addGroupFormRow($("#group-form-block"));
+      }
+      _ref = this.userGroups;
+      for (gNum in _ref) {
+        gList = _ref[gNum];
+        for (_i = 0, _len = gList.length; _i < _len; _i++) {
+          gId = gList[_i];
+          this.viewController.select(gId, true);
+          genomeGroupColor[gId] = gNum;
+        }
+        this.viewController.addToGroup(gNum);
+      }
+      this.viewController.createView('map', this.mapDiv, ['geophy'], genomeGroupColor);
+      this._appendLegend(jQuery('#groups-geophy'), this.userGroups);
+      return true;
+    };
+
+    GeoPhy.prototype.initShowall = function() {
+      var gId, gList, gNum, genomeGroupColor, userMaxGroupNum, _i, _len, _ref;
+      this.viewController.init(this.publicGenomes, this.privateGenomes, 'multi_select', '/groups/geophy');
+      this.viewController.groupsCompareForm($('#groups-compare'), true);
+      genomeGroupColor = {};
+      userMaxGroupNum = Math.max.apply(Math, Object.keys(this.userGroups));
+      while (userMaxGroupNum > this.viewController.groups.length) {
+        this.viewController.addGroupFormRow($("#group-form-block"));
+      }
+      _ref = this.userGroups;
+      for (gNum in _ref) {
+        gList = _ref[gNum];
+        for (_i = 0, _len = gList.length; _i < _len; _i++) {
+          gId = gList[_i];
+          this.viewController.select(gId, true);
+          genomeGroupColor[gId] = gNum;
+        }
+        this.viewController.addToGroup(gNum);
+      }
+      this.viewController.createView('map', this.mapDiv, ['satellite']);
+      return true;
+    };
+
+    GeoPhy.prototype.initReset = function() {
+      this.viewController.init(this.publicGenomes, this.privateGenomes, 'multi_select', '/groups/geophy');
+      this.viewController.groupsCompareForm($('#groups-compare'), true);
+      this.viewController.createView('map', this.mapDiv, ['satellite']);
+      return true;
+    };
+
+    if (!root.GeoPhy) {
+      root.GeoPhy = GeoPhy;
+    }
+
+    return GeoPhy;
 
   })();
 

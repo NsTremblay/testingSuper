@@ -170,7 +170,6 @@ class ViewController
   addToGroup: (grp) ->
     # Get all currently selected genomes
     selected = @genomeController.selected()
-    console.log(selected)
     
     # Change genome properties
     @genomeController.assignGroup(selected, grp)
@@ -217,7 +216,6 @@ class ViewController
     return true # return success
     
   select: (g, checked) ->
-    
     if @actionMode is 'single_select'
       @redirect(g)
       
@@ -305,7 +303,7 @@ class ViewController
 
     true
   
-  groupForm: (elem, type) ->
+  groupForm: (elem, type, boolFilter) ->
     #TODO: This has to be changed, need to be able to set up form for only 2 groups or more than 2 groups 
 
     # There can be only one
@@ -329,8 +327,10 @@ class ViewController
     submitEl = jQuery("<div class='compare-genome-groups row'></div>")
     divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
     clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
-    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl)
-    
+    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl) if boolFilter
+    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl) unless boolFilter
+
+
     hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{@action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
     # Prevent default click action to prepare the groups before submitting
     buttonEl.click( (e) =>
@@ -343,7 +343,6 @@ class ViewController
         blockEl.prepend(alert);
         return false
 
-      # TODO: Change this to account for any number of groups
       #Prepare groups
 
       for i in [1..@groups.length] by 1
@@ -377,8 +376,8 @@ class ViewController
     for i in [gNum, gNum+1]
       formEl = jQuery("<div id='genome-group-form#{i}' class='genome-group-form col-md-6'></div>")
       listEl = jQuery("<div id='genome-group-list#{i}' class='genome-group'></div>").appendTo(formEl)
-      divEl = jQuery('<div class="genome-group-add-controller"></div>').appendTo(listEl)
-      buttEl = jQuery("<button id='genome-group-add#{i}' class='btn' type='button' title='Add genome(s) to Group #{i}'><span class='fa fa-plus'></span> <h4 id='genome-group#{i}-heading'>Group #{i}</h4></button>").appendTo(divEl)
+      divEl = jQuery("<div class='genome-group-add-controller'></div>").appendTo(listEl)
+      buttEl = jQuery("<button id='genome-group-add#{i}' class='btn btn-primary' type='button' title='Add genome(s) to Group #{i}'><span class='fa fa-plus'></span> <span class='input-lg' id='genome-group#{i}-heading'>Group #{i}</span></button>").appendTo(divEl)
       rowEl.append(formEl)
       
       ok = @createGroup(listEl,buttEl)
@@ -463,7 +462,7 @@ class ViewController
     @groupsSideForm(form, parentTarget)
     true
 
-  groupsCompareForm: (elem) ->
+  groupsCompareForm: (elem, boolFilter) ->
     parentTarget = 'groups-compare-panel-body'
     wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
     elem.append(wrapper)
@@ -471,7 +470,7 @@ class ViewController
     #Need to specify action mode so the page allows for more groups if needed
     form = jQuery('<div class="panel-body" id="'+parentTarget+'"></div>')
     wrapper.append(form)
-    @groupForm(form, @actionMode);
+    @groupForm(form, @actionMode, boolFilter);
     true
   
   # Incomplete and on hold for now:

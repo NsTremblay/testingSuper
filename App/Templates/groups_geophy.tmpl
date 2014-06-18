@@ -52,55 +52,26 @@
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
+var user_groups;
 </script>
 
 <TMPL_IF USER_SELECTIONS>
 <script type="text/javascript">
-var user_groups = <TMPL_VAR groups>;
+user_groups = <TMPL_VAR groups>;
 var num_groups = <TMPL_VAR num_groups>;
 </script>
 </TMPL_IF>
 
 <script type="text/javascript">
-if (typeof user_groups == "undefined" || user_groups == null) 
-{
-    viewController.init(public_genomes, private_genomes, 'multi_select', '/groups/geophy');
-    //Group Compare form
-    viewController.groupsCompareForm($('#groups-compare'));
-}
-else 
-{
-    //User selected groups
-    var public_subset_genomes = {};
-    var private_subset_genomes = {};
 
-    $.each(user_groups, function(gp_num, gp) {
-        $.each(gp, function(i, v) {
-            if (public_genomes[v]) {
-                public_subset_genomes[v] = public_genomes[v];
-            };
-            if (private_genomes[v]) {
-                private_subst_genomes[v] = private_genomes[v];
-            };
-        }); 
-    }); 
-    viewController.init(public_subset_genomes, private_subset_genomes, 'multi_select', '/groups/geophy');
-}
+var geophy = new GeoPhy(public_genomes, private_genomes, viewController, user_groups, $('#groups_tree'), $('#groups_map'));
+geophy.init();
 
-viewController.sideBar($('#search-utilities'));
-viewController.createView('map', $('#groups_map'), ['satellite']);
-viewController.createView('tree', $('#groups_tree'), tree);
-
-viewController.groupsCompareForm($('#groups-compare'));
-
-$(document).ready( function () {
-    //TODO: Need to restablish selected groups
-    
+$(document).ready( function () {    
     $('.map-manifest').removeClass('col-md-5').addClass('col-md-12');
     $('.map-search-div').removeClass('col-md-6').addClass('col-md-12');
     //Removed the dl view for now. Need to set the styling properly on this
     $('.download-view').empty();
-
 });
 
 </script>

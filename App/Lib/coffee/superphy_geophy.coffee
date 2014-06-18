@@ -1,0 +1,188 @@
+class GeoPhy
+  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv) ->
+
+  publicSubsetGenomes: {}
+  privateSubsetGenomes: {}
+  genomeController: null
+
+  init: (boolShowall) ->
+    #TODO:
+    console.log boolShowall
+
+    if not @userGroups?
+      @initReset()
+    else if @userGroups? and boolShowall
+      @initShowall()
+    else if @userGroups? and not boolShowall
+      @initFilter()
+
+    @viewController.sideBar($('#search-utilities'))
+    @viewController.createView('tree', @treeDiv, tree)
+    
+    true
+
+  _getPublicSubset: (public_genomes, selected_groups) ->
+    public_subset_genomes = {}
+    jQuery.each(selected_groups, (gp_num, gp) ->
+      jQuery.each(gp, (i,v) ->
+        if public_genomes[v]
+          public_subset_genomes[v] = public_genomes[v]
+          )
+      )
+    return public_subset_genomes
+
+  _getPrivateSubset: (private_genomes, selected_groups) ->
+    private_subset_genomes = {}
+    jQuery.each(selected_groups, (gp_num, gp) ->
+      jQuery.each(gp, (i,v) ->
+        if private_genomes[v]
+          private_subset_genomes[v] = private_genomes[v]
+          )
+      )
+    return private_subset_genomes
+
+  _appendLegend: (divEl, groups) ->
+    
+    blue = '#1f77b4';
+    orange = '#ff7f0e';
+    green = '#2ca02c';
+    red = '#d62728';
+    purple = '#9467bd';
+    brown = '#8c564b';
+    pink = '#e377c2';
+    grey = '#7f7f7f';
+    lime = '#bcbd22';
+    aqua = '#17becf';
+
+    colors = {
+      'group1Color': blue;
+      'group2Color': orange;
+      'group3Color': green;
+      'group4Color': red;
+      'group5Color': purple;
+      'group6Color': pink;
+      'group7Color': brown;
+      'group8Color': grey;
+      'group9Color': aqua;
+      'group10Color': lime;
+    }
+
+    legendEl = jQuery('<div class="col-md-12 panel panel-default"></div>')
+    
+    panelEl = jQuery('<div class="panel-body"></div>').appendTo(legendEl)
+
+    rowEl = jQuery('<div class="row"></div>').appendTo(panelEl)
+
+    divEl.prepend(legendEl)
+
+    for gNum, gList of groups
+      console.log gNum
+
+      div = document.createElement('div')
+      
+      div.className = "col-md-1"
+
+      svg = d3.select(div).append('svg')
+        .attr('height', '20px')
+        .attr('width', '100px')
+      
+      markerLegend = svg.append("g")
+        .attr('transform', 'translate(0,0)')
+      
+      markerLegend.append("circle")
+        .attr('cx', 10)
+        .attr('cy', 10)
+        .attr('r', '5px')
+        .style({'fill': colors["group#{gNum}Color"], 'fill-opacity': '1.0'})
+
+      markerLegend.append("text")
+        .attr("class","legendlabel2")
+        .attr("dx", 20)
+        .attr("dy", 15)
+        .attr("text-anchor", "start")
+        .text("Group #{gNum}")
+
+      rowEl.append(div)
+
+    # TODO:
+
+    submitEl = jQuery("<div class='compare-genome-groups row'></div>").appendTo(panelEl)
+    divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
+    clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
+    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Show All Groups</button>").appendTo(divEl)
+
+    #hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{@viewController.action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
+
+    hiddenFormEl = jQuery('#groups-compare-form');
+
+    buttonEl.click (e) =>
+      e.preventDefault()
+      
+      jQuery("<input type='hidden' name='show-all' value='1'>").appendTo(hiddenFormEl)
+
+      for i in [1..@viewController.groups.length] by 1
+        groupGenomes = jQuery("#genome_group#{i} .genome_group_item")
+        jQuery("<input type='hidden' name='group#{i}-genome' value='#{jQuery(genome).find('a').data('genome')}'>").appendTo(hiddenFormEl) for genome in groupGenomes
+      
+      jQuery("<input type='hidden' name='num-groups' value='#{@viewController.groups.length}'>").appendTo(hiddenFormEl)
+      
+      hiddenFormEl.submit()
+
+    true
+
+  initFilter: () ->
+    @publicSubsetGenomes = @_getPublicSubset(@publicGenomes, @userGroups)
+    @privateSubsetGenomes = @_getPrivateSubset(@privateGenomes, @userGroups)
+    @viewController.init(@publicSubsetGenomes, @privateSubsetGenomes, 'multi_select', '/groups/geophy')
+    
+    @viewController.groupsCompareForm($('#groups-compare'), true)
+    jQuery('#groups-compare').hide();
+
+    genomeGroupColor = {}
+
+    userMaxGroupNum = Math.max.apply(Math, Object.keys(@userGroups))
+
+    while (userMaxGroupNum > @viewController.groups.length)
+      @viewController.addGroupFormRow($("#group-form-block"))
+
+    for gNum, gList of @userGroups
+      for gId in gList
+        @viewController.select(gId, true)
+        genomeGroupColor[gId] = gNum
+      @viewController.addToGroup(gNum)
+
+    @viewController.createView('map', @mapDiv, ['geophy'], genomeGroupColor)
+
+    @_appendLegend(jQuery('#groups-geophy'), @userGroups);
+        
+    true
+
+  initShowall: () ->
+    @viewController.init(@publicGenomes, @privateGenomes, 'multi_select', '/groups/geophy')
+    @viewController.groupsCompareForm($('#groups-compare'), true)
+
+    genomeGroupColor = {}
+
+    userMaxGroupNum = Math.max.apply(Math, Object.keys(@userGroups))
+
+    while (userMaxGroupNum > @viewController.groups.length)
+      @viewController.addGroupFormRow($("#group-form-block"))
+
+    for gNum, gList of @userGroups
+      for gId in gList
+        @viewController.select(gId, true)
+        genomeGroupColor[gId] = gNum
+      @viewController.addToGroup(gNum)
+
+    @viewController.createView('map', @mapDiv, ['satellite'])
+
+    true
+
+  initReset: () -> 
+    @viewController.init(@publicGenomes, @privateGenomes, 'multi_select', '/groups/geophy')
+    @viewController.groupsCompareForm($('#groups-compare'), true)
+    @viewController.createView('map', @mapDiv, ['satellite'])
+    true
+
+  unless root.GeoPhy
+    root.GeoPhy = GeoPhy

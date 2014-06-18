@@ -236,8 +236,9 @@ class MapView extends ViewTemplate
     cartographerTypes = {
       'base': new Cartographer(jQuery(elem))
       'dot': new DotCartographer(jQuery(elem))
-      'satellite': new SatelliteCartographer(jQuery(@parentElem))
-      'infoSatellite': new InfoSatelliteCartographer(jQuery(@parentElem), null, window.selectedGenome)
+      'satellite': new SatelliteCartographer(jQuery(elem))
+      'infoSatellite': new InfoSatelliteCartographer(jQuery(elem), null, window.selectedGenome)
+      'geophy': new GeophyCartographer(jQuery(elem), null, @mapArgs[1])
     }
     @cartographer = cartographerTypes[@mapArgs[0]];
     @cartographer.cartograPhy()
@@ -458,30 +459,30 @@ class SatelliteCartographer extends Cartographer
     super
     
     # Init the visible list of strains and convert these to markers
-    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
+    @updateMarkerLists(viewController.genomeController, @map)
     
     # Init the marker clusterer
-    SatelliteCartographer::markerCluster(@map)
+    @markerCluster(@map)
     
     # Set mapViewIndex for easy lookup
-    index = SatelliteCartographer::findMapViewIndex(viewController.views)
-    SatelliteCartographer::mapViewIndex = index
+    index = @findMapViewIndex(viewController.views)
+    @mapViewIndex = index
     jQuery(@satelliteCartographDiv).data("viewsIndex", index);
 
     # Map viewport change event
-    google.maps.event.addListener(@map, 'zoom_changed', () ->
-      SatelliteCartographer::markerClusterer.clearMarkers()
+    google.maps.event.addListener(@map, 'zoom_changed', () =>
+      @markerClusterer.clearMarkers()
       )
-    google.maps.event.addListener(@map, 'bounds_changed', () ->
-      SatelliteCartographer::markerClusterer.clearMarkers()
+    google.maps.event.addListener(@map, 'bounds_changed', () =>
+      @markerClusterer.clearMarkers()
       )
-    google.maps.event.addListener(@map, 'resize', () ->
-      SatelliteCartographer::markerClusterer.clearMarkers()
+    google.maps.event.addListener(@map, 'resize', () =>
+      @markerClusterer.clearMarkers()
       )
-    google.maps.event.addListener(@map, 'idle', () ->
-      SatelliteCartographer::updateMarkerLists(viewController.genomeController, @)
-      viewController.getView(SatelliteCartographer::mapViewIndex).update(viewController.genomeController)
-      SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
+    google.maps.event.addListener(@map, 'idle', () =>
+      @updateMarkerLists(viewController.genomeController, @map)
+      viewController.getView(@mapViewIndex).update(viewController.genomeController)
+      @markerClusterer.addMarkers(@clusterList)
       )
     true
 
@@ -503,7 +504,7 @@ class SatelliteCartographer extends Cartographer
 
     for pubGenomeId, public_genome of genomes.public_genomes
       if public_genome.isolation_location? && public_genome.isolation_location != ""
-        pubMarkerObj = SatelliteCartographer::parseLocation(public_genome)
+        pubMarkerObj = @parseLocation(public_genome)
 
         circleIcon = {
           path: google.maps.SymbolPath.CIRCLE
@@ -532,7 +533,7 @@ class SatelliteCartographer extends Cartographer
 
     for pvtGenomeId, private_genome of genomes.private_genomes
       if private_genome.isolation_location? && private_genome.isolation_location != ""
-        pvtMarkerObj = SatelliteCartographer::parseLocation(private_genome)
+        pvtMarkerObj = @parseLocation(private_genome)
 
         circleIcon = {
           path: google.maps.SymbolPath.CIRCLE
@@ -596,13 +597,13 @@ class SatelliteCartographer extends Cartographer
   # RETURNS
   #
   resetMap: ()  ->
-    SatelliteCartographer::updateMarkerLists(viewController.genomeController, @map)
+    @updateMarkerLists(viewController.genomeController, @map)
     x = @map.getZoom();
     c = @map.getCenter();
     google.maps.event.trigger(@map, 'resize');
     @map.setZoom(x);
     @map.setCenter(c);
-    SatelliteCartographer::markerClusterer.addMarkers(SatelliteCartographer::clusterList)
+    @markerClusterer.addMarkers(@clusterList)
 
   # FUNC parseLocation
   # parses the location out from a genome object
@@ -762,3 +763,106 @@ class CartographerOverlay
 
     div.style.left = (location.x - 11) + 'px'
     div.style.top = (location.y - 40) + 'px'
+
+class GeophyCartographer extends SatelliteCartographer
+  constructor: (@geophyCartographDiv, @geophyCartograhOpt, @genomeGroupColor) ->
+    # Call default constructor
+    super(@geophyCartographDiv, @geophyCartograhOpt, @genomeGroupColor)
+
+  # FUNC updateMarkerLists overrides SatelliteCartographer
+  # Initializes and sets lists of genomes with known locations
+  # Initializes and sets lists of markers for google maps and marker clusterer
+  # Resets lists to contain only those markers visible in the viewport of the map
+  # Colours markers according to the groups they belong to
+  #
+  # PARAMS
+  # list of genomeContorller genomes, map 
+  #
+  # RETURNS
+  #
+  updateMarkerLists: (genomes, map) ->
+    # Init public strains
+    @clusterList = []
+    @visibileStrainLocations.pubVisible = []
+    @visibileStrainLocations.pvtVisible = []
+
+    blue = '#1f77b4';
+    orange = '#ff7f0e';
+    green = '#2ca02c';
+    red = '#d62728';
+    purple = '#9467bd';
+    brown = '#8c564b';
+    pink = '#e377c2';
+    grey = '#7f7f7f';
+    lime = '#bcbd22';
+    aqua = '#17becf';
+
+    colors = {
+      'group1Color': blue;
+      'group2Color': orange;
+      'group3Color': green;
+      'group4Color': red;
+      'group5Color': purple;
+      'group6Color': pink;
+      'group7Color': brown;
+      'group8Color': grey;
+      'group9Color': aqua;
+      'group10Color': lime;
+    }
+
+    for pubGenomeId, public_genome of genomes.public_genomes
+      if public_genome.isolation_location? && public_genome.isolation_location != ""
+        pubMarkerObj = @parseLocation(public_genome)
+
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE
+          fillColor: colors["group#{@genomeGroupColor[pubGenomeId]}Color"]
+          fillOpacity: 0.8
+          scale: 5
+          strokeColor: colors["group#{@genomeGroupColor[pubGenomeId]}Color"]
+          strokeWeight: 1
+        }
+
+        pubMarker = new google.maps.Marker({
+          map: map
+          icon: circleIcon
+          position: pubMarkerObj['centerLatLng']
+          title: public_genome.uniquename
+          feature_id: pubGenomeId
+          uniquename: public_genome.uniquename
+          location: pubMarkerObj['locationName']
+          })
+
+        @clusterList.push(pubMarker)
+
+        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
+          @visibileStrainLocations.pubVisible.push(pubGenomeId)
+
+
+    for pvtGenomeId, private_genome of genomes.private_genomes
+      if private_genome.isolation_location? && private_genome.isolation_location != ""
+        pvtMarkerObj = @parseLocation(private_genome)
+
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE
+          fillColor: colors["group#{@genomeGroupColor[pvtGenomeId]}Color"]
+          fillOpacity: 0.8
+          scale: 5
+          strokeColor: colors["group#{@genomeGroupColor[pvtGenomeId]}Color"]
+          strokeWeight: 1
+        }
+
+        pvtMarker = new google.maps.Marker({
+          map: map
+          position: pvtMarkerObj['centerLatLng']
+          title: private_genome.uniquename
+          feature_id: pvtGenomeId
+          uniquename: private_genome.uniquename
+          location: pvtMarkerObj['locationName']
+          })
+
+        @clusterList.push(pvtMarker)
+
+        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
+          @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
+    true
