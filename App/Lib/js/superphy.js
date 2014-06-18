@@ -5017,17 +5017,17 @@
         }
         return _results;
       })();
-      header.unshift("Genome name");
+      header.unshift("Superphy ID", "Genome name");
       output += "#" + header.join("\t") + "\n";
       _ref = genomes.public_genomes;
       for (id in _ref) {
         g = _ref[id];
-        output += genomes.label(g, fullMeta, "\t") + "\n";
+        output += id + "\t" + genomes.label(g, fullMeta, "\t") + "\n";
       }
       _ref1 = genomes.private_genomes;
       for (id in _ref1) {
         g = _ref1[id];
-        output += genomes.label(g, fullMeta, "\t") + "\n";
+        output += id + "\t" + genomes.label(g, fullMeta, "\t") + "\n";
       }
       return {
         ext: 'csv',

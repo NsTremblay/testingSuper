@@ -342,16 +342,16 @@ class TableView extends ViewTemplate
     output = ''
     # Output header
     header = (genomes.metaMap[k] for k in genomes.mtypes)
-    header.unshift "Genome name"
+    header.unshift "Superphy ID", "Genome name"
     output += "#" + header.join("\t") + "\n"
     
     # Output public set
     for id,g of genomes.public_genomes
-      output += genomes.label(g,fullMeta,"\t") + "\n"
+      output += id + "\t" + genomes.label(g,fullMeta,"\t") + "\n"
       
     # Output private set
     for id,g of genomes.private_genomes
-      output += genomes.label(g,fullMeta,"\t") + "\n"
+      output += id + "\t" + genomes.label(g,fullMeta,"\t") + "\n"
       
     return {
       ext: 'csv'
