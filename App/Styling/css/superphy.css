@@ -1253,6 +1253,9 @@ Date: May 20th, 2014
 }
 #genome-group-add10 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #bcbd22;
+  margin: 10px;
 }
 #genome-group-add10 span {
   color: #e2e362;
@@ -1273,6 +1276,9 @@ Date: May 20th, 2014
 }
 #genome-group-add9 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #17becf;
+  margin: 10px;
 }
 #genome-group-add9 span {
   color: #5fe0ed;
@@ -1293,6 +1299,9 @@ Date: May 20th, 2014
 }
 #genome-group-add8 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #7f7f7f;
+  margin: 10px;
 }
 #genome-group-add8 span {
   color: #b2b2b2;
@@ -1313,6 +1322,9 @@ Date: May 20th, 2014
 }
 #genome-group-add7 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #8c564b;
+  margin: 10px;
 }
 #genome-group-add7 span {
   color: #bc8b81;
@@ -1333,6 +1345,9 @@ Date: May 20th, 2014
 }
 #genome-group-add6 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #e377c2;
+  margin: 10px;
 }
 #genome-group-add6 span {
   color: #f4cce8;
@@ -1353,6 +1368,9 @@ Date: May 20th, 2014
 }
 #genome-group-add5 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #9467bd;
+  margin: 10px;
 }
 #genome-group-add5 span {
   color: #c6aedc;
@@ -1373,6 +1391,9 @@ Date: May 20th, 2014
 }
 #genome-group-add4 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #d62728;
+  margin: 10px;
 }
 #genome-group-add4 span {
   color: #e77c7d;
@@ -1393,6 +1414,9 @@ Date: May 20th, 2014
 }
 #genome-group-add3 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #2ca02c;
+  margin: 10px;
 }
 #genome-group-add3 span {
   color: #5fd35f;
@@ -1413,6 +1437,9 @@ Date: May 20th, 2014
 }
 #genome-group-add2 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #ff7f0e;
+  margin: 10px;
 }
 #genome-group-add2 span {
   color: #ffb574;
@@ -1433,6 +1460,9 @@ Date: May 20th, 2014
 }
 #genome-group-add1 {
   background-color: #fff;
+  border-radius: 0px;
+  border-color: #1f77b4;
+  margin: 10px;
 }
 #genome-group-add1 span {
   color: #57a9e2;

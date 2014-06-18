@@ -68,7 +68,7 @@ sub search : StartRunmode {
     $template->param(groups_manager => 1) if $username;
 
     $template->param(title1 => 'GROUP');
-    $template->param(title2 => 'SEARCH');
+    $template->param(title2 => 'ANALYSES');
 
     return $template->output();
 }
@@ -197,6 +197,7 @@ sub geophy : Runmode {
     #Change this to take into account any number of genomes
     my $num_groups = $q->param('num-groups');
     my %qGroups;
+    my $showAllBool = $q->param('show-all');
 
     for (my $i = 0; $i < $num_groups; $i++) {
         my @newgroup = $q->param('group'.($i+1).'-genome');
@@ -205,9 +206,15 @@ sub geophy : Runmode {
         }
     }
 
+    print STDERR "$_\n" foreach(keys %qGroups);
+
     if(scalar(keys %qGroups) gt 0) {
         my $groups_json =  encode_json(\%qGroups);
         $template->param(USER_SELECTIONS => 1, groups => $groups_json, num_groups => $num_groups);
+    }
+
+    if ($showAllBool) {
+        $template->param(SHOWALL => 1);
     }
 
     my $fdg = Modules::FormDataGenerator->new();
@@ -239,8 +246,8 @@ sub geophy : Runmode {
     $template->param(groups_manager => 0) unless $username;
     $template->param(groups_manager => 1) if $username;
 
-    $template->param(title1 => 'GEO');
-    $template->param(title2 => 'PHY');
+    $template->param(title1 => 'GROUP');
+    $template->param(title2 => 'VISUALIZATIONS');
 
     return $template->output();
 }

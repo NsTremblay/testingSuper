@@ -63,9 +63,17 @@ var num_groups = <TMPL_VAR num_groups>;
 </TMPL_IF>
 
 <script type="text/javascript">
+<TMPL_IF SHOWALL>
+var showAll = true;
+<TMPL_ELSE>
+var showAll = false;
+</TMPL_IF>
+</script>
+
+<script type="text/javascript">
 
 var geophy = new GeoPhy(public_genomes, private_genomes, viewController, user_groups, $('#groups_tree'), $('#groups_map'));
-geophy.init();
+geophy.init(showAll);
 
 $(document).ready( function () {    
     $('.map-manifest').removeClass('col-md-5').addClass('col-md-12');
