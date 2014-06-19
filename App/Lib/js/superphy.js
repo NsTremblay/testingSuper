@@ -499,7 +499,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -562,7 +562,7 @@
     };
 
     ViewController.prototype.filterForm = function(elem, parentStr) {
-      var advForm, advLab, advRadio, container, delButton, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selLab, selRadio, sf;
+      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selDiv, selGroup, selLab, selRadio, sf;
       header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
       container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>');
       numVisible = this.genomeController.filtered;
@@ -586,9 +586,11 @@
       filterStatus.append(filterOff);
       container.append(filterStatus);
       container.append('<p>Limit genomes displayed in views by:</p>');
-      filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>');
-      fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>');
-      fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>');
+      filtType = jQuery('<form id="select-filter-form" class="form-horizontal"></form>');
+      fastGroup = jQuery('<div class="form-group"></div>');
+      fastDiv = jQuery('<div class="col-xs-1"></div>').appendTo(fastGroup);
+      fastRadio = jQuery('<input id="fast" type="radio" name="filter-form-type" value="fast" checked>').appendTo(fastDiv);
+      fastLab = jQuery('<label class="col-xs-10" for="fast">Basic</label>').appendTo(fastGroup);
       fastRadio.change(function(e) {
         if (this.checked != null) {
           jQuery("#fast-filter").show();
@@ -597,10 +599,11 @@
         }
         return true;
       });
-      fastLab.prepend(fastRadio);
-      filtType.append(fastLab);
-      advLab = jQuery('<div class="form-group"><label class="radio">Advanced</label></div>');
-      advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">');
+      filtType.append(fastGroup);
+      advGroup = jQuery('<div class="form-group"></div>');
+      advDiv = jQuery('<div class="col-xs-1"></div>').appendTo(advGroup);
+      advRadio = jQuery('<input type="radio" id="adv" name="filter-form-type" value="advanced">').appendTo(advDiv);
+      advLab = jQuery('<label class="col-xs-10" for="adv">Advanced</label>').appendTo(advGroup);
       advRadio.change(function(e) {
         if (this.checked != null) {
           jQuery("#fast-filter").hide();
@@ -609,10 +612,11 @@
         }
         return true;
       });
-      advLab.prepend(advRadio);
-      filtType.append(advLab);
-      selLab = jQuery('<div class="form-group"><label class="radio">By Selection</label></div>');
-      selRadio = jQuery('<input type="radio" name="filter-form-type" value="selection">');
+      filtType.append(advGroup);
+      selGroup = jQuery('<div class="form-group"></div>');
+      selDiv = jQuery('<div class="col-xs-1"></div>').appendTo(selGroup);
+      selRadio = jQuery('<input id="sel" type="radio" name="filter-form-type" value="selection">').appendTo(selDiv);
+      selLab = jQuery('<label class="col-xs-10" for="sel">By Selection</label>').appendTo(selGroup);
       selRadio.change(function(e) {
         if (this.checked != null) {
           jQuery("#fast-filter").hide();
@@ -621,8 +625,7 @@
         }
         return true;
       });
-      selLab.prepend(selRadio);
-      filtType.append(selLab);
+      filtType.append(selGroup);
       container.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);

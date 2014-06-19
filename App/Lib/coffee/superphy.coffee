@@ -596,15 +596,15 @@ class ViewController
     '<p>Select meta-data displayed:</p>'+
     '<form class="form-inline">'+
     '<fieldset>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
     '</fieldset>'+
     '</form>'+
     '</div></div>'
@@ -690,7 +690,8 @@ class ViewController
   filterForm: (elem, parentStr) ->
     
     # Header
-    header = jQuery('<div class="panel-heading">'+
+    header = jQuery(
+      '<div class="panel-heading">'+
       '<div class="panel-title">'+
       '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
       '<span class="caret"></span></a>'+
@@ -727,22 +728,27 @@ class ViewController
     container.append('<p>Limit genomes displayed in views by:</p>')
     
     # Add form selector
-    filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>')
-    fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>')
-    fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>')
+    filtType = jQuery('<form id="select-filter-form" class="form-horizontal"></form>')
+    
+    fastGroup = jQuery('<div class="form-group"></div>')
+    fastDiv = jQuery('<div class="col-xs-1"></div>').appendTo(fastGroup)
+    fastRadio = jQuery('<input id="fast" type="radio" name="filter-form-type" value="fast" checked>').appendTo(fastDiv)
+    fastLab = jQuery('<label class="col-xs-10" for="fast">Basic</label>').appendTo(fastGroup)
     
     fastRadio.change (e) ->
-      if this.checked?
+      if @checked?
         jQuery("#fast-filter").show()
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").hide()
       true
+
+    filtType.append(fastGroup)
     
-    fastLab.prepend(fastRadio)
-    filtType.append(fastLab)
     
-    advLab = jQuery('<div class="form-group"><label class="radio">Advanced</label></div>')
-    advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">')
+    advGroup = jQuery('<div class="form-group"></div>')
+    advDiv = jQuery('<div class="col-xs-1"></div>').appendTo(advGroup)
+    advRadio = jQuery('<input type="radio" id="adv" name="filter-form-type" value="advanced">').appendTo(advDiv)
+    advLab = jQuery('<label class="col-xs-10" for="adv">Advanced</label>').appendTo(advGroup)
     
     advRadio.change (e) ->
       if this.checked?
@@ -751,11 +757,12 @@ class ViewController
         jQuery("#selection-filter").hide()
       true
     
-    advLab.prepend(advRadio)
-    filtType.append(advLab)
+    filtType.append(advGroup)
     
-    selLab = jQuery('<div class="form-group"><label class="radio">By Selection</label></div>')
-    selRadio = jQuery('<input type="radio" name="filter-form-type" value="selection">')
+    selGroup = jQuery('<div class="form-group"></div>')
+    selDiv = jQuery('<div class="col-xs-1"></div>').appendTo(selGroup)
+    selRadio = jQuery('<input id="sel" type="radio" name="filter-form-type" value="selection">').appendTo(selDiv)
+    selLab = jQuery('<label class="col-xs-10" for="sel">By Selection</label>').appendTo(selGroup)
     
     selRadio.change (e) ->
       if this.checked?
@@ -763,9 +770,8 @@ class ViewController
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").show()
       true
-    
-    selLab.prepend(selRadio)
-    filtType.append(selLab)
+      
+    filtType.append(selGroup)
     
     container.append(filtType)
     
