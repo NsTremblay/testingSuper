@@ -49,30 +49,13 @@ class MapView extends ViewTemplate
       pvtVis = genomes.pvtVisible
     else if @cartographer? && @cartographer.visibleStrains
 
-      for i in @cartographer.visibileStrainLocations.pubVisible
-        if i in genomes.pubVisible
-          pubVis.push i
-    
-      for i in @cartographer.visibileStrainLocations.pvtVisible
-        if i in genomes.pvtVisible
-          pvtVis.push i
-    
+      pubVis.push i for i in @cartographer.visibileStrainLocations.pubVisible when i in genomes.pubVisible 
+      pvtVis.push i for i in @cartographer.visibileStrainLocations.pvtVisible when i in genomes.pvtVisible
+      
     #append genomes to list
     t1 = new Date()
     @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)
     @_appendGenomes(mapElem, pvtVis, genomes.private_genomes, @style, true)
-
-    # For /strains/info page:
-    # If genome is a selected genome add an additional css class to higlight and append to the top of map-manifest list
-    if window.selectedGenomeHasLocation? and window.selectedGenomeHasLocation != ""
-      selectedEl = jQuery('.map-manifest ul li a[data-genome='+selectedGenomeHasLocation+']')
-      selectedElParent = selectedEl.parent()
-      selectedElParent.remove()
-      jQuery('.map-manifest ul').prepend(selectedElParent)
-      selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>')
-      selectedElParent.css({"font-weight":"bold", "margin-bottom":"5px"})
-      selectedEl.remove()
-
     t2 = new Date()
     ft = t2-t1
 
@@ -294,6 +277,38 @@ class MapView extends ViewTemplate
     @cartographer = cartographerTypes[@mapArgs[0]];
     @cartographer.cartograPhy()
     true
+
+###
+  CLASS SelectionMapView
+###
+
+class SelectionMapView extends MapView
+  constructor: (@selParentElem, @selStyle , @selElNum, @selMapArgs) ->
+    super(@selParentElem, @selStyle , @selElNum, @selMapArgs)
+
+  update: (genomes) ->
+    super
+    # /strains/info page:
+    # If genome is a selected genome add an additional css class to higlight and append to the top of map-manifest list
+    selectedEl = jQuery('.map-manifest ul li a[data-genome='+selectedGenomeHasLocation+']')
+    selectedElParent = selectedEl.parent()
+    selectedElParent.remove()
+    jQuery('.map-manifest ul').prepend(selectedElParent)
+    selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>')
+    selectedElParent.css({"font-weight":"bold", "margin-bottom":"5px"})
+    selectedEl.remove()
+    true
+
+###
+  CLASS ExtendedMapView
+
+  Shows segregated list of genomes with unknown locations in map-manifest
+  
+###
+class ExtendedMapView extends MapView
+  constructor: (@extParentElem, @extStyle , @extElNum, @extMapArgs) ->
+    super(@extParentElem, @extStyle , @extElNum, @extMapArgs)
+
 
 ###
   CLASS Cartographer

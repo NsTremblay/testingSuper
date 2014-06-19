@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, ExtendedMapView, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -119,6 +119,11 @@
         this.views.push(matView);
       } else if (viewType === 'map') {
         mapView = new MapView(elem, clickStyle, vNum, viewArgs);
+        this.views.push(mapView);
+        mapView.conscriptCartographger();
+        mapView.update(this.genomeController, mapView.cartographer);
+      } else if (viewType === 'selmap') {
+        mapView = new SelectionMapView(elem, clickStyle, vNum, viewArgs);
         this.views.push(mapView);
         mapView.conscriptCartographger();
         mapView.update(this.genomeController, mapView.cartographer);
@@ -4332,7 +4337,7 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var ft, i, mapElem, pubVis, pvtVis, selectedEl, selectedElParent, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
+      var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
       mapElem = jQuery("#" + this.elID);
       if (mapElem.length) {
         mapElem.empty();
@@ -4360,22 +4365,19 @@
             pvtVis.push(i);
           }
         }
+
+        /*      for i in @cartographer.visibileStrainLocations.pubVisible
+          if i in genomes.pubVisible
+            pubVis.push i
+            
+        for i in @cartographer.visibileStrainLocations.pvtVisible
+          if i in genomes.pvtVisible
+            pvtVis.push i
+         */
       }
       t1 = new Date();
       this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
       this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
-      if ((window.selectedGenomeHasLocation != null) && window.selectedGenomeHasLocation !== "") {
-        selectedEl = jQuery('.map-manifest ul li a[data-genome=' + selectedGenomeHasLocation + ']');
-        selectedElParent = selectedEl.parent();
-        selectedElParent.remove();
-        jQuery('.map-manifest ul').prepend(selectedElParent);
-        selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>');
-        selectedElParent.css({
-          "font-weight": "bold",
-          "margin-bottom": "5px"
-        });
-        selectedEl.remove();
-      }
       t2 = new Date();
       ft = t2 - t1;
       console.log('MapView update elapsed time: ' + ft);
@@ -4547,6 +4549,64 @@
     return MapView;
 
   })(ViewTemplate);
+
+
+  /*
+    CLASS SelectionMapView
+   */
+
+  SelectionMapView = (function(_super) {
+    __extends(SelectionMapView, _super);
+
+    function SelectionMapView(selParentElem, selStyle, selElNum, selMapArgs) {
+      this.selParentElem = selParentElem;
+      this.selStyle = selStyle;
+      this.selElNum = selElNum;
+      this.selMapArgs = selMapArgs;
+      SelectionMapView.__super__.constructor.call(this, this.selParentElem, this.selStyle, this.selElNum, this.selMapArgs);
+    }
+
+    SelectionMapView.prototype.update = function(genomes) {
+      var selectedEl, selectedElParent;
+      SelectionMapView.__super__.update.apply(this, arguments);
+      selectedEl = jQuery('.map-manifest ul li a[data-genome=' + selectedGenomeHasLocation + ']');
+      selectedElParent = selectedEl.parent();
+      selectedElParent.remove();
+      jQuery('.map-manifest ul').prepend(selectedElParent);
+      selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>');
+      selectedElParent.css({
+        "font-weight": "bold",
+        "margin-bottom": "5px"
+      });
+      selectedEl.remove();
+      return true;
+    };
+
+    return SelectionMapView;
+
+  })(MapView);
+
+
+  /*
+    CLASS ExtendedMapView
+  
+    Shows segregated list of genomes with unknown locations in map-manifest
+   */
+
+  ExtendedMapView = (function(_super) {
+    __extends(ExtendedMapView, _super);
+
+    function ExtendedMapView(extParentElem, extStyle, extElNum, extMapArgs) {
+      this.extParentElem = extParentElem;
+      this.extStyle = extStyle;
+      this.extElNum = extElNum;
+      this.extMapArgs = extMapArgs;
+      ExtendedMapView.__super__.constructor.call(this, this.extParentElem, this.extStyle, this.extElNum, this.extMapArgs);
+    }
+
+    return ExtendedMapView;
+
+  })(MapView);
 
 
   /*

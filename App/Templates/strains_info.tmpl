@@ -234,7 +234,7 @@ else if (selectedGenomeHasLocation.match(/public_/g)) {
     selectedGenome = public_genomes[selectedGenomeHasLocation];
 }
 
-selectedGenomeHasLocation != "" ? viewController.createView('map', $('#strains-info-map'), ['infoSatellite']) : 0;
+selectedGenomeHasLocation != "" ? viewController.createView('selmap', $('#strains-info-map'), ['infoSatellite']) : 0;
 
 //Sidebar actions
 viewController.sideBar($('#search-utilities'));
