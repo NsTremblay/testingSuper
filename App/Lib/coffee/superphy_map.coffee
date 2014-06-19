@@ -134,16 +134,67 @@ class MapView extends ViewTemplate
 
       true
 
-  updateCSS: (gset, genomes) -> 
-    #TODO: modify the helper functions for updating CSS
-    #Retrieve list DOM element
+  # FUNC updateCSS
+  # Change CSS class for selected genomes to match underlying genome properties
+  #
+  # PARAMS
+  # simple hash object with private and public list of genome Ids to update
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  updateCSS: (gset, genomes) ->
+    
+    # Retrieve list DOM element    
     mapEl = jQuery("##{@elID}")
-    throw new SuperphyError " DOM element for map view #{@elID} not found. Cannot call MapView method updateCSS()." unless mapEl? and mapEl.length
+    throw new SuperphyError "DOM element for map view #{@elID} not found. Cannot call ListView method updateCSS()." unless mapEl? and mapEl.length
+    
+    # append genomes to list
+    @_updateGenomeCSS(mapEl, gset.public, genomes.public_genomes) if gset.public?
+    
+    @_updateGenomeCSS(mapEl, gset.private, genomes.private_genomes) if gset.private?
+    
+    true # return success
+    
+  
+  _updateGenomeCSS: (el, changedG, genomes) ->
+    
+    # View class
+    cls = @cssClass()
+    
+    for g in changedG
+      
+      thiscls = cls
+      thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
+      itemEl = null
+      
+      if @style == 'redirect'
+        # Link style
+        
+        # Find element
+        descriptor = "li > a[data-genome='#{g}']"
+        itemEl = el.find(descriptor)
+       
+      else if @style == 'select'
+        # Checkbox style
+        
+        # Find element
+        descriptor = "li input[value='#{g}']"
+        itemEl = el.find(descriptor)
+   
+      else
+        return false
+      
+      unless itemEl? and itemEl.length
+        throw new SuperphyError "Map element for genome #{g} not found in MapView #{@elID}"
+        return false
+      
+      liEl = itemEl.parents().eq(1)
+      liEl.attr('class', thiscls)
+        
+    true # success
 
-    #@_updateGenomeCSS(mapEl, gset.public, genomes.public_genomes) if gset.public?
-    #@_updateGenomeCSS(mapEl, gset.private, genomes.private_genomes) if gset.private?
-
-    true # return succes
 
   # FUNC select
   # Change style to indicate its selection status

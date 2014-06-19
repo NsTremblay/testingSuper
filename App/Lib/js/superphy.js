@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, Poller, SatelliteCartographer, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -4429,7 +4429,42 @@
       var mapEl;
       mapEl = jQuery("#" + this.elID);
       if (!((mapEl != null) && mapEl.length)) {
-        throw new SuperphyError(" DOM element for map view " + this.elID + " not found. Cannot call MapView method updateCSS().");
+        throw new SuperphyError("DOM element for map view " + this.elID + " not found. Cannot call ListView method updateCSS().");
+      }
+      if (gset["public"] != null) {
+        this._updateGenomeCSS(mapEl, gset["public"], genomes.public_genomes);
+      }
+      if (gset["private"] != null) {
+        this._updateGenomeCSS(mapEl, gset["private"], genomes.private_genomes);
+      }
+      return true;
+    };
+
+    MapView.prototype._updateGenomeCSS = function(el, changedG, genomes) {
+      var cls, descriptor, g, itemEl, liEl, thiscls, _i, _len;
+      cls = this.cssClass();
+      for (_i = 0, _len = changedG.length; _i < _len; _i++) {
+        g = changedG[_i];
+        thiscls = cls;
+        if (genomes[g].cssClass != null) {
+          thiscls = cls + ' ' + genomes[g].cssClass;
+        }
+        itemEl = null;
+        if (this.style === 'redirect') {
+          descriptor = "li > a[data-genome='" + g + "']";
+          itemEl = el.find(descriptor);
+        } else if (this.style === 'select') {
+          descriptor = "li input[value='" + g + "']";
+          itemEl = el.find(descriptor);
+        } else {
+          return false;
+        }
+        if (!((itemEl != null) && itemEl.length)) {
+          throw new SuperphyError("Map element for genome " + g + " not found in MapView " + this.elID);
+          return false;
+        }
+        liEl = itemEl.parents().eq(1);
+        liEl.attr('class', thiscls);
       }
       return true;
     };
@@ -5040,40 +5075,6 @@
 
   })(SatelliteCartographer);
 
-
-  /*
-      CLASS Poller
-   */
-
-  Poller = (function() {
-    function Poller(jobId, alertStatusDiv) {
-      this.jobId = jobId;
-      this.alertStatusDiv = alertStatusDiv;
-      if (this.jobId == null) {
-        throw new SuperphyError('Job id must be specified in Poller constructor');
-      }
-      if (this.alertStatusDiv == null) {
-        throw new SuperphyError('Need to specify status div for Poller constructor');
-      }
-    }
-
-    Poller.prototype.pollJob = function() {
-      jQuery.ajax({
-        type: 'POST',
-        url: '/groups/poll/',
-        data: {
-          'job_id': this.jobId
-        }
-      }).done(function(data) {
-        return console.log(data);
-      });
-      return true;
-    };
-
-    return Poller;
-
-  })();
-
   GeoPhy = (function() {
     function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv) {
       this.publicGenomes = publicGenomes;
@@ -5091,13 +5092,10 @@
     GeoPhy.prototype.genomeController = null;
 
     GeoPhy.prototype.init = function(boolShowall) {
-      console.log(boolShowall);
-      if (this.userGroups == null) {
-        this.initReset();
-      } else if ((this.userGroups != null) && boolShowall) {
-        this.initShowall();
+      if ((this.userGroups == null) || (this.userGroups != null) && boolShowall) {
+        this._showall();
       } else if ((this.userGroups != null) && !boolShowall) {
-        this.initFilter();
+        this._filter();
       }
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
@@ -5196,37 +5194,36 @@
       return true;
     };
 
-    GeoPhy.prototype.initFilter = function() {
-      var gId, gList, gNum, genomeGroupColor, userMaxGroupNum, _i, _len, _ref;
+    GeoPhy.prototype._showall = function() {
+      var gpColors;
+      this._setViewController(this.publicGenomes, this.privateGenomes);
+      if (this.userGroups != null) {
+        gpColors = this._prepareGroups();
+      }
+      this.viewController.createView('map', this.mapDiv, ['satellite']);
+      return true;
+    };
+
+    GeoPhy.prototype._filter = function() {
+      var gpColors;
       this.publicSubsetGenomes = this._getPublicSubset(this.publicGenomes, this.userGroups);
       this.privateSubsetGenomes = this._getPrivateSubset(this.privateGenomes, this.userGroups);
-      this.viewController.init(this.publicSubsetGenomes, this.privateSubsetGenomes, 'multi_select', '/groups/geophy');
-      this.viewController.groupsCompareForm($('#groups-compare'), true);
+      this._setViewController(this.publicSubsetGenomes, this.privateSubsetGenomes);
       jQuery('#groups-compare').hide();
-      genomeGroupColor = {};
-      userMaxGroupNum = Math.max.apply(Math, Object.keys(this.userGroups));
-      while (userMaxGroupNum > this.viewController.groups.length) {
-        this.viewController.addGroupFormRow($("#group-form-block"));
-      }
-      _ref = this.userGroups;
-      for (gNum in _ref) {
-        gList = _ref[gNum];
-        for (_i = 0, _len = gList.length; _i < _len; _i++) {
-          gId = gList[_i];
-          this.viewController.select(gId, true);
-          genomeGroupColor[gId] = gNum;
-        }
-        this.viewController.addToGroup(gNum);
-      }
-      this.viewController.createView('map', this.mapDiv, ['geophy'], genomeGroupColor);
+      gpColors = this._prepareGroups();
+      this.viewController.createView('map', this.mapDiv, ['geophy'], gpColors);
       this._appendLegend(jQuery('#groups-geophy'), this.userGroups);
       return true;
     };
 
-    GeoPhy.prototype.initShowall = function() {
-      var gId, gList, gNum, genomeGroupColor, userMaxGroupNum, _i, _len, _ref;
-      this.viewController.init(this.publicGenomes, this.privateGenomes, 'multi_select', '/groups/geophy');
+    GeoPhy.prototype._setViewController = function(pubList, pvtList) {
+      this.viewController.init(pubList, pvtList, 'multi_select', '/groups/geophy');
       this.viewController.groupsCompareForm($('#groups-compare'), true);
+      return true;
+    };
+
+    GeoPhy.prototype._prepareGroups = function() {
+      var gId, gList, gNum, genomeGroupColor, userMaxGroupNum, _i, _len, _ref;
       genomeGroupColor = {};
       userMaxGroupNum = Math.max.apply(Math, Object.keys(this.userGroups));
       while (userMaxGroupNum > this.viewController.groups.length) {
@@ -5242,15 +5239,7 @@
         }
         this.viewController.addToGroup(gNum);
       }
-      this.viewController.createView('map', this.mapDiv, ['satellite']);
-      return true;
-    };
-
-    GeoPhy.prototype.initReset = function() {
-      this.viewController.init(this.publicGenomes, this.privateGenomes, 'multi_select', '/groups/geophy');
-      this.viewController.groupsCompareForm($('#groups-compare'), true);
-      this.viewController.createView('map', this.mapDiv, ['satellite']);
-      return true;
+      return genomeGroupColor;
     };
 
     if (!root.GeoPhy) {
