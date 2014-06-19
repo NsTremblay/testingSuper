@@ -10,6 +10,19 @@
 ###
 
 ###
+ MIXIN support
+ 
+ The function adds instance properties to a class.
+
+###
+mixOf = (base, mixins...) ->
+  class Mixed extends base
+  for mixin in mixins by -1 #earlier mixins override later ones
+    for name, method of mixin::
+      Mixed::[name] = method
+  Mixed
+
+###
  CLASS TickerTemplate
  
  Template object for tickers. Defines required and
@@ -143,19 +156,19 @@ class MetaTicker extends TickerTemplate
 
 ###
 
-class LocusTicker extends TickerTemplate
+class StxTicker extends TickerTemplate
   constructor: (@parentElem, @elNum, tickerArgs) ->
     
     super(@parentElem, @elNum, @elNum)
     
-    throw new SuperphyError 'Missing argument. LocusTicker constructor requires a LocusController object.' unless tickerArgs.length == 1
+    throw new SuperphyError 'Missing argument. StxTicker constructor requires a LocusController object.' unless tickerArgs.length == 1
     
     @locusData = tickerArgs[0]
     
   
-  elName: 'locus_ticker'
+  elName: 'stx_ticker'
   cssClass: 'superphy_ticker_table'
-  flavor: 'locus'
+  flavor: 'stx'
   noDataLabel: 'NA'
   
   
@@ -212,35 +225,33 @@ class LocusTicker extends TickerTemplate
     t2 = new Date()
     
     ft = t2-t1
-    console.log('LocusTicker update elapsed time: '+ft)
+    console.log('StxTicker update elapsed time: '+ft)
    
     true # return success
     
-  
-###
- CLASS AlleleTicker
-  
- Histogram of allele frequency for one or more genes
 
 ###
+ CLASS Histogram
+  
+ Histogram mixin
 
-class AlleleTicker extends TickerTemplate
-  constructor: (@parentElem, @elNum, genomes, tickerArgs) ->
-    
-    super(@parentElem, @elNum, @elNum)
-    
-    throw new SuperphyError 'Missing argument. AlleleTicker constructor requires GenomeController object.' unless genomes?
-    throw new SuperphyError 'Missing argument. AlleleTicker constructor requires a JSON object containing: nodes, linksobject.' unless tickerArgs.length == 1
-    
-    tmp = tickerArgs[0]
-    genes = tmp['nodes']
-    alleles = tmp['links']
-    @_doCounts(genomes, genes, alleles)
-    
+###
+class Histogram
+  
+  # FUNC init
+  # Initialise the histogram elements
+  #
+  # PARAMS
+  # None
+  # 
+  # RETURNS
+  # boolean 
+  #       
+  init: ->
     # Create empty histogram
     margin = {top: 40, right: 30, bottom: 40, left: 30}
-    @width = 200 - margin.left - margin.right
-    @height = 200 - margin.top - margin.bottom
+    @width = 300 - margin.left - margin.right
+    @height = 250 - margin.top - margin.bottom
     
     bins = [
       {'val': 0, 'key': '0'}
@@ -286,39 +297,23 @@ class AlleleTicker extends TickerTemplate
         .attr("x", @width / 2)
         .attr("text-anchor", "middle")
         .text( 'Number of Alleles')
-      
   
-  elName: 'allele_ticker'
-  cssClass: 'allele_histogram'
-  flavor: 'allele'
-  noDataLabel: 'NA'
-  
-  
-  # FUNC update
-  # Update Ticker
+  # FUNC updateHistogram
+  # Update/draw histogram bin
   #
   # PARAMS
-  # genomeController object
+  # List of numeric counts to bin
   # 
   # RETURNS
   # boolean 
-  # 
-  update: (genomes) ->
+  #       
+  updateHistogram: (values) ->
     
-    t1 = new Date()
-    
-    # Update counts
-    values = []
-    for g in genomes.pubVisible.concat genomes.pvtVisible
-      for n in @geneList
-        throw new SuperphyError "Count not defined for genome #{g} and gene #{n}." unless @counts[g]? and @counts[g][n]?
-        values.push @counts[g][n]
-        
     histData = @histogram(values)
     
-    # Max y values are increased in pre-defined steps so that
+    # Max y values are increased in discrete steps so that
     # scale is more consistent between updates
-    steps = [10,50,100,500,1000,5000,10000,50000,100000]
+    steps = [10,50,100,200,500,800,1000,1200,1500,2000,5000,8000,10000,20000,50000,80000,100000]
     maxSteps = steps.length
     maxY = d3.max(histData, (d) -> d.y)
     yTop = NaN
@@ -376,26 +371,73 @@ class AlleleTicker extends TickerTemplate
           @formatCount(d.y)
         else
           '' )
+          
+    true
+
+###
+ CLASS MatrixTicker
+  
+ Histogram of allele frequency for multiple genes
+
+###
+
+class MatrixTicker extends mixOf TickerTemplate, Histogram
+  constructor: (@parentElem, @elNum, genomes, tickerArgs) ->
+    
+    super(@parentElem, @elNum, @elNum)
+    
+    throw new SuperphyError 'Missing argument. MatrixTicker constructor requires GenomeController object.' unless genomes?
+    throw new SuperphyError 'Missing argument. MatrixTicker constructor requires a JSON object containing: nodes, links object.' unless tickerArgs.length == 1
+    
+    tmp = tickerArgs[0]
+    genes = tmp['nodes']
+    alleles = tmp['links']
+    @_doCounts(genomes, genes, alleles)
+    
+    @init()
+    
+  elName: 'matrix_ticker'
+  cssClass: 'matrix_histogram'
+  flavor: 'matrix'
+  noDataLabel: 'NA'
+  
+  
+  # FUNC update
+  # Update Ticker
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  # 
+  update: (genomes) ->
+    
+    t1 = new Date()
+    
+    # Update counts
+    values = []
+    for g in genomes.pubVisible.concat genomes.pvtVisible
+      for n in @geneList
+        throw new SuperphyError "Count not defined for genome #{g} and gene #{n}." unless @counts[g]? and @counts[g][n]?
+        values.push @counts[g][n]
         
-    # console.log(yTop)
-    # console.log maxY
-#     
-    # console.log histData
-#    
+        
+    # Redraw histogram
+    @updateHistogram(values)
 
     t2 = new Date()
     
     ft = t2-t1
-    console.log('AlleleTicker update elapsed time: '+ft)
+    console.log('MatrixTicker update elapsed time: '+ft)
    
     true # return success
+    
     
   _doCounts: (genomes, genes, alleles) ->
     
     gList = Object.keys(genomes.public_genomes).concat Object.keys(genomes.private_genomes)
     @geneList = Object.keys(genes)
-    
-    console.log alleles
     
     @counts = {}
   
@@ -411,8 +453,57 @@ class AlleleTicker extends TickerTemplate
           numAlleles = alleles[g][n].length
            
         @counts[g][n] = numAlleles
-        
-    console.log @counts
-        
+            
     true
    
+    
+###
+ CLASS AlleleTicker
+  
+ Histogram of allele frequency for one gene
+
+###
+
+class AlleleTicker extends mixOf TickerTemplate, Histogram
+  constructor: (@parentElem, @elNum, tickerArgs) ->
+    
+    super(@parentElem, @elNum, @elNum)
+    
+    throw new SuperphyError 'Missing argument. AlleleTicker constructor requires a LocusController object.' unless tickerArgs.length == 1
+    
+    @locusData = tickerArgs[0]
+    
+    @init()
+    
+  elName: 'allele_ticker'
+  cssClass: 'allele_histogram'
+  flavor: 'allele'
+  noDataLabel: 'NA'
+  
+  
+  # FUNC update
+  # Update Ticker
+  #
+  # PARAMS
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  # 
+  update: (genomes) ->
+    
+    t1 = new Date()
+    
+    # Update counts
+    values = @locusData.count(genomes)
+    
+    # Redraw histogram
+    @updateHistogram(values)
+
+    t2 = new Date()
+    
+    ft = t2-t1
+    console.log('AlleleTicker update elapsed time: '+ft)
+   
+    true # return success
+    

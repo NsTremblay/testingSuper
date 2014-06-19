@@ -24,7 +24,7 @@ root.numAmrSelected = 0
 # RETURNS
 # Object containing jQuery DOM elements and data object array
 #    
-root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem) ->
+root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem, multi_select=true) ->
   
   throw new Error("Invalid geneType parameter: #{geneType}.") unless geneType is 'vf' or geneType is 'amr'
   
@@ -44,6 +44,7 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
       category: catElem
       autocomplete: autocElem
     }
+    multi_select: multi_select
   }
     
 
@@ -52,7 +53,7 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
 # genes where object.visible = true
 #
 # USAGE appendGeneList data_object
-# 
+#
 # RETURNS
 # boolean
 #    
@@ -60,13 +61,28 @@ root.appendGeneList = (d) ->
   
   list = d.element.list
   name = "#{d.type}-gene"
+  listHtml = ""
   
   for k,o of d.genes
     if o.visible
       id = "#{d.type}-gene-#{k}"
-      item = jQuery("<li><label class='checkbox'><input id='#{id}' class='checkbox' type='checkbox' name='#{name}' value='#{k}'/>#{o.name} - #{o.uniquename}</label></li>")
-      item.prop('checked', true) if o.selected
-      list.append(item)
+      item
+      link = "<a href='/genes/info?#{d.type}=#{k}'><i class='fa fa-search'></i></a>"
+      if d.multi_select
+        checked = ''
+        checked = 'checked' if o.selected
+        item = "<li><label class='checkbox'>"+
+          "<input id='#{id}' class='checkbox gene-search-select' type='checkbox' name='#{name}' value='#{k}' #{checked}/>"+
+          "#{o.name} - #{o.uniquename} #{link}"+
+          "</label></li>"
+        
+      else
+         item = "<li>#{o.name} - #{o.uniquename} #{link}</li>"
+      
+      listHtml += item
+      
+      
+  list.append(listHtml)
       
   cboxes = list.find("input[name='#{name}']")
   cboxes.change( ->
@@ -139,13 +155,14 @@ root.matching = (gList, searchTerm) ->
 root.appendCategories = (d) ->
   
   categoryE = d.element.category
-  categoryE.append('<span>Select category to refine list of virulence factors to genes of specific function / type:</span>')
- 
-  resetDiv = jQuery('<div class="genes-search-reset-categories"></div>').appendTo(categoryE)
-  resetButt = jQuery("<button id='#{d.type}-reset-category' class='btn btn-link'>Reset</button>").appendTo(resetDiv)
+  introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE)
+  introDiv.append('<span>Select category to refine list of genes:</span>')
+  
+  resetButt = jQuery("<button id='#{d.type}-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv)
   resetButt.click( (e) ->
     e.preventDefault()
     filterByCategory(-1,-1,d)
+    resetNullCategories(d)
   )
   
   for k,o of d.categories
@@ -156,13 +173,13 @@ root.appendCategories = (d) ->
     
     if o.parent_definition?
       moreInfoId = 'category-info-'+k
-      moreInfo = jQuery("<a id='#{moreInfoId}' href='#' data-toggle='tooltip' data-original-title=''#{o.parent_definition}><i class='fa fa-info-circle'></i></a>")
+      moreInfo = jQuery("<a id='#{moreInfoId}' href='#' data-toggle='tooltip' data-original-title='#{o.parent_definition}'><i class='fa fa-info-circle'></i></a>")
       titleDiv.append(moreInfo)
       moreInfo.tooltip({ placement: 'right' })
     
     row2 = jQuery('<div class="row"></div>').appendTo(categoryE)
     col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2)
-    sel = jQuery("<select name='vf-category' data-category-id='#{k}' class='form-control'></select>").appendTo(col2)
+    sel = jQuery("<select name='#{d.type}-category' data-category-id='#{k}' class='form-control'></select>").appendTo(col2)
     
     for s,t of o.subcategories
       def = ""
@@ -180,7 +197,7 @@ root.appendCategories = (d) ->
       subId = obj.val()
       
       if subId isnt 'null'
-        jQuery("select[name='vf-category'][data-category-id!='#{catId}']").val('null')
+        jQuery("select[name='#{d.type}-category'][data-category-id!='#{catId}']").val('null')
         filterByCategory(catId, subId, d)
         
     )
@@ -214,6 +231,7 @@ root.filterByCategory = (catId, subcatId, d) ->
     o.visible = true
     
   d.element.list.empty()
+  console.log d
   appendGeneList(d)
   
   true
@@ -246,7 +264,6 @@ root.selectGene = (geneIds, checked, d) ->
     
   else
     removeSelectedGenes(geneIds, d)
-      
     
   true
 
@@ -274,7 +291,7 @@ root.updateCount = (d) ->
   true
 
 # FUNC addSelectedGenes
-# Add genes to selected box elment
+# Add genes to selected box element
 # 
 # USAGE addSelectedGenes array data_object
 #
@@ -288,7 +305,7 @@ root.addSelectedGenes = (geneIds, d) ->
     
     gObj = d.genes[g]
     
-    listEl = jQuery("<li class='#{cls}'>"+gObj.name+'</li>')
+    listEl = jQuery("<li class='#{cls}'>"+gObj.name+' - '+gObj.uniquename+'</li>')
     actionEl = jQuery("<a href='#' data-gene='#{g}'> <i class='fa fa-times'></a>")
       
     # Set behaviour
@@ -296,7 +313,7 @@ root.addSelectedGenes = (geneIds, d) ->
       e.preventDefault()
       gid = @.dataset.gene
       selectGene([gid], false, d)
-      $("input[value='#{gid}']").prop('checked',false)
+      $("input.gene-search-select[value='#{gid}']").prop('checked',false)
       
     # Append to list
     listEl.append(actionEl)
@@ -321,6 +338,32 @@ root.removeSelectedGenes = (geneIds, d) ->
     
   true
   
+# FUNC selectAllGenes
+# Select all visible genes
+#
+# USAGE selectAllGenes boolean, d
+#
+# if checked==true, 
+#   select all visible genes
+# if checked==false,
+#   unselect all genes 
+#
+# RETURNS
+# boolean
+#    
+root.selectAllGenes = (checked, d) ->
+  
+  if checked
+    visible = (k for k,g of d.genes when g.visible && !g.selected)
+    selectGene(visible, true, d)
+    $("input.gene-search-select[value='#{g}']").prop('checked',true) for g in visible
+  else
+    all = (k for k,g of d.genes when g.selected)
+    selectGene(all, false, d)
+    $("input.gene-search-select[value='#{g}']").prop('checked',false) for g in all
+  
+  true
+  
 # FUNC submitGeneQuery
 # Submit by dynamically building form with hidden
 # input params
@@ -331,6 +374,49 @@ root.removeSelectedGenes = (geneIds, d) ->
 # boolean
 #    
 root.submitGeneQuery = (vfData, amrData, viewController) ->
+  
+  form = jQuery('<form></form')
+  form.attr('method', 'POST')
+  form.attr('action', viewController.action)
+  
+  # Append genome params
+  viewController.submitGenomes(form, 'selected')
+  
+  # Append VF genes
+  for k,g of vfData.genes when g.selected
+    input = jQuery('<input></input>')
+    input.attr('type','hidden')
+    input.attr('name', 'gene')
+    input.val(k)
+    form.append(input)
+      
+  for k,g of amrData.genes when g.selected
+    input = jQuery('<input></input>')
+    input.attr('type','hidden')
+    input.attr('name', 'gene')
+    input.val(k)
+    form.append(input)
+      
+  jQuery('body').append(form)
+  form.submit()
+      
+  true
+  
+# FUNC resetNullCategories
+# Reset category drop downs back to null values. Triggered
+# when clicking reset button
+# 
+# USAGE resetNullCategories data_object
+#
+# RETURNS
+# boolean
+#    
+root.resetNullCategories = (d) ->
+  el = d.element.category
+  name = "#{d.type}-category"
+  el.find("select[name='#{name}']").val('null')
+  
+  true
   
   
 # FUNC capitaliseFirstLetter

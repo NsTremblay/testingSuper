@@ -1,4 +1,4 @@
-BEGIN;
+/*BEGIN;
 
 --
 -- SQL for creating additional table for storing private/public snps
@@ -14,12 +14,12 @@ SET default_tablespace = '';
 --
 
 CREATE TABLE snp_core (
-	snp_core_id      integer NOT NULL,
+	snp_core_id         integer NOT NULL,
 	pangenome_region_id integer NOT NULL,
-	allele           char(1) NOT NULL DEFAULT 'n',
-	position         integer NOT NULL DEFAULT -1,
-	gap_offset       integer NOT NULL DEFAULT 0,
-	aln_column       integer NOT NULL DEFAULT 0
+	allele              char(1) NOT NULL DEFAULT 'n',
+	position            integer NOT NULL DEFAULT -1,
+	gap_offset          integer NOT NULL DEFAULT 0,
+	aln_column          integer NOT NULL DEFAULT 0
 );
 
 ALTER TABLE public.snp_core OWNER TO postgres;
@@ -234,6 +234,271 @@ ALTER TABLE ONLY snp_alignment
 ALTER TABLE ONLY snp_alignment
     ADD CONSTRAINT snp_alignment_c1 UNIQUE (name);
 
+
+COMMIT;
+*/
+BEGIN;
+
+-----------------------------------------------------------------------------
+--
+-- Table Name: snp_position; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE snp_position (
+	snp_position_id        integer NOT NULL,
+	contig_collection_id   integer NOT NULL,
+	contig_id              integer NOT NULL,
+        pangenome_region_id    integer NOT NULL,
+	locus_id               integer NOT NULL,
+        region_start           integer,
+        locus_start            integer,
+        region_end             integer,
+        locus_end              integer,
+        locus_gap_offset       integer DEFAULT -1
+);
+
+ALTER TABLE public.snp_position OWNER TO postgres;
+
+--
+-- primary key
+--
+CREATE SEQUENCE snp_position_snp_position_id_seq
+	START WITH 1
+	INCREMENT BY 1
+	NO MINVALUE
+	NO MAXVALUE
+	CACHE 1;
+
+ALTER TABLE public.snp_position_snp_position_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE snp_position_snp_position_id_seq OWNED BY snp_position.snp_position_id;
+
+ALTER TABLE ONLY snp_position ALTER COLUMN snp_position_id SET DEFAULT nextval('snp_position_snp_position_id_seq'::regclass);
+
+ALTER TABLE ONLY snp_position
+	ADD CONSTRAINT snp_position_pkey PRIMARY KEY (snp_position_id);
+
+--
+-- Foreign keys
+--
+ALTER TABLE ONLY snp_position
+	ADD CONSTRAINT snp_position_contig_collection_id_fkey FOREIGN KEY (contig_collection_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY snp_position
+	ADD CONSTRAINT snp_position_contig_id_fkey FOREIGN KEY (contig_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY snp_position
+	ADD CONSTRAINT snp_position_locus_id_fkey FOREIGN KEY (locus_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY snp_position
+	ADD CONSTRAINT snp_position_pangenome_region_id_fkey FOREIGN KEY (pangenome_region_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Constraints
+--  
+ALTER TABLE ONLY snp_position
+    ADD CONSTRAINT snp_position_c1 UNIQUE (contig_collection_id, pangenome_region_id, region_start, region_end);
+
+--
+-- Indices
+--
+
+-----------------------------------------------------------------------------
+--
+-- Table Name: private_snp_position; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_snp_position (
+	snp_position_id        integer NOT NULL,
+	contig_collection_id   integer NOT NULL,
+	contig_id              integer NOT NULL,
+        pangenome_region_id    integer NOT NULL,
+	locus_id               integer NOT NULL,
+        region_start           integer,
+        locus_start            integer,
+        region_end             integer,
+        locus_end              integer,
+        locus_gap_offset       integer DEFAULT -1
+);
+
+ALTER TABLE public.private_snp_position OWNER TO postgres;
+
+--
+-- primary key
+--
+CREATE SEQUENCE private_snp_position_snp_position_id_seq
+	START WITH 1
+	INCREMENT BY 1
+	NO MINVALUE
+	NO MAXVALUE
+	CACHE 1;
+
+ALTER TABLE public.private_snp_position_snp_position_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE private_snp_position_snp_position_id_seq OWNED BY private_snp_position.snp_position_id;
+
+ALTER TABLE ONLY private_snp_position ALTER COLUMN snp_position_id SET DEFAULT nextval('private_snp_position_snp_position_id_seq'::regclass);
+
+ALTER TABLE ONLY private_snp_position
+	ADD CONSTRAINT private_snp_position_pkey PRIMARY KEY (snp_position_id);
+
+--
+-- Foreign keys
+--
+ALTER TABLE ONLY private_snp_position
+	ADD CONSTRAINT private_snp_position_contig_collection_id_fkey FOREIGN KEY (contig_collection_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_snp_position
+	ADD CONSTRAINT private_snp_position_contig_id_fkey FOREIGN KEY (contig_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_snp_position
+	ADD CONSTRAINT private_snp_position_locus_id_fkey FOREIGN KEY (locus_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_snp_position
+	ADD CONSTRAINT private_snp_position_pangenome_region_id_fkey FOREIGN KEY (pangenome_region_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+
+--
+-- Constraints
+--  
+ALTER TABLE ONLY private_snp_position
+    ADD CONSTRAINT private_snp_position_c1 UNIQUE (contig_collection_id, pangenome_region_id, region_start, region_end);
+
+--
+-- Indices
+--
+
+-----------------------------------------------------------------------------
+--
+-- Table Name: gap_position; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE gap_position (
+	gap_position_id        integer NOT NULL,
+	contig_collection_id   integer NOT NULL,
+	contig_id              integer NOT NULL,
+        pangenome_region_id    integer NOT NULL,
+	locus_id               integer NOT NULL,
+	snp_id                 integer NOT NULL,
+        locus_pos              integer NOT NULL
+);
+
+ALTER TABLE public.gap_position OWNER TO postgres;
+
+--
+-- primary key
+--
+CREATE SEQUENCE gap_position_gap_position_id_seq
+	START WITH 1
+	INCREMENT BY 1
+	NO MINVALUE
+	NO MAXVALUE
+	CACHE 1;
+
+ALTER TABLE public.gap_position_gap_position_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE gap_position_gap_position_id_seq OWNED BY gap_position.gap_position_id;
+
+ALTER TABLE ONLY gap_position ALTER COLUMN gap_position_id SET DEFAULT nextval('gap_position_gap_position_id_seq'::regclass);
+
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_pkey PRIMARY KEY (gap_position_id);
+
+--
+-- Foreign keys
+--
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_contig_collection_id_fkey FOREIGN KEY (contig_collection_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_contig_id_fkey FOREIGN KEY (contig_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_locus_id_fkey FOREIGN KEY (locus_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_pangenome_region_id_fkey FOREIGN KEY (pangenome_region_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY gap_position
+	ADD CONSTRAINT gap_position_snp_id_fkey FOREIGN KEY (snp_id) REFERENCES snp_core(snp_core_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Constraints
+--  
+ALTER TABLE ONLY gap_position
+    ADD CONSTRAINT gap_position_c1 UNIQUE (snp_id, contig_collection_id);
+
+--
+-- Indices
+--
+
+-----------------------------------------------------------------------------
+--
+-- Table Name: private_gap_position; Schema: public; Owner: postgres; Tablespace: 
+--
+
+CREATE TABLE private_gap_position (
+	gap_position_id        integer NOT NULL,
+	contig_collection_id   integer NOT NULL,
+	contig_id              integer NOT NULL,
+        pangenome_region_id    integer NOT NULL,
+	locus_id               integer NOT NULL,
+	snp_id                 integer NOT NULL,
+        locus_pos              integer NOT NULL
+);
+
+ALTER TABLE public.private_gap_position OWNER TO postgres;
+
+--
+-- primary key
+--
+CREATE SEQUENCE private_gap_position_gap_position_id_seq
+	START WITH 1
+	INCREMENT BY 1
+	NO MINVALUE
+	NO MAXVALUE
+	CACHE 1;
+
+ALTER TABLE public.private_gap_position_gap_position_id_seq OWNER TO postgres;
+
+ALTER SEQUENCE private_gap_position_gap_position_id_seq OWNED BY private_gap_position.gap_position_id;
+
+ALTER TABLE ONLY private_gap_position ALTER COLUMN gap_position_id SET DEFAULT nextval('private_gap_position_gap_position_id_seq'::regclass);
+
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_pkey PRIMARY KEY (gap_position_id);
+
+--
+-- Foreign keys
+--
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_contig_collection_id_fkey FOREIGN KEY (contig_collection_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_contig_id_fkey FOREIGN KEY (contig_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_locus_id_fkey FOREIGN KEY (locus_id) REFERENCES private_feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_pangenome_region_id_fkey FOREIGN KEY (pangenome_region_id) REFERENCES feature(feature_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE ONLY private_gap_position
+	ADD CONSTRAINT private_gap_position_snp_id_fkey FOREIGN KEY (snp_id) REFERENCES snp_core(snp_core_id) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+
+
+--
+-- Constraints
+--  
+ALTER TABLE ONLY private_gap_position
+    ADD CONSTRAINT private_gap_position_c1 UNIQUE (snp_id, contig_collection_id);
+
+--
+-- Indices
+--
 
 
 COMMIT;

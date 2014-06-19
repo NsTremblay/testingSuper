@@ -643,15 +643,28 @@ sub find_snps {
 	# Add row in SNP alignment table for genome, if it doesn't exist
 	$chado->add_snp_row($contig_collection,$is_public);
 	
-	# Load snp positions from file
-	my $pos_file = $data_dir . "/$ref_id\__$genome\__snp_positions.txt";
-	open(my $in, "<", $pos_file) or croak "Error: unable to read file $pos_file ($!).\n";
+	# Load snp variations from file
+	my $var_file = $data_dir . "/$ref_id\__$genome\__snp_variations.txt";
+	open(my $in, "<", $var_file) or croak "Error: unable to read file $var_file ($!).\n";
 	
 	while(my $snp_line = <$in>) {
 		chomp $snp_line;
 		my ($pos, $gap, $refc, $seqc) = split(/\t/, $snp_line);
-		croak "Error: invalid snp position format on line $snp_line." unless $seqc;
+		croak "Error: invalid snp variation format on line $snp_line." unless $seqc;
 		$chado->handle_snp($ref_id, $refc, $pos, $gap, $contig_collection, $contig, $locus, $seqc, $is_public);
+	}
+	
+	close $in;
+	
+	# Load snp alignment positions from file
+	my $pos_file = $data_dir . "/$ref_id\__$genome\__snp_positions.txt";
+	open($in, "<", $pos_file) or croak "Error: unable to read file $pos_file ($!).\n";
+	
+	while(my $snp_line = <$in>) {
+		chomp $snp_line;
+		my ($start1, $start2, $end1, $end2, $gap1, $gap2) = split(/\t/, $snp_line);
+		croak "Error: invalid snp position format on line $snp_line." unless defined $gap2;
+		$chado->handle_snp_alignment_block($contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public);
 	}
 	
 	close $in;

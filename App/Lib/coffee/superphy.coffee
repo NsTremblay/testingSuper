@@ -126,8 +126,14 @@ class ViewController
       mapView.conscriptCartographger()
       mapView.update(@genomeController, mapView.cartographer)
       
+    else if viewType is 'table'
+      # New table view
+      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+      tableView.update(@genomeController)
+      @views.push tableView
+      
     else
-      throw new SuperphyError 'Unrecognized viewType in ViewController createView() method.'
+      throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
       return false
 
     # Create download link
@@ -204,15 +210,21 @@ class ViewController
       metaTicker.update(@genomeController)
       @tickers.push metaTicker
       
-    else if tickerType is 'locus'
-      # New locus ticker
-      locTicker = new LocusTicker(elem, tNum, tickerArgs)
-      locTicker.update(@genomeController)
-      @tickers.push locTicker
+    else if tickerType is 'stx'
+      # New Stx ticker
+      stxTicker = new StxTicker(elem, tNum, tickerArgs)
+      stxTicker.update(@genomeController)
+      @tickers.push stxTicker
+      
+    else if tickerType is 'matrix'
+      # New Matrix ticker
+      matTicker = new MatrixTicker(elem, tNum, @genomeController, tickerArgs)
+      matTicker.update(@genomeController)
+      @tickers.push matTicker
       
     else if tickerType is 'allele'
       # New allele ticker/histogram
-      alTicker = new AlleleTicker(elem, tNum, @genomeController, tickerArgs)
+      alTicker = new AlleleTicker(elem, tNum, tickerArgs)
       alTicker.update(@genomeController)
       @tickers.push alTicker
       
@@ -223,6 +235,7 @@ class ViewController
     return true # return success
     
   select: (g, checked) ->
+    
     if @actionMode is 'single_select'
       @redirect(g)
       
@@ -1149,6 +1162,32 @@ class ViewController
       
     else
       throw new SuperphyError "Unknown paramType parameter: #{paramType}"
+
+  # FUNC highlightInView
+  # Identify genomes that match query and update
+  # selected view so that genome(s) are highlighted
+  #
+  # PARAMS
+  # string for search query
+  # int indicating view number
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  highlightInView: (searchStr, vNum) ->
+    
+    unless searchStr and searchStr.length
+      return false
+      
+    targetList = @genomeController.find(searchStr)
+    
+    if targetList and targetList.length
+      @views[vNum].highlightGenomes(@genomeController, targetList)
+      
+    else
+      superphyAlert "Search string #{searchStr} matches no currently visible genomes.", "None Found"
+      
+    true
     
 
 # Return instance of a ViewController
@@ -1197,6 +1236,10 @@ class ViewTemplate
     
   viewAction: (genomes, args...) ->
     throw new SuperphyError "viewAction method has not been defined in child class (#{this.type})."
+    false # return fail
+    
+  highlightGenomes: (genomes, targetList, args...) ->
+    throw new SuperphyError "highlightGenomes method has not been defined in child class (#{this.type})."
     false # return fail
     
   cssClass: ->
@@ -1354,30 +1397,37 @@ class ListView extends ViewTemplate
       
       thiscls = cls
       thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-      itemEl = null
+      liEl = null
       
-      if @style == 'redirect'
+     if @style == 'redirect'
         # Link style
         
         # Find element
-        descriptor = "li > a[data-genome='#{g}']"
+        descriptor = "td > a[data-genome='#{g}']"
         itemEl = el.find(descriptor)
+        
+        unless itemEl? and itemEl.length
+          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
+          return false
+          
+        liEl = itemEl.parent()
        
       else if @style == 'select'
         # Checkbox style
         
         # Find element
-        descriptor = "li input[value='#{g}']"
+        descriptor = "td input[value='#{g}']"
         itemEl = el.find(descriptor)
+        
+        unless itemEl? and itemEl.length
+          throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
+          return false
+          
+        liEl = itemEl.parents().eq(1)
    
       else
         return false
       
-      unless itemEl? and itemEl.length
-        throw new SuperphyError "List element for genome #{g} not found in ListView #{@elID}"
-        return false
-      
-      liEl = itemEl.parents().eq(1)
       liEl.attr('class', thiscls)
         
         
@@ -1436,7 +1486,7 @@ class ListView extends ViewTemplate
     
     output = ''
     # Output header
-    header = (genomes.metaMap[k] for k of fullMeta)
+    header = (genomes.metaMap[k] for k in genomes.mtypes)
     header.unshift "Genome name"
     output += "#" + header.join("\t") + "\n"
     
@@ -1634,11 +1684,22 @@ class GenomeController
     'stx1_subtype': 'Stx1 Subtype',
     'stx2_subtype': 'Stx2 Subtype'
     
+  mtypes: [
+    'strain'
+    'serotype'
+    'isolation_host'
+    'isolation_source'
+    'isolation_date'
+    'syndrome'
+    'stx1_subtype'
+    'stx2_subtype'
+    'accession'
+  ]
+    
   publicRegexp: new RegExp('^public_')
   privateRegexp: new RegExp('^private_')
   
   filtered: 0
-  
   
    
   # FUNC update
@@ -1653,12 +1714,15 @@ class GenomeController
   update: ->
     # Update public set
     for id,g of @public_genomes
-      g.viewname = @label(g,@visibleMeta)
-      g.htmlname = @labelHTML(g,@visibleMeta)
+      ma = @label(g,@visibleMeta,null)
+      g.viewname = ma.join('|')
+      g.meta_array = ma
+      
     # Update private set
     for id,g of @private_genomes
-      g.viewname = @label(g,@visibleMeta)
-      g.htmlname = @labelHTML(g,@visibleMeta)
+      ma = @label(g,@visibleMeta,null)
+      g.viewname = ma.join('|')
+      g.meta_array = ma
       
     true
     
@@ -1952,49 +2016,30 @@ class GenomeController
   # PARAMS
   # genome      - a single genome object from the private_/public_genomes
   # visibleMeta - a data field name in the genome object
+  # joinStr     - a string or null (in which case, no join is performed)
   #
   # RETURNS
   # string
   #      
-  label: (genome, visibleMeta, joinStr = '|') ->
+  label: (genome, visibleMeta, joinStr) ->
     na = 'NA'
     lab = [genome.displayname]
     
     # Add visible meta-data to label is specific order
     # Array values
-    mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype']
-    for t in mtypes
+    for t in @mtypes when t isnt 'accession'
       lab.push (genome[t] ? [na]).join(' ') if visibleMeta[t]
     
     # Scalar values
     lab.push genome.primary_dbxref ? na if visibleMeta.accession
     
-    # Return string
-    lab.join(joinStr)
-
-  labelHTML: (genome, visibleMeta, joinStr = ' ') ->
-    na = 'NA'
-    lab = [genome.displayname]
-    
-    # Add visible meta-data to label is specific order
-    # Array values
-    mtypes = ['strain', 'serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype']
-    for t in mtypes
-      #lab.push (genome[t] ? [na]).join(' ') if visibleMeta[t]
-      if visibleMeta[t]
-        if genome[t]?
-          for i in genome[t]
-            lab.push('<span class="label label-default">'+i+'</span>')
-        else
-          lab.push('<span class="label label-default">'+[na]+'</span>')
-
-    
-    # Scalar values
-    lab.push genome.primary_dbxref ? na if visibleMeta.accession
-    
-    # Return string
-    lab.join(joinStr)
-    
+    # Return string or array
+    if joinStr?
+      return lab.join(joinStr)
+    else
+      return lab
+   
+ 
   updateMeta: (option, checked) ->
     
     console.log(option)
@@ -2091,14 +2136,251 @@ class GenomeController
     else
       return @private_genomes[gid]
       
+  # FUNC sort
+  # Sort genomes by meta-data 
+  #
+  # PARAMS
+  # gids        - a list of genome labels ala: private_/public_123445
+  # metaField   - a data field to sort on
+  #
+  # RETURNS
+  # string
+  #      
+  sort: (gids, metaField, asc) ->
+    
+    return gids unless gids.length
+   
+    that = @
+    gids.sort (a,b) ->
+      aObj = that.genome(a)
+      bObj = that.genome(b)
+      
+      aField = aObj[metaField]
+      aName = aObj.displayname.toLowerCase()
+      bField = bObj[metaField]
+      bName = bObj.displayname.toLowerCase()
+      
+      if aField? and bField?
+        
+        if typeIsArray aField
+          aField = aField.join('').toLowerCase()
+          bField = bField.join('').toLowerCase()
+        else
+          aField = aField.toLowerCase()
+          bField = bField.toLowerCase()
+          
+        if aField < bField
+          return -1
+        else if aField > bField
+          return 1
+        else
+          if aName < bName
+            return -1
+          else if aName > bName
+            return 1
+          else
+            return 0
+            
+      else
+        if aField? and not bField?
+          return -1
+        else if bField? and not aField?
+          return 1
+        else
+          if aName < bName
+            return -1
+          else if aName > bName
+            return 1
+          else
+            return 0
 
+    if not asc
+      gids.reverse()
+      
+    gids
+          
+          
+  # FUNC find
+  # Returns list of visible public and private genome IDs \
+  # that have matching names
+  #
+  # PARAMS
+  # searchStr - a string to use in genome name search
+  # 
+  # RETURNS
+  # array of matching genome labels
+  #
+  find: (searchStr) ->
+    
+    regex = new RegExp escapeRegExp(searchStr), "i"
+    pubSet = (id for id in @pubVisible when @match(@public_genomes[id], 'displayname', regex, false))
+    pvtSet = (id for id in @pvtVisible when @match(@private_genomes[id], 'displayname', regex, false))
+    
+ 
+    genomes = pubSet.concat pvtSet
+    
+    console.log genomes
+    
+    genomes
+        
+  
 ###
  CLASS LocusController
  
- Manages locus data 
+ Manages Locus/Gene allele data 
 
 ###
 class LocusController
+  constructor: (@locusData) ->
+    
+ 
+  emptyString: "<span class='locus_group0'>No alleles detected</span>"
+ 
+  # FUNC locusString
+  # return string for single allele/locus 
+  #
+  # PARAMS
+  # Either
+  # 1. single argument with ID format: genomeID|locusID
+  #   -or-
+  # 2. two arguments: genomeID, locusID
+  #   -where-
+  # genomeID = public_1234
+  # locusID = 1234
+  # 
+  # RETURNS
+  # string
+  #      
+  locusString: (id, locusID=null) ->
+    
+    genomeID
+    if locusID?
+      genomeID = id
+    else
+      res = parseHeader(id)
+      genomeID = res[1]
+      locusID = res[2]
+      throw new SuperphyError "Invalid locus ID format: #{id}." unless genomeID? and locusID?
+      
+    g = @locusData[genomeID]
+    throw new SuperphyError "Unknown genome: #{genomeID}." unless g?
+    
+    l = g[locusID]
+    throw new SuperphyError "Unknown locus: #{locusID} for genome #{genomeID}." unless l?
+    
+    str
+    if l.copy > 1
+      str = " (#{l.copy} copy)"
+    else 
+      ''
+    
+    str
+    
+  # FUNC locusNode
+  # return text/class associated with locus 
+  #
+  # PARAMS
+  # Either
+  # 1. single argument with ID format: genomeID|locusID
+  #   -or-
+  # 2. two arguments: genomeID, locusID
+  #   -where-
+  # genomeID = public_1234
+  # locusID = 1234
+  # 
+  # RETURNS
+  # string, group
+  #      
+  locusNode: (id, locusID=null) ->
+    
+    genomeID
+    if locusID?
+      genomeID = id
+    else
+      res = parseHeader(id)
+      genomeID = res[1]
+      locusID = res[2]
+      throw new SuperphyError "Invalid locus ID format: #{id}." unless genomeID? and locusID?
+      
+    g = @locusData[genomeID]
+    throw new SuperphyError "Unknown genome: #{genomeID}." unless g?
+    
+    l = g[locusID]
+    throw new SuperphyError "Unknown locus: #{locusID} for genome #{genomeID}." unless l?
+    
+    str
+    if l.copy > 1
+      str = " (#{l.copy} copy)"
+    else 
+      str = ''
+    
+    return [str, null]
+    
+
+  # FUNC genomeString
+  # return string for genome (merging multiple loci/allele 
+  # data strings for genome) 
+  #
+  # PARAMS
+  # genomeID with format: public_1234
+  #
+  # RETURNS
+  # string
+  #      
+  genomeString: (genomeID) ->
+    
+    str = ' - '
+    g = @locusData[genomeID]
+    
+    if g? and g.num_copies > 0
+      str += "<span class='locus_group1'>#{g.num_copies} allele(s)</span>"
+      
+    else
+      str += @emptyString
+    
+    str
+    
+    
+  # FUNC count
+  # Counts unique locus data copies for a set of genomes
+  #
+  # PARAMS
+  # genomeController object
+  #
+  # RETURNS
+  # string
+  #      
+  count: (genomes) ->
+    
+    counts_list = []
+    
+    @_count(genomes.pubVisible, counts_list)
+    @_count(genomes.pvtVisible, counts_list)
+    
+    counts_list
+    
+  _count: (genomeList, counts_list) ->
+    
+    for gID in genomeList
+      g = @locusData[gID]
+      if g?
+        counts_list.push g.num_copies
+      else
+        counts_list.push 0
+        
+    true
+    
+# Return instance of a LocusController
+unless root.LocusController
+  root.LocusController = LocusController
+  
+###
+ CLASS StxController
+ 
+ Manages Stx data 
+
+###
+class StxController
   constructor: (@locusData) ->
  
     @dataValues = {}
@@ -2279,10 +2561,10 @@ class LocusController
         uniqueValues['NA']++
     
 # Return instance of a LocusController
-unless root.LocusController
-  root.LocusController = LocusController
+unless root.StxController
+  root.StxController = StxController
   
-  
+
 ###
  CLASS SelectionView
  
@@ -2534,3 +2816,26 @@ trimInput = (str, field) ->
   else
     alert("Error: #{field} is empty.")
     return null
+
+# FUNC superphyAlert
+# JQuery UI dialog to use as alert replacement
+#
+# USAGE superphyAlert string, string
+# 
+# RETURNS
+# Boolean
+#      
+superphyAlert = (output_msg='No Message to Display.', title_msg='Alert') ->
+  
+  jQuery("<div></div>")
+    .html(output_msg)
+    .dialog({
+      title: title_msg,
+      resizable: false,
+      modal: true,
+      buttons: {
+        "Ok": -> jQuery( this ).dialog( "close" );
+      }
+    })
+
+
