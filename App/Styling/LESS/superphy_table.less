@@ -10,12 +10,13 @@
 /** Table *********************************/
 
 .superphy-table {
-  
   max-height: 450px;
+  max-width: 100%;
   overflow-y: scroll;
+  overflow-x: scroll;
   display: inline-block;
   .borderStyle;
-  margin: 20px;
+  //margin: 20px;
   
   table {
   
@@ -49,11 +50,23 @@
           padding: 0;
           
           input[type="checkbox"] {
+            min-height: 20px;
+            line-height: normal;
+            margin: 0 5px 0 0;
+          }
+        } 
+      }
+      td.genome_map_item {
+        div.checkbox {
+          margin: 0;
+          padding: 0;
+          
+          input[type="checkbox"] {
+            min-height: 20px;
             line-height: normal;
             margin: 0 5px 0 0;
           }
         }
-        
       }
     }
   }

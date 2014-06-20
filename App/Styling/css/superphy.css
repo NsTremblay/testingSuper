@@ -748,12 +748,13 @@ div.matrixSort {
 /** Table *********************************/
 .superphy-table {
   max-height: 450px;
+  max-width: 100%;
   overflow-y: scroll;
+  overflow-x: scroll;
   display: inline-block;
   border-style: solid;
   border-width: 1px;
   border-color: #d3d3d3;
-  margin: 20px;
 }
 .superphy-table table {
   background-color: #FFF;
@@ -780,6 +781,16 @@ div.matrixSort {
   padding: 0;
 }
 .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.genome_map_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
   line-height: normal;
   margin: 0 5px 0 0;
 }
@@ -840,6 +851,16 @@ div.matrixSort {
 .map-legend .legendlabel1 {
   position: relative;
   top: 5px;
+}
+.noloc {
+  font-style: italic;
+}
+.noloc-tag {
+  font-style: italic;
+  color: #d3d3d3;
+}
+.loc-tag {
+  font-style: italic;
 }
 /*
  
@@ -1330,11 +1351,18 @@ Date: May 20th, 2014
 }
 #genome-group-add10 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #bcbd22;
+  border: none;
   margin: 10px;
 }
 #genome-group-add10 span {
+  color: #e2e362;
+}
+#genome-group-clear10 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear10 span {
   color: #e2e362;
 }
 #genome-group-list10 div a span {
@@ -1353,11 +1381,18 @@ Date: May 20th, 2014
 }
 #genome-group-add9 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #17becf;
+  border: none;
   margin: 10px;
 }
 #genome-group-add9 span {
+  color: #5fe0ed;
+}
+#genome-group-clear9 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear9 span {
   color: #5fe0ed;
 }
 #genome-group-list9 div a span {
@@ -1376,11 +1411,18 @@ Date: May 20th, 2014
 }
 #genome-group-add8 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #7f7f7f;
+  border: none;
   margin: 10px;
 }
 #genome-group-add8 span {
+  color: #b2b2b2;
+}
+#genome-group-clear8 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear8 span {
   color: #b2b2b2;
 }
 #genome-group-list8 div a span {
@@ -1399,11 +1441,18 @@ Date: May 20th, 2014
 }
 #genome-group-add7 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #8c564b;
+  border: none;
   margin: 10px;
 }
 #genome-group-add7 span {
+  color: #bc8b81;
+}
+#genome-group-clear7 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear7 span {
   color: #bc8b81;
 }
 #genome-group-list7 div a span {
@@ -1422,11 +1471,18 @@ Date: May 20th, 2014
 }
 #genome-group-add6 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #e377c2;
+  border: none;
   margin: 10px;
 }
 #genome-group-add6 span {
+  color: #f4cce8;
+}
+#genome-group-clear6 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear6 span {
   color: #f4cce8;
 }
 #genome-group-list6 div a span {
@@ -1445,11 +1501,18 @@ Date: May 20th, 2014
 }
 #genome-group-add5 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #9467bd;
+  border: none;
   margin: 10px;
 }
 #genome-group-add5 span {
+  color: #c6aedc;
+}
+#genome-group-clear5 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear5 span {
   color: #c6aedc;
 }
 #genome-group-list5 div a span {
@@ -1468,11 +1531,18 @@ Date: May 20th, 2014
 }
 #genome-group-add4 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #d62728;
+  border: none;
   margin: 10px;
 }
 #genome-group-add4 span {
+  color: #e77c7d;
+}
+#genome-group-clear4 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear4 span {
   color: #e77c7d;
 }
 #genome-group-list4 div a span {
@@ -1491,11 +1561,18 @@ Date: May 20th, 2014
 }
 #genome-group-add3 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #2ca02c;
+  border: none;
   margin: 10px;
 }
 #genome-group-add3 span {
+  color: #5fd35f;
+}
+#genome-group-clear3 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear3 span {
   color: #5fd35f;
 }
 #genome-group-list3 div a span {
@@ -1514,11 +1591,18 @@ Date: May 20th, 2014
 }
 #genome-group-add2 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #ff7f0e;
+  border: none;
   margin: 10px;
 }
 #genome-group-add2 span {
+  color: #ffb574;
+}
+#genome-group-clear2 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear2 span {
   color: #ffb574;
 }
 #genome-group-list2 div a span {
@@ -1537,11 +1621,18 @@ Date: May 20th, 2014
 }
 #genome-group-add1 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #1f77b4;
+  border: none;
   margin: 10px;
 }
 #genome-group-add1 span {
+  color: #57a9e2;
+}
+#genome-group-clear1 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear1 span {
   color: #57a9e2;
 }
 #genome-group-list1 div a span {

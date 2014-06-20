@@ -52,7 +52,7 @@ var tree = <TMPL_VAR tree_json>;
 
 viewController.init(public_genomes, private_genomes, 'two_groups', '/groups/compare');
 
-viewController.createView('list', $('#strains_list'));
+viewController.createView('table', $('#strains_table'));
 
 viewController.createView('tree', $('#strains_tree'), tree);
 
@@ -61,7 +61,10 @@ viewController.createView('map', $('#strains_map'), ['satellite']);
 viewController.sideBar($('#search-utilities'));
 
 //Group Compare form
-viewController.groupsCompareForm($('#groups-compare'));
+var addMore = false;
+var submit = true;
+var filter = false;
+viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter);
 
 //Change this
 $(document).ready(function(){

@@ -10,11 +10,7 @@
  */
 
 (function() {
-<<<<<<< HEAD
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, ExtendedMapView, GenomeController, GeoPhy, GeophyCartographer, GroupView, InfoSatelliteCartographer, ListView, LocusController, LocusTicker, MapView, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, SuperphyError, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, parseHeader, root, trimInput, typeIsArray,
-=======
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, Poller, SatelliteCartographer, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
->>>>>>> a46a2c8d677514da884f4f7e8ba78882b5e13b9a
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, ExtendedMapView, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -125,19 +121,16 @@
         mapView = new MapView(elem, clickStyle, vNum, viewArgs);
         this.views.push(mapView);
         mapView.conscriptCartographger();
-        mapView.update(this.genomeController, mapView.cartographer);
-<<<<<<< HEAD
+        mapView.update(this.genomeController);
       } else if (viewType === 'selmap') {
         mapView = new SelectionMapView(elem, clickStyle, vNum, viewArgs);
         this.views.push(mapView);
         mapView.conscriptCartographger();
-        mapView.update(this.genomeController, mapView.cartographer);
-=======
+        mapView.update(this.genomeController);
       } else if (viewType === 'table') {
         tableView = new TableView(elem, clickStyle, vNum, viewArgs);
         tableView.update(this.genomeController);
         this.views.push(tableView);
->>>>>>> a46a2c8d677514da884f4f7e8ba78882b5e13b9a
       } else {
         throw new SuperphyError('Unrecognized viewType <' + viewType + '> in ViewController createView() method.');
         return false;
@@ -157,7 +150,7 @@
       return true;
     };
 
-    ViewController.prototype.createGroup = function(boxEl, buttonEl) {
+    ViewController.prototype.createGroup = function(boxEl, buttonEl, clearButtonEl) {
       var gNum, group, grpView, selectGroupList, _i, _len, _ref;
       gNum = this.groups.length + 1;
       if (gNum > this.maxGroups) {
@@ -169,6 +162,10 @@
       buttonEl.click(function(e) {
         e.preventDefault();
         return viewController.addToGroup(gNum);
+      });
+      clearButtonEl.click(function(e) {
+        e.preventDefault();
+        return viewController.clearFromGroup(gNum);
       });
       selectGroupList = jQuery('.group-manager-number');
       selectGroupList.empty();
@@ -259,7 +256,6 @@
 
     ViewController.prototype.removeFromGroup = function(genomeID, grp) {
       var gset, i, v, _i, _len, _ref;
-      console.log('deleting ' + genomeID);
       gset = this.genomeController.genomeSet([genomeID]);
       this.genomeController.deleteGroup(gset);
       i = grp - 1;
@@ -272,11 +268,17 @@
       return true;
     };
 
-    ViewController.prototype.groupForm = function(elem, type, boolFilter) {
+    ViewController.prototype.clearFromGroup = function(grp) {
+      var actionEl;
+      actionEl = jQuery("a[data-genome-group='" + grp + "']");
+      return actionEl.click();
+    };
+
+    ViewController.prototype.groupForm = function(elem, addMoreBool, submitBool, filterBool) {
       var addEl, blockEl, buttEl, buttonEl, clearFormEl, divEl, hiddenFormEl, submitEl;
       blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem);
       this.addGroupFormRow(blockEl);
-      if (type === 'multi_select') {
+      if (addMoreBool) {
         addEl = jQuery("<div class='add-genome-groups row'></div>");
         divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl);
         buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl);
@@ -290,42 +292,44 @@
         });
         elem.append(addEl);
       }
-      submitEl = jQuery("<div class='compare-genome-groups row'></div>");
-      divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
-      clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl);
-      if (boolFilter) {
-        buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl);
-      }
-      if (!boolFilter) {
-        buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
-      }
-      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + this.action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
-      buttonEl.click((function(_this) {
-        return function(e) {
-          var alert, genome, groupGenomes, i, _i, _j, _len, _ref;
-          e.preventDefault();
-          alert = jQuery('<div class="alert alert-danger"> <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> You must have at least one genome in either of the groups to compare to. </div>');
-          if (!(jQuery('#genome_group1 li').length > 0 || jQuery('#genome_group2 li').length > 0)) {
-            blockEl.prepend(alert);
-            return false;
-          }
-          for (i = _i = 1, _ref = _this.groups.length; _i <= _ref; i = _i += 1) {
-            groupGenomes = jQuery("#genome_group" + i + " .genome_group_item");
-            for (_j = 0, _len = groupGenomes.length; _j < _len; _j++) {
-              genome = groupGenomes[_j];
-              jQuery("<input type='hidden' name='group" + i + "-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
+      if (submitBool) {
+        submitEl = jQuery("<div class='compare-genome-groups row'></div>");
+        divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl);
+        clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl);
+        if (filterBool) {
+          buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl);
+        }
+        if (!filterBool) {
+          buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl);
+        }
+        hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='" + this.action + "' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl);
+        buttonEl.click((function(_this) {
+          return function(e) {
+            var alert, genome, groupGenomes, i, _i, _j, _len, _ref;
+            e.preventDefault();
+            alert = jQuery('<div class="alert alert-danger"> <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button> You must have at least one genome in either of the groups to compare to. </div>');
+            if (!(jQuery('#genome_group1 li').length > 0 || jQuery('#genome_group2 li').length > 0)) {
+              blockEl.prepend(alert);
+              return false;
             }
-          }
-          jQuery("<input type='hidden' name='num-groups' value='" + _this.groups.length + "'>").appendTo(hiddenFormEl);
-          return jQuery('#groups-compare-form').submit();
-        };
-      })(this));
-      elem.append(submitEl);
+            for (i = _i = 1, _ref = _this.groups.length; _i <= _ref; i = _i += 1) {
+              groupGenomes = jQuery("#genome_group" + i + " .genome_group_item");
+              for (_j = 0, _len = groupGenomes.length; _j < _len; _j++) {
+                genome = groupGenomes[_j];
+                jQuery("<input type='hidden' name='group" + i + "-genome' value='" + (jQuery(genome).find('a').data('genome')) + "'>").appendTo(hiddenFormEl);
+              }
+            }
+            jQuery("<input type='hidden' name='num-groups' value='" + _this.groups.length + "'>").appendTo(hiddenFormEl);
+            return jQuery('#groups-compare-form').submit();
+          };
+        })(this));
+        elem.append(submitEl);
+      }
       return true;
     };
 
     ViewController.prototype.addGroupFormRow = function(elem) {
-      var buttEl, divEl, formEl, gNum, i, listEl, ok, rowEl, _i, _len, _ref;
+      var buttEl, clearButtEl, divEl, formEl, gNum, i, listEl, ok, rowEl, _i, _len, _ref;
       if (typeof elem === 'string') {
         elem = jQuery(elem);
       }
@@ -342,8 +346,9 @@
         listEl = jQuery("<div id='genome-group-list" + i + "' class='genome-group'></div>").appendTo(formEl);
         divEl = jQuery("<div class='genome-group-add-controller'></div>").appendTo(listEl);
         buttEl = jQuery("<button id='genome-group-add" + i + "' class='btn btn-primary' type='button' title='Add genome(s) to Group " + i + "'><span class='fa fa-plus'></span> <span class='input-lg' id='genome-group" + i + "-heading'>Group " + i + "</span></button>").appendTo(divEl);
+        clearButtEl = jQuery("<button id='genome-group-clear" + i + "' class='btn btn-primary pull-right' type='button' title='Clear all genome(s) from Group " + i + "'><span class='fa fa-times'></span> <span class='input-lg' id='genome-group" + i + "-heading'></span></button>").appendTo(divEl);
         rowEl.append(formEl);
-        ok = this.createGroup(listEl, buttEl);
+        ok = this.createGroup(listEl, buttEl, clearButtEl);
       }
       return ok;
     };
@@ -423,103 +428,20 @@
       return true;
     };
 
-    ViewController.prototype.groupsCompareForm = function(elem, boolFilter) {
+    ViewController.prototype.createGroupsForm = function(elem, addMoreBool, submitBool, filterBool) {
       var form, parentTarget, wrapper;
       parentTarget = 'groups-compare-panel-body';
       wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>');
       elem.append(wrapper);
       form = jQuery('<div class="panel-body" id="' + parentTarget + '"></div>');
       wrapper.append(form);
-      this.groupForm(form, this.actionMode, boolFilter);
-      return true;
-    };
-
-    ViewController.prototype.groupsSideForm = function(elem, parentStr) {
-      var alertBox, buttonGroupEl, deleteGroupButton, form, formEl, formRadioEl, group, groupNameInputEl, groupNumberInputEl, groupSelectEl, loadGroupButton, newGroupEl, renameGroupEl, saveGroupButton, updateGroupEl, _i, _len, _ref;
-      form = '<div class="panel-heading"> <div class="panel-title"> <a data-toggle="collapse" data-parent="#' + parentStr + '" href="#group-manager-form-panel"><span class="fa fa-th-large"></span> Manage Groups <span class="caret"></span></a> </div></div> <div id="group-manager-form-panel" class="panel-collapse collapse out"> <div class="panel-body"> <form role="form" id="group-manager-form"></form> </div></div>';
-      elem.append(form);
-      formEl = jQuery('#group-manager-form');
-      groupSelectEl = jQuery('<div class="form-group"><label>Select from your custom groups:<select class="form-control input-sm"></select></label></div>').appendTo(formEl);
-      formRadioEl = jQuery('<div class="form-group group-manager-options"></div>').appendTo(formEl);
-      updateGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="update-group" checked>Update group</label></div>').appendTo(formRadioEl);
-      renameGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="rename-group">Rename group</label></div>').appendTo(formRadioEl);
-      newGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="new-group">Create a new group</label></div>').appendTo(formRadioEl);
-      groupNameInputEl = jQuery('<div class="form-group"><label>Enter a group name:<input type="text" class="form-control input-sm group-manager-name" name="group-name"></label></div>').appendTo(formEl);
-      groupNumberInputEl = jQuery('<div class="form-group"><label>Select group number:<select class="form-control input-sm group-manager-number" name="group-number"></select></label></div>').appendTo(formEl);
-      _ref = this.groups;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        group = _ref[_i];
-        jQuery('<option value=' + ("" + group.elNum) + '>Group ' + ("" + group.elNum) + '</option>').appendTo(jQuery('.group-manager-number'));
-      }
-      buttonGroupEl = jQuery('<div class="form-group"></div>').appendTo(formEl);
-      saveGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-floppy-o"></span></button>').appendTo(buttonGroupEl);
-      loadGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-folder-open-o"></span></button>').appendTo(buttonGroupEl);
-      deleteGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-trash-o"></span></button>').appendTo(buttonGroupEl);
-      alertBox = jQuery('<div class="group-manager-alerts"></div>').prependTo(formEl);
-      saveGroupButton.click(function(e) {
-        var groupNum, maxGroups, serialData;
-        alertBox.empty();
-        form = jQuery('#group-manager-form');
-        serialData = form.serialize();
-        maxGroups = window.viewController.groups.length;
-        groupNum = jQuery('input[name="group-number"]').val();
-        serialData += '&max-groups=' + maxGroups;
-        e.preventDefault;
-        return jQuery.ajax({
-          type: "POST",
-          url: '/groups/save',
-          data: serialData
-        }).done(function(data) {
-          var messages;
-          alertBox.empty();
-          messages = JSON.parse(data);
-          if (messages.error) {
-            return jQuery('<div class="alert alert-danger">' + messages.error + '</div>').appendTo(alertBox);
-          } else {
-            return jQuery('<div class="alert alert-success">' + messages.success + '</div>').appendTo(alertBox);
-          }
-        }).fail((function() {
-          return alert("There was some kind of error. Contact the code doctor.");
-        }));
-      });
-      true;
-      loadGroupButton.click(function(e) {
-        e.preventDefault;
-        return jQuery.ajax({
-          type: "POST",
-          url: '/groups/load',
-          data: serialData
-        }).done(function() {
-          return console.log("Done and returned");
-        }).fail((function() {
-          return console.log("Error!");
-        }));
-      });
-      true;
-      deleteGroupButton.click(function(e) {
-        var serialData;
-        serialData = jQuery('#group-manager-form').serialize();
-        e.preventDefault;
-        return jQuery.ajax({
-          type: "POST",
-          url: '/groups/delete',
-          data: serialData
-        }).done(function() {
-          return console.log("Done and returned");
-        }).fail((function() {
-          return console.log("Error!");
-        }));
-      });
-      return true;
-    };
-
-    ViewController.prototype.sideBarRight = function(elem) {
+      this.groupForm(form, addMoreBool, submitBool, filterBool);
       return true;
     };
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -680,6 +602,14 @@
         filterOn.hide();
         filterOff.show();
       }
+      this._toggleSelectAll();
+      return true;
+    };
+
+    ViewController.prototype._toggleSelectAll = function() {
+      var selectAll;
+      selectAll = jQuery('.tableview-select-all');
+      selectAll.toggle();
       return true;
     };
 
@@ -4936,9 +4866,11 @@
       table = '';
       table += this._appendHeader(genomes);
       table += '<tbody>';
+      table += '<td><a class="tableview-select-all" href="#"> Select all</a></td>';
       table += this._appendGenomes(genomes.sort(genomes.pubVisible, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false);
       table += this._appendGenomes(genomes.sort(genomes.pvtVisible, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true);
       table += '</body>';
+      jQuery('.tableview-select-all').hide();
       tableElem.append(table);
       this._actions(tableElem, this.style);
       t2 = new Date();
@@ -5257,7 +5189,9 @@
       this.style = style;
       this.elNum = elNum;
       this.mapArgs = mapArgs;
-      MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum, this.mapArgs);
+      MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+      this.sortField = 'displayname';
+      this.sortAsc = true;
     }
 
     MapView.prototype.type = 'map';
@@ -5269,158 +5203,180 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var ft, i, mapElem, pubVis, pvtVis, t1, t2, _i, _j, _len, _len1, _ref, _ref1;
-      mapElem = jQuery("#" + this.elID);
-      if (mapElem.length) {
-        mapElem.empty();
+      var divElem, ft, i, pubVisLoc, pubVisNoLoc, pvtVisLoc, pvtVisNoLoc, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      tableElem = jQuery("#" + this.elID + " table");
+      if (tableElem.length) {
+        tableElem.empty();
       } else {
-        mapElem = jQuery("<ul id='" + this.elID + "' />");
-        jQuery(this.parentElem).find('.map-manifest').append(mapElem);
+        divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
+        tableElem = jQuery("<table />").appendTo(divElem);
+        jQuery(this.parentElem).find('.map-manifest').append(divElem);
       }
-      pubVis = [];
-      pvtVis = [];
+      pubVisLoc = [];
+      pvtVisLoc = [];
+      pubVisNoLoc = [];
+      pvtVisNoLoc = [];
       if (this.cartographer == null) {
-        pubVis = genomes.pubVisible;
-        pvtVis = genomes.pvtVisible;
+        pubVisLoc = genomes.pubVisible;
+        pvtVisLoc = genomes.pvtVisible;
       } else if ((this.cartographer != null) && this.cartographer.visibleStrains) {
         _ref = this.cartographer.visibileStrainLocations.pubVisible;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           i = _ref[_i];
           if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-            pubVis.push(i);
+            pubVisLoc.push(i);
           }
         }
         _ref1 = this.cartographer.visibileStrainLocations.pvtVisible;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           i = _ref1[_j];
           if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-            pvtVis.push(i);
+            pvtVisLoc.push(i);
           }
         }
-
-        /*      for i in @cartographer.visibileStrainLocations.pubVisible
-          if i in genomes.pubVisible
-            pubVis.push i
-            
-        for i in @cartographer.visibileStrainLocations.pvtVisible
-          if i in genomes.pvtVisible
-            pvtVis.push i
-         */
+        _ref2 = this.cartographer.noLocationGenomes.pubVisible;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          i = _ref2[_k];
+          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+            pubVisNoLoc.push(i);
+          }
+        }
+        _ref3 = this.cartographer.noLocationGenomes.pvtVisible;
+        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+          i = _ref3[_l];
+          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+            pvtVisNoLoc.push(i);
+          }
+        }
       }
       t1 = new Date();
-      this._appendGenomes(mapElem, pubVis, genomes.public_genomes, this.style, false);
-      this._appendGenomes(mapElem, pvtVis, genomes.private_genomes, this.style, true);
+      table = '';
+      table += this._appendHeader(genomes);
+      table += '<tbody>';
+      table += '<td><a class="tableview-select-all" href="#" style="display:none"> Select all</a></td>';
+      table += this._appendGenomes(genomes.sort(pubVisLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
+      table += this._appendGenomes(genomes.sort(pvtVisLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
+      table += this._appendGenomes(genomes.sort(pubVisNoLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, false);
+      table += this._appendGenomes(genomes.sort(pvtVisNoLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, false);
+      table += '</body>';
+      jQuery('.tableview-select-all').hide();
+      tableElem.append(table);
+      this._actions(tableElem, this.style);
       t2 = new Date();
       ft = t2 - t1;
       console.log('MapView update elapsed time: ' + ft);
       return true;
     };
 
-    MapView.prototype._appendGenomes = function(el, visibleG, genomes, style, priv) {
-      var actionEl, checked, cls, g, labEl, mapEl, name, thiscls, _i, _len;
+    MapView.prototype._appendGenomes = function(visibleG, genomes, style, priv, location) {
+      var checked, cls, d, g, gObj, name, row, table, thiscls, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       cls = this.cssClass();
+      table = '';
       if (priv && visibleG.length) {
-        el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>");
+        table += this._template('spacer', null);
       }
       for (_i = 0, _len = visibleG.length; _i < _len; _i++) {
         g = visibleG[_i];
+        row = '';
+        gObj = genomes[g];
         thiscls = cls;
-        if (genomes[g].cssClass != null) {
-          thiscls = cls + ' ' + genomes[g].cssClass;
+        if (gObj.cssClass != null) {
+          thiscls = cls + ' ' + gObj.cssClass;
         }
-        name = genomes[g].htmlname;
+        name = gObj.meta_array[0];
+        if (this.locusData != null) {
+          name += this.locusData.genomeString(g);
+        }
         if (style === 'redirect') {
-          mapEl = jQuery("<li class='" + thiscls + "'>" + name + "</li>");
-          actionEl = jQuery("<a href='#' data-genome='" + g + "'> <span class='fa fa-search'></span>info</a>");
-          actionEl.click(function(e) {
-            var gid;
-            e.preventDefault();
-            gid = this.dataset.genome;
-            return viewController.select(gid, true);
+          if (location) {
+            row += this._template('td1_redirect', {
+              g: g,
+              name: name,
+              shortName: gObj.meta_array[0],
+              klass: thiscls,
+              location: JSON.parse(gObj.isolation_location[0]).formatted_address
+            });
+          }
+          if (!location) {
+            row += this._template('td1_redirect_noloc', {
+              g: g,
+              name: name,
+              shortName: gObj.meta_array[0],
+              klass: thiscls
+            });
+          }
+          _ref = gObj.meta_array.slice(1);
+          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+            d = _ref[_j];
+            row += this._template('td', {
+              data: d
+            });
+          }
+          table += this._template('tr', {
+            row: row
           });
-          mapEl.append(actionEl);
-          el.append(mapEl);
         } else if (style === 'select') {
           checked = '';
-          if (genomes[g].isSelected) {
+          if (gObj.isSelected) {
             checked = 'checked';
           }
-          mapEl = jQuery("<li class='" + thiscls + "'></li>");
-          labEl = jQuery("<label class='checkbox'>" + name + "</label>");
-          actionEl = jQuery("<input class='checkbox' type='checkbox' value='" + g + "' " + checked + "/>");
-          actionEl.change(function(e) {
-            e.preventDefault();
-            return viewController.select(this.value, this.checked);
+          if (location) {
+            row += this._template('td1_select', {
+              g: g,
+              name: name,
+              klass: thiscls,
+              checked: checked,
+              location: JSON.parse(gObj.isolation_location[0]).formatted_address
+            });
+          }
+          if (!location) {
+            row += this._template('td1_select_noloc', {
+              g: g,
+              name: name,
+              klass: thiscls,
+              checked: checked
+            });
+          }
+          _ref1 = gObj.meta_array.slice(1);
+          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+            d = _ref1[_k];
+            row += this._template('td', {
+              data: d
+            });
+          }
+          table += this._template('tr', {
+            row: row
           });
-          labEl.append(actionEl);
-          mapEl.append(labEl);
-          el.append(mapEl);
         } else {
           return false;
         }
-        true;
       }
+      return table;
     };
 
-    MapView.prototype.updateCSS = function(gset, genomes) {
-      var mapEl;
-      mapEl = jQuery("#" + this.elID);
-      if (!((mapEl != null) && mapEl.length)) {
-        throw new SuperphyError("DOM element for map view " + this.elID + " not found. Cannot call ListView method updateCSS().");
-      }
-      if (gset["public"] != null) {
-        this._updateGenomeCSS(mapEl, gset["public"], genomes.public_genomes);
-      }
-      if (gset["private"] != null) {
-        this._updateGenomeCSS(mapEl, gset["private"], genomes.private_genomes);
-      }
-      return true;
-    };
-
-    MapView.prototype._updateGenomeCSS = function(el, changedG, genomes) {
-      var cls, descriptor, g, itemEl, liEl, thiscls, _i, _len;
-      cls = this.cssClass();
-      for (_i = 0, _len = changedG.length; _i < _len; _i++) {
-        g = changedG[_i];
-        thiscls = cls;
-        if (genomes[g].cssClass != null) {
-          thiscls = cls + ' ' + genomes[g].cssClass;
-        }
-        itemEl = null;
-        if (this.style === 'redirect') {
-          descriptor = "li > a[data-genome='" + g + "']";
-          itemEl = el.find(descriptor);
-        } else if (this.style === 'select') {
-          descriptor = "li input[value='" + g + "']";
-          itemEl = el.find(descriptor);
-        } else {
-          return false;
-        }
-        if (!((itemEl != null) && itemEl.length)) {
-          throw new SuperphyError("Map element for genome " + g + " not found in MapView " + this.elID);
-          return false;
-        }
-        liEl = itemEl.parents().eq(1);
-        liEl.attr('class', thiscls);
-      }
-      return true;
-    };
-
-    MapView.prototype.select = function(genome, isSelected) {
-      var descriptor, itemEl;
-      itemEl = null;
-      if (this.style === 'select') {
-        descriptor = "li input[value='" + genome + "']";
-        itemEl = jQuery(descriptor);
+    MapView.prototype._template = function(tmpl, values) {
+      var html;
+      html = null;
+      if (tmpl === 'tr') {
+        html = "<tr>" + values.row + "</tr>";
+      } else if (tmpl === 'th') {
+        html = "<th><a class='genome-table-sort' href='#' data-genomesort='" + values.type + "'>" + values.name + " <i class='fa " + values.sortIcon + "'></i></a></th>";
+      } else if (tmpl === 'td') {
+        html = "<td>" + values.data + "</td>";
+      } else if (tmpl === 'td1_redirect') {
+        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><label class='loc-tag'> - " + values.location + "</label><i class='fa fa-search'></i></a></td>";
+      } else if (tmpl === 'td1_select') {
+        html = "<td class='" + values.klass + "'><div class='checkbox'><label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label><label class='loc-tag'> - " + values.location + "</label></div></td>";
+      } else if (tmpl === 'td1_redirect_noloc') {
+        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link noloc' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><label class='noloc-tag'> - location unknown</label><i class='fa fa-search'></i></a></td>";
+      } else if (tmpl === 'td1_select_noloc') {
+        html = "<td class='" + values.klass + "'><div class='checkbox'><label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label><label class='noloc-tag'> - location unknown</label></div></td>";
+      } else if (tmpl === 'spacer') {
+        html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>";
       } else {
-        return false;
+        throw new SuperphyError("Unknown template type " + tmpl + " in TableView method _template");
       }
-      if (!((itemEl != null) && itemEl.length)) {
-        throw new SuperphyError(" Map element for genome " + genome + " not found in MapView " + this.elID);
-        return false;
-      }
-      itemEl.prop('checked', isSelected);
-      return true;
+      return html;
     };
 
     MapView.prototype.dump = function(genomes) {
@@ -5480,7 +5436,7 @@
 
     return MapView;
 
-  })(ViewTemplate);
+  })(TableView);
 
 
   /*
@@ -5706,6 +5662,8 @@
 
     SatelliteCartographer.prototype.visibileStrainLocations = {};
 
+    SatelliteCartographer.prototype.noLocationGenomes = {};
+
     SatelliteCartographer.prototype.markerClusterer = null;
 
     SatelliteCartographer.prototype.mapViewIndex = null;
@@ -5714,6 +5672,7 @@
       var index;
       jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
+      this.populateNoLocationList(viewController.genomeController);
       this.updateMarkerLists(viewController.genomeController, this.map);
       this.markerCluster(this.map);
       index = this.findMapViewIndex(viewController.views);
@@ -5741,6 +5700,27 @@
           return _this.markerClusterer.addMarkers(_this.clusterList);
         };
       })(this));
+      return true;
+    };
+
+    SatelliteCartographer.prototype.populateNoLocationList = function(genomes) {
+      var private_genome, pubGenomeId, public_genome, pvtGenomeId, _ref, _ref1;
+      this.noLocationGenomes.pubVisible = [];
+      this.noLocationGenomes.pvtVisible = [];
+      _ref = genomes.public_genomes;
+      for (pubGenomeId in _ref) {
+        public_genome = _ref[pubGenomeId];
+        if (!((public_genome.isolation_location != null) && public_genome.isolation_location !== "")) {
+          this.noLocationGenomes.pubVisible.push(pubGenomeId);
+        }
+      }
+      _ref1 = genomes.private_genomes;
+      for (pvtGenomeId in _ref1) {
+        private_genome = _ref1[pvtGenomeId];
+        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
+          this.noLocationGenomes.pvtVisible.push(pvtGenomeId);
+        }
+      }
       return true;
     };
 
@@ -6212,8 +6192,12 @@
     };
 
     GeoPhy.prototype._setViewController = function(pubList, pvtList) {
+      var addMore, filter, submit;
       this.viewController.init(pubList, pvtList, 'multi_select', '/groups/geophy');
-      this.viewController.groupsCompareForm($('#groups-compare'), true);
+      addMore = true;
+      submit = true;
+      filter = true;
+      this.viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter);
       return true;
     };
 

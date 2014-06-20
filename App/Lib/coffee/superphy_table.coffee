@@ -67,18 +67,22 @@ class TableView extends ViewTemplate
     table = ''
     table += @_appendHeader(genomes)
     table += '<tbody>'
+    table += '<td><a class="tableview-select-all" href="#"> Select all</a></td>'
     table += @_appendGenomes(genomes.sort(genomes.pubVisible, @sortField, @sortAsc), genomes.public_genomes, @style, false)
     table += @_appendGenomes(genomes.sort(genomes.pvtVisible, @sortField, @sortAsc), genomes.private_genomes, @style, true)
     table += '</body>'
+
+    jQuery('.tableview-select-all').hide()
+
     tableElem.append(table)
     @_actions(tableElem, @style)
-    t2 = new Date()
+
+    t2 = new Date()    
     
     ft = t2-t1
     console.log('TableView update elapsed time: '+ft)
     
     true # return success
-  
   
   _template: (tmpl, values) ->
     

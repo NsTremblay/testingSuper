@@ -7,13 +7,17 @@
 
 ###
 
-class MapView extends ViewTemplate
+class MapView extends TableView
   constructor: (@parentElem, @style , @elNum, @mapArgs) ->
     #add map args to mapArgs list 
 
     # Call default constructor - creates unique element ID                  
-    super(@parentElem, @style, @elNum, @mapArgs)
-  
+    super(@parentElem, @style, @elNum)
+
+    # Sort selection
+    @sortField = 'displayname'
+    @sortAsc = true
+    
   type: 'map'
 
   elName: 'genome_map'
@@ -21,6 +25,7 @@ class MapView extends ViewTemplate
   cartographer: null
 
   mapView: true
+
 
   # FUNC update
   # Update genome list view
@@ -33,184 +38,138 @@ class MapView extends ViewTemplate
   #
   update: (genomes) -> 
     # create or find list element
-    mapElem = jQuery("##{@elID}")
-    if mapElem.length
-      mapElem.empty()
-    
+    tableElem = jQuery("##{@elID} table")
+    if tableElem.length
+      tableElem.empty()
     else
-      mapElem = jQuery("<ul id='#{@elID}' />")
-      jQuery(@parentElem).find('.map-manifest').append(mapElem)
+      divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
+      tableElem = jQuery("<table />").appendTo(divElem)
+      jQuery(@parentElem).find('.map-manifest').append(divElem)
 
-    pubVis = []
-    pvtVis = []
+    pubVisLoc = []
+    pvtVisLoc = []
+    pubVisNoLoc = []
+    pvtVisNoLoc = []
 
     if !@cartographer?
-      pubVis = genomes.pubVisible
-      pvtVis = genomes.pvtVisible
+      pubVisLoc = genomes.pubVisible
+      pvtVisLoc = genomes.pvtVisible
     else if @cartographer? && @cartographer.visibleStrains
+      pubVisLoc.push i for i in @cartographer.visibileStrainLocations.pubVisible when i in genomes.pubVisible 
+      pvtVisLoc.push i for i in @cartographer.visibileStrainLocations.pvtVisible when i in genomes.pvtVisible
+      pubVisNoLoc.push i for i in @cartographer.noLocationGenomes.pubVisible when i in genomes.pubVisible 
+      pvtVisNoLoc.push i for i in @cartographer.noLocationGenomes.pvtVisible when i in genomes.pvtVisible
 
-      pubVis.push i for i in @cartographer.visibileStrainLocations.pubVisible when i in genomes.pubVisible 
-      pvtVis.push i for i in @cartographer.visibileStrainLocations.pvtVisible when i in genomes.pvtVisible
-      
     #append genomes to list
     t1 = new Date()
-    @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)
-    @_appendGenomes(mapElem, pvtVis, genomes.private_genomes, @style, true)
+    table = ''
+    table += @_appendHeader(genomes)
+    table += '<tbody>'
+    table += '<td><a class="tableview-select-all" href="#" style="display:none"> Select all</a></td>'
+    table += @_appendGenomes(genomes.sort(pubVisLoc, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
+    table += @_appendGenomes(genomes.sort(pvtVisLoc, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
+    table += @_appendGenomes(genomes.sort(pubVisNoLoc, @sortField, @sortAsc), genomes.public_genomes, @style, false, false)
+    table += @_appendGenomes(genomes.sort(pvtVisNoLoc, @sortField, @sortAsc), genomes.private_genomes, @style, true, false)
+    table += '</body>'
+    
+    jQuery('.tableview-select-all').hide()
+
+    tableElem.append(table)
+    @_actions(tableElem, @style)
     t2 = new Date()
     ft = t2-t1
 
     console.log 'MapView update elapsed time: ' +ft
     true # return success
 
-  # Helper function for update
-  _appendGenomes: (el, visibleG, genomes, style, priv) -> 
-
-    # View class
-    cls = @cssClass()
-
-    if priv && visibleG.length
-      el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>")
-
-    for g in visibleG
-      thiscls = cls
-      thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
-
-      name = genomes[g].htmlname
-      if style == 'redirect'
-        # Links
-
-        # Create elements
-        mapEl = jQuery("<li class='#{thiscls}'>#{name}</li>")
-        actionEl = jQuery("<a href='#' data-genome='#{g}'> <span class='fa fa-search'></span>info</a>")
-
-        # Set behavior
-        actionEl.click (e) -> 
-          e.preventDefault()
-          gid = @.dataset.genome
-          viewController.select(gid, true)
-
-        # Append to list
-        mapEl.append(actionEl)
-        el.append(mapEl)
-
-      else if style == 'select'
-        # Checkboxes
-        # Create elements
-        checked = ''
-        checked = 'checked' if genomes[g].isSelected
-        mapEl = jQuery("<li class='#{thiscls}'></li>")
-        labEl = jQuery("<label class='checkbox'>#{name}</label>")
-        actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
-
-        # Set behavior
-        actionEl.change (e) ->
-          e.preventDefault()
-          viewController.select(@.value, @.checked)
-
-        # Append to list
-        labEl.append(actionEl)
-        mapEl.append(labEl)
-        el.append(mapEl)
-
-      else
-        return false 
-
-      true
-
-  # FUNC updateCSS
-  # Change CSS class for selected genomes to match underlying genome properties
-  #
-  # PARAMS
-  # simple hash object with private and public list of genome Ids to update
-  # genomeController object
-  # 
-  # RETURNS
-  # boolean 
-  #      
-  updateCSS: (gset, genomes) ->
-    
-    # Retrieve list DOM element    
-    mapEl = jQuery("##{@elID}")
-    throw new SuperphyError "DOM element for map view #{@elID} not found. Cannot call ListView method updateCSS()." unless mapEl? and mapEl.length
-    
-    # append genomes to list
-    @_updateGenomeCSS(mapEl, gset.public, genomes.public_genomes) if gset.public?
-    
-    @_updateGenomeCSS(mapEl, gset.private, genomes.private_genomes) if gset.private?
-    
-    true # return success
-    
   
-  _updateGenomeCSS: (el, changedG, genomes) ->
+  _appendGenomes: (visibleG, genomes, style, priv, location) ->
+      
+      cls = @cssClass()
+      table = ''
+      
+      # Spacer    
+      if priv && visibleG.length
+        table += @_template('spacer',null)
+          
+      for g in visibleG
+        
+        row = ''
+        
+        gObj = genomes[g]
+
+        thiscls = cls
+        thiscls = cls+' '+gObj.cssClass if gObj.cssClass?
+        
+        name = gObj.meta_array[0]
+        if @locusData?
+          name += @locusData.genomeString(g)
+          
+        if style == 'redirect'
+          # Links
+          
+          # Genome name
+          row += @_template('td1_redirect', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls, location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_redirect_noloc', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls}) unless location
     
-    # View class
-    cls = @cssClass()
+          # Other data
+          for d in gObj.meta_array[1..-1]
+            row += @_template('td', {data: d})
+            
+          table += @_template('tr', {row: row})       
+         
+        else if style == 'select'
+          # Checkboxes
+          
+          # Genome name
+          checked = ''
+          checked = 'checked' if gObj.isSelected
+          row += @_template('td1_select', {g: g, name: name, klass: thiscls, checked: checked, location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_select_noloc', {g: g, name: name, klass: thiscls, checked: checked}) unless location
+
+          # Other data
+          for d in gObj.meta_array[1..-1]
+            row += @_template('td', {data: d})
+            
+          table += @_template('tr', {row: row})       
+     
+        else
+          return false
+        
+      table
+
+  _template: (tmpl, values) ->
     
-    for g in changedG
+    html = null
+    if tmpl is 'tr'
+      html = "<tr>#{values.row}</tr>"
       
-      thiscls = cls
-      thiscls = cls+' '+ genomes[g].cssClass if genomes[g].cssClass?
-      itemEl = null
-      
-      if @style == 'redirect'
-        # Link style
+    else if tmpl is 'th'
+      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
+    
+    else if tmpl is 'td'
+      html = "<td>#{values.data}</td>"
+    
+    else if tmpl is 'td1_redirect'
+      html = "<td class='#{values.klass}'>#{values.name} <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><label class='loc-tag'> - #{values.location}</label><i class='fa fa-search'></i></a></td>"
         
-        # Find element
-        descriptor = "li > a[data-genome='#{g}']"
-        itemEl = el.find(descriptor)
-       
-      else if @style == 'select'
-        # Checkbox style
-        
-        # Find element
-        descriptor = "li input[value='#{g}']"
-        itemEl = el.find(descriptor)
-   
-      else
-        return false
+    else if tmpl is 'td1_select'
+      html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label><label class='loc-tag'> - #{values.location}</label></div></td>"
       
-      unless itemEl? and itemEl.length
-        throw new SuperphyError "Map element for genome #{g} not found in MapView #{@elID}"
-        return false
-      
-      liEl = itemEl.parents().eq(1)
-      liEl.attr('class', thiscls)
+    else if tmpl is 'td1_redirect_noloc'
+      html = "<td class='#{values.klass}'>#{values.name} <a class='genome-table-link noloc' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><label class='noloc-tag'> - location unknown</label><i class='fa fa-search'></i></a></td>"
         
-    true # success
+    else if tmpl is 'td1_select_noloc'
+      html = "<td class='#{values.klass}'><div class='checkbox'><label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label><label class='noloc-tag'> - location unknown</label></div></td>"
 
-
-  # FUNC select
-  # Change style to indicate its selection status
-  #
-  # PARAMS
-  # genome object from GenomeController list
-  # boolean indicating if selected/unselected
-  #
-  # RETURNS
-  # boolean
-  #
-  select: (genome, isSelected) -> 
-
-    itemEl = null
-
-    if @style == 'select'
-     # Checkbox style, other styles do not have a 'select' behavior
-
-     # Find element
-     descriptor = "li input[value='#{genome}']"
-     itemEl = jQuery(descriptor)
-
+    else if tmpl is 'spacer'
+      html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>"
+    
     else
-      return false
-
-    unless itemEl? and itemEl.length
-      throw new SuperphyError " Map element for genome #{genome} not found in MapView #{@elID}"
-      return false
-
-    itemEl.prop('checked', isSelected);
-
-    true # success
-
+      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+      
+    html
+    
   # FUNC dump
   # Generate CSV tab-delimited representation of all genomes with locations
   #
@@ -499,6 +458,7 @@ class SatelliteCartographer extends Cartographer
   visibleStrains: true
   clusterList: []
   visibileStrainLocations: {}
+  noLocationGenomes: {}
 
   markerClusterer: null
 
@@ -524,6 +484,9 @@ class SatelliteCartographer extends Cartographer
     # Init the map
     super
     
+    # Populate the list of genomes with unknown locations
+    @populateNoLocationList(viewController.genomeController)
+
     # Init the visible list of strains and convert these to markers
     @updateMarkerLists(viewController.genomeController, @map)
     
@@ -550,6 +513,28 @@ class SatelliteCartographer extends Cartographer
       viewController.getView(@mapViewIndex).update(viewController.genomeController)
       @markerClusterer.addMarkers(@clusterList)
       )
+    true
+
+  # FUNC updateNoLocationList
+  # Initializes and sets lists of genomes without known locations
+  #
+  # PARAMS
+  # list of genomeContorller genomes 
+  #
+  # RETURNS
+  #
+  populateNoLocationList: (genomes) ->
+    @noLocationGenomes.pubVisible = []
+    @noLocationGenomes.pvtVisible = []
+
+    for pubGenomeId, public_genome of genomes.public_genomes
+      unless public_genome.isolation_location? && public_genome.isolation_location != ""
+          @noLocationGenomes.pubVisible.push(pubGenomeId)
+
+    for pvtGenomeId, private_genome of genomes.private_genomes
+      if private_genome.isolation_location? && private_genome.isolation_location != ""
+          @noLocationGenomes.pvtVisible.push(pvtGenomeId)
+
     true
 
   # FUNC updateMarkerLists

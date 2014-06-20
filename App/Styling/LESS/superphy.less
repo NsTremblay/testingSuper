@@ -150,12 +150,25 @@
   
   #genome-group-add@{index} {
     background-color: #fff;
-    border-radius: 0px;
-    border-color: @@color;
+    border: none;
+    //border-radius: 0px;
+    //border-color: @@color;
     margin: 10px;
   }
 
   #genome-group-add@{index} span {
+    color: @light-color;
+  }
+
+  #genome-group-clear@{index} {
+    background-color: #fff;
+    border: none;
+    //border-radius: 0px;
+    //border-color: @@color;
+    margin: 10px;
+  }
+
+  #genome-group-clear@{index} span {
     color: @light-color;
   }
   
@@ -179,6 +192,7 @@
 
 // Define color schemes for up to 10 groups
 .buttonGroupConstructor(@group-num);
+
 
 /*Checkbox styles*/
 .radio, .checkbox {

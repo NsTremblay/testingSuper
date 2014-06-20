@@ -137,7 +137,10 @@ class GeoPhy
 
   _setViewController: (pubList, pvtList) ->
     @viewController.init(pubList, pvtList, 'multi_select', '/groups/geophy')
-    @viewController.groupsCompareForm($('#groups-compare'), true)
+    addMore = true
+    submit = true
+    filter = true
+    @viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter)
     true
 
   _prepareGroups: () ->

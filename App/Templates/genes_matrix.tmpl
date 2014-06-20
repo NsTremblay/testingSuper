@@ -134,7 +134,10 @@
 		
 		// Code to create groups
 		var addMore = true;
-		viewController.groupForm($('#expanding_groups'), addMore);
+		var submit = false;
+		var filter = false;
+		viewController.createGroupsForm($('#expanding_groups'), addMore, submit, filter);
+
 		
 	</script>
 	
