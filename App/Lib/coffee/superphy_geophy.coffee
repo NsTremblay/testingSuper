@@ -11,7 +11,8 @@ class GeoPhy
     else if @userGroups? and not boolShowall
       @_filter()
     @viewController.sideBar($('#search-utilities'))
-    @viewController.createView('tree', @treeDiv, tree)  
+    @viewController.createView('tree', @treeDiv, tree)
+    jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12') 
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
@@ -132,7 +133,7 @@ class GeoPhy
     jQuery('#groups-compare').hide();
     gpColors = @_prepareGroups();
     @viewController.createView('map', @mapDiv, ['geophy'], gpColors)
-    @_appendLegend(jQuery('#groups-geophy'), @userGroups);
+    @_appendLegend(jQuery('#groups-geophy'), @userGroups)
     true
 
   _setViewController: (pubList, pvtList) ->

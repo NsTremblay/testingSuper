@@ -29,13 +29,11 @@ class TableView extends ViewTemplate
       
     # Call default constructor - creates unique element ID                  
     super(@parentElem, @style, @elNum)
-    
+
     # Sort selection
     @sortField = 'displayname'
     @sortAsc = true
-    
-    
-  
+
   type: 'table'
   
   elName: 'genome_table'
@@ -61,18 +59,15 @@ class TableView extends ViewTemplate
       divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
       tableElem = jQuery("<table />").appendTo(divElem)
       jQuery(@parentElem).append(divElem)
-      
+
     # Append genomes to table
     t1 = new Date()
     table = ''
     table += @_appendHeader(genomes)
     table += '<tbody>'
-    table += '<td><a class="tableview-select-all" href="#"> Select all</a></td>'
     table += @_appendGenomes(genomes.sort(genomes.pubVisible, @sortField, @sortAsc), genomes.public_genomes, @style, false)
     table += @_appendGenomes(genomes.sort(genomes.pvtVisible, @sortField, @sortAsc), genomes.private_genomes, @style, true)
     table += '</body>'
-
-    jQuery('.tableview-select-all').hide()
 
     tableElem.append(table)
     @_actions(tableElem, @style)

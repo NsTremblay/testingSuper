@@ -214,30 +214,30 @@ $(document).ready(function(){
     $('.map-canvas').hide();
     $('a[href="#overview-panel"]').click();
     $('#geospatial-panel').on('hidden.bs.collapse', function () {
-        viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.markerClusterer.clearMarkers();
+        viewController.getView($('#strains-info-map').data("views-index")-1).mapController.markerClusterer.clearMarkers();
     });
     $('#geospatial-panel').on('shown.bs.collapse', function () {
         $('.map-canvas').show();
-        viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.resetMap();
+        viewController.getView($('#strains-info-map').data("views-index")-1).mapController.resetMap();
     });
 });
 
-var selectedGenomeHasLocation = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
+var selectedGenomeId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
 
 //Determine whether public or private
-var pvtLocation = selectedGenomeHasLocation.match(/private_/g);
+var pvtLocation = selectedGenomeId.match(/private_/g);
 
-if (selectedGenomeHasLocation.match(/private_/g)) {
-    selectedGenome = private_genomes[selectedGenomeHasLocation];
+if (selectedGenomeId.match(/private_/g)) {
+    selectedGenome = private_genomes[selectedGenomeId];
 }
-else if (selectedGenomeHasLocation.match(/public_/g)) {
-    selectedGenome = public_genomes[selectedGenomeHasLocation];
+else if (selectedGenomeId.match(/public_/g)) {
+    selectedGenome = public_genomes[selectedGenomeId];
 }
 
-selectedGenomeHasLocation != "" ? viewController.createView('selmap', $('#strains-info-map'), ['infoSatellite']) : 0;
+selectedGenomeId != "" ? viewController.createView('selmap', $('#strains-info-map'), ['infoSatellite'], selectedGenomeId, selectedGenome) : 0;
 
 //Sidebar actions
 viewController.sideBar($('#search-utilities'));
-$('#strains-list').append('<span class="help-block">Jump to the info page of another genome by clicking a link below. You can also use the meta-data and filtering functions above to refine the list down:</span>')
-viewController.createView('jump2list', $('#strains-list'));
+$('#strains-table').append('<span class="help-block">Jump to the info page of another genome by clicking a link below. You can also use the meta-data and filtering functions above to refine the list down:</span>')
+viewController.createView('jump2table', $('#strains-table'));
 </script>

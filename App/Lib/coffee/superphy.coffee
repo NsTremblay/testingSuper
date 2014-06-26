@@ -83,13 +83,6 @@ class ViewController
       listView = new ListView(elem, clickStyle, vNum, viewArgs)
       listView.update(@genomeController)
       @views.push listView
-
-    else if viewType is 'jump2list'
-      # New list view
-      listView = new ListView(elem, clickStyle, vNum, viewArgs)
-      listView.update(@genomeController)
-      @views.push listView
-      return
       
     else if viewType is 'tree'
       # New tree view
@@ -112,25 +105,28 @@ class ViewController
 
     else if viewType is 'map'
       #New map view
-      mapView = new MapView(elem, clickStyle, vNum, viewArgs)
-      #Mapview needs to be pushed prior to constructing the cartographer otherwise the cartographer will not know which index of the views the map view is in to update
+      mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+      #mapView.update(@genomeController)
       @views.push mapView
-      mapView.conscriptCartographger()
-      mapView.update(@genomeController)
 
     else if viewType is 'selmap'
       #New map view
-      mapView = new SelectionMapView(elem, clickStyle, vNum, viewArgs)
-      #Mapview needs to be pushed prior to constructing the cartographer otherwise the cartographer will not know which index of the views the map view is in to update
+      mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+      #mapView.update(@genomeController)
       @views.push mapView
-      mapView.conscriptCartographger()
-      mapView.update(@genomeController)
       
     else if viewType is 'table'
       # New table view
       tableView = new TableView(elem, clickStyle, vNum, viewArgs)
       tableView.update(@genomeController)
       @views.push tableView
+
+    else if viewType is 'jump2table'
+      # New list view
+      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+      tableView.update(@genomeController)
+      @views.push tableView
+      return
       
     else
       throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
@@ -574,7 +570,7 @@ class ViewController
       # Perform search
       @genomeController.filter(searchTerms)
       
-    # Update Views  
+    # Update Views 
     @_toggleFilterStatus()
     v.update(@genomeController) for v in @views
     t.update(@genomeController) for t in @tickers
@@ -728,20 +724,46 @@ class ViewController
       filterOn.find('#filter-on-text').text("Filter active. #{numVisible} genomes visible.")
       filterOn.show()
       filterOff.hide()
+      #@_toggleSelectAll(true, 50)
     else 
       filterOn.hide()
       filterOff.show()
-
-    @_toggleSelectAll()
-      
+      #@_toggleSelectAll(false)
     true
 
-  _toggleSelectAll: ->
-    selectAll = jQuery('.tableview-select-all')
-    selectAll.toggle()
+  _toggleSelectAll: (switchOn, hardLimit) ->
+    # TODO: Handle the different form types
+    numVisible = @genomeController.filtered
+
+    selectAllRow = jQuery('.select-all-genomes-row')
+
+    selectAllRow.empty()
+
+    divEl = jQuery('<div class="col-md-6"></div>')
+    buttonGp = jQuery('<div class="btn-group"></div>').appendTo(divEl)
+
+    selectAllButt = jQuery('<button id="table-select-all" class="btn btn-link">Select All</button>').appendTo(buttonGp)
+    unSelectAllButt = jQuery('<button id="table-unselect-all" class="btn btn-link">Unselect All</button>').appendTo(buttonGp)
+
+    selectAllButt.click( (e) =>
+      e.preventDefault()
+      @select(g, true) for g in @genomeController.pubVisible
+      @select(g, true) for g in @genomeController.pvtVisible
+      )
+
+    unSelectAllButt.click( (e) =>
+      e.preventDefault()
+      @select(g, false) for g in @genomeController.pubVisible
+      @select(g, false) for g in @genomeController.pvtVisible
+      )
+    
+    if switchOn and numVisible <= hardLimit
+      selectAllRow.append(divEl)
+    else
+    
     true
     
-   _clearFilterForm: ->
+  _clearFilterForm: ->
     
     # Remove, build & attach simple fast form
     sf = jQuery("#fast-filter")

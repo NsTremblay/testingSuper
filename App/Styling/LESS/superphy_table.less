@@ -7,9 +7,9 @@
  
  * */
 
-/** Table *********************************/
+ /** Table *********************************/
 
-.superphy-table {
+ .superphy-table {
   max-height: 450px;
   max-width: 100%;
   overflow-y: scroll;
@@ -19,7 +19,7 @@
   //margin: 20px;
   
   table {
-  
+
     background-color: #FFF;
     font-size: 10pt;
     text-align: left;
@@ -65,6 +65,71 @@
             min-height: 20px;
             line-height: normal;
             margin: 0 5px 0 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+.superphy-jump2-table {
+  padding-bottom: 20px;
+  padding-right: 8px;
+  margin: 5px;
+
+  .superphy-table {
+      max-height: 300px;
+      max-width: 100%;
+      overflow-x: scroll;
+      overflow-y: scroll;
+
+    table {
+
+      background-color: #FFF;
+      font-size: 10pt;
+      text-align: left;
+      border-collapse: collapse;
+      margin: auto;
+
+      thead {
+        th {
+          background-color: #e6EEEE;
+          border: 1px solid #FFF;
+          font-size: 10pt;
+          padding: 4px;
+        }
+      }
+
+      tbody {
+        td {
+          color: #3D3D3D;
+          padding: 4px;
+          background-color: #FFF;
+          vertical-align: top;
+        }
+
+        td.genome_table_item {
+          div.checkbox {
+            margin: 0;
+            padding: 0;
+
+            input[type="checkbox"] {
+              min-height: 20px;
+              line-height: normal;
+              margin: 0 5px 0 0;
+            }
+          } 
+        }
+        td.genome_map_item {
+          div.checkbox {
+            margin: 0;
+            padding: 0;
+
+            input[type="checkbox"] {
+              min-height: 20px;
+              line-height: normal;
+              margin: 0 5px 0 0;
+            }
           }
         }
       }

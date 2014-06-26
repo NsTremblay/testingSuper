@@ -36,6 +36,7 @@ use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
 use Modules::TreeManipulator;
 use Modules::LocationManager;
+use Modules::GenomeWarden;
 use IO::File;
 use JSON;
 
@@ -87,19 +88,13 @@ Run mode for the single strain page
 
 sub info : Runmode {
 	my $self = shift;
-	
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	
+
 	#Init the location manager
 	my $locationManager = Modules::LocationManager->new();
 	$locationManager->dbixSchema($self->dbixSchema);
 	
 	my $username = $self->authen->username;
-	
-	# Retrieve form data
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
+		
 	# Check if user is requesting genome info
 	my $q = $self->query();
 	
@@ -107,6 +102,7 @@ sub info : Runmode {
 	my $strainID;
 	my $privateStrainID;
 	my $feature = $q->param("genome");
+	print STDERR "Genome is $feature\n\n";
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
@@ -116,11 +112,28 @@ sub info : Runmode {
 			die "Error: invalid genome ID: $feature.";
 		}
 	}
+
+	#Check if user has access to the particular requested genome
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
+
+	my ($err, $bad1, $bad2) = $warden->error; 
+
+	if($err) {
+ 		# User requested invalid strains or strains that they do not have permission to view
+  		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+  		return $self->redirect( $self->home_page );
+	}
+
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
 	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $data->genomeInfo($username);
+
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
-		
+
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
 		$template = $self->load_tmpl( 'strains_info.tmpl' ,
@@ -133,7 +146,13 @@ sub info : Runmode {
 		$template->param(tree_json => $tree->nodeTree($feature));
 		
 		# Get Virulence and AMR genes for genome
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(public_genomes => [$strainID]);
+		# Retrieve presence / absence of alleles for query genes
+		my %args = (
+			warden => $warden
+		);
+
+		my $result_hashref = $data->getGeneAlleleData(%args);
+
 		my $vf = $result_hashref->{vf};
 		my $amr = $result_hashref->{amr};
 		my $names = $result_hashref->{names};
@@ -145,7 +164,7 @@ sub info : Runmode {
 			$virRow{'gene_name'} = $names->{$gene_id};
 			$virRow{'feature_id'} = $gene_id;
 			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
+				$virRow{'allele_count'}++;
 			}
 			push (@amrData, \%virRow);
 		}
@@ -155,7 +174,7 @@ sub info : Runmode {
 			$virRow{'gene_name'} = $names->{$gene_id};
 			$virRow{'feature_id'} = $gene_id;
 			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
+				$virRow{'allele_count'}++;
 			}
 			push (@virData, \%virRow);
 		}
@@ -172,10 +191,11 @@ sub info : Runmode {
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		# TODO: Change this to use genome Warden
 		# User requested information on private strain
 		
 		# Retrieve list of private genomes user can view (need full list to mask unviewable nodes in tree)
-		my ($visable, $has_private) = $formDataGenerator->privateGenomes($username);
+		my ($visable, $has_private) = $data->privateGenomes($username);
 		
 		unless(defined($visable->{$feature})) {
 			# User requested strain that they do not have permission to view
@@ -204,7 +224,7 @@ sub info : Runmode {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		if($has_private) {
 			# Need to use full tree, with non-visable nodes masked
-			$formDataGenerator->publicGenomes(undef, $visable);
+			$data->publicGenomes(undef, $visable);
 			$template->param(tree_json => $tree->nodeTree($feature, $visable));
 		} else {
 			# Can use public tree
@@ -213,7 +233,7 @@ sub info : Runmode {
 		
 		# Get Virulence and AMR genes for genome
 		get_logger->debug($privateStrainID);
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(private_genomes => [$privateStrainID]);
+		my $result_hashref = $data->getGeneAlleleData(private_genomes => [$privateStrainID]);
 		
 		my $vf = $result_hashref->{vf};
 		my $amr = $result_hashref->{amr};

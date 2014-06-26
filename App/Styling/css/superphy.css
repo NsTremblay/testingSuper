@@ -327,22 +327,6 @@ td.msaPosition {
   border-width: 1px;
   border-color: #d3d3d3;
 }
-.superphy-jump2-list {
-  padding-bottom: 20px;
-  padding-right: 8px;
-  margin: 5px;
-}
-.superphy-jump2-list ul {
-  list-style-type: none;
-  display: block;
-  max-height: 300px;
-  overflow: auto;
-  padding: 10px;
-  margin: 0px;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
-}
 li.genome_group10 {
   color: #91921a;
   font: italic bold 13px sans-serif;
@@ -794,6 +778,54 @@ div.matrixSort {
   line-height: normal;
   margin: 0 5px 0 0;
 }
+.superphy-jump2-table {
+  padding-bottom: 20px;
+  padding-right: 8px;
+  margin: 5px;
+}
+.superphy-jump2-table .superphy-table {
+  max-height: 300px;
+  max-width: 100%;
+  overflow-x: scroll;
+  overflow-y: scroll;
+}
+.superphy-jump2-table .superphy-table table {
+  background-color: #FFF;
+  font-size: 10pt;
+  text-align: left;
+  border-collapse: collapse;
+  margin: auto;
+}
+.superphy-jump2-table .superphy-table table thead th {
+  background-color: #e6EEEE;
+  border: 1px solid #FFF;
+  font-size: 10pt;
+  padding: 4px;
+}
+.superphy-jump2-table .superphy-table table tbody td {
+  color: #3D3D3D;
+  padding: 4px;
+  background-color: #FFF;
+  vertical-align: top;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_table_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
 /*
  
  File: website_styles.less
@@ -854,13 +886,16 @@ div.matrixSort {
 }
 .noloc {
   font-style: italic;
+  font-weight: 100;
 }
 .noloc-tag {
   font-style: italic;
+  font-weight: 100;
   color: #d3d3d3;
 }
 .loc-tag {
   font-style: italic;
+  font-weight: 100;
 }
 /*
  

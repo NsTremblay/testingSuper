@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, ExtendedMapView, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocationController, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -100,11 +100,6 @@
         listView = new ListView(elem, clickStyle, vNum, viewArgs);
         listView.update(this.genomeController);
         this.views.push(listView);
-      } else if (viewType === 'jump2list') {
-        listView = new ListView(elem, clickStyle, vNum, viewArgs);
-        listView.update(this.genomeController);
-        this.views.push(listView);
-        return;
       } else if (viewType === 'tree') {
         treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
         treeView.update(this.genomeController);
@@ -118,19 +113,20 @@
         matView.update(this.genomeController);
         this.views.push(matView);
       } else if (viewType === 'map') {
-        mapView = new MapView(elem, clickStyle, vNum, viewArgs);
+        mapView = new MapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
         this.views.push(mapView);
-        mapView.conscriptCartographger();
-        mapView.update(this.genomeController);
       } else if (viewType === 'selmap') {
-        mapView = new SelectionMapView(elem, clickStyle, vNum, viewArgs);
+        mapView = new SelectionMapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
         this.views.push(mapView);
-        mapView.conscriptCartographger();
-        mapView.update(this.genomeController);
       } else if (viewType === 'table') {
         tableView = new TableView(elem, clickStyle, vNum, viewArgs);
         tableView.update(this.genomeController);
         this.views.push(tableView);
+      } else if (viewType === 'jump2table') {
+        tableView = new TableView(elem, clickStyle, vNum, viewArgs);
+        tableView.update(this.genomeController);
+        this.views.push(tableView);
+        return;
       } else {
         throw new SuperphyError('Unrecognized viewType <' + viewType + '> in ViewController createView() method.');
         return false;
@@ -602,14 +598,59 @@
         filterOn.hide();
         filterOff.show();
       }
-      this._toggleSelectAll();
       return true;
     };
 
-    ViewController.prototype._toggleSelectAll = function() {
-      var selectAll;
-      selectAll = jQuery('.tableview-select-all');
-      selectAll.toggle();
+    ViewController.prototype._toggleSelectAll = function(switchOn, hardLimit) {
+      var buttonGp, divEl, numVisible, selectAllButt, selectAllRow, unSelectAllButt;
+      numVisible = this.genomeController.filtered;
+      selectAllRow = jQuery('.select-all-genomes-row');
+      selectAllRow.empty();
+      divEl = jQuery('<div class="col-md-6"></div>');
+      buttonGp = jQuery('<div class="btn-group"></div>').appendTo(divEl);
+      selectAllButt = jQuery('<button id="table-select-all" class="btn btn-link">Select All</button>').appendTo(buttonGp);
+      unSelectAllButt = jQuery('<button id="table-unselect-all" class="btn btn-link">Unselect All</button>').appendTo(buttonGp);
+      selectAllButt.click((function(_this) {
+        return function(e) {
+          var g, _i, _j, _len, _len1, _ref, _ref1, _results;
+          e.preventDefault();
+          _ref = _this.genomeController.pubVisible;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            g = _ref[_i];
+            _this.select(g, true);
+          }
+          _ref1 = _this.genomeController.pvtVisible;
+          _results = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            g = _ref1[_j];
+            _results.push(_this.select(g, true));
+          }
+          return _results;
+        };
+      })(this));
+      unSelectAllButt.click((function(_this) {
+        return function(e) {
+          var g, _i, _j, _len, _len1, _ref, _ref1, _results;
+          e.preventDefault();
+          _ref = _this.genomeController.pubVisible;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            g = _ref[_i];
+            _this.select(g, false);
+          }
+          _ref1 = _this.genomeController.pvtVisible;
+          _results = [];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            g = _ref1[_j];
+            _results.push(_this.select(g, false));
+          }
+          return _results;
+        };
+      })(this));
+      if (switchOn && numVisible <= hardLimit) {
+        selectAllRow.append(divEl);
+      } else {
+
+      }
       return true;
     };
 
@@ -4866,11 +4907,9 @@
       table = '';
       table += this._appendHeader(genomes);
       table += '<tbody>';
-      table += '<td><a class="tableview-select-all" href="#"> Select all</a></td>';
       table += this._appendGenomes(genomes.sort(genomes.pubVisible, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false);
       table += this._appendGenomes(genomes.sort(genomes.pvtVisible, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true);
       table += '</body>';
-      jQuery('.tableview-select-all').hide();
       tableElem.append(table);
       this._actions(tableElem, this.style);
       t2 = new Date();
@@ -5184,64 +5223,83 @@
   MapView = (function(_super) {
     __extends(MapView, _super);
 
-    function MapView(parentElem, style, elNum, mapArgs) {
+    function MapView(parentElem, style, elNum, genomeController, mapArgs) {
+      var buttonEl, divEl, fieldsetEl, formEl, input, inputGpEl, mapCanvasEl, mapManifestEl, splitLayoutEl, tableData1El, tableData2El, tableEl, tableRow1El, tableRow2El;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
+      this.genomeController = genomeController;
       this.mapArgs = mapArgs;
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
-      this.sortField = 'displayname';
-      this.sortAsc = true;
+      mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(this.parentElem));
+      splitLayoutEl = jQuery('<div class="col-md-6 map-search-div"></div>').appendTo(jQuery(this.parentElem));
+      tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl);
+      tableRow1El = jQuery('<tr></tr>').appendTo(tableEl);
+      tableData1El = jQuery('<td></td>').appendTo(tableRow1El);
+      formEl = jQuery('<form class="form"></form>').appendTo(tableData1El);
+      fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl);
+      divEl = jQuery('<div></div>').appendTo(fieldsetEl);
+      inputGpEl = jQuery('<div class="input-group"></div>').appendTo(divEl);
+      input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl);
+      buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
+      tableRow2El = jQuery('<tr></tr>').appendTo(tableEl);
+      tableData2El = jQuery('<td></td>').appendTo(tableRow2El);
+      mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El);
+      this.locationController = this.getLocationController(this.mapArgs[0]);
+      this.mapController = this.getCartographer(this.mapArgs[0], this.locationController);
+      jQuery(this.parentElem).data('views-index', this.elNum);
     }
 
     MapView.prototype.type = 'map';
 
     MapView.prototype.elName = 'genome_map';
 
-    MapView.prototype.cartographer = null;
-
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var divElem, ft, i, pubVisLoc, pubVisNoLoc, pvtVisLoc, pvtVisNoLoc, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      var divElem, ft, i, mapManifest, pubVisLoc, pubVisNoLoc, pvtVisLoc, pvtVisNoLoc, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
       tableElem = jQuery("#" + this.elID + " table");
       if (tableElem.length) {
         tableElem.empty();
       } else {
         divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
         tableElem = jQuery("<table />").appendTo(divElem);
-        jQuery(this.parentElem).find('.map-manifest').append(divElem);
+        mapManifest = jQuery('.map-manifest').append(divElem);
+        jQuery(this.parentElem).append(mapManifest);
       }
       pubVisLoc = [];
       pvtVisLoc = [];
       pubVisNoLoc = [];
       pvtVisNoLoc = [];
-      if (this.cartographer == null) {
+      if (this.locationController == null) {
         pubVisLoc = genomes.pubVisible;
         pvtVisLoc = genomes.pvtVisible;
-      } else if ((this.cartographer != null) && this.cartographer.visibleStrains) {
-        _ref = this.cartographer.visibileStrainLocations.pubVisible;
+      } else {
+        this.mapController.updateVisible();
+        this.mapController.markerClusterer.clearMarkers();
+        this.mapController.markerClusterer.addMarkers(this.mapController.clusteredMarkers);
+        _ref = this.mapController.visibleLocations;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           i = _ref[_i];
           if (__indexOf.call(genomes.pubVisible, i) >= 0) {
             pubVisLoc.push(i);
           }
         }
-        _ref1 = this.cartographer.visibileStrainLocations.pvtVisible;
+        _ref1 = this.mapController.visibleLocations;
         for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
           i = _ref1[_j];
           if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
             pvtVisLoc.push(i);
           }
         }
-        _ref2 = this.cartographer.noLocationGenomes.pubVisible;
+        _ref2 = this.locationController.pubNoLocations;
         for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
           i = _ref2[_k];
           if (__indexOf.call(genomes.pubVisible, i) >= 0) {
             pubVisNoLoc.push(i);
           }
         }
-        _ref3 = this.cartographer.noLocationGenomes.pvtVisible;
+        _ref3 = this.locationController.pvtNoLocaitons;
         for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
           i = _ref3[_l];
           if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
@@ -5253,13 +5311,11 @@
       table = '';
       table += this._appendHeader(genomes);
       table += '<tbody>';
-      table += '<td><a class="tableview-select-all" href="#" style="display:none"> Select all</a></td>';
       table += this._appendGenomes(genomes.sort(pubVisLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
       table += this._appendGenomes(genomes.sort(pvtVisLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
       table += this._appendGenomes(genomes.sort(pubVisNoLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, false);
       table += this._appendGenomes(genomes.sort(pvtVisNoLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, false);
       table += '</body>';
-      jQuery('.tableview-select-all').hide();
       tableElem.append(table);
       this._actions(tableElem, this.style);
       t2 = new Date();
@@ -5364,13 +5420,13 @@
       } else if (tmpl === 'td') {
         html = "<td>" + values.data + "</td>";
       } else if (tmpl === 'td1_redirect') {
-        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><label class='loc-tag'> - " + values.location + "</label><i class='fa fa-search'></i></a></td>";
+        html = "<td class='" + values.klass + "'>" + values.name + " <label class='loc-tag'> - " + values.location + "</label> <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
       } else if (tmpl === 'td1_select') {
-        html = "<td class='" + values.klass + "'><div class='checkbox'><label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label><label class='loc-tag'> - " + values.location + "</label></div></td>";
+        html = "<td class='" + values.klass + "'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label> <label class='loc-tag'> - " + values.location + "</label></div></td>";
       } else if (tmpl === 'td1_redirect_noloc') {
-        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link noloc' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><label class='noloc-tag'> - location unknown</label><i class='fa fa-search'></i></a></td>";
+        html = "<td class='" + values.klass + "'>" + values.name + " <label class='noloc-tag'> - location unknown</label> <a class='genome-table-link noloc' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
       } else if (tmpl === 'td1_select_noloc') {
-        html = "<td class='" + values.klass + "'><div class='checkbox'><label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label><label class='noloc-tag'> - location unknown</label></div></td>";
+        html = "<td class='" + values.klass + "'><div class='checkbox'> <label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label> <label class='noloc-tag'> - location unknown</label></div></td>";
       } else if (tmpl === 'spacer') {
         html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>";
       } else {
@@ -5418,20 +5474,73 @@
       };
     };
 
-    MapView.prototype.conscriptCartographger = function() {
-      var cartographerTypes, elem, _ref;
+    MapView.prototype.getCartographer = function(mapType, locationController) {
+      var cartographTypes, cartographer, elem;
       elem = this.parentElem;
-      this.mapArgs[0] = (_ref = this.mapArgs[0]) != null ? _ref : 'base';
-      cartographerTypes = {
-        'base': new Cartographer(jQuery(elem)),
-        'dot': new DotCartographer(jQuery(elem)),
-        'satellite': new SatelliteCartographer(jQuery(elem)),
-        'infoSatellite': new InfoSatelliteCartographer(jQuery(elem), null, window.selectedGenome),
-        'geophy': new GeophyCartographer(jQuery(elem), null, this.mapArgs[1])
+      mapType = mapType != null ? mapType : 'base';
+      cartographTypes = {
+        'base': (function(_this) {
+          return function() {
+            return new Cartographer(jQuery(elem), [locationController]);
+          };
+        })(this),
+        'dot': (function(_this) {
+          return function() {
+            return new DotCartographer(jQuery(elem), [locationController]);
+          };
+        })(this),
+        'satellite': (function(_this) {
+          return function() {
+            return new SatelliteCartographer(jQuery(elem), [locationController]);
+          };
+        })(this),
+        'infoSatellite': (function(_this) {
+          return function() {
+            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[1], _this.mapArgs[2]]);
+          };
+        })(this),
+        'geophy': (function(_this) {
+          return function() {
+            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[1]]);
+          };
+        })(this)
       };
-      this.cartographer = cartographerTypes[this.mapArgs[0]];
-      this.cartographer.cartograPhy();
-      return true;
+      cartographer = cartographTypes[mapType]();
+      cartographer.cartograPhy();
+      return cartographer;
+    };
+
+    MapView.prototype.getLocationController = function(mapType) {
+      var cartographTypes, controller;
+      cartographTypes = {
+        'base': (function(_this) {
+          return function() {
+            return null;
+          };
+        })(this),
+        'dot': (function(_this) {
+          return function() {
+            return null;
+          };
+        })(this),
+        'satellite': (function(_this) {
+          return function() {
+            return new LocationController(_this.genomeController, _this.parentElem);
+          };
+        })(this),
+        'infoSatellite': (function(_this) {
+          return function() {
+            return new LocationController(_this.genomeController, _this.parentElem);
+          };
+        })(this),
+        'geophy': (function(_this) {
+          return function() {
+            return new LocationController(_this.genomeController, _this.parentElem);
+          };
+        })(this)
+      };
+      controller = cartographTypes[mapType]();
+      return controller;
     };
 
     return MapView;
@@ -5446,53 +5555,31 @@
   SelectionMapView = (function(_super) {
     __extends(SelectionMapView, _super);
 
-    function SelectionMapView(selParentElem, selStyle, selElNum, selMapArgs) {
+    function SelectionMapView(selParentElem, selStyle, selElNum, selGenomeController, selMapArgs) {
       this.selParentElem = selParentElem;
       this.selStyle = selStyle;
       this.selElNum = selElNum;
+      this.selGenomeController = selGenomeController;
       this.selMapArgs = selMapArgs;
-      SelectionMapView.__super__.constructor.call(this, this.selParentElem, this.selStyle, this.selElNum, this.selMapArgs);
+      SelectionMapView.__super__.constructor.call(this, this.selParentElem, this.selStyle, this.selElNum, this.selGenomeController, this.selMapArgs);
     }
 
     SelectionMapView.prototype.update = function(genomes) {
       var selectedEl, selectedElParent;
       SelectionMapView.__super__.update.apply(this, arguments);
-      selectedEl = jQuery('.map-manifest ul li a[data-genome=' + selectedGenomeHasLocation + ']');
+      selectedEl = jQuery('.genome_map_item a[data-genome="' + this.mapController.selectedGenomeId + '"]');
       selectedElParent = selectedEl.parent();
-      selectedElParent.remove();
-      jQuery('.map-manifest ul').prepend(selectedElParent);
       selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>');
       selectedElParent.css({
         "font-weight": "bold",
         "margin-bottom": "5px"
       });
+      jQuery('.superphy-table table tbody').prepend('<tr>' + selectedElParent + '</tr>');
       selectedEl.remove();
       return true;
     };
 
     return SelectionMapView;
-
-  })(MapView);
-
-
-  /*
-    CLASS ExtendedMapView
-  
-    Shows segregated list of genomes with unknown locations in map-manifest
-   */
-
-  ExtendedMapView = (function(_super) {
-    __extends(ExtendedMapView, _super);
-
-    function ExtendedMapView(extParentElem, extStyle, extElNum, extMapArgs) {
-      this.extParentElem = extParentElem;
-      this.extStyle = extStyle;
-      this.extElNum = extElNum;
-      this.extMapArgs = extMapArgs;
-      ExtendedMapView.__super__.constructor.call(this, this.extParentElem, this.extStyle, this.extElNum, this.extMapArgs);
-    }
-
-    return ExtendedMapView;
 
   })(MapView);
 
@@ -5507,30 +5594,20 @@
     function Cartographer(cartographDiv, cartograhOpt) {
       this.cartographDiv = cartographDiv;
       this.cartograhOpt = cartograhOpt;
-    }
-
-    Cartographer.prototype.visibleStrains = false;
-
-    Cartographer.prototype.map = null;
-
-    Cartographer.prototype.splitLayout = '<div class="col-md-6 map-search-div"> <table class="table map-search-table"> <tr> <td> <form class="form"> <fieldset> <div> <div class="input-group"> <input type="text" class="form-control map-search-location" placeholder="Enter a search location"> <span class="input-group-btn"> <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button> </span> </div> </div> </div> </fieldset> </form> </td> </tr> <tr> <td> <div class="map-canvas"></div> </td> </tr> </table> </div>';
-
-    Cartographer.prototype.cartograPhy = function() {
-      var cartograhOpt;
-      jQuery(this.cartographDiv).prepend(this.splitLayout);
-      if (this.map != null) {
-        this.map = null;
-      }
-      cartograhOpt = {
+      this.mapOptions = {
         center: new google.maps.LatLng(-0.000, 0.000),
         zoom: 1,
         streetViewControl: false,
         mapTypeId: google.maps.MapTypeId.ROADMAP
       };
-      this.map = new google.maps.Map(jQuery(this.cartographDiv).find('.map-canvas')[0], cartograhOpt);
+      this.mapBounds;
+      this.map = new google.maps.Map(jQuery(this.cartographDiv).find('.map-canvas')[0], this.mapOptions);
       jQuery('.map-search-button').bind('click', {
         context: this
       }, this.pinPoint);
+    }
+
+    Cartographer.prototype.cartograPhy = function() {
       return true;
     };
 
@@ -5586,9 +5663,11 @@
 
     DotCartographer.prototype.cartograPhy = function() {
       DotCartographer.__super__.cartograPhy.apply(this, arguments);
-      google.maps.event.addListener(this.map, 'click', function(event) {
-        return DotCartographer.prototype.plantFlag(event.latLng, this);
-      });
+      google.maps.event.addListener(this.map, 'click', (function(_this) {
+        return function(event) {
+          return _this.plantFlag(event.latLng, _this);
+        };
+      })(this));
       return true;
     };
 
@@ -5654,30 +5733,16 @@
       this.satelliteCartographDiv = satelliteCartographDiv;
       this.satelliteCartograhOpt = satelliteCartograhOpt;
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
+      this.locationController = this.satelliteCartograhOpt[0];
+      this.clusteredMarkers = this.locationController.pubMarkers.concat(this.locationController.pvtMarkers);
+      this.allMarkers = this.clusteredMarkers;
+      this.visibleLocations = this.locationController.pubVisible.concat(this.locationController.pvtVisible);
+      this.visibleNoLocations = this.locationController.pubNoLocations.concat(this.locationController.pvtNoLocaitons);
+      this.setMarkers(this.clusteredMarkers);
     }
 
-    SatelliteCartographer.prototype.visibleStrains = true;
-
-    SatelliteCartographer.prototype.clusterList = [];
-
-    SatelliteCartographer.prototype.visibileStrainLocations = {};
-
-    SatelliteCartographer.prototype.noLocationGenomes = {};
-
-    SatelliteCartographer.prototype.markerClusterer = null;
-
-    SatelliteCartographer.prototype.mapViewIndex = null;
-
     SatelliteCartographer.prototype.cartograPhy = function() {
-      var index;
-      jQuery(this.satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>');
       SatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
-      this.populateNoLocationList(viewController.genomeController);
-      this.updateMarkerLists(viewController.genomeController, this.map);
-      this.markerCluster(this.map);
-      index = this.findMapViewIndex(viewController.views);
-      this.mapViewIndex = index;
-      jQuery(this.satelliteCartographDiv).data("viewsIndex", index);
       google.maps.event.addListener(this.map, 'zoom_changed', (function(_this) {
         return function() {
           return _this.markerClusterer.clearMarkers();
@@ -5695,158 +5760,133 @@
       })(this));
       google.maps.event.addListener(this.map, 'idle', (function(_this) {
         return function() {
-          _this.updateMarkerLists(viewController.genomeController, _this.map);
-          viewController.getView(_this.mapViewIndex).update(viewController.genomeController);
-          return _this.markerClusterer.addMarkers(_this.clusterList);
+          var view, _i, _len, _ref, _results;
+          _ref = viewController.views;
+          _results = [];
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            view = _ref[_i];
+            _results.push(view.update(viewController.genomeController));
+          }
+          return _results;
         };
       })(this));
       return true;
     };
 
-    SatelliteCartographer.prototype.populateNoLocationList = function(genomes) {
-      var private_genome, pubGenomeId, public_genome, pvtGenomeId, _ref, _ref1;
-      this.noLocationGenomes.pubVisible = [];
-      this.noLocationGenomes.pvtVisible = [];
-      _ref = genomes.public_genomes;
-      for (pubGenomeId in _ref) {
-        public_genome = _ref[pubGenomeId];
-        if (!((public_genome.isolation_location != null) && public_genome.isolation_location !== "")) {
-          this.noLocationGenomes.pubVisible.push(pubGenomeId);
-        }
-      }
-      _ref1 = genomes.private_genomes;
-      for (pvtGenomeId in _ref1) {
-        private_genome = _ref1[pvtGenomeId];
-        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
-          this.noLocationGenomes.pvtVisible.push(pvtGenomeId);
+    SatelliteCartographer.prototype.updateVisible = function() {
+      var genomes, marker, _i, _len, _ref, _ref1, _ref2;
+      genomes = this.locationController.genomeController;
+      this.visibleLocations = [];
+      this.visibeNoLocations = [];
+      this.clusteredMarkers = [];
+      _ref = this.allMarkers;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        marker = _ref[_i];
+        if (this.map.getBounds() !== void 0 && this.map.getBounds().contains(marker.getPosition()) && ((_ref1 = marker.feature_id, __indexOf.call(genomes.pubVisible, _ref1) >= 0) || (_ref2 = marker.feature_id, __indexOf.call(genomes.pvtVisible, _ref2) >= 0))) {
+          this.clusteredMarkers.push(marker);
+          this.visibleLocations.push(marker.feature_id);
         }
       }
       return true;
     };
 
-    SatelliteCartographer.prototype.updateMarkerLists = function(genomes, map) {
-      var circleIcon, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
-      this.clusterList = [];
-      this.visibileStrainLocations.pubVisible = [];
-      this.visibileStrainLocations.pvtVisible = [];
-      _ref = genomes.public_genomes;
-      for (pubGenomeId in _ref) {
-        public_genome = _ref[pubGenomeId];
-        if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
-          pubMarkerObj = this.parseLocation(public_genome);
-          circleIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#FF0000',
-            fillOpacity: 0.8,
-            scale: 5,
-            strokeColor: '#FF0000',
-            strokeWeight: 1
-          };
-          pubMarker = new google.maps.Marker({
-            map: map,
-            icon: circleIcon,
-            position: pubMarkerObj['centerLatLng'],
-            title: public_genome.uniquename,
-            feature_id: pubGenomeId,
-            uniquename: public_genome.uniquename,
-            location: pubMarkerObj['locationName']
-          });
-          this.clusterList.push(pubMarker);
-          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
-            this.visibileStrainLocations.pubVisible.push(pubGenomeId);
-          }
-        }
+    SatelliteCartographer.prototype.setMarkers = function(markerList) {
+      var circleIcon, marker, mcOptions, _i, _len;
+      circleIcon = {
+        path: google.maps.SymbolPath.CIRCLE,
+        fillColor: '#FF0000',
+        fillOpacity: 0.8,
+        scale: 5,
+        strokeColor: '#FF0000',
+        strokeWeight: 1
+      };
+      for (_i = 0, _len = markerList.length; _i < _len; _i++) {
+        marker = markerList[_i];
+        marker.setMap(this.map);
+        marker.setIcon(circleIcon);
       }
-      _ref1 = genomes.private_genomes;
-      for (pvtGenomeId in _ref1) {
-        private_genome = _ref1[pvtGenomeId];
-        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
-          pvtMarkerObj = this.parseLocation(private_genome);
-          circleIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: '#000000',
-            fillOpacity: 0.8,
-            scale: 5,
-            strokeColor: '#FF0000',
-            strokeWeight: 1
-          };
-          pvtMarker = new google.maps.Marker({
-            map: map,
-            position: pvtMarkerObj['centerLatLng'],
-            title: private_genome.uniquename,
-            feature_id: pvtGenomeId,
-            uniquename: private_genome.uniquename,
-            location: pvtMarkerObj['locationName']
-          });
-          this.clusterList.push(pvtMarker);
-          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
-            this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
-          }
-        }
-      }
-      return true;
-    };
-
-    SatelliteCartographer.prototype.markerCluster = function(map) {
-      var mcOptions;
       mcOptions = {
         gridSize: 50,
         maxZoom: 15
       };
-      this.markerClusterer = new MarkerClusterer(map, this.clusterList, mcOptions);
+      this.markerClusterer = new MarkerClusterer(this.map, markerList, mcOptions);
       return true;
-    };
-
-    SatelliteCartographer.prototype.findMapViewIndex = function(views) {
-      var index, v, _i, _len;
-      for (index = _i = 0, _len = views.length; _i < _len; index = ++_i) {
-        v = views[index];
-        if (v.mapView != null) {
-          return index;
-        }
-      }
-      return null;
     };
 
     SatelliteCartographer.prototype.resetMap = function() {
       var c, x;
-      this.updateMarkerLists(viewController.genomeController, this.map);
+      this.updateVisible();
       x = this.map.getZoom();
       c = this.map.getCenter();
       google.maps.event.trigger(this.map, 'resize');
       this.map.setZoom(x);
       this.map.setCenter(c);
-      return this.markerClusterer.addMarkers(this.clusterList);
-    };
-
-    SatelliteCartographer.prototype.parseLocation = function(genome) {
-      var centerLatLng, genomeLocation, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
-      genomeLocation = JSON.parse(genome.isolation_location[0]);
-      locationName = genomeLocation.formatted_address;
-      locationCoordinates = genomeLocation.geometry;
-      locationCenter = locationCoordinates.location;
-      locationCenterLat = locationCenter.lat;
-      locationCenterLng = locationCenter.lng;
-      locationViewPortSW = locationCoordinates.bounds.southwest;
-      locationViewPortSWLat = locationViewPortSW.lat;
-      locationViewPortSWLng = locationViewPortSW.lng;
-      locationViewPortNE = locationCoordinates.bounds.northeast;
-      locationViewPortNELat = locationViewPortNE.lat;
-      locationViewPortNELng = locationViewPortNE.lng;
-      centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
-      swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
-      neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);
-      markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
-      markerObj = {};
-      markerObj['locationName'] = locationName;
-      markerObj['centerLatLng'] = centerLatLng;
-      markerObj['markerBounds'] = markerBounds;
-      return markerObj;
+      this.markerClusterer.addMarkers(this.clusteredMarkers);
+      return true;
     };
 
     return SatelliteCartographer;
 
   })(Cartographer);
+
+  GeophyCartographer = (function(_super) {
+    __extends(GeophyCartographer, _super);
+
+    function GeophyCartographer(geophyCartographDiv, geophyCartograhOpt) {
+      this.geophyCartographDiv = geophyCartographDiv;
+      this.geophyCartograhOpt = geophyCartograhOpt;
+      this.genomeGroupColor = this.geophyCartograhOpt[1];
+      GeophyCartographer.__super__.constructor.call(this, this.geophyCartographDiv, this.geophyCartograhOpt);
+    }
+
+    GeophyCartographer.prototype.setMarkers = function(markerList) {
+      var aqua, blue, brown, circleIcon, colors, green, grey, lime, marker, mcOptions, orange, pink, purple, red, _i, _len;
+      blue = '#1f77b4';
+      orange = '#ff7f0e';
+      green = '#2ca02c';
+      red = '#d62728';
+      purple = '#9467bd';
+      brown = '#8c564b';
+      pink = '#e377c2';
+      grey = '#7f7f7f';
+      lime = '#bcbd22';
+      aqua = '#17becf';
+      colors = {
+        'group1Color': blue,
+        'group2Color': orange,
+        'group3Color': green,
+        'group4Color': red,
+        'group5Color': purple,
+        'group6Color': pink,
+        'group7Color': brown,
+        'group8Color': grey,
+        'group9Color': aqua,
+        'group10Color': lime
+      };
+      for (_i = 0, _len = markerList.length; _i < _len; _i++) {
+        marker = markerList[_i];
+        circleIcon = {
+          path: google.maps.SymbolPath.CIRCLE,
+          fillColor: colors["group" + this.genomeGroupColor[marker.feature_id] + "Color"],
+          fillOpacity: 0.8,
+          scale: 5,
+          strokeColor: colors["group" + this.genomeGroupColor[marker.feature_id] + "Color"],
+          strokeWeight: 1
+        };
+        marker.setMap(this.map);
+        marker.setIcon(circleIcon);
+      }
+      mcOptions = {
+        gridSize: 50,
+        maxZoom: 15
+      };
+      this.markerClusterer = new MarkerClusterer(this.map, markerList, mcOptions);
+      return true;
+    };
+
+    return GeophyCartographer;
+
+  })(SatelliteCartographer);
 
 
   /*
@@ -5863,18 +5903,17 @@
   InfoSatelliteCartographer = (function(_super) {
     __extends(InfoSatelliteCartographer, _super);
 
-    function InfoSatelliteCartographer(infoSatelliteCartographDiv, infoSatelliteCartograhOpt, infoSelectedGenome) {
+    function InfoSatelliteCartographer(infoSatelliteCartographDiv, infoSatelliteCartograhOpt) {
       this.infoSatelliteCartographDiv = infoSatelliteCartographDiv;
       this.infoSatelliteCartograhOpt = infoSatelliteCartograhOpt;
-      this.infoSelectedGenome = infoSelectedGenome;
-      InfoSatelliteCartographer.__super__.constructor.call(this, this.infoSatelliteCartographDiv, this.infoSatelliteCartograhOpt, this.infoSelectedGenome);
+      InfoSatelliteCartographer.__super__.constructor.call(this, this.infoSatelliteCartographDiv, this.infoSatelliteCartograhOpt);
+      this.selectedGenomeId = this.infoSatelliteCartograhOpt[1];
+      this.selectedGenome = this.infoSatelliteCartograhOpt[2];
+      this.selectedGenomeLocation = this.locationController._parseLocation(this.selectedGenome);
     }
-
-    InfoSatelliteCartographer.prototype.selectedGenomeLocation = null;
 
     InfoSatelliteCartographer.prototype.cartograPhy = function() {
       InfoSatelliteCartographer.__super__.cartograPhy.apply(this, arguments);
-      this.selectedGenomeLocation = this.parseLocation(this.infoSelectedGenome);
       this.showSelectedGenome(this.selectedGenomeLocation, this.map);
       return this.showLegend();
     };
@@ -5951,104 +5990,129 @@
 
   })();
 
-  GeophyCartographer = (function(_super) {
-    __extends(GeophyCartographer, _super);
-
-    function GeophyCartographer(geophyCartographDiv, geophyCartograhOpt, genomeGroupColor) {
-      this.geophyCartographDiv = geophyCartographDiv;
-      this.geophyCartograhOpt = geophyCartograhOpt;
-      this.genomeGroupColor = genomeGroupColor;
-      GeophyCartographer.__super__.constructor.call(this, this.geophyCartographDiv, this.geophyCartograhOpt, this.genomeGroupColor);
+  LocationController = (function() {
+    function LocationController(genomeController, parentElem) {
+      this.genomeController = genomeController;
+      this.parentElem = parentElem;
+      this._init(this.genomeController);
     }
 
-    GeophyCartographer.prototype.updateMarkerLists = function(genomes, map) {
-      var aqua, blue, brown, circleIcon, colors, green, grey, lime, orange, pink, private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, purple, pvtGenomeId, pvtMarker, pvtMarkerObj, red, _ref, _ref1;
-      this.clusterList = [];
-      this.visibileStrainLocations.pubVisible = [];
-      this.visibileStrainLocations.pvtVisible = [];
-      blue = '#1f77b4';
-      orange = '#ff7f0e';
-      green = '#2ca02c';
-      red = '#d62728';
-      purple = '#9467bd';
-      brown = '#8c564b';
-      pink = '#e377c2';
-      grey = '#7f7f7f';
-      lime = '#bcbd22';
-      aqua = '#17becf';
-      colors = {
-        'group1Color': blue,
-        'group2Color': orange,
-        'group3Color': green,
-        'group4Color': red,
-        'group5Color': purple,
-        'group6Color': pink,
-        'group7Color': brown,
-        'group8Color': grey,
-        'group9Color': aqua,
-        'group10Color': lime
-      };
+    LocationController.prototype.pubLocations = null;
+
+    LocationController.prototype.pvtLocations = null;
+
+    LocationController.prototype.pubNoLocations = null;
+
+    LocationController.prototype.pvtNoLocaitons = null;
+
+    LocationController.prototype.pubVisible = null;
+
+    LocationController.prototype.pvtVisible = null;
+
+    LocationController.prototype.pubMarkers = null;
+
+    LocationController.prototype.pvtMarkers = null;
+
+    LocationController.prototype._init = function(genomes) {
+      this._populateNoLocations(genomes);
+      this._populateLocations(genomes);
+      this.pubVisible = this.pubLocations;
+      this.pvtVisible = this.pvtLocations;
+      return true;
+    };
+
+    LocationController.prototype._populateNoLocations = function(genomes) {
+      var private_genome, pubGenomeId, public_genome, pvtGenomeId, _ref, _ref1;
+      this.pubNoLocations = [];
+      this.pvtNoLocaitons = [];
+      _ref = genomes.public_genomes;
+      for (pubGenomeId in _ref) {
+        public_genome = _ref[pubGenomeId];
+        if (!((public_genome.isolation_location != null) && public_genome.isolation_location !== "")) {
+          this.pubNoLocations.push(pubGenomeId);
+        }
+      }
+      _ref1 = genomes.private_genomes;
+      for (pvtGenomeId in _ref1) {
+        private_genome = _ref1[pvtGenomeId];
+        if (!((private_genome.isolation_location != null) && private_genome.isolation_location !== "")) {
+          this.pvtNoLocaitons.push(pvtGenomeId);
+        }
+      }
+      return true;
+    };
+
+    LocationController.prototype._populateLocations = function(genomes) {
+      var private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
+      this.pubLocations = [];
+      this.pvtLocations = [];
+      this.pubMarkers = [];
+      this.pvtMarkers = [];
       _ref = genomes.public_genomes;
       for (pubGenomeId in _ref) {
         public_genome = _ref[pubGenomeId];
         if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
-          pubMarkerObj = this.parseLocation(public_genome);
-          circleIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: colors["group" + this.genomeGroupColor[pubGenomeId] + "Color"],
-            fillOpacity: 0.8,
-            scale: 5,
-            strokeColor: colors["group" + this.genomeGroupColor[pubGenomeId] + "Color"],
-            strokeWeight: 1
-          };
+          pubMarkerObj = this._parseLocation(public_genome);
+          this.pubLocations.push(pubGenomeId);
           pubMarker = new google.maps.Marker({
-            map: map,
-            icon: circleIcon,
             position: pubMarkerObj['centerLatLng'],
             title: public_genome.uniquename,
             feature_id: pubGenomeId,
             uniquename: public_genome.uniquename,
-            location: pubMarkerObj['locationName']
+            location: pubMarkerObj['locationName'],
+            privacy: 'public'
           });
-          this.clusterList.push(pubMarker);
-          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
-            this.visibileStrainLocations.pubVisible.push(pubGenomeId);
-          }
+          this.pubMarkers.push(pubMarker);
         }
       }
       _ref1 = genomes.private_genomes;
       for (pvtGenomeId in _ref1) {
         private_genome = _ref1[pvtGenomeId];
         if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
-          pvtMarkerObj = this.parseLocation(private_genome);
-          circleIcon = {
-            path: google.maps.SymbolPath.CIRCLE,
-            fillColor: colors["group" + this.genomeGroupColor[pvtGenomeId] + "Color"],
-            fillOpacity: 0.8,
-            scale: 5,
-            strokeColor: colors["group" + this.genomeGroupColor[pvtGenomeId] + "Color"],
-            strokeWeight: 1
-          };
+          pvtMarkerObj = this._parseLocation(private_genome);
+          this.pvtLocations.push(pvtGenomeId);
           pvtMarker = new google.maps.Marker({
-            map: map,
             position: pvtMarkerObj['centerLatLng'],
             title: private_genome.uniquename,
             feature_id: pvtGenomeId,
             uniquename: private_genome.uniquename,
-            location: pvtMarkerObj['locationName']
+            location: pvtMarkerObj['locationName'],
+            privacy: 'private'
           });
-          this.clusterList.push(pvtMarker);
-          if (map.getBounds() !== void 0 && map.getBounds().contains(pubMarker.getPosition())) {
-            this.visibileStrainLocations.pvtVisible.push(pvtGenomeId);
-          }
+          this.pvtMarkers.push(pvtMarker);
         }
       }
       return true;
     };
 
-    return GeophyCartographer;
+    LocationController.prototype._parseLocation = function(genome) {
+      var centerLatLng, genomeLocation, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
+      genomeLocation = JSON.parse(genome.isolation_location[0]);
+      locationName = genomeLocation.formatted_address;
+      locationCoordinates = genomeLocation.geometry;
+      locationCenter = locationCoordinates.location;
+      locationCenterLat = locationCenter.lat;
+      locationCenterLng = locationCenter.lng;
+      locationViewPortSW = locationCoordinates.bounds.southwest;
+      locationViewPortSWLat = locationViewPortSW.lat;
+      locationViewPortSWLng = locationViewPortSW.lng;
+      locationViewPortNE = locationCoordinates.bounds.northeast;
+      locationViewPortNELat = locationViewPortNE.lat;
+      locationViewPortNELng = locationViewPortNE.lng;
+      centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
+      swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
+      neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);
+      markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
+      markerObj = {};
+      markerObj['locationName'] = locationName;
+      markerObj['centerLatLng'] = centerLatLng;
+      markerObj['markerBounds'] = markerBounds;
+      return markerObj;
+    };
 
-  })(SatelliteCartographer);
+    return LocationController;
+
+  })();
 
   GeoPhy = (function() {
     function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv) {
@@ -6074,6 +6138,7 @@
       }
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
+      jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12');
       return true;
     };
 

@@ -292,9 +292,9 @@
 		});
 
 		$(document).ready(function(){
-			//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
+		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
 			$('a[href="#strains_map"]').on('shown.bs.tab', function () {
-				viewController.getView($('#strains_map').data("viewsIndex")).cartographer.resetMap();
+				viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 			});
 		});
 
