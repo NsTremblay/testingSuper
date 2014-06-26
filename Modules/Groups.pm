@@ -252,12 +252,6 @@ sub geophy : Runmode {
     return $template->output();
 }
 
-sub test_map : Runmode {
-    my $self = shift;
-    my $template = $self->load_tmpl('test_map.tmpl', die_on_bad_params => 0);
-    return $template->output();
-}
-
 # Incomplete and on hold for now
 # Group Form Functions
 # sub save : Runmode {
