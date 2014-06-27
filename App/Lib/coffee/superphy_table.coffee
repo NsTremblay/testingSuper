@@ -67,7 +67,7 @@ class TableView extends ViewTemplate
     table += '<tbody>'
     table += @_appendGenomes(genomes.sort(genomes.pubVisible, @sortField, @sortAsc), genomes.public_genomes, @style, false)
     table += @_appendGenomes(genomes.sort(genomes.pvtVisible, @sortField, @sortAsc), genomes.private_genomes, @style, true)
-    table += '</body>'
+    table += '</tbody>'
 
     tableElem.append(table)
     @_actions(tableElem, @style)

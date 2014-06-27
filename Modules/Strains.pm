@@ -151,40 +151,53 @@ sub info : Runmode {
 			warden => $warden
 		);
 
-		my $result_hashref = $data->getGeneAlleleData(%args);
+		my $results = $data->getGeneAlleleData(%args);
+		get_logger->debug('halt1');
+	
+		my $gene_list = $results->{genes};
+		my $gene_json = encode_json($gene_list);
+		$template->param(gene_json => $gene_json);
+	
+		my $alleles = $results->{alleles};
+		my $allele_json = encode_json($alleles);
+		$template->param(allele_json => $allele_json);
 
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++;
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++;
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		get_logger->debug('halt2');
+	
+		# my $result_hashref = $data->getGeneAlleleData(%args);
 
-		$template->param(AMRDATA=>\@amrData);
+		# my $vf = $result_hashref->{vf};
+		# my $amr = $result_hashref->{amr};
+		# my $names = $result_hashref->{names};
+		
+		# my @virData; my @amrData;
+		
+		# foreach my $gene_id (keys %{$amr->{$feature}}) {
+		# 	my %virRow;
+		# 	$virRow{'gene_name'} = $names->{$gene_id};
+		# 	$virRow{'feature_id'} = $gene_id;
+		# 	foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
+		# 		$virRow{'allele_count'}++;
+		# 	}
+		# 	push (@amrData, \%virRow);
+		# }
+		
+		# foreach my $gene_id (keys %{$vf->{$feature}}) {
+		# 	my %virRow;
+		# 	$virRow{'gene_name'} = $names->{$gene_id};
+		# 	$virRow{'feature_id'} = $gene_id;
+		# 	foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
+		# 		$virRow{'allele_count'}++;
+		# 	}
+		# 	push (@virData, \%virRow);
+		# }
+		
+		# get_logger->debug("NUMBER OF VF:".scalar(@virData));
+		# get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
+		
+		# $template->param(VIRDATA=>\@virData);
+
+		# $template->param(AMRDATA=>\@amrData);
 
 		# Get location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');

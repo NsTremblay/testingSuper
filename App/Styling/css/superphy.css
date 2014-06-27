@@ -760,6 +760,18 @@ div.matrixSort {
   background-color: #FFF;
   vertical-align: top;
 }
+.superphy-table table tbody td.gene_table_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-table table tbody td.gene_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.gene_table_item .gene-table-link {
+  display: inline;
+}
 .superphy-table table tbody td.genome_table_item div.checkbox {
   margin: 0;
   padding: 0;

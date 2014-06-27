@@ -11,7 +11,6 @@
 
 root = exports ? this
 
-
 # FUNC categoryView
 # Creates category view for a single gene
 #

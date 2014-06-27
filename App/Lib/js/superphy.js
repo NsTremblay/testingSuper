@@ -4909,7 +4909,7 @@
       table += '<tbody>';
       table += this._appendGenomes(genomes.sort(genomes.pubVisible, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false);
       table += this._appendGenomes(genomes.sort(genomes.pvtVisible, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true);
-      table += '</body>';
+      table += '</tbody>';
       tableElem.append(table);
       this._actions(tableElem, this.style);
       t2 = new Date();

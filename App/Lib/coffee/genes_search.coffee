@@ -24,7 +24,7 @@ root.numAmrSelected = 0
 # RETURNS
 # Object containing jQuery DOM elements and data object array
 #    
-root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem, multi_select=true) ->
+root.initGeneList = (gList, geneType, categories, tableElem, selElem, countElem, catElem, autocElem, multi_select=true) ->
   
   throw new Error("Invalid geneType parameter: #{geneType}.") unless geneType is 'vf' or geneType is 'amr'
   
@@ -37,8 +37,10 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
     genes: gList
     categories: categories
     num_selected: 0
+    sortField: 'name'
+    sortAsc: true
     element: {
-      list: listElem
+      table: tableElem
       select: selElem
       count: countElem
       category: catElem
@@ -46,9 +48,8 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
     }
     multi_select: multi_select
   }
-    
 
-# FUNC appendGeneList
+# FUNC appendGeneTable
 # Appends genes to form. Only attaches
 # genes where object.visible = true
 #
@@ -57,34 +58,20 @@ root.initGeneList = (gList, geneType, categories, listElem, selElem, countElem, 
 # RETURNS
 # boolean
 #    
-root.appendGeneList = (d) ->
-  
-  list = d.element.list
+root.appendGeneTable = (d) ->
+  table = d.element.table
   name = "#{d.type}-gene"
-  listHtml = ""
-  
-  for k,o of d.genes
-    if o.visible
-      id = "#{d.type}-gene-#{k}"
-      item
-      link = "<a href='/genes/info?#{d.type}=#{k}'><i class='fa fa-search'></i></a>"
-      if d.multi_select
-        checked = ''
-        checked = 'checked' if o.selected
-        item = "<li><label class='checkbox'>"+
-          "<input id='#{id}' class='checkbox gene-search-select' type='checkbox' name='#{name}' value='#{k}' #{checked}/>"+
-          "#{o.name} - #{o.uniquename} #{link}"+
-          "</label></li>"
-        
-      else
-         item = "<li>#{o.name} - #{o.uniquename} #{link}</li>"
-      
-      listHtml += item
-      
-      
-  list.append(listHtml)
-      
-  cboxes = list.find("input[name='#{name}']")
+  tableElem = jQuery("<table />").appendTo(table)
+
+  tableHtml = ''
+  tableHtml += appendHeader(d)
+  tableHtml += '<tbody>'
+  tableHtml += appendGenes(d, sort(d.genes, d.sortField, d.sortAsc), d.genes, d.type, 'select')
+  tableHtml += '</tbody>'
+
+  tableElem.append(tableHtml)
+
+  cboxes = table.find("input[name='#{name}']")
   cboxes.change( ->
     obj = $(@)
     geneId = obj.val()
@@ -95,8 +82,147 @@ root.appendGeneList = (d) ->
   updateCount(d)
   
   true
+
+# FUNC sort
+# Sort genomes by meta-data 
+#
+# PARAMS
+# gids        - a list of genome labels ala: private_/public_123445
+# metaField   - a data field to sort on
+#
+# RETURNS
+# string
+#      
+sort = (gids, metaField, asc) ->
+  #TODO: Get this working
+  ###  return gids unless gids.length
+ 
+  that = @
+  gids.sort (a,b) ->
+    aObj = that.genome(a)
+    bObj = that.genome(b)
+    
+    aField = aObj[metaField]
+    aName = aObj.displayname.toLowerCase()
+    bField = bObj[metaField]
+    bName = bObj.displayname.toLowerCase()
+    
+    if aField? and bField?
       
+      if typeIsArray aField
+        aField = aField.join('').toLowerCase()
+        bField = bField.join('').toLowerCase()
+      else
+        aField = aField.toLowerCase()
+        bField = bField.toLowerCase()
         
+      if aField < bField
+        return -1
+      else if aField > bField
+        return 1
+      else
+        if aName < bName
+          return -1
+        else if aName > bName
+          return 1
+        else
+          return 0
+          
+    else
+      if aField? and not bField?
+        return -1
+      else if bField? and not aField?
+        return 1
+      else
+        if aName < bName
+          return -1
+        else if aName > bName
+          return 1
+        else
+          return 0
+
+  if not asc
+    gids.reverse()###
+    
+  gids
+
+
+template = (tmpl, values) ->
+    
+  html = null
+  if tmpl is 'tr'
+    html = "<tr>#{values.row}</tr>"
+    
+  else if tmpl is 'th'
+    html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
+  
+  else if tmpl is 'td'
+    html = "<td>#{values.data}</td>"
+  
+  else if tmpl is 'td1_redirect'
+    html = "<td class='#{values.klass}'>#{values.name} <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-external-link'></i></a></td>"
+      
+  else if tmpl is 'td1_select'
+    html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='#{values.g}' #{values.checked} name='#{values.type}-gene'/> #{values.name}</label> <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></div></td>"
+  
+  else
+    throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+    
+  html
+
+
+appendHeader = (d) ->  
+  table = '<thead><tr>'
+  values = []
+  i = -1
+
+  if d.sortField is 'name'
+    sortIcon = 'fa-sort-asc'
+    sortIcon = 'fa-sort-desc' unless d.sortAsc
+    values[++i] = {type:'name', name:'Gene Name', sortIcon:sortIcon}
+  else
+    values[++i] = {type:'name', name:'Gene Name', sortIcon:'fa-sort'}
+
+  values[++i] = {type:'uniquename', name:'Unique Name', sortIcon:'fa-sort'}
+
+  table += template('th', v) for v in values
+
+  table += '</thead></tr>'
+
+  table
+
+appendGenes = (d, visibleG, genes, type, style) ->
+
+  table = ''
+
+  for gId, gObj of visibleG
+
+    row = ''
+
+    geneObj = genes[gId]
+
+    name = geneObj.name
+    uniquename = geneObj.uniquename
+
+    continue unless geneObj.visible
+
+    if style is 'redirect'
+      #Links
+      row += template('td1_redirect', {klass: 'gene_table_item', name: name, type: type})
+
+    else if style = "select"
+      checked = ''
+      checked = 'checked' if geneObj.selected
+      row += template('td1_select', {klass: 'gene_table_item', g: gId, name: name, type: type, checked:checked})
+
+    else
+      return false
+
+    row += template('td', {data: uniquename})
+    table += template('tr', {row: row})
+
+  table
+      
 # FUNC filterGeneList
 # Find genes that match filter and
 # append to list
@@ -107,13 +233,15 @@ root.appendGeneList = (d) ->
 # boolean
 #    
 root.filterGeneList = (d) ->
-  
+  #DONE
   searchTerm = d.element.autocomplete.val()
   
   matching(d.genes, searchTerm)
   
-  d.element.list.empty()
-  appendGeneList(d)
+  #Table
+  d.element.table.empty()
+
+  appendGeneTable(d)
   
   true
         
@@ -127,7 +255,7 @@ root.filterGeneList = (d) ->
 # boolean
 #    
 root.matching = (gList, searchTerm) ->
-  
+  #DONE
   regex = new RegExp escapeRegExp(searchTerm), "i"
   
   for k,g of gList
@@ -153,7 +281,7 @@ root.matching = (gList, searchTerm) ->
 # boolean
 #
 root.appendCategories = (d) ->
-  
+  #DONE
   categoryE = d.element.category
   introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE)
   introDiv.append('<span>Select category to refine list of genes:</span>')
@@ -215,7 +343,7 @@ root.appendCategories = (d) ->
 # boolean
 #    
 root.filterByCategory = (catId, subcatId, d) ->
-  
+  #DONE
   geneIds = []
   if catId is -1
     geneIds = Object.keys(d.genes)
@@ -230,9 +358,10 @@ root.filterByCategory = (catId, subcatId, d) ->
     throw new Error("Invalid gene ID: #{g}.") unless o?
     o.visible = true
     
-  d.element.list.empty()
+  #Table
+  d.element.table.empty()
   console.log d
-  appendGeneList(d)
+  appendGeneTable(d)
   
   true
   
@@ -245,7 +374,7 @@ root.filterByCategory = (catId, subcatId, d) ->
 # boolean
 #    
 root.selectGene = (geneIds, checked, d) ->
-  
+  #DONE
   console.log geneIds
   console.log checked
   
@@ -276,7 +405,7 @@ root.selectGene = (geneIds, checked, d) ->
 # boolean
 #    
 root.updateCount = (d) ->
-  
+  #DONE
   # Stick in inner span
   innerElem = d.element.count.find('span.selected-gene-count-text')
   unless innerElem.length
@@ -299,7 +428,7 @@ root.updateCount = (d) ->
 # boolean
 #    
 root.addSelectedGenes = (geneIds, d) ->
-  
+  #DONE
   cls = 'selected-gene-item'
   for g in geneIds
     
@@ -420,7 +549,7 @@ root.resetNullCategories = (d) ->
   
   
 # FUNC capitaliseFirstLetter
-# Its obvious
+# Its obvious <- haha
 #
 # USAGE capitaliseFirstLetter string
 # 

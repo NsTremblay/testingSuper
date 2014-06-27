@@ -5,8 +5,8 @@
 
 	<TMPL_INCLUDE NAME="header2.tmpl">
 	<link rel="stylesheet" href="/App/Styling/css/genes_search.css">
-	<script src="/App/Lib/js/genes_search.js"></script>
-	
+	<script src="/App/Lib/js/superphy_genes.js"></script>
+
 	<script>var page_name = 'genes';</script>
 	
 </head>
@@ -73,9 +73,10 @@
 								<div class="col-md-6">
 									<div class="gene-list-wrapper">
 										<fieldset>
-											<span>Select one or more virulence factors:</span>
-											<ul id="vf-list">
-											</ul>
+											<span class="col-md-12">Select one or more virulence factors:</span>
+											<div class="col-md-12">
+												<div class="superphy-table" id="vf-table"></div>
+											</div>
 										</fieldset>
 									</div>
 								</div>
@@ -126,9 +127,10 @@
 								<div class="col-md-6">
 									<div class="gene-list-wrapper">
 										<fieldset>
-											<span>Select one or more AMR genes:</span>
-											<ul id="amr-list">
-											</ul>
+											<span class="col-md-12">Select one or more AMR genes:</span>
+											<div class="col-md-12">
+												<div class="superphy-table" id="amr-table"></div>
+											</div>
 										</fieldset>
 									</div>
 								</div>
@@ -213,94 +215,56 @@
 
 			</div>
 
-
-
 			<TMPL_INCLUDE NAME="page_bottom.tmpl">
 
-			<script type="text/javascript">	
-		// Initialise JSON data objects
-		var vf = <TMPL_VAR vf>;
-		var amr = <TMPL_VAR amr>;
-		var categories = <TMPL_VAR categories>;
-		var public_genomes = <TMPL_VAR public_genomes>;
-		var private_genomes = <TMPL_VAR private_genomes>;
-		var tree = <TMPL_VAR tree_json>;
-		
-		// Data objects
-		viewController.init(public_genomes, private_genomes, 'multi_select', '/genes/matrix');
-		
-		// Search forms
-		viewController.sideBar($('#search-utilities'));
-		
-		// Genome selection form
-		viewController.createSelectionView($('#selected_genomes'), $('#selected_genome_count'))
-		viewController.createView('table', $('#strains_table'));
-		viewController.createView('tree', $('#strains_tree'), tree);
-		viewController.createView('map', $('#strains_map'), ['satellite']);
-		
-		// Gene selection form
-		
-		// Initialisation
-		var vfData = initGeneList(vf, 'vf', categories.vfCats, $('#vf-list'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'));
-		var amrData = initGeneList(amr, 'amr', categories.amrCats, $('#amr-list'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'));
-		appendGeneList(vfData);
-		appendCategories(vfData);
-		appendGeneList(amrData);
-		appendCategories(amrData);
-		
-		$('#vf-autocomplete').keyup(function () {
-			filterGeneList(vfData);	
-		});
-		
-		$('#amr-autocomplete').keyup(function () {
-			filterGeneList(amrData);	
+		</body>
+
+	<script type="text/javascript">	
+	// Initialise JSON data objects
+	var vf = <TMPL_VAR vf>;
+	var amr = <TMPL_VAR amr>;
+	var categories = <TMPL_VAR categories>;
+	var public_genomes = <TMPL_VAR public_genomes>;
+	var private_genomes = <TMPL_VAR private_genomes>;
+	var tree = <TMPL_VAR tree_json>;
+
+	// Data objects
+	viewController.init(public_genomes, private_genomes, 'multi_select', '/genes/matrix');
+
+	// Search forms
+	viewController.sideBar($('#search-utilities'));
+
+	// Genome selection form
+	viewController.createSelectionView($('#selected_genomes'), $('#selected_genome_count'))
+	viewController.createView('table', $('#strains_table'));
+	viewController.createView('tree', $('#strains_tree'), tree);
+	viewController.createView('map', $('#strains_map'), ['satellite']);
+
+	// Initialisation
+	var vfGenesSearch = new GenesSearch(vf, 'vf', categories.vfCats, $('#vf-table'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'), $('#vf-select-all'), $('#vf-unselect-all'), true);
+	var amrGenesSearch = new GenesSearch(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'), $('#amr-select-all'), $('#amr-unselect-all'), true);
+
+	$(document).ready(function(){
+		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
+		$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+			viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 		});
 
-		$('#gene-search-move-to-genomes-tab').click(function(e) {
-			e.preventDefault();
-			$('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show')	
-		});
-		
-		$('#gene-search-move-to-submit-tab').click(function(e) {
-			e.preventDefault();
-			$('#gene-search-tabs a[href="#gene-search-submit"]').tab('show')       
-		});
-		
 		$('#gene-search-submit').click(function(e) {
 			e.preventDefault();
-			submitGeneQuery(vfData, amrData, viewController); 
-		});
-		
-		$('#vf-select-all').click(function(e) {
-			e.preventDefault();
-			selectAllGenes(true, vfData); 
-		});
+			var form = jQuery('<form class="genes_search"></form')
+			form.attr('method', 'POST')
+			form.attr('action', viewController.action)
 
-		$('#vf-unselect-all').click(function(e) {
-			e.preventDefault();
-			selectAllGenes(false, vfData); 
+			viewController.submitGenomes(form, 'selected')
+			vfGenesSearch.prepareGenesQuery();
+			amrGenesSearch.prepareGenesQuery();
+
+			jQuery('body').append(form)
+			form.submit()
 		});
-		
-		$('#amr-select-all').click(function(e) {
-			e.preventDefault();
-			selectAllGenes(true, amrData); 
-		});
+	});
 
-		$('#amr-unselect-all').click(function(e) {
-			e.preventDefault();
-			selectAllGenes(false, amrData); 
-		});
-
-		$(document).ready(function(){
-		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
-			$('a[href="#strains_map"]').on('shown.bs.tab', function () {
-				viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
-			});
-		});
-
-		</script>
-
-
-	</body>
+	</script>
 
 	</html>
