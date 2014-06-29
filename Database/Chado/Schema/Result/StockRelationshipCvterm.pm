@@ -131,12 +131,12 @@ __PACKAGE__->belongs_to(
   "stock_relationship",
   "Database::Chado::Schema::Result::StockRelationship",
   { stock_relationship_id => "stock_relationship_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+ECd5Lgzz3U/c1rGeDimNg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RGWEW+pdOeBfFR4BOL1Ikw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

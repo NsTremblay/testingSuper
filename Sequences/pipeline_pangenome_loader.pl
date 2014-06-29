@@ -312,6 +312,7 @@ $chado->end_files();
 $chado->flush_caches();
 
 unless ($NOLOAD) {
+	
 	$chado->load_data();
 	build_genome_tree();
 }

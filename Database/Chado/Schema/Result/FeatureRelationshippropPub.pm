@@ -103,7 +103,7 @@ __PACKAGE__->belongs_to(
   "feature_relationshipprop",
   "Database::Chado::Schema::Result::FeatureRelationshipprop",
   { feature_relationshipprop_id => "feature_relationshipprop_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -118,12 +118,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VBqkkZLfLjrOt4vSHrrWxA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Cctc9Sud2+I0+wykodEANA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

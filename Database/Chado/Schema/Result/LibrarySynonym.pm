@@ -136,7 +136,7 @@ __PACKAGE__->belongs_to(
   "library",
   "Database::Chado::Schema::Result::Library",
   { library_id => "library_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -151,7 +151,7 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 synonym
@@ -166,12 +166,12 @@ __PACKAGE__->belongs_to(
   "synonym",
   "Database::Chado::Schema::Result::Synonym",
   { synonym_id => "synonym_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:OOE0qdeznuKr3p8cZan0ew
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Lb13+13jTtueEX/ipYdW9A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

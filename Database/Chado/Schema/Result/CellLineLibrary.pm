@@ -113,7 +113,7 @@ __PACKAGE__->belongs_to(
   "cell_line",
   "Database::Chado::Schema::Result::CellLine",
   { cell_line_id => "cell_line_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 library
@@ -128,7 +128,7 @@ __PACKAGE__->belongs_to(
   "library",
   "Database::Chado::Schema::Result::Library",
   { library_id => "library_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -143,12 +143,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Hbv/TUh2GjC04OAqQp1auw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:LoX5gvpMK6o1rVGtqobjRg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

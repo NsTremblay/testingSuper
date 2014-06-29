@@ -128,6 +128,10 @@ my %tracker_step_values = (
 	completed => 3,
 	notified => 4
 );
+my %sequence_checks = (
+	min_fragment_hits => 100,
+	max_novel_fragments => 1000,
+);
 
 
 ################
@@ -221,7 +225,6 @@ if(@tracking_ids) {
 	
 	# Re-build MSAs and trees
 	align($vf_dir.'/panseq_vf_amr_results/locus_alleles.fasta', $vf_dir);
-	#combine_alignments($job_dir . '/panseq_vf_amr_results/locus_alleles.fasta', $msa_dir, $tree_dir);
 	
 	# Check genome directory is up-to-date
 	my $pg_dir1 = $data_directory . 'pangenome_fragments/';
@@ -239,9 +242,11 @@ if(@tracking_ids) {
 	INFO "Pan-genome region fasta file: $pg_file.";
 	pangenome_analysis($pg_dir, $fasta_dir, $pg_file);
 	
+	# Validate sequences
+	validate_sequences($nr_sequences,);
+	
 	# Re-build MSAs and trees for pan-genome fragments
-	align($pg_dir . '/panseq_pg_results/locus_alleles.fasta', $pg_dir, 1, $nr_sequences);
-	#combine_alignments($job_dir . '/panseq_pg_results/locus_alleles.fasta', $msa_dir2, $tree_dir2, $g_file);
+	align($pg_dir.'/panseq_pg_results/locus_alleles.fasta', $pg_dir, 1, $nr_sequences);
 	
 	# Free up memory
 	undef %$nr_sequences;
@@ -724,6 +729,8 @@ sub align {
 	my $is_pg = shift;
 	my $nr_sequences = shift;
 	
+	my %fragment_counts;
+	
 	# Create directory tree for results/inputs
 	my $new_dir = $root_dir . 'new/';
 	my $fasta_dir = $root_dir . 'fasta/';
@@ -872,9 +879,13 @@ sub align {
 			$seq =~ tr/-//; # Remove gaps
 			
 			# Print to tmp file
-			
 			print $seqo ">$header\n$seq\n";
-			close $seqo;
+			
+			# Track fragment counts to basic checks on uploaded sequences
+			if($is_pg) {
+				my $is_novel = $is_nr ? 'novel' : 'seen';
+				$fragment_counts{$header}{$is_novel}++
+			}
 			
 			$num_seq++;
 		}
@@ -894,6 +905,18 @@ sub align {
 	}
 	close $in;
 	close $rec;
+	
+	# Check sequence is not too novel and has some overlap with existing genomes
+	if($is_pg) {
+		foreach my $genome (keys %fragment_counts) {
+			my $num_novel = $fragment_counts{$genome}{'novel'};
+			my $num_overlap = $fragment_counts{$genome}{'seen'};
+			die "Genome $genome has large portion that is novel in comparison to DB genomes ($num_novel novel genome fragments)."
+				unless $num_novel < $sequence_checks{max_novel_fragments};
+			die "Genome $genome has little overlap with other genomes in DB ($num_overlap genome fragment matches)."
+				unless $num_overlap > $sequence_checks{min_fragment_hits};
+		}
+	}
 	
 	# Run parallel alignment program
 	my @loading_args = ("perl $FindBin::Bin/../Sequences/parallel_tree_builder.pl",

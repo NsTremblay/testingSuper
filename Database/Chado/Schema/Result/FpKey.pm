@@ -14,6 +14,7 @@ use strict;
 use warnings;
 
 use base 'DBIx::Class::Core';
+__PACKAGE__->table_class("DBIx::Class::ResultSource::View");
 
 =head1 TABLE: C<fp_key>
 
@@ -51,8 +52,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ukc3dNZHX8CzhdfgEq1XTQ
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:HgN1QQ/MhSKAdRg0qQfV1A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

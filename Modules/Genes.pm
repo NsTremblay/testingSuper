@@ -272,7 +272,6 @@ sub matrix : Runmode {
 	}
 	
 	my $results = $data->getGeneAlleleData(%args);
-	get_logger->debug('halt1');
 	
 	my $gene_list = $results->{genes};
 	my $gene_json = encode_json($gene_list);
@@ -287,13 +286,11 @@ sub matrix : Runmode {
 		my $gl_json = encode_json($genome_list);
 		$template->param(genome_json => $gl_json);
 	}
-	get_logger->debug('halt2');
 	
 	# Retrieve genome meta info
 	my ($pub_json, $pvt_json) = $data->genomeInfo($user);
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
-	get_logger->debug('halt3');
 	
 	# Retrieve genome tree
 	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
