@@ -273,9 +273,11 @@ sub contig {
 	
 	# Retrieve contig
 	my $table = 'Feature';
-	$table = 'PrivateFeature' unless $is_public;
-	my @cols = qw/feature_id name/;
-	push @cols, 'residues' if $DOCHECKS;
+	unless ($is_public) {
+		$table = 'PrivateFeature';
+	}
+	
+	my @cols = qw/feature_id name residues/;
 	
 	my $contig = $data->dbixSchema->resultset($table)->find(
 		{
@@ -326,17 +328,24 @@ sub contig {
 		$allele = $background_allele;
 	}
 	
+	# Surrounding contig sequence
+	my $seq = $contig->residues;
+	my $upstr = substr($seq, $contig_pos - 100, 100);
+	my $dnstr = substr($seq, $contig_pos, 100);
+	
 	my $result = {
 		genome => $genome_name,
 		contig => $contig_name,
 		allele => $allele,
 		position => $contig_pos,
 		gap_offset => $position_array->[1],
-		strand => $strand
+		strand => $strand,
+		upstream => $upstr,
+		downstream => $dnstr,
 	};
 	
 	if($DOCHECKS) {
-		my $seq = $contig->residues;
+		
 	
 		my $start = $contig_pos - 2 - 1; # Zero doens't count as a position
 		my $window = substr($seq, $start, 5);

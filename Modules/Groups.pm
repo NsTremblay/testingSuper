@@ -288,10 +288,10 @@ sub snps : Runmode {
 	
 	# Produce CSV output
 	my @rows;
-	my @fields = qw/genome allele contig position gap_offset strand/;
+	my @fields = qw/genome allele contig position gap_offset strand upstream downstream/;
 	# Header
-	my @header = @fields;
-	push @rows, '#'.join("\t", map { s/\b(\w)/\U$1/g; $_ } @header);
+	my @header = qw/Genome Allele Contig Position Gap_Offset Strand 100bp_Upstream 100bp_Downstream/;
+	push @rows, '#'.join("\t", @header);
 	
 	foreach my $k (keys %$results) {
 		my $r = $results->{$k};
