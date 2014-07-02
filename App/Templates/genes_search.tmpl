@@ -83,7 +83,6 @@
 								<div class="col-md-6">
 									<div id="vf-categories" class="gene-category-wrapper">
 									</div>
-
 								</div>
 							</div>
 
@@ -241,8 +240,8 @@
 	viewController.createView('map', $('#strains_map'), ['satellite']);
 
 	// Initialisation
-	var vfGenesSearch = new GenesSearch(vf, 'vf', categories.vfCats, $('#vf-table'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'), $('#vf-select-all'), $('#vf-unselect-all'), true);
-	var amrGenesSearch = new GenesSearch(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'), $('#amr-select-all'), $('#amr-unselect-all'), true);
+	var vfGenesSearch = new GenesSearch(vf, 'vf', categories.vfCats, $('#vf-table'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'), $('#vf-select-all'), $('#vf-unselect-all'), ['uniquename'], true);
+	var amrGenesSearch = new GenesSearch(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'), $('#amr-select-all'), $('#amr-unselect-all'), ['uniquename'], true);
 
 	$(document).ready(function(){
 		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
@@ -250,6 +249,7 @@
 			viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 		});
 
+		// Submit function for querying genes page
 		$('#gene-search-submit').click(function(e) {
 			e.preventDefault();
 			var form = jQuery('<form class="genes_search"></form')

@@ -11,12 +11,18 @@
 
 root = exports ? this
 
-class GenesSearch
-  constructor: (@geneList, @geneType, @categories, @tableElem, @selectedElem, @countElem, @categoriesElem, @autocompleteElem, @selectAllEl, @unselectAllEl, @multi_select=false) ->
+class GenesList
+  constructor: (@geneList, @geneType, @categories, @tableElem, @categoriesElem, @mTypes, @multi_select=false) ->
     throw new Error("Invalid gene type parameter: #{@geneType}.") unless @geneType is 'vf' or @geneType is 'amr'
-    @num_selected = 0
+
     @sortField = 'name'
     @sortAsc = true
+
+    @metaMap = {
+      'name' : 'Gene Name'
+      'uniquename': 'Unique Name'
+      'alleles': 'Number of Alleles'
+    }
 
     for k,o of @geneList
       o.visible = true
@@ -25,24 +31,10 @@ class GenesSearch
     @_appendGeneTable()
     @_appendCategories()
 
-    jQuery(@autocompleteElem).keyup( () => 
-      @_filterGeneList() 
-    )
-
-    jQuery(@selectAllEl).click((e) => 
-      e.preventDefault()
-      @_selectAllGenes(true); 
-    )
-
-    jQuery(@unselectAllEl).click((e) => 
-      e.preventDefault()
-      @_selectAllGenes(false); 
-    )
-    
-
   typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
 
-  _appendHeader: () ->  
+  _appendHeader: () ->
+    #TODO:
     table = '<thead><tr>'
     values = []
     i = -1
@@ -54,16 +46,28 @@ class GenesSearch
     else
       values[++i] = {type:'name', name:'Gene Name', sortIcon:'fa-sort'}
 
-    values[++i] = {type:'uniquename', name:'Unique Name', sortIcon:'fa-sort'}
+    # Meta fields   
+    for t in @mTypes
+      tName = @metaMap[t]
+      sortIcon = null
+      
+      if t is @sortField
+        sortIcon = 'fa-sort-asc'
+        sortIcon = 'fa-sort-desc' unless @sortAsc
+        
+      else
+        sortIcon = 'fa-sort'
+      
+      values[++i] = { type: t, name: tName, sortIcon: sortIcon}
 
     table += @_template('th', v) for v in values
 
     table += '</thead></tr>'
 
     table
-  
-  _appendGenes: (visibleG, genes, type, style) ->
 
+  _appendGenes: (visibleG, genes, type, style) ->
+    #TODO:
     table = ''
 
     for gId, gObj of visibleG
@@ -73,13 +77,12 @@ class GenesSearch
       geneObj = genes[gId]
 
       name = geneObj.name
-      uniquename = geneObj.uniquename
 
       continue unless geneObj.visible
 
       if style is 'redirect'
         #Links
-        row += @_template('td1_redirect', {klass: 'gene_table_item', name: name, type: type})
+        row += @_template('td1_redirect', {klass: 'gene_table_item', g: gId, name: name, type: type})
 
       else if style = "select"
         checked = ''
@@ -89,11 +92,14 @@ class GenesSearch
       else
         return false
 
-      row += @_template('td', {data: uniquename})
+      for d in @mTypes
+        mData = geneObj[d]
+        row += @_template('td', {data: mData})
+          
       table += @_template('tr', {row: row})
 
     table
-        
+
   # FUNC _appendGeneTable
   # Appends genes to form. Only attaches
   # genes where object.visible = true
@@ -104,6 +110,7 @@ class GenesSearch
   # boolean
   #    
   _appendGeneTable: () ->
+    #TODO:
     table = @tableElem
     name = "#{@geneType}-gene"
     tableElem = jQuery("<table />").appendTo(table)
@@ -119,18 +126,89 @@ class GenesSearch
 
     tableElem.append(tableHtml)
 
-    cboxes = table.find("input[name='#{name}']")
-    that = @
-    cboxes.change( ->
-      console.log @
-      obj = $(@)
-      geneId = obj.val()
-      checked = obj.prop('checked')
-      that._selectGene([geneId], checked)
+    true
+
+  _template: (tmpl, values) ->
+    #TODO: Add template for allele number
+    html = null
+    if tmpl is 'tr'
+      html = "<tr>#{values.row}</tr>"
+      
+    else if tmpl is 'th'
+      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
+    
+    else if tmpl is 'td'
+      html = "<td>#{values.data}</td>"
+    
+    else if tmpl is 'td1_redirect'
+      html = "<td class='#{values.klass}'>#{values.name} <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></td>"
+        
+    else if tmpl is 'td1_select'
+      html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='#{values.g}' #{values.checked} name='#{values.type}-gene'/> #{values.name}</label> <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></div></td>"
+    
+    else
+      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+      
+    html
+
+  # FUNC appendCategories
+  # Appends categores to form.
+  #
+  # USAGE appendGeneList data_object
+  # 
+  # RETURNS
+  # boolean
+  #
+  _appendCategories: () ->
+    categoryE = @categoriesElem
+    introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE)
+    introDiv.append('<span>Select category to refine list of genes:</span>')
+    
+    resetButt = jQuery("<button id='#{@geneType}-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv)
+    resetButt.click( (e) =>
+      e.preventDefault()
+      @_filterByCategory(-1,-1)
+      @_resetNullCategories()
     )
     
-    @_updateCount()
-    
+    for k,o of @categories
+      
+      row1 = jQuery('<div class="row"></div>').appendTo(categoryE)
+      cTitle = @_capitaliseFirstLetter(o.parent_name)
+      titleDiv = jQuery("<div class='category-header col-xs-12'>#{cTitle}: </div>").appendTo(row1)
+      
+      if o.parent_definition?
+        moreInfoId = 'category-info-'+k
+        moreInfo = jQuery("<a id='#{moreInfoId}' href='#' data-toggle='tooltip' data-original-title='#{o.parent_definition}'><i class='fa fa-info-circle'></i></a>")
+        titleDiv.append(moreInfo)
+        moreInfo.tooltip({ placement: 'right' })
+      
+      row2 = jQuery('<div class="row"></div>').appendTo(categoryE)
+      col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2)
+      sel = jQuery("<select name='#{@geneType}-category' data-category-id='#{k}' class='form-control'></select>").appendTo(col2)
+      
+      for s,t of o.subcategories
+        def = ""
+        def = t.category_definition if t.category_definition?
+        name = @_capitaliseFirstLetter(t.category_name)
+        id = "subcategory-id-#{s}"
+        def.replace(/\.n/g, ". &#13;");
+        sel.append("<option id='#{id}' value='#{s}' title='#{def}'>#{name}</option>")
+        
+      sel.append("<option value='null' selected><strong>--Select Category--</strong></option>")
+      
+      that = @
+      sel.change( ->
+        obj = jQuery(@)
+        catId = obj.data('category-id')
+        subId = obj.val()
+        
+        if subId isnt 'null'
+          jQuery("select[name='#{@geneType}-category'][data-category-id!='#{catId}']").val('null')
+          that._filterByCategory(catId, subId)
+          
+      )
+      
     true
 
   # FUNC sort
@@ -196,29 +274,107 @@ class GenesSearch
       
     gids
 
-
-  _template: (tmpl, values) ->
+  # FUNC filterByCategory
+  # Find genes belong to category and
+  # append to list
+  #
+  # USAGE filterByCategory int int data_object
+  # if catId == -1, reset of visible is performed
+  # 
+  # RETURNS
+  # boolean
+  #    
+  _filterByCategory: (catId, subcatId) ->
+    #DONE
+    geneIds = []
+    if catId is -1
+      geneIds = Object.keys(@geneList)
       
-    html = null
-    if tmpl is 'tr'
-      html = "<tr>#{values.row}</tr>"
-      
-    else if tmpl is 'th'
-      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
-    
-    else if tmpl is 'td'
-      html = "<td>#{values.data}</td>"
-    
-    else if tmpl is 'td1_redirect'
-      html = "<td class='#{values.klass}'>#{values.name} <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-external-link'></i></a></td>"
-        
-    else if tmpl is 'td1_select'
-      html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='#{values.g}' #{values.checked} name='#{values.type}-gene'/> #{values.name}</label> <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></div></td>"
-    
     else
-      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+      geneIds.push(id) for id in @categories[catId].subcategories[subcatId].gene_ids when @geneList[id]?
+      throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
+      o.visible = false for k,o of @geneList
+    
+    for g in geneIds
+      o = @geneList[g]
+      throw new Error("Invalid gene ID: #{g}.") unless o?
+      o.visible = true
       
-    html
+    #Table
+    @tableElem.empty()
+    @_appendGeneTable()
+    
+    true
+
+  # FUNC resetNullCategories
+  # Reset category drop downs back to null values. Triggered
+  # when clicking reset button
+  # 
+  # USAGE resetNullCategories data_object
+  #
+  # RETURNS
+  # boolean
+  #    
+  _resetNullCategories: () ->
+    el = @categoriesElem
+    name = "#{@geneType}-category"
+    el.find("select[name='#{name}']").val('null')
+    true
+    
+  
+  # FUNC capitaliseFirstLetter
+  # Its obvious <- haha
+  #
+  # USAGE capitaliseFirstLetter string
+  # 
+  # RETURNS
+  # string
+  # 
+  _capitaliseFirstLetter: (str) -> 
+    str[0].toUpperCase() + str[1..-1]
+
+# Return instance of GeneSearch
+unless root.GenesList
+  root.GenesList = GenesList
+
+
+class GenesSearch extends GenesList
+  constructor: (@geneList, @geneType, @categories, @tableElem, @selectedElem, @countElem, @categoriesElem, @autocompleteElem, @selectAllEl, @unselectAllEl, @mTypes, @multi_select=false) ->
+    super(@geneList, @geneType, @categories, @tableElem, @categoriesElem, @mTypes, @multi_select)
+
+    @num_selected = 0
+
+    jQuery(@autocompleteElem).keyup( () => 
+      @_filterGeneList() 
+    )
+
+    jQuery(@selectAllEl).click((e) => 
+      e.preventDefault()
+      @_selectAllGenes(true); 
+    )
+
+    jQuery(@unselectAllEl).click((e) => 
+      e.preventDefault()
+      @_selectAllGenes(false); 
+    )
+        
+  _appendGeneTable: () ->
+    super
+
+    table = @tableElem
+
+    cboxes = table.find("input[name='#{name}']")
+    that = @
+    cboxes.change( ->
+      console.log @
+      obj = $(@)
+      geneId = obj.val()
+      checked = obj.prop('checked')
+      that._selectGene([geneId], checked)
+    )
+
+    @_updateCount()
+    true  
 
   # FUNC filterGeneList
   # Find genes that match filter and
@@ -253,7 +409,7 @@ class GenesSearch
   #    
   _matching: (gList, searchTerm) ->
     #DONE
-    regex = new RegExp escapeRegExp(searchTerm), "i"
+    regex = new RegExp @escapeRegExp(searchTerm), "i"
     
     for k,g of gList
       
@@ -267,99 +423,6 @@ class GenesSearch
         g.visible = false
 
         #console.log val+' failed'
-    
-    true
-
-  # FUNC appendCategories
-  # Appends categores to form.
-  #
-  # USAGE appendGeneList data_object
-  # 
-  # RETURNS
-  # boolean
-  #
-  _appendCategories: () ->
-    #DONE
-    categoryE = @categoriesElem
-    introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE)
-    introDiv.append('<span>Select category to refine list of genes:</span>')
-    
-    resetButt = jQuery("<button id='#{@geneType}-reset-category' class='btn btn-link'>Reset</button>").appendTo(introDiv)
-    resetButt.click( (e) =>
-      e.preventDefault()
-      @_filterByCategory(-1,-1)
-      @_resetNullCategories()
-    )
-    
-    for k,o of @categories
-      
-      row1 = jQuery('<div class="row"></div>').appendTo(categoryE)
-      cTitle = @_capitaliseFirstLetter(o.parent_name)
-      titleDiv = jQuery("<div class='category-header col-xs-12'>#{cTitle}: </div>").appendTo(row1)
-      
-      if o.parent_definition?
-        moreInfoId = 'category-info-'+k
-        moreInfo = jQuery("<a id='#{moreInfoId}' href='#' data-toggle='tooltip' data-original-title='#{o.parent_definition}'><i class='fa fa-info-circle'></i></a>")
-        titleDiv.append(moreInfo)
-        moreInfo.tooltip({ placement: 'right' })
-      
-      row2 = jQuery('<div class="row"></div>').appendTo(categoryE)
-      col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2)
-      sel = jQuery("<select name='#{@geneType}-category' data-category-id='#{k}' class='form-control'></select>").appendTo(col2)
-      
-      for s,t of o.subcategories
-        def = ""
-        def = t.category_definition if t.category_definition?
-        name = @_capitaliseFirstLetter(t.category_name)
-        id = "subcategory-id-#{s}"
-        def.replace(/\.n/g, ". &#13;");
-        sel.append("<option id='#{id}' value='#{s}' title='#{def}'>#{name}</option>")
-        
-      sel.append("<option value='null' selected><strong>--Select Category--</strong></option>")
-      
-      that = @
-      sel.change( ->
-        obj = jQuery(@)
-        catId = obj.data('category-id')
-        subId = obj.val()
-        
-        if subId isnt 'null'
-          jQuery("select[name='#{@geneType}-category'][data-category-id!='#{catId}']").val('null')
-          that._filterByCategory(catId, subId)
-          
-      )
-      
-    true
-
-  # FUNC filterByCategory
-  # Find genes belong to category and
-  # append to list
-  #
-  # USAGE filterByCategory int int data_object
-  # if catId == -1, reset of visible is performed
-  # 
-  # RETURNS
-  # boolean
-  #    
-  _filterByCategory: (catId, subcatId) ->
-    #DONE
-    geneIds = []
-    if catId is -1
-      geneIds = Object.keys(@geneList)
-      
-    else
-      geneIds = @categories[catId].subcategories[subcatId].gene_ids
-      throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
-      o.visible = false for k,o of @geneList
-    
-    for g in geneIds
-      o = @geneList[g]
-      throw new Error("Invalid gene ID: #{g}.") unless o?
-      o.visible = true
-      
-    #Table
-    @tableElem.empty()
-    @_appendGeneTable()
     
     true
   
@@ -512,35 +575,6 @@ class GenesSearch
       form.append(input)        
     
     true
-
-  # FUNC resetNullCategories
-  # Reset category drop downs back to null values. Triggered
-  # when clicking reset button
-  # 
-  # USAGE resetNullCategories data_object
-  #
-  # RETURNS
-  # boolean
-  #    
-  _resetNullCategories: () ->
-    el = @categoriesElem
-    name = "#{@geneType}-category"
-    el.find("select[name='#{name}']").val('null')
-    
-    true
-    
-  
-  # FUNC capitaliseFirstLetter
-  # Its obvious <- haha
-  #
-  # USAGE capitaliseFirstLetter string
-  # 
-  # RETURNS
-  # string
-  # 
-  _capitaliseFirstLetter: (str) -> 
-    str[0].toUpperCase() + str[1..-1]
-    
     
   # FUNC escapeRegExp
   # Hides RegExp characters in a search string
@@ -550,7 +584,7 @@ class GenesSearch
   # RETURNS
   # string 
   #    
-  _escapeRegExp: (str) -> str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
+  escapeRegExp: (str) -> str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
 
   # FUNC typeIsArray
   # A safer way to check if variable is array

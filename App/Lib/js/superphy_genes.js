@@ -10,32 +10,34 @@
  */
 
 (function() {
-  var GenesSearch, root;
+  var GenesList, GenesSearch, root,
+    __hasProp = {}.hasOwnProperty,
+    __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
-  GenesSearch = (function() {
+  GenesList = (function() {
     var typeIsArray;
 
-    function GenesSearch(geneList, geneType, categories, tableElem, selectedElem, countElem, categoriesElem, autocompleteElem, selectAllEl, unselectAllEl, multi_select) {
+    function GenesList(geneList, geneType, categories, tableElem, categoriesElem, mTypes, multi_select) {
       var k, o, _ref;
       this.geneList = geneList;
       this.geneType = geneType;
       this.categories = categories;
       this.tableElem = tableElem;
-      this.selectedElem = selectedElem;
-      this.countElem = countElem;
       this.categoriesElem = categoriesElem;
-      this.autocompleteElem = autocompleteElem;
-      this.selectAllEl = selectAllEl;
-      this.unselectAllEl = unselectAllEl;
+      this.mTypes = mTypes;
       this.multi_select = multi_select != null ? multi_select : false;
       if (!(this.geneType === 'vf' || this.geneType === 'amr')) {
         throw new Error("Invalid gene type parameter: " + this.geneType + ".");
       }
-      this.num_selected = 0;
       this.sortField = 'name';
       this.sortAsc = true;
+      this.metaMap = {
+        'name': 'Gene Name',
+        'uniquename': 'Unique Name',
+        'alleles': 'Number of Alleles'
+      };
       _ref = this.geneList;
       for (k in _ref) {
         o = _ref[k];
@@ -44,31 +46,14 @@
       }
       this._appendGeneTable();
       this._appendCategories();
-      jQuery(this.autocompleteElem).keyup((function(_this) {
-        return function() {
-          return _this._filterGeneList();
-        };
-      })(this));
-      jQuery(this.selectAllEl).click((function(_this) {
-        return function(e) {
-          e.preventDefault();
-          return _this._selectAllGenes(true);
-        };
-      })(this));
-      jQuery(this.unselectAllEl).click((function(_this) {
-        return function(e) {
-          e.preventDefault();
-          return _this._selectAllGenes(false);
-        };
-      })(this));
     }
 
     typeIsArray = Array.isArray || function(value) {
       return {}.toString.call(value) === '[object Array]';
     };
 
-    GenesSearch.prototype._appendHeader = function() {
-      var i, sortIcon, table, v, values, _i, _len;
+    GenesList.prototype._appendHeader = function() {
+      var i, sortIcon, t, tName, table, v, values, _i, _j, _len, _len1, _ref;
       table = '<thead><tr>';
       values = [];
       i = -1;
@@ -89,34 +74,48 @@
           sortIcon: 'fa-sort'
         };
       }
-      values[++i] = {
-        type: 'uniquename',
-        name: 'Unique Name',
-        sortIcon: 'fa-sort'
-      };
-      for (_i = 0, _len = values.length; _i < _len; _i++) {
-        v = values[_i];
+      _ref = this.mTypes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        t = _ref[_i];
+        tName = this.metaMap[t];
+        sortIcon = null;
+        if (t === this.sortField) {
+          sortIcon = 'fa-sort-asc';
+          if (!this.sortAsc) {
+            sortIcon = 'fa-sort-desc';
+          }
+        } else {
+          sortIcon = 'fa-sort';
+        }
+        values[++i] = {
+          type: t,
+          name: tName,
+          sortIcon: sortIcon
+        };
+      }
+      for (_j = 0, _len1 = values.length; _j < _len1; _j++) {
+        v = values[_j];
         table += this._template('th', v);
       }
       table += '</thead></tr>';
       return table;
     };
 
-    GenesSearch.prototype._appendGenes = function(visibleG, genes, type, style) {
-      var checked, gId, gObj, geneObj, name, row, table, uniquename;
+    GenesList.prototype._appendGenes = function(visibleG, genes, type, style) {
+      var checked, d, gId, gObj, geneObj, mData, name, row, table, _i, _len, _ref;
       table = '';
       for (gId in visibleG) {
         gObj = visibleG[gId];
         row = '';
         geneObj = genes[gId];
         name = geneObj.name;
-        uniquename = geneObj.uniquename;
         if (!geneObj.visible) {
           continue;
         }
         if (style === 'redirect') {
           row += this._template('td1_redirect', {
             klass: 'gene_table_item',
+            g: gId,
             name: name,
             type: type
           });
@@ -135,9 +134,14 @@
         } else {
           return false;
         }
-        row += this._template('td', {
-          data: uniquename
-        });
+        _ref = this.mTypes;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          d = _ref[_i];
+          mData = geneObj[d];
+          row += this._template('td', {
+            data: mData
+          });
+        }
         table += this._template('tr', {
           row: row
         });
@@ -145,8 +149,8 @@
       return table;
     };
 
-    GenesSearch.prototype._appendGeneTable = function() {
-      var cboxes, name, style, table, tableElem, tableHtml, that;
+    GenesList.prototype._appendGeneTable = function() {
+      var name, style, table, tableElem, tableHtml;
       table = this.tableElem;
       name = "" + this.geneType + "-gene";
       tableElem = jQuery("<table />").appendTo(table);
@@ -162,75 +166,10 @@
       tableHtml += this._appendGenes(this._sort(this.geneList, this.sortField, this.sortAsc), this.geneList, this.geneType, style);
       tableHtml += '</tbody>';
       tableElem.append(tableHtml);
-      cboxes = table.find("input[name='" + name + "']");
-      that = this;
-      cboxes.change(function() {
-        var checked, geneId, obj;
-        console.log(this);
-        obj = $(this);
-        geneId = obj.val();
-        checked = obj.prop('checked');
-        return that._selectGene([geneId], checked);
-      });
-      this._updateCount();
       return true;
     };
 
-    GenesSearch.prototype._sort = function(gids, metaField, asc) {
-
-      /*  return gids unless gids.length
-         
-      that = @
-      gids.sort (a,b) ->
-        aObj = that.genome(a)
-        bObj = that.genome(b)
-        
-        aField = aObj[metaField]
-        aName = aObj.displayname.toLowerCase()
-        bField = bObj[metaField]
-        bName = bObj.displayname.toLowerCase()
-        
-        if aField? and bField?
-          
-          if typeIsArray aField
-            aField = aField.join('').toLowerCase()
-            bField = bField.join('').toLowerCase()
-          else
-            aField = aField.toLowerCase()
-            bField = bField.toLowerCase()
-            
-          if aField < bField
-            return -1
-          else if aField > bField
-            return 1
-          else
-            if aName < bName
-              return -1
-            else if aName > bName
-              return 1
-            else
-              return 0
-              
-        else
-          if aField? and not bField?
-            return -1
-          else if bField? and not aField?
-            return 1
-          else
-            if aName < bName
-              return -1
-            else if aName > bName
-              return 1
-            else
-              return 0
-      
-      if not asc
-        gids.reverse()
-       */
-      return gids;
-    };
-
-    GenesSearch.prototype._template = function(tmpl, values) {
+    GenesList.prototype._template = function(tmpl, values) {
       var html;
       html = null;
       if (tmpl === 'tr') {
@@ -240,7 +179,7 @@
       } else if (tmpl === 'td') {
         html = "<td>" + values.data + "</td>";
       } else if (tmpl === 'td1_redirect') {
-        html = "<td class='" + values.klass + "'>" + values.name + " <a class='gene-table-link' href='/genes/info?" + values.type + "=" + values.g + "' data-gene='" + values.g + "' title='" + values.name + " info'><i class='fa fa-external-link'></i></a></td>";
+        html = "<td class='" + values.klass + "'>" + values.name + " <a class='gene-table-link' href='/genes/info?" + values.type + "=" + values.g + "' data-gene='" + values.g + "' title='" + values.name + " info'><i class='fa fa-search'></i></a></td>";
       } else if (tmpl === 'td1_select') {
         html = "<td class='" + values.klass + "'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='" + values.g + "' " + values.checked + " name='" + values.type + "-gene'/> " + values.name + "</label> <a class='gene-table-link' href='/genes/info?" + values.type + "=" + values.g + "' data-gene='" + values.g + "' title='" + values.name + " info'><i class='fa fa-search'></i></a></div></td>";
       } else {
@@ -249,31 +188,7 @@
       return html;
     };
 
-    GenesSearch.prototype._filterGeneList = function() {
-      var searchTerm;
-      searchTerm = this.autocompleteElem.val();
-      this._matching(this.geneList, searchTerm);
-      this.tableElem.empty();
-      this._appendGeneTable();
-      return true;
-    };
-
-    GenesSearch.prototype._matching = function(gList, searchTerm) {
-      var g, k, regex, val;
-      regex = new RegExp(escapeRegExp(searchTerm), "i");
-      for (k in gList) {
-        g = gList[k];
-        val = g.name;
-        if (regex.test(val)) {
-          g.visible = true;
-        } else {
-          g.visible = false;
-        }
-      }
-      return true;
-    };
-
-    GenesSearch.prototype._appendCategories = function() {
+    GenesList.prototype._appendCategories = function() {
       var cTitle, categoryE, col2, def, id, introDiv, k, moreInfo, moreInfoId, name, o, resetButt, row1, row2, s, sel, t, that, titleDiv, _ref, _ref1;
       categoryE = this.categoriesElem;
       introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE);
@@ -331,24 +246,84 @@
       return true;
     };
 
-    GenesSearch.prototype._filterByCategory = function(catId, subcatId) {
-      var g, geneIds, k, o, _i, _len, _ref;
+    GenesList.prototype._sort = function(gids, metaField, asc) {
+
+      /*  return gids unless gids.length
+         
+      that = @
+      gids.sort (a,b) ->
+        aObj = that.genome(a)
+        bObj = that.genome(b)
+        
+        aField = aObj[metaField]
+        aName = aObj.displayname.toLowerCase()
+        bField = bObj[metaField]
+        bName = bObj.displayname.toLowerCase()
+        
+        if aField? and bField?
+          
+          if typeIsArray aField
+            aField = aField.join('').toLowerCase()
+            bField = bField.join('').toLowerCase()
+          else
+            aField = aField.toLowerCase()
+            bField = bField.toLowerCase()
+            
+          if aField < bField
+            return -1
+          else if aField > bField
+            return 1
+          else
+            if aName < bName
+              return -1
+            else if aName > bName
+              return 1
+            else
+              return 0
+              
+        else
+          if aField? and not bField?
+            return -1
+          else if bField? and not aField?
+            return 1
+          else
+            if aName < bName
+              return -1
+            else if aName > bName
+              return 1
+            else
+              return 0
+      
+      if not asc
+        gids.reverse()
+       */
+      return gids;
+    };
+
+    GenesList.prototype._filterByCategory = function(catId, subcatId) {
+      var g, geneIds, id, k, o, _i, _j, _len, _len1, _ref, _ref1;
       geneIds = [];
       if (catId === -1) {
         geneIds = Object.keys(this.geneList);
       } else {
-        geneIds = this.categories[catId].subcategories[subcatId].gene_ids;
+        _ref = this.categories[catId].subcategories[subcatId].gene_ids;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          id = _ref[_i];
+          if (this.geneList[id] != null) {
+            geneIds.push(id);
+          }
+        }
         if (!((geneIds != null) && typeIsArray(geneIds))) {
           throw new Error("Invalid category or subcategory ID: " + catId + " / " + subcatId + ".");
         }
-        _ref = this.geneList;
-        for (k in _ref) {
-          o = _ref[k];
+        _ref1 = this.geneList;
+        for (k in _ref1) {
+          o = _ref1[k];
           o.visible = false;
         }
       }
-      for (_i = 0, _len = geneIds.length; _i < _len; _i++) {
-        g = geneIds[_i];
+      for (_j = 0, _len1 = geneIds.length; _j < _len1; _j++) {
+        g = geneIds[_j];
         o = this.geneList[g];
         if (o == null) {
           throw new Error("Invalid gene ID: " + g + ".");
@@ -357,6 +332,105 @@
       }
       this.tableElem.empty();
       this._appendGeneTable();
+      return true;
+    };
+
+    GenesList.prototype._resetNullCategories = function() {
+      var el, name;
+      el = this.categoriesElem;
+      name = "" + this.geneType + "-category";
+      el.find("select[name='" + name + "']").val('null');
+      return true;
+    };
+
+    GenesList.prototype._capitaliseFirstLetter = function(str) {
+      return str[0].toUpperCase() + str.slice(1);
+    };
+
+    return GenesList;
+
+  })();
+
+  if (!root.GenesList) {
+    root.GenesList = GenesList;
+  }
+
+  GenesSearch = (function(_super) {
+    __extends(GenesSearch, _super);
+
+    function GenesSearch(geneList, geneType, categories, tableElem, selectedElem, countElem, categoriesElem, autocompleteElem, selectAllEl, unselectAllEl, mTypes, multi_select) {
+      this.geneList = geneList;
+      this.geneType = geneType;
+      this.categories = categories;
+      this.tableElem = tableElem;
+      this.selectedElem = selectedElem;
+      this.countElem = countElem;
+      this.categoriesElem = categoriesElem;
+      this.autocompleteElem = autocompleteElem;
+      this.selectAllEl = selectAllEl;
+      this.unselectAllEl = unselectAllEl;
+      this.mTypes = mTypes;
+      this.multi_select = multi_select != null ? multi_select : false;
+      GenesSearch.__super__.constructor.call(this, this.geneList, this.geneType, this.categories, this.tableElem, this.categoriesElem, this.mTypes, this.multi_select);
+      this.num_selected = 0;
+      jQuery(this.autocompleteElem).keyup((function(_this) {
+        return function() {
+          return _this._filterGeneList();
+        };
+      })(this));
+      jQuery(this.selectAllEl).click((function(_this) {
+        return function(e) {
+          e.preventDefault();
+          return _this._selectAllGenes(true);
+        };
+      })(this));
+      jQuery(this.unselectAllEl).click((function(_this) {
+        return function(e) {
+          e.preventDefault();
+          return _this._selectAllGenes(false);
+        };
+      })(this));
+    }
+
+    GenesSearch.prototype._appendGeneTable = function() {
+      var cboxes, table, that;
+      GenesSearch.__super__._appendGeneTable.apply(this, arguments);
+      table = this.tableElem;
+      cboxes = table.find("input[name='" + name + "']");
+      that = this;
+      cboxes.change(function() {
+        var checked, geneId, obj;
+        console.log(this);
+        obj = $(this);
+        geneId = obj.val();
+        checked = obj.prop('checked');
+        return that._selectGene([geneId], checked);
+      });
+      this._updateCount();
+      return true;
+    };
+
+    GenesSearch.prototype._filterGeneList = function() {
+      var searchTerm;
+      searchTerm = this.autocompleteElem.val();
+      this._matching(this.geneList, searchTerm);
+      this.tableElem.empty();
+      this._appendGeneTable();
+      return true;
+    };
+
+    GenesSearch.prototype._matching = function(gList, searchTerm) {
+      var g, k, regex, val;
+      regex = new RegExp(this.escapeRegExp(searchTerm), "i");
+      for (k in gList) {
+        g = gList[k];
+        val = g.name;
+        if (regex.test(val)) {
+          g.visible = true;
+        } else {
+          g.visible = false;
+        }
+      }
       return true;
     };
 
@@ -488,25 +562,13 @@
       return true;
     };
 
-    GenesSearch.prototype._resetNullCategories = function() {
-      var el, name;
-      el = this.categoriesElem;
-      name = "" + this.geneType + "-category";
-      el.find("select[name='" + name + "']").val('null');
-      return true;
-    };
-
-    GenesSearch.prototype._capitaliseFirstLetter = function(str) {
-      return str[0].toUpperCase() + str.slice(1);
-    };
-
-    GenesSearch.prototype._escapeRegExp = function(str) {
+    GenesSearch.prototype.escapeRegExp = function(str) {
       return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
     };
 
     return GenesSearch;
 
-  })();
+  })(GenesList);
 
   if (!root.GenesSearch) {
     root.GenesSearch = GenesSearch;

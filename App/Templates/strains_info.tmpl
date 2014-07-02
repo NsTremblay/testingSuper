@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
     <link rel="stylesheet" href="/App/Styling/css/superphy.css">
 
+    <link rel="stylesheet" href="/App/Styling/css/genes_search.css">
+    <script src="/App/Lib/js/superphy_genes.js"></script>
+
     <script type="text/javascript">
         var page_name = "strains";
     </script>
@@ -205,11 +208,35 @@ var private_genomes = <TMPL_VAR private_genomes>;
 var gene_json = <TMPL_VAR gene_json>;
 var allele_json = <TMPL_VAR allele_json>;
 var tree = <TMPL_VAR tree_json>;
+var vf = <TMPL_VAR vf>;
+var amr = <TMPL_VAR amr>;
+var categories = <TMPL_VAR categories>;
 var selectedGenome = "";
 
 viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
 viewController.createView('tree', $('#strains-info-tree'), tree);
+
+var allele_genome = Object.keys(allele_json)[0];
+
+var vfSub = {};
+var amrSub = {};
+
+$.each(allele_json[allele_genome], function(k,v) {
+    if(gene_json.vf[k]) {
+        vfSub[k] = vf[k];
+        vfSub[k]['alleles'] = v.length;
+    }
+    else if(gene_json.amr[k]) {
+        amrSub[k] = {};
+        amrSub[k] = amr[k];
+        amrSub[k]['alleles'] = v.length;
+    }
+});
+
+// Initialisation
+var vfGenesList = new GenesList(vfSub, 'vf', categories.vfCats, $('#vf-table'), $('#vf-categories'), ['uniquename', 'alleles'], false);
+var amrGenesList = new GenesList(amrSub, 'amr', categories.amrCats, $('#amr-table'), $('#amr-categories'), ['uniquename', 'alleles'], false);
 
 $(document).ready(function(){
     //Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
@@ -224,6 +251,8 @@ $(document).ready(function(){
     });
 });
 
+
+// TODO: Change this, it looks messy
 var selectedGenomeId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
 
 //Determine whether public or private

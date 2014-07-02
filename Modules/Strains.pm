@@ -164,41 +164,6 @@ sub info : Runmode {
 
 		get_logger->debug('halt2');
 	
-		# my $result_hashref = $data->getGeneAlleleData(%args);
-
-		# my $vf = $result_hashref->{vf};
-		# my $amr = $result_hashref->{amr};
-		# my $names = $result_hashref->{names};
-		
-		# my @virData; my @amrData;
-		
-		# foreach my $gene_id (keys %{$amr->{$feature}}) {
-		# 	my %virRow;
-		# 	$virRow{'gene_name'} = $names->{$gene_id};
-		# 	$virRow{'feature_id'} = $gene_id;
-		# 	foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-		# 		$virRow{'allele_count'}++;
-		# 	}
-		# 	push (@amrData, \%virRow);
-		# }
-		
-		# foreach my $gene_id (keys %{$vf->{$feature}}) {
-		# 	my %virRow;
-		# 	$virRow{'gene_name'} = $names->{$gene_id};
-		# 	$virRow{'feature_id'} = $gene_id;
-		# 	foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-		# 		$virRow{'allele_count'}++;
-		# 	}
-		# 	push (@virData, \%virRow);
-		# }
-		
-		# get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		# get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		# $template->param(VIRDATA=>\@virData);
-
-		# $template->param(AMRDATA=>\@amrData);
-
 		# Get location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
@@ -244,42 +209,23 @@ sub info : Runmode {
 			$template->param(tree_json => $tree->nodeTree($feature));
 		}
 		
-		# Get Virulence and AMR genes for genome
+		# Get Virulence and AMR genes for private genome
+		# TODO: How should I pass in the pprivate strain id?
 		get_logger->debug($privateStrainID);
-		my $result_hashref = $data->getGeneAlleleData(private_genomes => [$privateStrainID]);
+		#my $result_hashref = $data->getGeneAlleleData(private_genomes => [$privateStrainID]);
 		
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		# my $results = $data->getGeneAlleleData(%args);
+		# get_logger->debug('halt1');
+	
+		# my $gene_list = $results->{genes};
+		# my $gene_json = encode_json($gene_list);
+		# $template->param(gene_json => $gene_json);
+	
+		# my $alleles = $results->{alleles};
+		# my $allele_json = encode_json($alleles);
+		# $template->param(allele_json => $allele_json);
 
-		$template->param(AMRDATA=>\@amrData);
+		# get_logger->debug('halt2');
 
 		# Get private location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
@@ -294,6 +240,17 @@ sub info : Runmode {
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	# AMR/VF categores
+	my $categoriesRef = $self->categories();
+	$template->param(categories => $categoriesRef);
+
+	# AMR/VF Lists
+	my $vfRef = $data->getVirulenceFormData();
+	my $amrRef = $data->getAmrFormData();
+
+	$template->param(vf => $vfRef);
+	$template->param(amr => $amrRef);
 
 	$template->param(title1 => 'GENOME');
 	$template->param(title2 => 'INFORMATION');
@@ -487,6 +444,113 @@ sub geocode : Runmode {
 	my $queryResult = $locationManager->geocodeAddress($address);
 
 	return $queryResult;
+}
+
+
+=head2 categories
+
+Duplicate from Genes module - may consider merging into FormDataGenerator
+
+=cut
+sub categories {
+	my $self = shift;
+	
+	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
+		{},
+		{
+			join => ['parent_category', 'gene_cvterm', 'category'],
+			select => [
+				'parent_category.cvterm_id',
+				'parent_category.name',
+				'parent_category.definition',
+				'gene_cvterm.cvterm_id',
+				'gene_cvterm.name',
+				'gene_cvterm.definition',
+				'category.cvterm_id',
+				'category.name',
+				'category.definition',
+				'feature_id'],
+			as => [
+				'parent_id',
+				'parent_name',
+				'parent_definition',
+				'gene_id',
+				'gene_name',
+				'gene_definition',
+				'category_id',
+				'category_name',
+				'category_definition',
+				'feature_id']
+		}
+	);
+
+	my %amrCategories;
+	while (my $row = $amrCategoryResults->next) {
+		my $parent_id = $row->get_column('parent_id');
+		my $category_id = $row->get_column('category_id');
+		$amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
+		$amrCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+		$amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+		$amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+		push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+	}
+
+	my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
+		{},
+		{
+			join => ['parent_category', 'gene_cvterm', 'category'],
+			select => [
+				'parent_category.cvterm_id',
+				'parent_category.name',
+				'parent_category.definition',
+				'gene_cvterm.cvterm_id',
+				'gene_cvterm.name',
+				'gene_cvterm.definition',
+				'category.cvterm_id',
+				'category.name',
+				'category.definition',
+				'feature_id'],
+			as => [
+				'parent_id',
+				'parent_name',
+				'parent_definition',
+				'gene_id',
+				'gene_name',
+				'gene_definition',
+				'category_id',
+				'category_name',
+				'category_definition',
+				'feature_id']
+		}
+	);
+
+
+	my %vfCategories;
+	while (my $row = $vfCategoryResults->next) {
+		my $parent_id = $row->get_column('parent_id');
+		my $category_id = $row->get_column('category_id');
+		$vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
+		$vfCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+		$vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+		$vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+		push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+	}
+
+	my %categories = ('vfCats' => \%vfCategories,
+				  	  'amrCats' => \%amrCategories);
+
+	my $categories_json = encode_json(\%categories);
+	return $categories_json;
 }
 
 1;
