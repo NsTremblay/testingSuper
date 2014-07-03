@@ -393,8 +393,6 @@ class TableView extends ViewTemplate
   #      
   _sort: (genomes, field) ->
     
-    
-    
     if field is @sortField
       # If the same field is clicked again, reverse sort order
       if @sortAsc

@@ -2,7 +2,7 @@
 
 
  File: superphy_genes.coffee
- Desc: Javascript functions for the genes/search page
+ Desc: Javascript functions for genes in the genes/search and strains/info pages
  Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca & Akiff Manji akiff.manji@gmail.com
  Date: June 26th, 2014
  
@@ -31,86 +31,27 @@ class GenesList
     @_appendGeneTable()
     @_appendCategories()
 
+  # FUNC typeIsArray
+  # A safer way to check if variable is array
+  #
+  # USAGE typeIsArray variable
+  # 
+  # RETURNS
+  # boolean 
+  #    
   typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
-
-  _appendHeader: () ->
-    #TODO:
-    table = '<thead><tr>'
-    values = []
-    i = -1
-
-    if @sortField is 'name'
-      sortIcon = 'fa-sort-asc'
-      sortIcon = 'fa-sort-desc' unless @sortAsc
-      values[++i] = {type:'name', name:'Gene Name', sortIcon:sortIcon}
-    else
-      values[++i] = {type:'name', name:'Gene Name', sortIcon:'fa-sort'}
-
-    # Meta fields   
-    for t in @mTypes
-      tName = @metaMap[t]
-      sortIcon = null
-      
-      if t is @sortField
-        sortIcon = 'fa-sort-asc'
-        sortIcon = 'fa-sort-desc' unless @sortAsc
-        
-      else
-        sortIcon = 'fa-sort'
-      
-      values[++i] = { type: t, name: tName, sortIcon: sortIcon}
-
-    table += @_template('th', v) for v in values
-
-    table += '</thead></tr>'
-
-    table
-
-  _appendGenes: (visibleG, genes, type, style) ->
-    #TODO:
-    table = ''
-
-    for gId, gObj of visibleG
-
-      row = ''
-
-      geneObj = genes[gId]
-
-      name = geneObj.name
-
-      continue unless geneObj.visible
-
-      if style is 'redirect'
-        #Links
-        row += @_template('td1_redirect', {klass: 'gene_table_item', g: gId, name: name, type: type})
-
-      else if style = "select"
-        checked = ''
-        checked = 'checked' if geneObj.selected
-        row += @_template('td1_select', {klass: 'gene_table_item', g: gId, name: name, type: type, checked:checked})
-
-      else
-        return false
-
-      for d in @mTypes
-        mData = geneObj[d]
-        row += @_template('td', {data: mData})
-          
-      table += @_template('tr', {row: row})
-
-    table
 
   # FUNC _appendGeneTable
   # Appends genes to form. Only attaches
   # genes where object.visible = true
   #
-  # USAGE appendGeneTable data_object
-  #
   # RETURNS
   # boolean
   #    
   _appendGeneTable: () ->
-    #TODO:
+    if @tableElem.length
+      @tableElem.empty()
+
     table = @tableElem
     name = "#{@geneType}-gene"
     tableElem = jQuery("<table />").appendTo(table)
@@ -121,40 +62,16 @@ class GenesList
     tableHtml = ''
     tableHtml += @_appendHeader()
     tableHtml += '<tbody>'
-    tableHtml += @_appendGenes(@_sort(@geneList, @sortField, @sortAsc), @geneList, @geneType, style)
+    tableHtml += @_appendGenes(@_sort(Object.keys(@geneList), @sortField, @sortAsc), @geneList, @geneType, style)
     tableHtml += '</tbody>'
 
     tableElem.append(tableHtml)
+    @_actions(tableElem, style)
 
     true
 
-  _template: (tmpl, values) ->
-    #TODO: Add template for allele number
-    html = null
-    if tmpl is 'tr'
-      html = "<tr>#{values.row}</tr>"
-      
-    else if tmpl is 'th'
-      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
-    
-    else if tmpl is 'td'
-      html = "<td>#{values.data}</td>"
-    
-    else if tmpl is 'td1_redirect'
-      html = "<td class='#{values.klass}'>#{values.name} <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></td>"
-        
-    else if tmpl is 'td1_select'
-      html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='#{values.g}' #{values.checked} name='#{values.type}-gene'/> #{values.name}</label> <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></div></td>"
-    
-    else
-      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
-      
-    html
-
-  # FUNC appendCategories
+  # FUNC _appendCategories
   # Appends categores to form.
-  #
-  # USAGE appendGeneList data_object
   # 
   # RETURNS
   # boolean
@@ -211,29 +128,161 @@ class GenesList
       
     true
 
-  # FUNC sort
+  # FUNC _appendHeader
+  # Helper method for _appendGeneTable method
+  #
+  _appendHeader: () ->
+    table = '<thead><tr>'
+    values = []
+    i = -1
+
+    if @sortField is 'name'
+      sortIcon = 'fa-sort-asc'
+      sortIcon = 'fa-sort-desc' unless @sortAsc
+      values[++i] = {type:'name', name:'Gene Name', sortIcon:sortIcon}
+    else
+      values[++i] = {type:'name', name:'Gene Name', sortIcon:'fa-sort'}
+
+    # Meta fields   
+    for t in @mTypes
+      tName = @metaMap[t]
+      sortIcon = null
+      
+      if t is @sortField
+        sortIcon = 'fa-sort-asc'
+        sortIcon = 'fa-sort-desc' unless @sortAsc
+        
+      else
+        sortIcon = 'fa-sort'
+      
+      values[++i] = { type: t, name: tName, sortIcon: sortIcon}
+
+    table += @_template('th', v) for v in values
+
+    table += '</thead></tr>'
+
+    table
+
+  # FUNC _appendGenes
+  # Helper method for _appendGeneTable method
+  #
+  _appendGenes: (visibleG, genes, type, style) ->
+    table = ''
+
+    for gId in visibleG
+
+      row = ''
+
+      geneObj = genes[gId]
+
+      name = geneObj.name
+
+      continue unless geneObj.visible
+
+      if style is 'redirect'
+        #Links
+        row += @_template('td1_redirect', {klass: 'gene_table_item', g: gId, name: name, type: type})
+
+      else if style = "select"
+        checked = ''
+        checked = 'checked' if geneObj.selected
+        row += @_template('td1_select', {klass: 'gene_table_item', g: gId, name: name, type: type, checked:checked})
+
+      else
+        return false
+
+      for d in @mTypes
+        mData = geneObj[d]
+        row += @_template('td', {data: mData})
+          
+      table += @_template('tr', {row: row})
+
+    table
+
+  # FUNC _template
+  # Helper method for _appendGeneTable method
+  #
+  _template: (tmpl, values) ->
+    html = null
+    if tmpl is 'tr'
+      html = "<tr>#{values.row}</tr>"
+      
+    else if tmpl is 'th'
+      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
+    
+    else if tmpl is 'td'
+      html = "<td>#{values.data}</td>"
+    
+    else if tmpl is 'td1_redirect'
+      html = "<td class='#{values.klass}'>#{values.name} <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></td>"
+        
+    else if tmpl is 'td1_select'
+      html = "<td class='#{values.klass}'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='#{values.g}' #{values.checked} name='#{values.type}-gene'/> #{values.name}</label> <a class='gene-table-link' href='/genes/info?#{values.type}=#{values.g}' data-gene='#{values.g}' title='#{values.name} info'><i class='fa fa-search'></i></a></div></td>"
+    
+    else
+      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+      
+    html
+
+  # FUNC _actions
+  # Helper method for _appendGeneTable method
+  #
+  _actions: (tableEl, style) ->
+    # Header sort
+    that = @
+    tableEl.find('.genome-table-sort').click (e) ->
+      e.preventDefault()
+      sortField = @.dataset.genomesort
+      that._genesort(sortField)
+
+  # FUNC _genesort
+  # Private method to perform table sort on column
+  #
+  # PARAMS
+  # field[str]: Sort column
+  # 
+  # RETURNS
+  # boolean 
+  #      
+  _genesort: (field) ->
+    if field is @sortField
+      # If the same field is clicked again, reverse sort order
+      if @sortAsc
+        @sortAsc = false
+      else
+        @sortAsc = true
+      
+    else
+      @sortField = field
+      @sortAsc = true
+      
+    console.log [field, @sortField, @sortAsc].join(', ')
+
+    #Update the table      
+    @_appendGeneTable()     
+
+  # FUNC _sort
   # Sort genes by meta-data 
   #
   # PARAMS
-  # gids        - a list of genome labels ala: private_/public_123445
+  # gids        - a list of gene ids
   # metaField   - a data field to sort on
   #
   # RETURNS
   # string
   #      
   _sort: (gids, metaField, asc) ->
-    #TODO: Get this working
-    ###  return gids unless gids.length
+    return gids unless gids.length
    
     that = @
     gids.sort (a,b) ->
-      aObj = that.genome(a)
-      bObj = that.genome(b)
+      aObj = that.geneList[a]
+      bObj = that.geneList[b]
       
       aField = aObj[metaField]
-      aName = aObj.displayname.toLowerCase()
+      aName = aObj.name.toString().toLowerCase()
       bField = bObj[metaField]
-      bName = bObj.displayname.toLowerCase()
+      bName = bObj.name.toString().toLowerCase()
       
       if aField? and bField?
         
@@ -241,8 +290,8 @@ class GenesList
           aField = aField.join('').toLowerCase()
           bField = bField.join('').toLowerCase()
         else
-          aField = aField.toLowerCase()
-          bField = bField.toLowerCase()
+          aField = aField.toString().toLowerCase()
+          bField = bField.toString().toLowerCase()
           
         if aField < bField
           return -1
@@ -270,15 +319,15 @@ class GenesList
             return 0
 
     if not asc
-      gids.reverse()###
+      gids.reverse()
       
     gids
 
-  # FUNC filterByCategory
+  # FUNC _filterByCategory
   # Find genes belong to category and
   # append to list
   #
-  # USAGE filterByCategory int int data_object
+  # USAGE _filterByCategory int int
   # if catId == -1, reset of visible is performed
   # 
   # RETURNS
@@ -306,11 +355,9 @@ class GenesList
     
     true
 
-  # FUNC resetNullCategories
+  # FUNC _resetNullCategories
   # Reset category drop downs back to null values. Triggered
   # when clicking reset button
-  # 
-  # USAGE resetNullCategories data_object
   #
   # RETURNS
   # boolean
@@ -321,11 +368,10 @@ class GenesList
     el.find("select[name='#{name}']").val('null')
     true
     
-  
-  # FUNC capitaliseFirstLetter
-  # Its obvious <- haha
+  # FUNC _capitaliseFirstLetter
+  # Its obvious
   #
-  # USAGE capitaliseFirstLetter string
+  # USAGE _capitaliseFirstLetter string
   # 
   # RETURNS
   # string
@@ -333,10 +379,9 @@ class GenesList
   _capitaliseFirstLetter: (str) -> 
     str[0].toUpperCase() + str[1..-1]
 
-# Return instance of GeneSearch
+# Return instance of GenesList
 unless root.GenesList
   root.GenesList = GenesList
-
 
 class GenesSearch extends GenesList
   constructor: (@geneList, @geneType, @categories, @tableElem, @selectedElem, @countElem, @categoriesElem, @autocompleteElem, @selectAllEl, @unselectAllEl, @mTypes, @multi_select=false) ->
@@ -357,16 +402,21 @@ class GenesSearch extends GenesList
       e.preventDefault()
       @_selectAllGenes(false); 
     )
-        
+  
+  # FUNC _appendGeneTable overrides GenesList
+  #
+  # PARAMS
+  #
+  # RETURNS
+  # boolean
+  #        
   _appendGeneTable: () ->
     super
-
     table = @tableElem
 
     cboxes = table.find("input[name='#{name}']")
     that = @
     cboxes.change( ->
-      console.log @
       obj = $(@)
       geneId = obj.val()
       checked = obj.prop('checked')
@@ -376,17 +426,14 @@ class GenesSearch extends GenesList
     @_updateCount()
     true  
 
-  # FUNC filterGeneList
+  # FUNC _filterGeneList
   # Find genes that match filter and
   # append to list
-  #
-  # USAGE appendGeneList data_object
   # 
   # RETURNS
   # boolean
   #    
   _filterGeneList: () ->
-    #DONE
     searchTerm = @autocompleteElem.val()
     
     @_matching(@geneList, searchTerm)
@@ -398,17 +445,15 @@ class GenesSearch extends GenesList
     
     true
 
-
-  # FUNC matching
+  # FUNC _matching
   # Find genes that match filter search word
   #
-  # USAGE matching object_array, string
+  # USAGE _matching object_array, string
   # 
   # RETURNS
   # boolean
   #    
   _matching: (gList, searchTerm) ->
-    #DONE
     regex = new RegExp @escapeRegExp(searchTerm), "i"
     
     for k,g of gList
@@ -426,16 +471,15 @@ class GenesSearch extends GenesList
     
     true
   
-  # FUNC selectGene
-  # Update data object and elements for checked / unchecked genes\
+  # FUNC _selectGene
+  # Update data object and elements for checked / unchecked genes
   #
-  # USAGE selectGene array, boolean, data_object
+  # USAGE _selectGene array, boolean
   # 
   # RETURNS
   # boolean
   #    
   _selectGene: (geneIds, checked) ->
-    #DONE
     console.log geneIds
     console.log checked
     
@@ -457,16 +501,13 @@ class GenesSearch extends GenesList
       
     true
 
-  # FUNC updateCount
+  # FUNC _updateCount
   # Update displayed # of genes selected
-  # 
-  # USAGE updateCount data_object
   #
   # RETURNS
   # boolean
   #    
   _updateCount: () ->
-    #DONE
     # Stick in inner span
     innerElem = @countElem.find('span.selected-gene-count-text')
     unless innerElem.length
@@ -480,16 +521,15 @@ class GenesSearch extends GenesList
         
     true
 
-  # FUNC addSelectedGenes
+  # FUNC _addSelectedGenes
   # Add genes to selected box element
   # 
-  # USAGE addSelectedGenes array data_object
+  # USAGE _addSelectedGenes array
   #
   # RETURNS
   # boolean
   #    
   _addSelectedGenes: (geneIds) ->
-    #DONE
     cls = 'selected-gene-item'
     for g in geneIds
       
@@ -511,10 +551,10 @@ class GenesSearch extends GenesList
     
     true
 
-  # FUNC removeSelectedGenes
+  # FUNC _removeSelectedGenes
   # Remove genes from selected box element
   # 
-  # USAGE removeSelectedGenes array data_object
+  # USAGE _removeSelectedGenes array
   #
   # RETURNS
   # boolean
@@ -527,10 +567,10 @@ class GenesSearch extends GenesList
       
     true
   
-  # FUNC selectAllGenes
+  # FUNC _selectAllGenes
   # Select all visible genes
   #
-  # USAGE selectAllGenes boolean, d
+  # USAGE _selectAllGenes boolean
   #
   # if checked==true, 
   #   select all visible genes
@@ -553,11 +593,10 @@ class GenesSearch extends GenesList
     
     true
 
-  # FUNC submitGeneQuery
-  # Submit by dynamically building form with hidden
-  # input params
-  # 
-  # USAGE submitGeneQuery data_object data_object viewController
+  # FUNC prepareGenesQuery
+  # (Public)
+  # Prepares form for sumbission by
+  # dynamically building form with hidden input params
   #
   # RETURNS
   # boolean
@@ -586,15 +625,6 @@ class GenesSearch extends GenesList
   #    
   escapeRegExp: (str) -> str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
 
-  # FUNC typeIsArray
-  # A safer way to check if variable is array
-  #
-  # USAGE typeIsArray variable
-  # 
-  # RETURNS
-  # boolean 
-  #    
-
-# Return instance of GeneSearch
+# Return instance of GenesSearch
 unless root.GenesSearch
   root.GenesSearch = GenesSearch
