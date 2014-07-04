@@ -83,13 +83,6 @@ class ViewController
       listView = new ListView(elem, clickStyle, vNum, viewArgs)
       listView.update(@genomeController)
       @views.push listView
-
-    else if viewType is 'jump2list'
-      # New list view
-      listView = new ListView(elem, clickStyle, vNum, viewArgs)
-      listView.update(@genomeController)
-      @views.push listView
-      return
       
     else if viewType is 'tree'
       # New tree view
@@ -111,19 +104,29 @@ class ViewController
       @views.push matView
 
     else if viewType is 'map'
-      # TODO: Need to change this to account for the different maps
       #New map view
-      mapView = new MapView(elem, clickStyle, vNum, viewArgs)
-      #Mapview needs to be pushed prior to constructing the cartographer otherwise the cartographer will not know which index of the views the map view is in to update
+      mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+      #mapView.update(@genomeController)
       @views.push mapView
-      mapView.conscriptCartographger()
-      mapView.update(@genomeController, mapView.cartographer)
+
+    else if viewType is 'selmap'
+      #New map view
+      mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+      #mapView.update(@genomeController)
+      @views.push mapView
       
     else if viewType is 'table'
       # New table view
       tableView = new TableView(elem, clickStyle, vNum, viewArgs)
       tableView.update(@genomeController)
       @views.push tableView
+
+    else if viewType is 'jump2table'
+      # New list view
+      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+      tableView.update(@genomeController)
+      @views.push tableView
+      return
       
     else
       throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
@@ -145,7 +148,7 @@ class ViewController
       
     return true # return success
     
-  createGroup: (boxEl, buttonEl) ->
+  createGroup: (boxEl, buttonEl, clearButtonEl) ->
     
     # Current view number
     gNum = @groups.length + 1
@@ -162,7 +165,13 @@ class ViewController
     buttonEl.click (e) ->
       e.preventDefault()
       viewController.addToGroup(gNum)
-    
+
+    # Add response to clear button click
+    # TODO:
+    clearButtonEl.click (e) ->
+      e.preventDefault()
+      viewController.clearFromGroup(gNum)
+
     # Incomplete and on hold for now
     # Update number of groups to the dropdown list in the side bar
     selectGroupList = jQuery('.group-manager-number');
@@ -190,8 +199,7 @@ class ViewController
     # Update views (class, checked, etc)
     v.update(@genomeController) for v in @views
     @selectedBox.update(@genomeController) if @selectedBox?
-    
-    
+
   createTicker: (tickerType, elem, tickerArgs...) ->
     
     # Current view number
@@ -298,10 +306,7 @@ class ViewController
     true
     
   removeFromGroup: (genomeID, grp) ->
-    # Remove single genome from list
-    
-    console.log('deleting '+genomeID)
-    
+    # Remove single genome from list    
     # Change genome properties
     # Convert to Set format
     gset = @genomeController.genomeSet([genomeID])
@@ -312,18 +317,23 @@ class ViewController
     @groups[i].remove(genomeID)
     
     # Update style for genomes in views
-    v.updateCSS(gset, @genomeController) for v in @views
-
+    #v.updateCSS(gset, @genomeController) for v in @views
+    v.update(@genomeController) for v in @views
     true
+
+  clearFromGroup: (grp) ->
+    # Remove all genomes from a group
+    actionEl = jQuery("a[data-genome-group='#{grp}']")
+    actionEl.click();
   
-  groupForm: (elem, type, boolFilter) ->
+  groupForm: (elem, addMoreBool, submitBool, filterBool) ->
     #TODO: This has to be changed, need to be able to set up form for only 2 groups or more than 2 groups 
 
     # There can be only one
     blockEl = jQuery("<div id='group-form-block'></div>").appendTo(elem)
     @addGroupFormRow(blockEl)
     
-    if type == 'multi_select'
+    if addMoreBool
       addEl = jQuery("<div class='add-genome-groups row'></div>")
       divEl = jQuery("<div class='col-md-12'></div>").appendTo(addEl)
       buttEl = jQuery("<button class='btn' type='button'>More Genome Groups...</button>").appendTo(divEl)
@@ -336,39 +346,37 @@ class ViewController
       )
       elem.append(addEl)
 
-    #Create form submission function:
-    submitEl = jQuery("<div class='compare-genome-groups row'></div>")
-    divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
-    clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
-    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl) if boolFilter
-    buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl) unless boolFilter
+    if submitBool
+      #Create form submission function:
+      submitEl = jQuery("<div class='compare-genome-groups row'></div>")
+      divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
+      clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
+      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Filter Groups</button>").appendTo(divEl) if filterBool
+      buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Analyze Groups</button>").appendTo(divEl) unless filterBool
 
+      hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{@action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
+      # Prevent default click action to prepare the groups before submitting
+      buttonEl.click( (e) =>
+        e.preventDefault()
+        alert = jQuery('<div class="alert alert-danger">
+                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+                        You must have at least one genome in either of the groups to compare to.
+                        </div>')
+        unless jQuery('#genome_group1 li').length > 0 or jQuery('#genome_group2 li').length > 0
+          blockEl.prepend(alert);
+          return false
 
-    hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{@action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
-    # Prevent default click action to prepare the groups before submitting
-    buttonEl.click( (e) =>
-      e.preventDefault()
-      alert = jQuery('<div class="alert alert-danger">
-                      <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
-                      You must have at least one genome in either of the groups to compare to.
-                      </div>')
-      unless jQuery('#genome_group1 li').length > 0 or jQuery('#genome_group2 li').length > 0
-        blockEl.prepend(alert);
-        return false
+        #Prepare groups
+        for i in [1..@groups.length] by 1
+          groupGenomes = jQuery("#genome_group#{i} .genome_group_item")
+          jQuery("<input type='hidden' name='group#{i}-genome' value='#{jQuery(genome).find('a').data('genome')}'>").appendTo(hiddenFormEl) for genome in groupGenomes
+        
+        jQuery("<input type='hidden' name='num-groups' value='#{@groups.length}'>").appendTo(hiddenFormEl)
 
-      #Prepare groups
-
-      for i in [1..@groups.length] by 1
-        groupGenomes = jQuery("#genome_group#{i} .genome_group_item")
-        jQuery("<input type='hidden' name='group#{i}-genome' value='#{jQuery(genome).find('a').data('genome')}'>").appendTo(hiddenFormEl) for genome in groupGenomes
-      
-      jQuery("<input type='hidden' name='num-groups' value='#{@groups.length}'>").appendTo(hiddenFormEl)
-      
-      jQuery('#groups-compare-form').submit()
-      
-      )
-      
-    elem.append(submitEl)
+        jQuery('#groups-compare-form').submit()
+        )
+        
+      elem.append(submitEl)
 
     true
      
@@ -391,9 +399,10 @@ class ViewController
       listEl = jQuery("<div id='genome-group-list#{i}' class='genome-group'></div>").appendTo(formEl)
       divEl = jQuery("<div class='genome-group-add-controller'></div>").appendTo(listEl)
       buttEl = jQuery("<button id='genome-group-add#{i}' class='btn btn-primary' type='button' title='Add genome(s) to Group #{i}'><span class='fa fa-plus'></span> <span class='input-lg' id='genome-group#{i}-heading'>Group #{i}</span></button>").appendTo(divEl)
+      clearButtEl = jQuery("<button id='genome-group-clear#{i}' class='btn btn-primary pull-right' type='button' title='Clear all genome(s) from Group #{i}'><span class='fa fa-times'></span> <span class='input-lg' id='genome-group#{i}-heading'></span></button>").appendTo(divEl)
       rowEl.append(formEl)
       
-      ok = @createGroup(listEl,buttEl)
+      ok = @createGroup(listEl,buttEl,clearButtEl)
       
     ok  
             
@@ -475,7 +484,7 @@ class ViewController
     @groupsSideForm(form, parentTarget)
     true
 
-  groupsCompareForm: (elem, boolFilter) ->
+  createGroupsForm: (elem, addMoreBool, submitBool, filterBool) ->
     parentTarget = 'groups-compare-panel-body'
     wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
     elem.append(wrapper)
@@ -483,118 +492,9 @@ class ViewController
     #Need to specify action mode so the page allows for more groups if needed
     form = jQuery('<div class="panel-body" id="'+parentTarget+'"></div>')
     wrapper.append(form)
-    @groupForm(form, @actionMode, boolFilter);
+    @groupForm(form, addMoreBool, submitBool, filterBool);
     true
-  
-  # Incomplete and on hold for now:
-  groupsSideForm: (elem, parentStr) ->  
-    #Build & attach form
-    form =
-      '<div class="panel-heading">
-      <div class="panel-title">
-      <a data-toggle="collapse" data-parent="#'+parentStr+'" href="#group-manager-form-panel"><span class="fa fa-th-large"></span> Manage Groups <span class="caret"></span></a>
-      </div></div>
-      <div id="group-manager-form-panel" class="panel-collapse collapse out">
-      <div class="panel-body">
-      <form role="form" id="group-manager-form"></form>
-      </div></div>'
-
-    elem.append(form)
-
-    formEl = jQuery('#group-manager-form');
-
-    groupSelectEl = jQuery('<div class="form-group"><label>Select from your custom groups:<select class="form-control input-sm"></select></label></div>').appendTo(formEl)
-
-    formRadioEl = jQuery('<div class="form-group group-manager-options"></div>').appendTo(formEl)
-
-    updateGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="update-group" checked>Update group</label></div>').appendTo(formRadioEl)
-
-    renameGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="rename-group">Rename group</label></div>').appendTo(formRadioEl)
-
-    newGroupEl = jQuery('<div class="radio"><label><input type="radio" name="group-manager-option" value="new-group">Create a new group</label></div>').appendTo(formRadioEl)
-
-    groupNameInputEl = jQuery('<div class="form-group"><label>Enter a group name:<input type="text" class="form-control input-sm group-manager-name" name="group-name"></label></div>').appendTo(formEl)
-
-    groupNumberInputEl = jQuery('<div class="form-group"><label>Select group number:<select class="form-control input-sm group-manager-number" name="group-number"></select></label></div>').appendTo(formEl)
- 
-    jQuery('<option value='+"#{group.elNum}"+'>Group '+"#{group.elNum}"+'</option>').appendTo(jQuery('.group-manager-number')) for group in @groups
-
-    buttonGroupEl = jQuery('<div class="form-group"></div>').appendTo(formEl)
-
-    saveGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-floppy-o"></span></button>').appendTo(buttonGroupEl)
-
-    loadGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-folder-open-o"></span></button>').appendTo(buttonGroupEl)
-
-    deleteGroupButton = jQuery('<button class="btn btn-default" type="button"><span class="fa fa-trash-o"></span></button>').appendTo(buttonGroupEl)
-
-    alertBox = jQuery('<div class="group-manager-alerts"></div>').prependTo(formEl)
-
-    # TODO: update click action elements
-    # Click action for save groups button
-    saveGroupButton.click (e) ->
-      alertBox.empty();
       
-      form = jQuery('#group-manager-form')
-      serialData = form.serialize();
-
-      maxGroups = window.viewController.groups.length
-      groupNum = jQuery('input[name="group-number"]').val()
-      serialData += '&max-groups='+maxGroups
-
-      # TODO: Incomplete and on hold
-      e.preventDefault
-      jQuery.ajax({
-      type: "POST",
-      url: '/groups/save',
-      data: serialData
-      }).done( (data) ->
-        alertBox.empty();
-        messages = JSON.parse(data)
-        if messages.error 
-          jQuery('<div class="alert alert-danger">'+messages.error+'</div>').appendTo(alertBox)
-        else
-          jQuery('<div class="alert alert-success">'+messages.success+'</div>').appendTo(alertBox)
-        ).fail ( () ->
-          alert "There was some kind of error. Contact the code doctor."
-          )
-    true
-
-    # Click action for load groups button
-    # TODO: Incomplete and on hold
-    loadGroupButton.click (e) ->
-      e.preventDefault
-      jQuery.ajax({
-      type: "POST",
-      url: '/groups/load',
-      data: serialData
-      }).done( () ->
-        console.log "Done and returned"
-        ).fail ( () ->
-          console.log "Error!"
-          )
-    true
-
-    # Click action for delete groups button
-    # TODO: Incomplete and on hold
-    deleteGroupButton.click (e) ->
-      serialData = jQuery('#group-manager-form').serialize();
-      e.preventDefault
-      jQuery.ajax({
-      type: "POST",
-      url: '/groups/delete',
-      data: serialData
-      }).done( () ->
-        console.log "Done and returned"
-        ).fail ( () ->
-          console.log "Error!"
-          )
-    true
-
-  sideBarRight: (elem) ->
-    #Build and attach
-    true
-    
-    
   metaForm: (elem, parentStr) ->
     
     # Build & attach form
@@ -609,15 +509,15 @@ class ViewController
     '<p>Select meta-data displayed:</p>'+
     '<form class="form-inline">'+
     '<fieldset>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
-    '<div class="checkbox"><label><input class="meta-option" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
     '</fieldset>'+
     '</form>'+
     '</div></div>'
@@ -671,7 +571,7 @@ class ViewController
       # Perform search
       @genomeController.filter(searchTerms)
       
-    # Update Views  
+    # Update Views 
     @_toggleFilterStatus()
     v.update(@genomeController) for v in @views
     t.update(@genomeController) for t in @tickers
@@ -703,7 +603,8 @@ class ViewController
   filterForm: (elem, parentStr) ->
     
     # Header
-    header = jQuery('<div class="panel-heading">'+
+    header = jQuery(
+      '<div class="panel-heading">'+
       '<div class="panel-title">'+
       '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
       '<span class="caret"></span></a>'+
@@ -740,22 +641,27 @@ class ViewController
     container.append('<p>Limit genomes displayed in views by:</p>')
     
     # Add form selector
-    filtType = jQuery('<form id="select-filter-form" class="form-inline"></form>')
-    fastLab = jQuery('<div class="form-group"><label class="radio">Basic</label></div>')
-    fastRadio = jQuery('<input type="radio" name="filter-form-type" value="fast" checked>')
+    filtType = jQuery('<form id="select-filter-form" class="form-horizontal"></form>')
+    
+    fastGroup = jQuery('<div class="form-group"></div>')
+    fastDiv = jQuery('<div class="col-xs-1"></div>').appendTo(fastGroup)
+    fastRadio = jQuery('<input id="fast" type="radio" name="filter-form-type" value="fast" checked>').appendTo(fastDiv)
+    fastLab = jQuery('<label class="col-xs-10" for="fast">Basic</label>').appendTo(fastGroup)
     
     fastRadio.change (e) ->
-      if this.checked?
+      if @checked?
         jQuery("#fast-filter").show()
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").hide()
       true
+
+    filtType.append(fastGroup)
     
-    fastLab.prepend(fastRadio)
-    filtType.append(fastLab)
     
-    advLab = jQuery('<div class="form-group"><label class="radio">Advanced</label></div>')
-    advRadio = jQuery('<input type="radio" name="filter-form-type" value="advanced">')
+    advGroup = jQuery('<div class="form-group"></div>')
+    advDiv = jQuery('<div class="col-xs-1"></div>').appendTo(advGroup)
+    advRadio = jQuery('<input type="radio" id="adv" name="filter-form-type" value="advanced">').appendTo(advDiv)
+    advLab = jQuery('<label class="col-xs-10" for="adv">Advanced</label>').appendTo(advGroup)
     
     advRadio.change (e) ->
       if this.checked?
@@ -764,11 +670,12 @@ class ViewController
         jQuery("#selection-filter").hide()
       true
     
-    advLab.prepend(advRadio)
-    filtType.append(advLab)
+    filtType.append(advGroup)
     
-    selLab = jQuery('<div class="form-group"><label class="radio">By Selection</label></div>')
-    selRadio = jQuery('<input type="radio" name="filter-form-type" value="selection">')
+    selGroup = jQuery('<div class="form-group"></div>')
+    selDiv = jQuery('<div class="col-xs-1"></div>').appendTo(selGroup)
+    selRadio = jQuery('<input id="sel" type="radio" name="filter-form-type" value="selection">').appendTo(selDiv)
+    selLab = jQuery('<label class="col-xs-10" for="sel">By Selection</label>').appendTo(selGroup)
     
     selRadio.change (e) ->
       if this.checked?
@@ -776,9 +683,8 @@ class ViewController
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").show()
       true
-    
-    selLab.prepend(selRadio)
-    filtType.append(selLab)
+
+    filtType.append(selGroup)
     
     container.append(filtType)
     
@@ -819,13 +725,46 @@ class ViewController
       filterOn.find('#filter-on-text').text("Filter active. #{numVisible} genomes visible.")
       filterOn.show()
       filterOff.hide()
+      #@_toggleSelectAll(true, 50)
     else 
       filterOn.hide()
       filterOff.show()
-      
+      #@_toggleSelectAll(false)
+    true
+
+  _toggleSelectAll: (switchOn, hardLimit) ->
+    # TODO: Handle the different form types
+    numVisible = @genomeController.filtered
+
+    selectAllRow = jQuery('.select-all-genomes-row')
+
+    selectAllRow.empty()
+
+    divEl = jQuery('<div class="col-md-6"></div>')
+    buttonGp = jQuery('<div class="btn-group"></div>').appendTo(divEl)
+
+    selectAllButt = jQuery('<button id="table-select-all" class="btn btn-link">Select All</button>').appendTo(buttonGp)
+    unSelectAllButt = jQuery('<button id="table-unselect-all" class="btn btn-link">Unselect All</button>').appendTo(buttonGp)
+
+    selectAllButt.click( (e) =>
+      e.preventDefault()
+      @select(g, true) for g in @genomeController.pubVisible
+      @select(g, true) for g in @genomeController.pvtVisible
+      )
+
+    unSelectAllButt.click( (e) =>
+      e.preventDefault()
+      @select(g, false) for g in @genomeController.pubVisible
+      @select(g, false) for g in @genomeController.pvtVisible
+      )
+    
+    if switchOn and numVisible <= hardLimit
+      selectAllRow.append(divEl)
+    else
+    
     true
     
-   _clearFilterForm: ->
+  _clearFilterForm: ->
     
     # Remove, build & attach simple fast form
     sf = jQuery("#fast-filter")

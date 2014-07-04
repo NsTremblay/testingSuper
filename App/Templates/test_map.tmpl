@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+    <title>Leaflet test</title>
+    <link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+    <script src="/App/Styling/js/jquery-1.9.1.js"></script>
+    <script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+    
+    <script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
+
+    <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.css" />
+    <script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+
+    <script src="http://matchingnotes.com/javascripts/leaflet-google.js"></script>
+    
+    <style type="text/css">
+        #map {
+            height: 300px;
+        }
+    </style>
+</head>
+<body>
+<h1>Leaflet test map</h1>
+ <div class="col-md-6" id="map"></div>
+</body>
+
+<script type="text/javascript">
+//Map loading and funcitons here
+var map = new L.map('map', {center: new L.LatLng(-0.000, 0.000), zoom: 1});
+var googleTileLayer = new L.Google('ROADMAP');
+map.addLayer(googleTileLayer);
+</script>
+
+</html>

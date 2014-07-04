@@ -43,7 +43,7 @@ var tree = <TMPL_VAR tree_json>;
 
 viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
-viewController.createView('list', $('#strains_list'));      
+viewController.createView('table', $('#strains_table'));      
 
 viewController.createView('tree', $('#strains_tree'), tree);
 
@@ -52,11 +52,11 @@ viewController.createView('map', $('#strains_map'), ['satellite']);
 viewController.sideBar($('#search-utilities'));
 
 $(document).ready(function(){
-		//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
-		$('a[href="#strains_map"]').on('shown.bs.tab', function () {
-			viewController.getView($('#strains_map').data("viewsIndex")).cartographer.resetMap();
-		});
+	//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
+	$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+		viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 	});
+});
 </script>
 
 </html>

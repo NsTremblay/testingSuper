@@ -36,6 +36,7 @@ use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
 use Modules::TreeManipulator;
 use Modules::LocationManager;
+use Modules::GenomeWarden;
 use IO::File;
 use JSON;
 
@@ -87,19 +88,13 @@ Run mode for the single strain page
 
 sub info : Runmode {
 	my $self = shift;
-	
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
-	
+
 	#Init the location manager
 	my $locationManager = Modules::LocationManager->new();
 	$locationManager->dbixSchema($self->dbixSchema);
 	
 	my $username = $self->authen->username;
-	
-	# Retrieve form data
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
+		
 	# Check if user is requesting genome info
 	my $q = $self->query();
 	
@@ -107,6 +102,7 @@ sub info : Runmode {
 	my $strainID;
 	my $privateStrainID;
 	my $feature = $q->param("genome");
+	print STDERR "Genome is $feature\n\n";
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
@@ -116,11 +112,28 @@ sub info : Runmode {
 			die "Error: invalid genome ID: $feature.";
 		}
 	}
+
+	#Check if user has access to the particular requested genome
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
+
+	my ($err, $bad1, $bad2) = $warden->error; 
+
+	if($err) {
+ 		# User requested invalid strains or strains that they do not have permission to view
+  		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+  		return $self->redirect( $self->home_page );
+	}
+
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
 	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $data->genomeInfo($username);
+
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
-		
+
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
 		$template = $self->load_tmpl( 'strains_info.tmpl' ,
@@ -133,49 +146,34 @@ sub info : Runmode {
 		$template->param(tree_json => $tree->nodeTree($feature));
 		
 		# Get Virulence and AMR genes for genome
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(public_genomes => [$strainID]);
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		# Retrieve presence / absence of alleles for query genes
+		my %args = (
+			warden => $warden
+		);
 
-		$template->param(AMRDATA=>\@amrData);
+		my $results = $data->getGeneAlleleData(%args);
+		get_logger->debug('halt1');
+	
+		my $gene_list = $results->{genes};
+		my $gene_json = encode_json($gene_list);
+		$template->param(gene_json => $gene_json);
+	
+		my $alleles = $results->{alleles};
+		my $allele_json = encode_json($alleles);
+		$template->param(allele_json => $allele_json);
 
+		get_logger->debug('halt2');
+	
 		# Get location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
 	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		# TODO: Change this to use genome Warden
 		# User requested information on private strain
 		
 		# Retrieve list of private genomes user can view (need full list to mask unviewable nodes in tree)
-		my ($visable, $has_private) = $formDataGenerator->privateGenomes($username);
+		my ($visable, $has_private) = $data->privateGenomes($username);
 		
 		unless(defined($visable->{$feature})) {
 			# User requested strain that they do not have permission to view
@@ -204,49 +202,30 @@ sub info : Runmode {
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		if($has_private) {
 			# Need to use full tree, with non-visable nodes masked
-			$formDataGenerator->publicGenomes(undef, $visable);
+			$data->publicGenomes(undef, $visable);
 			$template->param(tree_json => $tree->nodeTree($feature, $visable));
 		} else {
 			# Can use public tree
 			$template->param(tree_json => $tree->nodeTree($feature));
 		}
 		
-		# Get Virulence and AMR genes for genome
+		# Get Virulence and AMR genes for private genome
+		# TODO: How should I pass in the pprivate strain id?
 		get_logger->debug($privateStrainID);
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(private_genomes => [$privateStrainID]);
+		#my $result_hashref = $data->getGeneAlleleData(private_genomes => [$privateStrainID]);
 		
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		# my $results = $data->getGeneAlleleData(%args);
+		# get_logger->debug('halt1');
+	
+		# my $gene_list = $results->{genes};
+		# my $gene_json = encode_json($gene_list);
+		# $template->param(gene_json => $gene_json);
+	
+		# my $alleles = $results->{alleles};
+		# my $allele_json = encode_json($alleles);
+		# $template->param(allele_json => $allele_json);
 
-		$template->param(AMRDATA=>\@amrData);
+		# get_logger->debug('halt2');
 
 		# Get private location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
@@ -261,6 +240,17 @@ sub info : Runmode {
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	# AMR/VF categores
+	my $categoriesRef = $self->categories();
+	$template->param(categories => $categoriesRef);
+
+	# AMR/VF Lists
+	my $vfRef = $data->getVirulenceFormData();
+	my $amrRef = $data->getAmrFormData();
+
+	$template->param(vf => $vfRef);
+	$template->param(amr => $amrRef);
 
 	$template->param(title1 => 'GENOME');
 	$template->param(title2 => 'INFORMATION');
@@ -454,6 +444,113 @@ sub geocode : Runmode {
 	my $queryResult = $locationManager->geocodeAddress($address);
 
 	return $queryResult;
+}
+
+
+=head2 categories
+
+Duplicate from Genes module - may consider merging into FormDataGenerator
+
+=cut
+sub categories {
+	my $self = shift;
+	
+	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
+		{},
+		{
+			join => ['parent_category', 'gene_cvterm', 'category'],
+			select => [
+				'parent_category.cvterm_id',
+				'parent_category.name',
+				'parent_category.definition',
+				'gene_cvterm.cvterm_id',
+				'gene_cvterm.name',
+				'gene_cvterm.definition',
+				'category.cvterm_id',
+				'category.name',
+				'category.definition',
+				'feature_id'],
+			as => [
+				'parent_id',
+				'parent_name',
+				'parent_definition',
+				'gene_id',
+				'gene_name',
+				'gene_definition',
+				'category_id',
+				'category_name',
+				'category_definition',
+				'feature_id']
+		}
+	);
+
+	my %amrCategories;
+	while (my $row = $amrCategoryResults->next) {
+		my $parent_id = $row->get_column('parent_id');
+		my $category_id = $row->get_column('category_id');
+		$amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
+		$amrCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+		$amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+		$amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+		push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+	}
+
+	my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
+		{},
+		{
+			join => ['parent_category', 'gene_cvterm', 'category'],
+			select => [
+				'parent_category.cvterm_id',
+				'parent_category.name',
+				'parent_category.definition',
+				'gene_cvterm.cvterm_id',
+				'gene_cvterm.name',
+				'gene_cvterm.definition',
+				'category.cvterm_id',
+				'category.name',
+				'category.definition',
+				'feature_id'],
+			as => [
+				'parent_id',
+				'parent_name',
+				'parent_definition',
+				'gene_id',
+				'gene_name',
+				'gene_definition',
+				'category_id',
+				'category_name',
+				'category_definition',
+				'feature_id']
+		}
+	);
+
+
+	my %vfCategories;
+	while (my $row = $vfCategoryResults->next) {
+		my $parent_id = $row->get_column('parent_id');
+		my $category_id = $row->get_column('category_id');
+		$vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
+		$vfCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
+		$vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+		$vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+		push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+	}
+
+	my %categories = ('vfCats' => \%vfCategories,
+				  	  'amrCats' => \%amrCategories);
+
+	my $categories_json = encode_json(\%categories);
+	return $categories_json;
 }
 
 1;

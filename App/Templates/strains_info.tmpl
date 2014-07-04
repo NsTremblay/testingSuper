@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
     <link rel="stylesheet" href="/App/Styling/css/superphy.css">
 
+    <link rel="stylesheet" href="/App/Styling/css/genes_search.css">
+    <script src="/App/Lib/js/superphy_genes.js"></script>
+
     <script type="text/javascript">
         var page_name = "strains";
     </script>
@@ -202,42 +205,70 @@ $(document).ready(function() {
 
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
+var gene_json = <TMPL_VAR gene_json>;
+var allele_json = <TMPL_VAR allele_json>;
 var tree = <TMPL_VAR tree_json>;
+var vf = <TMPL_VAR vf>;
+var amr = <TMPL_VAR amr>;
+var categories = <TMPL_VAR categories>;
 var selectedGenome = "";
 
 viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
 viewController.createView('tree', $('#strains-info-tree'), tree);
 
+var allele_genome = Object.keys(allele_json)[0];
+
+var vfSub = {};
+var amrSub = {};
+
+$.each(allele_json[allele_genome], function(k,v) {
+    if(gene_json.vf[k]) {
+        vfSub[k] = vf[k];
+        vfSub[k]['alleles'] = v.length;
+    }
+    else if(gene_json.amr[k]) {
+        amrSub[k] = {};
+        amrSub[k] = amr[k];
+        amrSub[k]['alleles'] = v.length;
+    }
+});
+
+// Initialisation
+var vfGenesList = new GenesList(vfSub, 'vf', categories.vfCats, $('#vf-table'), $('#vf-categories'), ['uniquename', 'alleles'], false);
+var amrGenesList = new GenesList(amrSub, 'amr', categories.amrCats, $('#amr-table'), $('#amr-categories'), ['uniquename', 'alleles'], false);
+
 $(document).ready(function(){
     //Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
     $('.map-canvas').hide();
     $('a[href="#overview-panel"]').click();
     $('#geospatial-panel').on('hidden.bs.collapse', function () {
-        viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.markerClusterer.clearMarkers();
+        viewController.getView($('#strains-info-map').data("views-index")-1).mapController.markerClusterer.clearMarkers();
     });
     $('#geospatial-panel').on('shown.bs.collapse', function () {
         $('.map-canvas').show();
-        viewController.getView($('#strains-info-map').data("viewsIndex")).cartographer.resetMap();
+        viewController.getView($('#strains-info-map').data("views-index")-1).mapController.resetMap();
     });
 });
 
-var selectedGenomeHasLocation = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
+
+// TODO: Change this, it looks messy
+var selectedGenomeId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
 
 //Determine whether public or private
-var pvtLocation = selectedGenomeHasLocation.match(/private_/g);
+var pvtLocation = selectedGenomeId.match(/private_/g);
 
-if (selectedGenomeHasLocation.match(/private_/g)) {
-    selectedGenome = private_genomes[selectedGenomeHasLocation];
+if (selectedGenomeId.match(/private_/g)) {
+    selectedGenome = private_genomes[selectedGenomeId];
 }
-else if (selectedGenomeHasLocation.match(/public_/g)) {
-    selectedGenome = public_genomes[selectedGenomeHasLocation];
+else if (selectedGenomeId.match(/public_/g)) {
+    selectedGenome = public_genomes[selectedGenomeId];
 }
 
-selectedGenomeHasLocation != "" ? viewController.createView('map', $('#strains-info-map'), ['infoSatellite']) : 0;
+selectedGenomeId != "" ? viewController.createView('selmap', $('#strains-info-map'), ['infoSatellite'], selectedGenomeId, selectedGenome) : 0;
 
 //Sidebar actions
 viewController.sideBar($('#search-utilities'));
-$('#strains-list').append('<span class="help-block">Jump to the info page of another genome by clicking a link below. You can also use the meta-data and filtering functions above to refine the list down:</span>')
-viewController.createView('jump2list', $('#strains-list'));
+$('#strains-table').append('<span class="help-block">Jump to the info page of another genome by clicking a link below. You can also use the meta-data and filtering functions above to refine the list down:</span>')
+viewController.createView('jump2table', $('#strains-table'));
 </script>

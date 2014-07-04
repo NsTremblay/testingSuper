@@ -7,18 +7,38 @@
 
 ###
 
-class MapView extends ViewTemplate
-  constructor: (@parentElem, @style , @elNum, @mapArgs) ->
-    #add map args to mapArgs list 
-
+class MapView extends TableView
+  constructor: (@parentElem, @style, @elNum, @genomeController, @mapArgs) ->
     # Call default constructor - creates unique element ID                  
-    super(@parentElem, @style, @elNum, @mapArgs)
-  
+    super(@parentElem, @style, @elNum)
+
+    @sortField = 'isolation_location'
+    @sortAsc = 'true'
+    
+    #Create the form element for the map
+    mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(@parentElem))
+    splitLayoutEl = jQuery('<div class="col-md-6 map-search-div"></div>').appendTo(jQuery(@parentElem))
+    tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl)
+    tableRow1El = jQuery('<tr></tr>').appendTo(tableEl)
+    tableData1El = jQuery('<td></td>').appendTo(tableRow1El)
+    formEl = jQuery('<form class="form"></form>').appendTo(tableData1El)
+    fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl)
+    divEl = jQuery('<div></div>').appendTo(fieldsetEl)
+    inputGpEl = jQuery('<div class="input-group"></div>').appendTo(divEl)
+    input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl)
+    buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl)
+    tableRow2El = jQuery('<tr></tr>').appendTo(tableEl)
+    tableData2El = jQuery('<td></td>').appendTo(tableRow2El)
+    mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El)
+
+    @locationController = @getLocationController(@mapArgs[0])
+    @mapController = @getCartographer(@mapArgs[0], @locationController)
+
+    jQuery(@parentElem).data('views-index', @elNum)
+    
   type: 'map'
 
   elName: 'genome_map'
-
-  cartographer: null
 
   mapView: true
 
@@ -31,152 +51,193 @@ class MapView extends ViewTemplate
   # RETURNS
   # boolean
   #
-  update: (genomes) -> 
+  update: (genomes) ->
     # create or find list element
-    mapElem = jQuery("##{@elID}")
-    if mapElem.length
-      mapElem.empty()
-    
+    tableElem = jQuery("##{@elID} table")
+    if tableElem.length
+      tableElem.empty()
     else
-      mapElem = jQuery("<ul id='#{@elID}' />")
-      jQuery(@parentElem).find('.map-manifest').append(mapElem)
+      divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
+      tableElem = jQuery("<table />").appendTo(divElem)
+      mapManifest = jQuery('.map-manifest').append(divElem)
+      jQuery(@parentElem).append(mapManifest)
 
     pubVis = []
     pvtVis = []
 
-    if !@cartographer?
+    if !@locationController?
       pubVis = genomes.pubVisible
       pvtVis = genomes.pvtVisible
-    else if @cartographer? && @cartographer.visibleStrains
+    else
+      #Load updated marker list
+      @mapController.resetMap()
 
-      for i in @cartographer.visibileStrainLocations.pubVisible
-        if i in genomes.pubVisible
-          pubVis.push i
-    
-      for i in @cartographer.visibileStrainLocations.pvtVisible
-        if i in genomes.pvtVisible
-          pvtVis.push i
-    
+      #Append genome list with location
+      if @mapController.map.getBounds().getNorthEast().toUrlValue() == '0,0' and @mapController.map.getBounds().getSouthWest().toUrlValue() == '0,0'
+        pubVis.push i for i in @locationController.pubLocations when i in genomes.pubVisible
+        pvtVis.push i for i in @locationController.pvtLocations when i in genomes.pvtVisibles
+      else
+        pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
+        pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible
+      
+      #Append genome list with no location
+      pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible
+      pvtVis.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible
+
     #append genomes to list
     t1 = new Date()
-    @_appendGenomes(mapElem, pubVis, genomes.public_genomes, @style, false)
-    @_appendGenomes(mapElem, pvtVis, genomes.private_genomes, @style, true)
-
-    # For /strains/info page:
-    # If genome is a selected genome add an additional css class to higlight and append to the top of map-manifest list
-    if window.selectedGenomeHasLocation? and window.selectedGenomeHasLocation != ""
-      selectedEl = jQuery('.map-manifest ul li a[data-genome='+selectedGenomeHasLocation+']')
-      selectedElParent = selectedEl.parent()
-      selectedElParent.remove()
-      jQuery('.map-manifest ul').prepend(selectedElParent)
-      selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>')
-      selectedElParent.css({"font-weight":"bold", "margin-bottom":"5px"})
-      selectedEl.remove()
-
+    table = ''
+    table += @_appendHeader(genomes)
+    table += '<tbody>'
+    table += @_appendGenomes(genomes.sort(pubVis, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
+    table += @_appendGenomes(genomes.sort(pvtVis, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
+    table += '</body>'
+    
+    tableElem.append(table)
+    @_actions(tableElem, @style)
     t2 = new Date()
     ft = t2-t1
 
     console.log 'MapView update elapsed time: ' +ft
     true # return success
 
-  # Helper function for update
-  _appendGenomes: (el, visibleG, genomes, style, priv) -> 
-
-    # View class
-    cls = @cssClass()
-
-    if priv && visibleG.length
-      el.append("<li class='genome_list_spacer'>---- USER-SUBMITTED GENOMES ----</li>")
-
-    for g in visibleG
-      thiscls = cls
-      thiscls = cls+' '+genomes[g].cssClass if genomes[g].cssClass?
-
-      name = genomes[g].htmlname
-      if style == 'redirect'
-        # Links
-
-        # Create elements
-        mapEl = jQuery("<li class='#{thiscls}'>#{name}</li>")
-        actionEl = jQuery("<a href='#' data-genome='#{g}'> <span class='fa fa-search'></span>info</a>")
-
-        # Set behavior
-        actionEl.click (e) -> 
-          e.preventDefault()
-          gid = @.dataset.genome
-          viewController.select(gid, true)
-
-        # Append to list
-        mapEl.append(actionEl)
-        el.append(mapEl)
-
-      else if style == 'select'
-        # Checkboxes
-        # Create elements
-        checked = ''
-        checked = 'checked' if genomes[g].isSelected
-        mapEl = jQuery("<li class='#{thiscls}'></li>")
-        labEl = jQuery("<label class='checkbox'>#{name}</label>")
-        actionEl = jQuery("<input class='checkbox' type='checkbox' value='#{g}' #{checked}/>")
-
-        # Set behavior
-        actionEl.change (e) ->
-          e.preventDefault()
-          viewController.select(@.value, @.checked)
-
-        # Append to list
-        labEl.append(actionEl)
-        mapEl.append(labEl)
-        el.append(mapEl)
-
-      else
-        return false 
-
-      true
-
-  updateCSS: (gset, genomes) -> 
-    #TODO: modify the helper functions for updating CSS
-    #Retrieve list DOM element
-    mapEl = jQuery("##{@elID}")
-    throw new SuperphyError " DOM element for map view #{@elID} not found. Cannot call MapView method updateCSS()." unless mapEl? and mapEl.length
-
-    #@_updateGenomeCSS(mapEl, gset.public, genomes.public_genomes) if gset.public?
-    #@_updateGenomeCSS(mapEl, gset.private, genomes.private_genomes) if gset.private?
-
-    true # return succes
-
-  # FUNC select
-  # Change style to indicate its selection status
-  #
-  # PARAMS
-  # genome object from GenomeController list
-  # boolean indicating if selected/unselected
-  #
-  # RETURNS
-  # boolean
-  #
-  select: (genome, isSelected) -> 
-
-    itemEl = null
-
-    if @style == 'select'
-     # Checkbox style, other styles do not have a 'select' behavior
-
-     # Find element
-     descriptor = "li input[value='#{genome}']"
-     itemEl = jQuery(descriptor)
-
+  _appendHeader: (genomes) ->
+    
+    table = '<thead><tr>'
+    values = []
+    i = -1
+    
+    # Genome
+    if @sortField is 'displayname'
+      sortIcon = 'fa-sort-asc'
+      sortIcon = 'fa-sort-desc' unless @sortAsc
+      values[++i] = { type: 'displayname', name: 'Genome', sortIcon: sortIcon}
     else
-      return false
+      values[++i] = { type: 'displayname', name: 'Genome', sortIcon: 'fa-sort'}
 
-    unless itemEl? and itemEl.length
-      throw new SuperphyError " Map element for genome #{genome} not found in MapView #{@elID}"
-      return false
+    # Genome
+    if @sortField is 'isolation_location'
+      sortIcon = 'fa-sort-asc'
+      sortIcon = 'fa-sort-desc' unless @sortAsc
+      values[++i] = {type: 'isolation_location', name: 'Location', sortIcon: sortIcon}
+    else
+      values[++i] = {type: 'isolation_location', name: 'Location', sortIcon: 'fa-sort'}
 
-    itemEl.prop('checked', isSelected);
+    # Meta fields   
+    for t in genomes.mtypes when genomes.visibleMeta[t]
+      tName = genomes.metaMap[t]
+      sortIcon = null
+      
+      if t is @sortField
+        sortIcon = 'fa-sort-asc'
+        sortIcon = 'fa-sort-desc' unless @sortAsc
+        
+      else
+        sortIcon = 'fa-sort'
+      
+      values[++i] = { type: t, name: tName, sortIcon: sortIcon}
+      
+    
+    table += @_template('th',v) for v in values
+    
+    table += '</tr></thead>'
+      
+    table
+  
+  _appendGenomes: (visibleG, genomes, style, priv) ->
+      
+      cls = @cssClass()
+      table = ''
+      
+      # Spacer    
+      if priv && visibleG.length
+        table += @_template('spacer',null)
+          
+      for g in visibleG
+        
+        row = ''
+        
+        gObj = genomes[g]
 
-    true # success
+        thiscls = cls
+        thiscls = cls+' '+gObj.cssClass if gObj.cssClass?
+        
+        name = gObj.meta_array[0]
+        if @locusData?
+          name += @locusData.genomeString(g)
+        
+        location = true if gObj.isolation_location?
+        location = false unless gObj.isolation_location?
 
+        if style == 'redirect'
+          # Links
+          
+          # Genome name
+          row += @_template('td1_redirect', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls})
+          # Genome location
+          row += @_template('td1_location', {location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_nolocation', {location: 'Unknown'}) unless location
+    
+          # Other data
+          for d in gObj.meta_array[1..-1]
+            row += @_template('td', {data: d})
+            
+          table += @_template('tr', {row: row})
+         
+        else if style == 'select'
+          # Checkboxes
+          
+          # Genome name
+          checked = ''
+          checked = 'checked' if gObj.isSelected
+          row += @_template('td1_select', {g: g, name: name, klass: thiscls, checked: checked})
+          # Genome location
+          row += @_template('td1_location', {location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_nolocation', {location: 'Unknown'}) unless location
+
+          # Other data
+          for d in gObj.meta_array[1..-1]
+            row += @_template('td', {data: d})
+            
+          table += @_template('tr', {row: row})       
+     
+        else
+          return false
+        
+      table
+
+  _template: (tmpl, values) ->
+    
+    html = null
+    if tmpl is 'tr'
+      html = "<tr>#{values.row}</tr>"
+      
+    else if tmpl is 'th'
+      html = "<th><a class='genome-table-sort' href='#' data-genomesort='#{values.type}'>#{values.name} <i class='fa #{values.sortIcon}'></i></a></th>"
+    
+    else if tmpl is 'td'
+      html = "<td>#{values.data}</td>"
+    
+    else if tmpl is 'td1_redirect'
+      html = "<td class='#{values.klass}'>#{values.name} <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
+        
+    else if tmpl is 'td1_select'
+      html = "<td class='#{values.klass}'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label></div></td>"
+      
+    else if tmpl is 'td1_location'
+      html = "<td>#{values.location}</td>"
+
+    else if tmpl is 'td1_nolocation'
+      html = "<td class='no-loc'>#{values.location}</td>"
+
+    else if tmpl is 'spacer'
+      html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>"
+    
+    else
+      throw new SuperphyError "Unknown template type #{tmpl} in TableView method _template"
+      
+    html
+    
   # FUNC dump
   # Generate CSV tab-delimited representation of all genomes with locations
   #
@@ -221,27 +282,76 @@ class MapView extends ViewTemplate
       data: output
     }
 
-  # FUNC conscriptCartographer
+  # FUNC getCartographer
   # creates a new cartographer object
-  # reappends download-view dive for better display
+  # reappends download-view div for better display
   #
   # PARAMS
   #
   # RETURNS
-  # boolean
+  # cartographer
   #
-  conscriptCartographger: () ->
+  getCartographer: (mapType, locationController) ->
     elem = @parentElem
-    @mapArgs[0] = @mapArgs[0] ? 'base'
-    cartographerTypes = {
-      'base': new Cartographer(jQuery(elem))
-      'dot': new DotCartographer(jQuery(elem))
-      'satellite': new SatelliteCartographer(jQuery(elem))
-      'infoSatellite': new InfoSatelliteCartographer(jQuery(elem), null, window.selectedGenome)
-      'geophy': new GeophyCartographer(jQuery(elem), null, @mapArgs[1])
+    mapType = mapType ? 'base'
+    cartographTypes = {
+      'base': () =>
+        new Cartographer(jQuery(elem), [locationController])
+      'dot': () =>
+        new DotCartographer(jQuery(elem), [locationController])
+      'satellite': () =>
+        new SatelliteCartographer(jQuery(elem), [locationController]) 
+      'infoSatellite': () =>
+        new InfoSatelliteCartographer(jQuery(elem), [locationController, @mapArgs[1], @mapArgs[2]])
+      'geophy': () =>
+        new GeophyCartographer(jQuery(elem), [locationController, @mapArgs[1]])
     }
-    @cartographer = cartographerTypes[@mapArgs[0]];
-    @cartographer.cartograPhy()
+    cartographer = cartographTypes[mapType]()
+    cartographer.cartograPhy()
+    return cartographer
+
+  # FUNC getLocationController
+  # creates a new location controller object
+  #
+  # PARAMS
+  #
+  # RETURNS
+  # location controller
+  #
+  getLocationController: (mapType) ->
+    cartographTypes = {
+      'base': () => 
+        null
+      'dot': () => 
+        null
+      'satellite': () =>
+        new LocationController(@genomeController, @parentElem)
+      'infoSatellite': () => 
+        new LocationController(@genomeController, @parentElem)
+      'geophy': () => 
+        new LocationController(@genomeController, @parentElem)
+    }
+    controller = cartographTypes[mapType]()
+    return controller
+
+###
+  CLASS SelectionMapView
+###
+
+class SelectionMapView extends MapView
+  constructor: (@selParentElem, @selStyle, @selElNum, @selGenomeController, @selMapArgs) ->
+    super(@selParentElem, @selStyle, @selElNum, @selGenomeController, @selMapArgs)
+
+  update: (genomes) ->
+    super
+    # /strains/info page:
+    # If genome is a selected genome add an additional css class to higlight it
+    selectedEl = jQuery('.genome_map_item a[data-genome="'+@mapController.selectedGenomeId+'"]')
+    selectedElParent = selectedEl.parent()
+    selectedElParent.prepend('<p style="padding:0px;margin:0px">Target genome: </p>')
+    selectedElParent.css({"font-weight":"bold", "margin-bottom":"5px"})
+    jQuery('.superphy-table table tbody').prepend('<tr>'+selectedElParent+'</tr>')
+    selectedEl.remove()
     true
 
 ###
@@ -252,36 +362,16 @@ class MapView extends ViewTemplate
 ###
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
-  
-  visibleStrains: false
-  map: null
-  splitLayout: '
-      <div class="col-md-6 map-search-div">
-        <table class="table map-search-table">
-          <tr>
-            <td>
-              <form class="form">
-                <fieldset>
-                  <div>
-                    <div class="input-group">
-                      <input type="text" class="form-control map-search-location" placeholder="Enter a search location">
-                        <span class="input-group-btn">
-                          <button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </fieldset>
-              </form>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div class="map-canvas"></div>
-            </td>
-          </tr>
-        </table>
-      </div>'
+    @mapOptions = {
+      center: new google.maps.LatLng(-0.000, 0.000),
+      zoom: 1,
+      streetViewControl: false,
+      mapTypeId: google.maps.MapTypeId.ROADMAP
+      }
+    @mapBounds
+    @map = new google.maps.Map(jQuery(@cartographDiv).find('.map-canvas')[0], @mapOptions)
+    jQuery('.map-search-button').bind('click', {context: @}, @pinPoint)
+
 
   # FUNC cartograPhy
   # initializes map in specified map div
@@ -292,16 +382,6 @@ class Cartographer
   # google map object drawn into specified div
   #
   cartograPhy: () ->
-    jQuery(@cartographDiv).prepend(@splitLayout)
-    @map = null if @map?
-    cartograhOpt = {
-      center: new google.maps.LatLng(-0.000, 0.000),
-      zoom: 1,
-      streetViewControl: false,
-      mapTypeId: google.maps.MapTypeId.ROADMAP
-    }
-    @map = new google.maps.Map(jQuery(@cartographDiv).find('.map-canvas')[0], cartograhOpt)
-    jQuery('.map-search-button').bind('click', {context: @}, @pinPoint)
     true
 
   # FUNC pinPoint
@@ -359,8 +439,8 @@ class DotCartographer extends Cartographer
   #
   cartograPhy: () ->
     super
-    google.maps.event.addListener(@map , 'click', (event) ->
-      DotCartographer::plantFlag(event.latLng, @)
+    google.maps.event.addListener(@map , 'click', (event) =>
+      @plantFlag(event.latLng, @)
       )
     true
 
@@ -429,14 +509,9 @@ class SatelliteCartographer extends Cartographer
   constructor: (@satelliteCartographDiv, @satelliteCartograhOpt) ->
     # Call default constructor
     super(@satelliteCartographDiv, @satelliteCartograhOpt)
-
-  visibleStrains: true
-  clusterList: []
-  visibileStrainLocations: {}
-
-  markerClusterer: null
-
-  mapViewIndex: null
+    @locationController = @satelliteCartograhOpt[0]
+    @allMarkers = @locationController.pubMarkers.concat @locationController.pvtMarkers
+    @setMarkers(@allMarkers)
 
   # FUNC cartograPhy overrides Cartographer
   # initializes map in specified map div
@@ -451,24 +526,7 @@ class SatelliteCartographer extends Cartographer
   # google map object drawn into specified div
   #
   cartograPhy: () ->
-    
-    # Init strain lis
-    jQuery(@satelliteCartographDiv).prepend('<div class="col-md-5 map-manifest"></div>')
-      
-    # Init the map
     super
-    
-    # Init the visible list of strains and convert these to markers
-    @updateMarkerLists(viewController.genomeController, @map)
-    
-    # Init the marker clusterer
-    @markerCluster(@map)
-    
-    # Set mapViewIndex for easy lookup
-    index = @findMapViewIndex(viewController.views)
-    @mapViewIndex = index
-    jQuery(@satelliteCartographDiv).data("viewsIndex", index);
-
     # Map viewport change event
     google.maps.event.addListener(@map, 'zoom_changed', () =>
       @markerClusterer.clearMarkers()
@@ -480,83 +538,32 @@ class SatelliteCartographer extends Cartographer
       @markerClusterer.clearMarkers()
       )
     google.maps.event.addListener(@map, 'idle', () =>
-      @updateMarkerLists(viewController.genomeController, @map)
-      viewController.getView(@mapViewIndex).update(viewController.genomeController)
-      @markerClusterer.addMarkers(@clusterList)
+      view.update(viewController.genomeController) for view in viewController.views
       )
     true
 
-  # FUNC updateMarkerLists
+  # FUNC updateVisible
   # Initializes and sets lists of genomes with known locations
   # Initializes and sets lists of markers for google maps and marker clusterer
   # Resets lists to contain only those markers visible in the viewport of the map
   #
   # PARAMS
-  # list of genomeContorller genomes, map 
+  # list of genomeController genomes, map 
   #
   # RETURNS
   #
-  updateMarkerLists: (genomes, map) ->
-    # Init public strains
-    @clusterList = []
-    @visibileStrainLocations.pubVisible = []
-    @visibileStrainLocations.pvtVisible = []
+  updateVisible: () ->
+    # TODO:
+    genomes = @locationController.genomeController
+    @visibleLocations = []
+    @clusteredMarkers = []
 
-    for pubGenomeId, public_genome of genomes.public_genomes
-      if public_genome.isolation_location? && public_genome.isolation_location != ""
-        pubMarkerObj = @parseLocation(public_genome)
-
-        circleIcon = {
-          path: google.maps.SymbolPath.CIRCLE
-          fillColor: '#FF0000'
-          fillOpacity: 0.8
-          scale: 5
-          strokeColor: '#FF0000'
-          strokeWeight: 1
-        }
-
-        pubMarker = new google.maps.Marker({
-          map: map
-          icon: circleIcon
-          position: pubMarkerObj['centerLatLng']
-          title: public_genome.uniquename
-          feature_id: pubGenomeId
-          uniquename: public_genome.uniquename
-          location: pubMarkerObj['locationName']
-          })
-
-        @clusterList.push(pubMarker)
-
-        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
-          @visibileStrainLocations.pubVisible.push(pubGenomeId)
-
-
-    for pvtGenomeId, private_genome of genomes.private_genomes
-      if private_genome.isolation_location? && private_genome.isolation_location != ""
-        pvtMarkerObj = @parseLocation(private_genome)
-
-        circleIcon = {
-          path: google.maps.SymbolPath.CIRCLE
-          fillColor: '#000000'
-          fillOpacity: 0.8
-          scale: 5
-          strokeColor: '#FF0000'
-          strokeWeight: 1
-        }
-
-        pvtMarker = new google.maps.Marker({
-          map: map
-          position: pvtMarkerObj['centerLatLng']
-          title: private_genome.uniquename
-          feature_id: pvtGenomeId
-          uniquename: private_genome.uniquename
-          location: pvtMarkerObj['locationName']
-          })
-
-        @clusterList.push(pvtMarker)
-
-        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
-          @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
+    for marker in @allMarkers
+      # Check if present on map
+      if @map.getBounds() != undefined && @map.getBounds().contains(marker.getPosition()) && (marker.feature_id in genomes.pubVisible || marker.feature_id in genomes.pvtVisible)
+        @clusteredMarkers.push(marker)
+        @visibleLocations.push(marker.feature_id)
+    
     true
 
   # FUNC markerClusterer
@@ -567,25 +574,24 @@ class SatelliteCartographer extends Cartographer
   # 
   # RETURNS
   #
-  markerCluster: (map) ->
-    mcOptions = {gridSize: 50, maxZoom: 15}
-    @markerClusterer = new MarkerClusterer(map, @clusterList, mcOptions)
-    true
+  setMarkers: (markerList) ->
+    circleIcon = {
+      path: google.maps.SymbolPath.CIRCLE
+      fillColor: '#FF0000'
+      fillOpacity: 0.8
+      scale: 5
+      strokeColor: '#FF0000'
+      strokeWeight: 1
+      }
 
-  # FUNC findMapViewIndex
-  # gets the index of MapView object from the list of views
-  #
-  # PARAMS
-  # list of views
-  #
-  # RETURNS
-  # index of MapView
-  #
-  findMapViewIndex: (views) ->
-    for v, index in views
-      if v.mapView?
-        return index
-    return null
+    for marker in markerList
+      marker.setMap(@map)
+      marker.setIcon(circleIcon)
+    
+    mcOptions = {gridSize: 50, maxZoom: 15}
+    # Sets the markerClusterer object
+    @markerClusterer = new MarkerClusterer(@map, markerList, mcOptions)
+    true
 
   # FUNC resetMap
   # recenters the map in the map-canvas div when bootstrap map-tab and map-panel divs clicked
@@ -596,61 +602,67 @@ class SatelliteCartographer extends Cartographer
   #
   # RETURNS
   #
-  resetMap: ()  ->
-    @updateMarkerLists(viewController.genomeController, @map)
+  resetMap: ()  =>
+    @updateVisible()
     x = @map.getZoom();
     c = @map.getCenter();
-    google.maps.event.trigger(@map, 'resize');
+    google.maps.event.trigger(@map, 'resize')
     @map.setZoom(x);
     @map.setCenter(c);
-    @markerClusterer.addMarkers(@clusterList)
+    @markerClusterer.clearMarkers()
+    @markerClusterer.addMarkers(@clusteredMarkers)
+    true
 
-  # FUNC parseLocation
-  # parses the location out from a genome object
-  # parses location name, center latLng point, SW and NE boundary latLng points
-  #
-  # PARAMS
-  # genomeController genome
-  #
-  # RETURNS
-  # marker object
-  #
-  parseLocation: (genome) ->
-    genomeLocation = JSON.parse(genome.isolation_location[0])
-    # Get location from genome
-    locationName = genomeLocation.formatted_address
-    # Get location coordinates
-    locationCoordinates = genomeLocation.geometry
-    # Get location center
-    locationCenter = locationCoordinates.location
-    # Get center lat
-    locationCenterLat = locationCenter.lat
-    # Get center Lng
-    locationCenterLng = locationCenter.lng
-    # Get location SW boundary
-    locationViewPortSW = locationCoordinates.bounds.southwest
-    # Get SW boundary lat
-    locationViewPortSWLat = locationViewPortSW.lat
-    # Get SW boundary Lng
-    locationViewPortSWLng = locationViewPortSW.lng
-    # Get location NE boundary
-    locationViewPortNE = locationCoordinates.bounds.northeast
-    # Get NE boundary lat
-    locationViewPortNELat = locationViewPortNE.lat
-    # Get NE boundary lng
-    locationViewPortNELng = locationViewPortNE.lng
 
-    centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng)
-    swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng)
-    neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng)
-    markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng)
+class GeophyCartographer extends SatelliteCartographer
+  constructor: (@geophyCartographDiv, @geophyCartograhOpt) ->
+    # Set Group Colors
+    @genomeGroupColor = @geophyCartograhOpt[1]
+    # Call default constructor
+    super(@geophyCartographDiv, @geophyCartograhOpt)
 
-    markerObj = {}
-    markerObj['locationName'] = locationName
-    markerObj['centerLatLng'] = centerLatLng
-    markerObj['markerBounds'] = markerBounds
+  setMarkers: (markerList) ->
+    blue = '#1f77b4';
+    orange = '#ff7f0e';
+    green = '#2ca02c';
+    red = '#d62728';
+    purple = '#9467bd';
+    brown = '#8c564b';
+    pink = '#e377c2';
+    grey = '#7f7f7f';
+    lime = '#bcbd22';
+    aqua = '#17becf';
 
-    return markerObj
+    colors = {
+      'group1Color': blue;
+      'group2Color': orange;
+      'group3Color': green;
+      'group4Color': red;
+      'group5Color': purple;
+      'group6Color': pink;
+      'group7Color': brown;
+      'group8Color': grey;
+      'group9Color': aqua;
+      'group10Color': lime;
+    }
+
+    for marker in markerList
+      circleIcon = {
+        path: google.maps.SymbolPath.CIRCLE
+        fillColor: colors["group#{@genomeGroupColor[marker.feature_id]}Color"]
+        fillOpacity: 0.8
+        scale: 5
+        strokeColor: colors["group#{@genomeGroupColor[marker.feature_id]}Color"]
+        strokeWeight: 1
+        }
+
+      marker.setMap(@map)
+      marker.setIcon(circleIcon)
+    
+    mcOptions = {gridSize: 50, maxZoom: 15}
+    # Sets the markerClusterer object
+    @markerClusterer = new MarkerClusterer(@map, markerList, mcOptions)
+    true
 
 ###
   CLASS InfoSatelliteCartographer
@@ -664,15 +676,15 @@ class SatelliteCartographer extends Cartographer
 
 ###
 class InfoSatelliteCartographer extends SatelliteCartographer
-  constructor: (@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt, @infoSelectedGenome) ->
+  constructor: (@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt) ->
     # Call default constructor
-    super(@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt, @infoSelectedGenome)
-
-  selectedGenomeLocation: null
+    super(@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt)
+    @selectedGenomeId = @infoSatelliteCartograhOpt[1]
+    @selectedGenome = @infoSatelliteCartograhOpt[2]
+    @selectedGenomeLocation = @locationController._parseLocation(@selectedGenome)
 
   cartograPhy: () ->
     super
-    @selectedGenomeLocation = @parseLocation(@infoSelectedGenome)
     @showSelectedGenome(@selectedGenomeLocation ,@map)
     @showLegend()
 
@@ -680,7 +692,6 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     unless location?
       throw new SuperphyError('Location cannot be determined or location is undefined (not specified)!')
       return 0
-
     maxZndex = google.maps.Marker.MAX_ZINDEX
     zInd = maxZndex + 1
     markerLatLng = new google.maps.LatLng(location.centerLatLng)
@@ -764,105 +775,114 @@ class CartographerOverlay
     div.style.left = (location.x - 11) + 'px'
     div.style.top = (location.y - 40) + 'px'
 
-class GeophyCartographer extends SatelliteCartographer
-  constructor: (@geophyCartographDiv, @geophyCartograhOpt, @genomeGroupColor) ->
-    # Call default constructor
-    super(@geophyCartographDiv, @geophyCartograhOpt, @genomeGroupColor)
 
-  # FUNC updateMarkerLists overrides SatelliteCartographer
-  # Initializes and sets lists of genomes with known locations
-  # Initializes and sets lists of markers for google maps and marker clusterer
-  # Resets lists to contain only those markers visible in the viewport of the map
-  # Colours markers according to the groups they belong to
-  #
-  # PARAMS
-  # list of genomeContorller genomes, map 
-  #
-  # RETURNS
-  #
-  updateMarkerLists: (genomes, map) ->
-    # Init public strains
-    @clusterList = []
-    @visibileStrainLocations.pubVisible = []
-    @visibileStrainLocations.pvtVisible = []
+# New class to handle the genome locations and the list
+class LocationController
+  constructor: (@genomeController, @parentElem) ->
+    @_populateLocations(@genomeController)
+    #Handle error messages here
 
-    blue = '#1f77b4';
-    orange = '#ff7f0e';
-    green = '#2ca02c';
-    red = '#d62728';
-    purple = '#9467bd';
-    brown = '#8c564b';
-    pink = '#e377c2';
-    grey = '#7f7f7f';
-    lime = '#bcbd22';
-    aqua = '#17becf';
+  # Genomes with locations
+  pubLocations: null
+  pvtLocations: null
 
-    colors = {
-      'group1Color': blue;
-      'group2Color': orange;
-      'group3Color': green;
-      'group4Color': red;
-      'group5Color': purple;
-      'group6Color': pink;
-      'group7Color': brown;
-      'group8Color': grey;
-      'group9Color': aqua;
-      'group10Color': lime;
-    }
+  # Genomes without locations
+  pubNoLocations: null
+  pvtNoLocaitons: null
+
+  # Created Markers
+  pubMarkers: null
+  pvtMarkers: null
+
+  _populateLocations: (genomes) ->
+    @pubLocations = []
+    @pvtLocations = []
+    @pubNoLocations = []
+    @pvtNoLocaitons = []
+    @pubMarkers = []
+    @pvtMarkers = []
 
     for pubGenomeId, public_genome of genomes.public_genomes
-      if public_genome.isolation_location? && public_genome.isolation_location != ""
-        pubMarkerObj = @parseLocation(public_genome)
-
-        circleIcon = {
-          path: google.maps.SymbolPath.CIRCLE
-          fillColor: colors["group#{@genomeGroupColor[pubGenomeId]}Color"]
-          fillOpacity: 0.8
-          scale: 5
-          strokeColor: colors["group#{@genomeGroupColor[pubGenomeId]}Color"]
-          strokeWeight: 1
-        }
+      unless public_genome.isolation_location? && public_genome.isolation_location != ""
+        @pubNoLocations.push(pubGenomeId)
+      else
+        pubMarkerObj = @_parseLocation(public_genome)
+        @pubLocations.push(pubGenomeId)
 
         pubMarker = new google.maps.Marker({
-          map: map
-          icon: circleIcon
           position: pubMarkerObj['centerLatLng']
           title: public_genome.uniquename
           feature_id: pubGenomeId
           uniquename: public_genome.uniquename
           location: pubMarkerObj['locationName']
+          privacy: 'public'
           })
 
-        @clusterList.push(pubMarker)
-
-        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
-          @visibileStrainLocations.pubVisible.push(pubGenomeId)
-
+        @pubMarkers.push(pubMarker)
 
     for pvtGenomeId, private_genome of genomes.private_genomes
-      if private_genome.isolation_location? && private_genome.isolation_location != ""
-        pvtMarkerObj = @parseLocation(private_genome)
-
-        circleIcon = {
-          path: google.maps.SymbolPath.CIRCLE
-          fillColor: colors["group#{@genomeGroupColor[pvtGenomeId]}Color"]
-          fillOpacity: 0.8
-          scale: 5
-          strokeColor: colors["group#{@genomeGroupColor[pvtGenomeId]}Color"]
-          strokeWeight: 1
-        }
+      unless private_genome.isolation_location? && private_genome.isolation_location != ""
+        @pvtNoLocaitons.push(pvtGenomeId)
+      else
+        pvtMarkerObj = @_parseLocation(private_genome)
+        @pvtLocations.push(pvtGenomeId)
 
         pvtMarker = new google.maps.Marker({
-          map: map
           position: pvtMarkerObj['centerLatLng']
           title: private_genome.uniquename
           feature_id: pvtGenomeId
           uniquename: private_genome.uniquename
           location: pvtMarkerObj['locationName']
-          })
+          privacy: 'private'
+          })            
 
-        @clusterList.push(pvtMarker)
+        @pvtMarkers.push(pvtMarker)
 
-        if map.getBounds() != undefined && map.getBounds().contains(pubMarker.getPosition())
-          @visibileStrainLocations.pvtVisible.push(pvtGenomeId)
     true
+
+  # FUNC parseLocation
+  # parses the location out from a genome object
+  # parses location name, center latLng point, SW and NE boundary latLng points
+  #
+  # PARAMS
+  # genomeController genome
+  #
+  # RETURNS
+  # marker object
+  #
+  _parseLocation: (genome) ->
+    genomeLocation = JSON.parse(genome.isolation_location[0])
+    # Get location from genome
+    locationName = genomeLocation.formatted_address
+    # Get location coordinates
+    locationCoordinates = genomeLocation.geometry
+    # Get location center
+    locationCenter = locationCoordinates.location
+    # Get center lat
+    locationCenterLat = locationCenter.lat
+    # Get center Lng
+    locationCenterLng = locationCenter.lng
+    # Get location SW boundary
+    locationViewPortSW = locationCoordinates.bounds.southwest
+    # Get SW boundary lat
+    locationViewPortSWLat = locationViewPortSW.lat
+    # Get SW boundary Lng
+    locationViewPortSWLng = locationViewPortSW.lng
+    # Get location NE boundary
+    locationViewPortNE = locationCoordinates.bounds.northeast
+    # Get NE boundary lat
+    locationViewPortNELat = locationViewPortNE.lat
+    # Get NE boundary lng
+    locationViewPortNELng = locationViewPortNE.lng
+
+    centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng)
+    swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng)
+    neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng)
+    markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng)
+
+    markerObj = {}
+    markerObj['locationName'] = locationName
+    markerObj['centerLatLng'] = centerLatLng
+    markerObj['markerBounds'] = markerBounds
+
+    return markerObj

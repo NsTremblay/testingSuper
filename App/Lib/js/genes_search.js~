@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var appendGenes, appendHeader, root, sort, template;
+  var root;
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
@@ -18,7 +18,7 @@
 
   root.numAmrSelected = 0;
 
-  root.initGeneList = function(gList, geneType, categories, tableElem, selElem, countElem, catElem, autocElem, multi_select) {
+  root.initGeneList = function(gList, geneType, categories, listElem, selElem, countElem, catElem, autocElem, multi_select) {
     var dObj, k, o;
     if (multi_select == null) {
       multi_select = true;
@@ -36,10 +36,8 @@
       genes: gList,
       categories: categories,
       num_selected: 0,
-      sortField: 'name',
-      sortAsc: true,
       element: {
-        table: tableElem,
+        list: listElem,
         select: selElem,
         count: countElem,
         category: catElem,
@@ -49,20 +47,34 @@
     };
   };
 
-  root.appendGeneTable = function(d) {
-    var cboxes, name, table, tableElem, tableHtml;
-    table = d.element.table;
+  root.appendGeneList = function(d) {
+    var cboxes, checked, id, item, k, link, list, listHtml, name, o, _ref;
+    list = d.element.list;
     name = "" + d.type + "-gene";
-    tableElem = jQuery("<table />").appendTo(table);
-    tableHtml = '';
-    tableHtml += appendHeader(d);
-    tableHtml += '<tbody>';
-    tableHtml += appendGenes(d, sort(d.genes, d.sortField, d.sortAsc), d.genes, d.type, 'select');
-    tableHtml += '</tbody>';
-    tableElem.append(tableHtml);
-    cboxes = table.find("input[name='" + name + "']");
+    listHtml = "";
+    _ref = d.genes;
+    for (k in _ref) {
+      o = _ref[k];
+      if (o.visible) {
+        id = "" + d.type + "-gene-" + k;
+        item;
+        link = "<a href='/genes/info?" + d.type + "=" + k + "'><i class='fa fa-search'></i></a>";
+        if (d.multi_select) {
+          checked = '';
+          if (o.selected) {
+            checked = 'checked';
+          }
+          item = "<li><label class='checkbox'>" + ("<input id='" + id + "' class='checkbox gene-search-select' type='checkbox' name='" + name + "' value='" + k + "' " + checked + "/>") + ("" + o.name + " - " + o.uniquename + " " + link) + "</label></li>";
+        } else {
+          item = "<li>" + o.name + " - " + o.uniquename + " " + link + "</li>";
+        }
+        listHtml += item;
+      }
+    }
+    list.append(listHtml);
+    cboxes = list.find("input[name='" + name + "']");
     cboxes.change(function() {
-      var checked, geneId, obj;
+      var geneId, obj;
       obj = $(this);
       geneId = obj.val();
       checked = obj.prop('checked');
@@ -72,163 +84,12 @@
     return true;
   };
 
-  sort = function(gids, metaField, asc) {
-
-    /*  return gids unless gids.length
-     
-    that = @
-    gids.sort (a,b) ->
-      aObj = that.genome(a)
-      bObj = that.genome(b)
-      
-      aField = aObj[metaField]
-      aName = aObj.displayname.toLowerCase()
-      bField = bObj[metaField]
-      bName = bObj.displayname.toLowerCase()
-      
-      if aField? and bField?
-        
-        if typeIsArray aField
-          aField = aField.join('').toLowerCase()
-          bField = bField.join('').toLowerCase()
-        else
-          aField = aField.toLowerCase()
-          bField = bField.toLowerCase()
-          
-        if aField < bField
-          return -1
-        else if aField > bField
-          return 1
-        else
-          if aName < bName
-            return -1
-          else if aName > bName
-            return 1
-          else
-            return 0
-            
-      else
-        if aField? and not bField?
-          return -1
-        else if bField? and not aField?
-          return 1
-        else
-          if aName < bName
-            return -1
-          else if aName > bName
-            return 1
-          else
-            return 0
-    
-    if not asc
-      gids.reverse()
-     */
-    return gids;
-  };
-
-  template = function(tmpl, values) {
-    var html;
-    html = null;
-    if (tmpl === 'tr') {
-      html = "<tr>" + values.row + "</tr>";
-    } else if (tmpl === 'th') {
-      html = "<th><a class='genome-table-sort' href='#' data-genomesort='" + values.type + "'>" + values.name + " <i class='fa " + values.sortIcon + "'></i></a></th>";
-    } else if (tmpl === 'td') {
-      html = "<td>" + values.data + "</td>";
-    } else if (tmpl === 'td1_redirect') {
-      html = "<td class='" + values.klass + "'>" + values.name + " <a class='gene-table-link' href='/genes/info?" + values.type + "=" + values.g + "' data-gene='" + values.g + "' title='" + values.name + " info'><i class='fa fa-external-link'></i></a></td>";
-    } else if (tmpl === 'td1_select') {
-      html = "<td class='" + values.klass + "'><div class='checkbox'><label><input class='checkbox gene-table-checkbox gene-search-select' type='checkbox' value='" + values.g + "' " + values.checked + " name='" + values.type + "-gene'/> " + values.name + "</label> <a class='gene-table-link' href='/genes/info?" + values.type + "=" + values.g + "' data-gene='" + values.g + "' title='" + values.name + " info'><i class='fa fa-search'></i></a></div></td>";
-    } else {
-      throw new SuperphyError("Unknown template type " + tmpl + " in TableView method _template");
-    }
-    return html;
-  };
-
-  appendHeader = function(d) {
-    var i, sortIcon, table, v, values, _i, _len;
-    table = '<thead><tr>';
-    values = [];
-    i = -1;
-    if (d.sortField === 'name') {
-      sortIcon = 'fa-sort-asc';
-      if (!d.sortAsc) {
-        sortIcon = 'fa-sort-desc';
-      }
-      values[++i] = {
-        type: 'name',
-        name: 'Gene Name',
-        sortIcon: sortIcon
-      };
-    } else {
-      values[++i] = {
-        type: 'name',
-        name: 'Gene Name',
-        sortIcon: 'fa-sort'
-      };
-    }
-    values[++i] = {
-      type: 'uniquename',
-      name: 'Unique Name',
-      sortIcon: 'fa-sort'
-    };
-    for (_i = 0, _len = values.length; _i < _len; _i++) {
-      v = values[_i];
-      table += template('th', v);
-    }
-    table += '</thead></tr>';
-    return table;
-  };
-
-  appendGenes = function(d, visibleG, genes, type, style) {
-    var checked, gId, gObj, geneObj, name, row, table, uniquename;
-    table = '';
-    for (gId in visibleG) {
-      gObj = visibleG[gId];
-      row = '';
-      geneObj = genes[gId];
-      name = geneObj.name;
-      uniquename = geneObj.uniquename;
-      if (!geneObj.visible) {
-        continue;
-      }
-      if (style === 'redirect') {
-        row += template('td1_redirect', {
-          klass: 'gene_table_item',
-          name: name,
-          type: type
-        });
-      } else if (style = "select") {
-        checked = '';
-        if (geneObj.selected) {
-          checked = 'checked';
-        }
-        row += template('td1_select', {
-          klass: 'gene_table_item',
-          g: gId,
-          name: name,
-          type: type,
-          checked: checked
-        });
-      } else {
-        return false;
-      }
-      row += template('td', {
-        data: uniquename
-      });
-      table += template('tr', {
-        row: row
-      });
-    }
-    return table;
-  };
-
   root.filterGeneList = function(d) {
     var searchTerm;
     searchTerm = d.element.autocomplete.val();
     matching(d.genes, searchTerm);
-    d.element.table.empty();
-    appendGeneTable(d);
+    d.element.list.empty();
+    appendGeneList(d);
     return true;
   };
 
@@ -326,9 +187,9 @@
       }
       o.visible = true;
     }
-    d.element.table.empty();
+    d.element.list.empty();
     console.log(d);
-    appendGeneTable(d);
+    appendGeneList(d);
     return true;
   };
 

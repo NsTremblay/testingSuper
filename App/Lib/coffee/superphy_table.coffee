@@ -29,13 +29,11 @@ class TableView extends ViewTemplate
       
     # Call default constructor - creates unique element ID                  
     super(@parentElem, @style, @elNum)
-    
+
     # Sort selection
     @sortField = 'displayname'
     @sortAsc = true
-    
-    
-  
+
   type: 'table'
   
   elName: 'genome_table'
@@ -61,7 +59,7 @@ class TableView extends ViewTemplate
       divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
       tableElem = jQuery("<table />").appendTo(divElem)
       jQuery(@parentElem).append(divElem)
-      
+
     # Append genomes to table
     t1 = new Date()
     table = ''
@@ -69,16 +67,17 @@ class TableView extends ViewTemplate
     table += '<tbody>'
     table += @_appendGenomes(genomes.sort(genomes.pubVisible, @sortField, @sortAsc), genomes.public_genomes, @style, false)
     table += @_appendGenomes(genomes.sort(genomes.pvtVisible, @sortField, @sortAsc), genomes.private_genomes, @style, true)
-    table += '</body>'
+    table += '</tbody>'
+
     tableElem.append(table)
     @_actions(tableElem, @style)
-    t2 = new Date()
+
+    t2 = new Date()    
     
     ft = t2-t1
     console.log('TableView update elapsed time: '+ft)
     
     true # return success
-  
   
   _template: (tmpl, values) ->
     
@@ -244,7 +243,9 @@ class TableView extends ViewTemplate
     
   
   _updateGenomeCSS: (el, changedG, genomes) ->
-    
+    #TODO: If the user tries to delete a genome from a group that has been filtered out, they will get an error
+    #Might need to overrride this for the mapViews
+
     # View class
     cls = @cssClass()
     
@@ -260,10 +261,11 @@ class TableView extends ViewTemplate
         # Find element
         descriptor = "td > a[data-genome='#{g}']"
         itemEl = el.find(descriptor)
-        
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
-          return false
+
+        unless itemEl? and itemEl.length and genomes[g].visible is true
+          continue
+          #throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
+          #return false
           
         dataEl = itemEl.parent()
        
@@ -274,9 +276,10 @@ class TableView extends ViewTemplate
         descriptor = "td input[value='#{g}']"
         itemEl = el.find(descriptor)
         
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
-          return false
+        unless itemEl? and itemEl.length and genomes[g].visible is true
+          continue
+          #throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
+          #return false
           
         dataEl = itemEl.parents().eq(1)
    
@@ -393,8 +396,6 @@ class TableView extends ViewTemplate
   # boolean 
   #      
   _sort: (genomes, field) ->
-    
-    
     
     if field is @sortField
       # If the same field is clicked again, reverse sort order

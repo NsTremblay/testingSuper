@@ -327,22 +327,6 @@ td.msaPosition {
   border-width: 1px;
   border-color: #d3d3d3;
 }
-.superphy-jump2-list {
-  padding-bottom: 20px;
-  padding-right: 8px;
-  margin: 5px;
-}
-.superphy-jump2-list ul {
-  list-style-type: none;
-  display: block;
-  max-height: 300px;
-  overflow: auto;
-  padding: 10px;
-  margin: 0px;
-  border-style: solid;
-  border-width: 1px;
-  border-color: #d3d3d3;
-}
 li.genome_group10 {
   color: #91921a;
   font: italic bold 13px sans-serif;
@@ -748,12 +732,13 @@ div.matrixSort {
 /** Table *********************************/
 .superphy-table {
   max-height: 450px;
+  max-width: 100%;
   overflow-y: scroll;
+  overflow-x: scroll;
   display: inline-block;
   border-style: solid;
   border-width: 1px;
   border-color: #d3d3d3;
-  margin: 20px;
 }
 .superphy-table table {
   background-color: #FFF;
@@ -775,11 +760,156 @@ div.matrixSort {
   background-color: #FFF;
   vertical-align: top;
 }
+.superphy-table table tbody .genome_group10 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group10 label {
+  color: #dadb37;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group9 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group9 label {
+  color: #31d7e8;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group8 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group8 label {
+  color: #999999;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group7 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group7 label {
+  color: #aa6d60;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group6 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group6 label {
+  color: #eca1d5;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group5 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group5 label {
+  color: #ad8bcc;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group4 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group4 label {
+  color: #df5152;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group3 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group3 label {
+  color: #37c837;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group2 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group2 label {
+  color: #ff9a41;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group1 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group1 label {
+  color: #2b93db;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody td.gene_table_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-table table tbody td.gene_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.gene_table_item .gene-table-link {
+  display: inline;
+}
 .superphy-table table tbody td.genome_table_item div.checkbox {
   margin: 0;
   padding: 0;
 }
 .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.genome_map_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.no-loc {
+  color: #d3d3d3;
+  font-weight: 100;
+  font-style: italic;
+}
+.superphy-jump2-table {
+  padding-bottom: 20px;
+  padding-right: 8px;
+  margin: 5px;
+}
+.superphy-jump2-table .superphy-table {
+  max-height: 300px;
+  max-width: 100%;
+  overflow-x: scroll;
+  overflow-y: scroll;
+}
+.superphy-jump2-table .superphy-table table {
+  background-color: #FFF;
+  font-size: 10pt;
+  text-align: left;
+  border-collapse: collapse;
+  margin: auto;
+}
+.superphy-jump2-table .superphy-table table thead th {
+  background-color: #e6EEEE;
+  border: 1px solid #FFF;
+  font-size: 10pt;
+  padding: 4px;
+}
+.superphy-jump2-table .superphy-table table tbody td {
+  color: #3D3D3D;
+  padding: 4px;
+  background-color: #FFF;
+  vertical-align: top;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_table_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
+  line-height: normal;
+  margin: 0 5px 0 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox {
+  margin: 0;
+  padding: 0;
+}
+.superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
+  min-height: 20px;
   line-height: normal;
   margin: 0 5px 0 0;
 }
@@ -1231,10 +1361,6 @@ Date: May 20th, 2014
   border-style: solid;
   padding: 10px;
 }
-.panel-div {
-  max-height: 500px;
-  overflow: auto;
-}
 .well {
   border-radius: 0px;
   border: none;
@@ -1330,11 +1456,18 @@ Date: May 20th, 2014
 }
 #genome-group-add10 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #bcbd22;
+  border: none;
   margin: 10px;
 }
 #genome-group-add10 span {
+  color: #e2e362;
+}
+#genome-group-clear10 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear10 span {
   color: #e2e362;
 }
 #genome-group-list10 div a span {
@@ -1353,11 +1486,18 @@ Date: May 20th, 2014
 }
 #genome-group-add9 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #17becf;
+  border: none;
   margin: 10px;
 }
 #genome-group-add9 span {
+  color: #5fe0ed;
+}
+#genome-group-clear9 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear9 span {
   color: #5fe0ed;
 }
 #genome-group-list9 div a span {
@@ -1376,11 +1516,18 @@ Date: May 20th, 2014
 }
 #genome-group-add8 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #7f7f7f;
+  border: none;
   margin: 10px;
 }
 #genome-group-add8 span {
+  color: #b2b2b2;
+}
+#genome-group-clear8 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear8 span {
   color: #b2b2b2;
 }
 #genome-group-list8 div a span {
@@ -1399,11 +1546,18 @@ Date: May 20th, 2014
 }
 #genome-group-add7 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #8c564b;
+  border: none;
   margin: 10px;
 }
 #genome-group-add7 span {
+  color: #bc8b81;
+}
+#genome-group-clear7 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear7 span {
   color: #bc8b81;
 }
 #genome-group-list7 div a span {
@@ -1422,11 +1576,18 @@ Date: May 20th, 2014
 }
 #genome-group-add6 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #e377c2;
+  border: none;
   margin: 10px;
 }
 #genome-group-add6 span {
+  color: #f4cce8;
+}
+#genome-group-clear6 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear6 span {
   color: #f4cce8;
 }
 #genome-group-list6 div a span {
@@ -1445,11 +1606,18 @@ Date: May 20th, 2014
 }
 #genome-group-add5 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #9467bd;
+  border: none;
   margin: 10px;
 }
 #genome-group-add5 span {
+  color: #c6aedc;
+}
+#genome-group-clear5 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear5 span {
   color: #c6aedc;
 }
 #genome-group-list5 div a span {
@@ -1468,11 +1636,18 @@ Date: May 20th, 2014
 }
 #genome-group-add4 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #d62728;
+  border: none;
   margin: 10px;
 }
 #genome-group-add4 span {
+  color: #e77c7d;
+}
+#genome-group-clear4 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear4 span {
   color: #e77c7d;
 }
 #genome-group-list4 div a span {
@@ -1491,11 +1666,18 @@ Date: May 20th, 2014
 }
 #genome-group-add3 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #2ca02c;
+  border: none;
   margin: 10px;
 }
 #genome-group-add3 span {
+  color: #5fd35f;
+}
+#genome-group-clear3 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear3 span {
   color: #5fd35f;
 }
 #genome-group-list3 div a span {
@@ -1514,11 +1696,18 @@ Date: May 20th, 2014
 }
 #genome-group-add2 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #ff7f0e;
+  border: none;
   margin: 10px;
 }
 #genome-group-add2 span {
+  color: #ffb574;
+}
+#genome-group-clear2 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear2 span {
   color: #ffb574;
 }
 #genome-group-list2 div a span {
@@ -1537,11 +1726,18 @@ Date: May 20th, 2014
 }
 #genome-group-add1 {
   background-color: #fff;
-  border-radius: 0px;
-  border-color: #1f77b4;
+  border: none;
   margin: 10px;
 }
 #genome-group-add1 span {
+  color: #57a9e2;
+}
+#genome-group-clear1 {
+  background-color: #fff;
+  border: none;
+  margin: 10px;
+}
+#genome-group-clear1 span {
   color: #57a9e2;
 }
 #genome-group-list1 div a span {
@@ -1572,4 +1768,7 @@ Date: May 20th, 2014
 #group-manager-form div.form-group button {
   margin-left: 2px;
   margin-right: 2px;
+}
+.form-group {
+  margin-bottom: 0px;
 }

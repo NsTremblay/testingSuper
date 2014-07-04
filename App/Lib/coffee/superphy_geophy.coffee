@@ -6,19 +6,13 @@ class GeoPhy
   genomeController: null
 
   init: (boolShowall) ->
-    #TODO:
-    console.log boolShowall
-
-    if not @userGroups?
-      @initReset()
-    else if @userGroups? and boolShowall
-      @initShowall()
+    if not @userGroups? or @userGroups? and boolShowall
+      @_showall()
     else if @userGroups? and not boolShowall
-      @initFilter()
-
+      @_filter()
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
-    
+    jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12') 
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
@@ -104,14 +98,10 @@ class GeoPhy
 
       rowEl.append(div)
 
-    # TODO:
-
     submitEl = jQuery("<div class='compare-genome-groups row'></div>").appendTo(panelEl)
     divEl = jQuery("<div class='col-md-12'></div>").appendTo(submitEl)
     clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
     buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Show All Groups</button>").appendTo(divEl)
-
-    #hiddenFormEl = jQuery("<form class='form' id='groups-compare-form' method='post' action='#{@viewController.action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(divEl)
 
     hiddenFormEl = jQuery('#groups-compare-form');
 
@@ -130,14 +120,31 @@ class GeoPhy
 
     true
 
-  initFilter: () ->
+  _showall: () ->
+    @_setViewController(@publicGenomes, @privateGenomes)
+    gpColors = @_prepareGroups() if @userGroups?;
+    @viewController.createView('map', @mapDiv, ['satellite'])
+    true
+
+  _filter: () ->
     @publicSubsetGenomes = @_getPublicSubset(@publicGenomes, @userGroups)
     @privateSubsetGenomes = @_getPrivateSubset(@privateGenomes, @userGroups)
-    @viewController.init(@publicSubsetGenomes, @privateSubsetGenomes, 'multi_select', '/groups/geophy')
-    
-    @viewController.groupsCompareForm($('#groups-compare'), true)
+    @_setViewController(@publicSubsetGenomes, @privateSubsetGenomes)
     jQuery('#groups-compare').hide();
+    gpColors = @_prepareGroups();
+    @viewController.createView('map', @mapDiv, ['geophy'], gpColors)
+    @_appendLegend(jQuery('#groups-geophy'), @userGroups)
+    true
 
+  _setViewController: (pubList, pvtList) ->
+    @viewController.init(pubList, pvtList, 'multi_select', '/groups/geophy')
+    addMore = true
+    submit = true
+    filter = true
+    @viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter)
+    true
+
+  _prepareGroups: () ->
     genomeGroupColor = {}
 
     userMaxGroupNum = Math.max.apply(Math, Object.keys(@userGroups))
@@ -151,38 +158,7 @@ class GeoPhy
         genomeGroupColor[gId] = gNum
       @viewController.addToGroup(gNum)
 
-    @viewController.createView('map', @mapDiv, ['geophy'], genomeGroupColor)
-
-    @_appendLegend(jQuery('#groups-geophy'), @userGroups);
-        
-    true
-
-  initShowall: () ->
-    @viewController.init(@publicGenomes, @privateGenomes, 'multi_select', '/groups/geophy')
-    @viewController.groupsCompareForm($('#groups-compare'), true)
-
-    genomeGroupColor = {}
-
-    userMaxGroupNum = Math.max.apply(Math, Object.keys(@userGroups))
-
-    while (userMaxGroupNum > @viewController.groups.length)
-      @viewController.addGroupFormRow($("#group-form-block"))
-
-    for gNum, gList of @userGroups
-      for gId in gList
-        @viewController.select(gId, true)
-        genomeGroupColor[gId] = gNum
-      @viewController.addToGroup(gNum)
-
-    @viewController.createView('map', @mapDiv, ['satellite'])
-
-    true
-
-  initReset: () -> 
-    @viewController.init(@publicGenomes, @privateGenomes, 'multi_select', '/groups/geophy')
-    @viewController.groupsCompareForm($('#groups-compare'), true)
-    @viewController.createView('map', @mapDiv, ['satellite'])
-    true
+    return genomeGroupColor
 
   unless root.GeoPhy
     root.GeoPhy = GeoPhy
