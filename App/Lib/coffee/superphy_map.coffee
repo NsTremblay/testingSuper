@@ -11,6 +11,9 @@ class MapView extends TableView
   constructor: (@parentElem, @style, @elNum, @genomeController, @mapArgs) ->
     # Call default constructor - creates unique element ID                  
     super(@parentElem, @style, @elNum)
+
+    @sortField = 'isolation_location'
+    @sortAsc = 'true'
     
     #Create the form element for the map
     mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(@parentElem))
@@ -59,37 +62,35 @@ class MapView extends TableView
       mapManifest = jQuery('.map-manifest').append(divElem)
       jQuery(@parentElem).append(mapManifest)
 
-    pubVisLoc = []
-    pvtVisLoc = []
-    pubVisNoLoc = []
-    pvtVisNoLoc = []
+    pubVis = []
+    pvtVis = []
 
-    # TODO: Need to change this so that the genomes lists are altered
     if !@locationController?
-      pubVisLoc = genomes.pubVisible
-      pvtVisLoc = genomes.pvtVisible
+      pubVis = genomes.pubVisible
+      pvtVis = genomes.pvtVisible
     else
-
       #Load updated marker list
-      @mapController.updateVisible()
-      @mapController.markerClusterer.clearMarkers()
-      @mapController.markerClusterer.addMarkers(@mapController.clusteredMarkers)
+      @mapController.resetMap()
 
-      pubVisLoc.push i for i in @mapController.visibleLocations when i in genomes.pubVisible 
-      pvtVisLoc.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible
+      #Append genome list with location
+      if @mapController.map.getBounds().getNorthEast().toUrlValue() == '0,0' and @mapController.map.getBounds().getSouthWest().toUrlValue() == '0,0'
+        pubVis.push i for i in @locationController.pubLocations when i in genomes.pubVisible
+        pvtVis.push i for i in @locationController.pvtLocations when i in genomes.pvtVisibles
+      else
+        pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
+        pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible
+      
       #Append genome list with no location
-      pubVisNoLoc.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible 
-      pvtVisNoLoc.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible
+      pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible
+      pvtVis.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible
 
     #append genomes to list
     t1 = new Date()
     table = ''
     table += @_appendHeader(genomes)
     table += '<tbody>'
-    table += @_appendGenomes(genomes.sort(pubVisLoc, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
-    table += @_appendGenomes(genomes.sort(pvtVisLoc, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
-    table += @_appendGenomes(genomes.sort(pubVisNoLoc, @sortField, @sortAsc), genomes.public_genomes, @style, false, false)
-    table += @_appendGenomes(genomes.sort(pvtVisNoLoc, @sortField, @sortAsc), genomes.private_genomes, @style, true, false)
+    table += @_appendGenomes(genomes.sort(pubVis, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
+    table += @_appendGenomes(genomes.sort(pvtVis, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
     table += '</body>'
     
     tableElem.append(table)
@@ -100,8 +101,50 @@ class MapView extends TableView
     console.log 'MapView update elapsed time: ' +ft
     true # return success
 
+  _appendHeader: (genomes) ->
+    
+    table = '<thead><tr>'
+    values = []
+    i = -1
+    
+    # Genome
+    if @sortField is 'displayname'
+      sortIcon = 'fa-sort-asc'
+      sortIcon = 'fa-sort-desc' unless @sortAsc
+      values[++i] = { type: 'displayname', name: 'Genome', sortIcon: sortIcon}
+    else
+      values[++i] = { type: 'displayname', name: 'Genome', sortIcon: 'fa-sort'}
+
+    # Genome
+    if @sortField is 'isolation_location'
+      sortIcon = 'fa-sort-asc'
+      sortIcon = 'fa-sort-desc' unless @sortAsc
+      values[++i] = {type: 'isolation_location', name: 'Location', sortIcon: sortIcon}
+    else
+      values[++i] = {type: 'isolation_location', name: 'Location', sortIcon: 'fa-sort'}
+
+    # Meta fields   
+    for t in genomes.mtypes when genomes.visibleMeta[t]
+      tName = genomes.metaMap[t]
+      sortIcon = null
+      
+      if t is @sortField
+        sortIcon = 'fa-sort-asc'
+        sortIcon = 'fa-sort-desc' unless @sortAsc
+        
+      else
+        sortIcon = 'fa-sort'
+      
+      values[++i] = { type: t, name: tName, sortIcon: sortIcon}
+      
+    
+    table += @_template('th',v) for v in values
+    
+    table += '</tr></thead>'
+      
+    table
   
-  _appendGenomes: (visibleG, genomes, style, priv, location) ->
+  _appendGenomes: (visibleG, genomes, style, priv) ->
       
       cls = @cssClass()
       table = ''
@@ -122,13 +165,18 @@ class MapView extends TableView
         name = gObj.meta_array[0]
         if @locusData?
           name += @locusData.genomeString(g)
-          
+        
+        location = true if gObj.isolation_location?
+        location = false unless gObj.isolation_location?
+
         if style == 'redirect'
           # Links
           
           # Genome name
-          row += @_template('td1_redirect', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls, location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
-          row += @_template('td1_redirect_noloc', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls}) unless location
+          row += @_template('td1_redirect', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls})
+          # Genome location
+          row += @_template('td1_location', {location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_nolocation', {location: 'Unknown'}) unless location
     
           # Other data
           for d in gObj.meta_array[1..-1]
@@ -142,8 +190,10 @@ class MapView extends TableView
           # Genome name
           checked = ''
           checked = 'checked' if gObj.isSelected
-          row += @_template('td1_select', {g: g, name: name, klass: thiscls, checked: checked, location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
-          row += @_template('td1_select_noloc', {g: g, name: name, klass: thiscls, checked: checked}) unless location
+          row += @_template('td1_select', {g: g, name: name, klass: thiscls, checked: checked})
+          # Genome location
+          row += @_template('td1_location', {location: JSON.parse(gObj.isolation_location[0]).formatted_address}) if location
+          row += @_template('td1_nolocation', {location: 'Unknown'}) unless location
 
           # Other data
           for d in gObj.meta_array[1..-1]
@@ -169,16 +219,16 @@ class MapView extends TableView
       html = "<td>#{values.data}</td>"
     
     else if tmpl is 'td1_redirect'
-      html = "<td class='#{values.klass}'>#{values.name} <label class='loc-tag'> - #{values.location}</label> <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
+      html = "<td class='#{values.klass}'>#{values.name} <a class='genome-table-link' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
         
     else if tmpl is 'td1_select'
-      html = "<td class='#{values.klass}'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label> <label class='loc-tag'> - #{values.location}</label></div></td>"
+      html = "<td class='#{values.klass}'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label></div></td>"
       
-    else if tmpl is 'td1_redirect_noloc'
-      html = "<td class='#{values.klass}'>#{values.name} <label class='noloc-tag'> - location unknown</label> <a class='genome-table-link noloc' href='#' data-genome='#{values.g}' title='Genome #{values.shortName} info'><i class='fa fa-search'></i></a></td>"
-        
-    else if tmpl is 'td1_select_noloc'
-      html = "<td class='#{values.klass}'><div class='checkbox'> <label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='#{values.g}' #{values.checked}/> #{values.name}</label> <label class='noloc-tag'> - location unknown</label></div></td>"
+    else if tmpl is 'td1_location'
+      html = "<td>#{values.location}</td>"
+
+    else if tmpl is 'td1_nolocation'
+      html = "<td class='no-loc'>#{values.location}</td>"
 
     else if tmpl is 'spacer'
       html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>"
@@ -460,11 +510,8 @@ class SatelliteCartographer extends Cartographer
     # Call default constructor
     super(@satelliteCartographDiv, @satelliteCartograhOpt)
     @locationController = @satelliteCartograhOpt[0]
-    @clusteredMarkers = @locationController.pubMarkers.concat @locationController.pvtMarkers
-    @allMarkers = @clusteredMarkers
-    @visibleLocations = @locationController.pubVisible.concat @locationController.pvtVisible
-    @visibleNoLocations = @locationController.pubNoLocations.concat @locationController.pvtNoLocaitons
-    @setMarkers(@clusteredMarkers)
+    @allMarkers = @locationController.pubMarkers.concat @locationController.pvtMarkers
+    @setMarkers(@allMarkers)
 
   # FUNC cartograPhy overrides Cartographer
   # initializes map in specified map div
@@ -506,18 +553,17 @@ class SatelliteCartographer extends Cartographer
   # RETURNS
   #
   updateVisible: () ->
-    # TODO: FIX this shit
+    # TODO:
     genomes = @locationController.genomeController
     @visibleLocations = []
-    @visibeNoLocations = []
     @clusteredMarkers = []
 
     for marker in @allMarkers
-      # First check genome not filtered out
       # Check if present on map
       if @map.getBounds() != undefined && @map.getBounds().contains(marker.getPosition()) && (marker.feature_id in genomes.pubVisible || marker.feature_id in genomes.pvtVisible)
         @clusteredMarkers.push(marker)
         @visibleLocations.push(marker.feature_id)
+    
     true
 
   # FUNC markerClusterer
@@ -556,13 +602,14 @@ class SatelliteCartographer extends Cartographer
   #
   # RETURNS
   #
-  resetMap: ()  ->
+  resetMap: ()  =>
     @updateVisible()
     x = @map.getZoom();
     c = @map.getCenter();
-    google.maps.event.trigger(@map, 'resize');
+    google.maps.event.trigger(@map, 'resize')
     @map.setZoom(x);
     @map.setCenter(c);
+    @markerClusterer.clearMarkers()
     @markerClusterer.addMarkers(@clusteredMarkers)
     true
 
@@ -732,7 +779,7 @@ class CartographerOverlay
 # New class to handle the genome locations and the list
 class LocationController
   constructor: (@genomeController, @parentElem) ->
-    @_init(@genomeController)
+    @_populateLocations(@genomeController)
     #Handle error messages here
 
   # Genomes with locations
@@ -743,73 +790,53 @@ class LocationController
   pubNoLocations: null
   pvtNoLocaitons: null
 
-  # Visible genomes that get passed back to the view controller
-  pubVisible: null
-  pvtVisible: null
-
   # Created Markers
   pubMarkers: null
   pvtMarkers: null
 
-  _init: (genomes) ->
-    @_populateNoLocations(genomes)
-    @_populateLocations(genomes)
-    #Initialize visible lists as all locations
-    @pubVisible = @pubLocations
-    @pvtVisible = @pvtLocations
-    true
-
-  _populateNoLocations: (genomes) ->
-    @pubNoLocations = []
-    @pvtNoLocaitons = []
-
-    for pubGenomeId, public_genome of genomes.public_genomes
-      unless public_genome.isolation_location? && public_genome.isolation_location != ""
-          @pubNoLocations.push(pubGenomeId)
-
-    for pvtGenomeId, private_genome of genomes.private_genomes
-      unless private_genome.isolation_location? && private_genome.isolation_location != ""
-          @pvtNoLocaitons.push(pvtGenomeId)
-
-    true
-
   _populateLocations: (genomes) ->
     @pubLocations = []
     @pvtLocations = []
+    @pubNoLocations = []
+    @pvtNoLocaitons = []
     @pubMarkers = []
     @pvtMarkers = []
 
     for pubGenomeId, public_genome of genomes.public_genomes
-      if public_genome.isolation_location? && public_genome.isolation_location != ""
-          pubMarkerObj = @_parseLocation(public_genome)
-          @pubLocations.push(pubGenomeId)
+      unless public_genome.isolation_location? && public_genome.isolation_location != ""
+        @pubNoLocations.push(pubGenomeId)
+      else
+        pubMarkerObj = @_parseLocation(public_genome)
+        @pubLocations.push(pubGenomeId)
 
-          pubMarker = new google.maps.Marker({
-            position: pubMarkerObj['centerLatLng']
-            title: public_genome.uniquename
-            feature_id: pubGenomeId
-            uniquename: public_genome.uniquename
-            location: pubMarkerObj['locationName']
-            privacy: 'public'
-            })
+        pubMarker = new google.maps.Marker({
+          position: pubMarkerObj['centerLatLng']
+          title: public_genome.uniquename
+          feature_id: pubGenomeId
+          uniquename: public_genome.uniquename
+          location: pubMarkerObj['locationName']
+          privacy: 'public'
+          })
 
-          @pubMarkers.push(pubMarker)
+        @pubMarkers.push(pubMarker)
 
     for pvtGenomeId, private_genome of genomes.private_genomes
-      if private_genome.isolation_location? && private_genome.isolation_location != ""
-          pvtMarkerObj = @_parseLocation(private_genome)
-          @pvtLocations.push(pvtGenomeId)
+      unless private_genome.isolation_location? && private_genome.isolation_location != ""
+        @pvtNoLocaitons.push(pvtGenomeId)
+      else
+        pvtMarkerObj = @_parseLocation(private_genome)
+        @pvtLocations.push(pvtGenomeId)
 
-          pvtMarker = new google.maps.Marker({
-            position: pvtMarkerObj['centerLatLng']
-            title: private_genome.uniquename
-            feature_id: pvtGenomeId
-            uniquename: private_genome.uniquename
-            location: pvtMarkerObj['locationName']
-            privacy: 'private'
-            })            
+        pvtMarker = new google.maps.Marker({
+          position: pvtMarkerObj['centerLatLng']
+          title: private_genome.uniquename
+          feature_id: pvtGenomeId
+          uniquename: private_genome.uniquename
+          location: pvtMarkerObj['locationName']
+          privacy: 'private'
+          })            
 
-          @pvtMarkers.push(pvtMarker)
+        @pvtMarkers.push(pvtMarker)
 
     true
 

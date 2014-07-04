@@ -243,7 +243,9 @@ class TableView extends ViewTemplate
     
   
   _updateGenomeCSS: (el, changedG, genomes) ->
-    
+    #TODO: If the user tries to delete a genome from a group that has been filtered out, they will get an error
+    #Might need to overrride this for the mapViews
+
     # View class
     cls = @cssClass()
     
@@ -259,10 +261,11 @@ class TableView extends ViewTemplate
         # Find element
         descriptor = "td > a[data-genome='#{g}']"
         itemEl = el.find(descriptor)
-        
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
-          return false
+
+        unless itemEl? and itemEl.length and genomes[g].visible is true
+          continue
+          #throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
+          #return false
           
         dataEl = itemEl.parent()
        
@@ -273,9 +276,10 @@ class TableView extends ViewTemplate
         descriptor = "td input[value='#{g}']"
         itemEl = el.find(descriptor)
         
-        unless itemEl? and itemEl.length
-          throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
-          return false
+        unless itemEl? and itemEl.length and genomes[g].visible is true
+          continue
+          #throw new SuperphyError "Table element for genome #{g} not found in TableView #{@elID}"
+          #return false
           
         dataEl = itemEl.parents().eq(1)
    

@@ -760,6 +760,76 @@ div.matrixSort {
   background-color: #FFF;
   vertical-align: top;
 }
+.superphy-table table tbody .genome_group10 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group10 label {
+  color: #dadb37;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group9 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group9 label {
+  color: #31d7e8;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group8 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group8 label {
+  color: #999999;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group7 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group7 label {
+  color: #aa6d60;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group6 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group6 label {
+  color: #eca1d5;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group5 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group5 label {
+  color: #ad8bcc;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group4 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group4 label {
+  color: #df5152;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group3 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group3 label {
+  color: #37c837;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group2 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group2 label {
+  color: #ff9a41;
+  font: italic bold 13px sans-serif;
+}
+.superphy-table table tbody .genome_group1 input {
+  visibility: hidden;
+}
+.superphy-table table tbody .genome_group1 label {
+  color: #2b93db;
+  font: italic bold 13px sans-serif;
+}
 .superphy-table table tbody td.gene_table_item div.checkbox {
   margin: 0;
   padding: 0;
@@ -789,6 +859,11 @@ div.matrixSort {
   min-height: 20px;
   line-height: normal;
   margin: 0 5px 0 0;
+}
+.superphy-table table tbody td.no-loc {
+  color: #d3d3d3;
+  font-weight: 100;
+  font-style: italic;
 }
 .superphy-jump2-table {
   padding-bottom: 20px;
@@ -895,19 +970,6 @@ div.matrixSort {
 .map-legend .legendlabel1 {
   position: relative;
   top: 5px;
-}
-.noloc {
-  font-style: italic;
-  font-weight: 100;
-}
-.noloc-tag {
-  font-style: italic;
-  font-weight: 100;
-  color: #d3d3d3;
-}
-.loc-tag {
-  font-style: italic;
-  font-weight: 100;
 }
 /*
  

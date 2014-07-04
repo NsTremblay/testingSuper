@@ -9,6 +9,9 @@
 
  /** Table *********************************/
 
+
+  @selectedTableFont: italic bold 13px sans-serif;
+
  .superphy-table {
   max-height: 450px;
   max-width: 100%;
@@ -44,6 +47,28 @@
         vertical-align: top;
       }
 
+      // Group styles
+      .groupConstructor (@index) when (@index > 0) {
+
+        @color: "group@{index}-color";
+        @dark-color: lighten(@@color, 10%);
+
+        .genome_group@{index} {
+          input {
+          visibility: hidden;
+          }
+          label {
+            color: @dark-color;
+            font: @selectedTableFont;
+          }
+        }
+        .groupConstructor(@index - 1);
+      }
+
+      // Define color schemes for up to 10 groups
+      .groupConstructor(@group-num);
+
+
       td.gene_table_item {
         div.checkbox {
           margin: 0;
@@ -56,10 +81,9 @@
           }
         }
         .gene-table-link {
-        display: inline;
+          display: inline;
         }
       }
-      
       td.genome_table_item {
         div.checkbox {
           margin: 0;
@@ -84,6 +108,11 @@
           }
         }
       }
+      td.no-loc {
+        color: #d3d3d3;
+        font-weight: 100;
+        font-style: italic;
+      }
     }
   }
 }
@@ -94,10 +123,10 @@
   margin: 5px;
 
   .superphy-table {
-      max-height: 300px;
-      max-width: 100%;
-      overflow-x: scroll;
-      overflow-y: scroll;
+    max-height: 300px;
+    max-width: 100%;
+    overflow-x: scroll;
+    overflow-y: scroll;
 
     table {
 

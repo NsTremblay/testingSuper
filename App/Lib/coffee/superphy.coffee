@@ -317,7 +317,8 @@ class ViewController
     @groups[i].remove(genomeID)
     
     # Update style for genomes in views
-    v.updateCSS(gset, @genomeController) for v in @views
+    #v.updateCSS(gset, @genomeController) for v in @views
+    v.update(@genomeController) for v in @views
     true
 
   clearFromGroup: (grp) ->

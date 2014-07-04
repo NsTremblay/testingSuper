@@ -14,7 +14,8 @@
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
-    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
@@ -259,7 +260,7 @@
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         v = _ref[_i];
-        v.updateCSS(gset, this.genomeController);
+        v.update(this.genomeController);
       }
       return true;
     };
@@ -5107,17 +5108,15 @@
         if (this.style === 'redirect') {
           descriptor = "td > a[data-genome='" + g + "']";
           itemEl = el.find(descriptor);
-          if (!((itemEl != null) && itemEl.length)) {
-            throw new SuperphyError("Table element for genome " + g + " not found in TableView " + this.elID);
-            return false;
+          if (!((itemEl != null) && itemEl.length && genomes[g].visible === true)) {
+            continue;
           }
           dataEl = itemEl.parent();
         } else if (this.style === 'select') {
           descriptor = "td input[value='" + g + "']";
           itemEl = el.find(descriptor);
-          if (!((itemEl != null) && itemEl.length)) {
-            throw new SuperphyError("Table element for genome " + g + " not found in TableView " + this.elID);
-            return false;
+          if (!((itemEl != null) && itemEl.length && genomes[g].visible === true)) {
+            continue;
           }
           dataEl = itemEl.parents().eq(1);
         } else {
@@ -5231,6 +5230,8 @@
       this.genomeController = genomeController;
       this.mapArgs = mapArgs;
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+      this.sortField = 'isolation_location';
+      this.sortAsc = 'true';
       mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(this.parentElem));
       splitLayoutEl = jQuery('<div class="col-md-6 map-search-div"></div>').appendTo(jQuery(this.parentElem));
       tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl);
@@ -5257,7 +5258,7 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var divElem, ft, i, mapManifest, pubVisLoc, pubVisNoLoc, pvtVisLoc, pvtVisNoLoc, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
       tableElem = jQuery("#" + this.elID + " table");
       if (tableElem.length) {
         tableElem.empty();
@@ -5267,43 +5268,56 @@
         mapManifest = jQuery('.map-manifest').append(divElem);
         jQuery(this.parentElem).append(mapManifest);
       }
-      pubVisLoc = [];
-      pvtVisLoc = [];
-      pubVisNoLoc = [];
-      pvtVisNoLoc = [];
+      pubVis = [];
+      pvtVis = [];
       if (this.locationController == null) {
-        pubVisLoc = genomes.pubVisible;
-        pvtVisLoc = genomes.pvtVisible;
+        pubVis = genomes.pubVisible;
+        pvtVis = genomes.pvtVisible;
       } else {
-        this.mapController.updateVisible();
-        this.mapController.markerClusterer.clearMarkers();
-        this.mapController.markerClusterer.addMarkers(this.mapController.clusteredMarkers);
-        _ref = this.mapController.visibleLocations;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
+        this.mapController.resetMap();
+        if (this.mapController.map.getBounds().getNorthEast().toUrlValue() === '0,0' && this.mapController.map.getBounds().getSouthWest().toUrlValue() === '0,0') {
+          _ref = this.locationController.pubLocations;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            i = _ref[_i];
+            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+              pubVis.push(i);
+            }
+          }
+          _ref1 = this.locationController.pvtLocations;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            i = _ref1[_j];
+            if (__indexOf.call(genomes.pvtVisibles, i) >= 0) {
+              pvtVis.push(i);
+            }
+          }
+        } else {
+          _ref2 = this.mapController.visibleLocations;
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            i = _ref2[_k];
+            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+              pubVis.push(i);
+            }
+          }
+          _ref3 = this.mapController.visibleLocations;
+          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+            i = _ref3[_l];
+            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+              pvtVis.push(i);
+            }
+          }
+        }
+        _ref4 = this.locationController.pubNoLocations;
+        for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
+          i = _ref4[_m];
           if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-            pubVisLoc.push(i);
+            pubVis.push(i);
           }
         }
-        _ref1 = this.mapController.visibleLocations;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          i = _ref1[_j];
+        _ref5 = this.locationController.pvtNoLocaitons;
+        for (_n = 0, _len5 = _ref5.length; _n < _len5; _n++) {
+          i = _ref5[_n];
           if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-            pvtVisLoc.push(i);
-          }
-        }
-        _ref2 = this.locationController.pubNoLocations;
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          i = _ref2[_k];
-          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-            pubVisNoLoc.push(i);
-          }
-        }
-        _ref3 = this.locationController.pvtNoLocaitons;
-        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-          i = _ref3[_l];
-          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-            pvtVisNoLoc.push(i);
+            pvtVis.push(i);
           }
         }
       }
@@ -5311,10 +5325,8 @@
       table = '';
       table += this._appendHeader(genomes);
       table += '<tbody>';
-      table += this._appendGenomes(genomes.sort(pubVisLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
-      table += this._appendGenomes(genomes.sort(pvtVisLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
-      table += this._appendGenomes(genomes.sort(pubVisNoLoc, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, false);
-      table += this._appendGenomes(genomes.sort(pvtVisNoLoc, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, false);
+      table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
+      table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
       table += '</body>';
       tableElem.append(table);
       this._actions(tableElem, this.style);
@@ -5324,8 +5336,77 @@
       return true;
     };
 
-    MapView.prototype._appendGenomes = function(visibleG, genomes, style, priv, location) {
-      var checked, cls, d, g, gObj, name, row, table, thiscls, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+    MapView.prototype._appendHeader = function(genomes) {
+      var i, sortIcon, t, tName, table, v, values, _i, _j, _len, _len1, _ref;
+      table = '<thead><tr>';
+      values = [];
+      i = -1;
+      if (this.sortField === 'displayname') {
+        sortIcon = 'fa-sort-asc';
+        if (!this.sortAsc) {
+          sortIcon = 'fa-sort-desc';
+        }
+        values[++i] = {
+          type: 'displayname',
+          name: 'Genome',
+          sortIcon: sortIcon
+        };
+      } else {
+        values[++i] = {
+          type: 'displayname',
+          name: 'Genome',
+          sortIcon: 'fa-sort'
+        };
+      }
+      if (this.sortField === 'isolation_location') {
+        sortIcon = 'fa-sort-asc';
+        if (!this.sortAsc) {
+          sortIcon = 'fa-sort-desc';
+        }
+        values[++i] = {
+          type: 'isolation_location',
+          name: 'Location',
+          sortIcon: sortIcon
+        };
+      } else {
+        values[++i] = {
+          type: 'isolation_location',
+          name: 'Location',
+          sortIcon: 'fa-sort'
+        };
+      }
+      _ref = genomes.mtypes;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        t = _ref[_i];
+        if (!genomes.visibleMeta[t]) {
+          continue;
+        }
+        tName = genomes.metaMap[t];
+        sortIcon = null;
+        if (t === this.sortField) {
+          sortIcon = 'fa-sort-asc';
+          if (!this.sortAsc) {
+            sortIcon = 'fa-sort-desc';
+          }
+        } else {
+          sortIcon = 'fa-sort';
+        }
+        values[++i] = {
+          type: t,
+          name: tName,
+          sortIcon: sortIcon
+        };
+      }
+      for (_j = 0, _len1 = values.length; _j < _len1; _j++) {
+        v = values[_j];
+        table += this._template('th', v);
+      }
+      table += '</tr></thead>';
+      return table;
+    };
+
+    MapView.prototype._appendGenomes = function(visibleG, genomes, style, priv) {
+      var checked, cls, d, g, gObj, location, name, row, table, thiscls, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       cls = this.cssClass();
       table = '';
       if (priv && visibleG.length) {
@@ -5343,22 +5424,27 @@
         if (this.locusData != null) {
           name += this.locusData.genomeString(g);
         }
+        if (gObj.isolation_location != null) {
+          location = true;
+        }
+        if (gObj.isolation_location == null) {
+          location = false;
+        }
         if (style === 'redirect') {
+          row += this._template('td1_redirect', {
+            g: g,
+            name: name,
+            shortName: gObj.meta_array[0],
+            klass: thiscls
+          });
           if (location) {
-            row += this._template('td1_redirect', {
-              g: g,
-              name: name,
-              shortName: gObj.meta_array[0],
-              klass: thiscls,
+            row += this._template('td1_location', {
               location: JSON.parse(gObj.isolation_location[0]).formatted_address
             });
           }
           if (!location) {
-            row += this._template('td1_redirect_noloc', {
-              g: g,
-              name: name,
-              shortName: gObj.meta_array[0],
-              klass: thiscls
+            row += this._template('td1_nolocation', {
+              location: 'Unknown'
             });
           }
           _ref = gObj.meta_array.slice(1);
@@ -5376,21 +5462,20 @@
           if (gObj.isSelected) {
             checked = 'checked';
           }
+          row += this._template('td1_select', {
+            g: g,
+            name: name,
+            klass: thiscls,
+            checked: checked
+          });
           if (location) {
-            row += this._template('td1_select', {
-              g: g,
-              name: name,
-              klass: thiscls,
-              checked: checked,
+            row += this._template('td1_location', {
               location: JSON.parse(gObj.isolation_location[0]).formatted_address
             });
           }
           if (!location) {
-            row += this._template('td1_select_noloc', {
-              g: g,
-              name: name,
-              klass: thiscls,
-              checked: checked
+            row += this._template('td1_nolocation', {
+              location: 'Unknown'
             });
           }
           _ref1 = gObj.meta_array.slice(1);
@@ -5420,13 +5505,13 @@
       } else if (tmpl === 'td') {
         html = "<td>" + values.data + "</td>";
       } else if (tmpl === 'td1_redirect') {
-        html = "<td class='" + values.klass + "'>" + values.name + " <label class='loc-tag'> - " + values.location + "</label> <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
+        html = "<td class='" + values.klass + "'>" + values.name + " <a class='genome-table-link' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
       } else if (tmpl === 'td1_select') {
-        html = "<td class='" + values.klass + "'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label> <label class='loc-tag'> - " + values.location + "</label></div></td>";
-      } else if (tmpl === 'td1_redirect_noloc') {
-        html = "<td class='" + values.klass + "'>" + values.name + " <label class='noloc-tag'> - location unknown</label> <a class='genome-table-link noloc' href='#' data-genome='" + values.g + "' title='Genome " + values.shortName + " info'><i class='fa fa-search'></i></a></td>";
-      } else if (tmpl === 'td1_select_noloc') {
-        html = "<td class='" + values.klass + "'><div class='checkbox'> <label class='noloc'><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label> <label class='noloc-tag'> - location unknown</label></div></td>";
+        html = "<td class='" + values.klass + "'><div class='checkbox'> <label><input class='checkbox genome-table-checkbox' type='checkbox' value='" + values.g + "' " + values.checked + "/> " + values.name + "</label></div></td>";
+      } else if (tmpl === 'td1_location') {
+        html = "<td>" + values.location + "</td>";
+      } else if (tmpl === 'td1_nolocation') {
+        html = "<td class='no-loc'>" + values.location + "</td>";
       } else if (tmpl === 'spacer') {
         html = "<tr class='genome-table-spacer'><td>---- USER-SUBMITTED GENOMES ----</td></tr>";
       } else {
@@ -5732,13 +5817,11 @@
     function SatelliteCartographer(satelliteCartographDiv, satelliteCartograhOpt) {
       this.satelliteCartographDiv = satelliteCartographDiv;
       this.satelliteCartograhOpt = satelliteCartograhOpt;
+      this.resetMap = __bind(this.resetMap, this);
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
       this.locationController = this.satelliteCartograhOpt[0];
-      this.clusteredMarkers = this.locationController.pubMarkers.concat(this.locationController.pvtMarkers);
-      this.allMarkers = this.clusteredMarkers;
-      this.visibleLocations = this.locationController.pubVisible.concat(this.locationController.pvtVisible);
-      this.visibleNoLocations = this.locationController.pubNoLocations.concat(this.locationController.pvtNoLocaitons);
-      this.setMarkers(this.clusteredMarkers);
+      this.allMarkers = this.locationController.pubMarkers.concat(this.locationController.pvtMarkers);
+      this.setMarkers(this.allMarkers);
     }
 
     SatelliteCartographer.prototype.cartograPhy = function() {
@@ -5777,7 +5860,6 @@
       var genomes, marker, _i, _len, _ref, _ref1, _ref2;
       genomes = this.locationController.genomeController;
       this.visibleLocations = [];
-      this.visibeNoLocations = [];
       this.clusteredMarkers = [];
       _ref = this.allMarkers;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -5821,6 +5903,7 @@
       google.maps.event.trigger(this.map, 'resize');
       this.map.setZoom(x);
       this.map.setCenter(c);
+      this.markerClusterer.clearMarkers();
       this.markerClusterer.addMarkers(this.clusteredMarkers);
       return true;
     };
@@ -5994,7 +6077,7 @@
     function LocationController(genomeController, parentElem) {
       this.genomeController = genomeController;
       this.parentElem = parentElem;
-      this._init(this.genomeController);
+      this._populateLocations(this.genomeController);
     }
 
     LocationController.prototype.pubLocations = null;
@@ -6005,53 +6088,24 @@
 
     LocationController.prototype.pvtNoLocaitons = null;
 
-    LocationController.prototype.pubVisible = null;
-
-    LocationController.prototype.pvtVisible = null;
-
     LocationController.prototype.pubMarkers = null;
 
     LocationController.prototype.pvtMarkers = null;
-
-    LocationController.prototype._init = function(genomes) {
-      this._populateNoLocations(genomes);
-      this._populateLocations(genomes);
-      this.pubVisible = this.pubLocations;
-      this.pvtVisible = this.pvtLocations;
-      return true;
-    };
-
-    LocationController.prototype._populateNoLocations = function(genomes) {
-      var private_genome, pubGenomeId, public_genome, pvtGenomeId, _ref, _ref1;
-      this.pubNoLocations = [];
-      this.pvtNoLocaitons = [];
-      _ref = genomes.public_genomes;
-      for (pubGenomeId in _ref) {
-        public_genome = _ref[pubGenomeId];
-        if (!((public_genome.isolation_location != null) && public_genome.isolation_location !== "")) {
-          this.pubNoLocations.push(pubGenomeId);
-        }
-      }
-      _ref1 = genomes.private_genomes;
-      for (pvtGenomeId in _ref1) {
-        private_genome = _ref1[pvtGenomeId];
-        if (!((private_genome.isolation_location != null) && private_genome.isolation_location !== "")) {
-          this.pvtNoLocaitons.push(pvtGenomeId);
-        }
-      }
-      return true;
-    };
 
     LocationController.prototype._populateLocations = function(genomes) {
       var private_genome, pubGenomeId, pubMarker, pubMarkerObj, public_genome, pvtGenomeId, pvtMarker, pvtMarkerObj, _ref, _ref1;
       this.pubLocations = [];
       this.pvtLocations = [];
+      this.pubNoLocations = [];
+      this.pvtNoLocaitons = [];
       this.pubMarkers = [];
       this.pvtMarkers = [];
       _ref = genomes.public_genomes;
       for (pubGenomeId in _ref) {
         public_genome = _ref[pubGenomeId];
-        if ((public_genome.isolation_location != null) && public_genome.isolation_location !== "") {
+        if (!((public_genome.isolation_location != null) && public_genome.isolation_location !== "")) {
+          this.pubNoLocations.push(pubGenomeId);
+        } else {
           pubMarkerObj = this._parseLocation(public_genome);
           this.pubLocations.push(pubGenomeId);
           pubMarker = new google.maps.Marker({
@@ -6068,7 +6122,9 @@
       _ref1 = genomes.private_genomes;
       for (pvtGenomeId in _ref1) {
         private_genome = _ref1[pvtGenomeId];
-        if ((private_genome.isolation_location != null) && private_genome.isolation_location !== "") {
+        if (!((private_genome.isolation_location != null) && private_genome.isolation_location !== "")) {
+          this.pvtNoLocaitons.push(pvtGenomeId);
+        } else {
           pvtMarkerObj = this._parseLocation(private_genome);
           this.pvtLocations.push(pvtGenomeId);
           pvtMarker = new google.maps.Marker({
