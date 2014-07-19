@@ -348,14 +348,15 @@ sub search : StartRunmode {
 	}
 	$template->param(tree_json => $tree_string);
 	
-	# AMR/VF categores
-	my $categoriesRef = $self->categories();
-	$template->param(categories => $categoriesRef);
-	
 	# AMR/VF Lists
 	my $vfRef = $data->getVirulenceFormData();
 	my $amrRef = $data->getAmrFormData();
 
+	# AMR/VF categores
+	my $categoriesRef;
+	($categoriesRef, $vfRef, $amrRef) = $data->categories($vfRef, $amrRef);
+	$template->param(categories => $categoriesRef);
+	
 	$template->param(vf => $vfRef);
 	$template->param(amr => $amrRef);
 	
@@ -385,14 +386,15 @@ sub lookup : Runmode {
 	# Template
 	my $template = $self->load_tmpl('genes_lookup.tmpl' , die_on_bad_params => 0);
 	
-	# AMR/VF categories
-	my $categoriesRef = $self->categories();
-	$template->param(categories => $categoriesRef);
-	
 	# AMR/VF Lists
 	my $vfRef = $data->getVirulenceFormData();
 	my $amrRef = $data->getAmrFormData();
 
+	# AMR/VF categories
+	my $categoriesRef;
+	($categoriesRef, $vfRef, $amrRef) = $data->categories($vfRef, $amrRef);
+	$template->param(categories => $categoriesRef);
+	
 	$template->param(vf => $vfRef);
 	$template->param(amr => $amrRef);
 	
@@ -743,112 +745,6 @@ sub _genomeAlleles {
 	return {alleles => \%gene_lists, counts => \%gene_counts, names => $gene_names};
 }
 
-
-
-=head2 categories
-
-
-=cut
-sub categories {
-	my $self = shift;
-	
-	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
-		{},
-		{
-			join => ['parent_category', 'gene_cvterm', 'category'],
-			select => [
-				'parent_category.cvterm_id',
-				'parent_category.name',
-				'parent_category.definition',
-				'gene_cvterm.cvterm_id',
-				'gene_cvterm.name',
-				'gene_cvterm.definition',
-				'category.cvterm_id',
-				'category.name',
-				'category.definition',
-				'feature_id'],
-			as => [
-				'parent_id',
-				'parent_name',
-				'parent_definition',
-				'gene_id',
-				'gene_name',
-				'gene_definition',
-				'category_id',
-				'category_name',
-				'category_definition',
-				'feature_id']
-		}
-	);
-
-	my %amrCategories;
-	while (my $row = $amrCategoryResults->next) {
-		my $parent_id = $row->get_column('parent_id');
-		my $category_id = $row->get_column('category_id');
-		$amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
-		$amrCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
-		$amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
-		$amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
-		push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
-	}
-
-	my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
-		{},
-		{
-			join => ['parent_category', 'gene_cvterm', 'category'],
-			select => [
-				'parent_category.cvterm_id',
-				'parent_category.name',
-				'parent_category.definition',
-				'gene_cvterm.cvterm_id',
-				'gene_cvterm.name',
-				'gene_cvterm.definition',
-				'category.cvterm_id',
-				'category.name',
-				'category.definition',
-				'feature_id'],
-			as => [
-				'parent_id',
-				'parent_name',
-				'parent_definition',
-				'gene_id',
-				'gene_name',
-				'gene_definition',
-				'category_id',
-				'category_name',
-				'category_definition',
-				'feature_id']
-		}
-	);
-
-
-	my %vfCategories;
-	while (my $row = $vfCategoryResults->next) {
-		my $parent_id = $row->get_column('parent_id');
-		my $category_id = $row->get_column('category_id');
-		$vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
-		$vfCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
-		$vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
-		$vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
-		push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
-	}
-
-	my %categories = ('vfCats' => \%vfCategories,
-				  	  'amrCats' => \%amrCategories);
-
-	my $categories_json = encode_json(\%categories);
-	return $categories_json;
-}
 
 =head2 gene_category
 

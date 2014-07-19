@@ -753,6 +753,7 @@ div.matrixSort {
   border: 1px solid #FFF;
   font-size: 10pt;
   padding: 4px;
+  width: 150px;
 }
 .superphy-table table tbody td {
   color: #3D3D3D;
@@ -936,7 +937,7 @@ div.matrixSort {
  
  * */
 .map-canvas {
-  height: 300px;
+  height: 400px;
 }
 .map-manifest {
   pading-top: 0px;
@@ -1349,6 +1350,9 @@ Date: May 20th, 2014
   border-radius: 0px;
 }
 .panel-danger {
+  border-radius: 0px;
+}
+.panel-default {
   border-radius: 0px;
 }
 .vf-panel-table {
@@ -1769,6 +1773,11 @@ Date: May 20th, 2014
   margin-left: 2px;
   margin-right: 2px;
 }
-.form-group {
-  margin-bottom: 0px;
+.superphy-icon img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.superphy-icon .caption {
+  text-align: center;
 }

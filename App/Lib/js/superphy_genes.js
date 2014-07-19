@@ -11,6 +11,7 @@
 
 (function() {
   var GenesList, GenesSearch, root,
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
@@ -20,7 +21,7 @@
     var typeIsArray;
 
     function GenesList(geneList, geneType, categories, tableElem, categoriesElem, mTypes, multi_select) {
-      var k, o, _ref;
+      var cat, catCount, cats, k, o, subcats, subs, _i, _len, _ref, _ref1, _ref2;
       this.geneList = geneList;
       this.geneType = geneType;
       this.categories = categories;
@@ -33,16 +34,42 @@
       }
       this.sortField = 'name';
       this.sortAsc = true;
+      if (__indexOf.call(this.mTypes, 'alleles') >= 0) {
+        this.sortField = 'alleles';
+      }
+      if (__indexOf.call(this.mTypes, 'alleles') >= 0) {
+        this.sortAsc = false;
+      }
+      this.filtered_category = null;
+      this.filtered_subcategory = null;
       this.metaMap = {
         'name': 'Gene Name',
         'uniquename': 'Unique Name',
-        'alleles': 'Number of Alleles'
+        'alleles': 'Number of Alleles',
+        'category': 'Category',
+        'subcategory': 'Sub Category'
       };
       _ref = this.geneList;
       for (k in _ref) {
         o = _ref[k];
         o.visible = true;
         o.selected = false;
+        cats = [];
+        subcats = [];
+        catCount = 0;
+        _ref1 = o.cats;
+        for (cat in _ref1) {
+          subs = _ref1[cat];
+          catCount++;
+          cats.push((" <span class='category-superscript  help-block'>[" + catCount + "]</span> ") + this._capitaliseFirstLetter(this.categories[cat].parent_name) + "<br/>");
+          _ref2 = Object.keys(subs.subcats);
+          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+            k = _ref2[_i];
+            subcats.push(this._capitaliseFirstLetter(this.categories[cat].subcategories[k].category_name) + (" <span class='category-superscript help-block'>[" + catCount + "]</span><br/>"));
+          }
+          o.category = cats.join("");
+          o.subcategory = subcats.join("");
+        }
       }
       this._appendGeneTable();
       this._appendCategories();
@@ -53,12 +80,11 @@
     };
 
     GenesList.prototype._appendGeneTable = function() {
-      var name, style, table, tableElem, tableHtml;
+      var style, table, tableElem, tableHtml;
       if (this.tableElem.length) {
         this.tableElem.empty();
       }
       table = this.tableElem;
-      name = "" + this.geneType + "-gene";
       tableElem = jQuery("<table />").appendTo(table);
       if (this.multi_select) {
         style = 'select';
@@ -77,7 +103,7 @@
     };
 
     GenesList.prototype._appendCategories = function() {
-      var cTitle, categoryE, col2, def, id, introDiv, k, moreInfo, moreInfoId, name, o, resetButt, row1, row2, s, sel, t, that, titleDiv, _ref, _ref1;
+      var cTitle, categoryE, col2, def, id, introDiv, k, moreInfo, moreInfoId, name, o, options, resetButt, row1, row2, s, sel, t, that, titleDiv, _ref, _ref1;
       categoryE = this.categoriesElem;
       introDiv = jQuery('<div class="gene-category-intro"></div>').appendTo(categoryE);
       introDiv.append('<span>Select category to refine list of genes:</span>');
@@ -105,7 +131,8 @@
         }
         row2 = jQuery('<div class="row"></div>').appendTo(categoryE);
         col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2);
-        sel = jQuery("<select name='" + this.geneType + "-category' data-category-id='" + k + "' class='form-control'></select>").appendTo(col2);
+        sel = jQuery("<select name='" + this.geneType + "-category' data-category-id='" + k + "' class='form-control' placeholder='--Select a category--'></select>").appendTo(col2);
+        options = [];
         _ref1 = o.subcategories;
         for (s in _ref1) {
           t = _ref1[s];
@@ -116,18 +143,50 @@
           name = this._capitaliseFirstLetter(t.category_name);
           id = "subcategory-id-" + s;
           def.replace(/\.n/g, ". &#13;");
-          sel.append("<option id='" + id + "' value='" + s + "' title='" + def + "'>" + name + "</option>");
+          options.push({
+            id: "" + id,
+            value: "" + s,
+            title: "" + def,
+            name: "" + name,
+            parent: "" + k
+          });
         }
-        sel.append("<option value='null' selected><strong>--Select Category--</strong></option>");
+        sel.selectize({
+          searchField: ['name'],
+          options: options,
+          render: {
+            option: (function(_this) {
+              return function(data, escape) {
+                return "<div class='option' title='" + data.title + "'>" + data.name + " <span class='badge'>" + _this.categories[data.parent].subcategories[data.value].gene_ids.length + " genes</span></div>";
+              };
+            })(this),
+            item: (function(_this) {
+              return function(data, escape) {
+                return "<div class='item'>" + data.name + "</div>";
+              };
+            })(this)
+          }
+        });
         that = this;
         sel.change(function() {
-          var catId, obj, subId;
+          var catId, obj, selectized, selects, subId, _i, _len;
+          selects = jQuery("select[name='" + that.geneType + "-category']");
           obj = jQuery(this);
           catId = obj.data('category-id');
           subId = obj.val();
-          if (subId !== 'null') {
-            jQuery("select[name='" + this.geneType + "-category'][data-category-id!='" + catId + "']").val('null');
-            return that._filterByCategory(catId, subId);
+          if (subId !== "" || null) {
+            for (_i = 0, _len = selects.length; _i < _len; _i++) {
+              sel = selects[_i];
+              selectized = sel.selectize;
+              if (selectized.getValue() !== subId) {
+                selectized.clear();
+              }
+            }
+            this.selectize.getItem(subId);
+            that._filterByCategory(catId, subId);
+          }
+          if (subId === "" || null) {
+            return that._filterByCategory(-1, -1);
           }
         });
       }
@@ -219,7 +278,24 @@
         _ref = this.mTypes;
         for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
           d = _ref[_j];
-          mData = geneObj[d];
+          switch (d) {
+            case 'category':
+              if (this.filtered_category !== null) {
+                mData = this.filtered_category;
+              } else {
+                mData = geneObj[d];
+              }
+              break;
+            case 'subcategory':
+              if (this.filtered_subcategory !== null) {
+                mData = this.filtered_subcategory;
+              } else {
+                mData = geneObj[d];
+              }
+              break;
+            default:
+              mData = geneObj[d];
+          }
           row += this._template('td', {
             data: mData
           });
@@ -338,6 +414,8 @@
       geneIds = [];
       if (catId === -1) {
         geneIds = Object.keys(this.geneList);
+        this.filtered_category = null;
+        this.filtered_subcategory = null;
       } else {
         _ref = this.categories[catId].subcategories[subcatId].gene_ids;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
@@ -354,6 +432,8 @@
           o = _ref1[k];
           o.visible = false;
         }
+        this.filtered_category = this._capitaliseFirstLetter(this.categories[catId].parent_name);
+        this.filtered_subcategory = this._capitaliseFirstLetter(this.categories[catId].subcategories[subcatId].category_name);
       }
       for (_j = 0, _len1 = geneIds.length; _j < _len1; _j++) {
         g = geneIds[_j];
@@ -369,10 +449,14 @@
     };
 
     GenesList.prototype._resetNullCategories = function() {
-      var el, name;
+      var el, name, sel, select, _i, _len;
       el = this.categoriesElem;
       name = "" + this.geneType + "-category";
-      el.find("select[name='" + name + "']").val('null');
+      select = el.find("select[name='" + name + "']");
+      for (_i = 0, _len = select.length; _i < _len; _i++) {
+        sel = select[_i];
+        sel.selectize.clear();
+      }
       return true;
     };
 
@@ -426,9 +510,10 @@
     }
 
     GenesSearch.prototype._appendGeneTable = function() {
-      var cboxes, table, that;
+      var cboxes, name, table, that;
       GenesSearch.__super__._appendGeneTable.apply(this, arguments);
       table = this.tableElem;
+      name = "" + this.geneType + "-gene";
       cboxes = table.find("input[name='" + name + "']");
       that = this;
       cboxes.change(function() {
@@ -436,6 +521,7 @@
         obj = $(this);
         geneId = obj.val();
         checked = obj.prop('checked');
+        console.log(checked);
         return that._selectGene([geneId], checked);
       });
       this._updateCount();
@@ -504,18 +590,19 @@
     };
 
     GenesSearch.prototype._addSelectedGenes = function(geneIds) {
-      var actionEl, cls, g, gObj, listEl, _i, _len;
+      var actionEl, cls, g, gObj, listEl, that, _i, _len;
       cls = 'selected-gene-item';
       for (_i = 0, _len = geneIds.length; _i < _len; _i++) {
         g = geneIds[_i];
         gObj = this.geneList[g];
         listEl = jQuery(("<li class='" + cls + "'>") + gObj.name + ' - ' + gObj.uniquename + '</li>');
         actionEl = jQuery("<a href='#' data-gene='" + g + "'> <i class='fa fa-times'></a>");
+        that = this;
         actionEl.click(function(e) {
           var gid;
           e.preventDefault();
           gid = this.dataset.gene;
-          this._selectGene([gid], false);
+          that._selectGene([gid], false);
           return $("input.gene-search-select[value='" + gid + "']").prop('checked', false);
         });
         listEl.append(actionEl);
@@ -596,6 +683,11 @@
 
     GenesSearch.prototype.escapeRegExp = function(str) {
       return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+    };
+
+    GenesSearch.prototype._filterByCategory = function(catId, subcatId) {
+      this.autocompleteElem.val("");
+      return GenesSearch.__super__._filterByCategory.apply(this, arguments);
     };
 
     return GenesSearch;

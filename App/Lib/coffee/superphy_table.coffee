@@ -72,7 +72,7 @@ class TableView extends ViewTemplate
     tableElem.append(table)
     @_actions(tableElem, @style)
 
-    t2 = new Date()    
+    t2 = new Date()
     
     ft = t2-t1
     console.log('TableView update elapsed time: '+ft)

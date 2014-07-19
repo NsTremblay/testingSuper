@@ -156,7 +156,7 @@ class GeoPhy
       for gId in gList
         @viewController.select(gId, true)
         genomeGroupColor[gId] = gNum
-      @viewController.addToGroup(gNum)
+      @viewController.addToGroup(parseInt(gNum))
 
     return genomeGroupColor
 

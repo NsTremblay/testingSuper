@@ -23,10 +23,13 @@ class MapView extends TableView
     tableData1El = jQuery('<td></td>').appendTo(tableRow1El)
     formEl = jQuery('<form class="form"></form>').appendTo(tableData1El)
     fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl)
-    divEl = jQuery('<div></div>').appendTo(fieldsetEl)
+    rowEl = jQuery('<div class="row"></div>').appendTo(fieldsetEl)
+    divEl = jQuery('<div class="col-md-9"></div>').appendTo(rowEl)
     inputGpEl = jQuery('<div class="input-group"></div>').appendTo(divEl)
     input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl)
     buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl)
+    divEl2 = jQuery('<div class="col-md-3"></div>').appendTo(rowEl)
+    resetMapViewEl = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(divEl2)
     tableRow2El = jQuery('<tr></tr>').appendTo(tableEl)
     tableData2El = jQuery('<td></td>').appendTo(tableRow2El)
     mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El)
@@ -35,6 +38,11 @@ class MapView extends TableView
     @mapController = @getCartographer(@mapArgs[0], @locationController)
 
     jQuery(@parentElem).data('views-index', @elNum)
+
+    resetMapViewEl.click( (e) =>
+      e.preventDefault()
+      @mapController.resetMapView()
+      )
     
   type: 'map'
 
@@ -70,16 +78,10 @@ class MapView extends TableView
       pvtVis = genomes.pvtVisible
     else
       #Load updated marker list
-      @mapController.resetMap()
+      @mapController.resetMarkers()
 
-      #Append genome list with location
-      if @mapController.map.getBounds().getNorthEast().toUrlValue() == '0,0' and @mapController.map.getBounds().getSouthWest().toUrlValue() == '0,0'
-        pubVis.push i for i in @locationController.pubLocations when i in genomes.pubVisible
-        pvtVis.push i for i in @locationController.pvtLocations when i in genomes.pvtVisibles
-      else
-        pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
-        pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible
-      
+      pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
+      pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible      
       #Append genome list with no location
       pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible
       pvtVis.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible
@@ -344,6 +346,7 @@ class SelectionMapView extends MapView
 
   update: (genomes) ->
     super
+    # TODO: 
     # /strains/info page:
     # If genome is a selected genome add an additional css class to higlight it
     selectedEl = jQuery('.genome_map_item a[data-genome="'+@mapController.selectedGenomeId+'"]')
@@ -362,8 +365,9 @@ class SelectionMapView extends MapView
 ###
 class Cartographer
   constructor: (@cartographDiv, @cartograhOpt) ->
+    @defaultCenter = new google.maps.LatLng(-0.000, 0.000)
     @mapOptions = {
-      center: new google.maps.LatLng(-0.000, 0.000),
+      center: @defaultCenter,
       zoom: 1,
       streetViewControl: false,
       mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -413,6 +417,11 @@ class Cartographer
           )
     true
 
+  resetMapView: ->
+    @map.setZoom(1)
+    @map.setCenter(@defaultCenter)
+    true
+
 ###
   CLASS DotCartographer
 
@@ -440,7 +449,7 @@ class DotCartographer extends Cartographer
   cartograPhy: () ->
     super
     google.maps.event.addListener(@map , 'click', (event) =>
-      @plantFlag(event.latLng, @)
+      @plantFlag(event.latLng)
       )
     true
 
@@ -485,14 +494,30 @@ class DotCartographer extends Cartographer
   #
   # RETURNS
   #
-  plantFlag: (location, map) ->
+  plantFlag: (location) =>
     @marker.setMap(null) if @marker?
     @marker = new google.maps.Marker({
       position: location,
-      map: map
+      map: @map
       });
     @marker.setTitle(@marker.getPosition().toString())
-    map.panTo(@marker.getPosition())
+    @map.panTo(@marker.getPosition())
+    true
+
+  # FUNC resetMap
+  # recenters the map in the map-canvas div when bootstrap map-tab and map-panel divs clicked
+  # circumvents issues with rendering maps in bootstraps hidden tab and panel divs
+  #
+  # PARAMS
+  #
+  # RETURNS
+  #
+  resetMap: ()  =>
+    x = @map.getZoom()
+    c = @map.getCenter()
+    google.maps.event.trigger(@map, 'resize')
+    @map.setZoom(x)
+    @map.setCenter(c)
     true
 
 ###
@@ -603,15 +628,20 @@ class SatelliteCartographer extends Cartographer
   # RETURNS
   #
   resetMap: ()  =>
-    @updateVisible()
-    x = @map.getZoom();
-    c = @map.getCenter();
+    x = @map.getZoom()
+    c = @map.getCenter()
     google.maps.event.trigger(@map, 'resize')
-    @map.setZoom(x);
-    @map.setCenter(c);
+    @map.setZoom(x)
+    @map.setCenter(c)
+    @resetMarkers()
+    true
+
+  resetMarkers: () =>
+    @updateVisible()
     @markerClusterer.clearMarkers()
     @markerClusterer.addMarkers(@clusteredMarkers)
     true
+
 
 
 class GeophyCartographer extends SatelliteCartographer
