@@ -508,7 +508,7 @@ sub info : Runmode {
 	my $num_alleles = $result_hash->{counts}->{$qgene};
 	
 	get_logger->debug('Number of alleles found:'.$num_alleles);
-	
+	$template->param(allele_num => $num_alleles);
 	
 	# Retrieve tree
 	# GENE TREES BROKEN - need to reload to remove tmp IDs like upl_4
@@ -521,21 +521,21 @@ sub info : Runmode {
 	
 	
 	# Retrieve MSA
-	if($num_alleles > 1) {
-		get_logger->debug('attempt made for alignment');
-		my $is_typing = 0;
-		my $msa = $data->seqAlignment(
-			locus => $qgene, 
-			warden => $warden,
-			typing => $is_typing
-		);
-		if($msa) {
-			my $msa_json = encode_json($msa);
-			$template->param(msa_json => $msa_json);
-		} else {
-			get_logger->debug('got nothing');
-		}
-	}
+#	if($num_alleles > 1) {
+#		get_logger->debug('attempt made for alignment');
+#		my $is_typing = 0;
+#		my $msa = $data->seqAlignment(
+#			locus => $qgene, 
+#			warden => $warden,
+#			typing => $is_typing
+#		);
+#		if($msa) {
+#			my $msa_json = encode_json($msa);
+#			$template->param(msa_json => $msa_json);
+#		} else {
+#			get_logger->debug('got nothing');
+#		}
+#	}
 	
 	
 	# Retrieve meta info
@@ -926,6 +926,74 @@ sub gene_type {
 	} else {
 		return 0
 	}
+	
+}
+
+=head2 sequences
+
+Return all sequences for copies of a gene in JSON object.
+Called in AJAX request
+
+=cut
+
+sub sequences : Runmode {
+	my $self = shift;
+	
+	# Params 
+	my $q = $self->query();
+	my $qgene;
+	
+	if($q->param('gene')) {
+		$qgene = $q->param('gene');
+	}
+	
+	my @genomes = $q->param("genome");
+
+	croak "Error: no query gene parameter." unless $qgene;
+	
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
+	
+	# User
+	my $user = $self->authen->username;
+	
+	# Genomes
+	my $warden;
+	if(@genomes) {
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => \@genomes, user => $user, cvmemory => $self->cvmemory);
+		my ($err, $bad1, $bad2) = $warden->error; 
+		if($err) {
+			# User requested invalid strains or strains that they do not have permission to view
+			$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+			return $self->redirect( $self->home_page );
+		}
+		
+	} else {
+		
+		$warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, user => $user, cvmemory => $self->cvmemory);
+	}
+
+
+	# Retrieve MSA
+	my $msa_json;
+	get_logger->debug('attempt made for alignment');
+	my $is_typing = 0;
+	my $msa = $data->seqAlignment(
+		locus => $qgene, 
+		warden => $warden,
+		typing => $is_typing
+	);
+	if($msa) {
+		$msa_json = encode_json($msa);
+	} else {
+		get_logger->debug('got nothing');
+	}
+	
+	$self->header_add( 
+		-type => 'application/json',
+	);
+	
+	return $msa_json
 	
 }
 

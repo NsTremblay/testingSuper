@@ -457,7 +457,7 @@ class ViewController
   sideBar: (elem) ->
     
     # Build & attach
-    parentTarget = 'sidebar-accordion'
+    parentTarget = 'sidebar-group'
     wrapper = jQuery('<div class="panel-group" id="'+parentTarget+'"></div>')
     elem.append(wrapper)
       
@@ -501,10 +501,10 @@ class ViewController
     form = 
     '<div class="panel-heading">'+
     '<div class="panel-title">'+
-    '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#meta-form"><i class="fa fa-eye"></i> Meta-data '+
+    '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data '+
     '<span class="caret"></span></a>'+
     '</div></div>'+
-    '<div id="meta-form" class="panel-collapse collapse out">'+
+    '<div id="meta-form" class="collapse in">'+
     '<div class="panel-body">'+
     '<p>Select meta-data displayed:</p>'+
     '<form class="form-inline">'+
@@ -567,12 +567,14 @@ class ViewController
       else
         # Advanced form - specified fields, terms
         searchTerms = @_parseFilterForm()
+        return false unless searchTerms?
+          
       
       # Perform search
       @genomeController.filter(searchTerms)
       
     # Update Views 
-    @_toggleFilterStatus()
+    @_toggleFilterStatus(true)
     v.update(@genomeController) for v in @views
     t.update(@genomeController) for t in @tickers
     
@@ -606,12 +608,12 @@ class ViewController
     header = jQuery(
       '<div class="panel-heading">'+
       '<div class="panel-title">'+
-      '<a data-toggle="collapse" data-parent="#'+parentStr+'" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
+      '<a data-toggle="collapse" href="#filter-form"><i class="fa fa-filter"></i> Filter '+
       '<span class="caret"></span></a>'+
       '</div></div>'
     ).appendTo(elem)
       
-    container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>')
+    container = jQuery('<div id="filter-form" class="panel-collapse collapse in"></div>')
     
     # Add filter status bar
     numVisible = @genomeController.filtered
@@ -715,7 +717,7 @@ class ViewController
     
     true
       
-  _toggleFilterStatus: ->
+  _toggleFilterStatus: (attempt=false) ->
     
     numVisible = @genomeController.filtered
     filterOn = jQuery('#filter-on')
@@ -725,11 +727,16 @@ class ViewController
       filterOn.find('#filter-on-text').text("Filter active. #{numVisible} genomes visible.")
       filterOn.show()
       filterOff.hide()
-      #@_toggleSelectAll(true, 50)
+      
+    else if numVisible is 0 and attempt
+      filterOn.find('#filter-on-text').text("No genomes match search criteria.")
+      filterOn.show()
+      filterOff.hide()
+      
     else 
       filterOn.hide()
       filterOff.show()
-      #@_toggleSelectAll(false)
+   
     true
 
   _toggleSelectAll: (switchOn, hardLimit) ->
@@ -805,7 +812,8 @@ class ViewController
     elem.append(addRow)
       
     true
-      
+    
+  ###  
   # FUNC addFilterRow
   # Adds additional search term row to advanced filter form.
   # Multiple search terms are joined using boolean operators.
@@ -854,6 +862,11 @@ class ViewController
     # Search term box
     jQuery('<input type="text" name="adv-filter-term" data-filter-row="' + rowNum + '" placeholder="Keyword"></input>').appendTo(keyw)
     keyw.appendTo(row)
+    
+    # Predefined search term dropdowns
+    # Host
+    
+    
 
     # Date-based search wrapper
     dt = jQuery('<div class="adv-filter-date" data-filter-row="' + rowNum + '"></div>)')
@@ -879,6 +892,201 @@ class ViewController
         jQuery('.adv-filter-row[data-filter-row="' + thisRow + '"]').remove()
   
     true
+    
+  ###
+    
+  # FUNC addFilterRow
+  # Adds additional search term row to advanced filter form.
+  # Multiple search terms are joined using boolean operators.
+  #
+  # PARAMS
+  # elem - jQuery element object of rows
+  # rowNum - sequential number for new row
+  # 
+  # RETURNS
+  # boolean 
+  #       
+  addFilterRow: (elem, rowNum) ->
+    
+    # Row wrapper
+    row = '<div class="adv-filter-row" data-filter-row="' + rowNum + '">';
+    
+    # Term join operation
+    row += '<div class="adv-filter-header">'
+    if rowNum isnt 1
+      row += '<select name="adv-filter-op" data-filter-row="' + rowNum + '">' +
+        '<option value="and" selected="selected">AND</option>' +
+        '<option value="or">OR</option>' +
+        '<option value="not">NOT</option>' +
+        '</select>'
+    
+    # Field type
+    dropDown = '<select name="adv-filter-field" data-filter-row="' + rowNum + '">'
+    for k,v of @genomeController.metaMap
+        dropDown += '<option value="' + k + '">' + v + '</option>'
+   
+    dropDown += '<option value="displayname" selected="selected">Genome name</option></select>'
+    row += dropDown
+    
+    row += '</div><div class="adv-filter-body">'
+    
+    # Keyword-based search wrapper
+    keyw = '<div class="adv-filter-keyword" data-filter-row="' + rowNum + '">'
+      
+    # Search term box
+    keyw += '<input type="text" name="adv-filter-term" data-filter-row="' + rowNum + '" placeholder="Keyword"></input>'
+    keyw += '</div>'
+    row += keyw
+    
+    # Predefined search term dropdowns
+    # Host
+    hosts =  '<div class="adv-filter-host-terms" data-filter-row="' + rowNum + '">'
+    hosts +='<select name="adv-filter-hosts" data-filter-row="' + rowNum + '">'
+    hosts += '<option value="">--Select Host--</option>'
+    for v in superphyMetaOntology["hosts"]
+      hosts += '<option value="'+v+'">'+v+'</option>'
+    hosts += '<option value="other">Other (fill in field below)</option></select>'
+    hosts += '<input type="text" name="adv-filter-host-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>'
+    hosts += '</div>'
+    row += hosts
+    
+    # Source
+    sources =  '<div class="adv-filter-source-terms" data-filter-row="' + rowNum + '">'
+    sources +='<select name="adv-filter-sources" data-filter-row="' + rowNum + '">'
+    sources += '<option value="">--Select Source--</option>'
+    for v in superphyMetaOntology["sources"]
+      sources += '<option value="'+v+'">'+v+'</option>'
+    sources += '<option value="other">Other (fill in field below)</option></select>'
+    sources += '<input type="text" name="adv-filter-source-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>'
+    sources += '</div>'
+    row += sources
+    
+    # Syndrome
+    syndromes =  '<div class="adv-filter-syndrome-terms" data-filter-row="' + rowNum + '">'
+    syndromes +='<select name="adv-filter-syndromes" data-filter-row="' + rowNum + '">'
+    syndromes += '<option value="">--Select Syndrome--</option>'
+    for v in superphyMetaOntology["syndromes"]
+      syndromes += '<option value="'+v+'">'+v+'</option>'
+    syndromes += '<option value="other">Other (fill in field below)</option></select>'
+    syndromes += '<input type="text" name="adv-filter-syndrome-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>'
+    syndromes += '</div>'
+    row += syndromes
+      
+
+    # Date-based search wrapper
+    dt = '<div class="adv-filter-date" data-filter-row="' + rowNum + '">'
+    dt +='<select name="adv-filter-before" data-filter-row="' + rowNum + '">' +
+      '<option value="before" selected="selected">before</option>' +
+      '<option value="after">after</option>' +
+      '</select>'
+    dt += '<input type="text" name="adv-filter-year" data-filter-row="' + rowNum + '" placeholder="YYYY"></input>'
+    dt += '<input type="text" name="adv-filter-mon" data-filter-row="' + rowNum + '" placeholder="MM"></input>'
+    dt += '<input type="text" name="adv-filter-day" data-filter-row="' + rowNum + '" placeholder="DD"></input>'
+    dt += '</div>'
+    row += dt
+    
+    if rowNum isnt 1
+      delRow = '<a href="#" class="adv-filter-subtraction" data-filter-row="' + rowNum + '">Remove term</a>'
+      row += delRow
+    
+    row += '</div>'
+    
+    rowObj = jQuery(row)
+    
+    # Actions
+   
+    # Change type of search term box depending on field type
+    ff = rowObj.find('[name="adv-filter-field"][data-filter-row="'+rowNum+'"]')
+    ff.change ->
+      thisRow = this.dataset.filterRow
+      if @.value is 'isolation_date'
+        jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').show()
+        jQuery('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]').hide()
+      else if @.value is 'isolation_host'
+        jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]').show()
+        jQuery('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]').hide()
+      else if @.value is 'isolation_source'
+        jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]').show()
+        jQuery('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]').hide()
+      else if @.value is 'syndrome'
+        jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]').show()
+      else
+        jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').show()
+        jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide()
+        jQuery('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]').hide()
+        jQuery('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]').hide()
+      true
+      
+    # Hosts
+    fht = rowObj.find('.adv-filter-host-terms[data-filter-row="'+rowNum+'"]')
+    fh = fht.find('[name="adv-filter-hosts"]')
+    fh.change ->
+      thisRow = this.dataset.filterRow
+      if @.value is 'other'
+        jQuery('[name="adv-filter-host-other"][data-filter-row="'+rowNum+'"]').prop("disabled",false)
+      else
+        jQuery('[name="adv-filter-host-other"][data-filter-row="'+rowNum+'"]').prop("disabled",true)
+       
+    fht.hide()
+    
+    # Sources
+    fst = rowObj.find('.adv-filter-source-terms[data-filter-row="'+rowNum+'"]')
+    fs = fst.find('[name="adv-filter-sources"]')
+    fs.change ->
+      thisRow = this.dataset.filterRow
+      if @.value is 'other'
+        jQuery('[name="adv-filter-source-other"][data-filter-row="'+rowNum+'"]').prop("disabled",false)
+      else
+        jQuery('[name="adv-filter-source-other"][data-filter-row="'+rowNum+'"]').prop("disabled",true)
+        
+    fst.hide()
+    
+    # Syndrome
+    fdt = rowObj.find('.adv-filter-syndrome-terms[data-filter-row="'+rowNum+'"]')
+    fd = fdt.find('[name="adv-filter-syndromes"]')
+    fd.change ->
+      thisRow = this.dataset.filterRow
+      if @.value is 'other'
+        jQuery('[name="adv-filter-syndrome-other"][data-filter-row="'+rowNum+'"]').prop("disabled",false)
+      else
+        jQuery('[name="adv-filter-syndrome-other"][data-filter-row="'+rowNum+'"]').prop("disabled",true)
+        
+    fdt.hide()    
+    
+    
+    # Hide date
+    fd = rowObj.find('.adv-filter-date[data-filter-row="'+rowNum+'"]')
+    fd.hide()
+    
+    # Delete button
+    if rowNum isnt 1
+
+      # Delete row wrapper
+      db = rowObj.find('.adv-filter-subtraction[data-filter-row="'+rowNum+'"]')
+      db.click (e) ->
+        e.preventDefault()
+        thisRow = this.dataset.filterRow
+        console.log('del'+thisRow)
+        jQuery('.adv-filter-row[data-filter-row="'+thisRow+'"]').remove()
+        
+  
+    elem.append(rowObj)
+    true
+   
     
   # FUNC addSimpleFilter
   # Perform 'as-you-type' filter based on displayed name.
@@ -939,13 +1147,59 @@ class ViewController
       isDate = true if df is 'isolation_date'
       
       if !isDate
-        # Retrieve keyword
-        term = jQuery("[name='adv-filter-term'][data-filter-row='#{rowNum}']").val()
         
-        term = trimInput term, 'keyword'
-        return null unless term?
+        if df is 'isolation_host'
+          # Retrieve host
+          term = jQuery("[name='adv-filter-hosts'][data-filter-row='#{rowNum}']").val()
+          
+          if term is 'other'
+            term = jQuery("[name='adv-filter-host-other'][data-filter-row='#{rowNum}']").val()
+            term = trimInput term, 'keyword'
+            
+          unless term? and term isnt ""
+            alert('Error: empty field.')
+            return null 
+          
+          t.searchTerm = term
+          
+        else if df is 'isolation_source'
+          # Retrieve source
+          term = jQuery("[name='adv-filter-sources'][data-filter-row='#{rowNum}']").val()
+          
+          if term is 'other'
+            term = jQuery("[name='adv-filter-source-other'][data-filter-row='#{rowNum}']").val()
+            term = trimInput term, 'keyword'
+            
+          unless term? and term isnt ""
+            alert('Error: empty field.')
+            return null 
+          
+          t.searchTerm = term
+          
+        else if df is 'syndrome'
+          # Retrieve syndrome
+          term = jQuery("[name='adv-filter-syndromes'][data-filter-row='#{rowNum}']").val()
+          
+          if term is 'other'
+            term = jQuery("[name='adv-filter-syndrome-other'][data-filter-row='#{rowNum}']").val()
+            term = trimInput term, 'keyword'
+            
+          unless term? and term isnt ""
+            alert('Error: empty field.')
+            return null 
+          
+          t.searchTerm = term  
         
-        t.searchTerm = term
+        else
+          # Retrieve keyword
+          term = jQuery("[name='adv-filter-term'][data-filter-row='#{rowNum}']").val()
+          
+          term = trimInput term, 'keyword'
+          unless term? and term isnt ""
+            alert('Error: empty field.')
+            return null 
+          
+          t.searchTerm = term
         
       else
         # Retrieve date
@@ -1685,14 +1939,18 @@ class GenomeController
       
       @filtered = pubGenomeIds.length + pvtGenomeIds.length
       
-      # Reset visible variable for all genomes
-      g.visible = false for i,g of @public_genomes
-      g.visible = false for i,g of @private_genomes
-      
-      # Set visible variable for genomes that passed filter
-      @public_genomes[g].visible = true for g in pubGenomeIds
-      @private_genomes[g].visible = true for g in pvtGenomeIds
-      
+      if @filtered != 0
+        # Reset visible variable for all genomes
+        g.visible = false for i,g of @public_genomes
+        g.visible = false for i,g of @private_genomes
+        
+        # Set visible variable for genomes that passed filter
+        @public_genomes[g].visible = true for g in pubGenomeIds
+        @private_genomes[g].visible = true for g in pvtGenomeIds
+        
+        @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
+        @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
+        
     else
       pubGenomeIds = Object.keys(@public_genomes)
       pvtGenomeIds = Object.keys(@private_genomes)
@@ -1703,8 +1961,8 @@ class GenomeController
       g.visible = true for i,g of @public_genomes
       g.visible = true for i,g of @private_genomes
     
-    @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
-    @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
+      @pubVisible = pubGenomeIds.sort (a, b) => cmp(@public_genomes[a].viewname, @public_genomes[b].viewname)
+      @pvtVisible = pvtGenomeIds.sort (a, b) => cmp(@private_genomes[a].viewname, @private_genomes[b].viewname)
     
     # Changed the visible genomes, so views need to reset to default starting view
     @genomeSetId++
@@ -2194,12 +2452,10 @@ class LocusController
     l = g[locusID]
     throw new SuperphyError "Unknown locus: #{locusID} for genome #{genomeID}." unless l?
     
-    str
+    str = ''
     if l.copy > 1
       str = " (#{l.copy} copy)"
-    else 
-      ''
-    
+ 
     str
     
   # FUNC locusNode
@@ -2763,5 +3019,60 @@ superphyAlert = (output_msg='No Message to Display.', title_msg='Alert') ->
         "Ok": -> jQuery( this ).dialog( "close" );
       }
     })
+
+# OBJECT superphyMetaOntology
+# Standardized terms for host, source and syndrome
+#
+# To update this list (sync with DB host, source, syndrome tables)
+# copy and paste text from url: .../upload/meta_ontology below
+#
+superphyMetaOntology = {
+   "syndromes" : [
+      "Bacteriuria",
+      "Bloody diarrhea",
+      "Crohn's Disease",
+      "Diarrhea",
+      "Gastroenteritis",
+      "Hemolytic-uremic syndrome",
+      "Hemorrhagic colitis",
+      "Mastitis",
+      "Meningitis",
+      "Peritonitis",
+      "Pneumonia",
+      "Pyelonephritis",
+      "Septicaemia",
+      "Ulcerateive colitis",
+      "Urinary tract infection (cystitis)"
+   ],
+   "hosts" : [
+      "Bos taurus (cow)",
+      "Canis lupus familiaris (dog)",
+      "Environmental source",
+      "Felis catus (cat)",
+      "Gallus gallus (chicken)",
+      "Homo sapiens (human)",
+      "Mus musculus (mouse)",
+      "Oryctolagus cuniculus (rabbit)",
+      "Ovis aries (sheep)",
+      "Sus scrofa (pig)"
+   ],
+   "sources" : [
+      "Blood",
+      "Cecum",
+      "Colon",
+      "Feces",
+      "Ileum",
+      "Intestine",
+      "Liver",
+      "Meat",
+      "Meat-based food",
+      "Stool",
+      "Urine",
+      "Vegetable-based food",
+      "Water",
+      "Yolk",
+      "cerebrospinal_fluid"
+   ]
+}
 
 

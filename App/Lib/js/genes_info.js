@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var categoryView, root, _categoryHtml;
+  var alignmentRequest, categoryView, retrieveGeneAlignment, root, _categoryHtml;
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
@@ -42,5 +42,43 @@
     }
     return html;
   };
+
+  retrieveGeneAlignment = function(geneID, locusData) {
+    var alignmentRequest, serializedParams;
+    if (alignmentRequest) {
+      alignmentRequest.abort();
+    }
+    serializedParams = {
+      'gene': geneID
+    };
+    console.log('Sending gene alignment request');
+    alignmentRequest = jQuery.ajax({
+      url: "/genes/sequences",
+      type: "post",
+      data: serializedParams
+    });
+    alignmentRequest.done(function(data, textStatus, jqXHR) {
+      var parentDiv;
+      console.log('Alignment retrieval success');
+      parentDiv = jQuery('#gene-info-msa');
+      parentDiv.empty();
+      return viewController.createView('msa', parentDiv, data, locusData);
+    });
+    alignmentRequest.fail(function(jqXHR, textStatus, errorThrown) {
+      console.error("Error! AJAX retrieval of gene alignment failed: " + textStatus + ",  " + errorThrown + ".");
+      return jQuery('#msa_download_inprogress').html('<div class="alert alert-danger">' + '<p style="text-align:center">Retrieval of gene alignment encountered error.</p>');
+    });
+    return true;
+  };
+
+  if (!root.retrieveGeneAlignment) {
+    root.retrieveGeneAlignment = retrieveGeneAlignment;
+  }
+
+  alignmentRequest = null;
+
+  if (!root.alignmentRequest) {
+    root.alignmentRequest = alignmentRequest;
+  }
 
 }).call(this);

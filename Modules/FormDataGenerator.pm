@@ -1022,55 +1022,44 @@ sub seqAlignment {
 	}
 	
 	my @sets = values(%alignment);
-	return 0 unless @sets > 1 && @sets < 21;
 	
-	# Compute conservation line
 	my $sequence = $sets[0]->{seq};
 	my $len = length($sequence);
 	$self->logger->debug('BEFORE'.length($sequence));
 	map { croak "Error: sequence alignment lengths are not equal." unless length($_->{seq}) == $len } @sets[1..$#sets];
 	
-	my $cons;
+	# Remove gap columns
 	my @removeCols;
-	my $firstSeq = '';
-	
 	for(my $i = 0; $i < $len; $i++) {
-		my $m = 1;
+		
 		my $symbol = substr($sequence, $i, 1);
 		
-		foreach my $s (@sets[1..$#sets]) {
-			if($symbol ne substr($s->{seq},$i,1)) {
-				# mismatch
-				$cons .= ' ';
-				$m = 0;
-				last;
-			}
-		}
-		
-		# match
 		if($symbol eq '-') {
+			# Check if entire col is a gap
+			
+			foreach my $s (@sets[1..$#sets]) {
+				if($symbol ne substr($s->{seq},$i,1)) {
+					# mismatch
+					last;
+				}
+			}
+		
 			# Gap column needs to be spliced out
 			push @removeCols, $i;
-		} 
-		
-		$cons .= '*' if $m;
-		
+		}
 	}
-	$alignment{conservation_line}{seq} = $cons;
 	
-	# Remove gap columns
 	foreach my $s (values %alignment) {
 		my $seq = '';
 		my $p = 0;
 		foreach my $r (@removeCols) {
 			my $l = $r-$p;
 			$seq .= substr $s->{seq}, $p, $l;
-			$self->logger->debug("$p,$l,$r:".length($seq));
+			
 			$p = $r+1;
 		}
 		my $l = $len-$p+1;
 		$seq .= substr $s->{seq}, $p, $l if $l;
-		$self->logger->debug("FINAL-$p,$l,$len:".length($seq));;
 		$s->{seq} = $seq;
 	}
 

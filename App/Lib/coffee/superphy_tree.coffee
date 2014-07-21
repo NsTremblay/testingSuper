@@ -527,6 +527,7 @@ class TreeView extends ViewTemplate
       @update(genomes)
     else if event is 'reset_window'
       @resetWindow = true
+      @highlightGenomes(genomes, null)
       @update(genomes)
     else if event is 'expand_tree'
       @expandTree(genomes)
@@ -1596,6 +1597,7 @@ class TreeView extends ViewTemplate
   # PARAMS
   # GenomeController object
   # array of genome ID strings
+  # If array empty, resets focus nodes
   # 
   # RETURNS
   # boolean
@@ -1606,22 +1608,24 @@ class TreeView extends ViewTemplate
     for l in @leaves
       l.focus = false
       
-    targetNodes = @_blowUpPath(targetList)
-    
-    if targetNodes.length
-      maxy = 0
-      @edgeNode = null
-      for n in targetNodes
-        if n.sum_length > maxy
-          maxy = n.sum_length
-          @edgeNode = n
-        
-      @expansionContraction = true
-      @update(genomes)
+    if targetList? and targetList.length
       
-    else
-      gs = targetList.join(', ')
-      throw new SuperphyError "TreeView method highlightGenome error. Genome(s) #{gs} not found."
+      targetNodes = @_blowUpPath(targetList)
+      
+      if targetNodes.length
+        maxy = 0
+        @edgeNode = null
+        for n in targetNodes
+          if n.sum_length > maxy
+            maxy = n.sum_length
+            @edgeNode = n
+          
+        @expansionContraction = true
+        @update(genomes)
+        
+      else
+        gs = targetList.join(', ')
+        throw new SuperphyError "TreeView method highlightGenome error. Genome(s) #{gs} not found."
       
     
   # FUNC _blowUpPath

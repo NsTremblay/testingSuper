@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocationController, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocationController, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, superphyMetaOntology, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -403,7 +403,7 @@
 
     ViewController.prototype.sideBar = function(elem) {
       var form1, form2, parentTarget, wrapper;
-      parentTarget = 'sidebar-accordion';
+      parentTarget = 'sidebar-group';
       wrapper = jQuery('<div class="panel-group" id="' + parentTarget + '"></div>');
       elem.append(wrapper);
       form1 = jQuery('<div class="panel panel-default"></div>');
@@ -438,7 +438,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="panel-collapse collapse out">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -464,10 +464,13 @@
           }
         } else {
           searchTerms = this._parseFilterForm();
+          if (searchTerms == null) {
+            return false;
+          }
         }
         this.genomeController.filter(searchTerms);
       }
-      this._toggleFilterStatus();
+      this._toggleFilterStatus(true);
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         v = _ref[_i];
@@ -502,8 +505,8 @@
 
     ViewController.prototype.filterForm = function(elem, parentStr) {
       var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selDiv, selGroup, selLab, selRadio, sf;
-      header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" data-parent="#' + parentStr + '" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
-      container = jQuery('<div id="filter-form" class="panel-collapse collapse out"></div>');
+      header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
+      container = jQuery('<div id="filter-form" class="panel-collapse collapse in"></div>');
       numVisible = this.genomeController.filtered;
       filterStatus = jQuery('<div id="filter-status"></div>');
       filterOn = jQuery("<div id='filter-on'><div id='filter-on-text' class='alert alert-warning'>Filter active. " + numVisible + " genomes visible.</div></div>");
@@ -586,13 +589,20 @@
       return true;
     };
 
-    ViewController.prototype._toggleFilterStatus = function() {
+    ViewController.prototype._toggleFilterStatus = function(attempt) {
       var filterOff, filterOn, numVisible;
+      if (attempt == null) {
+        attempt = false;
+      }
       numVisible = this.genomeController.filtered;
       filterOn = jQuery('#filter-on');
       filterOff = jQuery('#filter-off');
       if (numVisible > 0) {
         filterOn.find('#filter-on-text').text("Filter active. " + numVisible + " genomes visible.");
+        filterOn.show();
+        filterOff.hide();
+      } else if (numVisible === 0 && attempt) {
+        filterOn.find('#filter-on-text').text("No genomes match search criteria.");
         filterOn.show();
         filterOff.hide();
       } else {
@@ -690,51 +700,243 @@
       return true;
     };
 
+
+    /*  
+     * FUNC addFilterRow
+     * Adds additional search term row to advanced filter form.
+     * Multiple search terms are joined using boolean operators.
+     *
+     * PARAMS
+     * elem - jQuery element object of rows
+     * rowNum - sequential number for new row
+     * 
+     * RETURNS
+     * boolean 
+     *       
+    addFilterRow: (elem, rowNum) ->
+      
+       * Row wrapper
+      row = jQuery('<div class="adv-filter-row" data-filter-row="' + rowNum + '"></div>').appendTo(elem)
+      
+       * Term join operation
+      if rowNum isnt 1
+        jQuery('<select name="adv-filter-op" data-filter-row="' + rowNum + '">' +
+          '<option value="and" selected="selected">AND</option>' +
+          '<option value="or">OR</option>' +
+          '<option value="not">NOT</option>' +
+          '</select>').appendTo(row)
+      
+       * Field type
+      dropDown = jQuery('<select name="adv-filter-field" data-filter-row="' + rowNum + '"></select>').appendTo(row)
+      for k,v of @genomeController.metaMap
+          dropDown.append('<option value="' + k + '">' + v + '</option>')
+      
+      dropDown.append('<option value="displayname" selected="selected">Genome name</option>')
+      
+       * Change type of search term box depending on field type
+      dropDown.change ->
+        thisRow = this.dataset.filterRow
+        if @.value is 'isolation_date'
+          jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide()
+          jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').show()
+        else
+          jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').show()
+          jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide()
+        true
+      
+       * Keyword-based search wrapper
+      keyw = jQuery('<div class="adv-filter-keyword" data-filter-row="' + rowNum + '"></div>)')
+      
+       * Search term box
+      jQuery('<input type="text" name="adv-filter-term" data-filter-row="' + rowNum + '" placeholder="Keyword"></input>').appendTo(keyw)
+      keyw.appendTo(row)
+      
+       * Predefined search term dropdowns
+       * Host
+      
+      
+    
+       * Date-based search wrapper
+      dt = jQuery('<div class="adv-filter-date" data-filter-row="' + rowNum + '"></div>)')
+      dt.append('<select name="adv-filter-before" data-filter-row="' + rowNum + '">' +
+        '<option value="before" selected="selected">before</option>' +
+        '<option value="after">after</option>' +
+        '</select>')
+      dt.append('<input type="text" name="adv-filter-year" data-filter-row="' + rowNum + '" placeholder="YYYY"></input>')
+      dt.append('<input type="text" name="adv-filter-mon" data-filter-row="' + rowNum + '" placeholder="MM"></input>')
+      dt.append('<input type="text" name="adv-filter-day" data-filter-row="' + rowNum + '" placeholder="DD"></input>')
+      dt.hide()
+      dt.appendTo(row)
+      
+       * Delete button
+      if rowNum isnt 1
+        delRow = jQuery('<a href="#" class="adv-filter-subtraction" data-filter-row="' + rowNum + '">Remove term</a>')
+        delRow.appendTo(row)
+    
+         * Delete row wrapper
+        delRow.click (e) ->
+          e.preventDefault()
+          thisRow = this.dataset.filterRow
+          jQuery('.adv-filter-row[data-filter-row="' + thisRow + '"]').remove()
+    
+      true
+     */
+
     ViewController.prototype.addFilterRow = function(elem, rowNum) {
-      var delRow, dropDown, dt, k, keyw, row, v, _ref;
-      row = jQuery('<div class="adv-filter-row" data-filter-row="' + rowNum + '"></div>').appendTo(elem);
+      var db, delRow, dropDown, dt, fd, fdt, ff, fh, fht, fs, fst, hosts, k, keyw, row, rowObj, sources, syndromes, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+      row = '<div class="adv-filter-row" data-filter-row="' + rowNum + '">';
+      row += '<div class="adv-filter-header">';
       if (rowNum !== 1) {
-        jQuery('<select name="adv-filter-op" data-filter-row="' + rowNum + '">' + '<option value="and" selected="selected">AND</option>' + '<option value="or">OR</option>' + '<option value="not">NOT</option>' + '</select>').appendTo(row);
+        row += '<select name="adv-filter-op" data-filter-row="' + rowNum + '">' + '<option value="and" selected="selected">AND</option>' + '<option value="or">OR</option>' + '<option value="not">NOT</option>' + '</select>';
       }
-      dropDown = jQuery('<select name="adv-filter-field" data-filter-row="' + rowNum + '"></select>').appendTo(row);
+      dropDown = '<select name="adv-filter-field" data-filter-row="' + rowNum + '">';
       _ref = this.genomeController.metaMap;
       for (k in _ref) {
         v = _ref[k];
-        dropDown.append('<option value="' + k + '">' + v + '</option>');
+        dropDown += '<option value="' + k + '">' + v + '</option>';
       }
-      dropDown.append('<option value="displayname" selected="selected">Genome name</option>');
-      dropDown.change(function() {
+      dropDown += '<option value="displayname" selected="selected">Genome name</option></select>';
+      row += dropDown;
+      row += '</div><div class="adv-filter-body">';
+      keyw = '<div class="adv-filter-keyword" data-filter-row="' + rowNum + '">';
+      keyw += '<input type="text" name="adv-filter-term" data-filter-row="' + rowNum + '" placeholder="Keyword"></input>';
+      keyw += '</div>';
+      row += keyw;
+      hosts = '<div class="adv-filter-host-terms" data-filter-row="' + rowNum + '">';
+      hosts += '<select name="adv-filter-hosts" data-filter-row="' + rowNum + '">';
+      hosts += '<option value="">--Select Host--</option>';
+      _ref1 = superphyMetaOntology["hosts"];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        v = _ref1[_i];
+        hosts += '<option value="' + v + '">' + v + '</option>';
+      }
+      hosts += '<option value="other">Other (fill in field below)</option></select>';
+      hosts += '<input type="text" name="adv-filter-host-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>';
+      hosts += '</div>';
+      row += hosts;
+      sources = '<div class="adv-filter-source-terms" data-filter-row="' + rowNum + '">';
+      sources += '<select name="adv-filter-sources" data-filter-row="' + rowNum + '">';
+      sources += '<option value="">--Select Source--</option>';
+      _ref2 = superphyMetaOntology["sources"];
+      for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
+        v = _ref2[_j];
+        sources += '<option value="' + v + '">' + v + '</option>';
+      }
+      sources += '<option value="other">Other (fill in field below)</option></select>';
+      sources += '<input type="text" name="adv-filter-source-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>';
+      sources += '</div>';
+      row += sources;
+      syndromes = '<div class="adv-filter-syndrome-terms" data-filter-row="' + rowNum + '">';
+      syndromes += '<select name="adv-filter-syndromes" data-filter-row="' + rowNum + '">';
+      syndromes += '<option value="">--Select Syndrome--</option>';
+      _ref3 = superphyMetaOntology["syndromes"];
+      for (_k = 0, _len2 = _ref3.length; _k < _len2; _k++) {
+        v = _ref3[_k];
+        syndromes += '<option value="' + v + '">' + v + '</option>';
+      }
+      syndromes += '<option value="other">Other (fill in field below)</option></select>';
+      syndromes += '<input type="text" name="adv-filter-syndrome-other" data-filter-row="' + rowNum + '" placeholder="Other" disabled></input>';
+      syndromes += '</div>';
+      row += syndromes;
+      dt = '<div class="adv-filter-date" data-filter-row="' + rowNum + '">';
+      dt += '<select name="adv-filter-before" data-filter-row="' + rowNum + '">' + '<option value="before" selected="selected">before</option>' + '<option value="after">after</option>' + '</select>';
+      dt += '<input type="text" name="adv-filter-year" data-filter-row="' + rowNum + '" placeholder="YYYY"></input>';
+      dt += '<input type="text" name="adv-filter-mon" data-filter-row="' + rowNum + '" placeholder="MM"></input>';
+      dt += '<input type="text" name="adv-filter-day" data-filter-row="' + rowNum + '" placeholder="DD"></input>';
+      dt += '</div>';
+      row += dt;
+      if (rowNum !== 1) {
+        delRow = '<a href="#" class="adv-filter-subtraction" data-filter-row="' + rowNum + '">Remove term</a>';
+        row += delRow;
+      }
+      row += '</div>';
+      rowObj = jQuery(row);
+      ff = rowObj.find('[name="adv-filter-field"][data-filter-row="' + rowNum + '"]');
+      ff.change(function() {
         var thisRow;
         thisRow = this.dataset.filterRow;
         if (this.value === 'isolation_date') {
           jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide();
           jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').show();
+          jQuery('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]').hide();
+        } else if (this.value === 'isolation_host') {
+          jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]').show();
+          jQuery('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]').hide();
+        } else if (this.value === 'isolation_source') {
+          jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]').show();
+          jQuery('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]').hide();
+        } else if (this.value === 'syndrome') {
+          jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]').show();
         } else {
           jQuery('.adv-filter-keyword[data-filter-row="' + thisRow + '"]').show();
           jQuery('.adv-filter-date[data-filter-row="' + thisRow + '"]').hide();
+          jQuery('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]').hide();
+          jQuery('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]').hide();
         }
         return true;
       });
-      keyw = jQuery('<div class="adv-filter-keyword" data-filter-row="' + rowNum + '"></div>)');
-      jQuery('<input type="text" name="adv-filter-term" data-filter-row="' + rowNum + '" placeholder="Keyword"></input>').appendTo(keyw);
-      keyw.appendTo(row);
-      dt = jQuery('<div class="adv-filter-date" data-filter-row="' + rowNum + '"></div>)');
-      dt.append('<select name="adv-filter-before" data-filter-row="' + rowNum + '">' + '<option value="before" selected="selected">before</option>' + '<option value="after">after</option>' + '</select>');
-      dt.append('<input type="text" name="adv-filter-year" data-filter-row="' + rowNum + '" placeholder="YYYY"></input>');
-      dt.append('<input type="text" name="adv-filter-mon" data-filter-row="' + rowNum + '" placeholder="MM"></input>');
-      dt.append('<input type="text" name="adv-filter-day" data-filter-row="' + rowNum + '" placeholder="DD"></input>');
-      dt.hide();
-      dt.appendTo(row);
+      fht = rowObj.find('.adv-filter-host-terms[data-filter-row="' + rowNum + '"]');
+      fh = fht.find('[name="adv-filter-hosts"]');
+      fh.change(function() {
+        var thisRow;
+        thisRow = this.dataset.filterRow;
+        if (this.value === 'other') {
+          return jQuery('[name="adv-filter-host-other"][data-filter-row="' + rowNum + '"]').prop("disabled", false);
+        } else {
+          return jQuery('[name="adv-filter-host-other"][data-filter-row="' + rowNum + '"]').prop("disabled", true);
+        }
+      });
+      fht.hide();
+      fst = rowObj.find('.adv-filter-source-terms[data-filter-row="' + rowNum + '"]');
+      fs = fst.find('[name="adv-filter-sources"]');
+      fs.change(function() {
+        var thisRow;
+        thisRow = this.dataset.filterRow;
+        if (this.value === 'other') {
+          return jQuery('[name="adv-filter-source-other"][data-filter-row="' + rowNum + '"]').prop("disabled", false);
+        } else {
+          return jQuery('[name="adv-filter-source-other"][data-filter-row="' + rowNum + '"]').prop("disabled", true);
+        }
+      });
+      fst.hide();
+      fdt = rowObj.find('.adv-filter-syndrome-terms[data-filter-row="' + rowNum + '"]');
+      fd = fdt.find('[name="adv-filter-syndromes"]');
+      fd.change(function() {
+        var thisRow;
+        thisRow = this.dataset.filterRow;
+        if (this.value === 'other') {
+          return jQuery('[name="adv-filter-syndrome-other"][data-filter-row="' + rowNum + '"]').prop("disabled", false);
+        } else {
+          return jQuery('[name="adv-filter-syndrome-other"][data-filter-row="' + rowNum + '"]').prop("disabled", true);
+        }
+      });
+      fdt.hide();
+      fd = rowObj.find('.adv-filter-date[data-filter-row="' + rowNum + '"]');
+      fd.hide();
       if (rowNum !== 1) {
-        delRow = jQuery('<a href="#" class="adv-filter-subtraction" data-filter-row="' + rowNum + '">Remove term</a>');
-        delRow.appendTo(row);
-        delRow.click(function(e) {
+        db = rowObj.find('.adv-filter-subtraction[data-filter-row="' + rowNum + '"]');
+        db.click(function(e) {
           var thisRow;
           e.preventDefault();
           thisRow = this.dataset.filterRow;
+          console.log('del' + thisRow);
           return jQuery('.adv-filter-row[data-filter-row="' + thisRow + '"]').remove();
         });
       }
+      elem.append(rowObj);
       return true;
     };
 
@@ -767,12 +969,48 @@
           isDate = true;
         }
         if (!isDate) {
-          term = jQuery("[name='adv-filter-term'][data-filter-row='" + rowNum + "']").val();
-          term = trimInput(term, 'keyword');
-          if (term == null) {
-            return null;
+          if (df === 'isolation_host') {
+            term = jQuery("[name='adv-filter-hosts'][data-filter-row='" + rowNum + "']").val();
+            if (term === 'other') {
+              term = jQuery("[name='adv-filter-host-other'][data-filter-row='" + rowNum + "']").val();
+              term = trimInput(term, 'keyword');
+            }
+            if (!((term != null) && term !== "")) {
+              alert('Error: empty field.');
+              return null;
+            }
+            t.searchTerm = term;
+          } else if (df === 'isolation_source') {
+            term = jQuery("[name='adv-filter-sources'][data-filter-row='" + rowNum + "']").val();
+            if (term === 'other') {
+              term = jQuery("[name='adv-filter-source-other'][data-filter-row='" + rowNum + "']").val();
+              term = trimInput(term, 'keyword');
+            }
+            if (!((term != null) && term !== "")) {
+              alert('Error: empty field.');
+              return null;
+            }
+            t.searchTerm = term;
+          } else if (df === 'syndrome') {
+            term = jQuery("[name='adv-filter-syndromes'][data-filter-row='" + rowNum + "']").val();
+            if (term === 'other') {
+              term = jQuery("[name='adv-filter-syndrome-other'][data-filter-row='" + rowNum + "']").val();
+              term = trimInput(term, 'keyword');
+            }
+            if (!((term != null) && term !== "")) {
+              alert('Error: empty field.');
+              return null;
+            }
+            t.searchTerm = term;
+          } else {
+            term = jQuery("[name='adv-filter-term'][data-filter-row='" + rowNum + "']").val();
+            term = trimInput(term, 'keyword');
+            if (!((term != null) && term !== "")) {
+              alert('Error: empty field.');
+              return null;
+            }
+            t.searchTerm = term;
           }
-          t.searchTerm = term;
         } else {
           bef = jQuery("[name='adv-filter-before'][data-filter-row='" + rowNum + "']").val();
           if (!(bef === 'before' || bef === 'after')) {
@@ -1405,23 +1643,35 @@
         pubGenomeIds = results["public"];
         pvtGenomeIds = results["private"];
         this.filtered = pubGenomeIds.length + pvtGenomeIds.length;
-        _ref = this.public_genomes;
-        for (i in _ref) {
-          g = _ref[i];
-          g.visible = false;
-        }
-        _ref1 = this.private_genomes;
-        for (i in _ref1) {
-          g = _ref1[i];
-          g.visible = false;
-        }
-        for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
-          g = pubGenomeIds[_i];
-          this.public_genomes[g].visible = true;
-        }
-        for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
-          g = pvtGenomeIds[_j];
-          this.private_genomes[g].visible = true;
+        if (this.filtered !== 0) {
+          _ref = this.public_genomes;
+          for (i in _ref) {
+            g = _ref[i];
+            g.visible = false;
+          }
+          _ref1 = this.private_genomes;
+          for (i in _ref1) {
+            g = _ref1[i];
+            g.visible = false;
+          }
+          for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
+            g = pubGenomeIds[_i];
+            this.public_genomes[g].visible = true;
+          }
+          for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
+            g = pvtGenomeIds[_j];
+            this.private_genomes[g].visible = true;
+          }
+          this.pubVisible = pubGenomeIds.sort((function(_this) {
+            return function(a, b) {
+              return cmp(_this.public_genomes[a].viewname, _this.public_genomes[b].viewname);
+            };
+          })(this));
+          this.pvtVisible = pvtGenomeIds.sort((function(_this) {
+            return function(a, b) {
+              return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
+            };
+          })(this));
         }
       } else {
         pubGenomeIds = Object.keys(this.public_genomes);
@@ -1437,17 +1687,17 @@
           g = _ref3[i];
           g.visible = true;
         }
+        this.pubVisible = pubGenomeIds.sort((function(_this) {
+          return function(a, b) {
+            return cmp(_this.public_genomes[a].viewname, _this.public_genomes[b].viewname);
+          };
+        })(this));
+        this.pvtVisible = pvtGenomeIds.sort((function(_this) {
+          return function(a, b) {
+            return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
+          };
+        })(this));
       }
-      this.pubVisible = pubGenomeIds.sort((function(_this) {
-        return function(a, b) {
-          return cmp(_this.public_genomes[a].viewname, _this.public_genomes[b].viewname);
-        };
-      })(this));
-      this.pvtVisible = pvtGenomeIds.sort((function(_this) {
-        return function(a, b) {
-          return cmp(_this.private_genomes[a].viewname, _this.private_genomes[b].viewname);
-        };
-      })(this));
       this.genomeSetId++;
       return true;
     };
@@ -2065,11 +2315,9 @@
       if (l == null) {
         throw new SuperphyError("Unknown locus: " + locusID + " for genome " + genomeID + ".");
       }
-      str;
+      str = '';
       if (l.copy > 1) {
         str = " (" + l.copy + " copy)";
-      } else {
-        '';
       }
       return str;
     };
@@ -2519,6 +2767,12 @@
     });
   };
 
+  superphyMetaOntology = {
+    "syndromes": ["Bacteriuria", "Bloody diarrhea", "Crohn's Disease", "Diarrhea", "Gastroenteritis", "Hemolytic-uremic syndrome", "Hemorrhagic colitis", "Mastitis", "Meningitis", "Peritonitis", "Pneumonia", "Pyelonephritis", "Septicaemia", "Ulcerateive colitis", "Urinary tract infection (cystitis)"],
+    "hosts": ["Bos taurus (cow)", "Canis lupus familiaris (dog)", "Environmental source", "Felis catus (cat)", "Gallus gallus (chicken)", "Homo sapiens (human)", "Mus musculus (mouse)", "Oryctolagus cuniculus (rabbit)", "Ovis aries (sheep)", "Sus scrofa (pig)"],
+    "sources": ["Blood", "Cecum", "Colon", "Feces", "Ileum", "Intestine", "Liver", "Meat", "Meat-based food", "Stool", "Urine", "Vegetable-based food", "Water", "Yolk", "cerebrospinal_fluid"]
+  };
+
 
   /*
   
@@ -2913,6 +3167,7 @@
         this.update(genomes);
       } else if (event === 'reset_window') {
         this.resetWindow = true;
+        this.highlightGenomes(genomes, null);
         this.update(genomes);
       } else if (event === 'expand_tree') {
         this.expandTree(genomes);
@@ -3526,22 +3781,24 @@
         l = _ref[_i];
         l.focus = false;
       }
-      targetNodes = this._blowUpPath(targetList);
-      if (targetNodes.length) {
-        maxy = 0;
-        this.edgeNode = null;
-        for (_j = 0, _len1 = targetNodes.length; _j < _len1; _j++) {
-          n = targetNodes[_j];
-          if (n.sum_length > maxy) {
-            maxy = n.sum_length;
-            this.edgeNode = n;
+      if ((targetList != null) && targetList.length) {
+        targetNodes = this._blowUpPath(targetList);
+        if (targetNodes.length) {
+          maxy = 0;
+          this.edgeNode = null;
+          for (_j = 0, _len1 = targetNodes.length; _j < _len1; _j++) {
+            n = targetNodes[_j];
+            if (n.sum_length > maxy) {
+              maxy = n.sum_length;
+              this.edgeNode = n;
+            }
           }
+          this.expansionContraction = true;
+          return this.update(genomes);
+        } else {
+          gs = targetList.join(', ');
+          throw new SuperphyError("TreeView method highlightGenome error. Genome(s) " + gs + " not found.");
         }
-        this.expansionContraction = true;
-        return this.update(genomes);
-      } else {
-        gs = targetList.join(', ');
-        throw new SuperphyError("TreeView method highlightGenome error. Genome(s) " + gs + " not found.");
       }
     };
 
@@ -3656,8 +3913,12 @@
 
     MsaView.prototype.cssClass = 'msa_row_name';
 
+    MsaView.prototype.maxRows = 26;
+
+    MsaView.prototype.minRows = 1;
+
     MsaView.prototype._formatAlignment = function(alignmentJSON) {
-      var g, i, j, n, pos, posElem, seq, seqLen, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
+      var g, j, n, pos, posElem, seq, seqLen, _i, _j, _k, _len, _len1, _ref, _ref1, _ref2;
       this.rowIDs = (function() {
         var _results;
         _results = [];
@@ -3666,11 +3927,6 @@
         }
         return _results;
       })();
-      i = this.rowIDs.indexOf(this.consLine);
-      if (!(i >= 0)) {
-        throw new SuperphyError('Alignment Object missing "conservation_line".');
-      }
-      this.rowIDs.splice(i, 1);
       seqLen = alignmentJSON[this.rowIDs[0]]['seq'].length;
       this.alignment = {};
       _ref = this.rowIDs;
@@ -3698,8 +3954,6 @@
           seq = alignmentJSON[n]['seq'];
           this.alignment[n]['alignment'].push(this._formatBlock(seq.substr(j, this.blockLen)));
         }
-        seq = alignmentJSON[this.consLine]['seq'];
-        this.alignment[this.consLine]['alignment'].push(this._formatBlock(seq.substr(j, this.blockLen)));
         pos = j + 1;
         posElem = "<td class='msaPosition'>" + pos + "</td>";
         this.alignment[this.posLine]['alignment'].push(posElem);
@@ -3711,7 +3965,7 @@
       var c, chr, cls, html, _i, _ref;
       html = '';
       seq.toUpperCase();
-      for (c = _i = 0, _ref = seq.length; 0 <= _ref ? _i <= _ref : _i >= _ref; c = 0 <= _ref ? ++_i : --_i) {
+      for (c = _i = 0, _ref = seq.length - 1; 0 <= _ref ? _i <= _ref : _i >= _ref; c = 0 <= _ref ? ++_i : --_i) {
         chr = seq.charAt(c);
         cls = this.nuclClasses[chr];
         html += "<td class='" + cls + "'>" + chr + "</td>";
@@ -3738,7 +3992,7 @@
     };
 
     MsaView.prototype._appendRows = function(el, genomes) {
-      var a, g, genomeElem, genomeID, i, j, name, nameCell, rowEl, thiscls, tmp, visibleRows, _i, _j, _k, _len, _len1, _ref, _ref1;
+      var a, consArray, g, genomeElem, genomeID, i, j, matches, n, name, nameCell, row, rows, thiscls, tmp, visibleRows, _i, _j, _k, _len, _len1, _ref, _ref1;
       genomeElem = {};
       visibleRows = [];
       tmp = {};
@@ -3751,10 +4005,10 @@
         if (g.visible) {
           visibleRows.push(i);
           name = g.viewname;
-          tmp[i] = name;
           if (this.locusData != null) {
             name += this.locusData.locusString(i);
           }
+          tmp[i] = name;
           thiscls = this.cssClass;
           if (g.cssClass != null) {
             thiscls = this.cssClass + ' ' + g.cssClass;
@@ -3763,31 +4017,46 @@
           genomeElem[i] = nameCell;
         }
       }
-      visibleRows.sort(function(a, b) {
-        var aname, bname;
-        aname = tmp[a];
-        bname = tmp[b];
-        if (aname > bname) {
-          return 1;
-        } else if (aname < bname) {
-          return -1;
-        } else {
-          return 0;
+      n = visibleRows.length;
+      if (n >= this.maxRows) {
+        el.html(("<tr class='msa-info'><td>Multiple sequence alignment is displayed when number of visible rows is below " + this.maxRows + ".</td></tr>") + ("<tr class='msa-info'><td>Current number of rows: " + n + "</td></tr>") + "<tr class='msa-info'><td>To view, either download alignment or use the filter to reduce visible genomes.</td></tr>");
+      } else if (n <= this.minRows) {
+        el.html(("<tr class='msa-info'><td>Multiple sequence alignment is displayed when number of visible rows is above " + this.minRows + ".</td></tr>") + ("<tr class='msa-info'><td>Current number of rows: " + n + "</td></tr>"));
+      } else {
+        visibleRows.sort(function(a, b) {
+          var aname, bname;
+          aname = tmp[a];
+          bname = tmp[b];
+          if (aname > bname) {
+            return 1;
+          } else if (aname < bname) {
+            return -1;
+          } else {
+            return 0;
+          }
+        });
+        matches = this.cigarLine(visibleRows);
+        rows = '';
+        for (j = _j = 0, _ref1 = this.numBlock; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
+          consArray = this.alignment[visibleRows[0]]['alignment'][j].split('');
+          console.log(consArray.length);
+          for (_k = 0, _len1 = visibleRows.length; _k < _len1; _k++) {
+            i = visibleRows[_k];
+            row = '<tr>';
+            row += genomeElem[i] + this.alignment[i]['alignment'][j];
+            row += '</tr>';
+            rows += row;
+          }
+          row = '<tr>';
+          row += '<td></td>' + matches[j];
+          row += '</tr>';
+          rows += row;
+          row = '<tr>';
+          row += this.alignment[this.posLine]['alignment'][j];
+          row += '</tr>';
+          rows += row;
         }
-      });
-      for (j = _j = 0, _ref1 = this.numBlock; 0 <= _ref1 ? _j < _ref1 : _j > _ref1; j = 0 <= _ref1 ? ++_j : --_j) {
-        for (_k = 0, _len1 = visibleRows.length; _k < _len1; _k++) {
-          i = visibleRows[_k];
-          rowEl = jQuery('<tr></tr>');
-          rowEl.append(genomeElem[i] + this.alignment[i]['alignment'][j]);
-          el.append(rowEl);
-        }
-        rowEl = jQuery('<tr></tr>');
-        rowEl.append('<td></td>' + this.alignment[this.consLine]['alignment'][j]);
-        el.append(rowEl);
-        rowEl = jQuery('<tr></tr>');
-        rowEl.append(this.alignment[this.posLine]['alignment'][j]);
-        el.append(rowEl);
+        el.append(rows);
       }
       return true;
     };
@@ -3856,6 +4125,39 @@
         type: 'text/plain',
         data: output
       };
+    };
+
+    MsaView.prototype.cigarLine = function(visibleRows) {
+      var c, consArray, consL, final, i, j, l, r, seq, _i, _j, _k, _l, _len, _len1, _ref, _ref1;
+      consL = this.alignment[visibleRows[0]]["seq"].split('');
+      l = consL.length - 1;
+      _ref = visibleRows.slice(1);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        r = _ref[_i];
+        seq = this.alignment[r]["seq"];
+        for (i = _j = 0; 0 <= l ? _j <= l : _j >= l; i = 0 <= l ? ++_j : --_j) {
+          c = consL[i];
+          if (c !== '$') {
+            if (c !== seq[i]) {
+              consL[i] = '$';
+            }
+          }
+        }
+      }
+      final = '';
+      for (_k = 0, _len1 = consL.length; _k < _len1; _k++) {
+        c = consL[_k];
+        if (c === '$') {
+          final += ' ';
+        } else {
+          final += '*';
+        }
+      }
+      consArray = [];
+      for (j = _l = 0, _ref1 = this.blockLen; _ref1 > 0 ? _l <= l : _l >= l; j = _l += _ref1) {
+        consArray.push(this._formatBlock(final.substr(j, this.blockLen)));
+      }
+      return consArray;
     };
 
     return MsaView;
@@ -5286,7 +5588,7 @@
           _ref1 = this.locationController.pvtLocations;
           for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
             i = _ref1[_j];
-            if (__indexOf.call(genomes.pvtVisibles, i) >= 0) {
+            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
               pvtVis.push(i);
             }
           }

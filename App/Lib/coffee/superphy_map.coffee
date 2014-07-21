@@ -75,7 +75,7 @@ class MapView extends TableView
       #Append genome list with location
       if @mapController.map.getBounds().getNorthEast().toUrlValue() == '0,0' and @mapController.map.getBounds().getSouthWest().toUrlValue() == '0,0'
         pubVis.push i for i in @locationController.pubLocations when i in genomes.pubVisible
-        pvtVis.push i for i in @locationController.pvtLocations when i in genomes.pvtVisibles
+        pvtVis.push i for i in @locationController.pvtLocations when i in genomes.pvtVisible
       else
         pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
         pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible

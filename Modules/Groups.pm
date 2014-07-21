@@ -14,7 +14,6 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
-use Modules::TreeManipulator;
 use Modules::LocationManager;
 use JSON;
 use Time::HiRes;

@@ -54,6 +54,9 @@ class MsaView extends ViewTemplate
   
   cssClass: 'msa_row_name'
   
+  maxRows: 26
+  minRows: 1 
+  
 
   # FUNC _formatAlignment
   # Splits alignment strings into even-length
@@ -72,10 +75,10 @@ class MsaView extends ViewTemplate
     # Loci in alignment
     @rowIDs = (g for g of alignmentJSON)
     
-    # Splice out the match line
-    i =  @rowIDs.indexOf(@consLine)
-    throw new SuperphyError 'Alignment Object missing "conservation_line".' unless i >= 0
-    @rowIDs.splice(i,1)
+    # # Splice out the match line
+    # i =  @rowIDs.indexOf(@consLine)
+    # throw new SuperphyError 'Alignment Object missing "conservation_line".' unless i >= 0
+    # @rowIDs.splice(i,1)
     
     # Initialise the alignment data
     seqLen = alignmentJSON[@rowIDs[0]]['seq'].length
@@ -98,13 +101,10 @@ class MsaView extends ViewTemplate
         seq = alignmentJSON[n]['seq']
         @alignment[n]['alignment'].push(@_formatBlock(seq.substr(j,@blockLen)))
      
-       # Conservation line 
-       seq = alignmentJSON[@consLine]['seq']
-       @alignment[@consLine]['alignment'].push(@_formatBlock(seq.substr(j,@blockLen)))
-       # Position Line
-       pos = j+1
-       posElem = "<td class='msaPosition'>#{pos}</td>"
-       @alignment[@posLine]['alignment'].push(posElem)
+      # Position Line
+      pos = j+1
+      posElem = "<td class='msaPosition'>#{pos}</td>"
+      @alignment[@posLine]['alignment'].push(posElem)
        
     true
     
@@ -112,7 +112,7 @@ class MsaView extends ViewTemplate
     html = '';
     seq.toUpperCase()
     
-    for c in [0..seq.length]
+    for c in [0..seq.length-1]
       chr = seq.charAt(c)
       cls = @nuclClasses[chr]
       html += "<td class='#{cls}'>#{chr}</td>"
@@ -160,6 +160,8 @@ class MsaView extends ViewTemplate
     visibleRows = []
     tmp = {}
     
+    # Find number of active rows
+    # Compute current genome name
     for i in @rowIDs
       a = @alignment[i]
       genomeID = a['genome']
@@ -171,11 +173,12 @@ class MsaView extends ViewTemplate
         
         # MSA row name
         name = g.viewname
-        tmp[i] = name
         
         # Append locus data
         if @locusData?
           name += @locusData.locusString(i)
+          
+        tmp[i] = name
         
         # Class data for row name
         thiscls = @cssClass
@@ -184,27 +187,58 @@ class MsaView extends ViewTemplate
         nameCell = "<td class='#{thiscls}' data-genome='#{genomeID}'>#{name}</td>";
         
         genomeElem[i] = nameCell
-        
-    # Sort alphabetically
-    visibleRows.sort (a,b) ->
-      aname = tmp[a]
-      bname = tmp[b]
-      if aname > bname then 1 else if aname < bname then -1 else 0
     
-    # Spit out each block row
-    for j in [0...@numBlock]
-      for i in visibleRows
-        rowEl = jQuery('<tr></tr>')
-        rowEl.append(genomeElem[i] + @alignment[i]['alignment'][j])
-        el.append(rowEl)
-      # Add conservation row and position row
-      rowEl = jQuery('<tr></tr>')
-      rowEl.append('<td></td>' + @alignment[@consLine]['alignment'][j])
-      el.append(rowEl)
-      rowEl = jQuery('<tr></tr>')
-      rowEl.append(@alignment[@posLine]['alignment'][j])
-      el.append(rowEl)
+    n = visibleRows.length
+    if n >= @maxRows
+      el.html("<tr class='msa-info'><td>Multiple sequence alignment is displayed when number of visible rows is below #{@maxRows}.</td></tr>"+
+        "<tr class='msa-info'><td>Current number of rows: #{n}</td></tr>"+
+        "<tr class='msa-info'><td>To view, either download alignment or use the filter to reduce visible genomes.</td></tr>"
+      )
       
+    else if n <= @minRows
+      el.html("<tr class='msa-info'><td>Multiple sequence alignment is displayed when number of visible rows is above #{@minRows}.</td></tr>"+
+        "<tr class='msa-info'><td>Current number of rows: #{n}</td></tr>"
+      )
+    
+    else
+      # Build and Attach MSA
+        
+      # Sort alphabetically
+      visibleRows.sort (a,b) ->
+        aname = tmp[a]
+        bname = tmp[b]
+        if aname > bname then 1 else if aname < bname then -1 else 0
+      
+      # Compute conservation line for this set
+      matches = @cigarLine(visibleRows)
+      
+      # Spit out each block row
+      rows = ''
+      for j in [0...@numBlock]
+        
+        consArray = @alignment[visibleRows[0]]['alignment'][j].split('')
+        console.log consArray.length
+        
+        for i in visibleRows
+          row = '<tr>'
+          row += genomeElem[i] + @alignment[i]['alignment'][j]
+          row += '</tr>'
+          rows += row
+          
+        # Add conservation row and position row
+        row = '<tr>'
+        row +='<td></td>'+matches[j]
+        row += '</tr>'
+        rows += row
+       
+        # Add position row
+        row = '<tr>'
+        row += @alignment[@posLine]['alignment'][j]
+        row += '</tr>'
+        rows += row
+      
+      el.append(rows)
+        
     true
     
   # FUNC updateCSS
@@ -306,6 +340,53 @@ class MsaView extends ViewTemplate
       data: output 
     }
     
+  # FUNC cigarLine
+  # Generate a basic cigar line for current visible alignment
+  #
+  #   Format: match -> '*' and mismatch -> ' '.
+  #
+  # PARAMS
+  #   visibleRows: array of visible row IDs
+  #
+  # RETURNS
+  #   array-ref containing array of block-length strings
+  #   representing html-formatted cigar line
+  #      
+  cigarLine: (visibleRows)->
+  
+    # Find mismatches
+    consL = @alignment[visibleRows[0]]["seq"].split('')
+    l = consL.length - 1
+    
+    for r in visibleRows.slice(1)
+      seq = @alignment[r]["seq"]
+      for i in [0..l]
+        c = consL[i]
+        if c != '$'
+          consL[i] = '$' if c != seq[i]
+          
+    # Change symbols
+    final = ''
+    for c in consL
+      if c == '$'
+        final += ' '
+      else
+        final += '*'
+      
+    # Chop into blocks and add html
+    consArray = []
+    for j in [0..l] by @blockLen
+      consArray.push(@_formatBlock(final.substr(j,@blockLen)))
+     
+    consArray
+   
+  
+    
+  
+    
+  
+      
+  
   
     
     
