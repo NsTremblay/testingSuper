@@ -1758,10 +1758,8 @@ Date: May 20th, 2014
   border-width: 1px;
   border-color: #d3d3d3;
 }
-/*Checkbox styles*/
-.radio,
-.checkbox {
-  min-height: 0px;
+label {
+  display: inline;
 }
 .genome-group {
   margin-bottom: 10px;
@@ -1772,12 +1770,4 @@ Date: May 20th, 2014
 #group-manager-form div.form-group button {
   margin-left: 2px;
   margin-right: 2px;
-}
-.superphy-icon img {
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-.superphy-icon .caption {
-  text-align: center;
 }
