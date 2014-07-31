@@ -242,6 +242,10 @@ g.scalebar text {
 td.msa_row_name {
   padding-right: 10px;
   text-align: right;
+  max-width: 200px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 /** Info message **************************/
 .msa-info td {

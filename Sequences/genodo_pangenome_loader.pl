@@ -473,12 +473,12 @@ elapsed_time("Data parsed");
 
 $chado->end_files();
 
-$chado->flush_caches();
-
 unless ($NOLOAD) {
 	$chado->load_data();
 	build_genome_tree();
 }
+
+$chado->flush_caches();
 
 $chado->remove_lock();
 elapsed_time("Data loaded");
@@ -627,9 +627,12 @@ sub pangenome_locus {
 		#  name
 		my $name = $locus_id;
 		
+		# Add entry in core pangenome alignment table for genome, if it doesn't exist
+		$chado->add_core_row($genome_ids->{genome}, $is_public);
+		
 		# Feature relationships
 		$chado->handle_parent($curr_feature_id, $genome_ids->{genome}, $contig_id, $is_public);
-		$chado->handle_pangenome_loci($curr_feature_id, $query_id, $is_public);
+		$chado->handle_pangenome_loci($curr_feature_id, $query_id, $is_public, $genome_ids->{genome});
 		
 		# Additional Feature Types
 		$chado->add_types($curr_feature_id, $is_public);
