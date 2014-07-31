@@ -838,7 +838,7 @@ div.matrixSort {
 .superphy-table table tbody td.gene_table_item div.checkbox input[type="checkbox"] {
   min-height: 20px;
   line-height: normal;
-  margin: 0 5px 0 0;
+  margin: 0px -20px;
 }
 .superphy-table table tbody td.gene_table_item .gene-table-link {
   display: inline;
@@ -850,7 +850,7 @@ div.matrixSort {
 .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
   min-height: 20px;
   line-height: normal;
-  margin: 0 5px 0 0;
+  margin: 0px -20px;
 }
 .superphy-table table tbody td.genome_map_item div.checkbox {
   margin: 0;
@@ -859,7 +859,7 @@ div.matrixSort {
 .superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
   min-height: 20px;
   line-height: normal;
-  margin: 0 5px 0 0;
+  margin: 0px -20px;
 }
 .superphy-table table tbody td.no-loc {
   color: #d3d3d3;
@@ -903,7 +903,7 @@ div.matrixSort {
 .superphy-jump2-table .superphy-table table tbody td.genome_table_item div.checkbox input[type="checkbox"] {
   min-height: 20px;
   line-height: normal;
-  margin: 0 5px 0 0;
+  margin: 0px -20px;
 }
 .superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox {
   margin: 0;
@@ -912,7 +912,7 @@ div.matrixSort {
 .superphy-jump2-table .superphy-table table tbody td.genome_map_item div.checkbox input[type="checkbox"] {
   min-height: 20px;
   line-height: normal;
-  margin: 0 5px 0 0;
+  margin: 0px -20px;
 }
 /*
  
@@ -1758,8 +1758,11 @@ Date: May 20th, 2014
   border-width: 1px;
   border-color: #d3d3d3;
 }
-label {
-  display: inline;
+/*Checkbox styles*/
+.radio,
+.checkbox {
+  height: 0px;
+  margin: 0px;
 }
 .genome-group {
   margin-bottom: 10px;
@@ -1770,4 +1773,8 @@ label {
 #group-manager-form div.form-group button {
   margin-left: 2px;
   margin-right: 2px;
+}
+#select-filter-form .form-group {
+  padding-bottom: 0px;
+  margin-bottom: 0px;
 }

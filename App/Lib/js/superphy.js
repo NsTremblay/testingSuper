@@ -143,7 +143,7 @@
         return true;
       });
       downloadElemDiv.append(downloadElem);
-      elem.prepend(downloadElemDiv);
+      downloadElemDiv.prependTo(elem);
       return true;
     };
 
@@ -2582,7 +2582,7 @@
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
-      this.parentElem.append("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>");
+      jQuery("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>").appendTo(this.parentElem);
       this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
       this.scalePos = {
         x: 10,
@@ -3472,7 +3472,7 @@
       var controls, expButtonID, findButtonID, findInputID, fitButtonID, num, opsHtml, resetButtonID;
       opsHtml = '';
       controls = '<div class="row">';
-      controls += "<div class='col-sm-6'><div class='btn-group'>";
+      controls += "<div class='col-sm-6 span6'><div class='btn-group'>";
       fitButtonID = "tree_fit_button" + this.elNum;
       controls += "<button id='" + fitButtonID + "' type='button' class='btn btn-default btn-sm'>Fit to window</button>";
       resetButtonID = "tree_reset_button" + this.elNum;
@@ -3482,14 +3482,14 @@
       controls += "</div></div>";
       findButtonID = "tree_find_button" + this.elNum;
       findInputID = "tree_find_input" + this.elNum;
-      controls += "<div class='col-sm-3'><div class='input-group input-group-sm'>";
+      controls += "<div class='col-sm-3 span3'><div class='input-group input-prepend input-group-sm'>";
       controls += "<span class='input-group-btn'> <button id='" + findButtonID + "' class='btn btn-default btn-sm' type='button'>Search</button></span>";
-      controls += "<input id='" + findInputID + "' type='text' class='form-control'></div></div>";
-      controls += "<div class='col-sm-1'></div>";
-      controls += "<div class='col-sm-2'><a href='#" + legendID + "'>Functions List</a></div>";
+      controls += "<input id='" + findInputID + "' type='text' class='form-control input-small'></div></div>";
+      controls += "<div class='col-sm-1 span1'></div>";
+      controls += "<div class='col-sm-2 span2'><a href='#" + legendID + "'>Functions List</a></div>";
       controls += "</div>";
       opsHtml += "" + controls;
-      el.append("<div class='tree_operations'>" + opsHtml + "</div>");
+      jQuery("<div class='tree_operations'>" + opsHtml + "</div>").appendTo(el);
       num = this.elNum - 1;
       jQuery("#" + findButtonID).click(function(e) {
         var searchString;
@@ -5225,24 +5225,44 @@
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
       this.sortField = 'isolation_location';
       this.sortAsc = 'true';
-      mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(this.parentElem));
-      splitLayoutEl = jQuery('<div class="col-md-6 map-search-div"></div>').appendTo(jQuery(this.parentElem));
+      this.shiny = this.mapArgs[1];
+      mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(jQuery(this.parentElem));
+      splitLayoutEl = jQuery('<div class="map-search-div"></div>').appendTo(jQuery(this.parentElem));
       tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl);
       tableRow1El = jQuery('<tr></tr>').appendTo(tableEl);
       tableData1El = jQuery('<td></td>').appendTo(tableRow1El);
       formEl = jQuery('<form class="form"></form>').appendTo(tableData1El);
       fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl);
-      rowEl = jQuery('<div class="row"></div>').appendTo(fieldsetEl);
-      divEl = jQuery('<div class="col-md-9"></div>').appendTo(rowEl);
-      inputGpEl = jQuery('<div class="input-group"></div>').appendTo(divEl);
+      rowEl = jQuery('<div></div>').appendTo(fieldsetEl);
+      divEl = jQuery('<div></div>').appendTo(rowEl);
+      inputGpEl = jQuery('<div class="input-append"></div>').appendTo(divEl);
       input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl);
-      buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
-      divEl2 = jQuery('<div class="col-md-3"></div>').appendTo(rowEl);
+      if (!this.shiny) {
+        buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
+      }
+      if (this.shiny) {
+        buttonEl = jQuery('<button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>').appendTo(inputGpEl);
+      }
+      divEl2 = jQuery('<div></div>').appendTo(rowEl);
       resetMapViewEl = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(divEl2);
       tableRow2El = jQuery('<tr></tr>').appendTo(tableEl);
       tableData2El = jQuery('<td></td>').appendTo(tableRow2El);
       mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El);
-      this.locationController = this.getLocationController(this.mapArgs[0]);
+      if (!this.shiny) {
+        mapManifestEl.addClass('col-md-6');
+        splitLayoutEl.addClass('col-md-6');
+        rowEl.addClass('row');
+        divEl.addClass('col-md-9');
+        inputGpEl.addClass('input-group');
+        divEl2.addClass('col-md-3');
+      } else {
+        rowEl.addClass('row-fluid');
+        divEl.addClass('span9');
+        inputGpEl.addClass('input-append');
+        input.addClass('input-xlarge');
+        divEl2.addClass('span3');
+      }
+      this.locationController = this.getLocationController(this.mapArgs[0], this.elNum);
       this.mapController = this.getCartographer(this.mapArgs[0], this.locationController);
       jQuery(this.parentElem).data('views-index', this.elNum);
       resetMapViewEl.click((function(_this) {
@@ -5261,14 +5281,16 @@
 
     MapView.prototype.update = function(genomes) {
       var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
-      tableElem = jQuery("#" + this.elID + " table");
-      if (tableElem.length) {
-        tableElem.empty();
-      } else {
-        divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
-        tableElem = jQuery("<table />").appendTo(divElem);
-        mapManifest = jQuery('.map-manifest').append(divElem);
-        jQuery(this.parentElem).append(mapManifest);
+      if (!this.shiny) {
+        tableElem = jQuery("#" + this.elID + " table");
+        if (tableElem.length) {
+          tableElem.empty();
+        } else {
+          divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
+          tableElem = jQuery("<table />").appendTo(divElem);
+          mapManifest = jQuery('.map-manifest').append(divElem);
+          jQuery(this.parentElem).append(mapManifest);
+        }
       }
       pubVis = [];
       pvtVis = [];
@@ -5306,18 +5328,20 @@
           }
         }
       }
-      t1 = new Date();
-      table = '';
-      table += this._appendHeader(genomes);
-      table += '<tbody>';
-      table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
-      table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
-      table += '</body>';
-      tableElem.append(table);
-      this._actions(tableElem, this.style);
-      t2 = new Date();
-      ft = t2 - t1;
-      console.log('MapView update elapsed time: ' + ft);
+      if (!this.shiny) {
+        t1 = new Date();
+        table = '';
+        table += this._appendHeader(genomes);
+        table += '<tbody>';
+        table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
+        table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
+        table += '</body>';
+        tableElem.append(table);
+        this._actions(tableElem, this.style);
+        t2 = new Date();
+        ft = t2 - t1;
+        console.log('MapView update elapsed time: ' + ft);
+      }
       return true;
     };
 
@@ -5566,12 +5590,12 @@
         })(this),
         'infoSatellite': (function(_this) {
           return function() {
-            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[1], _this.mapArgs[2]]);
+            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[2], _this.mapArgs[3]]);
           };
         })(this),
         'geophy': (function(_this) {
           return function() {
-            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[1]]);
+            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[2]]);
           };
         })(this)
       };
@@ -5580,7 +5604,7 @@
       return cartographer;
     };
 
-    MapView.prototype.getLocationController = function(mapType) {
+    MapView.prototype.getLocationController = function(mapType, viewNum) {
       var cartographTypes, controller;
       cartographTypes = {
         'base': (function(_this) {
@@ -5595,17 +5619,17 @@
         })(this),
         'satellite': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this),
         'infoSatellite': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this),
         'geophy': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this)
       };
@@ -5664,6 +5688,7 @@
     function Cartographer(cartographDiv, cartograhOpt) {
       this.cartographDiv = cartographDiv;
       this.cartograhOpt = cartograhOpt;
+      this.pinPoint = __bind(this.pinPoint, this);
       this.defaultCenter = new google.maps.LatLng(-0.000, 0.000);
       this.mapOptions = {
         center: this.defaultCenter,
@@ -5683,9 +5708,8 @@
     };
 
     Cartographer.prototype.pinPoint = function(e) {
-      var queryLocation, self;
+      var queryLocation;
       e.preventDefault();
-      self = e.data.context;
       queryLocation = jQuery('.map-search-location').val();
       jQuery.ajax({
         type: "POST",
@@ -5693,15 +5717,17 @@
         data: {
           'address': queryLocation
         }
-      }).done(function(data) {
-        var bounds, northEast, results, southWest;
-        results = JSON.parse(data);
-        self.map.setCenter(results.geometry.location);
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
-        bounds = new google.maps.LatLngBounds(southWest, northEast);
-        return self.map.fitBounds(bounds);
-      }).fail((function() {
+      }).done((function(_this) {
+        return function(data) {
+          var bounds, northEast, results, southWest;
+          results = JSON.parse(data);
+          _this.map.setCenter(results.geometry.location);
+          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          bounds = new google.maps.LatLngBounds(southWest, northEast);
+          return _this.map.fitBounds(bounds);
+        };
+      })(this)).fail((function() {
         return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
       }));
       return true;
@@ -5732,7 +5758,7 @@
       this.dotCartographDiv = dotCartographDiv;
       this.dotCartograhOpt = dotCartograhOpt;
       this.resetMap = __bind(this.resetMap, this);
-      this.plantFlag = __bind(this.plantFlag, this);
+      this.pinPoint = __bind(this.pinPoint, this);
       DotCartographer.__super__.constructor.call(this, this.dotCartographDiv, this.dotCartograhOpt);
     }
 
@@ -5751,9 +5777,8 @@
     };
 
     DotCartographer.prototype.pinPoint = function(e) {
-      var queryLocation, self;
+      var queryLocation;
       e.preventDefault();
-      self = e.data.context;
       queryLocation = jQuery('.map-search-location').val();
       jQuery.ajax({
         type: "POST",
@@ -5761,17 +5786,19 @@
         data: {
           'address': queryLocation
         }
-      }).done(function(data) {
-        var bounds, northEast, results, southWest;
-        results = JSON.parse(data);
-        self.latLng = results.geometry.location;
-        self.map.setCenter(results.geometry.location);
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
-        bounds = new google.maps.LatLngBounds(southWest, northEast);
-        self.map.fitBounds(bounds);
-        return DotCartographer.prototype.plantFlag(self.latLng, self.map);
-      }).fail((function() {
+      }).done((function(_this) {
+        return function(data) {
+          var bounds, northEast, results, southWest;
+          results = JSON.parse(data);
+          _this.map.setCenter(results.geometry.location);
+          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          bounds = new google.maps.LatLngBounds(southWest, northEast);
+          _this.map.fitBounds(bounds);
+          _this.latLng = results.geometry.location;
+          return _this.plantFlag(_this.latLng, _this.map);
+        };
+      })(this)).fail((function() {
         return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
       }));
       return true;
@@ -5848,14 +5875,7 @@
       })(this));
       google.maps.event.addListener(this.map, 'idle', (function(_this) {
         return function() {
-          var view, _i, _len, _ref, _results;
-          _ref = viewController.views;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            view = _ref[_i];
-            _results.push(view.update(viewController.genomeController));
-          }
-          return _results;
+          return viewController.views[_this.locationController.viewNum - 1].update(viewController.genomeController);
         };
       })(this));
       return true;
@@ -6084,9 +6104,10 @@
   })();
 
   LocationController = (function() {
-    function LocationController(genomeController, parentElem) {
+    function LocationController(genomeController, parentElem, viewNum) {
       this.genomeController = genomeController;
       this.parentElem = parentElem;
+      this.viewNum = viewNum;
       this._populateLocations(this.genomeController);
     }
 
@@ -6306,7 +6327,7 @@
       if (this.userGroups != null) {
         gpColors = this._prepareGroups();
       }
-      this.viewController.createView('map', this.mapDiv, ['satellite']);
+      this.viewController.createView('map', this.mapDiv, ['satellite'], false);
       return true;
     };
 
@@ -6317,7 +6338,7 @@
       this._setViewController(this.publicSubsetGenomes, this.privateSubsetGenomes);
       jQuery('#groups-compare').hide();
       gpColors = this._prepareGroups();
-      this.viewController.createView('map', this.mapDiv, ['geophy'], gpColors);
+      this.viewController.createView('map', this.mapDiv, ['geophy'], false, gpColors);
       this._appendLegend(jQuery('#groups-geophy'), this.userGroups);
       return true;
     };

@@ -2,341 +2,325 @@
 <html>
 <head>
 
-    <TMPL_INCLUDE NAME="header2.tmpl">
-    <link rel="stylesheet" href="/App/Styling/css/genes_search.css">
-    <link rel="stylesheet" href="/App/Styling/css/superphy_strains_info_menu.css">
-    <script src="/App/Lib/js/superphy_genes.js"></script>
+  <TMPL_INCLUDE NAME="header2.tmpl">
+  <link rel="stylesheet" href="/App/Styling/css/genes_search.css">
+  <link rel="stylesheet" href="/App/Styling/css/superphy_strains_info_menu.css">
+  <script src="/App/Lib/js/superphy_genes.js"></script>
 
 
-    <script type="text/javascript">
-    var page_name = "strains";
-    </script>
+  <script type="text/javascript">
+  var page_name = "strains";
+  </script>
 
 </head>
 
 <body data-spy="scroll" data-target="#menu-affix" data-offset="70">
 
-    <TMPL_INCLUDE NAME="page_top.tmpl">
+  <TMPL_INCLUDE NAME="page_top.tmpl">
 
-    <!-- TODO: Pull this all into coffee script to handle on hover -->
-    <!-- Change this to work with scrollspy and affix -->
-    <div class="row">
-        <div class="col-md-12 hidden-xs" id="strains-info-menu">
-            <nav id="menu-affix" class="panel panel-default">
-                <ul class="nav">
-                    <div class="panel-heading">    
-                        <div class="panel-title">View:</div>
-                    </div>
-                    <div class="row">
-                        <ul class="nav">
-                            <div class="col-sm-12">  
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#overview-panel-header">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img overview" alt="Overview"></div>
-                                                <div class="caption"><small>Overview</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
-                                
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#tree-panel-header">
-                                            <div class="superphy-icon">    
-                                                <div class="superphy-icon-img phylogeny" alt="Phylogenetic Tree"></div>
-                                                <div class="caption"><small>Phylogenetic Tree</small></div>  
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+  <!-- TODO: Pull this all into coffee script to handle on hover -->
+  <!-- Change this to work with scrollspy and affix -->
+  <div class="row">
+    <div class="col-md-12 hidden-xs" id="strains-info-menu">
+      <nav id="menu-affix" class="panel panel-default">
+        <ul class="nav">
+          <div class="panel-heading">
+            <div class="panel-title">View:</div>
+          </div>
+          <div class="row">
+            <ul class="nav">
+              <div class="col-sm-12">  
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#overview-panel-header">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img overview" data-toggle="tooltip" title="Overview"></div>
+                        <div class="caption"><small>Overview</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#map-panel-header">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img geospatial" alt="Geospatial Info"></div>
-                                                <div class="caption"><small>Geospatial Info</small></div>    
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#stx-panel-header">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img stx" data-toggle="tooltip" title="Stx Subtype"></div>
+                        <div class="caption"><small>Stx Subtype</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#vf-panel-header">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img vf" alt="Virulence Factors"></div>
-                                                <div class="caption"><small>Virulence Factors</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#tree-panel-header">
+                      <div class="superphy-icon">    
+                        <div class="superphy-icon-img phylogeny" data-toggle="tooltip" title="Phylogenetic Tree"></div>
+                        <div class="caption"><small>Phylogenetic Tree</small></div>  
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#amr-panel-header">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img amr" alt="Antimicrobial Resistance"></div>
-                                                <div class="caption"><small>Antimicrobial Resistance</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#map-panel-header">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img geospatial" data-toggle="tooltip" title="Geospatial Info"></div>
+                        <div class="caption"><small>Geospatial Info</small></div>    
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="#stx-panel-header">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img stx" alt="Stx Subtype"></div>
-                                                <div class="caption"><small>Stx Subtype</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
-                            </div>
-                        </ul>
-                    </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#vf-panel-header">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img vf" data-toggle="tooltip" title="Virulence Factors"></div>
+                        <div class="caption"><small>Virulence Factors</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                    <div class="panel-heading">    
-                        <div class="panel-title">Search By:</div>
-                    </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="#amr-panel-header">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img amr" data-toggle="tooltip" title="Antimicrobial Resistance"></div>
+                        <div class="caption"><small>Antimicrobial Resistance</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                    <div class="row">
-                        <ul class="nav">
-                            <div class="col-sm-12">
+              </div>
+            </ul>
+          </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="/strains/search/#strains_table">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img genomelist" alt="Genome List"></div>
-                                                <div class="caption"><small>Genome List</small></div>    
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+          <div class="panel-heading">    
+            <div class="panel-title">Search By:</div>
+          </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="/strains/search/#strains_tree">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img phylogeny" alt="Phylogenetic Tree"></div>
-                                                <div class="caption"><small>Phylogenetic Tree</small></div>    
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+          <div class="row">
+            <ul class="nav">
+              <div class="col-sm-12">
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a href="/strains/search/#strains_map">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img geospatial" alt="Geospatial Info"></div>
-                                                <div class="caption"><small>Geospatial Info</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="/strains/search/#strains_table">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img genomelist" data-toggle="tooltip" title="Genome List"></div>
+                        <div class="caption"><small>Genome List</small></div>    
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                                <div class="col-xs-2">
-                                    <li>
-                                        <a class="genome-dl-link">
-                                            <div class="superphy-icon">
-                                                <div class="superphy-icon-img download" alt="Download Genome"></div>
-                                                <div class="caption"><small>Download Genome</small></div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="/strains/search/#strains_tree">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img phylogeny" data-toggle="tooltip" title="Phylogenetic Tree"></div>
+                        <div class="caption"><small>Phylogenetic Tree</small></div>    
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                            </div>
-                        </ul>
-                    </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a href="/strains/search/#strains_map">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img geospatial" data-toggle="tooltip" title="Geospatial Info"></div>
+                        <div class="caption"><small>Geospatial Info</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
 
-                </ul>
-            </nav>
-        </div>
+                <div class="col-xs-2">
+                  <li>
+                    <a class="genome-dl-link">
+                      <div class="superphy-icon">
+                        <div class="superphy-icon-img download" data-toggle="tooltip" title="Download Genome"></div>
+                        <div class="caption"><small>Download Genome</small></div>
+                      </div>
+                    </a>
+                  </li>
+                </div>
+
+              </div>
+            </ul>
+          </div>
+
+        </ul>
+      </nav>
     </div>
+  </div>
 
-    <!-- Shows only if there is strain data -->
-    <TMPL_IF strainData>
-    <div class="panel-group strain-data" id="accordian">
+  <!-- Shows only if there is genome data -->
+  <TMPL_IF strainData>
+  <div class="panel-group genome-data" id="accordian">
 
-        <!-- Collapsible overview panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="overview-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#overview-panel">
-                        Overview
-                    </a>
-                </h4>
-            </div>
-            <div id="overview-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <section>
-                        <TMPL_INCLUDE NAME="strains_info_overview_tab.tmpl">
-                    </section>
-                </div>
-            </div>
+    <!-- Collapsible overview panel -->
+    <div class="panel panel-default">
+      <div class="panel-heading" id="overview-panel-header">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#overview-panel">
+            Overview
+          </a>
+        </h4>
+      </div>
+      <div id="overview-panel" class="panel-collapse">
+        <div class="panel-body">
+          <section>
+            <TMPL_INCLUDE NAME="strains_info_overview_tab.tmpl">
+          </section>
         </div>
-        <!-- end of overview panel -->
-
-        <!-- Collapsible tree panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="tree-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#tree-panel">
-                        Phylogenetic Tree
-                    </a>
-                </h4>
-            </div>
-            <div id="tree-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <div id="strains_tree"></div>
-                </div>
-            </div>
-        </div>
-        <!-- end of tree panel -->
-
-        <!-- Collapsible map panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="map-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#map-panel">
-                        Geospatial Info
-                    </a>
-                </h4>
-            </div>
-            <div id="map-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <div id="strains_map"></div>
-                </div>
-            </div>
-        </div>
-        <!-- end of map panel -->
-
-        <!-- Collapsible virulence panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="vf-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#vf-panel">
-                        VF
-                    </a>
-                </h4>
-            </div>
-            <div id="vf-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <TMPL_INCLUDE NAME="strains_info_vf.tmpl">
-                </div>
-            </div>
-        </div>
-        <!-- end of vf panel -->
-
-        <!-- Collapsible amr panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="amr-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#amr-panel">
-                        AMR
-                    </a>
-                </h4>
-            </div>
-            <div id="amr-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <TMPL_INCLUDE NAME="strains_info_amr.tmpl">
-                </div>
-            </div>
-        </div>
-        <!-- end of amr panel -->
-
-        <!-- Collapsible stx panel -->
-        <div class="panel panel-default">
-            <div class="panel-heading" id="stx-panel-header">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#stx-panel">
-                        Stx Subtype
-                    </a>
-                </h4>
-            </div>
-            <div id="stx-panel" class="panel-collapse">
-                <div class="panel-body" style="margin-bottom:300px">
-                    <TMPL_INCLUDE NAME="strains_info_stx.tmpl">
-                </div>
-            </div>
-        </div>
-        <!-- end of stx panel -->
-
-        <!-- Collapsible references panel -->
-        <TMPL_IF references>
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#references-panel">
-                        References
-                    </a>
-                </h4>
-            </div>
-            <div id="references-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <TMPL_IF owners>
-                    <div class="span11">
-                        <span class="muted">Original submitter / Owner of genome: </span>
-                    </div>
-                    <div class="span11">
-                        <ol>
-                            <TMPL_LOOP owners>
-                            <li><TMPL_VAR owner></li>
-                            </TMPL_LOOP>
-                        </ol>
-                    </div>
-                    <hr>
-                    </TMPL_IF>
-                    <TMPL_IF pmid_list>
-                    <div class="span11">
-                        <span class="muted">Pubmed References: </span>
-                    </div>
-                    <div id="pmid_results" class="span11">
-                    </div>
-                    <div id="pmid_error" style="display:none">
-                        Error occurred retrieving pubmed summaries.
-                    </div>
-                    </TMPL_IF>
-                </div>
-            </div>
-        </div>
-        </TMPL_IF>
-        <!-- end of references panel -->
-
-        <!-- Collapsible comments panel -->
-        <TMPL_IF comments>
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h4 class="panel-title">
-                    <a data-toggle="collapse" data-parent="#accordian" href="#comments-panel">
-                        Comments
-                    </a>
-                </h4>
-            </div>
-            <div id="comments-panel" class="panel-collapse">
-                <div class="panel-body">
-                    <ol>
-                        <TMPL_LOOP comments>
-                        <li><TMPL_VAR comment></li>
-                        </TMPL_LOOP>
-                    </ol>
-                </div>
-            </div>
-        </div>
-        </TMPL_IF>
-        <!-- end of comments panel -->
-
+      </div>
     </div>
-    <!-- end of panel group -->
+    <!-- end of overview panel -->
+
+    <!-- Collapsible tree panel -->
+    <div class="panel panel-default">
+      <div class="panel-heading" id="tree-panel-header">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#tree-panel">
+            Phylogenetic Tree
+          </a>
+        </h4>
+      </div>
+      <div id="tree-panel" class="panel-collapse">
+        <div class="panel-body">
+          <div id="strains_tree"></div>
+        </div>
+      </div>
+    </div>
+    <!-- end of tree panel -->
+
+    <!-- Collapsible map panel -->
+    <div class="panel panel-default">
+      <div class="panel-heading" id="map-panel-header">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#map-panel">
+            Geospatial Info
+          </a>
+        </h4>
+      </div>
+      <div id="map-panel" class="panel-collapse">
+        <div class="panel-body">
+          <div id="strains_map"></div>
+        </div>
+      </div>
+    </div>
+    <!-- end of map panel -->
+
+    <!-- Collapsible virulence panel -->
+    <div class="panel panel-default">
+      <div class="panel-heading" id="vf-panel-header">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#vf-panel">
+            VF
+          </a>
+        </h4>
+      </div>
+      <div id="vf-panel" class="panel-collapse">
+        <div class="panel-body">
+          <TMPL_INCLUDE NAME="strains_info_vf.tmpl">
+        </div>
+      </div>
+    </div>
+    <!-- end of vf panel -->
+
+    <!-- Collapsible amr panel -->
+    <div class="panel panel-default">
+      <div class="panel-heading" id="amr-panel-header">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#amr-panel">
+            AMR
+          </a>
+        </h4>
+      </div>
+      <div id="amr-panel" class="panel-collapse">
+        <div class="panel-body">
+          <TMPL_INCLUDE NAME="strains_info_amr.tmpl">
+        </div>
+      </div>
+    </div>
+    <!-- end of amr panel -->
+
+    <!-- Collapsible references panel -->
+    <TMPL_IF references>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#references-panel">
+            References
+          </a>
+        </h4>
+      </div>
+      <div id="references-panel" class="panel-collapse">
+        <div class="panel-body">
+          <TMPL_IF owners>
+          <div class="span11">
+            <span class="muted">Original submitter / Owner of genome: </span>
+          </div>
+          <div class="span11">
+            <ol>
+              <TMPL_LOOP owners>
+              <li><TMPL_VAR owner></li>
+              </TMPL_LOOP>
+            </ol>
+          </div>
+          <hr>
+          </TMPL_IF>
+          <TMPL_IF pmid_list>
+          <div class="span11">
+            <span class="muted">Pubmed References: </span>
+          </div>
+          <div id="pmid_results" class="span11">
+          </div>
+          <div id="pmid_error" style="display:none">
+            Error occurred retrieving pubmed summaries.
+          </div>
+          </TMPL_IF>
+        </div>
+      </div>
+    </div>
     </TMPL_IF>
+    <!-- end of references panel -->
 
-    <TMPL_INCLUDE NAME="page_bottom.tmpl">
+    <!-- Collapsible comments panel -->
+    <TMPL_IF comments>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordian" href="#comments-panel">
+            Comments
+          </a>
+        </h4>
+      </div>
+      <div id="comments-panel" class="panel-collapse">
+        <div class="panel-body">
+          <ol>
+            <TMPL_LOOP comments>
+            <li><TMPL_VAR comment></li>
+            </TMPL_LOOP>
+          </ol>
+        </div>
+      </div>
+    </div>
+    </TMPL_IF>
+    <!-- end of comments panel -->
+
+  </div>
+  <!-- end of panel group -->
+  </TMPL_IF>
+
+  <TMPL_INCLUDE NAME="page_bottom.tmpl">
 
 
 </body>
@@ -350,30 +334,30 @@ pmidList = <TMPL_VAR pmid_list>;
 </TMPL_IF>
 $(document).ready(function() {
 
-    if(pmidList != "") {
-        var entrezArgs = {
-            'apikey' : '847d6279e0c5c435df1bd425c1628778',
-            'db'     : 'pubmed',
-            'id'     : pmidList
-        };
+  if(pmidList != "") {
+    var entrezArgs = {
+      'apikey' : '847d6279e0c5c435df1bd425c1628778',
+      'db'     : 'pubmed',
+      'id'     : pmidList
+    };
 
-        $.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
-            if(data.entrezajax.error) {
-                $('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
-            }
-            $.each(data.result, function(i, item) {
-                var author_list = '';
-                for(var i = 0; i < item.AuthorList.length; i ++) {
-                    if(i != 0) {
-                        author_list += ', ';
-                    }
-                    author_list += item.AuthorList[i];
-                }
-                var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
-                $("<div/>").html(html).appendTo('#pmid_results');
-            });
-        });
-    }
+    $.getJSON('http://entrezajax.appspot.com/esummary?callback=?', entrezArgs, function(data) {
+      if(data.entrezajax.error) {
+        $('#pmid_error').html('<p class="text-error">Error occurred retrieving pubmed summaries: '+data.entrezajax.error_message+'</p>');
+      }
+      $.each(data.result, function(i, item) {
+        var author_list = '';
+        for(var i = 0; i < item.AuthorList.length; i ++) {
+          if(i != 0) {
+            author_list += ', ';
+          }
+          author_list += item.AuthorList[i];
+        }
+        var html = '<p><a href=\'http://www.ncbi.nlm.nih.gov/pubmed/' + item.ArticleIds.pubmed + '\'>' + item.Title + '</a><br/>' + author_list + '<br/>' + item.FullJournalName + ' ' + item.PubDate + '</p>';
+        $("<div/>").html(html).appendTo('#pmid_results');
+      });
+    });
+  }
 });
 
 var public_genomes = <TMPL_VAR public_genomes>;
@@ -393,17 +377,17 @@ viewController.createView('tree', $('#strains_tree'), tree);
 var allele_genome = Object.keys(allele_json)[0];
 
 $.each(vf, function(k,v) {
-    vf[k]['alleles'] = 0;
-    if(allele_json[allele_genome][k]) {
-        v['alleles'] = allele_json[allele_genome][k].length;
-    }
+  vf[k]['alleles'] = 0;
+  if(allele_json[allele_genome][k]) {
+    v['alleles'] = allele_json[allele_genome][k].length;
+  }
 });
 
 $.each(amr, function(k,v) {
-    amr[k]['alleles'] = 0;
-    if(allele_json[allele_genome][k]) {
-        v['alleles'] = allele_json[allele_genome][k].length;
-    }
+  amr[k]['alleles'] = 0;
+  if(allele_json[allele_genome][k]) {
+    v['alleles'] = allele_json[allele_genome][k].length;
+  }
 });
 
 // Initialisation
@@ -411,18 +395,18 @@ var vfGenesList = new GenesList(vf, 'vf', categories.vfCats, $('#vf-table'), $('
 var amrGenesList = new GenesList(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-categories'), ['uniquename', 'alleles', 'category', 'subcategory'], false);
 
 $(document).ready(function(){
-    $('a.genome-dl-link').attr("href", "/strains/download?genome="+allele_genome);
+  $('a.genome-dl-link').attr("href", "/strains/download?genome="+allele_genome);
 
 //Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
 //$('.map-canvas').hide();
 //$('a[href="#overview-panel"]').click();
 $('#map-panel').on('hidden.bs.collapse', function () {
-    viewController.getView($('#strains_map').data("views-index")-1).mapController.markerClusterer.clearMarkers();
+  viewController.getView($('#strains_map').data("views-index")-1).mapController.markerClusterer.clearMarkers();
 });
 $('#map-panel').on('shown.bs.collapse', function () {
     //$('.map-canvas').show();
     viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
-});
+  });
 });
 
 // TODO: Change this, it looks messy
@@ -432,13 +416,14 @@ var selectedGenomeId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_I
 var pvtLocation = selectedGenomeId.match(/private_/g);
 
 if (selectedGenomeId.match(/private_/g)) {
-    selectedGenome = private_genomes[selectedGenomeId];
+  selectedGenome = private_genomes[selectedGenomeId];
 }
 else if (selectedGenomeId.match(/public_/g)) {
-    selectedGenome = public_genomes[selectedGenomeId];
+  selectedGenome = public_genomes[selectedGenomeId];
 }
 
-selectedGenomeId != "" ? viewController.createView('selmap', $('#strains_map'), ['infoSatellite'], selectedGenomeId, selectedGenome) : viewController.createView('map', $('#strains_map'), ['satellite']);;
+// TODO: Change this
+selectedGenomeId != "" ? viewController.createView('selmap', $('#strains_map'), ['infoSatellite'], false, selectedGenomeId, selectedGenome) : viewController.createView('map', $('#strains_map'), ['satellite'], false);
 
 //Sidebar actions
 viewController.sideBar($('#search-utilities'));
@@ -447,41 +432,44 @@ viewController.createView('table', $('#strains_table'));
 
 //Affix and Scrollspy functions
 //TODO:
+$('[data-toggle="tooltip"]').tooltip({'placement': 'top'});
+
 var menu_affix_height = $('#menu-affix').height();
+var nav_bar_height = $('.navbar').height();
 
 $('#menu-affix').affix({
-    offset: {top: menu_affix_height},
+  offset: {top: menu_affix_height},
 });
 
 $('#menu-affix').on('affix.bs.affix', function() {
-    $('#accordian').css("margin-top", menu_affix_height);
-    $(this).prependTo('.superphy-side-menu').hide().fadeIn('slow');
+  $('#accordian').css("margin-top", menu_affix_height + nav_bar_height);
+  $(this).prependTo('.superphy-side-menu').hide().fadeIn('slow');
     //$('#menu-affix').addClass('sm');
     $('.superphy-icon').addClass("affix");
-});
+  });
 $('#menu-affix').on('affix-top.bs.affix', function() {
-    $('#accordian').css("margin-top", "0px");
-    $(this).appendTo('#strains-info-menu').hide().fadeIn('slow');
+  $('#accordian').css("margin-top", "0px");
+  $(this).appendTo('#strains-info-menu').hide().fadeIn('slow');
     //$('#menu-affix').removeClass('sm');
     $('.superphy-icon').removeClass("affix");
-});
+  });
 
 $(window).load(function() {
-    if ($(this).width() < 1000) {
-        $('#menu-affix').addClass('sm');
-    }
-    else {
-        $('#menu-affix').removeClass('sm');
-    }
+  if ($(this).width() < 1000) {
+    $('#menu-affix').addClass('sm');
+  }
+  else {
+    $('#menu-affix').removeClass('sm');
+  }
 });
 
 $(window).resize(function() {
-    if ($(this).width() < 1000) {
-        $('#menu-affix').addClass('sm');
-    }
-    else {
-        $('#menu-affix').removeClass('sm');
-    }
+  if ($(this).width() < 1000) {
+    $('#menu-affix').addClass('sm');
+  }
+  else {
+    $('#menu-affix').removeClass('sm');
+  }
 });
 
 </script>

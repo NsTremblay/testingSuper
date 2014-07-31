@@ -122,6 +122,7 @@ class ViewController
       @views.push tableView
 
     else if viewType is 'jump2table'
+      # TODO: Remove this, deprecated
       # New list view
       tableView = new TableView(elem, clickStyle, vNum, viewArgs)
       tableView.update(@genomeController)
@@ -144,7 +145,7 @@ class ViewController
       true
     
     downloadElemDiv.append(downloadElem)
-    elem.prepend(downloadElemDiv)
+    downloadElemDiv.prependTo(elem)
       
     return true # return success
     
