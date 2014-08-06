@@ -231,7 +231,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 pripub_feature_relationships
@@ -369,6 +369,51 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_gap_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_position_contig_collections",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_gap_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_position_contigs",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_gap_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_position_loci",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.locus_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_genome_locations
 
 Type: has_many
@@ -381,6 +426,51 @@ __PACKAGE__->has_many(
   "private_genome_locations",
   "Database::Chado::Schema::Result::PrivateGenomeLocation",
   { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_position_contig_collections",
+  "Database::Chado::Schema::Result::PrivateSnpPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_position_contigs",
+  "Database::Chado::Schema::Result::PrivateSnpPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_position_loci",
+  "Database::Chado::Schema::Result::PrivateSnpPosition",
+  { "foreign.locus_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -456,7 +546,7 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 upload
@@ -485,8 +575,8 @@ Composing rels: L</private_genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "private_genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nh2UNpAP3ARCDV2bQMW48Q
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9lk2xRy5e2rz6BELMf0hFw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

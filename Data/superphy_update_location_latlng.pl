@@ -124,6 +124,7 @@ print "\t...Disconected\n";
 
 sub populateGeocodedLocations {
     my ($locations, $public_genome_locations, $private_genome_locations) = _retrieveLocations();
+    
 
     my %_geocode_ids;
 
@@ -160,6 +161,8 @@ sub populateGeocodedLocations {
     close $fh;
     close $pubfh;
     close $pvtfh;
+    
+    #exit();
 
     #Populate geocoded_location
     $dbh->do("COPY geocoded_location(geocode_id, search_query, location) FROM STDIN");
@@ -249,7 +252,7 @@ sub _retrieveLocations {
 
     #Get private genome locations
     my $sqlStmt2 = 'SELECT feature_id, value FROM private_featureprop JOIN cvterm ON (private_featureprop.type_id = cvterm.cvterm_id) WHERE cvterm.name = ?';
-    $sth = $dbh->prepare($sqlStmt1) or die "Error! Could not prepare statement: " . $dbh->errstr;
+    $sth = $dbh->prepare($sqlStmt2) or die "Error! Could not prepare statement: " . $dbh->errstr;
     $queryResult = $sth->execute('isolation_location') or die "Error! Could not execute statement: " . $dbh->errstr;
 
     while (my $location = $sth->fetchrow_hashref) {

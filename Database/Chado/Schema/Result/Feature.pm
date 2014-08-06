@@ -652,6 +652,66 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 gap_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_contig_collections",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_contigs",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_loci",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.locus_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_pangenome_regions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_pangenome_regions",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 genome_locations
 
 Type: has_many
@@ -709,7 +769,7 @@ __PACKAGE__->belongs_to(
   "organism",
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phylonodes
@@ -739,6 +799,36 @@ __PACKAGE__->has_many(
   "pripub_feature_relationships",
   "Database::Chado::Schema::Result::PripubFeatureRelationship",
   { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_gap_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_positions",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_positions",
+  "Database::Chado::Schema::Result::PrivateSnpPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -798,6 +888,66 @@ Related object: L<Database::Chado::Schema::Result::SnpCore>
 __PACKAGE__->has_many(
   "snp_cores",
   "Database::Chado::Schema::Result::SnpCore",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_contig_collections",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_contigs",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_loci",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.locus_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_pangenome_regions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_pangenome_regions",
+  "Database::Chado::Schema::Result::SnpPosition",
   { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -889,7 +1039,7 @@ __PACKAGE__->belongs_to(
   "type",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "type_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 vf_categories
@@ -918,8 +1068,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:AK9ZMbmavyjG+mUh+7Rf3w
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bQvHPo/l36dRD+EUiiqeOw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -139,7 +139,7 @@ __PACKAGE__->belongs_to(
   "cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "cvterm_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 feature
@@ -154,7 +154,7 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 feature_cvterm_dbxrefs
@@ -214,12 +214,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:23
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bP+xhgp39MP8jT2zDDV3Pg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:yB0c6T7BkIE7PzzMTpT3dA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

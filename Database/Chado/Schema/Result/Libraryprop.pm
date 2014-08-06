@@ -117,7 +117,7 @@ __PACKAGE__->belongs_to(
   "library",
   "Database::Chado::Schema::Result::Library",
   { library_id => "library_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 libraryprop_pubs
@@ -151,8 +151,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:NRDdv3f1n6aK+fz1sUIRjg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ZNCtZ/QrSqZxjaC1u48+KQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

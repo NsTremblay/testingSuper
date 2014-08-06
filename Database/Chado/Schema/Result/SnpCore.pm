@@ -130,6 +130,21 @@ __PACKAGE__->add_unique_constraint("snp_core_c2", ["aln_column"]);
 
 =head1 RELATIONS
 
+=head2 gap_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_positions",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.snp_id" => "self.snp_core_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 pangenome_region
 
 Type: belongs_to
@@ -142,7 +157,22 @@ __PACKAGE__->belongs_to(
   "pangenome_region",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "pangenome_region_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+);
+
+=head2 private_gap_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_positions",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.snp_id" => "self.snp_core_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 private_snp_variations
@@ -176,8 +206,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JtbW9YRCantg9OX/iiLvsw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:L2d5I3iarMeKqarjuS97KQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

@@ -115,7 +115,7 @@ __PACKAGE__->belongs_to(
   "object_project",
   "Database::Chado::Schema::Result::Project",
   { project_id => "object_project_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 subject_project
@@ -130,7 +130,7 @@ __PACKAGE__->belongs_to(
   "subject_project",
   "Database::Chado::Schema::Result::Project",
   { project_id => "subject_project_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -149,8 +149,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xUQyxECNgG42d3MgKCrtuw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5spjD4vitOcaPmZign+iBA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

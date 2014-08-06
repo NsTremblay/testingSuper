@@ -4,15 +4,11 @@
 
 =head1 NAME
 
-Modules::GenomeUploader
-
-=head1 SNYNOPSIS
+Modules::Upload
 
 =head1 DESCRIPTION
 
-=head1 ACKNOWLEDGMENTS
-
-Thank you to Dr. Chad Laing and Dr. Matthew Whiteside, for all their assistance on this project
+Genome Submission module
 
 =head1 COPYRIGHT
 
@@ -25,14 +21,13 @@ The most recent version of the code may be found at:
 =head1 AUTHORS
 
 Akiff Manji (akiff.manji@gmail.com)
-
 Matt Whiteside (mawhites@phac-aspc.gov.ca)
 
 =head1 Methods
 
 =cut
 
-package Modules::GenomeUploader;
+package Modules::Upload;
 
 use strict;
 use warnings;
@@ -56,6 +51,8 @@ use Sequences::GenodoDateTime;
 use HTML::FillInForm;
 use XML::Simple;
 use Geo::Coder::Google;
+use Role::Tiny::With;
+with 'Roles::Hosts';
 
 my $dbic;
 
@@ -66,6 +63,8 @@ my %tracker_step_values = (
 	completed => 3,
 	notified => 4
 );
+
+=cut
 
 my $hostList = { 
 	hsapiens    => 'Homo sapiens (human)',
@@ -165,6 +164,8 @@ my $diseaseList = {
 	}
 };
 
+=cut
+
 
 =head2 setup
 
@@ -199,12 +200,12 @@ sub submit_genome : Runmode {
     
     # Populate the drop downs with valid options
     # Hosts
-    my @hosts = map { { host_name => $hostList->{$_}, host_value => $_ } } keys %{$hostList};
+    my @hosts = map { { host_name => $self->hostList->{$_}, host_value => $_ } } keys %{$self->hostList};
     $t->param(hosts => \@hosts);
     
     my $json = JSON->new;
-    $t->param(json_categories => $json->encode($sourceCategory));
-    $t->param(json_sources => $json->encode($sourceList));
+    $t->param(json_categories => $json->encode($self->hostCategories));
+    $t->param(json_sources => $json->encode($self->sourceList));
   
     # Set defaults in radio buttons
     $t->param(g_public => 1); # Check the public radio button
@@ -214,8 +215,10 @@ sub submit_genome : Runmode {
     $t->param(new_genome => 1); # Display new genome version of form
     $t->param(set_privacy => 1); # All new genomes must have privacy set
     
-    foreach my $category (qw/human mammal bird/) {
-    	my @syndromes = map { { syndrome_name => $diseaseList->{$category}{$_}, syndrome_value => $_ } } keys %{$diseaseList->{$category}};
+    foreach my $category (@{$self->categoryList}) {
+    	get_logger->debug("$category");
+    	get_logger->debug(Data::Dumper->Dump([$self->syndromeList],['syndromeList']));
+    	my @syndromes = map { { syndrome_name => $self->syndromeList->{$category}{$_}, syndrome_value => $_ } } keys %{$self->syndromeList->{$category}};
     	my $param = "$category\_syndromes";
     	$t->param($param => \@syndromes);
     }
@@ -303,17 +306,17 @@ sub upload_genome : Runmode {
 		$host = $results->valid('g_host_genus') . ' ' . $results->valid('g_host_species') . ' ('.
 			$results->valid('g_host_name').')';
 	} else {
-		$host = $hostList->{$results->valid('g_host')};
+		$host = $self->hostList->{$results->valid('g_host')};
 		croak "Unrecognized host ".$results->valid('g_host') unless $host;
 	}
 	
-	my $host_category = $sourceCategory->{$results->valid('g_host')};
+	my $host_category = $self->hostCategories->{$results->valid('g_host')};
 	
 	my $source;
 	if($results->valid('g_source') eq 'other') {
 		$source = $results->valid('g_other_source');
 	} else {
-		$source = $sourceList->{ $host_category }->{ $results->valid('g_source') };
+		$source = $self->sourceList->{ $host_category }->{ $results->valid('g_source') };
 		croak "Unrecognized source ".$results->valid('g_source')." for provided host ".$results->valid('g_host') unless $source;
 	}
 	
@@ -355,7 +358,7 @@ sub upload_genome : Runmode {
 		my @syndrome_keys = $results->valid('g_syndrome');
 		my @syndromes;
 		foreach my $key (@syndrome_keys) {
-			my $syndrome = $diseaseList->{ $host_category }->{ $key };
+			my $syndrome = $self->syndromeList->{ $host_category }->{ $key };
 			croak "Unrecognized disease $key for provided host ".$results->valid('g_host') unless $syndrome;
 			push @syndromes, $syndrome;
 		}
@@ -743,15 +746,15 @@ sub edit_genome : Runmode {
     $t->param(set_privacy => $test_row->get_column('can_share'));
     
     # Hosts
-    my @hosts = map { { host_name => $hostList->{$_}, host_value => $_ } } keys %{$hostList};
+    my @hosts = map { { host_name => $self->hostList->{$_}, host_value => $_ } } keys %{$self->hostList};
     $t->param(hosts => \@hosts);
     
     my $json = JSON->new;
-    $t->param(json_categories => $json->encode($sourceCategory));
-    $t->param(json_sources => $json->encode($sourceList));
+    $t->param(json_categories => $json->encode($self->hostCategories));
+    $t->param(json_sources => $json->encode($self->sourceList));
     
-	foreach my $category (qw/human mammal bird/) {
-		my @syndromes = map { { syndrome_name => $diseaseList->{$category}{$_}, syndrome_value => $_ } } keys %{$diseaseList->{$category}};
+	foreach my $category (@{$self->categoryList}) {
+    	my @syndromes = map { { syndrome_name => $self->syndromeList->{$category}{$_}, syndrome_value => $_ } } keys %{$self->syndromeList->{$category}};
     	my $param = "$category\_syndromes";
     	$t->param($param => \@syndromes);
     }
@@ -844,8 +847,8 @@ sub edit_genome : Runmode {
     
     # Host
     croak "Required data host not found" unless $host_value;
-    my %rhash = reverse %$hostList;
-    my $host_key = $rhash{$host_value};
+   
+    my $host_key = $self->hostUniquename($host_value);
     if($host_key) {
     	$t->param(selected_host => $host_key);
     } else {
@@ -858,9 +861,8 @@ sub edit_genome : Runmode {
     }
     
     # Source
-    my $host_cat = $sourceCategory->{$host_key};
-    %rhash = reverse %{$sourceList->{$host_cat}};
-    my $source_key = $rhash{$source_value};
+    my $host_cat = $self->hostCategories->{$host_key};
+    my $source_key = $self->sourceUniquename($host_cat, $source_value);
     if($source_key) {
     	$t->param(selected_source => $source_key);
     } else {
@@ -870,12 +872,11 @@ sub edit_genome : Runmode {
     }
     
     # Syndromes
-    %rhash = reverse %{$diseaseList->{$host_cat}};
     my @syndrome_keys;
     foreach my $disease (@syndrome_values) {
     	get_logger->debug('LOADING DISEASE: ',$disease);
-    	if($rhash{$disease}) {
-    		push @syndrome_keys, { syndrome_value => $rhash{$disease} };
+    	if(my $synd_key = $self->syndromeUniquename($host_cat, $source_value)) {
+    		push @syndrome_keys, { syndrome_value => $synd_key };
     		get_logger->debug('recognized');
     	} elsif($disease eq 'Asymptomatic') {
     		$param_hash{g_asymptomatic} = 'asymptomatic';
@@ -1108,17 +1109,17 @@ sub update_genome : Runmode {
 		$host = $results->valid('g_host_genus') . ' ' . $results->valid('g_host_species') . ' ('.
 			$results->valid('g_host_name').')';
 	} else {
-		$host = $hostList->{$results->valid('g_host')};
+		$host = $self->hostList->{$results->valid('g_host')};
 		croak "Unrecognized host ".$results->valid('g_host') unless $host;
 	}
 	
-	my $host_category = $sourceCategory->{$results->valid('g_host')};
+	my $host_category = $self->hostCategories->{$results->valid('g_host')};
 	
 	my $source;
 	if($results->valid('g_source') eq 'other') {
 		$source = $results->valid('g_other_source');
 	} else {
-		$source = $sourceList->{ $host_category }->{ $results->valid('g_source') };
+		$source = $self->sourceList->{ $host_category }->{ $results->valid('g_source') };
 		croak "Unrecognized source ".$results->valid('g_source')." for provided host ".$results->valid('g_host') unless $source;
 	}
 	
@@ -1158,7 +1159,7 @@ sub update_genome : Runmode {
 		my @syndrome_keys = $results->valid('g_syndrome');
 		my @syndromes;
 		foreach my $key (@syndrome_keys) {
-			my $syndrome = $diseaseList->{ $host_category }->{ $key };
+			my $syndrome = $self->syndromeList->{ $host_category }->{ $key };
 			croak "Unrecognized disease $key for provided host ".$results->valid('g_host') unless $syndrome;
 			push @syndromes, $syndrome;
 		}
@@ -1384,6 +1385,58 @@ sub update_genome : Runmode {
 	# Redirect to genome list page
 	$self->session->param( operation_status => '<strong>Success!</strong> Genome has been updated.' );
 	$self->redirect('/genome-uploader/list');
+}
+
+=head2 meta_ontology
+
+This is not really a run-mode, just a helper method to query the database
+and return a text-based JSON object of the current meta-ontology terms.
+
+Paste this text in the superphy.coffee file to update standardized meta-data terms.
+
+=cut
+
+sub meta_ontology : Runmode {
+	my $self = shift;
+	
+	my %ontology;
+	
+	# Hosts
+	my $hosts = $self->hostList;
+	foreach my $term (values %$hosts) {
+		next if $term =~ m'^Other ';
+		$ontology{hosts}{$term}=1;
+	}
+	
+	# Sources
+	my $sources = $self->sourceList;
+	foreach my $cat (keys %$sources) {
+		foreach my $term (values %{$sources->{$cat}}) {
+			next if $term =~ m'^Other ';
+			$ontology{sources}{$term}=1;
+		}
+	}
+	
+	# Syndromes
+	my $syndromes = $self->syndromeList;
+	foreach my $cat (keys %$sources) {
+		foreach my $term (values %{$syndromes->{$cat}}) {
+			next if $term =~ m'^Other ';
+			$ontology{syndromes}{$term}=1;
+		}
+	}
+	
+	# Sort
+	$ontology{hosts} = [sort keys %{$ontology{hosts}}];
+	$ontology{sources} = [sort keys %{$ontology{sources}}];
+	$ontology{syndromes} = [sort keys %{$ontology{syndromes}}];
+	
+	my $json = JSON->new->utf8(1)->pretty(1)->encode(\%ontology);
+	
+	$self->header_add( 
+		-type => 'text/plain');
+		
+	return $json;
 }
 
 =head2 _getModifiableFeatures

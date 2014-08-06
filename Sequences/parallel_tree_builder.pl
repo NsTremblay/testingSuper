@@ -123,8 +123,9 @@ sub build_tree {
 	
 	my $fasta_file = "$fastadir/$pg_id.ffn";
 	
-	# Iteratively add new sequences to existing alignment
 	if($add_seqs) {
+		# Iteratively add new sequences to existing alignment
+		
 		my $new_file = "$newdir/$pg_id.ffn";
 		my $tmp_file = "$newdir/$pg_id\_tmp.ffn";
 		
@@ -145,8 +146,20 @@ sub build_tree {
 			unless($success) {
 				croak "Muscle profile alignment failed for pangenome $pg_id ($stderr).";
 			}
-			
 		}
+		
+	} else {
+		# Generate new alignment
+		
+		my @loading_args = ($muscle_exe, "-in $fasta_file -out $fasta_file");
+		my $cmd = join(' ',@loading_args);
+		
+		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+		unless($success) {
+			croak "Muscle profile alignment failed for pangenome $pg_id ($stderr).";
+		}
+		
 	}
 	
 	if($do_tree) {
@@ -219,7 +232,7 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 	int s = 0; // start of alignment block
 	int g2 = 0;
 	int p2 = 0;
-	int s = 0;
+	int s2 = 0;
 	
 	// Alignment blocks are interupted by gaps
 	// Gap columns are ignored
@@ -240,62 +253,86 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 	                                         
 	for(i=0; refseq[i] && seq[i]; ++i) {
 		
-		// Advance reference sequence counters
 		if(refseq[i] == '-') {
+			// Gap col in ref
 			
 			if(seq[i] != '-') {
-				// End of alignment block
-				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+				// Nt col in comp
+				// Block transition
+				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2) if $i != 0;
+				
+				// Reset block counters
+				s = p;
+				s2 = p2;
+				
+				// Advance counters
+				g2 = 0;
+				p2++;
+				
+			} else {
+				// Gap col in comp
+				// No transition
+				
+				// Advance counters
+				g2++;
 			}
 			
+			// Advance counters
 			g++;
-			s = p;
 			
 		} else {
+			// Nt col in ref
 			
-			if(g != 0) {
-				// End of alignment block
-				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+			if(seq[i] == '-') {
+				// Gap col in comp
+				// Block transition
+				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2) if $i != 0;
 				
-				g = 0;
+				// Reset block counters
 				s = p;
+				s2 = p2;
+				
+				// Advance counters
+				g2++;
+				
+			} else {
+				// Nt col in comp
+				
+				if((g != 0 && g2 == 0) || (g == 0 && g2 != 0)) {
+					// Termination of gap in one sequence
+					// Ignores gap columns
+					// Block transition
+					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+					
+					// Reset block counters
+					s = p;
+					s2 = p;
+					
+				}
+				
+				// Advance counters
+				p2++;
+				g2 = 0;
 			}
-			
+	
+			// Advance counters
 			p++;
+			g = 0;
 		}
 		
-		// Advance comparison sequence counters
-		if(seq[i] == '-') {
-			
-			// End of alignment block
-			fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
-			
-			g2++;
-			s2 = p2;
-			
-	
-		} else {
-			
-			if(g2 != 0) {
-				// End of alignment block
-				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
-				
-				g2 = 0;
-				s2 = p2;
-			}
-			
-			p2++;
-		}
 		
 		// Print SNP                                        
 		if(refseq[i] != seq[i]) {
 			fprintf(fh, "%i\t%i\t%c\t%c\n", p, g, refseq[i], seq[i]);
 		}
-		
-		                                                                       
+		                                                                     
 	}
 	
-	fclose(fh);                                                                           
+	// Print last block
+	fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+	
+	fclose(fh);
+	fclose(fh2);                                                                           
 
 }
 

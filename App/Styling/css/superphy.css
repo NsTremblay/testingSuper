@@ -243,6 +243,11 @@ td.msa_row_name {
   padding-right: 10px;
   text-align: right;
 }
+/** Info message **************************/
+.msa-info td {
+  padding: 5px 10px 0 40px;
+  text-align: center;
+}
 /** Nucleotides ***************************/
 .nucText {
   font-family: "Lucida Console", Monaco, monospace;
@@ -482,7 +487,6 @@ body {
 }
 /** Side bar ******************************/
 .sidebar {
-  position: absolute;
   top: 0;
   width: 300px;
   padding: 5px 5px 70px 5px;
@@ -504,15 +508,15 @@ body {
 .sidebar #sidebar-expand-collapse #sidebar-collapse {
   display: inline-block;
 }
-.sidebar #sidebar-accordion {
+.sidebar #sidebar-group {
   padding-right: 8px;
 }
-.sidebar #sidebar-accordion .panel {
+.sidebar #sidebar-group .panel {
   margin: 5px;
   box-shadow: none;
   border-radius: 0;
 }
-.sidebar #sidebar-accordion .panel .panel-heading .panel-title {
+.sidebar #sidebar-group .panel .panel-heading .panel-title {
   color: #777;
 }
 /** Filter Status *************************/
@@ -574,6 +578,9 @@ body {
 .formSpacing select {
   margin: 10px;
 }
+.formSpacing a {
+  margin: 10px;
+}
 #fast-filter p {
   padding-left: 30px;
   padding-top: 5px;
@@ -585,6 +592,9 @@ body {
   margin: 10px;
 }
 #fast-filter select {
+  margin: 10px;
+}
+#fast-filter a {
   margin: 10px;
 }
 #adv-filter p {
@@ -600,6 +610,9 @@ body {
 #adv-filter select {
   margin: 10px;
 }
+#adv-filter a {
+  margin: 10px;
+}
 #adv-filter #adv-filter-rows .adv-filter-row div {
   display: inline-block;
 }
@@ -608,6 +621,10 @@ body {
 }
 #adv-filter #adv-filter-rows .adv-filter-row a {
   display: inline-block;
+}
+#adv-filter .adv-filter-body {
+  margin-left: 8px;
+  border-left: 1px solid #d3d3d3;
 }
 #selection-filter p {
   padding-left: 30px;
@@ -620,6 +637,9 @@ body {
   margin: 10px;
 }
 #selection-filter select {
+  margin: 10px;
+}
+#selection-filter a {
   margin: 10px;
 }
 /** Mixins ********************************/

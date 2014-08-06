@@ -45,7 +45,71 @@ _categoryHtml = (catObj, top=false) ->
     html += "<p>#{catObj.definition}</p>"
     
   html
+  
+
+# FUNC retrieveGeneAlignment
+# Ajax call to download gene alignment
+# Creates views for MSA on success
+#
+# USAGE retrieveAlignment geneID, locusController
+# 
+# RETURNS
+# boolean
+#    
+retrieveGeneAlignment = (geneID, locusData) ->
+
+  # Kill ongoing AJAX request sent by this
+  # method
+  if alignmentRequest
+    alignmentRequest.abort()
     
+  # Prepare params
+  serializedParams = {'gene': geneID}
+
+  # Fire off the request
+  console.log 'Sending gene alignment request'
+  alignmentRequest = jQuery.ajax({
+    url: "/genes/sequences"
+    type: "post"
+    data: serializedParams
+  })
+  
+
+  # Callback handler that will be called on success
+  alignmentRequest.done( (data, textStatus, jqXHR) -> 
+    console.log 'Alignment retrieval success'
+    parentDiv = jQuery('#gene-info-msa')
+    parentDiv.empty()
+    
+    viewController.createView('msa', parentDiv, data, locusData);
+  )
+
+  # Callback handler that will be called on failure
+  alignmentRequest.fail( (jqXHR, textStatus, errorThrown) -> 
+    console.error(
+      "Error! AJAX retrieval of gene alignment failed: #{textStatus},  #{errorThrown}."
+    )
+    jQuery('#msa_download_inprogress').html('<div class="alert alert-danger">'+
+      '<p style="text-align:center">Retrieval of gene alignment encountered error.</p>')
+  )
+  
+  true
+  
+unless root.retrieveGeneAlignment
+  root.retrieveGeneAlignment = retrieveGeneAlignment
+  
+# GLOBAL alignmentRequest
+# jQuery object handler for Ajax call
+#
+# Prevents multiple requests being simultaneously sent
+# from page
+
+alignmentRequest = null
+
+unless root.alignmentRequest
+  root.alignmentRequest = alignmentRequest
+    
+
   
 
   

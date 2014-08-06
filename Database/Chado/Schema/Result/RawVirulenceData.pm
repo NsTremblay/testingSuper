@@ -96,12 +96,12 @@ __PACKAGE__->belongs_to(
   "gene",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "gene_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:XeH5Ugo8GdrsQkw5txiKEA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:zPU32XyurdVKeFfaS/e32g
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

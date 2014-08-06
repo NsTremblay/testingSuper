@@ -108,10 +108,10 @@ my %sequences = (
   	snp_core                     => "snp_core_snp_core_id_seq",
   	snp_variation                => "snp_variation_snp_variation_id_seq",
   	private_snp_variation        => "private_snp_variation_snp_variation_id_seq",
-  	snp_variation                => "snp_position_snp_position_id_seq",
-  	private_snp_variation        => "private_snp_position_snp_position_id_seq",
-  	gap_variation                => "gap_position_gap_position_id_seq",
-  	private_gap_variation        => "private_gap_position_gap_position_id_seq",
+  	snp_position                 => "snp_position_snp_position_id_seq",
+  	private_snp_position         => "private_snp_position_snp_position_id_seq",
+  	gap_position                 => "gap_position_gap_position_id_seq",
+  	private_gap_position         => "private_gap_position_gap_position_id_seq",
 );
 
 # Primary key ID names
@@ -135,10 +135,10 @@ my %table_ids = (
   	snp_core                     => "snp_core_id",
   	snp_variation                => "snp_variation_id",
   	private_snp_variation        => "snp_variation_id",
-  	snp_variation                => "snp_position_id",
-  	private_snp_variation        => "snp_position_id",
-  	gap_variation                => "gap_position_id",
-  	private_gap_variation        => "gap_position_id"
+  	snp_position                 => "snp_position_id",
+  	private_snp_position         => "snp_position_id",
+  	gap_position                 => "gap_position_id",
+  	private_gap_position         => "gap_position_id"
 );
 
 # Valid cvterm types for featureprops table
@@ -475,6 +475,8 @@ sub initialize_sequences {
 	my $self = shift;
 	
 	foreach my $table (@tables) {
+		print "NEXTVAL on $table\n" if $DEBUG;
+		
 		my $sth = $self->dbh->prepare("select nextval('$sequences{$table}')");
 		$sth->execute;
 		my ($nextoid) = $sth->fetchrow_array();
@@ -2527,9 +2529,9 @@ sub handle_snp_alignment_block {
 	my $self = shift;
 	my ($contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public) = @_;
 	
-	croak "Positioning violation in reference alignment! gap positions should have length 1." if $gap1 && ($start1 != $end1);
-	croak "Positioning violation in comparison alignment! gap positions should have length 1." if $gap2 && ($start2 != $end2);
-	croak "Positioning violation in snp alignment! received gap column." if $gap2 && $gap1;
+	croak "Positioning violation in reference alignment! gap positions should have length 1 (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap1 && ($start1 != $end1);
+	croak "Positioning violation in comparison alignment! gap positions should have length 1 (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap2 && ($start2 != $end2);
+	croak "Positioning violation in snp alignment! received gap column (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap2 && $gap1;
 	
 	if($gap1) {
 		# Reference gaps go into 'special' table
@@ -2546,7 +2548,7 @@ sub handle_snp_alignment_block {
 		# Create standard snp position entry: reference nuc aligned to gap or nuc in comparison strain
 		
 		my $table = $is_public ? 'snp_position' : 'private_snp_position';
-		$self->print_sp($self->nextoid($table),$contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap2, $is_public);
+		$self->print_sp($self->nextoid($table), $contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap2, $is_public);
 		$self->nextoid($table,'++');
 	}
 	
@@ -2799,7 +2801,7 @@ sub print_sv {
 
 sub print_sp {
 	my $self = shift;
-	my ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g1,$g2,$pub) = @_;
+	my ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g,$pub) = @_;
 	
 	my $fh;
 	if($pub) {
@@ -2808,12 +2810,12 @@ sub print_sp {
 		$fh = $self->file_handles('private_snp_position');
 	}	
 
-	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g1,$g2)),"\n";
+	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$s1,$s2,$e1,$e2,$g)),"\n";
 }
 
 sub print_gp {
 	my $self = shift;
-	my ($nextft,$genome_id,$contig_id,$ref,$locus,$s2,$pub) = @_;
+	my ($nextft,$genome_id,$contig_id,$ref,$locus,$snp,$s2,$pub) = @_;
 	
 	my $fh;
 	if($pub) {
@@ -2822,7 +2824,7 @@ sub print_gp {
 		$fh = $self->file_handles('private_gap_position');
 	}	
 
-	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$s2)),"\n";
+	print $fh join("\t", ($nextft,$genome_id,$contig_id,$ref,$locus,$snp,$s2)),"\n";
 }
 
 
@@ -3730,7 +3732,23 @@ WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
 
 	$dbh->do("$query3") or croak("Error when executing: $query3 ($!).\n");
 	
-    
+	# Check for duplicate SNP alignment strings
+	# A red-flag for duplicate genomes in DB
+	my $query4 = 
+"SELECT * FROM (
+  SELECT name,
+  ROW_NUMBER() OVER(PARTITION BY alignment ORDER BY name ASC) AS Row
+  FROM $ttable
+) dups
+WHERE 
+dups.Row > 1";
+
+	my $sth2 = $dbh->prepare($query4);
+	$sth2->execute();
+	
+	while(my ($name) = $sth2->fetchrow_array()) {
+		carp('WARNING: Identical SNP strings found for genome: '.$name.'. Might indicate duplicate genomes in DB.');
+	}
 }
 
 

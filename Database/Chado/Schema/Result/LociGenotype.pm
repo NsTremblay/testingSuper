@@ -98,12 +98,12 @@ __PACKAGE__->belongs_to(
   "feature",
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "feature_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:taBReUGl/VpzC4g2Xpi8Vg
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fdk5e/3Q5d/SUpo4bOjbAQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

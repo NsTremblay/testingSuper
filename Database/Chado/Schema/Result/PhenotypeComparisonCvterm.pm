@@ -119,7 +119,7 @@ __PACKAGE__->belongs_to(
   "cvterm",
   "Database::Chado::Schema::Result::Cvterm",
   { cvterm_id => "cvterm_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 phenotype_comparison
@@ -134,7 +134,7 @@ __PACKAGE__->belongs_to(
   "phenotype_comparison",
   "Database::Chado::Schema::Result::PhenotypeComparison",
   { phenotype_comparison_id => "phenotype_comparison_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 pub
@@ -149,12 +149,12 @@ __PACKAGE__->belongs_to(
   "pub",
   "Database::Chado::Schema::Result::Pub",
   { pub_id => "pub_id" },
-  { is_deferrable => 0, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 0, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9nPe2R3yC2VcsvbquB8hpw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:BWAv58UOW8ZA32nYeDHFbg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

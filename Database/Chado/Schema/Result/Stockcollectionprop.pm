@@ -128,7 +128,7 @@ __PACKAGE__->belongs_to(
   "stockcollection",
   "Database::Chado::Schema::Result::Stockcollection",
   { stockcollection_id => "stockcollection_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 type
@@ -147,8 +147,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:PPgrvT6DJ8AO+70AQgiWUw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:fcFQr0xt9iD6gmfgoSNvEg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

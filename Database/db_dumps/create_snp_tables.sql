@@ -300,6 +300,9 @@ ALTER TABLE ONLY snp_position
 ALTER TABLE ONLY snp_position
     ADD CONSTRAINT snp_position_c1 UNIQUE (contig_collection_id, pangenome_region_id, region_start, region_end);
 
+ALTER TABLE ONLY snp_position
+    ADD CONSTRAINT snp_position_c2 UNIQUE (locus_id, region_start, region_end);
+
 --
 -- Indices
 --
@@ -366,6 +369,9 @@ ALTER TABLE ONLY private_snp_position
 ALTER TABLE ONLY private_snp_position
     ADD CONSTRAINT private_snp_position_c1 UNIQUE (contig_collection_id, pangenome_region_id, region_start, region_end);
 
+ALTER TABLE ONLY private_snp_position
+    ADD CONSTRAINT private_snp_position_c2 UNIQUE (locus_id, region_start, region_end);
+
 --
 -- Indices
 --
@@ -431,6 +437,9 @@ ALTER TABLE ONLY gap_position
 ALTER TABLE ONLY gap_position
     ADD CONSTRAINT gap_position_c1 UNIQUE (snp_id, contig_collection_id);
 
+ALTER TABLE ONLY gap_position
+    ADD CONSTRAINT gap_position_c2 UNIQUE (snp_id, locus_id);
+
 --
 -- Indices
 --
@@ -495,6 +504,9 @@ ALTER TABLE ONLY private_gap_position
 --  
 ALTER TABLE ONLY private_gap_position
     ADD CONSTRAINT private_gap_position_c1 UNIQUE (snp_id, contig_collection_id);
+
+ALTER TABLE ONLY private_gap_position
+    ADD CONSTRAINT private_gap_position_c2 UNIQUE (snp_id, locus_id);
 
 --
 -- Indices

@@ -34,7 +34,6 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
-use Modules::TreeManipulator;
 use Modules::LocationManager;
 use Modules::GenomeWarden;
 use IO::File;

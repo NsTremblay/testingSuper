@@ -114,7 +114,7 @@ __PACKAGE__->belongs_to(
   "dbxref",
   "Database::Chado::Schema::Result::Dbxref",
   { dbxref_id => "dbxref_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 stock
@@ -129,7 +129,7 @@ __PACKAGE__->belongs_to(
   "stock",
   "Database::Chado::Schema::Result::Stock",
   { stock_id => "stock_id" },
-  { is_deferrable => 1, on_delete => "CASCADE,", on_update => "NO ACTION" },
+  { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
 =head2 stock_dbxrefprops
@@ -148,8 +148,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JFLI2AL1b7rSBpbqCPbKkA
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hig7BGj4lu/dt4Zl+Mpq4Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

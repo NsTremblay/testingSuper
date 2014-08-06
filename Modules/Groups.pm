@@ -14,7 +14,6 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
-use Modules::TreeManipulator;
 use Modules::LocationManager;
 use JSON;
 use Time::HiRes;
@@ -251,5 +250,125 @@ sub geophy : Runmode {
 
     return $template->output();
 }
+
+sub snps : Runmode {
+	my $self = shift;
+
+    my $q = $self->query();
+    
+    my $job_id = $q->param('job');
+    
+    # Retrieve job data
+	unless($job_id) {
+		die("Missing query parameter: job")
+	}
+	my $job = $self->dbixSchema->resultset('JobResult')->find($job_id);
+	unless($job) {
+		die("No record matching ID $job_id in job_result table.")
+	}
+	
+	# Check user
+	my $user = $self->authen->username;
+	my $submitter = $job->username;
+	
+	if($user ne $submitter) {
+		# User requested invalid strains or strains that they do not have permission to view
+		$self->session->param( status => '<strong>Permission Denied!</strong> You do not have access to job: '.$job_id );
+		return $self->redirect( $self->home_page );
+	}
+	
+	# Retrieve results
+	my $result_json = $job->result;
+	my $results = decode_json($result_json);
+	
+	unless($results) {
+		die("No results for job $job_id");
+	}
+	
+	# Produce CSV output
+	my @rows;
+	my @fields = qw/genome allele contig position gap_offset strand upstream downstream/;
+	# Header
+	my @header = qw/Genome Allele Contig Position Gap_Offset Strand 100bp_Upstream 100bp_Downstream/;
+	push @rows, '#'.join("\t", @header);
+	
+	foreach my $k (keys %$results) {
+		my $r = $results->{$k};
+		my @row;
+		
+		foreach my $f (@fields) {
+			my $d = $r->{$f};
+			warn "Found undefined field $f in SNP job $job_id." unless $d;
+			push @row, $d;
+		}
+		
+		push @rows, join("\t", @row);
+	}
+	
+	# Pipe text to user
+	my $output = join("\n", @rows);
+	
+	$self->header_add( 
+		-type => 'text/plain',
+		-Content_Disposition => "attachment");
+		
+	return $output;
+}
+
+# Incomplete and on hold for now
+# Group Form Functions
+# sub save : Runmode {
+#     my $self = shift;
+#     my $q = $self->query();
+
+#     my %status;
+
+#     my $option = $q->param('group-manager-option');
+#     my $groupName = $q->param('group-name');
+#     my $groupNumber = $q-> param('group-number');
+#     my $maxGroups = $q->param('max-groups');
+
+#     print STDERR $groupName . "\n";
+#     print STDERR $groupNumber . "\n";
+
+#     if ($option eq 'new-group') {
+#         if (!$groupName) {
+#             $status{'error'} = "You must enter a group name to create a new group"; 
+#         }
+#         elsif (!$groupNumber) {
+#             $status{'error'} = "You must specify which group number to save";
+#         }
+#         elsif ($groupNumber > $maxGroups) {
+#             $status{'error'} = "Group $groupNumber is not valid";
+#         }
+#         else {
+#             # TODO
+#             $status{'success'} = "Your group has been saved successfully";
+#         }
+#     }
+
+#     return encode_json(\%status);
+# }
+
+# sub load : Runmode {
+#     # TODO:
+#     my $self = shift;
+#     return;
+# }
+# sub delete : Runmode {
+#     # TODO:
+#     my $self = shift;
+#     return;
+# }
+
+# sub _update {
+#     # TODO:
+#     return;
+# }
+
+# sub _rename {
+#     # TODO
+#     return;
+# }
 
 1;

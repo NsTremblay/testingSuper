@@ -110,7 +110,7 @@ body {
 /** Side bar ******************************/
   
 .sidebar {
-  position: absolute;
+  //position: absolute;
   top: 0;
   width: @sidebar-width;
   padding: 5px 5px 70px 5px;
@@ -139,9 +139,10 @@ body {
  
   }
   
-  #sidebar-accordion {
+  #sidebar-group {
      //padding-bottom: 20px;
      padding-right: 8px;
+     
     .panel {
       margin: 5px;
       box-shadow: none;
@@ -241,6 +242,9 @@ body {
   select {
     margin: 10px;
   }
+  a {
+    margin: 10px;
+  }
 }
 
 #fast-filter {
@@ -263,6 +267,12 @@ body {
         display: inline-block;
       }
     }
+  }
+  
+  .adv-filter-body {
+    margin-left: 8px;
+    border-left: 1px solid @border-color;
+    
   }
 }
 
