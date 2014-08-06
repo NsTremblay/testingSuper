@@ -1244,7 +1244,6 @@ sub getGeneAlleleData {
 	return({ genes => \%query_genes, alleles => \%alleles });
 }
 
-
 =head2 getStxData
 
 getStxData(%args)
@@ -1374,6 +1373,138 @@ sub getStxData {
 	return({names => \%subunit_names, stx => \%subtypes});
 }
 
+
+=head2 categories
+
+Duplicate from Genes module - may consider merging into FormDataGenerator
+
+=cut
+sub categories {
+    my $self = shift;
+    my ($vfJSON, $amrJSON) = @_;
+
+    die "Must pass a VF and AMR hash ref" unless $vfJSON && $amrJSON;
+
+    my ($vfRef,$amrRef) = (decode_json($vfJSON), decode_json($amrJSON));  
+    
+    my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
+        {},
+        {
+            join => ['parent_category', 'gene_cvterm', 'category'],
+            select => [
+                'parent_category.cvterm_id',
+                'parent_category.name',
+                'parent_category.definition',
+                'gene_cvterm.cvterm_id',
+                'gene_cvterm.name',
+                'gene_cvterm.definition',
+                'category.cvterm_id',
+                'category.name',
+                'category.definition',
+                'feature_id'],
+            as => [
+                'parent_id',
+                'parent_name',
+                'parent_definition',
+                'gene_id',
+                'gene_name',
+                'gene_definition',
+                'category_id',
+                'category_name',
+                'category_definition',
+                'feature_id']
+        }
+    );
+
+    my %amrCategories;
+    while (my $row = $amrCategoryResults->next) {
+        # TODO: Apeend the AMR categories and subcategories to the AMR lists
+        my $parent_id = $row->get_column('parent_id');
+        my $category_id = $row->get_column('category_id');
+        my $gene_id = $row->get_column('feature_id');
+        my $parent_name = $row->get_column('parent_name');
+        my $category_name = $row->get_column('category_name');
+
+        $amrRef->{$gene_id}->{'cats'} = {} unless exists $amrRef->{$gene_id}->{'cats'};
+        $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'} = {} unless exists $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'};
+        $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'}->{$category_id} = undef;
+
+        $amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
+        $amrCategories{$parent_id}->{'parent_name'} = $parent_name;
+        $amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+        $amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $category_name;
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+        push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $gene_id);
+    }
+
+    my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
+        {},
+        {
+            join => ['parent_category', 'gene_cvterm', 'category'],
+            select => [
+                'parent_category.cvterm_id',
+                'parent_category.name',
+                'parent_category.definition',
+                'gene_cvterm.cvterm_id',
+                'gene_cvterm.name',
+                'gene_cvterm.definition',
+                'category.cvterm_id',
+                'category.name',
+                'category.definition',
+                'feature_id'],
+            as => [
+                'parent_id',
+                'parent_name',
+                'parent_definition',
+                'gene_id',
+                'gene_name',
+                'gene_definition',
+                'category_id',
+                'category_name',
+                'category_definition',
+                'feature_id']
+        }
+    );
+
+
+    my %vfCategories;
+    while (my $row = $vfCategoryResults->next) {
+        #TODO: Append categories and subcategories to the VF lists
+        my $parent_id = $row->get_column('parent_id');
+        my $category_id = $row->get_column('category_id');
+        my $gene_id = $row->get_column('feature_id');
+        my $parent_name = $row->get_column('parent_name');
+        my $category_name = $row->get_column('category_name');
+
+        $vfRef->{$gene_id}->{'cats'} = {} unless exists $vfRef->{$gene_id}->{'cats'};
+        $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'} = {} unless exists $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'};
+        $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'}->{$category_id} = undef;
+        
+        $vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
+        $vfCategories{$parent_id}->{'parent_name'} = $parent_name;
+        $vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+        $vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $category_name;
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+        push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $gene_id);
+    }
+
+    my %categories = ('vfCats' => \%vfCategories,
+                      'amrCats' => \%amrCategories);
+
+    my $categories_json = encode_json(\%categories);
+    $amrJSON = encode_json($amrRef);
+    $vfJSON = encode_json($vfRef);
+    return ($categories_json, $vfJSON, $amrJSON);
+}
+
 sub elapsed_time {
 	my ($self, $mes) = @_;
 	
@@ -1383,6 +1514,5 @@ sub elapsed_time {
 	$self->logger->debug(sprintf("$mes: %.2f", $self->{now} - $time));
 	
 }
-
 
 1;

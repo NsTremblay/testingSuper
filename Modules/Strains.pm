@@ -60,7 +60,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-);
+	);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -87,6 +87,7 @@ Run mode for the single strain page
 =cut
 
 sub info : Runmode {
+	# TODO: Handle the private data
 	my $self = shift;
 
 	#Init the location manager
@@ -94,7 +95,7 @@ sub info : Runmode {
 	$locationManager->dbixSchema($self->dbixSchema);
 	
 	my $username = $self->authen->username;
-		
+
 	# Check if user is requesting genome info
 	my $q = $self->query();
 	
@@ -102,16 +103,15 @@ sub info : Runmode {
 	my $strainID;
 	my $privateStrainID;
 	my $feature = $q->param("genome");
-	print STDERR "Genome is $feature\n\n";
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
-		} elsif($feature =~ m/^private_(\d+)/) {
-			$privateStrainID = $1;
-		} else {
-			die "Error: invalid genome ID: $feature.";
-		}
-	}
+			} elsif($feature =~ m/^private_(\d+)/) {
+				$privateStrainID = $1;
+				} else {
+					die "Error: invalid genome ID: $feature.";
+				}
+			}
 
 	#Check if user has access to the particular requested genome
 	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
@@ -120,9 +120,9 @@ sub info : Runmode {
 
 	if($err) {
  		# User requested invalid strains or strains that they do not have permission to view
-  		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
-  		return $self->redirect( $self->home_page );
-	}
+ 		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+ 		return $self->redirect( $self->home_page );
+ 	}
 
 	# Data object
 	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
@@ -149,26 +149,46 @@ sub info : Runmode {
 		# Retrieve presence / absence of alleles for query genes
 		my %args = (
 			warden => $warden
-		);
+			);
 
 		my $results = $data->getGeneAlleleData(%args);
 		get_logger->debug('halt1');
-	
+
 		my $gene_list = $results->{genes};
 		my $gene_json = encode_json($gene_list);
 		$template->param(gene_json => $gene_json);
-	
+
 		my $alleles = $results->{alleles};
 		my $allele_json = encode_json($alleles);
 		$template->param(allele_json => $allele_json);
 
 		get_logger->debug('halt2');
-	
+
+		# Obtain reference typing sequence
+		my @subunits;
+		foreach my $uniquename (qw/stx1_subunit stx2_subunit/) {
+			my $refseq = $self->dbixSchema->resultset('Feature')->find(
+			{
+				uniquename => $uniquename
+			}
+			);
+			my $ref_id = $refseq->feature_id;
+			push @subunits, $ref_id;
+		}
+
+		$args{markers} = \@subunits;
+
+		# STX Subtypes
+		my $stxRef = $data->getStxData(%args);
+		my $stx_json = encode_json($stxRef);
+
+		$template->param(stx => $stx_json);
+
 		# Get location data for map
 		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
-	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		} elsif(defined $privateStrainID && $privateStrainID ne "") {
 		# TODO: Change this to use genome Warden
 		# User requested information on private strain
 		
@@ -194,17 +214,17 @@ sub info : Runmode {
 		
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-		} else {
-			$template->param('privacy' => $privacy_category);
-		}
-		
+			} else {
+				$template->param('privacy' => $privacy_category);
+			}
+
 		# Get phylogenetic tree
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		if($has_private) {
 			# Need to use full tree, with non-visable nodes masked
 			$data->publicGenomes(undef, $visable);
 			$template->param(tree_json => $tree->nodeTree($feature, $visable));
-		} else {
+			} else {
 			# Can use public tree
 			$template->param(tree_json => $tree->nodeTree($feature));
 		}
@@ -216,11 +236,11 @@ sub info : Runmode {
 		
 		# my $results = $data->getGeneAlleleData(%args);
 		# get_logger->debug('halt1');
-	
+
 		# my $gene_list = $results->{genes};
 		# my $gene_json = encode_json($gene_list);
 		# $template->param(gene_json => $gene_json);
-	
+
 		# my $alleles = $results->{alleles};
 		# my $allele_json = encode_json($alleles);
 		# $template->param(allele_json => $allele_json);
@@ -231,23 +251,24 @@ sub info : Runmode {
 		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
-	} else {
-		$template = $self->load_tmpl( 'strains_info.tmpl' ,
-			die_on_bad_params=>0 );
-		$template->param('strainData' => 0);
-	}
+		} else {
+			$template = $self->load_tmpl( 'strains_info.tmpl' ,
+				die_on_bad_params=>0 );
+			$template->param('strainData' => 0);
+		}
 
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 
-	# AMR/VF categores
-	my $categoriesRef = $self->categories();
-	$template->param(categories => $categoriesRef);
-
 	# AMR/VF Lists
 	my $vfRef = $data->getVirulenceFormData();
 	my $amrRef = $data->getAmrFormData();
+
+	# AMR/VF categores
+	my $categoriesRef;
+	($categoriesRef, $vfRef, $amrRef) = $data->categories($vfRef, $amrRef);
+	$template->param(categories => $categoriesRef);
 
 	$template->param(vf => $vfRef);
 	$template->param(amr => $amrRef);
@@ -287,16 +308,16 @@ sub search : StartRunmode {
 	if($has_private) {
 		my $tree_string = $tree->fullTree($visable_nodes);
 		$template->param(tree_json => $tree_string);
-	} else {
-		my $tree_string = $tree->fullTree();
-		$template->param(tree_json => $tree_string);
-	}
+		} else {
+			my $tree_string = $tree->fullTree();
+			$template->param(tree_json => $tree_string);
+		}
 
-	$template->param(title1 => 'GENOME');
-	$template->param(title2 => 'SEARCH');
-	
-	return $template->output();
-} 
+		$template->param(title1 => 'GENOME');
+		$template->param(title2 => 'SEARCH');
+
+		return $template->output();
+	} 
 
 =head2 _getStrainInfo
 
@@ -324,17 +345,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-		{
-			"me.feature_id" => $strainID
+	{
+		"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-				{ 'dbxref' => 'db' },
-				{ $featureprop_rel_name => 'type' },
+			{ 'dbxref' => 'db' },
+			{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-	);
+		);
 	
 	# Create hash
 	my %feature_hash;
@@ -355,14 +376,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-		{
-			feature_id => $feature->feature_id
+	{
+		feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-	);
+		);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -399,7 +420,7 @@ sub _getStrainInfo {
 	# Convert age to proper units
 	if(defined $feature_hash{isolation_ages}) {
 		foreach my $age_hash (@{$feature_hash{isolation_ages}}) {
-			my($age, $unit) = Sequences::GenodoDateTime::ageOut($age_hash->{isolation_age});
+			my($age, $unit) = Sequences::GenodoDateTime::a1ut($age_hash->{isolation_age});
 			$age_hash->{isolation_age} = "$age $unit";
 		}
 	}
@@ -446,111 +467,105 @@ sub geocode : Runmode {
 	return $queryResult;
 }
 
-
-=head2 categories
-
-Duplicate from Genes module - may consider merging into FormDataGenerator
-
-=cut
-sub categories {
+sub download : Runmode {
 	my $self = shift;
+
+	my $username = $self->authen->username;
+
+	my $q = $self->query();
 	
-	my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
-		{},
-		{
-			join => ['parent_category', 'gene_cvterm', 'category'],
-			select => [
-				'parent_category.cvterm_id',
-				'parent_category.name',
-				'parent_category.definition',
-				'gene_cvterm.cvterm_id',
-				'gene_cvterm.name',
-				'gene_cvterm.definition',
-				'category.cvterm_id',
-				'category.name',
-				'category.definition',
-				'feature_id'],
-			as => [
-				'parent_id',
-				'parent_name',
-				'parent_definition',
-				'gene_id',
-				'gene_name',
-				'gene_definition',
-				'category_id',
-				'category_name',
-				'category_definition',
-				'feature_id']
-		}
-	);
+	# Need to replace these param checks with a single genome request.
+	my $strainID;
+	my $privateStrainID;
+	my $feature = $q->param("genome");
+	if($feature && $feature ne "") {
+		if($feature =~ m/^public_(\d+)/) {
+			$strainID = $1;
+			} elsif($feature =~ m/^private_(\d+)/) {
+				$privateStrainID = $1;
+				} else {
+					die "Error: invalid genome ID: $feature.";
+				}
+			}
 
-	my %amrCategories;
-	while (my $row = $amrCategoryResults->next) {
-		my $parent_id = $row->get_column('parent_id');
-		my $category_id = $row->get_column('category_id');
-		$amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
-		$amrCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
-		$amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
-		$amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
-		$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
-		push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+	#Check if user has access to the particular requested genome
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
+
+	my ($err, $bad1, $bad2) = $warden->error; 
+
+	if($err) {
+ 		# User requested invalid strains or strains that they do not have permission to view
+ 		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+ 		return $self->redirect( $self->home_page );
+ 	}
+
+	my @rs;
+
+	if($strainID) {
+		# Obtain all contigs and contig collections in feature table
+		my $contig_rs = $self->dbixSchema->resultset('Feature')->search(
+		{
+			#'me.feature_id' => "$strainID",
+			'object_id' => "$strainID",
+			'type.name' => "contig",
+			'type_2.name' => "part_of",
+
+			},
+			{
+				column  => [qw/feature_id uniquename residues/],
+				'+select' => [qw/feature_relationship_subjects.object_id/],
+				'+as' => [qw/object_id/],
+				join    => [
+				'type',
+				{'feature_relationship_subjects' => 'type'}
+				],
+			}
+			);
+
+		push @rs, $contig_rs;
 	}
 
-	my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
-		{},
+	# Obtain all uploaded contigs and contig collections in private
+	if($privateStrainID) {
+		my $contig_rs2 = $self->dbixSchema->resultset('PrivateFeature')->search(
 		{
-			join => ['parent_category', 'gene_cvterm', 'category'],
-			select => [
-				'parent_category.cvterm_id',
-				'parent_category.name',
-				'parent_category.definition',
-				'gene_cvterm.cvterm_id',
-				'gene_cvterm.name',
-				'gene_cvterm.definition',
-				'category.cvterm_id',
-				'category.name',
-				'category.definition',
-				'feature_id'],
-			as => [
-				'parent_id',
-				'parent_name',
-				'parent_definition',
-				'gene_id',
-				'gene_name',
-				'gene_definition',
-				'category_id',
-				'category_name',
-				'category_definition',
-				'feature_id']
-		}
-	);
+			#'me.feature_id' => "$privateStrainID",
+			'type.name' => "contig",
+			'type_2.name' => "part_of",
 
+			},
+			{
+				column  => [qw/feature_id uniquename residues/],
+				'+select' => [qw/private_feature_relationship_subjects.object_id/],
+				'+as' => [qw/object_id/],
+				join    => [
+				'type',
+				{'private_feature_relationship_subjects' => 'type'}
+				],
+			}
+			);
 
-	my %vfCategories;
-	while (my $row = $vfCategoryResults->next) {
-		my $parent_id = $row->get_column('parent_id');
-		my $category_id = $row->get_column('category_id');
-		$vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
-		$vfCategories{$parent_id}->{'parent_name'} = $row->get_column('parent_name');
-		$vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
-		$vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $row->get_column('category_name');
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
-		$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
-		push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $row->get_column('feature_id'));
+		push @rs, $contig_rs2;
+
 	}
 
-	my %categories = ('vfCats' => \%vfCategories,
-				  	  'amrCats' => \%amrCategories);
+    # Produce CSV output
+    my @rows;
+    foreach my $contigs (@rs) {
+    	while (my $contig = $contigs->next) {
+    		my $row = ">superphy|" . $contig->uniquename . "\n" . $contig->residues;
+    		push(@rows, $row);
+    	}
+    }
+    
+    # Pipe text to user
+    my $output = join("\n", @rows);
+    
+    $self->header_add( 
+    	-type => 'text/plain',
+    	-Content_Disposition => "attachment");
 
-	my $categories_json = encode_json(\%categories);
-	return $categories_json;
+    return $output;
 }
 
 1;

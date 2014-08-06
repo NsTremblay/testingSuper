@@ -122,6 +122,7 @@ class ViewController
       @views.push tableView
 
     else if viewType is 'jump2table'
+      # TODO: Remove this, deprecated
       # New list view
       tableView = new TableView(elem, clickStyle, vNum, viewArgs)
       tableView.update(@genomeController)
@@ -144,7 +145,7 @@ class ViewController
       true
     
     downloadElemDiv.append(downloadElem)
-    elem.prepend(downloadElemDiv)
+    downloadElemDiv.prependTo(elem)
       
     return true # return success
     
@@ -171,13 +172,6 @@ class ViewController
     clearButtonEl.click (e) ->
       e.preventDefault()
       viewController.clearFromGroup(gNum)
-
-    # Incomplete and on hold for now
-    # Update number of groups to the dropdown list in the side bar
-    selectGroupList = jQuery('.group-manager-number');
-    selectGroupList.empty();
-    jQuery('<option value='+"#{group.elNum}"+'>Group '+"#{group.elNum}"+'</option>').appendTo(selectGroupList) for group in @groups
-
 
     return true # return success
     
@@ -1461,7 +1455,6 @@ class GroupView
   # boolean 
   #      
   update: (genomes) ->
-    
     # create or find list element
     listElem = jQuery("##{@elID}")
     if listElem.length
@@ -1471,7 +1464,9 @@ class GroupView
       jQuery(@parentElem).append(listElem)
    
     # append group genomes to list
+    # TODO:
     ingrp = genomes.grouped(@elNum)
+
     @_appendGenomes(listElem, ingrp.public, genomes.public_genomes)
     @_appendGenomes(listElem, ingrp.private, genomes.private_genomes)
     
@@ -1488,7 +1483,6 @@ class GroupView
   # boolean 
   #      
   add: (genomeSet, genomes) ->
-    
     # create or find list element
     listElem = jQuery("##{@elID}")
     if not listElem.length    
@@ -1508,7 +1502,7 @@ class GroupView
     
     for g in visibleG
       # Includes remove links
-      
+
       # Create elements
       listEl = jQuery("<li class='#{cls}'>"+genomes[g].viewname+'</li>')
       actionEl = jQuery("<a href='#' data-genome='#{g}' data-genome-group='#{@elNum}'> <i class='fa fa-times'></a>")
@@ -1980,7 +1974,7 @@ class GenomeController
     
     # toggle value
     @visibleMeta[option] = checked
-      
+    
     @update()
     
     true

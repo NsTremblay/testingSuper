@@ -22,7 +22,7 @@
 }
 .intro {
   padding-top: 5px;
-  padding-bottom: 30px;
+  padding-bottom: 40px;
 }
 .instruction-block {
   padding-top: 40px;
@@ -43,6 +43,34 @@
   padding: 10px;
 }
 .gene-list-wrapper ul {
+  list-style: none;
+  margin: 2px;
+  padding: 0;
+}
+.selected-gene-list-wrapper {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+  height: 200px;
+  overflow: auto;
+  margin: 10px 10px 20px 10px;
+  padding: 10px;
+}
+.selected-gene-list-wrapper ul {
+  list-style: none;
+  margin: 2px;
+  padding: 0;
+}
+#selected_genomes {
+  border-style: solid;
+  border-width: 1px;
+  border-color: #d3d3d3;
+  height: 200px;
+  overflow: auto;
+  margin: 10px 10px 20px 10px;
+  padding: 10px;
+}
+#selected_genomes ul {
   list-style: none;
   margin: 2px;
   padding: 0;
@@ -68,4 +96,8 @@
 }
 .gene-search-next-wrapper button {
   margin: 20px;
+}
+.category-superscript.help-block {
+  display: inline;
+  font-size: x-small;
 }
