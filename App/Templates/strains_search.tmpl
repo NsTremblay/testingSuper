@@ -2,25 +2,11 @@
 <html>
 
 <head>
-
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	
-	<script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
-	
-	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
-
-	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
-	<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
-
-	<script src="/App/Lib/js/superphy.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
-	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
-
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<script src="/App/Lib/js/superphy_menu.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">	
 	<script type="text/javascript">
-	var page_name = "strains";
+		var page_name = "strains";
 	</script>
 	
 </head>
@@ -28,6 +14,8 @@
 <body>
 
 	<TMPL_INCLUDE NAME="page_top.tmpl">
+
+	<div id="search_menu"></div>
 
 	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 
@@ -51,12 +39,21 @@ viewController.createView('map', $('#strains_map'), ['satellite']);
 
 viewController.sideBar($('#search-utilities'));
 
+//Test Icon Menu
+
+var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
+
 $(document).ready(function(){
+	var urlParams = window.location;
+	if (urlParams.hash !== "") {
+		$('a[href="'+urlParams.hash+'"]').click();
+	}
 	//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
-	$('a[href="#strains_map"]').on('shown.bs.tab', function () {
-		viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
-	});
+	//$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+	//	viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
+	//});
 });
+
 </script>
 
 </html>

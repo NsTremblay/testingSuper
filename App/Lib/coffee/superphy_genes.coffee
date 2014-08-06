@@ -14,20 +14,37 @@ root = exports ? this
 class GenesList
   constructor: (@geneList, @geneType, @categories, @tableElem, @categoriesElem, @mTypes, @multi_select=false) ->
     throw new Error("Invalid gene type parameter: #{@geneType}.") unless @geneType is 'vf' or @geneType is 'amr'
-
+   
     @sortField = 'name'
     @sortAsc = true
+    @sortField = 'alleles' if 'alleles' in @mTypes
+    @sortAsc = false if 'alleles' in @mTypes
+
+    @filtered_category = null
+    @filtered_subcategory = null
 
     @metaMap = {
       'name' : 'Gene Name'
       'uniquename': 'Unique Name'
       'alleles': 'Number of Alleles'
+      'category': 'Category'
+      'subcategory' : 'Sub Category'
     }
 
     for k,o of @geneList
       o.visible = true
       o.selected = false
-
+      # Set up categories categories
+      cats = []
+      subcats = []
+      catCount = 0
+      for cat, subs of o.cats
+        catCount++
+        cats.push(" <span class='category-superscript  help-block'>[#{catCount}]</span> " + @_capitaliseFirstLetter(@categories[cat].parent_name) + "<br/>")
+        subcats.push(@_capitaliseFirstLetter(@categories[cat].subcategories[k].category_name) + " <span class='category-superscript help-block'>[#{catCount}]</span><br/>") for k in Object.keys(subs.subcats)
+        o.category = cats.join("")
+        o.subcategory = subcats.join("")
+    
     @_appendGeneTable()
     @_appendCategories()
 
@@ -53,7 +70,6 @@ class GenesList
       @tableElem.empty()
 
     table = @tableElem
-    name = "#{@geneType}-gene"
     tableElem = jQuery("<table />").appendTo(table)
 
     style = 'select' if @multi_select
@@ -102,28 +118,48 @@ class GenesList
       
       row2 = jQuery('<div class="row"></div>').appendTo(categoryE)
       col2 = jQuery('<div class="col-xs-12"></div>').appendTo(row2)
-      sel = jQuery("<select name='#{@geneType}-category' data-category-id='#{k}' class='form-control'></select>").appendTo(col2)
-      
+      sel = jQuery("<select name='#{@geneType}-category' data-category-id='#{k}' class='form-control' placeholder='--Select a category--'></select>").appendTo(col2)
+
+      options = []
+
       for s,t of o.subcategories
         def = ""
         def = t.category_definition if t.category_definition?
         name = @_capitaliseFirstLetter(t.category_name)
         id = "subcategory-id-#{s}"
         def.replace(/\.n/g, ". &#13;");
-        sel.append("<option id='#{id}' value='#{s}' title='#{def}'>#{name}</option>")
-        
-      sel.append("<option value='null' selected><strong>--Select Category--</strong></option>")
+        options.push({id : "#{id}", value: "#{s}", title: "#{def}", name: "#{name}", parent: "#{k}"})
+
+      sel.selectize(
+        {
+          searchField: ['name']
+          options: options
+          render: {
+            option: (data, escape) =>
+              return "<div class='option' title='#{data.title}'>#{data.name} <span class='badge'>#{@categories[data.parent].subcategories[data.value].gene_ids.length} genes</span></div>"
+            item: (data, escape) =>
+              return "<div class='item'>#{data.name}</div>"
+          }
+        }
+      )
       
       that = @
       sel.change( ->
+        selects = jQuery("select[name='#{that.geneType}-category']")
         obj = jQuery(@)
         catId = obj.data('category-id')
         subId = obj.val()
         
-        if subId isnt 'null'
-          jQuery("select[name='#{@geneType}-category'][data-category-id!='#{catId}']").val('null')
-          that._filterByCategory(catId, subId)
+        if subId isnt "" or null  
+          for sel in selects
+            selectized = sel.selectize
+            selectized.clear() if selectized.getValue() isnt subId
           
+          @.selectize.getItem(subId)
+          that._filterByCategory(catId, subId)
+
+        if subId is "" or null
+          that._filterByCategory(-1,-1)
       )
       
     true
@@ -191,10 +227,24 @@ class GenesList
       else
         return false
 
+      # There are multiple categories present
       for d in @mTypes
-        mData = geneObj[d]
+        switch d
+          when 'category' 
+            if @filtered_category isnt null
+              mData = @filtered_category
+            else
+              mData = geneObj[d]
+          when 'subcategory'
+            if @filtered_subcategory isnt null
+              mData = @filtered_subcategory
+            else
+              mData = geneObj[d]
+          else 
+            mData = geneObj[d]
+        
         row += @_template('td', {data: mData})
-          
+
       table += @_template('tr', {row: row})
 
     table
@@ -278,7 +328,7 @@ class GenesList
     gids.sort (a,b) ->
       aObj = that.geneList[a]
       bObj = that.geneList[b]
-      
+    
       aField = aObj[metaField]
       aName = aObj.name.toString().toLowerCase()
       bField = bObj[metaField]
@@ -334,16 +384,20 @@ class GenesList
   # boolean
   #    
   _filterByCategory: (catId, subcatId) ->
-    #DONE
+
     geneIds = []
     if catId is -1
       geneIds = Object.keys(@geneList)
+      @filtered_category = null
+      @filtered_subcategory = null
       
     else
       geneIds.push(id) for id in @categories[catId].subcategories[subcatId].gene_ids when @geneList[id]?
       throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
       o.visible = false for k,o of @geneList
-    
+      @filtered_category = @_capitaliseFirstLetter(@categories[catId].parent_name)
+      @filtered_subcategory = @_capitaliseFirstLetter(@categories[catId].subcategories[subcatId].category_name)
+
     for g in geneIds
       o = @geneList[g]
       throw new Error("Invalid gene ID: #{g}.") unless o?
@@ -365,7 +419,8 @@ class GenesList
   _resetNullCategories: () ->
     el = @categoriesElem
     name = "#{@geneType}-category"
-    el.find("select[name='#{name}']").val('null')
+    select = el.find("select[name='#{name}']")
+    sel.selectize.clear() for sel in select
     true
     
   # FUNC _capitaliseFirstLetter
@@ -413,6 +468,7 @@ class GenesSearch extends GenesList
   _appendGeneTable: () ->
     super
     table = @tableElem
+    name = "#{@geneType}-gene"
 
     cboxes = table.find("input[name='#{name}']")
     that = @
@@ -420,6 +476,7 @@ class GenesSearch extends GenesList
       obj = $(@)
       geneId = obj.val()
       checked = obj.prop('checked')
+      console.log checked
       that._selectGene([geneId], checked)
     )
 
@@ -457,7 +514,6 @@ class GenesSearch extends GenesList
     regex = new RegExp @escapeRegExp(searchTerm), "i"
     
     for k,g of gList
-      
       val = g.name
       
       if regex.test val
@@ -539,10 +595,11 @@ class GenesSearch extends GenesList
       actionEl = jQuery("<a href='#' data-gene='#{g}'> <i class='fa fa-times'></a>")
         
       # Set behaviour
+      that = @
       actionEl.click (e) ->
         e.preventDefault()
         gid = @.dataset.gene
-        @_selectGene([gid], false)
+        that._selectGene([gid], false)
         $("input.gene-search-select[value='#{gid}']").prop('checked',false)
         
       # Append to list
@@ -624,6 +681,10 @@ class GenesSearch extends GenesList
   # string 
   #    
   escapeRegExp: (str) -> str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
+
+  _filterByCategory: (catId, subcatId) ->
+    @autocompleteElem.val("")
+    super
 
 # Return instance of GenesSearch
 unless root.GenesSearch

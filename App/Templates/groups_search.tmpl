@@ -2,33 +2,17 @@
 <html>
 
 <head>
-
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
-	
-	<script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
-	
-	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
-
-	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
-	<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
-
-	<script src="/App/Lib/js/superphy.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
-	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
-
-	<script type="text/javascript">
-	var page_name = "groups";
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<script>
+		var page_name = "groups";
 	</script>
 
-	<style type="text/css">
+	<!--style type="text/css">
 	input[type=checkbox] {
 		float: left;
 		margin-right: 0.4em;
 	}
-	</style>
+	</style-->
 	
 </head>
 
@@ -65,13 +49,13 @@ var addMore = false;
 var submit = true;
 var filter = false;
 viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter);
-
+/*
 $(document).ready(function(){
 	//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
 	$('a[href="#strains_map"]').on('shown.bs.tab', function () {
 		viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 	});
-});
+});*/
 </script>
 
 <TMPL_IF groups_manager>

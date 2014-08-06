@@ -240,7 +240,6 @@ sub submit_genome : Runmode {
 		$t->param(selected_syndromes => \@syndrome_list);
 		$t->param(selected_country => $self->query->param('g_location_country'));
 	}
-#=cut
 
 	#my $t = $self->load_tmpl ( 'unavailable.tmpl' , die_on_bad_params=>0 );
 	#$t->param(title => 'Upload a genome');

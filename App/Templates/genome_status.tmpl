@@ -1,34 +1,36 @@
 <!DOCTYPE html>
 <html>
 
+<!-- #TODO: Need to validate this visually-->
+
 <head>
-	<TMPL_INCLUDE NAME="header.tmpl">
+	<TMPL_INCLUDE NAME="header2.tmpl">
 </head>
 
-<body style="background-color:#796e6c">
+<body>
 
-	<TMPL_INCLUDE NAME="nav_bar.tmpl">
+	<TMPL_INCLUDE NAME="superphy_nav_bar.tmpl">
 	
-	<div class="container" style="background-color:#FFFFFF">
+	<div class="container">
 	
-		<div class="row-fluid">
-			<div class="span12"><h3>Status of Uploaded Genome</h3>
+		<div class="row">
+			<div class="col-md-12"><h3>Status of Uploaded Genome</h3>
 			</div>
 		</div>
 
-		<div class="row-fluid">
-			<div class="span8" style="margin:10px 10px 10px 10px;padding:10px 0px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
-				<p><span style="font-size:16pt; padding-right:10px;"><strong>Genome Name:</strong> <TMPL_VAR feature_name></span></p>
+		<div class="row">
+			<div class="col-md-8">
+				<p><span><strong>Genome Name:</strong> <TMPL_VAR feature_name></span></p>
 				<p><strong>Tracking ID:</strong> <TMPL_VAR tracking_id></p>
 				<p>Genome uploaded on <TMPL_VAR start_date>.</p>
 				<p>Current analysis stage: <span style="padding-left:5px; padding-right:5px"><strong><TMPL_VAR analysis_step></strong></span> (step <TMPL_VAR current_step> of <TMPL_VAR total_steps>).</p>
 			<TMPL_IF failed>
-				<p class="text-error"><strong>Analysis Failed:</strong> The analysis was terminated due to an error. Please contact us for further assistance.</p>
+				<p class="text-danger"><strong>Analysis Failed:</strong> The analysis was terminated due to an error. Please contact us for further assistance.</p>
 			</TMPL_IF>
 			<TMPL_IF end_date>
 				<p>Analysis completed on <TMPL_VAR end_date>.</p>
 				<TMPL_IF not_found>
-					<p class="text-error"><strong>Not Found:</strong> There appears to be an error with the upload. Please contact us for further assistance.</p>
+					<p class="text-danger"><strong>Not Found:</strong> There appears to be an error with the upload. Please contact us for further assistance.</p>
 				<TMPL_ELSE>
 					<p>Follow this link to see a summary of uploaded genome: <a href="<TMPL_VAR strain_link>"><TMPL_VAR feature_name></a>.</p>
 				</TMPL_IF>
@@ -37,15 +39,14 @@
 			</div>
 		</div>
 
-		<div class="row-fluid">
-			<div class="span8" style="margin:10px 10px 10px 10px;padding:10px 0px 0px 10px;">
+		<div class="row">
+			<div class="col-md-8">
 				<p>Bookmark and return to this <a href="/genome-uploader/status?tracking_id=<TMPL_VAR tracking_id>">page</a> to see the current status of your uploaded genome.</p>
 			</div>
 		</div>	
 
 	</div>
 	
-	<TMPL_INCLUDE NAME="footer.tmpl">
 
 </body>
 

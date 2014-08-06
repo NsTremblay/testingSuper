@@ -143,12 +143,12 @@
         return true;
       });
       downloadElemDiv.append(downloadElem);
-      elem.prepend(downloadElemDiv);
+      downloadElemDiv.prependTo(elem);
       return true;
     };
 
     ViewController.prototype.createGroup = function(boxEl, buttonEl, clearButtonEl) {
-      var gNum, group, grpView, selectGroupList, _i, _len, _ref;
+      var gNum, grpView;
       gNum = this.groups.length + 1;
       if (gNum > this.maxGroups) {
         return false;
@@ -164,13 +164,6 @@
         e.preventDefault();
         return viewController.clearFromGroup(gNum);
       });
-      selectGroupList = jQuery('.group-manager-number');
-      selectGroupList.empty();
-      _ref = this.groups;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        group = _ref[_i];
-        jQuery('<option value=' + ("" + group.elNum) + '>Group ' + ("" + group.elNum) + '</option>').appendTo(selectGroupList);
-      }
       return true;
     };
 
@@ -2843,7 +2836,7 @@
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
-      this.parentElem.append("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>");
+      jQuery("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>").appendTo(this.parentElem);
       this.wrap = d3.select("#" + this.elID).append("svg").attr("width", this.dim.w).attr("height", this.dim.h).style("-webkit-backface-visibility", "hidden");
       this.scalePos = {
         x: 10,
@@ -3734,7 +3727,7 @@
       var controls, expButtonID, findButtonID, findInputID, fitButtonID, num, opsHtml, resetButtonID;
       opsHtml = '';
       controls = '<div class="row">';
-      controls += "<div class='col-sm-6'><div class='btn-group'>";
+      controls += "<div class='col-sm-6 span6'><div class='btn-group'>";
       fitButtonID = "tree_fit_button" + this.elNum;
       controls += "<button id='" + fitButtonID + "' type='button' class='btn btn-default btn-sm'>Fit to window</button>";
       resetButtonID = "tree_reset_button" + this.elNum;
@@ -3744,14 +3737,14 @@
       controls += "</div></div>";
       findButtonID = "tree_find_button" + this.elNum;
       findInputID = "tree_find_input" + this.elNum;
-      controls += "<div class='col-sm-3'><div class='input-group input-group-sm'>";
+      controls += "<div class='col-sm-3 span3'><div class='input-group input-prepend input-group-sm'>";
       controls += "<span class='input-group-btn'> <button id='" + findButtonID + "' class='btn btn-default btn-sm' type='button'>Search</button></span>";
-      controls += "<input id='" + findInputID + "' type='text' class='form-control'></div></div>";
-      controls += "<div class='col-sm-1'></div>";
-      controls += "<div class='col-sm-2'><a href='#" + legendID + "'>Functions List</a></div>";
+      controls += "<input id='" + findInputID + "' type='text' class='form-control input-small'></div></div>";
+      controls += "<div class='col-sm-1 span1'></div>";
+      controls += "<div class='col-sm-2 span2'><a href='#" + legendID + "'>Functions List</a></div>";
       controls += "</div>";
       opsHtml += "" + controls;
-      el.append("<div class='tree_operations'>" + opsHtml + "</div>");
+      jQuery("<div class='tree_operations'>" + opsHtml + "</div>").appendTo(el);
       num = this.elNum - 1;
       jQuery("#" + findButtonID).click(function(e) {
         var searchString;
@@ -5525,7 +5518,7 @@
     __extends(MapView, _super);
 
     function MapView(parentElem, style, elNum, genomeController, mapArgs) {
-      var buttonEl, divEl, fieldsetEl, formEl, input, inputGpEl, mapCanvasEl, mapManifestEl, splitLayoutEl, tableData1El, tableData2El, tableEl, tableRow1El, tableRow2El;
+      var buttonEl, divEl, divEl2, fieldsetEl, formEl, input, inputGpEl, mapCanvasEl, mapManifestEl, resetMapViewEl, rowEl, splitLayoutEl, tableData1El, tableData2El, tableEl, tableRow1El, tableRow2El;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
@@ -5534,23 +5527,52 @@
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
       this.sortField = 'isolation_location';
       this.sortAsc = 'true';
-      mapManifestEl = jQuery('<div class="map-manifest col-md-6"></div>').appendTo(jQuery(this.parentElem));
-      splitLayoutEl = jQuery('<div class="col-md-6 map-search-div"></div>').appendTo(jQuery(this.parentElem));
+      this.shiny = this.mapArgs[1];
+      mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(jQuery(this.parentElem));
+      splitLayoutEl = jQuery('<div class="map-search-div"></div>').appendTo(jQuery(this.parentElem));
       tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl);
       tableRow1El = jQuery('<tr></tr>').appendTo(tableEl);
       tableData1El = jQuery('<td></td>').appendTo(tableRow1El);
       formEl = jQuery('<form class="form"></form>').appendTo(tableData1El);
       fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl);
-      divEl = jQuery('<div></div>').appendTo(fieldsetEl);
-      inputGpEl = jQuery('<div class="input-group"></div>').appendTo(divEl);
+      rowEl = jQuery('<div></div>').appendTo(fieldsetEl);
+      divEl = jQuery('<div></div>').appendTo(rowEl);
+      inputGpEl = jQuery('<div class="input-append"></div>').appendTo(divEl);
       input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl);
-      buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
+      if (!this.shiny) {
+        buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
+      }
+      if (this.shiny) {
+        buttonEl = jQuery('<button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>').appendTo(inputGpEl);
+      }
+      divEl2 = jQuery('<div></div>').appendTo(rowEl);
+      resetMapViewEl = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(divEl2);
       tableRow2El = jQuery('<tr></tr>').appendTo(tableEl);
       tableData2El = jQuery('<td></td>').appendTo(tableRow2El);
       mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El);
-      this.locationController = this.getLocationController(this.mapArgs[0]);
+      if (!this.shiny) {
+        mapManifestEl.addClass('col-md-6');
+        splitLayoutEl.addClass('col-md-6');
+        rowEl.addClass('row');
+        divEl.addClass('col-md-9');
+        inputGpEl.addClass('input-group');
+        divEl2.addClass('col-md-3');
+      } else {
+        rowEl.addClass('row-fluid');
+        divEl.addClass('span9');
+        inputGpEl.addClass('input-append');
+        input.addClass('input-xlarge');
+        divEl2.addClass('span3');
+      }
+      this.locationController = this.getLocationController(this.mapArgs[0], this.elNum);
       this.mapController = this.getCartographer(this.mapArgs[0], this.locationController);
       jQuery(this.parentElem).data('views-index', this.elNum);
+      resetMapViewEl.click((function(_this) {
+        return function(e) {
+          e.preventDefault();
+          return _this.mapController.resetMapView();
+        };
+      })(this));
     }
 
     MapView.prototype.type = 'map';
@@ -5560,15 +5582,17 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
-      tableElem = jQuery("#" + this.elID + " table");
-      if (tableElem.length) {
-        tableElem.empty();
-      } else {
-        divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
-        tableElem = jQuery("<table />").appendTo(divElem);
-        mapManifest = jQuery('.map-manifest').append(divElem);
-        jQuery(this.parentElem).append(mapManifest);
+      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      if (!this.shiny) {
+        tableElem = jQuery("#" + this.elID + " table");
+        if (tableElem.length) {
+          tableElem.empty();
+        } else {
+          divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
+          tableElem = jQuery("<table />").appendTo(divElem);
+          mapManifest = jQuery('.map-manifest').append(divElem);
+          jQuery(this.parentElem).append(mapManifest);
+        }
       }
       pubVis = [];
       pvtVis = [];
@@ -5576,65 +5600,50 @@
         pubVis = genomes.pubVisible;
         pvtVis = genomes.pvtVisible;
       } else {
-        this.mapController.resetMap();
-        if (this.mapController.map.getBounds().getNorthEast().toUrlValue() === '0,0' && this.mapController.map.getBounds().getSouthWest().toUrlValue() === '0,0') {
-          _ref = this.locationController.pubLocations;
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            i = _ref[_i];
-            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-              pubVis.push(i);
-            }
-          }
-          _ref1 = this.locationController.pvtLocations;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            i = _ref1[_j];
-            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-              pvtVis.push(i);
-            }
-          }
-        } else {
-          _ref2 = this.mapController.visibleLocations;
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            i = _ref2[_k];
-            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-              pubVis.push(i);
-            }
-          }
-          _ref3 = this.mapController.visibleLocations;
-          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-            i = _ref3[_l];
-            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-              pvtVis.push(i);
-            }
-          }
-        }
-        _ref4 = this.locationController.pubNoLocations;
-        for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
-          i = _ref4[_m];
+        this.mapController.resetMarkers();
+        _ref = this.mapController.visibleLocations;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          i = _ref[_i];
           if (__indexOf.call(genomes.pubVisible, i) >= 0) {
             pubVis.push(i);
           }
         }
-        _ref5 = this.locationController.pvtNoLocaitons;
-        for (_n = 0, _len5 = _ref5.length; _n < _len5; _n++) {
-          i = _ref5[_n];
+        _ref1 = this.mapController.visibleLocations;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          i = _ref1[_j];
+          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+            pvtVis.push(i);
+          }
+        }
+        _ref2 = this.locationController.pubNoLocations;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          i = _ref2[_k];
+          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+            pubVis.push(i);
+          }
+        }
+        _ref3 = this.locationController.pvtNoLocaitons;
+        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+          i = _ref3[_l];
           if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
             pvtVis.push(i);
           }
         }
       }
-      t1 = new Date();
-      table = '';
-      table += this._appendHeader(genomes);
-      table += '<tbody>';
-      table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
-      table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
-      table += '</body>';
-      tableElem.append(table);
-      this._actions(tableElem, this.style);
-      t2 = new Date();
-      ft = t2 - t1;
-      console.log('MapView update elapsed time: ' + ft);
+      if (!this.shiny) {
+        t1 = new Date();
+        table = '';
+        table += this._appendHeader(genomes);
+        table += '<tbody>';
+        table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
+        table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
+        table += '</body>';
+        tableElem.append(table);
+        this._actions(tableElem, this.style);
+        t2 = new Date();
+        ft = t2 - t1;
+        console.log('MapView update elapsed time: ' + ft);
+      }
       return true;
     };
 
@@ -5883,12 +5892,12 @@
         })(this),
         'infoSatellite': (function(_this) {
           return function() {
-            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[1], _this.mapArgs[2]]);
+            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[2], _this.mapArgs[3]]);
           };
         })(this),
         'geophy': (function(_this) {
           return function() {
-            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[1]]);
+            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[2]]);
           };
         })(this)
       };
@@ -5897,7 +5906,7 @@
       return cartographer;
     };
 
-    MapView.prototype.getLocationController = function(mapType) {
+    MapView.prototype.getLocationController = function(mapType, viewNum) {
       var cartographTypes, controller;
       cartographTypes = {
         'base': (function(_this) {
@@ -5912,17 +5921,17 @@
         })(this),
         'satellite': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this),
         'infoSatellite': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this),
         'geophy': (function(_this) {
           return function() {
-            return new LocationController(_this.genomeController, _this.parentElem);
+            return new LocationController(_this.genomeController, _this.parentElem, viewNum);
           };
         })(this)
       };
@@ -5981,8 +5990,10 @@
     function Cartographer(cartographDiv, cartograhOpt) {
       this.cartographDiv = cartographDiv;
       this.cartograhOpt = cartograhOpt;
+      this.pinPoint = __bind(this.pinPoint, this);
+      this.defaultCenter = new google.maps.LatLng(-0.000, 0.000);
       this.mapOptions = {
-        center: new google.maps.LatLng(-0.000, 0.000),
+        center: this.defaultCenter,
         zoom: 1,
         streetViewControl: false,
         mapTypeId: google.maps.MapTypeId.ROADMAP
@@ -5999,9 +6010,8 @@
     };
 
     Cartographer.prototype.pinPoint = function(e) {
-      var queryLocation, self;
+      var queryLocation;
       e.preventDefault();
-      self = e.data.context;
       queryLocation = jQuery('.map-search-location').val();
       jQuery.ajax({
         type: "POST",
@@ -6009,17 +6019,25 @@
         data: {
           'address': queryLocation
         }
-      }).done(function(data) {
-        var bounds, northEast, results, southWest;
-        results = JSON.parse(data);
-        self.map.setCenter(results.geometry.location);
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
-        bounds = new google.maps.LatLngBounds(southWest, northEast);
-        return self.map.fitBounds(bounds);
-      }).fail((function() {
+      }).done((function(_this) {
+        return function(data) {
+          var bounds, northEast, results, southWest;
+          results = JSON.parse(data);
+          _this.map.setCenter(results.geometry.location);
+          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          bounds = new google.maps.LatLngBounds(southWest, northEast);
+          return _this.map.fitBounds(bounds);
+        };
+      })(this)).fail((function() {
         return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
       }));
+      return true;
+    };
+
+    Cartographer.prototype.resetMapView = function() {
+      this.map.setZoom(1);
+      this.map.setCenter(this.defaultCenter);
       return true;
     };
 
@@ -6041,6 +6059,8 @@
     function DotCartographer(dotCartographDiv, dotCartograhOpt) {
       this.dotCartographDiv = dotCartographDiv;
       this.dotCartograhOpt = dotCartograhOpt;
+      this.resetMap = __bind(this.resetMap, this);
+      this.pinPoint = __bind(this.pinPoint, this);
       DotCartographer.__super__.constructor.call(this, this.dotCartographDiv, this.dotCartograhOpt);
     }
 
@@ -6052,16 +6072,15 @@
       DotCartographer.__super__.cartograPhy.apply(this, arguments);
       google.maps.event.addListener(this.map, 'click', (function(_this) {
         return function(event) {
-          return _this.plantFlag(event.latLng, _this);
+          return _this.plantFlag(event.latLng);
         };
       })(this));
       return true;
     };
 
     DotCartographer.prototype.pinPoint = function(e) {
-      var queryLocation, self;
+      var queryLocation;
       e.preventDefault();
-      self = e.data.context;
       queryLocation = jQuery('.map-search-location').val();
       jQuery.ajax({
         type: "POST",
@@ -6069,32 +6088,44 @@
         data: {
           'address': queryLocation
         }
-      }).done(function(data) {
-        var bounds, northEast, results, southWest;
-        results = JSON.parse(data);
-        self.latLng = results.geometry.location;
-        self.map.setCenter(results.geometry.location);
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
-        bounds = new google.maps.LatLngBounds(southWest, northEast);
-        self.map.fitBounds(bounds);
-        return DotCartographer.prototype.plantFlag(self.latLng, self.map);
-      }).fail((function() {
+      }).done((function(_this) {
+        return function(data) {
+          var bounds, northEast, results, southWest;
+          results = JSON.parse(data);
+          _this.map.setCenter(results.geometry.location);
+          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          bounds = new google.maps.LatLngBounds(southWest, northEast);
+          _this.map.fitBounds(bounds);
+          _this.latLng = results.geometry.location;
+          return _this.plantFlag(_this.latLng, _this.map);
+        };
+      })(this)).fail((function() {
         return alert("Could not get coordinates for: " + queryLocation + ". Please enter in another search query");
       }));
       return true;
     };
 
-    DotCartographer.prototype.plantFlag = function(location, map) {
+    DotCartographer.prototype.plantFlag = function(location) {
       if (this.marker != null) {
         this.marker.setMap(null);
       }
       this.marker = new google.maps.Marker({
         position: location,
-        map: map
+        map: this.map
       });
       this.marker.setTitle(this.marker.getPosition().toString());
-      map.panTo(this.marker.getPosition());
+      this.map.panTo(this.marker.getPosition());
+      return true;
+    };
+
+    DotCartographer.prototype.resetMap = function() {
+      var c, x;
+      x = this.map.getZoom();
+      c = this.map.getCenter();
+      google.maps.event.trigger(this.map, 'resize');
+      this.map.setZoom(x);
+      this.map.setCenter(c);
       return true;
     };
 
@@ -6119,6 +6150,7 @@
     function SatelliteCartographer(satelliteCartographDiv, satelliteCartograhOpt) {
       this.satelliteCartographDiv = satelliteCartographDiv;
       this.satelliteCartograhOpt = satelliteCartograhOpt;
+      this.resetMarkers = __bind(this.resetMarkers, this);
       this.resetMap = __bind(this.resetMap, this);
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
       this.locationController = this.satelliteCartograhOpt[0];
@@ -6145,14 +6177,7 @@
       })(this));
       google.maps.event.addListener(this.map, 'idle', (function(_this) {
         return function() {
-          var view, _i, _len, _ref, _results;
-          _ref = viewController.views;
-          _results = [];
-          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-            view = _ref[_i];
-            _results.push(view.update(viewController.genomeController));
-          }
-          return _results;
+          return viewController.views[_this.locationController.viewNum - 1].update(viewController.genomeController);
         };
       })(this));
       return true;
@@ -6199,12 +6224,17 @@
 
     SatelliteCartographer.prototype.resetMap = function() {
       var c, x;
-      this.updateVisible();
       x = this.map.getZoom();
       c = this.map.getCenter();
       google.maps.event.trigger(this.map, 'resize');
       this.map.setZoom(x);
       this.map.setCenter(c);
+      this.resetMarkers();
+      return true;
+    };
+
+    SatelliteCartographer.prototype.resetMarkers = function() {
+      this.updateVisible();
       this.markerClusterer.clearMarkers();
       this.markerClusterer.addMarkers(this.clusteredMarkers);
       return true;
@@ -6376,9 +6406,10 @@
   })();
 
   LocationController = (function() {
-    function LocationController(genomeController, parentElem) {
+    function LocationController(genomeController, parentElem, viewNum) {
       this.genomeController = genomeController;
       this.parentElem = parentElem;
+      this.viewNum = viewNum;
       this._populateLocations(this.genomeController);
     }
 
@@ -6598,7 +6629,7 @@
       if (this.userGroups != null) {
         gpColors = this._prepareGroups();
       }
-      this.viewController.createView('map', this.mapDiv, ['satellite']);
+      this.viewController.createView('map', this.mapDiv, ['satellite'], false);
       return true;
     };
 
@@ -6609,7 +6640,7 @@
       this._setViewController(this.publicSubsetGenomes, this.privateSubsetGenomes);
       jQuery('#groups-compare').hide();
       gpColors = this._prepareGroups();
-      this.viewController.createView('map', this.mapDiv, ['geophy'], gpColors);
+      this.viewController.createView('map', this.mapDiv, ['geophy'], false, gpColors);
       this._appendLegend(jQuery('#groups-geophy'), this.userGroups);
       return true;
     };
@@ -6639,7 +6670,7 @@
           this.viewController.select(gId, true);
           genomeGroupColor[gId] = gNum;
         }
-        this.viewController.addToGroup(gNum);
+        this.viewController.addToGroup(parseInt(gNum));
       }
       return genomeGroupColor;
     };

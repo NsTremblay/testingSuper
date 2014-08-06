@@ -5,6 +5,8 @@
 
 	<TMPL_INCLUDE NAME="header2.tmpl">
 	<link rel="stylesheet" href="/App/Styling/css/genes_matrix.css">
+	<script src="/App/Lib/js/superphy_menu.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">  
 	<script>var page_name = 'genes';</script>
 	
 </head>
@@ -68,14 +70,16 @@
 		</div>
 		
 	</div>
+
 	
 	<div id="groups">
 		<hr/>
+		<div id="search_menu"></div>
 		<h4>Create Groups</h4>
 		<div id="expanding_groups">
 			<p>To order genomes by selected properties (i.e. phylogenetic clade, meta-data property, geographical location), first assign genomes to groups and then select <code>by Group</code> as matrix order.</p>
 		</div>
-		
+	
 		<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 	
 	<div>
@@ -131,6 +135,9 @@
 		// Genome selection form
 		viewController.createView('table', $('#strains_table'));
 		viewController.createView('tree', $('#strains_tree'), tree);
+		viewController.createView('map', $('#strains_map'), ['satellite']);
+
+		var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
 		
 		// Code to create groups
 		var addMore = true;
