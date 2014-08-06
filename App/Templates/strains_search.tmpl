@@ -4,7 +4,7 @@
 <head>
 	<TMPL_INCLUDE NAME="header2.tmpl">
 	<script src="/App/Lib/js/superphy_menu.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/superphy_strains_info_menu.css">	
+	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">	
 	<script type="text/javascript">
 		var page_name = "strains";
 	</script>
@@ -41,18 +41,17 @@ viewController.sideBar($('#search-utilities'));
 
 //Test Icon Menu
 
-var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', ['genomelist', 'phylogeny', 'geospatial']);
+var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
 
 $(document).ready(function(){
 	var urlParams = window.location;
 	if (urlParams.hash !== "") {
 		$('a[href="'+urlParams.hash+'"]').click();
 	}
-
 	//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
-	$('a[href="#strains_map"]').on('shown.bs.tab', function () {
-		viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
-	});
+	//$('a[href="#strains_map"]').on('shown.bs.tab', function () {
+	//	viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
+	//});
 });
 
 </script>

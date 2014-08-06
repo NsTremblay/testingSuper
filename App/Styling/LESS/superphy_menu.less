@@ -1,5 +1,5 @@
 
-@icon-class: overview, phylogeny, geospatial, vf, amr, stx, download, genomelist;
+@icon-class: overview, phylogeny, geospatial, vf, amr, stx, download, genomelist, alleles, msa;
 
 //Icon types
 @overview: "/App/Styling/superphy_icons/overview_icon_large";
@@ -10,6 +10,8 @@
 @stx: "/App/Styling/superphy_icons/stx_icon_large";
 @download: "/App/Styling/superphy_icons/download_icon_large";
 @genomelist: "/App/Styling/superphy_icons/genomelist_icon_large";
+@alleles: "/App/Styling/superphy_icons/alleles_icon_large";
+@msa: "/App/Styling/superphy_icons/msa_icon_large";
 @img_type: "svg";
 
 .affix-style {
@@ -33,14 +35,14 @@
 #strains-info-menu {
     // Set the height programmatically
 }
-#menu-affix {
+.menu-affix {
     background-color: #f5f5f5;
     padding: 5px;
 }
-#menu-affix li>a {
+.menu-affix li>a {
     color: #777;
 }
-#menu-affix li>a:hover, li>a:focus {
+.menu-affix li>a:hover, li>a:focus {
     color: #000;
     text-decoration: none;
     background-color: inherit;
@@ -80,27 +82,27 @@
         .no-affix-style;
     }
 
-    #menu-affix li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .no-affix-style;
     }
 
-    #menu-affix li.active .superphy-icon-img.@{ikon} {
+    .menu-affix li.active .superphy-icon-img.@{ikon} {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .no-affix-style;
     }
 
-    #menu-affix.sm .superphy-icon-img.@{ikon} {
+    .menu-affix.sm .superphy-icon-img.@{ikon} {
         background-image: url("@{@{ikon}}.@{img_type}");
         .affix-style;
     }
     
-    #menu-affix.sm li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix.sm li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
     
-    #menu-affix.sm li.active .superphy-icon-img.@{ikon}{
+    .menu-affix.sm li.active .superphy-icon-img.@{ikon}{
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
@@ -110,12 +112,12 @@
         .affix-style;
     }
     
-    #menu-affix li>a:hover .superphy-icon.affix .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix li>a:hover .superphy-icon.affix .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
     
-    #menu-affix li.active .superphy-icon.affix .superphy-icon-img.@{ikon}{
+    .menu-affix li.active .superphy-icon.affix .superphy-icon-img.@{ikon}{
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }

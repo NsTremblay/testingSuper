@@ -36,12 +36,11 @@
   })(Error);
 
   SuperphyMenu = (function() {
-    function SuperphyMenu(menuElem, affix2Elem, pageName, menuName, searchList, viewList, searchUrl, redirectSearch) {
+    function SuperphyMenu(menuElem, affix2Elem, pageName, searchList, viewList, searchUrl, redirectSearch) {
       var _ref, _ref1;
       this.menuElem = menuElem;
       this.affix2Elem = affix2Elem;
       this.pageName = pageName;
-      this.menuName = menuName;
       this.searchList = searchList;
       this.viewList = viewList;
       this.searchUrl = searchUrl;
@@ -80,10 +79,10 @@
       };
       this.createNavMenu();
       if ((_ref = this.viewList) != null ? _ref.length : void 0) {
-        this.appendList(this.viewList, 'view', 'View', false);
+        this.appendList(this.viewList, 'View', false);
       }
       if ((_ref1 = this.searchList) != null ? _ref1.length : void 0) {
-        this.appendList(this.searchList, 'search-by', 'Search By', this.redirectSearch);
+        this.appendList(this.searchList, 'Search By', this.redirectSearch);
       }
       this.setAffixActions();
     }
@@ -91,14 +90,14 @@
     SuperphyMenu.prototype.createNavMenu = function() {
       this.menuRowEl = jQuery('<div class="row"></div>');
       this.menuAppendToEl = jQuery('<div class="col-md-12 hidden-xs" id="superphy-icon-menu"></div>').appendTo(this.menuRowEl);
-      this.menuAffixEl = jQuery("<nav id='" + this.menuName + "-menu-affix' class='menu-affix panel panel-default'></nav>").appendTo(this.menuAppendToEl);
+      this.menuAffixEl = jQuery('<nav id="menu-affix" class="menu-affix panel panel-default"></nav>').appendTo(this.menuAppendToEl);
       this.mainMenu = jQuery('<ul class="nav"></ul>').appendTo(this.menuAffixEl);
       this.menuRowEl.appendTo(this.menuElem);
       return true;
     };
 
-    SuperphyMenu.prototype.appendList = function(list, klass, header, redirectSearch) {
-      var captionEl, count, divEl, headerEl, icon, iconDivEl, iconEl, liEl, linkEl, navEl, newLineEl, redirectSearchUrl, rowEl, _i, _len;
+    SuperphyMenu.prototype.appendList = function(list, header, redirectSearch) {
+      var captionEl, count, divEl, headerEl, icon, iconDivEl, iconEl, liEl, linkEl, navEl, newLineEl, rowEl, _i, _len;
       rowEl = jQuery('<div class="row"></div>');
       navEl = jQuery('<ul class="nav"></ul>').appendTo(rowEl);
       headerEl = jQuery('<div class="col-sm-12"></div>').appendTo(navEl);
@@ -110,16 +109,16 @@
           newLineEl = jQuery('<div class="col-sm-12"></div>').appendTo(navEl);
         }
         divEl = jQuery('<div class="col-xs-2"></div>');
-        liEl = jQuery('<li class="superphy-icon-list"></li>').appendTo(divEl);
-        redirectSearchUrl = redirectSearch ? "/" + this.pageName + "/search" : "";
-        if (icon === 'download') {
-          if (icon === 'download') {
-            linkEl = jQuery("<a class='genome-dl-link'></a>");
-          }
-        } else {
-          linkEl = jQuery("<a href='" + redirectSearchUrl + "#" + icon + "-panel-header'></a>");
+        liEl = jQuery('<li></li>').appendTo(divEl);
+        if (!(redirectSearch && icon !== 'download')) {
+          linkEl = jQuery("<a href='#" + icon + "-panel-header'></a>").appendTo(liEl);
         }
-        linkEl.appendTo(liEl);
+        if (redirectSearch && icon !== 'download') {
+          linkEl = jQuery("<a href='/" + this.pageName + "/search#" + icon + "-panel-header'></a>").appendTo(liEl);
+        }
+        if (icon === 'download') {
+          linkEl = jQuery("<a class='genome-dl-link'></a>").appendTo(liEl);
+        }
         iconDivEl = jQuery('<div class="superphy-icon"></div>').appendTo(linkEl);
         iconEl = jQuery("<div class='superphy-icon-img " + icon + "' data-toggle='tooltip' title='" + this.iconTitles[icon] + "'></div>").appendTo(iconDivEl);
         captionEl = jQuery("<div class='caption'><small>" + this.iconTitles[icon] + "</small></div>").appendTo(iconDivEl);
@@ -130,32 +129,18 @@
       return true;
     };
 
-    SuperphyMenu.prototype._setLinkAction = function(linkEl, icon) {
-      linkEl.on('click', function(e) {
-        if (icon === 'stx') {
-          if (jQuery("a[href='#overview-panel']").hasClass('collapsed')) {
-            return jQuery("#overview-panel").collapse('show');
-          }
-        } else {
-          if (jQuery("a[href='#" + icon + "-panel']").hasClass('collapsed')) {
-            return jQuery("#" + icon + "-panel").collapse('show');
-          }
-        }
-      });
-      return true;
-    };
-
     SuperphyMenu.prototype.setAffixActions = function() {
-      var menu_affix_height, menu_affix_offset, navbar_height, that;
+      var menu_affix_height, navbar_height, that;
       menu_affix_height = jQuery(this.menuAffixEl).height();
-      menu_affix_offset = jQuery(this.menuAffixEl).offset().top;
       navbar_height = jQuery('.navbar').height();
       that = this;
       this.menuAffixEl.on('affix.bs.affix', function() {
+        jQuery('#accordian').css("margin-top", menu_affix_height + navbar_height);
         jQuery(this).prependTo(jQuery(that.affix2Elem)).hide().fadeIn('slow');
         return jQuery('.superphy-icon').addClass('affix');
       });
       this.menuAffixEl.on('affix-top.bs.affix', function() {
+        jQuery('#accordian').css("margin-top", "0px");
         jQuery(this).appendTo(jQuery(that.menuAppendToEl)).hide().fadeIn('slow');
         return jQuery('.superphy-icon').removeClass('affix');
       });
@@ -164,12 +149,8 @@
       });
       jQuery(this.menuAffixEl).affix({
         offset: {
-          top: menu_affix_height + menu_affix_offset - navbar_height
+          top: menu_affix_height
         }
-      });
-      jQuery('body').scrollspy({
-        target: "#" + this.menuName + "-menu-affix",
-        offset: navbar_height + 20
       });
       jQuery(window).load(function() {
         if (jQuery(this).width() < 1000) {
@@ -185,7 +166,6 @@
           return jQuery(that.menuAffixEl).removeClass('sm');
         }
       });
-      jQuery(this.menuElem).height(menu_affix_height).css("margin-bottom", "30px");
       return true;
     };
 

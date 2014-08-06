@@ -420,7 +420,7 @@ sub _getStrainInfo {
 	# Convert age to proper units
 	if(defined $feature_hash{isolation_ages}) {
 		foreach my $age_hash (@{$feature_hash{isolation_ages}}) {
-			my($age, $unit) = Sequences::GenodoDateTime::ageOut($age_hash->{isolation_age});
+			my($age, $unit) = Sequences::GenodoDateTime::a1ut($age_hash->{isolation_age});
 			$age_hash->{isolation_age} = "$age $unit";
 		}
 	}
