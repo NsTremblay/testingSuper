@@ -109,7 +109,7 @@
         if (count % 6 === 0) {
           newLineEl = jQuery('<div class="col-sm-12"></div>').appendTo(navEl);
         }
-        divEl = jQuery('<div class="col-xs-2"></div>');
+        divEl = jQuery("<div class='col-xs-2 " + icon + "-icon-wrapper'></div>");
         liEl = jQuery('<li class="superphy-icon-list"></li>').appendTo(divEl);
         redirectSearchUrl = redirectSearch ? "/" + this.pageName + "/search" : "";
         if (icon === 'download') {
@@ -120,8 +120,8 @@
           linkEl = jQuery("<a href='" + redirectSearchUrl + "#" + icon + "-panel-header'></a>");
         }
         linkEl.appendTo(liEl);
-        iconDivEl = jQuery('<div class="superphy-icon"></div>').appendTo(linkEl);
-        iconEl = jQuery("<div class='superphy-icon-img " + icon + "' data-toggle='tooltip' title='" + this.iconTitles[icon] + "'></div>").appendTo(iconDivEl);
+        iconDivEl = jQuery("<div class='superphy-icon " + icon + "-icon'></div>").appendTo(linkEl);
+        iconEl = jQuery("<div class='superphy-icon-img " + icon + "-icon-img' data-toggle='tooltip' title='" + this.iconTitles[icon] + "'></div>").appendTo(iconDivEl);
         captionEl = jQuery("<div class='caption'><small>" + this.iconTitles[icon] + "</small></div>").appendTo(iconDivEl);
         divEl.appendTo(newLineEl);
         count--;
