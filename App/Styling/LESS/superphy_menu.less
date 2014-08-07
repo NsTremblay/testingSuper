@@ -77,47 +77,47 @@
     .loop(@counter - 1);
     @ikon: extract(@icon-class, @counter);
     
-    .superphy-icon-img.@{ikon} {
+    .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}.@{img_type}");
         .no-affix-style;
     }
 
-    .menu-affix li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix li>a:hover .superphy-icon-img.@{ikon}-icon-img, li>a:focus .superphy-icon-img.@{ikon}-icon-img, li>a:visited .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .no-affix-style;
     }
 
-    .menu-affix li.active .superphy-icon-img.@{ikon} {
+    .menu-affix li.active .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .no-affix-style;
     }
 
-    .menu-affix.sm .superphy-icon-img.@{ikon} {
+    .menu-affix.sm .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}.@{img_type}");
         .affix-style;
     }
     
-    .menu-affix.sm li>a:hover .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix.sm li>a:hover .superphy-icon-img.@{ikon}-icon-img, li>a:focus .superphy-icon-img.@{ikon}-icon-img, li>a:visited .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
     
-    .menu-affix.sm li.active .superphy-icon-img.@{ikon}{
+    .menu-affix.sm li.active .superphy-icon-img.@{ikon}-icon-img{
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
     
-    .superphy-icon.affix .superphy-icon-img.@{ikon}{
+    .superphy-icon.affix .superphy-icon-img.@{ikon}-icon-img{
         background-image: url("@{@{ikon}}.@{img_type}");
         .affix-style;
     }
     
-    .menu-affix li>a:hover .superphy-icon.affix .superphy-icon-img.@{ikon}, li>a:focus .superphy-icon-img.@{ikon}, li>a:visited .superphy-icon-img.@{ikon} {
+    .menu-affix li>a:hover .superphy-icon.affix .superphy-icon-img.@{ikon}-icon-img, li>a:focus .superphy-icon-img.@{ikon}-icon-img, li>a:visited .superphy-icon-img.@{ikon}-icon-img {
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }
     
-    .menu-affix li.active .superphy-icon.affix .superphy-icon-img.@{ikon}{
+    .menu-affix li.active .superphy-icon.affix .superphy-icon-img.@{ikon}-icon-img{
         background-image: url("@{@{ikon}}_hover.@{img_type}");
         .affix-style;
     }

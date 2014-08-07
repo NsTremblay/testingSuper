@@ -257,25 +257,50 @@ viewController.createView('table', $('#strains_table'));
 viewController.createView('tree', $('#strains_tree'), tree);
 viewController.createView('map', $('#strains_map'), ['satellite']);
 
+var gene_menu_list = ['vf', 'amr'];
+var genome_menu_list = ['genomelist', 'phylogeny', 'geospatial'];
+
+var menu_list = gene_menu_list.concat(genome_menu_list);
+
 // Initialisation
 var vfGenesSearch = new GenesSearch(vf, 'vf', categories.vfCats, $('#vf-table'), $('#vf-selected'), $('#vf-selected-count'), $('#vf-categories'), $('#vf-autocomplete'), $('#vf-select-all'), $('#vf-unselect-all'), ['uniquename', 'category', 'subcategory'], true);
 var amrGenesSearch = new GenesSearch(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-selected'), $('#amr-selected-count'), $('#amr-categories'), $('#amr-autocomplete'), $('#amr-select-all'), $('#amr-unselect-all'), ['uniquename', 'category', 'subcategory'], true);
 
-var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'genes', 'genes',['vf', 'amr', 'genomelist', 'phylogeny', 'geospatial']);
+var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'genes', 'genes', menu_list);
+
+$.each(gene_menu_list, function(i, v) {
+	$('.'+v+'-icon-wrapper').removeClass('hidden');
+});
+$.each(genome_menu_list, function(i, v) {
+	$('.'+v+'-icon-wrapper').addClass('hidden');
+});
 
 $(document).ready(function(){
-
 	$('a[href="#gene-search-genomes"]').on('shown.bs.tab', function () {
+		$('#search_menu').show('fade');
+		$.each(gene_menu_list, function(i, v) {
+			$('.'+v+'-icon-wrapper').addClass('hidden');
+		});
+		$.each(genome_menu_list, function(i, v) {
+			$('.'+v+'-icon-wrapper').removeClass('hidden');
+		});
 		$('body').scrollspy('refresh');
 		viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 	});
 
 	$('a[href="#gene-search-querygenes"]').on('shown.bs.tab', function () {
+		$('#search_menu').show('fade');
+		$.each(gene_menu_list, function(i, v) {
+			$('.'+v+'-icon-wrapper').removeClass('hidden');
+		});
+		$.each(genome_menu_list, function(i, v) {
+			$('.'+v+'-icon-wrapper').addClass('hidden');
+		});
 		$('body').scrollspy('refresh');
 	});
 
 	$('a[href="#gene-search-submit"]').on('shown.bs.tab', function () {
-		$('body').scrollspy('refresh');
+		$('#search_menu').hide('fade');
 	});
 
 	$('#gene-search-move-to-genomes-tab').click(function(e) {
