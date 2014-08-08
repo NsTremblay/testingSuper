@@ -658,18 +658,14 @@ class GenesSearch extends GenesList
   # RETURNS
   # boolean
   #    
-  prepareGenesQuery: () ->
-
-    form = jQuery('form .genes_search')
-    
+  prepareGenesQuery: (form) ->
     # Append genes
     for k,g of @geneList when g.selected
       input = jQuery('<input></input>')
       input.attr('type','hidden')
       input.attr('name', 'gene')
       input.val(k)
-      form.append(input)        
-    
+      form.append(input)
     true
     
   # FUNC escapeRegExp

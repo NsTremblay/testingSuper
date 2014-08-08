@@ -267,6 +267,10 @@ sub matrix : Runmode {
 		warden => $warden
 	);
 	
+	print STDERR "GENE ids:\n";
+
+	print STDERR "$_\n" foreach (@genes);
+
 	if(@genes) {
 		$args{markers} = \@genes
 	}

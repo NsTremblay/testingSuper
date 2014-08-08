@@ -663,9 +663,8 @@
       return true;
     };
 
-    GenesSearch.prototype.prepareGenesQuery = function() {
-      var form, g, input, k, _ref;
-      form = jQuery('form .genes_search');
+    GenesSearch.prototype.prepareGenesQuery = function(form) {
+      var g, input, k, _ref;
       _ref = this.geneList;
       for (k in _ref) {
         g = _ref[k];

@@ -26,13 +26,16 @@
 	</div>
 
 	<div id="search">
-		<div id="search_menu"></div>
 
 		<ul id="gene-search-tabs" class="nav nav-pills nav-justified">
 			<li class="active"><a href="#gene-search-querygenes" data-toggle="tab">1. Select Genes</a></li>
 			<li><a href="#gene-search-genomes" data-toggle="tab">2. Select Genomes</a></li>
 			<li><a href="#gene-search-submit" data-toggle="tab">3. Submit Query</a></li>
 		</ul>
+		
+		<br />
+
+		<div id="search_menu"></div>
 
 		<div class="tab-content">
 			<div class="tab-pane active" id="gene-search-querygenes">
@@ -316,15 +319,13 @@ $(document).ready(function(){
 	// Submit function for querying genes page
 	$('#gene-search-submit').click(function(e) {
 		e.preventDefault();
-		var form = jQuery('<form class="genes_search"></form');
+		var form = $('<form class="genes_search"></form>');
 		form.attr('method', 'POST');
 		form.attr('action', viewController.action);
-
 		viewController.submitGenomes(form, 'selected');
-		vfGenesSearch.prepareGenesQuery();
-		amrGenesSearch.prepareGenesQuery();
-
-		jQuery('body').append(form);
+		vfGenesSearch.prepareGenesQuery(form);
+		amrGenesSearch.prepareGenesQuery(form);
+		$('body').append(form);
 		form.submit();
 	});
 });
