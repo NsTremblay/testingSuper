@@ -253,48 +253,205 @@ In this study, we have implemented an online predictive genomics platform
 %%%%%%%%%%%%%%%%
 %% Background %%
 %%
-\section*{Content}
-Text and results for this section, as per the individual journal's instructions for authors. %\cite{koon,oreg,khar,zvai,xjon,schn,pond,smith,marg,hunn,advi,koha,mouse}
+\section*{Introduction}
+Predictive genomics involves the translation of raw whole-genome sequence data into an assessment of the phenotypes exhibited by the organism from which the genome came. Whole-genome sequencing (WGS) of bacterial isolates is now routinely employed in outbreak investigations and basic science research [1,2]. Currently a small number of organizations are employing WGS as part of routine surveillance efforts [3,4], such as Public Health England in its comprehensive \textit{Salmonella} genome sequencing program. Obtaining WGS data and performing rudimentary comparative analyses is now commonplace, but meaningful interpretation of the raw data, also known as predictive genomics, lags considerably behind these perfunctory analyses [5].
 
-\section*{Section title}
-Text for this section \ldots
-\subsection*{Sub-heading for section}
-Text for this sub-heading \ldots
-\subsubsection*{Sub-sub heading for section}
-Text for this sub-sub-heading \ldots
-\paragraph*{Sub-sub-sub heading for section}
-Text for this sub-sub-sub-heading \ldots
-In this section we examine the growth rate of the mean of $Z_0$, $Z_1$ and $Z_2$. In
-addition, we examine a common modeling assumption and note the
-importance of considering the tails of the extinction time $T_x$ in
-studies of escape dynamics.
-We will first consider the expected resistant population at $vT_x$ for
-some $v>0$, (and temporarily assume $\alpha=0$)
-%
-\[
- E \bigl[Z_1(vT_x) \bigr]= E
-\biggl[\mu T_x\int_0^{v\wedge
-1}Z_0(uT_x)
-\exp \bigl(\lambda_1T_x(v-u) \bigr)\,du \biggr].
-\]
-%
-If we assume that sensitive cells follow a deterministic decay
-$Z_0(t)=xe^{\lambda_0 t}$ and approximate their extinction time as
-$T_x\approx-\frac{1}{\lambda_0}\log x$, then we can heuristically
-estimate the expected value as
-%
-\begin{eqnarray}\label{eqexpmuts}
-E\bigl[Z_1(vT_x)\bigr] &=& \frac{\mu}{r}\log x
-\int_0^{v\wedge1}x^{1-u}x^{({\lambda_1}/{r})(v-u)}\,du
-\nonumber\\
-&=& \frac{\mu}{r}x^{1-{\lambda_1}/{\lambda_0}v}\log x\int_0^{v\wedge
-1}x^{-u(1+{\lambda_1}/{r})}\,du
-\nonumber\\
-&=& \frac{\mu}{\lambda_1-\lambda_0}x^{1+{\lambda_1}/{r}v} \biggl(1-\exp \biggl[-(v\wedge1) \biggl(1+
-\frac{\lambda_1}{r}\biggr)\log x \biggr] \biggr).
-\end{eqnarray}
-%
-Thus we observe that this expected value is finite for all $v>0$ (also see \cite{koon,khar,zvai,xjon,marg}).
+Bioinformaticians are able to use the requisite analytical tools and typically have access to the required computer infrastructure to compare genomes; however, they often lack the organism-specific knowledge necessary to meaningfully interpret the data for end-users. Conversely, microbiologists often have organism-specific knowledge but lack the bioinformatics wherewithal to meaningfully interpret the WGS data. This leads to fragmented workflows, group-specific data silos, the re-computation of common analyses, and failures to make important discoveries that would benefit the full community of users. As such, the enormous potential benefits of WGS are often not realized.
+
+%BEGIN -- we used these paragraphs in the BIOINFORMATICS 2014 paper, need to change
+Some efforts have been made to automate complex bioinformatics workflows, such as Taverna [6] and Galaxy [7], and while they are effective at simplifying the process, data are not integrated with these tools requiring users to transfer genome sequences from public or private databases and perform their own separate analyses. Likewise, online repositories of genome sequence data such as the National Center for Biotechnology Information (http://www.ncbi.nlm.nih.gov/) and the Genomes Online Database (http://www.genomesonline.org) provide a wealth of data, but are decoupled from an efficient analytical platform.
+
+Only recently have platforms emerged that attempt to provide both large-scale data storage and analyses. Relevant to microbiology, MicroScope and PATRIC provide broad pre-computed analyses for public genomes [8,9]. MicroScope, limited to publicly available closed and annotated genomes, contains information for >1100 genomes, while PATRIC, which has a gene annotation workflow and includes incomplete genomes, contains 10 000 genome sequences. Analyses compare the phylogeny, biological pathways and gene functions of bacterial species. Several of the analyses in MicroScope focus on comparing the genome structure. Both tools allow users to add genome-associated data such
+as transcriptomics results to aid in the understanding of gene functions.
+
+The Integrated Microbial Genomes (IMG) project is a combined genome annotation and analysis platform [10]. While more limited in scope in comparison to PATRIC or MicroScope, IMG allows the submission of genomic data by users. Other platforms are organism specific, such as Sybil; a platform for the comparative analyses of Streptococcus pneumoniae based on BLASTp searches [11]. Outside of these broad analyses suites, other large-scale genome tools tend to focus on a specific analysis. For example, several tools provide a global phylogenetic tree for public bacterial genomes [12–14]. 
+%-- END duplicated paragraphs
+
+Several large WGS data analyses platforms are currently being developed world-wide, such as the Global Microbial Identifier project. These platforms take a very comprehensive approach and will be extremely useful in providing broad-based genome sequence analyses for all microbes of public health interest. These large projects promise to revolutionize molecular epidemiology. However, the outputs of these platforms out of necessity are very generic in nature and must be interpreted by species-specific experts for the data to be of use in answering specific biological questions. A recent study on outbreak investigations using WGS listed a main obstacle of routine adoption as “a paucity of user-friendly and clinically focused bioinformatics platforms” [5]. While some components necessary for phenotypic prediction based on WGS data have been developed, there is currently no single integrated platform built to provide predictive genomic analyses for organism-specific end-users.
+
+This need to provide pathogen specific information in currently unmet, and required by workers in the field to interpret the WGS data. For example, the assessment of risk posed by Shiga-toxin producing \textit{E. coli} (STEC) is based in part on the serotype, type of toxin produced, virulence attributes such as LEE, seropathotype, lineage, SNP clade and other features. These attributes are not readily extracted from more broad-based comparative genomic analyses, where the primary objective is discrimination among organisms and not in their characterization. Recently, the international STEC working group stated that while they value single large genomics databases for all micro-organisms and generic genomic analyses tools, they also saw the need for species-specific BioTools to serve the needs of their community.
+
+We have previously developed Panseq, a suite of software tools that has allowed users to compare the genomes from a wide variety of bacteria [15]. Using this program, the differences in the accessory genome and the single nucleotide variation in the core genome can be obtained and used to construct highly discriminatory and robust phylogenies. This ability to discriminate among groups of strains in turn allows inferences to be made quickly about the clonal spread of organisms in space and time, information that is invaluable in identifying and controlling sources of infections in disease outbreaks and the most important routes of sporadic disease transmission. 
+
+While high resolution genotyping information is helpful in epidemiological studies, there is also a need for researchers, clinicians and policy makers to understand disease risks associated with specific clonal groups of pathogens. Even pathogens of the same species can differ significantly in the frequency that they are associated with disease, the specific disease syndromes with which they are associated, disease severity, resistance to biological, chemical and physical agents, and host reservoir.
+
+In this study we begin to bridge the gap between bioinformatics and organism-specific knowledge. SuperPhy incorporates discoveries from the decades of research on the pathogenesis and epidemiology of \textit{E. coli}, and translates the tremendous amount of data, genotypic and phenotypic, that have previously been generated into organism-specific knowledge. This knowledge is used in the SuperPhy predictive genomics platform to discover relationships among and about sub-groups that would otherwise be impossible. It allows non-bioinformaticians such as epidemiologists to analyze strains of interest in real-time, and receive understandable, interpreted output that can help to guide public health responses. SuperPhy allows researchers to quickly analyze new data against the background of all known \textit{E. coli}, allowing novel insights to be made rapidly.
+
+Additionally, SuperPhy provides rapid identification and whole-genome-based characterization, including \textit{in silico} typing, and the identification of anti-microbial resistance and virulence determinants, potential risk to human health and other phenotypic predictions. It can help recognize pathogen-specific disease clusters, and relate unknown isolates to known pathogroups.
+
+SuperPhy allows users to identify genotypic clusters that vary in virulence (genopathotypes) and the statistically supported genetic elements responsible for these phenotypic differences. Predictive genomics is currently the missing translation layer between the vast amounts of information that many platforms are capable of producing, and true biological knowledge in a specific domain that is needed to test hypotheses.
+
+
+\section*{Implementation}
+\subsection{Webserver creation and data management}
+%BEGIN -- Duplicated text from previous publication
+\subsubsection{Database Schema}
+Data are stored and accessed using the Chado schema [24] for PostgrSQL 9.2 (http://www.postgresql.org/), which is a highly scalable and fast relational database (up to 350000 read queries per second, supporting up to 64 computing cores). In Chado, ontologies are used to assign types to entities, attributes and relationships. This ontology-centric design makes Chado highly adaptable. By not defining types in relational layers and instead using a mutable controlled vocabulary to assign types, the schema can be easily re-used or changed over time without having to change the relational structure. Figure 3 shows the main entity types and corresponding relationship types that will be used in our predictive genomics server. Contig collection is the parent term assigned to any genome project uploaded by a user or obtained from an external database and is used to store global attributes. A collection term contains one or more DNA sequences that are labelled contig. The contig types can be assembled contigs or fully closed chromosomes or plasmids. Additional experimental features for each genome include: pan-genome loci, antimicrobial resistance genes, virulence factor alleles, and single nucleotide polymorphisms (SNPs) in the core genome. A predefined set of required and optional genome meta-data fields and permissible values have been selected from the minimum information about a genome sequence (MIGS) specification [25].
+
+\subsubsection{Privacy}
+The database has three privacy levels associated with every data entry, which govern use of the data. The three modes are: 1) `public', where the information is available to all upon upload; 2) `private', which allows the registered user only to use the uploaded information in online computation; and 3) `private until a specified date', after which the data type is automatically converted to `public', available for open access. Private data remains private, but can be combined with public data for user-specific analyses. Previous strain-groups and analyses are saved for future use, and all results from the analyses may be download for offline use.
+
+\subsubsection{User Interface}
+The user-interface is created using HTML, CSS and Javascript within the Perl CGI::Application framework. The Phylogenetic tree graphical display will be constructed with the Data Driven Documents (D3) JavaScript library [26] and manipulation of world maps with the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/).
+
+\subsubsection{Server hardware}
+SuperPhy is hosted on a server with 16 vCPUs and 96 GB of RAM, running Ubuntu Server 12.04 hosted at the National Microbiology Laboratory in Winnipeg, Canada.
+
+%-- END duplicated
+
+\subsection{Comparative Genomic Analyses}
+
+
+
+
+
+2.1. Create an iterative / heuristic analysis approach for data addition to the platform
+2.2. Create a heuristic binning approach for the updating of phylogenetic trees
+2.3. Provide pre-computed computational analyses of all genomic sequences in the repository,
+including AMR and virulence determinants
+2.4. Determine statistically associated biomarkers between user-selected bacterial groups in real-
+time
+2.5. Provide integrated geospatial analyses for epidemiological studies
+3. Predictive Genomic Analyses
+We will provide:
+3.1. The evolutionary context for genomes of interest
+3.2. A graphical overview of the important genomic features that influence phenotype
+3.3. The pathotype and in silico molecular typing designations of the genome
+3.4. A risk level on a five point scale based on the pathogen genome of interest
+3.5. Validation via wet-lab experimental data for virulence factor and AMR prediction
+3.6. A consistent and meaningful framework (with associated standardized nomenclature) for E.
+coli and Campylobacter genopathotypes.
+3.7. Constant access and support to the end-user community to facility user-driven, iterative design
+of the predictive genomics platform
+3.8. On condition of successful completion of E. coli and C. jejuni predictive genomics tools, the
+addition of Salmonella genomes and Bio Tools will be implemented
+3.9. Publications in peer-reviewed journalsMethodology – Numbers correspond to Milestones, the methodological implementation of each
+follows
+
+
+
+1. Webserver
+
+2. Comparative Genomics
+2.1. Our previous pan-genomic analyses tool, Panseq [15] will include an iterative analyses mode
+that is integrated with the Postgres database, allowing only new genomic sequences to be
+analyzed and compared to those already stored in the platform. This computational approach
+will allow a continuous influx of new sequence data without large time or memory
+requirements. The software will be written in Perl, and will use MUMmer [27] for sequence
+comparisons, which relies on suffix-trees for efficient genomic comparisons.
+2.2. Phylogenies will be created using Bayesian inference via MrBayes [12]. To deal with the
+prohibitive times needed to construct phylogenies from thousands of whole-genome
+alignments, a binning algorithm based on the 16S ribosomal DNA sequence, and then on the
+presence / absence of species-specific genomic regions will be implemented to bin strains into
+sub-groups. Phylogenetic trees for these sub-groups will then be computed and joined into a
+“super tree”, negating the need to re-analyze the entire phylogeny for thousands of genomes
+with every new sequence addition [28].
+2.3. Pre-computed analyses will be carried out with respect to phylogenetic tree generation, the
+presence / absence of important phenotypic markers such as unique metabolic pathways,
+virulence and AMR genes, and single-nucleotide polymorphisms in shared genomic regions.
+We will use Panseq to perform these analyses. The non-redundant query set of AMR genes
+from the Comprehensive Antibiotic Resistance Database (CARD) [29] will be used for in silico
+AMR determinant screening. All AMR genes will be organized and stored in the database
+according to their Antibiotic Resistance Ontology annotation to aid in identifying the presence
+of different antimicrobial resistance mechanisms [30]. The virulence gene database will be
+constructed by obtaining all gene alleles of known virulence factors in E. coli and C. jejuni
+from the Virulence Factor Database [31], supplemented with known E. coli and C. jejuni
+virulence factors from the literature, given the expert knowledge our team brings to these
+pathogens.( e.g a preliminary scan has identified approximately twice as many E. coli virulence
+genes as are listed in the Virulence Factor Database).
+2.4. A biostatistical module to rapidly identify markers that differ statistically between groups
+based on both single nucleotide polymorphisms and the presence / absence of genomic loci
+will be created; this will ensure that group differences are not based on errors introduced into
+single strains during sequencing or assembly. This will be programmed in Perl for group
+generation and metadata analysis, with the statistical computation being conducted using
+Fisher’s Exact Test from the R statistical package [32]. All single-nucleotide data and genomicpresence / absence data will reside in the PostgreSQL database, requiring only the retrieval and
+Ρ-value computation for the strains of interest and allowing the near-real time analysis.
+2.5. The open GIS tool, Quantum GIS offers a high level of inter-operability (linking with many
+computing platforms, evolving through technology up-dates) within a flexible and powerful
+modular design [33,34]. It provides advanced statistical spatial analysis using the R statistical
+software and professional risk map production for epidemiological intelligence, knowledge
+transfer and communication. By using this framework, Bayesian smoothing for maps, cluster
+analyses, distance analyses, buffer zones, and spatial regression are possible.
+3. Predictive Genomic Analyses
+3.1. The genome(s) of interest will be shown on a phylogenetic tree of all genome sequences,
+indicating their closest neighbour and closest known reference strain.
+3.2. A report graphically highlighting the genome and depicting important genomic regions that
+differ between the genome of interest, the closest reference genome, and other user-specified
+genome(s) will be generated. It will include virulence factors, antimicrobial resistance genes
+and any genomic insertion / deletions unique to the genome of interest (e.g., the acquisition of
+bacteriophage).
+3.3. In silico genotyping will use the molecular in silico typing (MIST) package developed by
+members of our group using C# and the .NET framework version 4. MIST uses BLAST for
+sequence comparisons and generates multi-locus sequence typing profiles, multi-locus variable
+number tandem repeat analysis profiles, comparative genomic fingerprinting profiles, Shiga-
+toxin type for E. coli, and molecular serotype designations. These typing results will
+automatically be provided to users when a sequence is uploaded to the database. For E. coli
+genomes, pathotype based on the scheme of Clermont [35] will be identified in silico and
+included as part of the meta-data available to users.
+3.4. For E. coli and C. jejuni genomes, based on metadata from the entire database, a “risk level”
+for the strain of interest will be generated on a scale of 1 – 5 for broad categorization of
+microbial risk based on an assessment of potential human impact of an individual isolate or
+group. Risk level will be calculated based on the presence / absence of genomic loci, AMR
+determinants, known virulence factors, phylogenetic group membership, and frequency of
+genotype isolation and severity of human disease caused by closely related strains with the
+same attributes.
+3.5. Assess the predictive power of our BioTools by comparing in silico phenotypic predictions
+with previously generated, wet-lab genotypic and phenotypic data (such as virulence
+determinant profiles) from sequenced strains.
+3.6. Within E. coli, serotype is still used as a proxy for potential risk to human health [36]. While
+this seropathotype scheme has been useful, it is also known that the propensity for
+pathogenicity can vary within a serotype, due to parallel evolution and lateral gene transfer
+[37–40]. We will use whole-genome phylogenies based on variation in homologous genes, to
+define phylogenetic groups and assign a “genopathotype” to them, that is based not only on
+phylogenetic cluster but also on genome composition (rather than simply on serotype).3.7. Improvement and iterations. The user community (including FoodNet Canada and the STEC
+genomics working group) will provide constant feedback as the platform evolves. Monthly
+releases will ensure that new innovations are implemented and optimizations applied based on
+the feedback.
+3.8. Predictive genomics tools for Salmonella will be implemented in year 5 of the project, once the
+successful implementation of BioTools for both E. coli and C. jejuni has taken place. The
+upcoming four years promise an abundance of species-specific knowledge generated for the
+Salmonella species. This in-kind knowledge will be leveraged, time permitting, to add all
+public and in-house Salmonella genome data to the platform, along with predictive genomics
+tools for the species.
+
+\ldots
+% \subsection*{Sub-heading for section}
+% Text for this sub-heading \ldots
+% \subsubsection*{Sub-sub heading for section}
+% Text for this sub-sub-heading \ldots
+% \paragraph*{Sub-sub-sub heading for section}
+% Text for this sub-sub-sub-heading \ldots
+% In this section we examine the growth rate of the mean of $Z_0$, $Z_1$ and $Z_2$. In
+% addition, we examine a common modeling assumption and note the
+% importance of considering the tails of the extinction time $T_x$ in
+% studies of escape dynamics.
+% We will first consider the expected resistant population at $vT_x$ for
+% some $v>0$, (and temporarily assume $\alpha=0$)
+% %
+% \[
+%  E \bigl[Z_1(vT_x) \bigr]= E
+% \biggl[\mu T_x\int_0^{v\wedge
+% 1}Z_0(uT_x)
+% \exp \bigl(\lambda_1T_x(v-u) \bigr)\,du \biggr].
+% \]
+% %
+% If we assume that sensitive cells follow a deterministic decay
+% $Z_0(t)=xe^{\lambda_0 t}$ and approximate their extinction time as
+% $T_x\approx-\frac{1}{\lambda_0}\log x$, then we can heuristically
+% estimate the expected value as
+% %
+% \begin{eqnarray}\label{eqexpmuts}
+% E\bigl[Z_1(vT_x)\bigr] &=& \frac{\mu}{r}\log x
+% \int_0^{v\wedge1}x^{1-u}x^{({\lambda_1}/{r})(v-u)}\,du
+% \nonumber\\
+% &=& \frac{\mu}{r}x^{1-{\lambda_1}/{\lambda_0}v}\log x\int_0^{v\wedge
+% 1}x^{-u(1+{\lambda_1}/{r})}\,du
+% \nonumber\\
+% &=& \frac{\mu}{\lambda_1-\lambda_0}x^{1+{\lambda_1}/{r}v} \biggl(1-\exp \biggl[-(v\wedge1) \biggl(1+
+% \frac{\lambda_1}{r}\biggr)\log x \biggr] \biggr).
+% \end{eqnarray}
+% %
+% Thus we observe that this expected value is finite for all $v>0$ (also see \cite{koon,khar,zvai,xjon,marg}).
 
 
 
@@ -313,7 +470,7 @@ Thus we observe that this expected value is finite for all $v>0$ (also see \cite
     Text for this section \ldots
 
 \section*{Acknowledgements}
-  Text for this section \ldots
+  We would like to thank YOU, for reading this far.  \ldots
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                  The Bibliography                       %%
 %%                                                         %%
