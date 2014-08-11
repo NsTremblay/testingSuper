@@ -292,54 +292,22 @@ Data are stored and accessed using the Chado schema [24] for PostgrSQL 9.2 (http
 The database has three privacy levels associated with every data entry, which govern use of the data. The three modes are: 1) `public', where the information is available to all upon upload; 2) `private', which allows the registered user only to use the uploaded information in online computation; and 3) `private until a specified date', after which the data type is automatically converted to `public', available for open access. Private data remains private, but can be combined with public data for user-specific analyses. Previous strain-groups and analyses are saved for future use, and all results from the analyses may be download for offline use.
 
 \subsubsection{User Interface}
-The user-interface is created using HTML, CSS and Javascript within the Perl CGI::Application framework. The Phylogenetic tree graphical display will be constructed with the Data Driven Documents (D3) JavaScript library [26] and manipulation of world maps with the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/).
+The user-interface is created using HTML, CSS and Javascript within the Perl CGI::Application framework. The Phylogenetic tree graphical display is constructed with the Data Driven Documents (D3) JavaScript library [26] and manipulation of world maps with the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/). Group comparisons utilize the RStudio Shiny web application framework for R \cite{}.
 
 \subsubsection{Server hardware}
-SuperPhy is hosted on a server with 16 vCPUs and 96 GB of RAM, running Ubuntu Server 12.04 hosted at the National Microbiology Laboratory in Winnipeg, Canada.
+SuperPhy is hosted on a server with X CPUs and Y GB of RAM, running Ubuntu Server 12.04 hosted at the National Microbiology Laboratory in Winnipeg, Canada.
 
 %-- END duplicated
 
 \subsection{Comparative Genomic Analyses}
+Our previous pan-genomic analyses tool, Panseq is used for the background comparative analyses \cite{laing_pan-genome_2010}. It iteratively adds new genomic sequences, and compares them to those already stored in the platform. This computational approach allows a continuous influx of new sequence data without large time or memory requirements. 
+
+\subsubsection{Tree construction}
+Phylogenies are created using a two-tier approach. Initially the presence / absence of the previously computed pan-genome is used to localize a new genome to a clade on the phylogenetic tree of all organisms with a fast neighbor-joining approach. The genomes in this clade and its parent are used to build a maximum likelihood tree with FastTreeMP under the GTR substitution model. Lastly, the ML tree of the clade and parent-clade of the new genome are combined with the phylogeny of all the genomes in the database using the supertree method of SuperTriplets \cite{ranwez_supertriplets:_2010}.
 
 
 
-
-
-2.1. Create an iterative / heuristic analysis approach for data addition to the platform
-2.2. Create a heuristic binning approach for the updating of phylogenetic trees
-2.3. Provide pre-computed computational analyses of all genomic sequences in the repository,
-including AMR and virulence determinants
-2.4. Determine statistically associated biomarkers between user-selected bacterial groups in real-
-time
-2.5. Provide integrated geospatial analyses for epidemiological studies
-3. Predictive Genomic Analyses
-We will provide:
-3.1. The evolutionary context for genomes of interest
-3.2. A graphical overview of the important genomic features that influence phenotype
-3.3. The pathotype and in silico molecular typing designations of the genome
-3.4. A risk level on a five point scale based on the pathogen genome of interest
-3.5. Validation via wet-lab experimental data for virulence factor and AMR prediction
-3.6. A consistent and meaningful framework (with associated standardized nomenclature) for E.
-coli and Campylobacter genopathotypes.
-3.7. Constant access and support to the end-user community to facility user-driven, iterative design
-of the predictive genomics platform
-3.8. On condition of successful completion of E. coli and C. jejuni predictive genomics tools, the
-addition of Salmonella genomes and Bio Tools will be implemented
-3.9. Publications in peer-reviewed journalsMethodology – Numbers correspond to Milestones, the methodological implementation of each
-follows
-
-
-
-1. Webserver
-
-2. Comparative Genomics
-2.1. Our previous pan-genomic analyses tool, Panseq [15] will include an iterative analyses mode
-that is integrated with the Postgres database, allowing only new genomic sequences to be
-analyzed and compared to those already stored in the platform. This computational approach
-will allow a continuous influx of new sequence data without large time or memory
-requirements. The software will be written in Perl, and will use MUMmer [27] for sequence
-comparisons, which relies on suffix-trees for efficient genomic comparisons.
-2.2. Phylogenies will be created using Bayesian inference via MrBayes [12]. To deal with the
+an    created using Bayesian inference via MrBayes [12]. To deal with the
 prohibitive times needed to construct phylogenies from thousands of whole-genome
 alignments, a binning algorithm based on the 16S ribosomal DNA sequence, and then on the
 presence / absence of species-specific genomic regions will be implemented to bin strains into
@@ -372,6 +340,39 @@ modular design [33,34]. It provides advanced statistical spatial analysis using 
 software and professional risk map production for epidemiological intelligence, knowledge
 transfer and communication. By using this framework, Bayesian smoothing for maps, cluster
 analyses, distance analyses, buffer zones, and spatial regression are possible.
+
+
+
+2.1. Create an iterative / heuristic analysis approach for data addition to the platform
+2.2. Create a heuristic binning approach for the updating of phylogenetic trees
+2.3. Provide pre-computed computational analyses of all genomic sequences in the repository,
+including AMR and virulence determinants
+2.4. Determine statistically associated biomarkers between user-selected bacterial groups in real-
+time
+2.5. Provide integrated geospatial analyses for epidemiological studies
+
+
+
+3. Predictive Genomic Analyses
+We will provide:
+3.1. The evolutionary context for genomes of interest
+3.2. A graphical overview of the important genomic features that influence phenotype
+3.3. The pathotype and in silico molecular typing designations of the genome
+3.4. A risk level on a five point scale based on the pathogen genome of interest
+3.5. Validation via wet-lab experimental data for virulence factor and AMR prediction
+3.6. A consistent and meaningful framework (with associated standardized nomenclature) for E.
+coli and Campylobacter genopathotypes.
+3.7. Constant access and support to the end-user community to facility user-driven, iterative design
+of the predictive genomics platform
+3.8. On condition of successful completion of E. coli and C. jejuni predictive genomics tools, the
+addition of Salmonella genomes and Bio Tools will be implemented
+3.9. Publications in peer-reviewed journalsMethodology – Numbers correspond to Milestones, the methodological implementation of each
+follows
+
+
+
+
+
 3. Predictive Genomic Analyses
 3.1. The genome(s) of interest will be shown on a phylogenetic tree of all genome sequences,
 indicating their closest neighbour and closest known reference strain.
