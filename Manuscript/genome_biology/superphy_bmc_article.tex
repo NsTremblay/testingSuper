@@ -291,7 +291,7 @@ Data are stored and accessed using the Chado schema [24] for PostgrSQL 9.2 (http
 \subsubsection{Privacy}
 The database has three privacy levels associated with every data entry, which govern use of the data. The three modes are: 1) `public', where the information is available to all upon upload; 2) `private', which allows the registered user only to use the uploaded information in online computation; and 3) `private until a specified date', after which the data type is automatically converted to `public', available for open access. Private data remains private, but can be combined with public data for user-specific analyses. Previous strain-groups and analyses are saved for future use, and all results from the analyses may be download for offline use.
 
-\subsubsection{User Interface}
+\subsubsection{User interface}
 The user-interface is created using HTML, CSS and Javascript within the Perl CGI::Application framework. The Phylogenetic tree graphical display is constructed with the Data Driven Documents (D3) JavaScript library [26] and manipulation of world maps with the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/). Group comparisons utilize the RStudio Shiny web application framework for R \cite{}.
 
 \subsubsection{Server hardware}
@@ -299,57 +299,18 @@ SuperPhy is hosted on a server with X CPUs and Y GB of RAM, running Ubuntu Serve
 
 %-- END duplicated
 
-\subsection{Comparative Genomic Analyses}
+\subsection{Comparative genomic analyses}
 Our previous pan-genomic analyses tool, Panseq is used for the background comparative analyses \cite{laing_pan-genome_2010}. It iteratively adds new genomic sequences, and compares them to those already stored in the platform. This computational approach allows a continuous influx of new sequence data without large time or memory requirements. 
 
 \subsubsection{Tree construction}
 Phylogenies are created using a two-tier approach. Initially the presence / absence of the previously computed pan-genome is used to localize a new genome to a clade on the phylogenetic tree of all organisms with a fast neighbor-joining approach. The genomes in this clade and its parent are used to build a maximum likelihood tree with FastTreeMP under the GTR substitution model. Lastly, the ML tree of the clade and parent-clade of the new genome are combined with the phylogeny of all the genomes in the database using the supertree method of SuperTriplets \cite{ranwez_supertriplets:_2010}.
 
 
+\subsubsection{Virulence and anti-microbial resistance markers}
+The presence / absence of virulence and AMR genes, and single-nucleotide polymorphisms in shared genomic regions are automatically computed using Panseq. The non-redundant query set of AMR genes from the Comprehensive Antibiotic Resistance Database (CARD) \cite{mcarthur_comprehensive_2013} is used for \tetxtit{in silico}AMR determinant screening. All AMR genes are organized and stored in the database according to their Antibiotic Resistance Ontology annotation to aid in identifying the presence of different antimicrobial resistance mechanisms \cite{}[30]. The virulence gene database was constructed by obtaining all gene alleles of known virulence factors for E. coli from the Virulence Factor Database \cite{chen_vfdb_2011}, supplemented with additional virulence factors gleaned from the literature. 
 
-an    created using Bayesian inference via MrBayes [12]. To deal with the
-prohibitive times needed to construct phylogenies from thousands of whole-genome
-alignments, a binning algorithm based on the 16S ribosomal DNA sequence, and then on the
-presence / absence of species-specific genomic regions will be implemented to bin strains into
-sub-groups. Phylogenetic trees for these sub-groups will then be computed and joined into a
-“super tree”, negating the need to re-analyze the entire phylogeny for thousands of genomes
-with every new sequence addition [28].
-2.3. Pre-computed analyses will be carried out with respect to phylogenetic tree generation, the
-presence / absence of important phenotypic markers such as unique metabolic pathways,
-virulence and AMR genes, and single-nucleotide polymorphisms in shared genomic regions.
-We will use Panseq to perform these analyses. The non-redundant query set of AMR genes
-from the Comprehensive Antibiotic Resistance Database (CARD) [29] will be used for in silico
-AMR determinant screening. All AMR genes will be organized and stored in the database
-according to their Antibiotic Resistance Ontology annotation to aid in identifying the presence
-of different antimicrobial resistance mechanisms [30]. The virulence gene database will be
-constructed by obtaining all gene alleles of known virulence factors in E. coli and C. jejuni
-from the Virulence Factor Database [31], supplemented with known E. coli and C. jejuni
-virulence factors from the literature, given the expert knowledge our team brings to these
-pathogens.( e.g a preliminary scan has identified approximately twice as many E. coli virulence
-genes as are listed in the Virulence Factor Database).
-2.4. A biostatistical module to rapidly identify markers that differ statistically between groups
-based on both single nucleotide polymorphisms and the presence / absence of genomic loci
-will be created; this will ensure that group differences are not based on errors introduced into
-single strains during sequencing or assembly. This will be programmed in Perl for group
-generation and metadata analysis, with the statistical computation being conducted using
-Fisher’s Exact Test from the R statistical package [32]. All single-nucleotide data and genomicpresence / absence data will reside in the PostgreSQL database, requiring only the retrieval and
-Ρ-value computation for the strains of interest and allowing the near-real time analysis.
-2.5. The open GIS tool, Quantum GIS offers a high level of inter-operability (linking with many
-computing platforms, evolving through technology up-dates) within a flexible and powerful
-modular design [33,34]. It provides advanced statistical spatial analysis using the R statistical
-software and professional risk map production for epidemiological intelligence, knowledge
-transfer and communication. By using this framework, Bayesian smoothing for maps, cluster
-analyses, distance analyses, buffer zones, and spatial regression are possible.
-
-
-
-2.1. Create an iterative / heuristic analysis approach for data addition to the platform
-2.2. Create a heuristic binning approach for the updating of phylogenetic trees
-2.3. Provide pre-computed computational analyses of all genomic sequences in the repository,
-including AMR and virulence determinants
-2.4. Determine statistically associated biomarkers between user-selected bacterial groups in real-
-time
-2.5. Provide integrated geospatial analyses for epidemiological studies
+\subsubsection{Group comparisons}
+The statistical identification of markers that differ between groups based on both single nucleotide polymorphisms and the presence / absence of genomic loci is implemented using Fisher’s Exact Test from the R statistical package \cite{r_foundation_for_statistical_computing_r:_2005}. All single-nucleotide polymorphisms and genomic presence / absence data reside in the database, requiring only the retrieval and Ρ-value computation for the strains of interest, allowing for the real time analysis.
 
 
 
@@ -489,7 +450,7 @@ tools for the species.
 
 % if your bibliography is in bibtex format, use those commands:
 \bibliographystyle{bmc-mathphys} % Style BST file
-\bibliography{bmc_article}      % Bibliography file (usually '*.bib' )
+\bibliography{superphy_bmc_article}      % Bibliography file (usually '*.bib' )
 
 % or include bibliography directly:
 % \begin{thebibliography}
