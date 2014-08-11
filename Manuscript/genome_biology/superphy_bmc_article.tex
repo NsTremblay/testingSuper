@@ -312,69 +312,13 @@ The presence / absence of virulence and AMR genes, and single-nucleotide polymor
 \subsubsection{Group comparisons}
 The statistical identification of markers that differ between groups based on both single nucleotide polymorphisms and the presence / absence of genomic loci is implemented using Fisher’s Exact Test from the R statistical package \cite{r_foundation_for_statistical_computing_r:_2005}. All single-nucleotide polymorphisms and genomic presence / absence data reside in the database, requiring only the retrieval and Ρ-value computation for the strains of interest, allowing for the real time analysis.
 
+\subsection{Predictive genomic analyses}
+
+The genome(s) of interest will are shown in the phylogenetic context of a tree containing all genome sequences in the platform, whereby the most closely related strains are immediately visible.
+
+The user community will provide constant feedback as the platform evolves. A process of continuous integration will ensure that new innovations are implemented and optimizations applied based on the feedback.
 
 
-3. Predictive Genomic Analyses
-We will provide:
-3.1. The evolutionary context for genomes of interest
-3.2. A graphical overview of the important genomic features that influence phenotype
-3.3. The pathotype and in silico molecular typing designations of the genome
-3.4. A risk level on a five point scale based on the pathogen genome of interest
-3.5. Validation via wet-lab experimental data for virulence factor and AMR prediction
-3.6. A consistent and meaningful framework (with associated standardized nomenclature) for E.
-coli and Campylobacter genopathotypes.
-3.7. Constant access and support to the end-user community to facility user-driven, iterative design
-of the predictive genomics platform
-3.8. On condition of successful completion of E. coli and C. jejuni predictive genomics tools, the
-addition of Salmonella genomes and Bio Tools will be implemented
-3.9. Publications in peer-reviewed journalsMethodology – Numbers correspond to Milestones, the methodological implementation of each
-follows
-
-
-
-
-
-3. Predictive Genomic Analyses
-3.1. The genome(s) of interest will be shown on a phylogenetic tree of all genome sequences,
-indicating their closest neighbour and closest known reference strain.
-3.2. A report graphically highlighting the genome and depicting important genomic regions that
-differ between the genome of interest, the closest reference genome, and other user-specified
-genome(s) will be generated. It will include virulence factors, antimicrobial resistance genes
-and any genomic insertion / deletions unique to the genome of interest (e.g., the acquisition of
-bacteriophage).
-3.3. In silico genotyping will use the molecular in silico typing (MIST) package developed by
-members of our group using C# and the .NET framework version 4. MIST uses BLAST for
-sequence comparisons and generates multi-locus sequence typing profiles, multi-locus variable
-number tandem repeat analysis profiles, comparative genomic fingerprinting profiles, Shiga-
-toxin type for E. coli, and molecular serotype designations. These typing results will
-automatically be provided to users when a sequence is uploaded to the database. For E. coli
-genomes, pathotype based on the scheme of Clermont [35] will be identified in silico and
-included as part of the meta-data available to users.
-3.4. For E. coli and C. jejuni genomes, based on metadata from the entire database, a “risk level”
-for the strain of interest will be generated on a scale of 1 – 5 for broad categorization of
-microbial risk based on an assessment of potential human impact of an individual isolate or
-group. Risk level will be calculated based on the presence / absence of genomic loci, AMR
-determinants, known virulence factors, phylogenetic group membership, and frequency of
-genotype isolation and severity of human disease caused by closely related strains with the
-same attributes.
-3.5. Assess the predictive power of our BioTools by comparing in silico phenotypic predictions
-with previously generated, wet-lab genotypic and phenotypic data (such as virulence
-determinant profiles) from sequenced strains.
-3.6. Within E. coli, serotype is still used as a proxy for potential risk to human health [36]. While
-this seropathotype scheme has been useful, it is also known that the propensity for
-pathogenicity can vary within a serotype, due to parallel evolution and lateral gene transfer
-[37–40]. We will use whole-genome phylogenies based on variation in homologous genes, to
-define phylogenetic groups and assign a “genopathotype” to them, that is based not only on
-phylogenetic cluster but also on genome composition (rather than simply on serotype).3.7. Improvement and iterations. The user community (including FoodNet Canada and the STEC
-genomics working group) will provide constant feedback as the platform evolves. Monthly
-releases will ensure that new innovations are implemented and optimizations applied based on
-the feedback.
-3.8. Predictive genomics tools for Salmonella will be implemented in year 5 of the project, once the
-successful implementation of BioTools for both E. coli and C. jejuni has taken place. The
-upcoming four years promise an abundance of species-specific knowledge generated for the
-Salmonella species. This in-kind knowledge will be leveraged, time permitting, to add all
-public and in-house Salmonella genome data to the platform, along with predictive genomics
-tools for the species.
 
 \ldots
 % \subsection*{Sub-heading for section}
