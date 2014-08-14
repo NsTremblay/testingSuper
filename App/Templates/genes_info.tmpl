@@ -164,7 +164,6 @@
 			</div>
 			<div id="phylogeny-panel" class="panel">
 				<div id="gene-info-tree" class="panel-body">
-
 					<div id="tree_psa">
 						<p>Too few sequences. Tree unavailable.</p>
 					</div>
@@ -182,9 +181,16 @@
 			</div>
 			<div id="msa-panel" class="panel">
 				<div id="gene-info-msa" class="panel-body superphy-msa">
-
-					<div id="msa_psa">
-						<p>Too few/many sequences. Alignment unavailable.</p>
+					<div id="msa_psa" style="display: none">
+						<p>Too few sequences. Alignment unavailable.</p>
+					</div>
+					<div id="msa_download_inprogress">
+						<div class="alert alert-success">
+							<p style="text-align:center">Retrieving gene alignment</p>
+							<div class="loader">
+								<span></span>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -203,13 +209,10 @@
 	var category = <TMPL_VAR category_json>;
 
 	var allele_tree = null;
-	var allele_msa = null;
+	var allele_num = <TMPL_VAR allele_num>;
 	var genome_subset = null;
 	<TMPL_IF tree_json>
-	allele_tree = tree_json;
-	</TMPL_IF>
-	<TMPL_IF msa_json>
-	allele_msa = <TMPL_VAR msa_json>;
+	allele_tree = <TMPL_VAR tree_json>;
 	</TMPL_IF>
 	<TMPL_IF genomes_json>
 	genome_subset = <TMPL_VAR genomes_json>;
@@ -229,22 +232,28 @@
 	// Tree
 	if(allele_tree) {
 		$('#tree_psa').hide();
-		viewController.createView('tree', $('#allele_tree'), allele_tree, locusData);
-	}
-
-	// MSA
-	if(allele_msa) {
-		$('#msa_psa').hide();
-		viewController.createView('msa', $('#allele_msa'), allele_msa, locusData);
+		viewController.createView('tree', $('#gene-info-tree'), allele_tree, locusData);
 	}
 
 	// Search forms
 	viewController.sideBar($('#search-utilities'));
 
-	// Page stuff
-
 	// Categories
-	categoryView(category, $('#gene-info-category'))
+	categoryView(category, $('#gene-info-category'));
+
+	// MSA - initiate after DOM loading
+	$(function() {
+		if(allele_num > 1) {
+			// Initiate ajax download of all genome sequences
+			retrieveGeneAlignment(gene_id, locusData);
+
+		} else {
+			// No alleles for this gene
+			$('#msa_psa').show();
+			$('#msa_download_inprogress').remove();
+		}
+	});
+
 
 	</script>
 

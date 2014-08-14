@@ -518,31 +518,31 @@ sub info : Runmode {
 	
 	# Retrieve tree
 	# GENE TREES BROKEN - need to reload to remove tmp IDs like upl_4
-#	if($num_alleles > 2) {
-#		my $public = 1;
-#		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
-#		my $tree_string = $tree->geneTree($qgene, $public, $warden->genomeLookup());
-#		$template->param(tree_json => $tree_string);
-#	}
-	
+	# TODO: Comment out later
+	if($num_alleles > 2) {
+		my $public = 1;
+		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+		my $tree_string = $tree->geneTree($qgene, $public, $warden->genomeLookup());
+		$template->param(tree_json => $tree_string);
+	}
 	
 	# Retrieve MSA
-#	if($num_alleles > 1) {
-#		get_logger->debug('attempt made for alignment');
-#		my $is_typing = 0;
-#		my $msa = $data->seqAlignment(
-#			locus => $qgene, 
-#			warden => $warden,
-#			typing => $is_typing
-#		);
-#		if($msa) {
-#			my $msa_json = encode_json($msa);
-#			$template->param(msa_json => $msa_json);
-#		} else {
-#			get_logger->debug('got nothing');
-#		}
-#	}
-	
+	# TODO: Comment out later
+	if($num_alleles > 1) {
+		get_logger->debug('attempt made for alignment');
+		my $is_typing = 0;
+		my $msa = $data->seqAlignment(
+			locus => $qgene, 
+			warden => $warden,
+			typing => $is_typing
+		);
+		if($msa) {
+			my $msa_json = encode_json($msa);
+			$template->param(msa_json => $msa_json);
+		} else {
+			get_logger->debug('got nothing');
+		}
+	}
 	
 	# Retrieve meta info
 	my ($pub_json, $pvt_json) = $data->genomeInfo($user);

@@ -6528,6 +6528,7 @@
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
       jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12');
+      this._createSubmitForm();
       return true;
     };
 
@@ -6651,7 +6652,47 @@
       addMore = true;
       submit = true;
       filter = true;
-      this.viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter);
+      return true;
+    };
+
+    GeoPhy.prototype._createSubmitForm = function() {
+      var elem, form, parentTarget, resetButtonEl, submitButtonEl, submitEl, wrapper;
+      elem = jQuery('#geophy-control');
+      parentTarget = 'geophy-control-panel-body';
+      wrapper = jQuery('<div class="panel panel-default" id="geophy-control-panel"></div>');
+      elem.append(wrapper);
+      form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
+      wrapper.append(form);
+      submitEl = jQuery('<div class="row"></div>');
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl.click((function(_this) {
+        return function(e) {
+          e.preventDefault();
+          console.log("Button Clicked");
+          _this.viewController.filterViews('selection');
+          return true;
+        };
+      })(this));
+      resetButtonEl.click((function(_this) {
+        return function(e) {
+          var g, _i, _j, _len, _len1, _ref, _ref1;
+          e.preventDefault();
+          _this.viewController.resetFilter();
+          _ref = _this.viewController.genomeController.pubVisible;
+          for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+            g = _ref[_i];
+            _this.viewController.select(g, false);
+          }
+          _ref1 = _this.viewController.genomeController.pvtVisible;
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            g = _ref1[_j];
+            _this.viewController.select(g, false);
+          }
+          return true;
+        };
+      })(this));
+      form.append(submitEl);
       return true;
     };
 
