@@ -228,7 +228,7 @@ var tree = <TMPL_VAR tree_json>;
 var vf = <TMPL_VAR vf>;
 var amr = <TMPL_VAR amr>;
 var categories = <TMPL_VAR categories>;
-var selectedGenome = "";
+var locationId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
 
 viewController.init(public_genomes, private_genomes, 'single_select', '/strains/info/');
 
@@ -258,39 +258,11 @@ var menu = new SuperphyMenu($('#info_menu'), $('.superphy-side-menu'), 'strains'
 
 $(document).ready(function(){
   $('a.genome-dl-link').attr("href", "/strains/download?genome="+allele_genome);
-
-//Need to set these event listeners on the map so that they'll initialize properly when tabs are clicked
-//$('.map-canvas').hide();
-//$('a[href="#overview-panel"]').click();
-$('#map-panel').on('hidden.bs.collapse', function () {
-  viewController.getView($('#strains_map').data("views-index")-1).mapController.markerClusterer.clearMarkers();
-});
-$('#map-panel').on('shown.bs.collapse', function () {
-    //$('.map-canvas').show();
-    viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
-  });
 });
 
-// TODO: Change this, it looks messy
-var selectedGenomeId = "<TMPL_IF NAME=LOCATION><TMPL_VAR strainLocation></TMPL_IF>";
-
-//Determine whether public or private
-var pvtLocation = selectedGenomeId.match(/private_/g);
-
-if (selectedGenomeId.match(/private_/g)) {
-  selectedGenome = private_genomes[selectedGenomeId];
-}
-else if (selectedGenomeId.match(/public_/g)) {
-  selectedGenome = public_genomes[selectedGenomeId];
-}
-
-// TODO: Change this
-selectedGenomeId != "" ? viewController.createView('selmap', $('#strains_map'), ['infoSatellite'], false, selectedGenomeId, selectedGenome) : viewController.createView('map', $('#strains_map'), ['satellite'], false);
+locationId!= "" ? viewController.createView('selmap', $('#strains_map'), ['infoSatellite'], locationId) : viewController.createView('map', $('#strains_map'), ['satellite']);
 
 //Sidebar actions
 viewController.sideBar($('#search-utilities'));
-$('#strains_table').append('<span class="help-block">Jump to the info page of another genome by clicking a link below. You can also use the meta-data and filtering functions above to refine the list down:</span>')
-viewController.createView('table', $('#strains_table'));
-
 
 </script>

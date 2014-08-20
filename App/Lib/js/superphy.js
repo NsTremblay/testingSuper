@@ -5518,7 +5518,7 @@
     __extends(MapView, _super);
 
     function MapView(parentElem, style, elNum, genomeController, mapArgs) {
-      var buttonEl, divEl, divEl2, fieldsetEl, formEl, input, inputGpEl, mapCanvasEl, mapManifestEl, resetMapViewEl, rowEl, splitLayoutEl, tableData1El, tableData2El, tableEl, tableRow1El, tableRow2El;
+      var buttonEl, input, inputGpEl, manifestRow, map, mapCanvasEl, mapManifest, mapManifestEl, mapRow, mapSearchEl, mapSearchRow, mapSplitLayout, menu, menuRow, resetEl, resetMapView, searchEl;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
@@ -5527,47 +5527,28 @@
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
       this.sortField = 'isolation_location';
       this.sortAsc = 'true';
-      this.shiny = this.mapArgs[1];
-      mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(jQuery(this.parentElem));
-      splitLayoutEl = jQuery('<div class="map-search-div"></div>').appendTo(jQuery(this.parentElem));
-      tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl);
-      tableRow1El = jQuery('<tr></tr>').appendTo(tableEl);
-      tableData1El = jQuery('<td></td>').appendTo(tableRow1El);
-      formEl = jQuery('<form class="form"></form>').appendTo(tableData1El);
-      fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl);
-      rowEl = jQuery('<div></div>').appendTo(fieldsetEl);
-      divEl = jQuery('<div></div>').appendTo(rowEl);
-      inputGpEl = jQuery('<div class="input-append"></div>').appendTo(divEl);
-      input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl);
-      if (!this.shiny) {
-        buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
-      }
-      if (this.shiny) {
-        buttonEl = jQuery('<button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>').appendTo(inputGpEl);
-      }
-      divEl2 = jQuery('<div></div>').appendTo(rowEl);
-      resetMapViewEl = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(divEl2);
-      tableRow2El = jQuery('<tr></tr>').appendTo(tableEl);
-      tableData2El = jQuery('<td></td>').appendTo(tableRow2El);
-      mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El);
-      if (!this.shiny) {
-        mapManifestEl.addClass('col-md-6');
-        splitLayoutEl.addClass('col-md-6');
-        rowEl.addClass('row');
-        divEl.addClass('col-md-9');
-        inputGpEl.addClass('input-group');
-        divEl2.addClass('col-md-3');
-      } else {
-        rowEl.addClass('row-fluid');
-        divEl.addClass('span9');
-        inputGpEl.addClass('input-append');
-        input.addClass('input-xlarge');
-        divEl2.addClass('span3');
-      }
+      mapSplitLayout = jQuery('<div class="map-split-layout row"></div>').appendTo(jQuery(this.parentElem));
+      mapSearchEl = jQuery('<div class="map-search-wrapper col-md-6 span6"></div>').appendTo(mapSplitLayout);
+      mapSearchRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapSearchEl);
+      searchEl = jQuery('<div class="col-md-9 span9"></div>').appendTo(mapSearchRow);
+      resetEl = jQuery('<div class="col-md-3 span3"></div>').appendTo(mapSearchRow);
+      mapRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapSearchEl);
+      map = jQuery('<div class="col-md-12 span12"></div>').appendTo(mapRow);
+      mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(map);
+      inputGpEl = jQuery('<div class="input-group input-append"></div></div>').appendTo(searchEl);
+      input = jQuery('<input type="text" class="form-control map-search-location input-xlarge" placeholder="Enter a search location">').appendTo(inputGpEl);
+      buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl);
+      resetMapView = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(resetEl);
+      mapManifestEl = jQuery('<div class="map-manifest-wrapper col-md-6 span6"></div>').appendTo(mapSplitLayout);
+      menuRow = jQuery('<div class="row"></div>').appendTo(mapManifestEl);
+      menu = jQuery('<div class="map-menu col-md-12 span12"></div>').appendTo(menuRow);
+      manifestRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapManifestEl);
+      mapManifest = jQuery('<div class="col-md-12 span12"></div>').appendTo(manifestRow);
+      mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(mapManifest);
       this.locationController = this.getLocationController(this.mapArgs[0], this.elNum);
       this.mapController = this.getCartographer(this.mapArgs[0], this.locationController);
       jQuery(this.parentElem).data('views-index', this.elNum);
-      resetMapViewEl.click((function(_this) {
+      resetEl.click((function(_this) {
         return function(e) {
           e.preventDefault();
           return _this.mapController.resetMapView();
@@ -5582,18 +5563,21 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
-      if (!this.shiny) {
-        tableElem = jQuery("#" + this.elID + " table");
-        if (tableElem.length) {
-          tableElem.empty();
-        } else {
-          divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
-          tableElem = jQuery("<table />").appendTo(divElem);
-          mapManifest = jQuery('.map-manifest').append(divElem);
-          jQuery(this.parentElem).append(mapManifest);
-        }
+      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, that, toggleUnknownLocations, unknownsOff, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      tableElem = jQuery("#" + this.elID + " table");
+      if (tableElem.length) {
+        tableElem.empty();
+      } else {
+        divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
+        tableElem = jQuery("<table />").appendTo(divElem);
+        mapManifest = jQuery('.map-manifest').append(divElem);
+        toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'));
+        that = this;
+        toggleUnknownLocations.change(function() {
+          return that.update(that.genomeController);
+        });
       }
+      unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked;
       pubVis = [];
       pvtVis = [];
       if (this.locationController == null) {
@@ -5615,35 +5599,37 @@
             pvtVis.push(i);
           }
         }
-        _ref2 = this.locationController.pubNoLocations;
-        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-          i = _ref2[_k];
-          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-            pubVis.push(i);
+        if (!unknownsOff) {
+          _ref2 = this.locationController.pubNoLocations;
+          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+            i = _ref2[_k];
+            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+              pubVis.push(i);
+            }
           }
         }
-        _ref3 = this.locationController.pvtNoLocaitons;
-        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-          i = _ref3[_l];
-          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-            pvtVis.push(i);
+        if (!unknownsOff) {
+          _ref3 = this.locationController.pvtNoLocaitons;
+          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+            i = _ref3[_l];
+            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+              pvtVis.push(i);
+            }
           }
         }
       }
-      if (!this.shiny) {
-        t1 = new Date();
-        table = '';
-        table += this._appendHeader(genomes);
-        table += '<tbody>';
-        table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
-        table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
-        table += '</body>';
-        tableElem.append(table);
-        this._actions(tableElem, this.style);
-        t2 = new Date();
-        ft = t2 - t1;
-        console.log('MapView update elapsed time: ' + ft);
-      }
+      t1 = new Date();
+      table = '';
+      table += this._appendHeader(genomes);
+      table += '<tbody>';
+      table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
+      table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
+      table += '</body>';
+      tableElem.append(table);
+      this._actions(tableElem, this.style);
+      t2 = new Date();
+      ft = t2 - t1;
+      console.log('MapView update elapsed time: ' + ft);
       return true;
     };
 
@@ -5892,12 +5878,12 @@
         })(this),
         'infoSatellite': (function(_this) {
           return function() {
-            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[2], _this.mapArgs[3]]);
+            return new InfoSatelliteCartographer(jQuery(elem), [locationController, _this.mapArgs[1]]);
           };
         })(this),
         'geophy': (function(_this) {
           return function() {
-            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[2]]);
+            return new GeophyCartographer(jQuery(elem), [locationController, _this.mapArgs[1]]);
           };
         })(this)
       };
@@ -6319,11 +6305,12 @@
     __extends(InfoSatelliteCartographer, _super);
 
     function InfoSatelliteCartographer(infoSatelliteCartographDiv, infoSatelliteCartograhOpt) {
+      var _ref;
       this.infoSatelliteCartographDiv = infoSatelliteCartographDiv;
       this.infoSatelliteCartograhOpt = infoSatelliteCartograhOpt;
       InfoSatelliteCartographer.__super__.constructor.call(this, this.infoSatelliteCartographDiv, this.infoSatelliteCartograhOpt);
       this.selectedGenomeId = this.infoSatelliteCartograhOpt[1];
-      this.selectedGenome = this.infoSatelliteCartograhOpt[2];
+      this.selectedGenome = (_ref = window.viewController.genomeController.private_genomes[this.selectedGenomeId]) != null ? _ref : window.viewController.genomeController.public_genomes[this.selectedGenomeId];
       this.selectedGenomeLocation = this.locationController._parseLocation(this.selectedGenome);
     }
 
@@ -6527,7 +6514,6 @@
       }
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
-      jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12');
       this._createSubmitForm();
       return true;
     };
@@ -6630,7 +6616,7 @@
       if (this.userGroups != null) {
         gpColors = this._prepareGroups();
       }
-      this.viewController.createView('map', this.mapDiv, ['satellite'], false);
+      this.viewController.createView('map', this.mapDiv, ['satellite']);
       return true;
     };
 
@@ -6641,7 +6627,7 @@
       this._setViewController(this.publicSubsetGenomes, this.privateSubsetGenomes);
       jQuery('#groups-compare').hide();
       gpColors = this._prepareGroups();
-      this.viewController.createView('map', this.mapDiv, ['geophy'], false, gpColors);
+      this.viewController.createView('map', this.mapDiv, ['geophy'], gpColors);
       this._appendLegend(jQuery('#groups-geophy'), this.userGroups);
       return true;
     };

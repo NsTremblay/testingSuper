@@ -12,7 +12,6 @@ class GeoPhy
       @_filter()
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
-    jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12')
     @_createSubmitForm(); 
     true
 
@@ -124,7 +123,7 @@ class GeoPhy
   _showall: () ->
     @_setViewController(@publicGenomes, @privateGenomes)
     gpColors = @_prepareGroups() if @userGroups?;
-    @viewController.createView('map', @mapDiv, ['satellite'], false)
+    @viewController.createView('map', @mapDiv, ['satellite'])
     true
 
   _filter: () ->
@@ -133,7 +132,7 @@ class GeoPhy
     @_setViewController(@publicSubsetGenomes, @privateSubsetGenomes)
     jQuery('#groups-compare').hide();
     gpColors = @_prepareGroups();
-    @viewController.createView('map', @mapDiv, ['geophy'], false, gpColors)
+    @viewController.createView('map', @mapDiv, ['geophy'], gpColors)
     @_appendLegend(jQuery('#groups-geophy'), @userGroups)
     true
 
