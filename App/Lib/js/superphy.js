@@ -6671,6 +6671,7 @@
             g = _ref1[_j];
             _this.viewController.select(g, false);
           }
+          jQuery('#reset-map-view').click();
           return true;
         };
       })(this));
