@@ -2326,7 +2326,7 @@ class GenomeController
   sort: (gids, metaField, asc) ->
     
     return gids unless gids.length
-   
+
     that = @
     gids.sort (a,b) ->
       aObj = that.genome(a)
