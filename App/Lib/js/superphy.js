@@ -5431,10 +5431,6 @@
       } else {
         return false;
       }
-      if (!((itemEl != null) && itemEl.length)) {
-        throw new SuperphyError("Table element for genome " + genome + " not found in TableView " + this.elID);
-        return false;
-      }
       itemEl.prop('checked', isSelected);
       return true;
     };

@@ -44,6 +44,8 @@ class GenesList
         subcats.push(@_capitaliseFirstLetter(@categories[cat].subcategories[k].category_name) + " <span class='category-superscript help-block'>[#{catCount}]</span><br/>") for k in Object.keys(subs.subcats)
         o.category = cats.join("")
         o.subcategory = subcats.join("")
+
+    @filtered_geneList = @geneList
     
     @_appendGeneTable()
     @_appendCategories()
@@ -390,8 +392,10 @@ class GenesList
       geneIds = Object.keys(@geneList)
       @filtered_category = null
       @filtered_subcategory = null
+      @filtered_geneList = @geneList
       
     else
+      @filtered_geneList = {}
       geneIds.push(id) for id in @categories[catId].subcategories[subcatId].gene_ids when @geneList[id]?
       throw new Error("Invalid category or subcategory ID: #{catId} / #{subcatId}.") unless geneIds? and typeIsArray geneIds
       o.visible = false for k,o of @geneList
@@ -402,6 +406,7 @@ class GenesList
       o = @geneList[g]
       throw new Error("Invalid gene ID: #{g}.") unless o?
       o.visible = true
+      @filtered_geneList[g] = o
       
     #Table
     @tableElem.empty()
@@ -512,8 +517,9 @@ class GenesSearch extends GenesList
   #    
   _matching: (gList, searchTerm) ->
     regex = new RegExp @escapeRegExp(searchTerm), "i"
-    
+      
     for k,g of gList
+      continue unless @filtered_geneList[k]
       val = g.name
       
       if regex.test val
