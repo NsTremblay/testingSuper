@@ -10,7 +10,7 @@
 	<span class="muted">Synonyms: </span>
 </div>
 <TMPL_LOOP synonyms>
-<span style="padding-left:10px"><TMPL_VAR synonym></span>
+<span><TMPL_VAR synonym></span>
 </TMPL_LOOP>
 </TMPL_IF>
 <div class="col-md-12" style="border-bottom:#000;border-bottom-width:1px;border-bottom-style:solid"></div>
@@ -28,7 +28,7 @@
 			<span class="muted">Submitted by: </span>
 		</div>
 		<div class="col-md-12">
-			<span style="padding-left:10px"><TMPL_VAR username></span>
+			<span><TMPL_VAR username></span>
 		</div>
 	</div>
 
@@ -37,7 +37,7 @@
 			<span class="muted">Privacy setting: </span>
 		</div>
 		<div class="col-md-12">
-			<span style="padding-left:10px"><TMPL_VAR privacy></span>
+			<span><TMPL_VAR privacy></span>
 		</div>
 	</div>
 </div>
@@ -123,7 +123,7 @@
 			<dl class="dl-horizontal">
 				<dt>Isolation Source:</dt>
 				<TMPL_LOOP isolation_sources>
-				<dd><span style="padding-left:10px"><TMPL_VAR isolation_source></dd>
+				<dd><span><TMPL_VAR isolation_source></dd>
 				</TMPL_LOOP>
 			</dl>
 		</div>
@@ -136,7 +136,7 @@
 			<dl class="horizontal">	
 				<dt>Associated Diseases and Symptoms:</dt>
 				<TMPL_LOOP syndromes>
-				<dd><span style="padding-left:10px"><TMPL_VAR syndrome></dd>
+				<dd><span><TMPL_VAR syndrome></dd>
 				</TMPL_LOOP>
 			</dl>
 		</div>

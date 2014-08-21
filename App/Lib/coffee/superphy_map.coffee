@@ -15,57 +15,42 @@ class MapView extends TableView
     @sortField = 'isolation_location'
     @sortAsc = 'true'
 
-    @shiny = @mapArgs[1]
+    mapSplitLayout = jQuery('<div class="map-split-layout row"></div>').appendTo(jQuery(@parentElem))
     
-    mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(jQuery(@parentElem))
-    splitLayoutEl = jQuery('<div class="map-search-div"></div>').appendTo(jQuery(@parentElem))
-    tableEl = jQuery('<table class="table map-search-table"></table>').appendTo(splitLayoutEl)
-    tableRow1El = jQuery('<tr></tr>').appendTo(tableEl)
-    tableData1El = jQuery('<td></td>').appendTo(tableRow1El)
-    formEl = jQuery('<form class="form"></form>').appendTo(tableData1El)
-    fieldsetEl = jQuery('<fieldset></fieldset>').appendTo(formEl)
-    rowEl = jQuery('<div></div>').appendTo(fieldsetEl)
+    ## Map and Search
+    mapSearchEl = jQuery('<div class="map-search-wrapper col-md-6 span6"></div>').appendTo(mapSplitLayout)
     
-    divEl = jQuery('<div></div>').appendTo(rowEl)
-    inputGpEl = jQuery('<div class="input-append"></div>').appendTo(divEl)
-    input = jQuery('<input type="text" class="form-control map-search-location" placeholder="Enter a search location">').appendTo(inputGpEl)
+    mapSearchRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapSearchEl)
+    searchEl = jQuery('<div class="col-md-9 span9"></div>').appendTo(mapSearchRow)
+    resetEl = jQuery('<div class="col-md-3 span3"></div>').appendTo(mapSearchRow)
+    
+    mapRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapSearchEl)
+    map = jQuery('<div class="col-md-12 span12"></div>').appendTo(mapRow)
+    mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(map)
+    
+    #Location search input
+    inputGpEl = jQuery('<div class="input-group input-append"></div></div>').appendTo(searchEl)
+    input = jQuery('<input type="text" class="form-control map-search-location input-xlarge" placeholder="Enter a search location">').appendTo(inputGpEl)
+    buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl)
+    
+    #Map reset link
+    resetMapView = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(resetEl)
 
-    buttonEl = jQuery('<span class="input-group-btn"><button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button></span>').appendTo(inputGpEl) unless @shiny
+    ## Map menu and manifest
+    mapManifestEl = jQuery('<div class="map-manifest-wrapper col-md-6 span6"></div>').appendTo(mapSplitLayout)
+    menuRow = jQuery('<div class="row"></div>').appendTo(mapManifestEl)
+    menu = jQuery('<div class="map-menu col-md-12 span12"></div>').appendTo(menuRow)
 
-    buttonEl = jQuery('<button class="btn btn-default map-search-button" type="button"><span class="fa fa-search"></span></button>').appendTo(inputGpEl) if @shiny
-
-    divEl2 = jQuery('<div></div>').appendTo(rowEl)
-    resetMapViewEl = jQuery('<button id="reset-map-view" type="button" class="btn btn-link">Reset Map View</button>').appendTo(divEl2)
-
-    tableRow2El = jQuery('<tr></tr>').appendTo(tableEl)
-    tableData2El = jQuery('<td></td>').appendTo(tableRow2El)
-    mapCanvasEl = jQuery('<div class="map-canvas"></div>').appendTo(tableData2El)
-
-    unless @shiny
-      #Create the form element for the map
-      mapManifestEl.addClass('col-md-6')
-      splitLayoutEl.addClass('col-md-6')
-      rowEl.addClass('row')
-      divEl.addClass('col-md-9')
-      inputGpEl.addClass('input-group')
-      divEl2.addClass('col-md-3')
-
-    else
-      # Create the form element for shiny
-      #mapManifestEl.addClass('span6')
-      #splitLayoutEl.addClass('span6')
-      rowEl.addClass('row-fluid')
-      divEl.addClass('span9')
-      inputGpEl.addClass('input-append')
-      input.addClass('input-xlarge')
-      divEl2.addClass('span3')
+    manifestRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapManifestEl)
+    mapManifest = jQuery('<div class="col-md-12 span12"></div>').appendTo(manifestRow)
+    mapManifestEl = jQuery('<div class="map-manifest"></div>').appendTo(mapManifest)
 
     @locationController = @getLocationController(@mapArgs[0], @elNum)
     @mapController = @getCartographer(@mapArgs[0], @locationController)
 
     jQuery(@parentElem).data('views-index', @elNum)
 
-    resetMapViewEl.click( (e) =>
+    resetEl.click( (e) =>
       e.preventDefault()
       @mapController.resetMapView()
       )
@@ -88,15 +73,21 @@ class MapView extends TableView
   update: (genomes) ->
     # create or find list element
     
-    unless @shiny
-      tableElem = jQuery("##{@elID} table")
-      if tableElem.length
-        tableElem.empty()
-      else
-        divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
-        tableElem = jQuery("<table />").appendTo(divElem)
-        mapManifest = jQuery('.map-manifest').append(divElem)
-        jQuery(@parentElem).append(mapManifest)
+    tableElem = jQuery("##{@elID} table")
+    if tableElem.length
+      tableElem.empty()
+    else
+      divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
+      tableElem = jQuery("<table />").appendTo(divElem)
+      mapManifest = jQuery('.map-manifest').append(divElem)
+      toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
+
+      that = @
+      toggleUnknownLocations.change( () ->
+        that.update(that.genomeController)
+        )
+
+    unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked
 
     pubVis = []
     pvtVis = []
@@ -111,23 +102,22 @@ class MapView extends TableView
       pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
       pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible      
       #Append genome list with no location
-      pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible
-      pvtVis.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible
+      pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible unless unknownsOff
+      pvtVis.push i for i in @locationController.pvtNoLocaitons when i in genomes.pvtVisible unless unknownsOff      
     
-    unless @shiny
-      #append genomes to list
-      t1 = new Date()
-      table = ''
-      table += @_appendHeader(genomes)
-      table += '<tbody>'
-      table += @_appendGenomes(genomes.sort(pubVis, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
-      table += @_appendGenomes(genomes.sort(pvtVis, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
-      table += '</body>'
-      tableElem.append(table)
-      @_actions(tableElem, @style)
-      t2 = new Date()
-      ft = t2-t1
-      console.log 'MapView update elapsed time: ' +ft
+    #append genomes to list
+    t1 = new Date()
+    table = ''
+    table += @_appendHeader(genomes)
+    table += '<tbody>'
+    table += @_appendGenomes(genomes.sort(pubVis, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
+    table += @_appendGenomes(genomes.sort(pvtVis, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
+    table += '</body>'
+    tableElem.append(table)
+    @_actions(tableElem, @style)
+    t2 = new Date()
+    ft = t2-t1
+    console.log 'MapView update elapsed time: ' +ft
     
     true # return success
 
@@ -332,9 +322,9 @@ class MapView extends TableView
       'satellite': () =>
         new SatelliteCartographer(jQuery(elem), [locationController]) 
       'infoSatellite': () =>
-        new InfoSatelliteCartographer(jQuery(elem), [locationController, @mapArgs[2], @mapArgs[3]])
+        new InfoSatelliteCartographer(jQuery(elem), [locationController, @mapArgs[1]])
       'geophy': () =>
-        new GeophyCartographer(jQuery(elem), [locationController, @mapArgs[2]])
+        new GeophyCartographer(jQuery(elem), [locationController, @mapArgs[1]])
     }
     cartographer = cartographTypes[mapType]()
     cartographer.cartograPhy()
@@ -671,6 +661,7 @@ class SatelliteCartographer extends Cartographer
 
 
 class GeophyCartographer extends SatelliteCartographer
+  # TODO: Requirements have changed for this class
   constructor: (@geophyCartographDiv, @geophyCartograhOpt) ->
     # Set Group Colors
     @genomeGroupColor = @geophyCartograhOpt[1]
@@ -736,7 +727,7 @@ class InfoSatelliteCartographer extends SatelliteCartographer
     # Call default constructor
     super(@infoSatelliteCartographDiv, @infoSatelliteCartograhOpt)
     @selectedGenomeId = @infoSatelliteCartograhOpt[1]
-    @selectedGenome = @infoSatelliteCartograhOpt[2]
+    @selectedGenome = window.viewController.genomeController.private_genomes[@selectedGenomeId] ? window.viewController.genomeController.public_genomes[@selectedGenomeId]
     @selectedGenomeLocation = @locationController._parseLocation(@selectedGenome)
 
   cartograPhy: () ->

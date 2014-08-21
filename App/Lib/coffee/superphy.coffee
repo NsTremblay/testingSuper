@@ -175,7 +175,6 @@ class ViewController
 
     return true # return success
     
-    
   addToGroup: (grp) ->
     # Get all currently selected genomes
     selected = @genomeController.selected()

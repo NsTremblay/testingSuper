@@ -193,16 +193,20 @@ sub geophy : Runmode {
 
     my $template = $self->load_tmpl('groups_geophy.tmpl', die_on_bad_params => 0);
 
+    my @public_selected_genome_ids = $q->param('public_genome');
+    my @private_selected_genome_ids = $q->param('private_genome');
+
     #Change this to take into account any number of genomes
+    ####
     my $num_groups = $q->param('num-groups');
     my %qGroups;
     my $showAllBool = $q->param('show-all');
 
     for (my $i = 0; $i < $num_groups; $i++) {
-        my @newgroup = $q->param('group'.($i+1).'-genome');
-        if (scalar(@newgroup) gt 0) {
-            $qGroups{($i+1)} = \@newgroup;
-        }
+       my @newgroup = $q->param('group'.($i+1).'-genome');
+       if (scalar(@newgroup) gt 0) {
+           $qGroups{($i+1)} = \@newgroup;
+       }
     }
 
     print STDERR "$_\n" foreach(keys %qGroups);
@@ -215,6 +219,9 @@ sub geophy : Runmode {
     if ($showAllBool) {
         $template->param(SHOWALL => 1);
     }
+    ###
+
+    # TODO: Need to use genome-warden for looking up genomes
 
     my $fdg = Modules::FormDataGenerator->new();
     $fdg->dbixSchema($self->dbixSchema);
@@ -245,8 +252,8 @@ sub geophy : Runmode {
     $template->param(groups_manager => 0) unless $username;
     $template->param(groups_manager => 1) if $username;
 
-    $template->param(title1 => 'GROUP');
-    $template->param(title2 => 'VISUALIZATIONS');
+    $template->param(title1 => 'GEO');
+    $template->param(title2 => 'PHY');
 
     return $template->output();
 }
@@ -264,7 +271,7 @@ sub snps : Runmode {
 	}
 	my $job = $self->dbixSchema->resultset('JobResult')->find($job_id);
 	unless($job) {
-		die("No record matching ID $job_id in job_result table.")
+		die("No record matching ID $job_id in job_result table.");
 	}
 	
 	# Check user

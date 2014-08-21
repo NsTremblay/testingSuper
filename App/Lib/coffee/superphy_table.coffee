@@ -315,9 +315,9 @@ class TableView extends ViewTemplate
     else
       return false
     
-    unless itemEl? and itemEl.length
-      throw new SuperphyError "Table element for genome #{genome} not found in TableView #{@elID}"
-      return false
+    #unless itemEl? and itemEl.length
+      #throw new SuperphyError "Table element for genome #{genome} not found in TableView #{@elID}"
+      #return false
         
     itemEl.prop('checked', isSelected);
     
