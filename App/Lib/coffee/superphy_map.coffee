@@ -207,7 +207,7 @@ class MapView extends TableView
           # Genome name
           row += @_template('td1_redirect', {g: g, name: name, shortName: gObj.meta_array[0], klass: thiscls})
           # Genome location
-          row += @_template('td1_location', {location: @mapController.allMarkers[g][k]}) for k,v of @locationMetaFields when location
+          row += @_template('td1_location', {location: @mapController.allMarkers[g][k] ? 'NA'}) for k,v of @locationMetaFields when location
           row += @_template('td1_nolocation', {location: 'Unknown'}) for k,v of @locationMetaFields when !location
     
           # Other data
@@ -224,7 +224,7 @@ class MapView extends TableView
           checked = 'checked' if gObj.isSelected
           row += @_template('td1_select', {g: g, name: name, klass: thiscls, checked: checked})
           # Genome location
-          row += @_template('td1_location', {location: @mapController.allMarkers[g][k]}) for k,v of @locationMetaFields when location
+          row += @_template('td1_location', {location: @mapController.allMarkers[g][k] ? 'NA'}) for k,v of @locationMetaFields when location
           row += @_template('td1_nolocation', {location: 'Unknown'}) for k,v of @locationMetaFields when !location
 
 
@@ -954,9 +954,9 @@ class LocationController
     
     # Format the address into its components
     locationAddressComponents = {
-      'country' : 'NA' ,
-      'administrative_area_level_1' : 'NA',
-      'locality' : 'NA'}
+      'country' :  undefined,
+      'administrative_area_level_1' : undefined,
+      'locality' : undefined}
     
     locationAddressComponents[add_cmp.types[0]] = add_cmp.long_name for add_cmp in genomeLocation.address_components when add_cmp.types[0] in Object.keys(locationAddressComponents)
 

@@ -2331,7 +2331,6 @@ class GenomeController
     gids.sort (a,b) ->
       aObj = that.genome(a)
       bObj = that.genome(b)
-      
       aField = aObj[metaField]
       aName = aObj.displayname.toLowerCase()
       bField = bObj[metaField]

@@ -4,7 +4,7 @@
 <head>
 
     <TMPL_INCLUDE NAME="header2.tmpl">
-
+    <link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">
     <script type="text/javascript">
     var page_name = "geophy";
     </script>
@@ -13,6 +13,9 @@
     input[type=checkbox] {
         float: left;
         margin-right: 0.4em;
+    }
+    .cluster {
+        /*display: none;*/
     }
     </style>
     
@@ -38,28 +41,12 @@
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
-var user_groups;
-</script>
+// Need to handle the case where the user is not logged in
+var user_groups = <TMPL_VAR user_groups>;
 
-<TMPL_IF USER_SELECTIONS>
-<script type="text/javascript">
-user_groups = <TMPL_VAR groups>;
-var num_groups = <TMPL_VAR num_groups>;
-</script>
-</TMPL_IF>
-
-<script type="text/javascript">
-<TMPL_IF SHOWALL>
-var showAll = true;
-<TMPL_ELSE>
-var showAll = false;
-</TMPL_IF>
-</script>
-
-<script type="text/javascript">
-
-var geophy = new GeoPhy(public_genomes, private_genomes, viewController, user_groups, $('#groups_tree'), $('#groups_map'));
-geophy.init(showAll);
+//TODO: This is bloated and needs to be changed.
+var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'));
+geophy.init(false);
 
 $(document).ready( function () {    
     $('.map-manifest-wrapper').removeClass('col-md-6').addClass('col-md-12');
@@ -68,6 +55,44 @@ $(document).ready( function () {
     $('.download-view').empty();
 });
 
+//TEST: Script for creating groups
+// Pull this into coffee script.
+
+// Load alert message or dropdown list
+
+if (user_groups.error) {
+    $('.user-groups-menu').append('<div class="alert alert-info" role="alert">'+user_groups.error+'</div>'); 
+}
+else {
+
+    //Append the user groups to .user-groups-menu 
+    var user_groups_dropdown = $('<div class="dropdown"></div>');
+    var user_groups_dd_button = $('<button class="btn btn-default dropdown-toggle" type="button" id="user-groups-dropdown" data-toggle="dropdown">My Saved Groups <span class="caret"></span></button>').appendTo(user_groups_dropdown);
+
+    var user_groups_dd_list = $('<ul class="dropdown-menu" role="menu" aria-labelledby="user-groups-dropdown"></ul>').appendTo(user_groups_dropdown);
+
+    var user_group_collections = {
+        group_collections: {}
+    };
+
+    $.each(user_groups.groups, function(collection_name, groups_array) {
+        user_group_collections.group_collections[collection_name] = {};
+        $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
+        $('<li role="presentation" class="dropdown-header">Collection: '+collection_name+'</li>').appendTo(user_groups_dd_list);
+        $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
+        $.each(groups_array, function(index,group){
+            if(!user_group_collections.group_collections[collection_name][group]) {
+                user_group_collections.group_collections[collection_name][group] = [];
+                $('<li role="presentation"><a role="menuitem" tabindex="-1" href="#">'+group+'</a></li>').appendTo(user_groups_dd_list);
+            }
+            else {
+                user_group_collections.group_collections[collection_name][group].push(user_groups.genome_id[index]);
+            }
+        });
+    });
+
+    user_groups_dropdown.appendTo($('.user-groups-menu'));
+}
 </script>
 
 </html>

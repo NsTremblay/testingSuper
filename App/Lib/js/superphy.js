@@ -5705,7 +5705,7 @@
     };
 
     MapView.prototype._appendGenomes = function(visibleG, genomes, style, priv) {
-      var checked, cls, d, g, gObj, k, location, name, row, table, thiscls, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4, _ref5;
+      var checked, cls, d, g, gObj, k, location, name, row, table, thiscls, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7;
       cls = this.cssClass();
       table = '';
       if (priv && visibleG.length) {
@@ -5741,22 +5741,22 @@
             v = _ref[k];
             if (location) {
               row += this._template('td1_location', {
-                location: this.mapController.allMarkers[g][k]
+                location: (_ref1 = this.mapController.allMarkers[g][k]) != null ? _ref1 : 'NA'
               });
             }
           }
-          _ref1 = this.locationMetaFields;
-          for (k in _ref1) {
-            v = _ref1[k];
+          _ref2 = this.locationMetaFields;
+          for (k in _ref2) {
+            v = _ref2[k];
             if (!location) {
               row += this._template('td1_nolocation', {
                 location: 'Unknown'
               });
             }
           }
-          _ref2 = gObj.meta_array.slice(1);
-          for (_j = 0, _len1 = _ref2.length; _j < _len1; _j++) {
-            d = _ref2[_j];
+          _ref3 = gObj.meta_array.slice(1);
+          for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
+            d = _ref3[_j];
             row += this._template('td', {
               data: d
             });
@@ -5775,27 +5775,27 @@
             klass: thiscls,
             checked: checked
           });
-          _ref3 = this.locationMetaFields;
-          for (k in _ref3) {
-            v = _ref3[k];
-            if (location) {
-              row += this._template('td1_location', {
-                location: this.mapController.allMarkers[g][k]
-              });
-            }
-          }
           _ref4 = this.locationMetaFields;
           for (k in _ref4) {
             v = _ref4[k];
+            if (location) {
+              row += this._template('td1_location', {
+                location: (_ref5 = this.mapController.allMarkers[g][k]) != null ? _ref5 : 'NA'
+              });
+            }
+          }
+          _ref6 = this.locationMetaFields;
+          for (k in _ref6) {
+            v = _ref6[k];
             if (!location) {
               row += this._template('td1_nolocation', {
                 location: 'Unknown'
               });
             }
           }
-          _ref5 = gObj.meta_array.slice(1);
-          for (_k = 0, _len2 = _ref5.length; _k < _len2; _k++) {
-            d = _ref5[_k];
+          _ref7 = gObj.meta_array.slice(1);
+          for (_k = 0, _len2 = _ref7.length; _k < _len2; _k++) {
+            d = _ref7[_k];
             row += this._template('td', {
               data: d
             });
@@ -6508,9 +6508,9 @@
       locationViewPortNELat = locationViewPortNE.lat;
       locationViewPortNELng = locationViewPortNE.lng;
       locationAddressComponents = {
-        'country': 'NA',
-        'administrative_area_level_1': 'NA',
-        'locality': 'NA'
+        'country': void 0,
+        'administrative_area_level_1': void 0,
+        'locality': void 0
       };
       _ref = genomeLocation.address_components;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {

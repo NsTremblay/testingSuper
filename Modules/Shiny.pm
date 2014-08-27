@@ -33,42 +33,71 @@ sub setup {
 }
 
 sub data : Runmode {
-    #TODO: Pass in a CGI key as a parameter and get user specific data
+    #TODO: Check all security constraints and make sure this is air tight
     my $self = shift;
 
     my $q = $self->query();
 
     my $SHINYSESSID = $q->param('CGISESSID');
+    my $SHINYURI = $q->param('uri');
+    my $SHINYUSER = $q->param('user');
 
     my $CGISESSID = $self->session->id();
 
-    #print STDERR "Session key returned from shiny is: $SHINYSESSID\n";
+    print STDERR "Shiny returned CGISESSID: " . $SHINYSESSID . "\n";
+    print STDERR "Current CGISESSID: " . $CGISESSID . "\n";
 
-    #print STDERR "Current CGI key is $CGISESSID\n";
-    
-    my $fdg = Modules::FormDataGenerator->new();
-    $fdg->dbixSchema($self->dbixSchema);
-    
+    my $formMethod = $ENV{'REQUEST_METHOD'};
+
+    # Check user is logged in
     my $username = $self->authen->username;
     print STDERR "User logged in is: $username\n" if $username;
     print STDERR "No user currently logged in\n" unless $username;
 
+    if ($formMethod eq 'GET') {
+        print STDERR "\nGET method called\n\n";
+        my $user_data_json = $self->_getUserData($username, $CGISESSID);
+        return $user_data_json;
+    }
+    elsif ($formMethod eq 'POST') {
+        print STDERR "\nPOST method called\n\n";
+        my $user_genomes = $q->param('genome_id');
+        my $user_groups = $q->param('groups');
+        my $status_json = $self->_saveUserData($username, $user_genomes, $user_groups);
+        return $status_json;
+    }
+    else {
+        my $status = {error => "contact database administrator"};
+        return encode_json($status);
+    }
+}
+
+
+# Helper methods
+sub _getUserData {
+    my ($self, $username, $CGISESSID) = @_;
+
+    my $fdg = Modules::FormDataGenerator->new();
+    $fdg->dbixSchema($self->dbixSchema);
+
+    my $status = {};
+
     my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
 
-    # Phylogenetic tree
-    my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
-    my $tree_string;
-    # find visable nodes for user
-    my $visable_nodes;
-    $fdg->publicGenomes($visable_nodes);
-    my $has_private = $fdg->privateGenomes($username, $visable_nodes);
+    # # Phylogenetic tree
+    # my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
+    # my $tree_string;
+    # # find visable nodes for user
+    # my $visable_nodes;
+    # $fdg->publicGenomes($visable_nodes);
+    # my $has_private = $fdg->privateGenomes($username, $visable_nodes);
     
-    if($has_private) {
-        $tree_string = $tree->fullTree($visable_nodes);
-    } 
-    else {
-        $tree_string = $tree->fullTree();
-    }
+    # if($has_private) {
+    #     $tree_string = $tree->fullTree($visable_nodes);
+    # } 
+    # else {
+    #     $tree_string = $tree->fullTree();
+    # }
 
     my $public_genome_objs = decode_json($pub_json);
     my $private_genome_objs = decode_json($pvt_json);
@@ -164,16 +193,23 @@ sub data : Runmode {
         }
     }
 
+    $status->{error} = "User is not logged in" unless $username;
+    $status->{status} = "User data retrieved for $username" if $username;
+
     my $shiny_data = {
         'user' => $username // undef,
-        'cgissessionid' => $CGISESSID,
-        'data' => {'genome_id' => \@sorted_genome_ids}
+        'CGISESSID' => $CGISESSID,
+        'data' => {},
+        'genome_id' => \@sorted_genome_ids,
+        'groups_data' => {},
     };
 
     @{$shiny_data->{'data'}}{keys %$meta_categories} = values %$meta_categories;
     @{$shiny_data->{'data'}}{keys %$extra_date_categories} = values %$extra_date_categories;
     @{$shiny_data->{'data'}}{keys %$extra_location_categories} = values %$extra_location_categories;
-
+    $shiny_data->{'status'} = $status;
+    
+    # This data is for the map and tree, which is not currently being used in shiny
     #my $data = {
     #   'public_genomes' => decode_json($pub_json),
     #   'private_genomes' => decode_json($pvt_json),
@@ -181,15 +217,50 @@ sub data : Runmode {
     #};
     #return encode_json($data);
 
+    #TODO: Get user groups and add them in
+
     return encode_json($shiny_data);
 }
 
-sub groups : Runmode {
-    # TODO: Save JSON of groups
-    my $self = shift;
-    return;
+sub _saveUserData {
+    # TODO: Test this
+    my ($self, $_userName, $_userGenomes, $_userGroups) = @_;
+
+    my $status = {};
+
+    unless ($_userName) {    
+        $status->{error} = "User not logged in";
+        return encode_json($status);
+    }
+
+    my $timestamp = localtime(time);
+
+    my $user_data_json = "{" . $_userGroups . "," .  $_userGenomes ."}";
+
+    my $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->find({username => $_userName});
+
+    if ($userGroupQuery) {
+        $userGroupQuery->update(
+        {
+            last_modified => "$timestamp",
+            user_groups => JSON->new->allow_nonref->encode($user_data_json)
+            });
+    }
+    else {
+        $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->create(
+        {
+            username => $_userName,
+            last_modified => "$timestamp",
+            user_groups => JSON->new->allow_nonref->encode($user_data_json)
+            });
+    }
+
+    $status->{status} = "User data updated";
+    return encode_json($status);
+
 }
 
+# TODO: Get rid of this
 sub test : StartRunmode {
     my $self = shift;
     my $template = $self->load_tmpl('shiny_test.tmpl', die_on_bad_params => 0);
