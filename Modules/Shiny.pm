@@ -38,19 +38,20 @@ sub data : Runmode {
 
     my $q = $self->query();
 
-    my $SHINYSESSID = $q->param('CGISESSID');
-    my $SHINYURI = $q->param('uri');
-    my $SHINYUSER = $q->param('user');
+    #my $SHINYSESSID = $q->param('CGISESSID');
+    #my $SHINYURI = $q->param('uri');
+    #my $SHINYUSER = $q->param('user');
 
     my $CGISESSID = $self->session->id();
 
-    print STDERR "Shiny returned CGISESSID: " . $SHINYSESSID . "\n";
+    #print STDERR "Shiny returned CGISESSID: " . $SHINYSESSID . "\n";
     print STDERR "Current CGISESSID: " . $CGISESSID . "\n";
 
     my $formMethod = $ENV{'REQUEST_METHOD'};
 
     # Check user is logged in
     my $username = $self->authen->username;
+
     print STDERR "User logged in is: $username\n" if $username;
     print STDERR "No user currently logged in\n" unless $username;
 
@@ -61,9 +62,9 @@ sub data : Runmode {
     }
     elsif ($formMethod eq 'POST') {
         print STDERR "\nPOST method called\n\n";
-        my $user_genomes = $q->param('genome_id');
+        #my $user_genomes = $q->param('genome_id');
         my $user_groups = $q->param('groups');
-        my $status_json = $self->_saveUserData($username, $user_genomes, $user_groups);
+        my $status_json = $self->_saveUserData($username, $user_groups);
         return $status_json;
     }
     else {
@@ -196,19 +197,30 @@ sub _getUserData {
     $status->{error} = "User is not logged in" unless $username;
     $status->{status} = "User data retrieved for $username" if $username;
 
+    my $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
+
+    my $userGroups = $userGroupQuery->user_groups if $userGroupQuery // undef;
+
+    my $user_groups_obj = decode_json($userGroups) if $userGroupQuery;
+    $user_groups_obj = {} unless $userGroupQuery;
+
+    #print STDERR "$_\n" foreach (keys %$user_groups_obj);
+
     my $shiny_data = {
         'user' => $username // undef,
         'CGISESSID' => $CGISESSID,
         'data' => {},
         'genome_id' => \@sorted_genome_ids,
-        'groups_data' => {},
     };
 
     @{$shiny_data->{'data'}}{keys %$meta_categories} = values %$meta_categories;
     @{$shiny_data->{'data'}}{keys %$extra_date_categories} = values %$extra_date_categories;
     @{$shiny_data->{'data'}}{keys %$extra_location_categories} = values %$extra_location_categories;
+    $shiny_data->{'groups'} = $user_groups_obj;
     $shiny_data->{'status'} = $status;
-    
+
+    #%$shiny_data = (%$shiny_data, %$user_groups_obj);
+
     # This data is for the map and tree, which is not currently being used in shiny
     #my $data = {
     #   'public_genomes' => decode_json($pub_json),
@@ -224,7 +236,13 @@ sub _getUserData {
 
 sub _saveUserData {
     # TODO: Test this
-    my ($self, $_userName, $_userGenomes, $_userGroups) = @_;
+    my ($self, $_userName, $_userGroups) = @_;
+
+    #print STDERR $_userGroups . "\n";
+
+    my $user_groups_obj = decode_json($_userGroups);
+
+    #print STDERR $user_groups_obj . "\n";
 
     my $status = {};
 
@@ -235,15 +253,13 @@ sub _saveUserData {
 
     my $timestamp = localtime(time);
 
-    my $user_data_json = "{" . $_userGroups . "," .  $_userGenomes ."}";
-
     my $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->find({username => $_userName});
 
     if ($userGroupQuery) {
         $userGroupQuery->update(
         {
             last_modified => "$timestamp",
-            user_groups => JSON->new->allow_nonref->encode($user_data_json)
+            user_groups => encode_json($user_groups_obj)
             });
     }
     else {
@@ -251,23 +267,12 @@ sub _saveUserData {
         {
             username => $_userName,
             last_modified => "$timestamp",
-            user_groups => JSON->new->allow_nonref->encode($user_data_json)
+            user_groups => encode_json($user_groups_obj)
             });
     }
 
     $status->{status} = "User data updated";
     return encode_json($status);
-
-}
-
-# TODO: Get rid of this
-sub test : StartRunmode {
-    my $self = shift;
-    my $template = $self->load_tmpl('shiny_test.tmpl', die_on_bad_params => 0);
-    my $CGISESSID = $self->session->id();
-    #print STDERR "New session key is: $CGISESSID\n";
-    $template->param(CGISESSID => $CGISESSID);
-    return $template->output();
 }
 
 1;

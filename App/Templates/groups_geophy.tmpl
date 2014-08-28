@@ -58,8 +58,6 @@ $(document).ready( function () {
 //TEST: Script for creating groups
 // Pull this into coffee script.
 
-// Load alert message or dropdown list
-
 if (user_groups.error) {
     $('.user-groups-menu').append('<div class="alert alert-info" role="alert">'+user_groups.error+'</div>'); 
 }
@@ -67,19 +65,19 @@ else {
 
     //Append the user groups to .user-groups-menu 
     var user_groups_dropdown = $('<div class="dropdown"></div>');
-    var user_groups_dd_button = $('<button class="btn btn-default dropdown-toggle" type="button" id="user-groups-dropdown" data-toggle="dropdown">My Saved Groups <span class="caret"></span></button>').appendTo(user_groups_dropdown);
+    var user_groups_dd_button = $('<button class="btn btn-default dropdown-toggle" type="button" id="user-group-collection-dropdown-dropdown" data-toggle="dropdown">My Saved Groups <span class="caret"></span></button>').appendTo(user_groups_dropdown);
 
-    var user_groups_dd_list = $('<ul class="dropdown-menu" role="menu" aria-labelledby="user-groups-dropdown"></ul>').appendTo(user_groups_dropdown);
+    var user_groups_dd_list = $('<ul class="dropdown-menu" role="menu" aria-labelledby="user-group-collection-dropdown"></ul>').appendTo(user_groups_dropdown);
 
     var user_group_collections = {
-        group_collections: {}
+        group_collections : {}
     };
 
-    $.each(user_groups.groups, function(collection_name, groups_array) {
+    $.each(user_groups, function(collection_name, groups_array) {
+        if(collection_name == 'genome_id') return;
         user_group_collections.group_collections[collection_name] = {};
         $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
         $('<li role="presentation" class="dropdown-header">Collection: '+collection_name+'</li>').appendTo(user_groups_dd_list);
-        $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
         $.each(groups_array, function(index,group){
             if(!user_group_collections.group_collections[collection_name][group]) {
                 user_group_collections.group_collections[collection_name][group] = [];
@@ -92,6 +90,7 @@ else {
     });
 
     user_groups_dropdown.appendTo($('.user-groups-menu'));
+
 }
 </script>
 

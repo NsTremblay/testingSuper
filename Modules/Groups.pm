@@ -348,7 +348,7 @@ sub _getUserGroups {
 
     my $userGroupsJson = $userGroupsRs->user_groups;
 
-    my $user_groups_json = JSON->new->allow_nonref->decode($userGroupsJson);
+    my $user_groups_json = $userGroupsJson;
 
     return $user_groups_json;
 }
