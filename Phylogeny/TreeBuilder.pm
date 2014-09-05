@@ -25,7 +25,7 @@ use warnings;
 use Carp qw/croak carp/;
 
 # Get/set methods
-Phylogeny::TreeBuilder->mk_accessors(qw/ft_exe ft_opt/);
+Phylogeny::TreeBuilder->mk_accessors(qw/ft_exe ft_opt cc_exe cc_opt/);
 
 
 =head2 new
@@ -42,12 +42,20 @@ sub new {
 	bless( $self, $class );
 	
 	# Fast tree executable
-	my $ftexe = $args{fasttree_exe} // 'FastTreeMP';
+	my $ftexe = $args{fasttree_exe} // 'FastTree';
 	$self->ft_exe($ftexe);
 	
 	# Fast tree command
 	my $ftopt = $args{fasttree_opt} // '-gtr -nt -quiet -nopr';
 	$self->ft_opt($ftopt);
+	
+	# Clearcut executable
+	my $ccexe = $args{clearcut_exe} // 'clearcut';
+	$self->cc_exe($ccexe);
+	
+	# Fast tree command
+	my $ccopt = $args{clearcut_opt} // '--alignment --DNA';
+	$self->cc_opt($ccopt);
 	
 	return $self;
 }
@@ -73,5 +81,30 @@ sub build_tree {
 	
 	return(1);
 }
+
+=head2 build_njtree
+
+Args:
+1. file name containg nt MSA in FASTA format
+2. file name for newick tree output
+
+=cut
+
+sub build_njtree {
+	my ($self, $msa_file, $tree_file) = @_;
+	
+	my $cmd = join(' ', $self->cc_exe, $self->cc_opt, '<', $msa_file, '>', $tree_file);
+	
+	unless(system($cmd) == 0) {
+		die "clearcut error ($!).\n";
+		return 0;
+	}
+	
+	return(1);
+}
+
+
+
+
 
 1;

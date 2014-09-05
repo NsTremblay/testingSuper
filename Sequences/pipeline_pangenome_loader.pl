@@ -585,7 +585,6 @@ sub load_tree {
 	
 }
 
-
 sub load_snps {
 	my ($snp_positions_dir, $refseq_dir, $query_id, $sequence_group) = @_;
 	

@@ -77,7 +77,6 @@ retrieveGeneAlignment = (geneID, locusData) ->
 
   # Callback handler that will be called on success
   alignmentRequest.done( (data, textStatus, jqXHR) -> 
-    console.log 'Alignment retrieval success'
     parentDiv = jQuery('#gene-info-msa')
     parentDiv.empty()
     
