@@ -12,7 +12,7 @@ class GeoPhy
       @_filter()
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
-    jQuery('.map-manifest').removeClass('col-md-6').addClass('col-md-12') 
+    @_createSubmitForm(); 
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
@@ -103,7 +103,7 @@ class GeoPhy
     clearFormEl = jQuery("<button class='btn btn-danger' onclick='location.reload()'><span class='fa fa-times'></span> Reset Form</button>").appendTo(divEl)
     buttonEl = jQuery("<button type='submit' class='btn btn-primary' value='Submit' form='groups-compare-form'><span class='fa fa-check'></span> Show All Groups</button>").appendTo(divEl)
 
-    hiddenFormEl = jQuery('#groups-compare-form');
+    hiddenFormEl = jQuery('#groups-compare-form')
 
     buttonEl.click (e) =>
       e.preventDefault()
@@ -123,7 +123,7 @@ class GeoPhy
   _showall: () ->
     @_setViewController(@publicGenomes, @privateGenomes)
     gpColors = @_prepareGroups() if @userGroups?;
-    @viewController.createView('map', @mapDiv, ['satellite'], false)
+    @viewController.createView('map', @mapDiv, ['satellite'])
     true
 
   _filter: () ->
@@ -132,16 +132,52 @@ class GeoPhy
     @_setViewController(@publicSubsetGenomes, @privateSubsetGenomes)
     jQuery('#groups-compare').hide();
     gpColors = @_prepareGroups();
-    @viewController.createView('map', @mapDiv, ['geophy'], false, gpColors)
+    @viewController.createView('map', @mapDiv, ['geophy'], gpColors)
     @_appendLegend(jQuery('#groups-geophy'), @userGroups)
     true
 
   _setViewController: (pubList, pvtList) ->
+    # TODO: Move this up to the init funciton and get rid of adding groups
     @viewController.init(pubList, pvtList, 'multi_select', '/groups/geophy')
     addMore = true
     submit = true
     filter = true
-    @viewController.createGroupsForm($('#groups-compare'), addMore, submit, filter)
+    #@viewController.createGroupsForm($('#geophy-control'), addMore, submit, filter)
+    true
+
+  _createSubmitForm: () ->
+    elem = jQuery('#geophy-control')
+    parentTarget = 'geophy-control-panel-body'
+    wrapper = jQuery('<div class="panel panel-default" id="geophy-control-panel"></div>')
+    elem.append(wrapper)
+    
+    form = jQuery("<div class='panel-body' id='#{parentTarget}'></div>")
+    wrapper.append(form)
+
+    submitEl = jQuery('<div class="row"></div>')
+
+    #TODO: Add buttons and actions
+    submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl)
+    resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl)
+    #hiddenFormEl = jQuery("<form class='form' id='geophy-form' method='post' action='#{@viewController.action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(submitEl)
+
+    submitButtonEl.click( (e) =>
+      e.preventDefault()
+      console.log "Button Clicked"
+      @viewController.filterViews('selection')
+      true
+      )
+
+    resetButtonEl.click( (e) =>
+      e.preventDefault()
+      @viewController.resetFilter()
+      @viewController.select(g, false) for g in @viewController.genomeController.pubVisible
+      @viewController.select(g, false) for g in @viewController.genomeController.pvtVisible
+      true
+      ) 
+
+    form.append(submitEl)
+
     true
 
   _prepareGroups: () ->

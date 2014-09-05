@@ -30,6 +30,7 @@ use Log::Log4perl qw/get_logger :easy/;
 use Carp;
 use Geo::Coder::Google;
 use JSON;
+use Switch;
 
 # Object creation
 sub new {
@@ -150,6 +151,33 @@ sub geocodeAddress {
     print STDERR "Address: $locationQuery added to database\n";
 
     return $result_json;
+}
+
+sub parseGeocodedAddress {
+    # TODO: 
+    # Currently the only thing that we want from the geocoded locations:
+    #   City : 'locality'
+    #   Province/State: 'administrative_area_1'
+    #   Country: 'country'
+    my ($self, $locationJSONRef) = @_;
+    my @address_components_array = $locationJSONRef->{'address_components'};
+    my $parsed_location_ref = {};
+    foreach my $address_components (@address_components_array) {
+        foreach my $address_component_obj (@$address_components) {
+            switch ($address_component_obj->{'types'}->[0]) {
+                case ('country') {
+                    $parsed_location_ref->{'isolation_country'} =  $address_component_obj->{'long_name'};
+                }
+                case ('administrative_area_level_1') {
+                    $parsed_location_ref->{'isolation_province_state'} =  $address_component_obj->{'long_name'};
+                }
+                case ('locality') {
+                    $parsed_location_ref->{'isolation_city'} =  $address_component_obj->{'long_name'};
+                }
+            }
+        }
+    }
+    return $parsed_location_ref;
 }
 
 1;

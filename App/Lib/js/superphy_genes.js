@@ -71,6 +71,7 @@
           o.subcategory = subcats.join("");
         }
       }
+      this.filtered_geneList = this.geneList;
       this._appendGeneTable();
       this._appendCategories();
     }
@@ -416,7 +417,9 @@
         geneIds = Object.keys(this.geneList);
         this.filtered_category = null;
         this.filtered_subcategory = null;
+        this.filtered_geneList = this.geneList;
       } else {
+        this.filtered_geneList = {};
         _ref = this.categories[catId].subcategories[subcatId].gene_ids;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           id = _ref[_i];
@@ -442,6 +445,7 @@
           throw new Error("Invalid gene ID: " + g + ".");
         }
         o.visible = true;
+        this.filtered_geneList[g] = o;
       }
       this.tableElem.empty();
       this._appendGeneTable();
@@ -542,6 +546,9 @@
       regex = new RegExp(this.escapeRegExp(searchTerm), "i");
       for (k in gList) {
         g = gList[k];
+        if (!this.filtered_geneList[k]) {
+          continue;
+        }
         val = g.name;
         if (regex.test(val)) {
           g.visible = true;
@@ -663,9 +670,8 @@
       return true;
     };
 
-    GenesSearch.prototype.prepareGenesQuery = function() {
-      var form, g, input, k, _ref;
-      form = jQuery('form .genes_search');
+    GenesSearch.prototype.prepareGenesQuery = function(form) {
+      var g, input, k, _ref;
       _ref = this.geneList;
       for (k in _ref) {
         g = _ref[k];
