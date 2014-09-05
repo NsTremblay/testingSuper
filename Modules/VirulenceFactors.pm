@@ -722,8 +722,8 @@ sub view : Runmode {
 Obtain genome feature IDs that contain
 a VF or AMR allele.
 
-Changes are needed with amr/vf tables are
-upgraded to handle private/public
+Changes are needed with amr/vf tables
+to handle private/public
 
 =cut
 

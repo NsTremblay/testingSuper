@@ -17,6 +17,7 @@ use Carp qw/croak carp/;
 use HTML::Template;
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
+with 'Roles::CVMemory';
 use Log::Log4perl qw(:easy);
 
 # get script location via File::Basename
@@ -125,11 +126,11 @@ sub cgiapp_postrun {
  			# Genome uploader requires user to be logged in.
  			my $authen_gu = 
  			q|<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome-uploader/submit_genome">Upload a genome</a></li>
-            <li role="presentation"><a role="menuitem" tabindex="-1" href="/genome-uploader/list">Modify or delete a genome</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="/upload/submit_genome">Upload a genome</a></li>
+            <li role="presentation"><a role="menuitem" tabindex="-1" href="/upload/list">Modify or delete a genome</a></li>
 			<li role="presentation" class="divider"></li>
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/add_access">Grant access to an uploaded genome</a></li>
-			<li role="presentation"><a role="menuitem" tabindex="-1" href="/user/edit_access">Change access to uploaded genomes</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="/upload/add_access">Grant access to an uploaded genome</a></li>
+			<li role="presentation"><a role="menuitem" tabindex="-1" href="/upload/edit_access">Change access to uploaded genomes</a></li>
             </ul>|;
             
             $$output_ref =~ s|gg_genome_uploader|$authen_gu|;

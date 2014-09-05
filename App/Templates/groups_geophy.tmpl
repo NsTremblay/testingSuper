@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <TMPL_INCLUDE NAME="header2.tmpl">
+
+    <script type="text/javascript">
+    var page_name = "geophy";
+    </script>
+
+    <style type="text/css">
+    input[type=checkbox] {
+        float: left;
+        margin-right: 0.4em;
+    }
+    </style>
+    
+</head>
+
+<body>
+
+    <TMPL_INCLUDE NAME="page_top.tmpl">
+
+    <div id="geophy-control"></div>
+
+    <div class="row" id="groups-geophy">
+        <div class="col-md-6" id="groups_map"></div>
+        <div class="col-md-6" id="groups_tree"></div>
+    </div>
+
+    <TMPL_INCLUDE NAME="page_bottom.tmpl">
+
+</body>
+
+
+<script type="text/javascript">
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR  private_genomes>;
+var tree = <TMPL_VAR tree_json>;
+var user_groups;
+</script>
+
+<TMPL_IF USER_SELECTIONS>
+<script type="text/javascript">
+user_groups = <TMPL_VAR groups>;
+var num_groups = <TMPL_VAR num_groups>;
+</script>
+</TMPL_IF>
+
+<script type="text/javascript">
+<TMPL_IF SHOWALL>
+var showAll = true;
+<TMPL_ELSE>
+var showAll = false;
+</TMPL_IF>
+</script>
+
+<script type="text/javascript">
+
+var geophy = new GeoPhy(public_genomes, private_genomes, viewController, user_groups, $('#groups_tree'), $('#groups_map'));
+geophy.init(showAll);
+
+$(document).ready( function () {    
+    $('.map-manifest-wrapper').removeClass('col-md-6').addClass('col-md-12');
+    $('.map-search-wrapper').removeClass('col-md-6').addClass('col-md-12');
+    //Removed the dl view for now. Need to set the styling properly on this
+    $('.download-view').empty();
+});
+
+</script>
+
+</html>

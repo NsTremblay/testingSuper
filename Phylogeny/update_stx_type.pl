@@ -37,16 +37,15 @@ use Carp;
 use Getopt::Long;
 
 
-my ($tree_file);
+my ($config_file);
 
-#GetOptions(
-#    'tree=s' => \$tree_file,
-#);
-#
-## Connect to DB
-#croak "Missing argument. You must supply the filename containing the newick tree data.\n" unless $tree_file;
+GetOptions(
+    'config=s' => \$config_file,
+);
 
-my $t = Phylogeny::Typer->new;
+my %args;
+$args{config} = $config_file if $config_file;
+my $t = Phylogeny::Typer->new(%args);
 
 # Retrieve stx alignment from database
 my ($stx1_file, $stx2_file) = $t->dbAlignments('/tmp/genodo2');

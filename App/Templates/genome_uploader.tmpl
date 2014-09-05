@@ -2,21 +2,18 @@
 <html>
 
 <head>
-	<TMPL_INCLUDE NAME="header.tmpl">
-	<!-- jQuery -->
-	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
-	<script src="/App/Styling/js/jquery-ui-1.10.1.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.1.css">
-	<!-- Twitter Bootstrap -->
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<!-- Twitter Bootstrap Form Helpers-->
 	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.en_US.js"></script>
 	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.js"></script>
-	<!-- Google Maps -->
-	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDDfsRetldM0eW0vVemFKt48xYaZwKQACY&sensor=true"></script>
-	<script type="text/javascript" src="/App/Styling/js/genodo_map_functions.js"></script>
-
+	
+	<script type="text/javascript">
+	var page_name = "genome-uploader";
+	</script>
 </head>
 
-<body style="background-color:#796e6c">
+
+<body>
 
 	<script type="text/javascript">
 	
@@ -74,19 +71,23 @@
 
 </script>
 
-<TMPL_INCLUDE NAME="nav_bar.tmpl">
+<TMPL_INCLUDE NAME="superphy_nav_bar.tmpl">
 
-<div class="container" style="background-color:#FFFFFF">
+<div class="container">
 
-	<div style="margin:10px 10px 10px 10px;padding:10px 10px 10px 10px">
-		<h1><TMPL_IF new_genome><h1><span>UPLOAD A </span> <span style="color:#d41616">GENOME</span></h1><TMPL_ELSE><h1><span>MODIFY GENOME</span> <span style="color:#d41616">ATTRIBUTES</span></h1></TMPL_IF></h1>
+	<div class="content-header">
+		<h1>
+			<TMPL_IF new_genome><span class="title_part1">UPLOAD A </span><span class="title_part2">GENOME</span><TMPL_ELSE><span class="title_part1">MODIFY GENOME </span><span class="title_part2">ATTRIBUTES</span></TMPL_IF>
+		</h1>
 	</div>
 
-	<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">
+	<div class="panel panel-default">
+		<div class="panel-body">
+			<TMPL_INCLUDE NAME="genome_uploader_form.tmpl">
+		</div>
+	</div>
 
 </div>
-
-<TMPL_INCLUDE NAME="footer.tmpl">
 
 </body>
 

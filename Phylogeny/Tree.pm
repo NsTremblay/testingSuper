@@ -123,7 +123,7 @@ sub loadTree {
 	my $public_list = $self->visableGenomes;
 	
 	# Prune private genomes from tree
-	my $public_tree = $self->pruneTree($ptree, $public_list, 1);
+	my $public_tree = $self->pruneTree($ptree, $public_list, 0);
 	
 	# Save perl copy for instances where we need to do some editing
 	my $ptree_string2 = Data::Dumper->Dump([$public_tree], ['tree']);
@@ -459,10 +459,10 @@ sub fullTree {
 
 =head2 nodeTree
 
-Returns json string representing "narrow" view of tree.
+Returns json string of tree.
 
-Nodes are all collapsed above a certain depth except for nodes 
-along path to leaf node matching $node.
+NOTE: Nodes are NO LONGER collapsed above a certain depth. This is done on
+the fly using javascript.
 
 =cut
 sub nodeTree {
@@ -473,7 +473,7 @@ sub nodeTree {
 		my $ptree = $self->globalTree;
 	
 		# Remove genomes not visable to user
-		my $tree = $self->pruneTree($ptree, $visable, 1);
+		my $tree = $self->pruneTree($ptree, $visable, 0);
 		
 		# Exand nodes along path to target leaf node
 		DEBUG encode_json($tree);
@@ -631,17 +631,15 @@ sub geneTree {
 	my $tree;
 	eval $tree_row->tree_string;
 	
-	{
-		$Data::Dumper::Indent = 1;
-		$Data::Dumper::Sortkeys = 1;
-		get_logger->debug(Dumper $tree);
-		
-	}
+#	{
+#		$Data::Dumper::Indent = 1;
+#		$Data::Dumper::Sortkeys = 1;
+#		get_logger->debug(Dumper $tree);
+#		
+#	}
 	
 	# Remove genomes not visable to user
 	my $user_tree = $self->pruneTree($tree, $visable);
-	
-	get_logger->debug('UT'.$user_tree);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);
