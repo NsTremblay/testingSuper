@@ -73,6 +73,7 @@ my @update_tables = (
 	"tprivate_featureprop",
 	"ttree",
 	"tsnp_core",
+	"tsnp_core2"
 );
 
 my %update_table_names = (
@@ -83,7 +84,8 @@ my %update_table_names = (
 	"tfeatureprop" => 'featureprop',
 	"tprivate_featureprop" => 'private_featureprop',
 	"ttree" => 'tree',
-	"tsnp_core" => 'snp_core'
+	"tsnp_core" => 'snp_core',
+	"tsnp_core2" => 'snp_core'
 );
 
 # Primary key sequence names
@@ -165,7 +167,7 @@ my %copystring = (
    tree                         => "(tree_id,name,format,tree_string)",
    feature_tree                 => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
    private_feature_tree         => "(feature_tree_id,feature_id,tree_id,tree_relationship)",
-   snp_core                     => "(snp_core_id,pangenome_region_id,allele,position,gap_offset,aln_column)",
+   snp_core                     => "(snp_core_id,pangenome_region_id,allele,position,gap_offset,aln_column,frequency_a,frequency_t,frequency_g,frequency_c,frequency_gap,frequency_other)",
    snp_variation                => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
    private_snp_variation        => "(snp_variation_id,snp_id,contig_collection_id,contig_id,locus_id,allele)",
    snp_position                 => "(snp_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,region_start,locus_start,region_end,locus_end,locus_gap_offset)",
@@ -184,6 +186,8 @@ my %updatestring = (
 	tprivate_featureprop          => "value = s.value",
 	ttree                         => "tree_string = s.tree_string",
 	tsnp_core                     => "position = s.position, gap_offset = s.gap_offset",
+	tsnp_core2                    => "aln_column = s.aln_column, frequency_a = s.frequency_a, frequency_a = s.frequency_a, frequency_t = s.frequency_t,".
+									 "frequency_g = s.frequency_g, frequency_c = s.frequency_c, frequency_gap = s.frequency_gap, frequency_gap = s.frequency_gap"
 );
 
 my %tmpcopystring = (
@@ -194,7 +198,8 @@ my %tmpcopystring = (
 	tprivate_featureprop          => "(feature_id,type_id,value,rank)",
 	tprivate_featureloc           => "(feature_id,fmin,fmax,strand,locgroup,rank)",
 	ttree                         => "(tree_id,name,tree_string)",
-	tsnp_core                     => "(snp_core_id,pangenome_region_id,position,gap_offset)"
+	tsnp_core                     => "(snp_core_id,pangenome_region_id,position,gap_offset)",
+	tsnp_core2                    => "(snp_core_id,pangenome_region_id,aln_column,frequency_a,frequency_t,frequency_g,frequency_c,frequency_gap,frequency_other)"
 );
 
 my %joinstring = (
@@ -205,7 +210,8 @@ my %joinstring = (
 	tprivate_featureloc           => "s.feature_id = t.feature_id",
 	tprivate_featureprop          => "s.feature_id = t.feature_id AND s.type_id = t.type_id",
 	ttree                         => "s.tree_id = t.tree_id",
-	tsnp_core                     => "s.snp_core_id = t.snp_core_id"
+	tsnp_core                     => "s.snp_core_id = t.snp_core_id",
+	tsnp_core2                    => "s.snp_core_id = t.snp_core_id"
 );
 
 
@@ -213,7 +219,7 @@ my %joinstring = (
 my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|uniquename|genome_id|query_id|is_public|insert|update";
                
 # Tables for which caches are maintained
-my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp|snp_alignment|uploaded_feature|core_alignment|core_region";
+my $ALLOWED_CACHE_KEYS = "collection|contig|feature|sequence|core|core_snp|new_core_snp|snp_alignment|uploaded_feature|core_alignment|core_region";
 
 # Tmp file names for storing upload data
 my %files = map { $_ => 'FH'.$_; } @tables, @update_tables;
@@ -774,6 +780,7 @@ sub initialize_snp_caches {
    $sql = 
 	"CREATE TABLE public.tmp_snp_cache (
 		name varchar(100),
+		snp_id int,
 		aln_column int,
 		nuc char(1)
 	)";
@@ -781,16 +788,21 @@ sub initialize_snp_caches {
     
     # Prepare bulk insert
     my $bulk_set_size = 10000;
-    my $insert_query = 'INSERT INTO tmp_snp_cache (name,aln_column,nuc) VALUES (?,?,?)';
-    $insert_query .= ', (?,?,?)' x ($bulk_set_size-1);
+    my $insert_query = 'INSERT INTO tmp_snp_cache (name,snp_id,aln_column,nuc) VALUES (?,?,?,?)';
+    $insert_query .= ', (?,?,?,?)' x ($bulk_set_size-1);
     $self->{snp_alignment}{insert_tmp_variations} = $dbh->prepare($insert_query);
     $self->{snp_alignment}{bulk_set_size} = $bulk_set_size;
+
+    # Prepare update column
+    my $update_query = 'UPDATE tmp_snp_cache SET aln_column = ? WHERE snp_id = ?';
+    $self->{snp_alignment}{update_tmp_variations} = $dbh->prepare($update_query);
     
     # Setup up insert buffer
 	$self->{snp_alignment}{buffer_stack} = []; 
 	$self->{snp_alignment}{buffer_num} = 0; 
 	$self->{snp_alignment}{new_rows} = [];
-	
+	$self->{snp_alignment}{new_columns} = {};
+	$self->{snp_alignment}{modified_columns} = {};
 	
 	
 	# Setup core region cache
@@ -826,7 +838,7 @@ sub initialize_snp_caches {
     $self->{core_alignment}{bulk_set_size} = $bulk_set_size;
     
     # Setup up insert buffer
-	$self->{core_alignment}{buffer_stack} = []; 
+	$self->{core_alignment}{buffer_stack} = [];
 	$self->{core_alignment}{buffer_num} = 0; 
 	$self->{core_alignment}{new_rows} = [];
     
@@ -1542,7 +1554,8 @@ sub prepare_queries {
 	# SNP stuff
 	if($self->{snp_aware}) {
 		# SNP tables
-		$sql = "SELECT snp_core_id, aln_column FROM snp_core WHERE pangenome_region_id = ? AND position = ? AND gap_offset = ?";
+		$sql = "SELECT snp_core_id, aln_column, position, gap_offset, frequency_a, frequency_t, frequency_g, frequency_c, frequency_gap, frequency_other ".
+		       "FROM snp_core WHERE pangenome_region_id = ? AND position = ? AND gap_offset = ?";
 		$self->{'queries'}{'validate_core_snp'} = $dbh->prepare($sql);
 		$sql = "SELECT snp_variation_id FROM snp_variation WHERE snp_id = ? AND contig_collection_id = ?";
 		$self->{'queries'}{'validate_public_snp'} = $dbh->prepare($sql);
@@ -1597,6 +1610,12 @@ void
 sub load_data {
 	my $self = shift;
 
+	# Print mutable in-memory values to file,
+	# now that program has terminated.
+	if($self->{snp_aware}) {
+		$self->print_snp_data();
+	}
+
 	my %nextvalue = $self->nextvalueHash();
 	
 	foreach my $table (@update_tables) {
@@ -1642,7 +1661,6 @@ sub load_data {
 		$self->push_core_alignment();
 		$self->push_snp_alignment();
 	}
-	 
 	
 	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 	
@@ -1984,7 +2002,12 @@ sub validate_snp_alignment {
 
 =item Returns
 
-Nothing
+Hash:
+  snp_id => snp_core_id in snp_core table,
+  col    => column in snp_alignment string containing this snp
+  freq   => allele frequency array ref
+  pos    => position/column in pangenome region alignment where snp arises
+  gapo   => gap offset in pangenome region alignment where snp arises (if snp is gap)
 
 =item Arguments
 
@@ -1998,20 +2021,28 @@ sub retrieve_core_snp {
     my $self = shift;
 	my ($id, $pos, $gap_offset) = @_;
 	
-	# Search for existing core snp entries in cached values
-	my ($core_snp_id, $column);
+	
+	my $snp_hash;
 	
 	if(defined $self->cache('core_snp', "$id.$pos.$gap_offset")) {
-		($core_snp_id, $column) = @{$self->cache('core_snp', "$id.$pos.$gap_offset")};
+		# Search for existing core snp entries in cached values
+		$snp_hash = $self->cache('core_snp', "$id.$pos.$gap_offset");
+
 	} else {
 		# Search for existing entries in snp_core table
+
 		$self->{queries}{'validate_core_snp'}->execute($id,$pos,$gap_offset);
-		($core_snp_id, $column) = $self->{queries}{'validate_core_snp'}->fetchrow_array;
-		
-		$self->cache('core_snp', "$id.$pos.$gap_offset", [$core_snp_id, $column]) if $core_snp_id;
+		my ($core_snp_id, $col, $pos, $gapo, @frequencyArray) = $self->{queries}{'validate_core_snp'}->fetchrow_array;
+
+		if($core_snp_id) {
+			$snp_hash = { snp_id => $core_snp_id, col => $col, freq => \@frequencyArray, pos => $pos, gapo => $gapo };
+		} else {
+			$snp_hash = undef;
+		}
+				
 	}
 	
-	return ($core_snp_id, $column);
+	return ($snp_hash);
 }
 
 =head2 validate_core_alignment
@@ -2594,32 +2625,143 @@ sub handle_snp {
 	
 	croak "Positioning violation! $c2 character with gap offset value $rgap_offset for core sequence." if ($rgap_offset && $c2 ne '-') || (!$rgap_offset && $c2 eq '-');
 	
-	# Retrieve reference snp, if exists
-	my ($ref_snp_id, $column) = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
+	# Retrieve reference snp, if it exists
+	my $snp_hash = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
+
+	my ($ref_snp_id, $column);
 	
-	unless($ref_snp_id) {
+	unless($snp_hash) {
 		# Create new core snp
+		$ref_snp_id = $self->add_core_snp($ref_id, $ref_pos, $rgap_offset, $c2, $c1);
 		
-		# Update snp alignment strings with new column
-		($column) = $self->add_snp_column($c2);
+	} else {
+		# Existing core snp
+		$ref_snp_id = $snp_hash->{snp_id};
+		$column = $snp_hash->{column};
+
+		my @frequencyArray = @{$snp_hash->{freqA}};
 		
-		my $table = 'snp_core';
+		# Update frequency
+		@frequencyArray = _update_frequency_array($c1, @frequencyArray);
+		$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset")->{freq} = \@frequencyArray;
 		
-		$ref_snp_id = $self->nextoid($table);	                                 	
-		$self->print_sc($ref_snp_id,$ref_id,$c2,$ref_pos,$rgap_offset,$column);
-		$self->nextoid($table,'++');
-		$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset",[$ref_snp_id, $column]);
+		# Does the updated allele frequency indicate that this is now a polymorphism
+		if(!defined($column) && _is_polymorphism(@frequencyArray)) {
+			# Now officially snp, add new snp column to alignment
+
+			($column) = $self->add_snp_column($c2, $ref_snp_id);
+			$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset")->{col} = $column;
+			$self->{snp_alignment}{new_columns}{$ref_snp_id} = [$column, $ref_id];
+
+			# Set all previous variations to new column value
+			$self->{snp_alignment}{update_tmp_variations}->execute($column, $ref_snp_id);
+			$self->dbh->commit;
+
+
+		} elsif(defined $column) {
+			# Snp in alignment
+			
+			# Record modified snp column
+			$self->{snp_alignment}{modified_columns}{$ref_snp_id} = [$column, $ref_id];
+		}
 		
 	}
 		
-	# Update snp in alignment for genome
-	$self->alter_snp($contig_collection,$is_public,$column,$c1);
-	
-	# Create snp entry
+	# Create variation entry
 	my $table = $is_public ? 'snp_variation' : 'private_snp_variation';
 	$self->print_sv($self->nextoid($table),$ref_snp_id,$contig_collection,$contig,$locus,$c1,$is_public);
 	$self->nextoid($table,'++');
+
+	# Record all variations in cache
+	$self->alter_snp($contig_collection,$is_public,$ref_snp_id,$column,$c1);
+
+}
+
+sub _update_frequency_array {
+	my $nuc = shift;
+	my @frequencyArray = @_;
 	
+	@frequencyArray = (0) x 6 unless @frequencyArray;
+	
+	if($nuc eq 'A') {
+		$frequencyArray[0]++;
+	} elsif($nuc eq 'T') {
+		$frequencyArray[1]++;
+	} elsif($nuc eq 'C') {
+		$frequencyArray[2]++;
+	} elsif($nuc eq 'G') {
+		$frequencyArray[3]++;
+	} elsif($nuc eq '-') {
+		$frequencyArray[4]++;
+	} else {
+		$frequencyArray[5]++;
+	} 
+	
+	return @frequencyArray;
+}
+
+sub _is_polymorphism {
+	my @frequencyArray = @_;
+	
+	foreach my $n (@frequencyArray[0..3]) {
+		return 1 if $n > 1;
+	}
+
+	return 0;
+}
+
+=cut
+
+=head2 add_core_snp
+
+=over
+
+=item Usage
+
+  $obj->add_core_snp($pg_id, $align_pos, $gap_offset, $ref_c, $c)
+
+=item Function
+
+  Create new reference SNP entry.
+
+  At time point only one genome will have variation.
+
+=item Returns
+
+ID for newly added snp_core entry
+
+=item Arguments
+
+  1. Int: pangenome fragment ID
+  2. Int: position in pangenome alignment
+  3. Int: gap offset in pangenome alignment
+  4. Char: background allele character
+  5. Char: genome variation charater
+
+=back
+
+=cut
+
+sub add_core_snp {
+	my $self = shift;
+	my ($ref_id, $ref_pos, $rgap_offset, $ref_c, $c) = @_;
+
+	# Allele frequency > 1 in order to add to snp alignment,
+	# so at this point snp will not be in alignment
+		
+	# Starting frequency counts
+	# NOTE: background (or SNPs with char matching the snp_core allele char) are not counted
+	my @frequencyArray = _update_frequency_array($c);
+		
+	my $table = 'snp_core';
+	my $ref_snp_id = $self->nextoid($table);
+	$self->cache('new_core_snp',"$ref_id.$ref_pos.$rgap_offset", [$ref_snp_id,$ref_id,$ref_c,$ref_pos,$rgap_offset]);
+	$self->nextoid($table,'++');
+	$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset", 
+		{ snp_id => $ref_snp_id, col => undef, freq => \@frequencyArray, pos => $ref_pos, gapo => $rgap_offset }
+	);
+
+	return $ref_snp_id;
 }
 
 =cut
@@ -2659,9 +2801,9 @@ sub handle_snp_alignment_block {
 	if($gap1) {
 		# Reference gaps go into 'special' table
 		
-		my $snp_array = $self->cache('core_snp',"$ref_id.$start1.$gap1");
-		croak "Error: SNP in reference pangenome region $ref_id (pos: $start1, gap-offset: $gap1) not found." unless defined $snp_array;
-		my $core_snp_id = $snp_array->[0];
+		my $snp_hash = $self->cache('core_snp',"$ref_id.$start1.$gap1");
+		croak "Error: SNP in reference pangenome region $ref_id (pos: $start1, gap-offset: $gap1) not found." unless defined $snp_hash && defined $snp_hash->{snp_id};
+		my $core_snp_id = $snp_hash->{snp_id};
 		
 		my $table = $is_public ? 'gap_position' : 'private_gap_position';
 		$self->print_gp($self->nextoid($table),$contig_collection, $contig, $ref_id, $locus, $core_snp_id, $start2, $is_public);
@@ -2883,11 +3025,11 @@ sub print_ftree {
 
 sub print_sc {
 	my $self = shift;
-	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col) = @_;
+	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col,@freqA) = @_;
 	
 	my $fh = $self->file_handles('snp_core');		
 
-	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$col)),"\n";
+	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$col,@freqA)),"\n";
 }
 
 sub print_cr {
@@ -3008,6 +3150,15 @@ sub print_usc {
 	my $fh = $self->file_handles('tsnp_core');		
 
 	print $fh join("\t", ($snp_core_id,$pangenome_region,$position,$gap_offset)),"\n";
+}
+
+sub print_usc2 {
+	my $self = shift;
+	my ($snp_core_id,$pangenome_region,$aln_coln,@freqA) = @_;
+	
+	my $fh = $self->file_handles('tsnp_core2');		
+
+	print $fh join("\t", ($snp_core_id,$pangenome_region,$aln_coln,@freqA)),"\n";
 }
 
 
@@ -3576,10 +3727,10 @@ sub elapsed_time {
 sub add_snp_column {
 	my $self = shift;
 	my $nuc = shift;
+	my $ref_id = shift;
 		
-	my $c = $self->{snp_alignment}->{core_position}++;
-	$self->{snp_alignment}->{core_alignment} .= $nuc;
-	
+	my $c = $self->{snp_alignment}{core_position}++;
+	$self->{snp_alignment}{core_alignment} .= $nuc;
 	
 	return($c);
 }
@@ -3728,12 +3879,9 @@ sub alter_snp {
 	my $self = shift;
 	my $genome_id = shift;
 	my $is_public = shift;
-	my $pos = shift;
+	my $ref_id = shift;
+	my $col = shift;
 	my $nuc = shift;
-	
-	# Validate alignment positions
-	my $maxc = $self->{snp_alignment}->{core_position};
-	croak "Invalid SNP alignment position $pos (max: $maxc)." unless $pos <= $maxc;
 	
 	# Validate nucleotide
 	$nuc = uc($nuc);
@@ -3742,7 +3890,7 @@ sub alter_snp {
 	my $pre = $is_public ? 'public_' : 'private_';
 	my $genome = $pre . $genome_id;
 	
-	push @{$self->{snp_alignment}{buffer_stack}}, $genome, $pos, $nuc;
+	push @{$self->{snp_alignment}{buffer_stack}}, $genome, $ref_id, $col, $nuc;
 	$self->{snp_alignment}{buffer_num}++;
 
 	if($self->{snp_alignment}{buffer_num} == $self->{snp_alignment}{bulk_set_size}) {
@@ -3804,6 +3952,53 @@ sub has_core_region {
 	}
 }
 
+=head2 print_snp_data
+
+=over
+
+=item Usage
+
+  $obj->print_snp_data(); 
+
+=item Function
+
+  Snp counts change over progression of program. Print final values
+  to file at end of run.
+
+=item Returns
+
+  Nothing
+
+=item Arguments
+
+  None
+
+=back
+
+=cut
+
+sub print_snp_data {
+	my $self = shift;
+	
+	my $dbh = $self->dbh;
+	my $filler_pg = 1;
+
+	while( my ($snp_name, $snp_data) = each %{$self->cache('core_snp')} ) {
+		my $new_snp_data = $self->cache('new_core_snp', $snp_name);
+
+		if($new_snp_data) {
+			# Print data for new core snp entry
+			$self->print_sc(@$new_snp_data,$snp_data->{col},$snp_data->{freqA});
+		} else {
+			# Print data for updated core snp
+			# pangenome region ID cannot be NULL, so just plugin some value to satisfy constraint in temp update table.
+			# Note: this value is not used to join or update values in target table.
+			$self->print_usc2($snp_data->{snp_id},$filler_pg,$snp_data->{col},$snp_data->{freqA})
+		}
+	}
+
+}
+
 =head2 push_snp_alignment
 
 =over
@@ -3836,16 +4031,16 @@ sub push_snp_alignment {
 	# Insert the remaining rows in the buffer
 	my $num_rows = scalar(@{$self->{snp_alignment}{buffer_stack}});
 	if($num_rows) {
-		$num_rows = $num_rows/3;
-		my $insert_query = 'INSERT INTO tmp_snp_cache (name,aln_column,nuc) VALUES (?,?,?)';
-	    $insert_query .= ', (?,?,?)' x ($num_rows-1);
+		$num_rows = $num_rows/4;
+		my $insert_query = 'INSERT INTO tmp_snp_cache (name,snp_id,aln_column,nuc) VALUES (?,?,?,?)';
+	    $insert_query .= ', (?,?,?,?)' x ($num_rows-1);
 	    my $insert_sth = $dbh->prepare($insert_query);
 	    $insert_sth->execute(@{$self->{snp_alignment}{buffer_stack}});
 	}
 	my $sql = "CREATE INDEX tmp_snp_cache_idx1 ON public.tmp_snp_cache (name)";
     $dbh->do($sql);
     $dbh->commit;
-	
+
 	# New additions to core
 	my $new_core_aln = $self->{snp_alignment}->{core_alignment};
 	my $curr_column = $self->{snp_alignment}->{core_position};
@@ -3887,25 +4082,22 @@ sub push_snp_alignment {
 	# Iterate through new genomes
 	my @new_genomes = @{$self->{snp_alignment}{new_rows}};
 	
-	my $retrieve_sth = $dbh->prepare('SELECT aln_column,nuc FROM tmp_snp_cache WHERE name = ?');
-	print 'NG:'.join(',',@new_genomes),"\n";
+	my $retrieve_sth = $dbh->prepare('SELECT aln_column, nuc FROM tmp_snp_cache WHERE name = ? AND aln_column IS NOT NULL');
 	foreach my $g (@new_genomes) {
 		
 		$genomes->{$g} = 0;
+		my $genome_string = $full_core_aln;
 		
 		# Make genome snp changes to core string
 		$retrieve_sth->execute($g);
-		my $genome_string = $full_core_aln;
 
-		while (my $bunch_of_rows = $retrieve_sth->fetchall_arrayref(undef, 5000)) {
+		while (my $bunch_of_rows = $retrieve_sth->fetchrow_arrayref(undef, 5000)) {
 			snp_edits($genome_string, $bunch_of_rows);
 		}
 		
 		# Remove snps for regions not in genome
-		#print 'BEFORE: '.$genome_string."\n";
 		my $missing_regions = &_absentCoreRegions($g, $pgregions, $pgmap->{$g});
 		$genome_string = $self->mask_missing_in_new($genome_string, $missing_regions, $db_snps, $new_snps);
-		#print 'AFTER: '.$genome_string."\n";
 		
 		# Print to DB file
 		print $tmpfh join("\t", ($g,$curr_column,$genome_string)),"\n";
@@ -3914,13 +4106,30 @@ sub push_snp_alignment {
 	# Iterate through old genomes (no SNP-finding performed on these genomes)
 	# Add core snps to their strings
 	my $offset = $curr_column - length($new_core_aln);
+	my $public_sth = $dbh->prepare('SELECT allele FROM snp_variation WHERE contig_collection_id = ? AND snp_id = ?');
+	my $private_sth = $dbh->prepare('SELECT allele FROM private_snp_variation WHERE contig_collection_id = ? AND snp_id = ?');
 	foreach my $g (keys %$genomes) {
 		
 		next unless $genomes->{$g};
+
+		my ($access, $id) = ($g =~ m/(public|private)_(\d+)/);
+
+		# Pull down any variations for the new columns
+		my @modifications;
+		my $sth = ($access eq 'public') ? $public_sth : $private_sth;
+		while(my ($snp_id, $snp_row) = each $self->{snp_alignment}{new_columns}) {
+			
+			$sth->execute($id, $snp_id);
+			while(my ($nuc) = $sth->fetchrow_array()) {
+				push @modifications, [$snp_row->[0]-$offset, $nuc]
+			}
+		}
+		my $editted_aln = $new_core_aln;
+		snp_edits($editted_aln, \@modifications) if @modifications;
 		
 		# Change snps for regions not in genome to gaps
 		my $missing_regions = &_absentCoreRegions($g, $pgregions, $pgmap->{$g});
-		my $editted_aln = $self->mask_missing_in_db($new_core_aln, $missing_regions, $new_snps, $offset);
+		$editted_aln = $self->mask_missing_in_db($editted_aln, $missing_regions, $new_snps, $offset);
 		
 		print $tmpfh join("\t", ($g,$curr_column,$editted_aln)),"\n";
 	}
@@ -4198,30 +4407,23 @@ sub _coreRegionList {
 sub _snpsList {
 	my $self = shift;
 	
-	my $dbh = $self->dbh;
-	
 	# Build list of new and existing SNPs
 	# DB Snps
 	my %db_snps;
-	my $sql4 = "SELECT snp_core_id, aln_column, pangenome_region_id FROM snp_core";
-	my $sth4 = $dbh->prepare($sql4);
-	$sth4->execute();
 	
-	while(my $row = $sth4->fetchrow_arrayref) {
-		$db_snps{$row->[2]} = [] unless defined $db_snps{$row->[2]};
-		push @{$db_snps{$row->[2]}}, [$row->[0], $row->[1]];
+	while(my ($snp_id, $snp_row) = each %{$self->{snp_alignment}{modified_columns}}) {
+		next if $self->{snp_alignment}{modified_columns}{$snp_id};
+
+		$db_snps{$snp_row->[1]} = [] unless defined $db_snps{$snp_row->[1]};
+		push @{$db_snps{$snp_row->[2]}}, [$snp_id, $snp_row->[0]];
 	}
 	
 	# New Snps
-	# Assumes $self->{cache}{'core_snp'} is populated with new snps
 	my %new_snps;
-	if(defined $self->cache('core_snp')) {
-		foreach my $uniquename (keys %{$self->cache('core_snp')}) {
-			my ($pg_id, $pos, $gap) = split(/\./, $uniquename);
-			my $snp_data = $self->{cache}{'core_snp'}->{$uniquename};
-			$new_snps{$pg_id} = [] unless defined $new_snps{$pg_id};
-			push @{$new_snps{$pg_id}}, $snp_data;
-		}
+	while(my ($snp_id, $snp_row) = each %{$self->{snp_alignment}{new_columns}}) {
+		
+		$new_snps{$snp_row->[1]} = [] unless defined $new_snps{$snp_row->[1]};
+		push @{$new_snps{$snp_row->[2]}}, [$snp_id, $snp_row->[0]];
 	}
 	
 	return (\%db_snps, \%new_snps);
@@ -4495,14 +4697,13 @@ sub snp_audit {
         		# find if any columns are new
         		my $n = 0;
         		for(my $j=1; $j <= $gap; $j++) {
-        			my ($snp_id, $col) = $self->retrieve_core_snp($refid, $pos, $j);
+        			my $snp_hash = $self->retrieve_core_snp($refid, $pos, $j);
         			
-					unless($snp_id) {
+					unless($snp_hash) {
 						# new insert
 						$n++;
 					} else {
-						croak "Error: SNP entry in DB for $refid, $pos, $j, $snp_id missing alignment column." unless $col;
-						push @old_snps, [$snp_id, $col];
+						push @old_snps, $snp_hash;
 					}
         		}
         		
@@ -4527,7 +4728,7 @@ sub snp_audit {
 }
 
 
-=head2 handle_insert_blocks
+=head2 handle_isert_blocks
 
 Handle regions of ambiguity (new gap inserted into existing gap), identifying
 old and new alignment columns. Update positioning as needed.
@@ -4555,7 +4756,7 @@ sub handle_insert_blocks {
 		# Compare each insert position with known column characters to distinguish old and new
         
         # Obtain identifying characters for the first old insert column in alignment
-        my $insert_column = $self->snp_variations_in_column($current_insert_ids[0][0]);
+        my $insert_column = $self->snp_variations_in_column($current_insert_ids[0]->{snp_id});
 		
 		if($v) {
 			print "REF FRAGMENT: $ref_id\n$refseq\n";
@@ -4579,15 +4780,7 @@ sub handle_insert_blocks {
 					croak "Error: Unable to position new and old insertion columns in SNP alignment (encountered non-gap character in genome row that is currently in DB)." unless $c2 eq '-';
 					
 					# Found new snp column
-					
-					# Create new entry in snp_core table and add gap column to SNP alignment
-					my ($column) = $self->add_snp_column('-');
-					
-					my $table = 'snp_core';
-					my $ref_snp_id = $self->nextoid($table);	                                 	
-					$self->print_sc($ref_snp_id,$ref_id,$c2,$pos,$i,$column);
-					$self->nextoid($table,'++');
-					$self->cache('core_snp',"$ref_id.$pos.$i",[$ref_snp_id, $column]);
+					$self->add_core_snp($ref_id, $pos, $i, $c2, $c1);
 					
 					$col_match = 0;
 					$n--;
@@ -4600,15 +4793,19 @@ sub handle_insert_blocks {
         		
         		# Update the position of the insert column
         		croak "Error: The snps in the DB and the current alignment are out of sync." unless @current_insert_ids;
-        		my ($snp_core_id, $column) = @{$current_insert_ids[0]};
-        		$self->print_usc($snp_core_id,$ref_id,$pos,$i);
+        		#my ($snp_core_id, $column) 
+        		my $snp_hash = $current_insert_ids[0];
+        		$self->print_usc($snp_hash->{snp_id},$ref_id,$pos,$i);
 				
-				$self->cache('core_snp',"$ref_id.$pos.$i",[$snp_core_id, $column]);
+				$snp_hash->{pos} = $pos;
+				$snp_hash->{gapo} = $i;
+
+				$self->cache('core_snp',"$ref_id.$pos.$i",$snp_hash);
 				
         		shift @current_insert_ids;
-        		$insert_column = $self->snp_variations_in_column($current_insert_ids[0][0]) if @current_insert_ids;
+        		$insert_column = $self->snp_variations_in_column($current_insert_ids[0]->{snp_id}) if @current_insert_ids;
         		
-        		print "MATCHED $snp_core_id, $column to $pos, $i in ALIGNMENT.\n" if $v;
+        		print "MATCHED ".$snp_hash->{snp_id}." to $pos, $i in ALIGNMENT.\n" if $v;
         		
         	} else {
         		print "NEW GAP COLUMN IN ALIGNMENT at $pos, $i.\n" if $v;
