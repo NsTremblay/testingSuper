@@ -127,8 +127,8 @@ __PACKAGE__->add_columns(
 __PACKAGE__->set_primary_key("job_id");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07038 @ 2013-12-18 19:03:47
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:K4MAGz6vQasn1qdNM+6+0w
+# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-05-27 15:57:54
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:y7BCDD6rPAV0lAMJf+wRCw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

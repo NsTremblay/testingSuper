@@ -8,12 +8,13 @@ use Pod::Usage;
 use Carp;
 use Sys::Hostname;
 use Config::Simple;
-use ExperimentalFeatures;
 use FindBin;
 use lib "$FindBin::Bin/..";
+use Sequences::ExperimentalFeatures;
 use Phylogeny::TreeBuilder;
 use Phylogeny::Tree;
 use Time::HiRes qw( time );
+use IO::CaptureOutput qw(capture_exec);
 
 =head1 NAME
 
@@ -113,7 +114,15 @@ it under the same terms as Perl itself.
 
 =cut
 
-my ($CONFIGFILE, $FASTAFILE, $PANFILE, $BINARYFILE, $NOLOAD,
+# Globals (set these to match local values)
+my $muscle_exe = '/usr/bin/muscle';
+my $mummer_dir = '/home/matt/MUMmer3.23/';
+my $blast_dir = '/home/matt/blast/bin/';
+my $parallel_exe = '/usr/bin/parallel';
+my $panseq_exe = '/home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl';
+my $align_script = "$FindBin::Bin/parallel_tree_builder.pl";
+
+my ($CONFIGFILE, $PANSEQDIR, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
@@ -122,9 +131,7 @@ my ($CONFIGFILE, $FASTAFILE, $PANFILE, $BINARYFILE, $NOLOAD,
 
 GetOptions(
 	'config=s' => \$CONFIGFILE,
-    'fasta=s' => \$FASTAFILE,
-    'pan=s' => \$PANFILE,
-    'binary=s' => \$BINARYFILE,
+    'panseq=s' => \$PANSEQDIR,
     'noload' => \$NOLOAD,
     'recreate_cache'=> \$RECREATE_CACHE,
     'remove_lock'  => \$REMOVE_LOCK,
@@ -136,16 +143,10 @@ GetOptions(
 or pod2usage(-verbose => 1, -exitval => 1);
 pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
 
-
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
-
-croak "You must supply an FASTA filename" unless $FASTAFILE;
-croak "You must supply an Panseq pan-genome filename" unless $PANFILE;
-
-
 # Load database connection info from config file
-die "You must supply a configuration filename" unless $CONFIGFILE;
+croak "[Error] you must supply a configuration filename" unless $CONFIGFILE;
 if(my $db_conf = new Config::Simple($CONFIGFILE)) {
 	$DBNAME    = $db_conf->param('db.name');
 	$DBUSER    = $db_conf->param('db.user');
@@ -158,7 +159,6 @@ if(my $db_conf = new Config::Simple($CONFIGFILE)) {
 	die Config::Simple->error();
 }
 croak "Invalid configuration file." unless $DBNAME;
-
 
 # Initialize the chado adapter
 my %argv;
@@ -183,9 +183,84 @@ my $chado = Sequences::ExperimentalFeatures->new(%argv);
 my $tree_builder = Phylogeny::TreeBuilder->new();
 my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
 
-
 # BEGIN
 my $now = time();
+
+unless($PANSEQDIR) {
+	print "Running panseq...\n";
+	
+	my $root_dir = $TMPDIR . 'panseq_alleles/';
+	unless (-e $root_dir) {
+		mkdir $root_dir or croak "[Error] unable to create directory $root_dir ($!).\n";
+	}
+	
+	# Download all genome sequences
+	print "\tdownloading genome sequences...\n";
+	my $fasta_dir = $root_dir . '/fasta/';
+	unless (-e $fasta_dir) {
+		mkdir $fasta_dir or croak "[Error] unable to create directory $fasta_dir ($!).\n";
+	}
+	my $fasta_file = $fasta_dir . 'genomes.ffn';
+	
+	my $cmd = "perl $FindBin::Bin/../Database/contig_fasta.pl --config $CONFIGFILE --output $fasta_file";
+	system($cmd) == 0 or croak "[Error] download of contig sequences failed (syscmd: $cmd).\n";
+	print "\tcomplete\n";
+	
+	# Download all query gene sequences
+	print "\tdownloading query gene sequences...\n";
+	my $qg_dir = $root_dir . '/query_genes/';
+	unless (-e $qg_dir) {
+		mkdir $qg_dir or croak "[Error] unable to create directory $qg_dir ($!).\n";
+	}
+	my $query_file = $qg_dir . 'query_genes.ffn';
+	
+	$cmd = "perl $FindBin::Bin/../Database/query_gene_fasta.pl --config $CONFIGFILE --combined $query_file.";
+	system($cmd) == 0 or croak "[Error] download of query gene sequences failed (syscmd: $cmd).\n";
+	print "\tcomplete\n";
+	$query_file = "/home/matt/workspace/a_genodo/data/typing/stx/fasta/genodo_query_genes.ffn";
+	
+	# Run panseq
+	print "\tpreparing panseq input...\n";
+	$PANSEQDIR = $root_dir . 'panseq/';
+	if(-e $PANSEQDIR) {
+		remove_tree $PANSEQDIR or croak "[Error] unable to delete directory $PANSEQDIR ($!).\n";
+	}
+	
+	my $pan_cfg_file = $root_dir . 'vf.conf';
+	my $core_threshold = 3;
+	
+	open(my $out, '>', $pan_cfg_file) or die "[Error] cannot write to file $pan_cfg_file ($!).\n";
+	print $out 
+qq|queryDirectory	$fasta_dir
+queryFile	$query_file
+baseDirectory	$PANSEQDIR
+numberOfCores	8
+mummerDirectory	$mummer_dir
+blastDirectory	$blast_dir
+minimumNovelRegionSize	0
+novelRegionFinderMode	no_duplicates
+muscleExecutable	$muscle_exe
+fragmentationSize	0
+percentIdentityCutoff	90
+coreGenomeThreshold	0
+runMode	pan
+storeAlleles	1
+addMissingQuery	1
+nameOrId	name
+|;
+	close $out;
+
+	print "\tcomplete\n";
+	
+	my @loading_args = ($panseq_exe,
+	$pan_cfg_file);
+	
+	print "\trunning panseq...\n";
+	$cmd = join(' ', @loading_args);
+	system($cmd) == 0 or croak "[Error] Panseq analysis failed.\n";
+	print "\tcomplete\n";
+	
+}
 
 # Lock table so no one else can upload
 $chado->remove_lock() if $REMOVE_LOCK;
@@ -198,9 +273,13 @@ $chado->file_handles();
 # Save data for inserting into database
 elapsed_time('db init');
 
+# Inputs
+my $panfile = $PANSEQDIR . '/pan_genome.txt';
+my $locusfile = $PANSEQDIR . 'locus_alleles.fasta';
+
 # Load locus locations
 my %loci;
-open(my $in, "<", $PANFILE) or croak "Error: unable to read file $PANFILE ($!).\n";
+open(my $in, "<", $panfile) or croak "[Error] unable to read file $panfile ($!).\n";
 <$in>; # header line
 while (my $line = <$in>) {
 	chomp $line;
@@ -235,13 +314,13 @@ elapsed_time('positions loaded');
 	# This could be disasterous if the memory req'd is large (swap-thrashing yikes!)
 	# otherwise, this should be faster than line-by-line.
 	# Also assumes specific FASTA format (i.e. sequence and header contain no line breaks or spaces)
-	open (my $in, "<", $FASTAFILE) or croak "Error: unable to read file $FASTAFILE ($!).\n";
+	open (my $in, "<", $locusfile) or croak "[Error] unable to read file $locusfile ($!).\n";
 	local $/ = "\nLocus ";
 	
 	while(my $locus_block = <$in>) {
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my %sequence_group;
+		my @sequence_group;
 		my $num_ok = 0;  # Some allele sequences fail checks, so the overall number of sequences can drop making trees irrelevant
 		
 		# query gene
@@ -253,12 +332,12 @@ elapsed_time('positions loaded');
 			my $seq = $2;
 		
 			# Load the sequence
-			$num_ok++ if allele($query_id,$query_name,$header,$seq,\%sequence_group);
+			$num_ok++ if allele($query_id,$query_name,$header,$seq,\@sequence_group);
 			
 		}
 		
 		# Build tree
-		build_tree($query_id, \%sequence_group) if $num_ok > 2;
+		build_tree($query_id, \@sequence_group) if $num_ok > 2;
 	}
 	close $in;
 	
@@ -266,10 +345,10 @@ elapsed_time('positions loaded');
 
 elapsed_time("sequences parsed");
 
-# Load presence/absence data
-load_binary($BINARYFILE);
+# Do typing
+$chado->typing($TMPDIR);
 
-elapsed_time("binary file parsed");
+elapsed_time("in silico typing");
 
 # Finalize and load into DB
 
@@ -456,8 +535,8 @@ sub allele {
 	my $event = $is_new ? 'insert' : 'update';
 	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
-			
-	$seq_group->{$contig_collection} = {
+
+	my $allele_hash = {
 		genome => $contig_collection_id,
 		allele => $allele_id,
 		#copy => $allele_num,
@@ -465,6 +544,11 @@ sub allele {
 		is_new => $is_new,
 		seq => $seq
 	};
+	push @$seq_group, $allele_hash;
+		
+	if($chado->is_typing_sequence($query_id)) {
+		$chado->record_typing_sequences($query_id, $allele_hash);
+	}
 	
 	return 1;
 }
@@ -475,8 +559,10 @@ sub build_tree {
 	# write alignment file
 	my $tmp_file = '/tmp/genodo_allele_aln.txt';
 	open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
-	foreach my $id (keys %$seq_grp) {
-		print $out join("\n",">".$id,$seq_grp->{$id}->{seq}),"\n";
+	foreach my $allele_hash (@$seq_grp) {
+		my $header = $allele_hash->{public} ? 'public_':'private_';
+		$header .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
+		print $out join("\n",">".$header,$allele_hash->{seq}),"\n";
 	}
 	close $out;
 	
@@ -497,6 +583,8 @@ sub build_tree {
 	return($tmp_file);
 }
 
+
+=cut
 sub load_binary {
 	my $bfile = shift;
 	
@@ -535,6 +623,7 @@ sub load_binary {
 	}
 	
 }
+=cut
 
 sub elapsed_time {
 	my ($mes) = @_;

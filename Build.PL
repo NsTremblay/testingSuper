@@ -51,6 +51,7 @@ my $build=Module::Build->new(
 		'IO:CaptureOutput'=>0,
 		'Parallel::ForkManager'=>0,
 		'Inline::C'=>0,
+		'String::Random'=>0,
 	}
 );
 $build->create_build_script();

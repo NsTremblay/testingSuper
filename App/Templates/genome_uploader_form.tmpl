@@ -1,10 +1,10 @@
-<div style="margin:10px 10px 10px 10px;padding:10px 10px 0px 10px;border-style:solid;border-width:1px;border-color:#d3d3d3">
+<div>
 	
 	<TMPL_IF some_errors>
 	<div id='form_general_error' class="text-error"><strong>Error detected!</strong> Please correct the problems below:</div>
 	</TMPL_IF>
 
-	<form id="genomeUploadForm" class="form" action="<TMPL_VAR rm>" method="post" enctype="multipart/form-data">
+	<form id="genomeUploadForm" role="form" action="<TMPL_VAR rm>" method="post" enctype="multipart/form-data">
 
 		<TMPL_IF upload_id>
 		<input type="hidden" name="upload_id" value="<TMPL_VAR upload_id>">
@@ -12,71 +12,91 @@
 		
 		<fieldset class="form-horizontal">
 			<h4>These fields are required:</h4>
-			<span class="help-block" style="margin:10px; padding-top:20px"><em>Escherichia coli</em> Genome information:</span>
+			
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-8">
+					<span class="help-block"><em>Escherichia coli</em> Genome information:</span>
+				</div>
+			</div>
+			
 			<TMPL_IF new_genome>
-			<div class="control-group">
-				<label class="control-label">
+			<div class="form-group">
+				<label class="col-sm-2 control-label">
 					DNA FASTA file
-					<i class="icon-question-sign" data-toggle="tooltip" title="A multi-fasta file containing genomic DNA. Incomplete whole genome shotgun (WGS) sequence that have assembled or completed genomes are permitted.">
-					</i>
+					<span class="fa fa-question-circle" data-toggle="tooltip" title="A multi-fasta file containing genomic DNA. Incomplete whole genome shotgun (WGS) sequence that have assembled or completed genomes are permitted.">
+					</span>
 				</label>
-				<div class="controls">
+				<div class="col-sm-8">
 					<input id="attachFile" class="input" type="file" name="g_file" required>
 					<TMPL_VAR err_g_file>
 				</div>
 			</div>
 			</TMPL_IF>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputGenomeName">Genome Name</label>
-				<div class="controls">
-					<input type="text" name="g_name" id="inputGenomeName" required>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputGenomeName">Genome Name</label>
+				<div class="col-sm-8">
+					<input class="form-control" type="text" name="g_name" id="inputGenomeName" required>
 					<TMPL_VAR err_g_name>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputStrain">Strain</label>
-				<div class="controls">
-					<input type="text" name="g_strain" id="inputStrain" required>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputStrain">Strain</label>
+				<div class="col-sm-8">
+					<input class="form-control" type="text" name="g_strain" id="inputStrain" required>
 					<TMPL_VAR err_g_strain>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputSerotype">Serotype</label>
-				<div class="controls">
-					<input type="text" name="g_serotype" id="inputSerotype" required>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputSerotype">Serotype</label>
+				<div class="col-sm-8">
+					<input class="form-control" type="text" name="g_serotype" id="inputSerotype" required>
 					<TMPL_VAR err_g_serotype>
 				</div>
 			</div>
 			
-			<span class="help-block" style="margin:10px; padding-top:20px">Isolation details:</span>
-			<div class="control-group">
-				<label class="control-label" for="inputHost">Isolation Host</label>
-				<div class="controls controls-row">
-					<select class="span3" name="g_host" id="inputHost" required>
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-8">
+					<span class="help-block">Isolation details:</span>
+				</div>
+			</div>
+			
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputHost">Isolation Host</label>
+				<div class="col-sm-8">
+					<select class="col-sm-3 form-control" name="g_host" id="inputHost" required>
 						<option value="" selected="selected">--Select Host--</option>
 						<TMPL_LOOP hosts>
 						<option value="<TMPL_VAR host_value>"><TMPL_VAR host_name></option>
 						</TMPL_LOOP>
 					</select>
-					<div id="inputOtherHost" style="display:none">
-						<input type="text" class="span2" style="margin-left:20px" name="g_host_name" id="inputHostName" placeholder="Common Name">
-						<input type="text" style="margin-left:10px" class="input-small" name="g_host_genus" id="inputHostGenus" placeholder="Genus">
-						<input type="text" class="input-small" name="g_host_species" id="inputHostSpecies" placeholder="Species">
-					</div>
-					<TMPL_VAR err_g_host>
-					<TMPL_VAR err_g_host_name>
-					<TMPL_VAR err_g_host_genus>
-					<TMPL_VAR err_g_host_species>
 				</div>
 			</div>
+
+			<div class="form-group" id="inputOtherHost" style="display:none">
+				<div class="col-sm-offset-2">
+					<div class="col-sm-3">
+						<input type="text" class="form-control" name="g_host_name" id="inputHostName" placeholder="Common Name">
+					</div>
+					<div class="col-sm-3">
+						<input type="text" class="form-control" name="g_host_genus" id="inputHostGenus" placeholder="Genus">
+					</div>
+					<div class="col-sm-3">
+						<input type="text" class="form-control" name="g_host_species" id="inputHostSpecies" placeholder="Species">
+					</div>
+				</div>
+			</div>
+			<TMPL_VAR err_g_host>
+			<TMPL_VAR err_g_host_name>
+			<TMPL_VAR err_g_host_genus>
+			<TMPL_VAR err_g_host_species>
 			
-			<div class="control-group" style="padding-left:60px">
-				<label class="control-label" for="inputSource">Isolation Source</label>
-				<div class="controls controls-row">
-					<select class="span3" name="g_source" id="inputSource" required>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputSource">Isolation Source</label>
+				<div class="col-sm-8">
+					<select class="col-sm-3 form-control" name="g_source" id="inputSource" required>
 						<option value="">Select host first</option>
 					</select>
 					<div id="inputOtherSource" style="display:none">
@@ -87,136 +107,220 @@
 				</div>
 			</div>
 			
-			<div class="control-group" style="padding-left:60px">
-				<label class="control-label" for="inputShowAge inputHideAge">Host Age</label>
-				<div class="controls">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputAge">Host Age</label>
+				<div class="col-sm-offset-2">
 					<div id="inputShowAge" style="display:none">
-						<input name="g_age" id="inputAge" class="input-mini" type="text"></input>
-						<label class="radio inline">
-							<input type="radio" name="g_age_unit" value="years" id="inputAgeUnitYears" checked="checked">
-							Years
-						</label>
-						<label class="radio inline">
-							<input type="radio" name="g_age_unit" value="months" id="inputAgeUnitMonths">
-							Months
-						</label>
-						<label class="radio inline">
-							<input type="radio" name="g_age_unit" value="days" id="inputAgeUnitDays">
-							Days
-						</label>
+						<div class="col-sm-3">
+							<input name="g_age" id="inputAge" class="form-control" type="text"></input>
+						</div>
+						<div class="col-sm-12">
+							<div class="radio">
+								<label>
+									<input type="radio" name="g_age_unit" value="years" id="inputAgeUnitYears" checked="checked">
+									Years
+								</label>
+							</div>
+						</div>
+						<div class="col-sm-12">
+							<div class="radio">
+								<label>
+									<input type="radio" name="g_age_unit" value="months" id="inputAgeUnitMonths">
+									Months
+								</label>
+							</div>
+						</div>
+						<div class="col-sm-12">
+							<div class="radio">
+								<label>
+									<input type="radio" name="g_age_unit" value="days" id="inputAgeUnitDays">
+									Days
+								</label>
+							</div>
+						</div>
 					</div>
+					
 					<TMPL_VAR err_g_age>
 					<TMPL_VAR err_g_age_unit>
-					<div id="inputNoAge" style="display:none">
-						<span class="help-block" style="margin:10px"><em>Not Applicable</em></span>
+					
+					<div class="col-sm-12" id="inputNoAge" style="display:none">
+						<span class="help-block"><em>Not Applicable</em></span>
 					</div>
-					<div id="inputHideAge">
-						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
+					
+					<div class="col-sm-12" id="inputHideAge">
+						<span class="help-block"><em>Select host first</em></span>
 					</div>
+
 				</div>
 			</div>
 			
-			<div class="control-group" style="padding-left:60px">
-				<label class="control-label">Associated Diseases and Symptoms</label>
-				<div class="controls">
-					<div id="inputNoDiseases" style="width:500px;">
-						<span class="help-block" style="margin:10px"><em>Select host first</em></span>
+			<div class="form-group">
+				<label class="col-sm-2 control-label">Associated Diseases and Symptoms</label>
+				
+				<div class="col-sm-offset-2">
+					
+					<div class="col-sm-12" id="inputNoDiseases">
+						<span class="help-block"><em>Select host first</em></span>
 					</div>
-					<div id="inputHumanDiseases" style="width:500px; display:none">
+					
+					<div class="col-sm-12" id="inputHumanDiseases" style="display:none">
 						<TMPL_LOOP human_syndromes>
-						<label class="checkbox inline">
-							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
-							<TMPL_VAR syndrome_name>
-						</label>
+						<div class="checkbox">
+							<label>
+								<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+								<TMPL_VAR syndrome_name>
+							</label>
+						</div>
 						</TMPL_LOOP>
 					</div>
-					<div id="inputMammalDiseases" style="width:500px; display:none">
+
+					<div class="col-sm-12" id="inputMammalDiseases" style="display:none">
 						<TMPL_LOOP mammal_syndromes>
-						<label class="checkbox inline">
-							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
-							<TMPL_VAR syndrome_name>
-						</label>
+						<div class="checkbox">
+							<label>
+								<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+								<TMPL_VAR syndrome_name>
+							</label>
+						</div>
 						</TMPL_LOOP>
 					</div>
-					<div id="inputBirdDiseases" style="width:500px; display:none">
+
+					<div class="col-sm-12" id="inputBirdDiseases" style="display:none">
 						<TMPL_LOOP bird_syndromes>
-						<label class="checkbox inline">
-							<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
-							<TMPL_VAR syndrome_name>
-						</label>
+						<div class="checkbox">
+							<label>
+								<input name="g_syndrome" type="checkbox" value="<TMPL_VAR syndrome_value>"></input>
+								<TMPL_VAR syndrome_name>
+							</label>
+						</div>
 						</TMPL_LOOP>
 					</div>
-					<div id="inputEnvDiseases" style="width:500px; display:none">
-						<span class="help-block" style="margin:10px"><em>Not applicable</em></span>
+					
+					<div class="col-sm-12" id="inputEnvDiseases" style="display:none">
+						<span class="help-block"><em>Not applicable</em></span>
 					</div>
-					<div id="inputOtherDiseases" style="width:500px; display:none">
-						<label class="checkbox inline">
-							<input id="inputAsymptomatic" name="g_asymptomatic" value="asymptomatic" type="checkbox"></input>
-							Asymptomatic
-						</label>
-						<label class="checkbox inline">
-							<input id="inputOtherDiseaseCheck" name="g_other_syndrome_cb" value="other" type="checkbox"></input>
-							Other:
-						</label>
-						<input id="inputOtherDiseaseText" name="g_other_syndrome" type="text" class="input-medium" disabled></input>
+					
+					<div class="col-sm-12" id="inputOtherDiseases" style="display:none">
+						<div class="checkbox">
+							<label>
+								<input id="inputAsymptomatic" name="g_asymptomatic" value="asymptomatic" type="checkbox"></input>
+								Asymptomatic
+							</label>
+						</div>
+						
+						<div class="row">
+							<div class="col-sm-2">
+								<div class="checkbox">
+									<label>
+										<input id="inputOtherDiseaseCheck" name="g_other_syndrome_cb" value="other" type="checkbox"></input>
+										Other:
+									</label>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<input id="inputOtherDiseaseText" name="g_other_syndrome" type="text" class="form-control" disabled></input>
+							</div>
+						</div>
 					</div>
 					<TMPL_VAR err_g_syndrome>
 					<TMPL_VAR err_g_other_syndrome>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputIsolationDate">Date of Isolation</label>
-				<div class="controls">
-					<input type="text" class="input-medium" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" required>						
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputIsolationDate">Date of Isolation</label>
+				<div class="col-sm-3">
+					<input type="text" class="form-control" name="g_date" id="inputIsolationDate" placeholder="YYYY-MM-DD" required>						
 					<TMPL_VAR err_g_date>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputLocationName inputLocationMapPoint">Location of Isolation</label>
-				<div class="controls">
-					<div>
-						<label class="radio">
-							<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
-							<span class="help-block">Specify by name:</span>
-						</label>
-						<select class="input-medium" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
-						<input type="text" class="input-large" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
-						<input type="text" class="input-medium" name="g_location_city" id="inputLocationCity" placeholder="City"/>
-						<TMPL_VAR err_g_location_country>
-						<TMPL_VAR err_g_location_state>
-						<TMPL_VAR err_g_location_city>
+			<div class="form-group">
+				<label class="control-label col-sm-2" for="inputLocationName inputLocationMapPoint">Location of Isolation</label>
+				<div class="col-sm-offset-2">
+					<div class="row">
+						<div class="col-sm-2">
+							<div class="radio">
+								<label>
+									<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
+									Specify by name:
+								</label>
+							</div>
+						</div>
+
+						<div class="col-sm-3">
+							<select class="form-control" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
+						</div>
+
+						<div class="col-sm-3">
+							<input type="text" class="form-control" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
+						</div>
+
+						<div class="col-sm-3">
+							<input type="text" class="form-control" name="g_location_city" id="inputLocationCity" placeholder="City"/>
+						</div>
 					</div>
-					<div>
-						<label class="radio">
-							<input type="radio" name="g_locate_method" value="map" id="inputLocationMapPoint">
-							<span class="help-block">Or by location on map:</span>
-						</label>
+
+					<TMPL_VAR err_g_location_country>
+					<TMPL_VAR err_g_location_state>
+					<TMPL_VAR err_g_location_city>
+					
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_locate_method" value="map" id="inputLocationMapPoint">
+								Or by location on map:
+							</label>
+						</div>
+						<!-- TODO: -->
 						<TMPL_INCLUDE NAME="genome_uploader_map_selector.tmpl">
 					</div>
 					<TMPL_VAR err_g_location_latlng>
 				</div>
 			</div>
 			
-			<span class="help-block" style="margin:10px; padding-top:20px">Data privacy:</span>
+			<div class="form-group">
+				<div class="col-sm-offset-2 col-sm-8">
+					<span class="help-block">Data privacy:</span>
+				</div>
+			</div>
+			
+
 			<TMPL_IF set_privacy>
-			<div class="control-group">
-				<label class="control-label" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
-				<div class="controls">
-					<label class="radio">
-						<input type="radio" name="g_privacy" value="public" id="inputPublic" <TMPL_IF g_public>checked</TMPL_IF>>
-						Public
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_privacy" value="private" id="inputPrivate" <TMPL_IF g_private>checked</TMPL_IF>>
-						Private
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_privacy" value="release" id="inputPrivateUntil" <TMPL_IF g_release>checked</TMPL_IF>>
-						Private Until
-						<input type="text" class="input-medium" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD">
-					</label>
+			<div class="form-group">
+				<label class="control-label col-sm-2" for="inputPublic inputPrivate inputPrivateUntil">Privacy Settings</label>
+				<div class="col-sm-offset-2">
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_privacy" value="public" id="inputPublic" <TMPL_IF g_public>checked</TMPL_IF>>
+								Public
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_privacy" value="private" id="inputPrivate" <TMPL_IF g_private>checked</TMPL_IF>>
+								Private
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="row">
+							<div class="col-sm-2">
+								<div class="radio">
+									<label>
+										<input type="radio" name="g_privacy" value="release" id="inputPrivateUntil" <TMPL_IF g_release>checked</TMPL_IF>>
+										Private Until:
+									</label>
+								</div>
+							</div>
+							<div class="col-sm-3">
+								<input type="text" class="form-control" name="g_release_date" id="inputPrivateUntilText" disabled placeholder="YYYY-MM-DD">
+							</div>
+						</div>
+					</div>
 					<TMPL_VAR err_g_privacy>
 					<TMPL_VAR err_g_release_date>
 				</div>
@@ -225,6 +329,7 @@
 			
 		</fieldset>
 		
+		<!-- TODO -->
 		<TMPL_IF new_genome>
 		<fieldset class="form-inline">
 			<div style="position:relative; margin:20px 0; padding:10px 20px 0px" >
@@ -240,147 +345,179 @@
 		<fieldset class="form-horizontal" id="additionalFields">
 			<h4>The following fields are optional:</h4>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputGroupLabel">
-					Group Label
-					<i class="icon-question-sign" data-toggle="tooltip" title="If multiple uploads are part of same project, assign them a common group descriptor here.">
-					</i>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputGroupLabel">
+					Group Label 
+					<span class="fa fa-question-circle" data-toggle="tooltip" title="If multiple uploads are part of same project, assign them a common group descriptor here."></span>
 				</label>
-				<div class="controls">
-					<input type="text" id="inputGroupLabel" name="g_group" class="input-xlarge">
+				<div class="col-sm-8">
+					<input type="text" id="inputGroupLabel" name="g_group" class="form-control">
 					<TMPL_VAR err_g_group>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputComments">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputComments">
 					Additional Notes on Strain
 				</label>
-				<div class="controls">
-					<textarea rows=2 id="inputComments" name="g_comments" class="input-xlarge"> </textarea>
+				<div class="col-sm-8">
+					<textarea rows=2 id="inputComments" name="g_comments" class="form-control"> </textarea>
 					<TMPL_VAR err_g_comments>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputDescription">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputDescription">
 					Genome Description
 				</label>
-				<div class="controls">
-					<input type="text" id="inputDescription" name="g_description" class="input-xlarge" >
+				<div class="col-sm-8">
+					<input type="text" id="inputDescription" name="g_description" class="form-control" >
 					<TMPL_VAR err_g_description>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputKeywords">
-					Keywords
-					<i class="icon-info-sign" data-toggle="tooltip" title='Separate keywords with a "," (comma).'>
-					</i>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputKeywords">
+					Keywords 
+					<span class="fa fa-info-circle" data-toggle="tooltip" title='Separate keywords with a "," (comma).'></span>
 				</label>
-				<div class="controls">
-					<input type="text" id="inputKeywords" name="g_keywords" class="input-xlarge" >
+				<div class="col-sm-8">
+					<input type="text" id="inputKeywords" name="g_keywords" class="form-control" >
 					<TMPL_VAR err_g_keywords>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputOwner">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputOwner">
 					Owner
 				</label>
-				<div class="controls">
-					<input type="text" id="inputOwner" name="g_owner" class="input-xlarge" >
+				<div class="col-sm-8">
+					<input type="text" id="inputOwner" name="g_owner" class="form-control" >
 					<TMPL_VAR err_g_owner>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputSynonym">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputSynonym">
 					Genome Alias
 				</label>
-				<div class="controls">
-					<input type="text" id="inputSynonym" name="g_synonym" class="input-xlarge" >
+				<div class="col-sm-8">
+					<input type="text" id="inputSynonym" name="g_synonym" class="form-control" >
 					<TMPL_VAR err_g_synonym>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputDbxrefDB inputDbxrefAcc inputDbxrefVer">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputDbxrefDB inputDbxrefAcc inputDbxrefVer">
 					External DB Identifier
 				</label>
-				<div class="controls">
-					<div>
-						<input type="text" class="input-medium" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" />
-						<input type="text" class="input-medium" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" />
-						<input type="text" class="input-mini" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" />
-
-						<TMPL_VAR err_g_dbxref_db>
-						<TMPL_VAR err_g_dbxref_acc>
-						<TMPL_VAR err_g_dbxref_ver>
+				<div class="col-sm-offset-2">
+					<div class="row">
+						<div class="col-sm-3">
+							<input type="text" class="form-control" id="inputDbxrefDB" name="g_dbxref_db" placeHolder="Database" />
+						</div>
+						<div class="col-sm-3">
+							<input type="text" class="form-control" id="inputDbxrefAcc" name="g_dbxref_acc" placeHolder="Accession ID" />
+						</div>
+						<div class="col-sm-3">
+							<input type="text" class="form-control" id="inputDbxrefVer" name="g_dbxref_ver" placeHolder="Version #" />
+						</div>
 					</div>
+					<TMPL_VAR err_g_dbxref_db>
+					<TMPL_VAR err_g_dbxref_acc>
+					<TMPL_VAR err_g_dbxref_ver>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputRef">
-					Pubmed References
-					<i class="icon-info-sign" data-toggle="tooltip" title='Separate multiple pubmed IDs with a "," (comma).'>
-					</i>
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputRef">
+					Pubmed References 
+					<span class="fa fa-info-circle" data-toggle="tooltip" title='Separate multiple pubmed IDs with a "," (comma).'></span>
 				</label>
-				<div class="controls">
-					<div>
-						<input type="text" id="inputRef" name="g_pmid" class="input-xlarge" placeHolder="Pubmed ID" />
-						<TMPL_VAR err_g_pmid>
-					</div>
+				<div class="col-sm-8">
+					<input type="text" id="inputRef" name="g_pmid" class="form-control" placeHolder="Pubmed ID" />
+					<TMPL_VAR err_g_pmid>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputFinished inputUnfinished">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputFinished inputUnfinished">
 					Genome Sequence Status
 				</label>
-				<div class="controls">
-					<label class="radio">
-						<input type="radio" name="g_finished" id="inputFinished" value="yes" <TMPL_IF g_is_finished>checked</TMPL_IF>>
-						Complete
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_finished" id="inputUnfinished" value="no" <TMPL_IF g_not_finished>checked</TMPL_IF>>
-						Incomplete
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_finished" id="inputUnfinished" value="unknown" <TMPL_IF g_unkn_finished>checked</TMPL_IF>>
-						Unspecified
-					</label>
+				<div class="col-sm-offset-2">
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_finished" id="inputFinished" value="yes" <TMPL_IF g_is_finished>checked</TMPL_IF>>
+								Complete
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_finished" id="inputUnfinished" value="no" <TMPL_IF g_not_finished>checked</TMPL_IF>>
+								Incomplete
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_finished" id="inputUnfinished" value="unknown" <TMPL_IF g_unkn_finished>checked</TMPL_IF>>
+								Unspecified
+							</label>
+						</div>
+					</div>
 					<TMPL_VAR err_g_finished>
 				</div>
 			</div>
 			
-			<div class="control-group">
-				<label class="control-label" for="inputMolType">
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="inputMolType">
 					Molecular Type
 				</label>
-				<div class="controls">
-					<label class="radio">
-						<input type="radio" name="g_mol_type" id="inputMolType" value="wgs" <TMPL_IF g_wgs_mtype>checked</TMPL_IF>>
-						Whole genome shotgun sequence
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_mol_type" id="inputMolType" value="genome" <TMPL_IF g_gen_mtype>checked</TMPL_IF>>
-						Genome
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_mol_type" id="inputMolType" value="chromosome" <TMPL_IF g_chr_mtype>checked</TMPL_IF>>
-						Chromosome
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_mol_type" id="inputMolType" value="plasmid" <TMPL_IF g_plas_mtype>checked</TMPL_IF>>
-						Plasmid
-					</label>
-					<label class="radio">
-						<input type="radio" name="g_mol_type" id="inputMolType" value="dna" <TMPL_IF g_dna_mtype>checked</TMPL_IF>>
-						Unspecified
-					</label>
+				<div class="col-sm-offset-2">
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_mol_type" id="inputMolType" value="wgs" <TMPL_IF g_wgs_mtype>checked</TMPL_IF>>
+								Whole genome shotgun sequence
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_mol_type" id="inputMolType" value="genome" <TMPL_IF g_gen_mtype>checked</TMPL_IF>>
+								Genome
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_mol_type" id="inputMolType" value="chromosome" <TMPL_IF g_chr_mtype>checked</TMPL_IF>>
+								Chromosome
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_mol_type" id="inputMolType" value="plasmid" <TMPL_IF g_plas_mtype>checked</TMPL_IF>>
+								Plasmid
+							</label>
+						</div>
+					</div>
+					<div class="col-sm-12">
+						<div class="radio">
+							<label>
+								<input type="radio" name="g_mol_type" id="inputMolType" value="dna" <TMPL_IF g_dna_mtype>checked</TMPL_IF>>
+								Unspecified
+							</label>
+						</div>
+					</div>
 					<TMPL_VAR err_g_mol_type>
 				</div>
 			</div>
@@ -406,8 +543,9 @@ $('#inputLocationMapPoint').click( function() {
 	$('#inputLocationLatLng').val("");
 	$('#inputLocationLatLng').attr("disabled", false);
 	$('#inputLocationLatLng').attr("required", true);
-	$('#map').show();
-	showMap();
+	$('#map-selector').show();
+	viewController.getView($('#map-selector').data("views-index")-1).mapController.resetMap();
+
 });
 
 $('#inputLocationName').click( function() {

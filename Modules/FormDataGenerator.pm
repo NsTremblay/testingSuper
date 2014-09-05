@@ -34,9 +34,10 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
+use Modules::GenomeWarden;
 use Log::Log4perl qw/get_logger :easy/;
 use Carp;
-use Time::HiRes qw( gettimeofday tv_interval );
+use Time::HiRes qw( time );
 use JSON;
 
 #One time use
@@ -56,6 +57,8 @@ sub new {
     my $public_suffix = ' [G]';
     $self->{private_suffix} = $private_suffix;
     $self->{public_suffix} = $public_suffix;
+    
+    $self->{now} = time();
     
 	
 	return $self;
@@ -88,7 +91,8 @@ sub _initialize {
             #logconfess calls the confess of Carp package, as well as logging to Log4perl
             $self->logger->logconfess("$key is not a valid parameter in Modules::FormDataGenerator");
         }
-    }   
+    }
+    
 }
 
 =head2 dbixSchema
@@ -100,6 +104,17 @@ sub dbixSchema {
 	my $self = shift;
 	
 	$self->{_dbixSchema} = shift // return $self->{_dbixSchema};
+}
+
+=head2 cvmemory
+
+A pointer to the hashref of cvterm IDs
+
+=cut
+sub cvmemory {
+	my $self = shift;
+	
+	$self->{_cvmemory} = shift // return $self->{_cvmemory};
 }
 
 =head2 logger
@@ -377,11 +392,10 @@ sub getVirulenceFormData {
     my $self = shift;
     my $_virulenceFactorProperties = $self->dbixSchema->resultset('Feature')->search(
 		{
-        	'type.name' => "virulence_factor"
+        	'type_id' => $self->cvmemory->{'virulence_factor'}
         },
         {
 			column  => [qw/feature_id type_id name uniquename/],
-            join        => ['type'],
             order_by    => { -asc => ['name'] }
         }
 	);
@@ -401,11 +415,10 @@ sub getAmrFormData {
     my $self = shift;
     my $_amrFactorProperties = $self->dbixSchema->resultset('Feature')->search(
     	{
-			'type.name' => "antimicrobial_resistance_gene"
+			'type_id' => $self->cvmemory->{'antimicrobial_resistance_gene'}
         },
         {
 			column  => [qw/feature_id type_id name uniquename/],
-            join        => ['type'],
         	order_by    => { -asc => ['name'] }
 		}
 	);
@@ -454,107 +467,6 @@ sub _getJSONFormat {
     $jsonHash{'data'} = $dataHashRef;
     my $_encodedText = $json->encode(\%jsonHash);
     return $_encodedText;
-}
-
-=cut
-
-sub dataViewSerotype {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "serotype";
-    my $serotypeJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $serotypeJson;
-}
-
-sub dataViewIsolationHost {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_host";
-    my $isolationHostJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationHostJson;
-}
-
-sub dataViewIsolationSource {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_source";
-    my $isolationSourceJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationSourceJson;
-}
-
-sub dataViewIsolationDate {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_date";
-    my $isolationDateJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationDateJson;
-}
-
-sub dataViewIsolationLocation {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = "isolation_location";
-    my $isolationLocationJson = $self->publicDataViewList($publicIdList,$searchParam);
-    return $isolationLocationJson;
-}
-=cut
-
-sub publicDataViewList {
-    my $self=shift;
-    my $publicIdList=shift;
-    my $searchParam = shift;
-    my @publicFeautureIds = @{$publicIdList};
-
-    my $genomes = $self->dbixSchema->resultset('Feature')->search(
-    {
-        'type.name' =>  'contig_collection',
-        },
-        {
-            columns => [qw/feature_id uniquename name dbxref.accession/],
-            join => ['type' , 'dbxref'],
-            order_by    => {-asc => ['me.uniquename']}
-        }
-        );
-
-    my @publicDataViewNames;
-
-    my $publicFeatureProps = $self->dbixSchema->resultset('Featureprop')->search(
-        {'type.name' => $searchParam},
-        {
-            column  => [qw/me.feature_id me.value type.name/],
-            join        => ['type']
-        }
-        );
-
-    foreach my $_pubStrainId (@publicFeautureIds) {
-        my %dataView;
-        my $dataRow = $publicFeatureProps->find({'me.feature_id' => "$_pubStrainId"});
-        if (!$dataRow) {
-            $dataView{'value'} = "N/A";
-        }
-        else {
-            #Need to parse out tags for location data
-            if ($searchParam eq "isolation_location") {
-                my $markedUpLocation = $1 if $dataRow->value =~ /(<location>[\w\d\W\D]*<\/location>)/;
-                my $noMarkupLocation = $markedUpLocation;
-                $noMarkupLocation =~ s/(<[\/]*location>)//g;
-                $noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
-                $noMarkupLocation =~ s/<[\w\d]*>/, /g;
-                $noMarkupLocation =~ s/, //;
-                $dataView{'value'} = $noMarkupLocation;
-            }
-            else {
-                $dataView{'value'} = $dataRow->value;
-            }
-        }
-        my $featureRow = $genomes->find({'me.feature_id' => "$_pubStrainId"});
-        $dataView{'feature_id'} = $featureRow->feature_id;
-        $dataView{'common_name'} = $featureRow->uniquename;
-        $dataView{'accession'} = $featureRow->dbxref->accession;
-        push(@publicDataViewNames , \%dataView);
-    }
-    my $dataViewJson = $self->_getJSONFormat(\@publicDataViewNames);
-    return $dataViewJson;
 }
 
 sub _getNameMap {
@@ -679,6 +591,10 @@ sub genomeInfo {
 
 sub _runGenomeQuery {
 	my ($self, $public, $username) = @_;
+	
+	#$self->dbixSchema->storage->debug(1);
+	
+	#$self->elapsed_time('Start of meta-data query');
 
 	my %fp_types = (
 		serotype            => 1,
@@ -688,28 +604,62 @@ sub _runGenomeQuery {
 		isolation_location  => 1,
 		isolation_latlng    => 1,
 		isolation_date      => 1,
+		syndrome            => 1,
+	);
+	
+	my %st_types = (
+		stx1_subtype        => 1,
+		stx2_subtype        => 1,
 	);
 
 	# Table and relationship names
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
+	my $feature_relationship_rel_name = 'feature_relationship_objects';
+    # Added tables to look up genome locaiton info
+    my $genome_location_table_name = 'genome_locations';
 	my $order_name = { '-asc' => ['featureprops.rank'] };
 	unless($public) {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
+		$feature_relationship_rel_name = 'private_feature_relationship_objects';
+        # Added tables to look up private genome location infoq
+        $genome_location_table_name = "private_genome_locations";
 		$order_name = { '-asc' => ['private_featureprops.rank'] };
 	}
 	
 	# Query
-	my $query = {
+#	my $query = {
+#		'type.name'      => 'contig_collection',
+#		'type_2.name'      => { '-in' => [ keys %fp_types ] }
+#    };
+#    my $join = ['type'];
+#    my $prefetch = [
+#	    { 'dbxref' => 'db' },
+#	    { $featureprop_rel_name => 'type' },
+#    ];
+    
+    my $query = {
 		'type.name'      => 'contig_collection',
-		'type_2.name'      => { '-in' => [ keys %fp_types ] }
+		'type_2.name'    => { '-in' => [ keys %fp_types ] },
     };
-    my $join = ['type'];
+    # Added $genome_location_table_name => 'geocode' to join
+    my $join = ['type', {$genome_location_table_name => 'geocode'}];
     my $prefetch = [
 	    { 'dbxref' => 'db' },
-	    { $featureprop_rel_name => 'type' },
+	    { $featureprop_rel_name => 'type' }
     ];
+    
+    # Subtypes needs separate query
+    my $query2 = {
+    	'type.name'        => 'part_of',
+		'type_2.name'      => 'allele_fusion',
+		'type_3.name'      => { '-in' => [ keys %st_types ] },
+    };
+    my $join2 = [];
+    my $prefetch2 = [
+	    { $feature_relationship_rel_name  => [ 'type', { 'subject' => [ 'type', { $featureprop_rel_name => 'type' } ] } ] }
+	];
 
 	# Query data in private tables
 	unless($public) {
@@ -719,27 +669,55 @@ sub _runGenomeQuery {
             	{
 					'login.username'     => $username,
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+					'type_2.name'        => { '-in' => [ keys %fp_types ] },
+					
              	},
              	{
 					'upload.category'    => 'public',
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] }
+					'type_2.name'        => { '-in' => [ keys %fp_types ] },
 				}
 			];
 
 			push @$prefetch, 'upload';
+			
+			$query2 = [
+            	{
+					'login.username'     => $username,
+					'type.name'          => 'part_of',
+					'type_2.name'        => 'allele_fusion',
+					'type_3.name'        => { '-in' => [ keys %st_types ] },
+					
+             	},
+             	{
+					'upload.category'    => 'public',
+					'type.name'          => 'part_of',
+					'type_2.name'        => 'allele_fusion',
+					'type_3.name'        => { '-in' => [ keys %st_types ] },
+				}
+			];
+		    push @$prefetch2, 'upload';
+			
 		} else {
 			$query = {
 				'upload.category'    => 'public',
 				'type.name'          => 'contig_collection',
 				'type_2.name'        => { '-in' => [ keys %fp_types ] }
             };
+            
+            $query2 = {
+				'upload.category'    => 'public',
+				'type.name'          => 'part_of',
+				'type_2.name'        => 'allele_fusion',
+				'type_3.name'        => { '-in' => [ keys %st_types ] },
+            };
         }
 
         push @$join, { 'upload' => { 'permissions' => 'login'} };
+        push @$join2, { 'upload' => { 'permissions' => 'login'} };
     }
 
+	#$self->elapsed_time('Begin query 1');
     my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
 		$query,	
 		{
@@ -748,13 +726,25 @@ sub _runGenomeQuery {
 			#order_by => $order_name
 		}
      );
+     
+     #$self->elapsed_time('Begin query 2');
+     my $feature_rs2 = $self->dbixSchema->resultset($feature_table_name)->search(
+		$query2,	
+		{
+			join => $join2,
+			prefetch => $prefetch2,
+			#order_by => $order_name
+		}
+     );
 
 	# Create hash from all results
 	my %genome_info;
 	
+    my $featureCount = 0;
+
+	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
 		my %feature_hash;
-		
 		# Feature data
 		$feature_hash{uniquename} = $feature->uniquename;
 		if($feature->dbxref) {
@@ -788,13 +778,20 @@ sub _runGenomeQuery {
 		
 		# Featureprop data
 		my $featureprops = $feature->$featureprop_rel_name;
-		
+
 		while(my $fp = $featureprops->next) {
 			my $type = $fp->type->name;
-
-			$feature_hash{$type} = [] unless defined $feature_hash{$type};
-			push @{$feature_hash{$type}}, $fp->value;
+			$feature_hash{$type} = [] unless defined $feature_hash{$type} || $type eq 'isolation_location';
+			push @{$feature_hash{$type}}, $fp->value unless $type eq 'isolation_location';
 		}
+
+        # Genome location data
+        my $genomeLocation = $feature->$genome_location_table_name;
+
+        while (my $location = $genomeLocation->next) {
+            $feature_hash{'isolation_location'} = [] unless defined $feature_hash{'isolation_location'} || !($location->geocode->location);
+            push @{$feature_hash{'isolation_location'}}, $location->geocode->location unless !($location->geocode->location);
+        }
 		
 		my $k = ($public) ? 'public_' : 'private_';
 		
@@ -802,6 +799,34 @@ sub _runGenomeQuery {
 		
 		$genome_info{$k} = \%feature_hash;
 	}
+	
+	#$self->elapsed_time('Hash query 2');
+	while(my $feature = $feature_rs2->next) {
+		
+		my $k = ($public) ? 'public_' : 'private_';
+		$k .= $feature->feature_id;
+		
+		my $feature_hash = $genome_info{$k};
+		croak "Error: something strange is going on... genome with subtype properties but no other properties.\n" unless defined $feature_hash;
+		
+		my $typing_feature_relationships =  $feature->$feature_relationship_rel_name;
+		while(my $fr = $typing_feature_relationships->next ) {
+			# Iterate through typing sequences linked to genome
+			
+			my $typing_properties = $fr->subject->$featureprop_rel_name;
+			while(my $st = $typing_properties->next){
+				# Iterate through types assigned to sequence
+				my $type = $st->type->name;
+
+				$feature_hash->{$type} = [] unless defined $feature_hash->{$type};
+				push @{$feature_hash->{$type}}, $st->value;
+			}
+			
+		}
+		
+	}
+
+	#$self->elapsed_time('End');
 	
 	return(\%genome_info);
 }
@@ -903,39 +928,40 @@ sub verifyMultipleAccess {
 
 =head2 seqAlignment
 
-seqAlignent(feature_id, visable_hash)
+seqAlignent(hash)
 
-Inputs:
- -feature_id       A query gene feature_id. 
-                    Must be 'query_gene' type.
- -visable_hash     Hash containing
-	                 public_/private_feature_ids => uniquename
-	                                
-MAKE SURE THE USER CAN ACCESS THESE GENOMES
-DO NOT RELEASE PRIVATE SEQUENCES!	                                
-
+Input:
+Hash with keys:
+  locus        => A query gene feature_id 
+  warden       => GenomeWarden instance
+  typing       => Indicates looking up typing sequences
+                  rather than alleles
+                  	                                
 Returns: 
-  a JSON string representing a multiple
+  a hash-ref representing a multiple
   sequence alignment of gene alleles.
 
 =cut
 
 sub seqAlignment {
-	my ($self, $locus, $visable) = @_;
+	my ($self, %args) = @_;
 	
-	get_logger->debug("multiple sequence alignment");  
-	
-	my @private_ids = map m/private_(\d+)/ ? $1 : (), keys %$visable;
-	my @public_ids = map m/public_(\d+)/ ? $1 : (), keys %$visable;
+	my $locus   = $args{locus};
+	my $warden  = $args{warden};
+	my $typing  = (defined($args{typing}) && $args{typing});
 	
 	my %alignment;
 	
-	if(@private_ids) {
+	my $type_name = 'similar_to';
+	$type_name = 'variant_of' if $typing;
+	
+	if($warden->numPrivate) {
+		
 		my $feature_rs = $self->dbixSchema->resultset('PrivateFeature')->search(
 			{
 				'private_feature_relationship_subjects.object_id' => $locus,
-				'type.name' => 'similar_to', 
-				'private_feature_relationship_subjects_2.object_id' => { '-in' => \@private_ids },
+				'type.name' => $type_name, 
+				'private_feature_relationship_subjects_2.object_id' => { '-in' => $warden->featureList('private') },
 				'type_2.name' => 'part_of'
 			},
 			{
@@ -943,88 +969,123 @@ sub seqAlignment {
 					{ 'private_feature_relationship_subjects' => 'type' },
 					{ 'private_feature_relationship_subjects' => 'type' }
 				],
+				columns => [qw/residues feature_id/],
 				'+select' => ['private_feature_relationship_subjects_2.object_id'],
-				'+as' => 'collection_id'
+				'+as' => ['collection_id']
 			}
 		);
 		
 		while(my $feature = $feature_rs->next) {
-			$alignment{$visable->{'private_'.$feature->get_column('collection_id')}} = $feature->residues;
+			my $genome = 'private_'.$feature->get_column('collection_id');
+			my $allele = $feature->feature_id;
+			my $header = "$genome|$allele";
+			$alignment{$header} = {
+				seq => $feature->residues,
+				genome => $genome,
+				locus => $allele,
+			};
 		}
 	}
 	
-	if(@public_ids) {
+	if($warden->numPublic) {
+		my $select_stmt = {
+			'feature_relationship_subjects.object_id' => $locus,
+			'type.name' => $type_name,
+			'type_2.name' => 'part_of'
+		};
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects_2.object_id'} = { '-in' => $warden->featureList('public') };
+		}
 		my $feature_rs = $self->dbixSchema->resultset('Feature')->search(
-			{
-				'feature_relationship_subjects.object_id' => $locus,
-				'type.name' => 'similar_to', 
-				'feature_relationship_subjects_2.object_id' => { '-in' => \@public_ids },
-				'type_2.name' => 'part_of'
-			},
+			$select_stmt,
 			{
 				join => [
 					{ 'feature_relationship_subjects' => 'type' },
 					{ 'feature_relationship_subjects' => 'type' }
 				],
+				columns => [qw/residues feature_id/],
 				'+select' => ['feature_relationship_subjects_2.object_id'],
-				'+as' => 'collection_id'
+				'+as' => ['collection_id']
 			}
 		);
 		
 		while(my $feature = $feature_rs->next) {
-			$alignment{$visable->{'public_'.$feature->get_column('collection_id')}} = $feature->residues;
+			my $genome = 'public_'.$feature->get_column('collection_id');
+			my $allele = $feature->feature_id;
+			my $header = "$genome|$allele";
+			$alignment{$header} = {
+				seq => $feature->residues,
+				genome => $genome,
+				locus => $allele,
+			};
 		}
 	}
 	
-	my @sequences = values(%alignment);
-	return 0 unless @sequences > 1 && @sequences < 21;
+	my @sets = values(%alignment);
 	
-	# Compute conservation line
+	my $sequence = $sets[0]->{seq};
+	my $len = length($sequence);
+	$self->logger->debug('BEFORE'.length($sequence));
+	map { croak "Error: sequence alignment lengths are not equal." unless length($_->{seq}) == $len } @sets[1..$#sets];
 	
-	my $len = length($sequences[0]);
-	map { croak "Error: sequence alignment lengths are not equal." unless length($_) == $len } @sequences[1..$#sequences];
-	
-	my $cons;
+	# Remove gap columns
+	my @removeCols;
 	for(my $i = 0; $i < $len; $i++) {
-		my $m = 1;
-		my $symbol = substr($sequences[0], $i, 1);
 		
-		foreach my $s (@sequences[1..$#sequences]) {
-			if($symbol ne substr($s,$i,1)) {
-				# mismatch
-				$cons .= ' ';
-				$m = 0;
-				last;
-			}
+		my $symbol = substr($sequence, $i, 1);
+		
+		if($symbol eq '-') {
+			# Check if entire col is a gap
 			
-		}
+			foreach my $s (@sets[1..$#sets]) {
+				if($symbol ne substr($s->{seq},$i,1)) {
+					# mismatch
+					last;
+				}
+			}
 		
-		# match
-		$cons .= '*' if $m;
+			# Gap column needs to be spliced out
+			push @removeCols, $i;
+		}
 	}
 	
-	$alignment{conservation_line} = $cons;
-	
-	return encode_json(\%alignment);
+	foreach my $s (values %alignment) {
+		my $seq = '';
+		my $p = 0;
+		foreach my $r (@removeCols) {
+			my $l = $r-$p;
+			$seq .= substr $s->{seq}, $p, $l;
+			
+			$p = $r+1;
+		}
+		my $l = $len-$p+1;
+		$seq .= substr $s->{seq}, $p, $l if $l;
+		$s->{seq} = $seq;
+	}
+
+	return \%alignment;
 	
 }
 
+
+
+
 =head2 getGeneAlleleData
 
-seqAlignent(feature_id, visable_hash)
+getGeneAlleleData(%args)
 
 Inputs:
- -feature_id       A query gene feature_id. 
-                    Must be 'query_gene' type.
- -visable_hash     Hash containing
-	                 public_/private_feature_ids => uniquename
-	                                
-MAKE SURE THE USER CAN ACCESS THESE GENOMES
-DO NOT RELEASE PRIVATE SEQUENCES!	                                
+hash containing key-value pairs:
+ -markers [optional]  Array-ref of query gene feature ids 
+ -warden              GenomeWarden object                         
 
-Returns: 
-  a JSON string representing a multiple
-  sequence alignment of gene alleles.
+Returns:
+Hash containing key-value pairs:
+  name - hash mapping query gene feature ids to names
+  amr  - hash mapping allele feature ids to genome ids and query gene ids
+         for AMR genes   
+  vf   - hash mapping allele feature ids to genome ids and query gene ids
+         for virulence factors
 
 =cut
 
@@ -1032,62 +1093,207 @@ sub getGeneAlleleData {
 	my $self = shift;
 	my (%args) = @_;
 	
+	# Params
 	get_logger->debug(%args);
-#	$self->dbixSchema->storage->debug(1);
-#	$self->dbixSchema->storage->debugfh(IO::File->new('/tmp/trace.out', 'w'));
+	my $warden = $args{warden};
+	croak "Error: must provide GenomeWarden object 'warden' as an argument." unless $warden;
 	
-	# A subset of genomes must be defined
-	# If no 
-	my $public_genomes = $args{public_genomes};
-	my $private_genomes = $args{private_genomes};
+	# Get query genes
+	my $amr_type = $self->cvmemory->{'antimicrobial_resistance_gene'};
+	my $vf_type = $self->cvmemory->{'virulence_factor'};
+	my %query_genes;
 	
-	unless(($public_genomes && ref($public_genomes) eq 'ARRAY') || ($private_genomes && ref($private_genomes) eq 'ARRAY')) {
-		croak "Error: must provide array reference 'public_genomes' or 'private_genomes' as an argument."
+	my $select_stmt;
+	if($args{markers}) {
+		# Lookup specific genes
+		croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
+		$select_stmt->{'feature_id'} = {'-in' => $args{markers}};
+	} else {
+		# Lookup all genes
+		$select_stmt->{'type_id'} = {'-in' => [$amr_type, $vf_type]};
 	}
 	
-	# Grab some type IDs
-	# Probably should have this hard-coded somewhere
-	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
+	my $query_rs = $self->dbixSchema->resultset('Feature')->search(
+		$select_stmt,
 		{
-			name => [qw(similar_to part_of antimicrobial_resistance_gene virulence_factor allele)]
-		},
-		{
-			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
-			columns => [qw/cvterm_id name/]
-	    }
+			columns => [qw/feature_id uniquename type_id/]
+		}
 	);
-	my %types;
-	while (my $hashref = $type_rs->next) {
-		$types{$hashref->{'name'}} = $hashref->{'cvterm_id'}
+	
+	while( my $query_row = $query_rs->next) {
+		
+		my $type_id = $query_row->type_id;
+		my $gene_name = $query_row->uniquename;
+		my $gene_id = $query_row->feature_id;
+		
+		if($type_id == $vf_type) {
+			$query_genes{vf}{$gene_id} = $gene_name;
+		} elsif($type_id == $amr_type) {
+			$query_genes{amr}{$gene_id} = $gene_name;
+		} else {
+			get_logger->warn("Unrecognized query gene type $type_id.\n");
+		}
 	}
-	my $amr_type = $types{'antimicrobial_resistance_gene'};
-	my $vf_type = $types{'virulence_factor'};
 	
-	my %amr_alleles;
-	my %vf_alleles;
-	my %gene_names;
+	# Get alleles
+	my ($public_genomes, $private_genomes) = $warden->featureList();
+	my %alleles;
 	
-	if($public_genomes) {
+	#$self->dbixSchema->storage->debug(1);
+	
+	if($warden->numPublic) {
 		
 		# Retreive allele hits for each query gene (can be AMR/VF)
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $types{'similar_to'},
-			'feature_relationship_subjects.type_id' => $types{'part_of'},
-			'feature_relationship_subjects.object_id' => {'-in' => $public_genomes}
+			'me.type_id' => $self->cvmemory->{'similar_to'},
+			'feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
 		};
 		
 		# Select only for specific AMR/VF genes
 		if($args{markers}) {
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		# Subset of public genomes
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
+			$select_stmt,
+			{
+				join => [
+					{'subject' => 'feature_relationship_subjects'},
+				],
+				columns => [qw/subject_id object_id/],
+				'+columns' => [
+					{
+						'subject.feature_id' => 'subject.feature_id'
+					},
+					{ 
+						'subject.feature_relationship_subjects.object_id' => 'feature_relationship_subjects.object_id',
+					    'subject.feature_relationship_subjects.feature_relationship_id' => 'feature_relationship_subjects.feature_relationship_id'
+					}
+                 ],
+				collapse => 1
+			}
+		);
+		
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			
+			$alleles{$genome_label}->{$gene_id} = [] unless defined($alleles{$genome_label}->{$gene_id});
+			push @{$alleles{$genome_label}->{$gene_id}}, $allele_id;
+		}
+	}
+	
+	if($warden->numPrivate) {
+		
+		# Retreive allele hits for each query gene (can be AMR/VF)
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $self->cvmemory->{'similar_to'},
+			'private_feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
+			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
+		};
+		
+		# Select only for specific AMR/VF genes
+		if($args{markers}) {
+			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		my $allelehits_rs = $self->dbixSchema->resultset('PripubFeatureRelationship')->search(
+			$select_stmt,
+			{
+				prefetch => [
+					{'subject' => 'private_feature_relationship_subjects'},
+				]
+			}
+		);
+		
+		# Hash results
+		while(my $allele_row = $allelehits_rs->next) {
+			
+			my $genome_label = 'private_'.$allele_row->subject->private_feature_relationship_subjects->first->object_id;
+			my $allele_id = $allele_row->subject_id;
+			my $gene_id = $allele_row->object_id;
+			
+			$alleles{$genome_label}->{$gene_id} = [] unless defined $alleles{$genome_label}->{$gene_id};
+			push @{$alleles{$genome_label}->{$gene_id}}, $allele_id;
+		}
+		
+	}
+	
+	return({ genes => \%query_genes, alleles => \%alleles });
+}
+
+=head2 getStxData
+
+getStxData(%args)
+
+Inputs:
+hash containing possible key -value pairs:
+ -markers          Array-ref of typing sequence feature ids    
+ -public_genomes   Array-ref of genome feature ids OR a string 'all' to retrieve all genomes
+ -private_genomes  Array-ref of genome private_feature ids
+	                                
+MAKE SURE THE USER CAN ACCESS THESE GENOMES
+DO NOT RELEASE PRIVATE SEQUENCES!	                                
+
+Returns:
+Hash containing key - value pairs:
+  name - hash mapping typing reference sequence feature ids to names 
+  stx  - hash mapping allele_fusion feature ids to genome ids and ref sequence ids
+
+=cut
+
+
+sub getStxData {
+	my $self = shift;
+	my (%args) = @_;
+	
+	$self->dbixSchema->storage->debug(1);
+	
+	# The set of genomes must be defined
+	my $warden = $args{warden};
+	
+	my ($public_genomes, $private_genomes) = $warden->featureList();
+	
+	my %subunit_names;
+	my %subtypes;
+	
+	if($warden->numPublic) {
+		
+		# Retreive allele_fusion hits for each reference gene
+		# for selected public genomes
+		my $select_stmt = {
+			'me.type_id' => $self->cvmemory->{'variant_of'},
+			'feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
+			'featureprops.type_id' => [$self->cvmemory->{'stx1_subtype'}, $self->cvmemory->{'stx2_subtype'}]
+		};
+		
+		# Select only for specific typing reference sequences
+		if($args{markers}) {
 			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
 			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
+		}
+		
+		# Subset of public genomes
+		if($warden->subset) {
+			$select_stmt->{'feature_relationship_subjects.object_id'} = {'-in' => $public_genomes},
 		}
 		
 		my $allelehits_rs = $self->dbixSchema->resultset('FeatureRelationship')->search(
 			$select_stmt,
 			{
 				prefetch => [
-					{'subject' => 'feature_relationship_subjects'},
+					{'subject' => ['feature_relationship_subjects', 'featureprops']},
 					'object'
 				]
 			}
@@ -1096,39 +1302,31 @@ sub getGeneAlleleData {
 		# Hash results
 		while(my $allele_row = $allelehits_rs->next) {
 			
-			my $type_id = $allele_row->object->type_id;
 			my $genome_label = 'public_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
 			my $allele_id = $allele_row->subject_id;
-			my $gene_id = $allele_row->object_id;
-			my $gene_name = $allele_row->object->uniquename;
+			my $ref_id = $allele_row->object_id;
+			my $ref_name = $allele_row->object->uniquename;
+			my $subt = $allele_row->subject->featureprops->first->value;
 			
-			$gene_names{$gene_id} = $gene_name;
+			$subunit_names{$ref_id} = $ref_name;
 			
-			if($type_id == $vf_type) {
-				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
-				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} if($type_id == $amr_type) {
-				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
-				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} else {
-				get_logger->warn("Unrecognized allele type ID $type_id.\n");
-			}
+			$subtypes{$genome_label}->{$ref_id} = [] unless defined($subtypes{$genome_label}->{$ref_id});
+			push @{$subtypes{$genome_label}->{$ref_id}}, { allele => $allele_id, subtype => $subt};
 		}
 	}
 	
-	if($private_genomes) {
+	if($warden->numPrivate) {
 		
-		# Retreive allele hits for each query gene (can be AMR/VF)
+		# Retreive allele_fusion hits for each reference gene
 		# for selected public genomes
 		my $select_stmt = {
-			'me.type_id' => $types{'similar_to'},
-			'private_feature_relationship_subjects.type_id' => $types{'part_of'},
-			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes}
+			'me.type_id' => $self->cvmemory->{'variant_of'},
+			'private_feature_relationship_subjects.type_id' => $self->cvmemory->{'part_of'},
+			'private_feature_relationship_subjects.object_id' => {'-in' => $private_genomes},
+			'private_featureprops.type_id' => [$self->cvmemory->{'stx1_subtype'}, $self->cvmemory->{'stx2_subtype'}]
 		};
 		
-		# Select only for specific AMR/VF genes
+		# Select only for specific typing reference sequences
 		if($args{markers}) {
 			croak "Invalid 'markers' argument. Must be arrayref." unless ref($args{markers}) eq 'ARRAY';
 			$select_stmt->{'me.object_id'} = {'-in' => $args{markers}};
@@ -1138,7 +1336,7 @@ sub getGeneAlleleData {
 			$select_stmt,
 			{
 				prefetch => [
-					{'subject' => 'private_feature_relationship_subjects'},
+					{'subject' => ['private_feature_relationship_subjects', 'private_featureprops']},
 					'object'
 				]
 			}
@@ -1147,30 +1345,163 @@ sub getGeneAlleleData {
 		# Hash results
 		while(my $allele_row = $allelehits_rs->next) {
 			
-			my $type_id = $allele_row->object->type_id;
-			my $genome_label = 'private_'.$allele_row->subject->private_feature_relationship_subjects->first->object_id;
+			my $genome_label = 'private_'.$allele_row->subject->feature_relationship_subjects->first->object_id;
 			my $allele_id = $allele_row->subject_id;
-			my $gene_id = $allele_row->object_id;
-			my $gene_name = $allele_row->object->uniquename;
+			my $ref_id = $allele_row->object_id;
+			my $ref_name = $allele_row->object->uniquename;
+			my $subt = $allele_row->subject->featureprops->first->value;
 			
-			$gene_names{$gene_id} = $gene_name;
+			$subunit_names{$ref_id} = $ref_name;
 			
-			if($type_id == $vf_type) {
-				$vf_alleles{$genome_label}->{$gene_id} = [] unless defined($vf_alleles{$genome_label}->{$gene_id});
-				push @{$vf_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} if($type_id == $amr_type) {
-				$amr_alleles{$genome_label}->{$gene_id} = [] unless defined $amr_alleles{$genome_label}->{$gene_id};
-				push @{$amr_alleles{$genome_label}->{$gene_id}}, $allele_id;
-				
-			} else {
-				get_logger->warn("Unrecognized allele type ID $type_id.\n");
-			}
+			$subtypes{$genome_label}->{$ref_id} = [] unless defined($subtypes{$genome_label}->{$ref_id});
+			push @{$subtypes{$genome_label}->{$ref_id}}, { allele => $allele_id, subtype => $subt};
 		}
 		
 	}
 	
-	return({names => \%gene_names, amr => \%amr_alleles, vf => \%vf_alleles});
+	return({names => \%subunit_names, stx => \%subtypes});
+}
+
+
+=head2 categories
+
+Duplicate from Genes module - may consider merging into FormDataGenerator
+
+=cut
+sub categories {
+    my $self = shift;
+    my ($vfJSON, $amrJSON) = @_;
+
+    die "Must pass a VF and AMR hash ref" unless $vfJSON && $amrJSON;
+
+    my ($vfRef,$amrRef) = (decode_json($vfJSON), decode_json($amrJSON));  
+    
+    my $amrCategoryResults = $self->dbixSchema->resultset('AmrCategory')->search(
+        {},
+        {
+            join => ['parent_category', 'gene_cvterm', 'category'],
+            select => [
+                'parent_category.cvterm_id',
+                'parent_category.name',
+                'parent_category.definition',
+                'gene_cvterm.cvterm_id',
+                'gene_cvterm.name',
+                'gene_cvterm.definition',
+                'category.cvterm_id',
+                'category.name',
+                'category.definition',
+                'feature_id'],
+            as => [
+                'parent_id',
+                'parent_name',
+                'parent_definition',
+                'gene_id',
+                'gene_name',
+                'gene_definition',
+                'category_id',
+                'category_name',
+                'category_definition',
+                'feature_id']
+        }
+    );
+
+    my %amrCategories;
+    while (my $row = $amrCategoryResults->next) {
+        # TODO: Apeend the AMR categories and subcategories to the AMR lists
+        my $parent_id = $row->get_column('parent_id');
+        my $category_id = $row->get_column('category_id');
+        my $gene_id = $row->get_column('feature_id');
+        my $parent_name = $row->get_column('parent_name');
+        my $category_name = $row->get_column('category_name');
+
+        $amrRef->{$gene_id}->{'cats'} = {} unless exists $amrRef->{$gene_id}->{'cats'};
+        $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'} = {} unless exists $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'};
+        $amrRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'}->{$category_id} = undef;
+
+        $amrCategories{$parent_id} = {} unless exists $amrCategories{$parent_id};
+        $amrCategories{$parent_id}->{'parent_name'} = $parent_name;
+        $amrCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+        $amrCategories{$parent_id}->{'subcategories'} = {} unless exists $amrCategories{$parent_id}->{'subcategories'};
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id};
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $category_name;
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+        $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+        push(@{$amrCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $gene_id);
+    }
+
+    my $vfCategoryResults = $self->dbixSchema->resultset('VfCategory')->search(
+        {},
+        {
+            join => ['parent_category', 'gene_cvterm', 'category'],
+            select => [
+                'parent_category.cvterm_id',
+                'parent_category.name',
+                'parent_category.definition',
+                'gene_cvterm.cvterm_id',
+                'gene_cvterm.name',
+                'gene_cvterm.definition',
+                'category.cvterm_id',
+                'category.name',
+                'category.definition',
+                'feature_id'],
+            as => [
+                'parent_id',
+                'parent_name',
+                'parent_definition',
+                'gene_id',
+                'gene_name',
+                'gene_definition',
+                'category_id',
+                'category_name',
+                'category_definition',
+                'feature_id']
+        }
+    );
+
+
+    my %vfCategories;
+    while (my $row = $vfCategoryResults->next) {
+        #TODO: Append categories and subcategories to the VF lists
+        my $parent_id = $row->get_column('parent_id');
+        my $category_id = $row->get_column('category_id');
+        my $gene_id = $row->get_column('feature_id');
+        my $parent_name = $row->get_column('parent_name');
+        my $category_name = $row->get_column('category_name');
+
+        $vfRef->{$gene_id}->{'cats'} = {} unless exists $vfRef->{$gene_id}->{'cats'};
+        $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'} = {} unless exists $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'};
+        $vfRef->{$gene_id}->{'cats'}->{$parent_id}->{'subcats'}->{$category_id} = undef;
+        
+        $vfCategories{$parent_id} = {} unless exists $vfCategories{$parent_id};
+        $vfCategories{$parent_id}->{'parent_name'} = $parent_name;
+        $vfCategories{$parent_id}->{'parent_definition'} = $row->get_column('parent_definition');
+        $vfCategories{$parent_id}->{'subcategories'} = {} unless exists $vfCategories{$parent_id}->{'subcategories'};
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id} = {} unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id};
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'parent_id'} = $parent_id;
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_name'} = $category_name;
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'category_definition'} = $row->get_column('category_definition');
+        $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'} = [] unless exists $vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'};
+        push(@{$vfCategories{$parent_id}->{'subcategories'}->{$category_id}->{'gene_ids'}}, $gene_id);
+    }
+
+    my %categories = ('vfCats' => \%vfCategories,
+                      'amrCats' => \%amrCategories);
+
+    my $categories_json = encode_json(\%categories);
+    $amrJSON = encode_json($amrRef);
+    $vfJSON = encode_json($vfRef);
+    return ($categories_json, $vfJSON, $amrJSON);
+}
+
+sub elapsed_time {
+	my ($self, $mes) = @_;
+	
+	my $time = $self->{now};
+	$self->{now} = time();
+	printf("$mes: %.2f\n", $self->{now} - $time); 
+	$self->logger->debug(sprintf("$mes: %.2f", $self->{now} - $time));
+	
 }
 
 1;

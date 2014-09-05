@@ -162,7 +162,8 @@ my $db_id = $schema->resultset('Db')->find({ name => $db_name })->db_id;
 
 my @local_terms = qw/serotype strain isolation_host isolation_location isolation_date isolation_latlng
 	syndrome severity isolation_source isolation_age pmid virulence_factor antimicrobial_resistance_gene
-	source_organism publication pangenome panseq_function locus core_genome/;
+	source_organism publication pangenome panseq_function locus core_genome typing_sequence allele_fusion 
+	stx1_subtype stx2_subtype/;
 foreach my $term (@local_terms) {
 	
 	my $term_hash = {
@@ -180,6 +181,29 @@ foreach my $term (@local_terms) {
 	
 	unless($row->in_storage) {
 		print "Adding local ontology term $term\n";
+		$row->insert;
+	}
+}
+
+# Genodo Feature relationship types
+my @local_rel_terms = qw/fusion_of/;
+foreach my $term (@local_rel_terms) {
+	
+	my $term_hash = {
+			name => $term,
+			cv_id => $cv_id,
+			is_obsolete => 0,
+			is_relationshiptype => 1,
+			dbxref => {
+				db_id => $db_id,
+				accession => $term
+			}
+		};
+	
+	my $row = $schema->resultset('Cvterm')->find_or_new($term_hash, { key => 'cvterm_c1' });
+	
+	unless($row->in_storage) {
+		print "Adding local ontology relationship term $term\n";
 		$row->insert;
 	}
 }

@@ -34,7 +34,8 @@ use CGI::Application::Plugin::AutoRunmode;
 use Log::Log4perl qw/get_logger/;
 use Sequences::GenodoDateTime;
 use Phylogeny::Tree;
-use Modules::TreeManipulator;
+use Modules::LocationManager;
+use Modules::GenomeWarden;
 use IO::File;
 use JSON;
 
@@ -58,7 +59,7 @@ my %fp_types = (
 	isolation_latlng => 'local',
 	syndrome => 'local',
 	pmid     => 'local',
-);
+	);
 
 # In addition to the meta-data in the featureprops table
 # Also have external accessions (i.e. NCBI genbank ID) 
@@ -85,16 +86,15 @@ Run mode for the single strain page
 =cut
 
 sub info : Runmode {
+	# TODO: Handle the private data
 	my $self = shift;
-	
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-	$formDataGenerator->dbixSchema($self->dbixSchema);
+
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
 	
 	my $username = $self->authen->username;
-	
-	# Retrieve form data
-	my ($pub_json, $pvt_json) = $formDataGenerator->genomeInfo($username);
-	
+
 	# Check if user is requesting genome info
 	my $q = $self->query();
 	
@@ -105,20 +105,37 @@ sub info : Runmode {
 	if($feature && $feature ne "") {
 		if($feature =~ m/^public_(\d+)/) {
 			$strainID = $1;
-		} elsif($feature =~ m/^private_(\d+)/) {
-			$privateStrainID = $1;
-		} else {
-			die "Error: invalid genome ID: $feature.";
-		}
-	}
+			} elsif($feature =~ m/^private_(\d+)/) {
+				$privateStrainID = $1;
+				} else {
+					die "Error: invalid genome ID: $feature.";
+				}
+			}
+
+	#Check if user has access to the particular requested genome
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
+
+	my ($err, $bad1, $bad2) = $warden->error; 
+
+	if($err) {
+ 		# User requested invalid strains or strains that they do not have permission to view
+ 		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+ 		return $self->redirect( $self->home_page );
+ 	}
+
+	# Data object
+	my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, cvmemory => $self->cvmemory);
 	
+	# Retrieve form data
+	my ($pub_json, $pvt_json) = $data->genomeInfo($username);
+
 	my $template;
 	if(defined $strainID && $strainID ne "") {
 		# User requested information on public strain
-		
+
 		my $strainInfoRef = $self->_getStrainInfo($strainID, 1);
 		
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
+		$template = $self->load_tmpl( 'strains_info.tmpl' ,
 			associate => HTML::Template::HashWrapper->new( $strainInfoRef ),
 			die_on_bad_params=>0 );
 		$template->param('strainData' => 1);
@@ -128,49 +145,54 @@ sub info : Runmode {
 		$template->param(tree_json => $tree->nodeTree($feature));
 		
 		# Get Virulence and AMR genes for genome
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(public_genomes => [$strainID]);
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		# Retrieve presence / absence of alleles for query genes
+		my %args = (
+			warden => $warden
+			);
 
-		$template->param(AMRDATA=>\@amrData);
+		my $results = $data->getGeneAlleleData(%args);
+		get_logger->debug('halt1');
 
-		# Get loacation data for map
-		my $strainLocationDataRef = $self->_getStrainLocation($strainID, 'Featureprop');
+		my $gene_list = $results->{genes};
+		my $gene_json = encode_json($gene_list);
+		$template->param(gene_json => $gene_json);
+
+		my $alleles = $results->{alleles};
+		my $allele_json = encode_json($alleles);
+		$template->param(allele_json => $allele_json);
+
+		get_logger->debug('halt2');
+
+		# Obtain reference typing sequence
+		my @subunits;
+		foreach my $uniquename (qw/stx1_subunit stx2_subunit/) {
+			my $refseq = $self->dbixSchema->resultset('Feature')->find(
+			{
+				uniquename => $uniquename
+			}
+			);
+			my $ref_id = $refseq->feature_id;
+			push @subunits, $ref_id;
+		}
+
+		$args{markers} = \@subunits;
+
+		# STX Subtypes
+		my $stxRef = $data->getStxData(%args);
+		my $stx_json = encode_json($stxRef);
+
+		$template->param(stx => $stx_json);
+
+		# Get location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($strainID, 'public');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'public_'.$strainID);
 
-	} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		} elsif(defined $privateStrainID && $privateStrainID ne "") {
+		# TODO: Change this to use genome Warden
 		# User requested information on private strain
 		
 		# Retrieve list of private genomes user can view (need full list to mask unviewable nodes in tree)
-		my ($visable, $has_private) = $formDataGenerator->privateGenomes($username);
+		my ($visable, $has_private) = $data->privateGenomes($username);
 		
 		unless(defined($visable->{$feature})) {
 			# User requested strain that they do not have permission to view
@@ -191,70 +213,67 @@ sub info : Runmode {
 		
 		if($privacy_category eq 'release') {
 			$template->param('privacy' => "delayed public release");
-		} else {
-			$template->param('privacy' => $privacy_category);
-		}
-		
+			} else {
+				$template->param('privacy' => $privacy_category);
+			}
+
 		# Get phylogenetic tree
 		my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 		if($has_private) {
 			# Need to use full tree, with non-visable nodes masked
-			$formDataGenerator->publicGenomes(undef, $visable);
+			$data->publicGenomes(undef, $visable);
 			$template->param(tree_json => $tree->nodeTree($feature, $visable));
-		} else {
+			} else {
 			# Can use public tree
 			$template->param(tree_json => $tree->nodeTree($feature));
 		}
 		
-		# Get Virulence and AMR genes for genome
+		# Get Virulence and AMR genes for private genome
+		# TODO: How should I pass in the pprivate strain id?
 		get_logger->debug($privateStrainID);
-		my $result_hashref = $formDataGenerator->getGeneAlleleData(private_genomes => [$privateStrainID]);
+		#my $result_hashref = $data->getGeneAlleleData(private_genomes => [$privateStrainID]);
 		
-		my $vf = $result_hashref->{vf};
-		my $amr = $result_hashref->{amr};
-		my $names = $result_hashref->{names};
-		
-		my @virData; my @amrData;
-		
-		foreach my $gene_id (keys %{$amr->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$amr->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@amrData, \%virRow);
-		}
-		
-		foreach my $gene_id (keys %{$vf->{$feature}}) {
-			my %virRow;
-			$virRow{'gene_name'} = $names->{$gene_id};
-			$virRow{'feature_id'} = $gene_id;
-			foreach my $allele_id (@{$vf->{$feature}->{$gene_id}}) {
-				$virRow{'allele_count'}++
-			}
-			push (@virData, \%virRow);
-		}
-		
-		get_logger->debug("NUMBER OF VF:".scalar(@virData));
-		get_logger->debug("NUMBER OF AMR:".scalar(@amrData));
-		
-		$template->param(VIRDATA=>\@virData);
+		# my $results = $data->getGeneAlleleData(%args);
+		# get_logger->debug('halt1');
 
-		$template->param(AMRDATA=>\@amrData);
+		# my $gene_list = $results->{genes};
+		# my $gene_json = encode_json($gene_list);
+		# $template->param(gene_json => $gene_json);
 
-		my $strainLocationDataRef = $self->_getStrainLocation($privateStrainID, 'PrivateFeatureprop');
+		# my $alleles = $results->{alleles};
+		# my $allele_json = encode_json($alleles);
+		# $template->param(allele_json => $allele_json);
+
+		# get_logger->debug('halt2');
+
+		# Get private location data for map
+		my $strainLocationDataRef = $locationManager->getStrainLocation($privateStrainID, 'private');
 		$template->param(LOCATION => $strainLocationDataRef->{'presence'} , strainLocation => 'private_'.$privateStrainID);
 
-	} else {
-		$template = $self->load_tmpl( 'strain_info.tmpl' ,
-			die_on_bad_params=>0 );
-		$template->param('strainData' => 0);
-	}
+		} else {
+			$template = $self->load_tmpl( 'strains_info.tmpl' ,
+				die_on_bad_params=>0 );
+			$template->param('strainData' => 0);
+		}
 
 	# Populate forms
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
+
+	# AMR/VF Lists
+	my $vfRef = $data->getVirulenceFormData();
+	my $amrRef = $data->getAmrFormData();
+
+	# AMR/VF categores
+	my $categoriesRef;
+	($categoriesRef, $vfRef, $amrRef) = $data->categories($vfRef, $amrRef);
+	$template->param(categories => $categoriesRef);
+
+	$template->param(vf => $vfRef);
+	$template->param(amr => $amrRef);
+
+	$template->param(title1 => 'GENOME');
+	$template->param(title2 => 'INFORMATION');
 
 	return $template->output();
 }
@@ -277,7 +296,6 @@ sub search : StartRunmode {
 	$template->param(public_genomes => $pub_json);
 	$template->param(private_genomes => $pvt_json) if $pvt_json;
 	
-=cut
 	# Phylogenetic tree
 	my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
 	
@@ -289,14 +307,16 @@ sub search : StartRunmode {
 	if($has_private) {
 		my $tree_string = $tree->fullTree($visable_nodes);
 		$template->param(tree_json => $tree_string);
-	} else {
-		my $tree_string = $tree->fullTree();
-		$template->param(tree_json => $tree_string);
-	}
-=cut
-	
-	return $template->output();
-} 
+		} else {
+			my $tree_string = $tree->fullTree();
+			$template->param(tree_json => $tree_string);
+		}
+
+		$template->param(title1 => 'GENOME');
+		$template->param(title2 => 'SEARCH');
+
+		return $template->output();
+	} 
 
 =head2 _getStrainInfo
 
@@ -324,17 +344,17 @@ sub _getStrainInfo {
 	}
 
 	my $feature_rs = $self->dbixSchema->resultset($feature_table_name)->search(
-		{
-			"me.feature_id" => $strainID
+	{
+		"me.feature_id" => $strainID
 		},
 		{
 			prefetch => [
-				{ 'dbxref' => 'db' },
-				{ $featureprop_rel_name => 'type' },
+			{ 'dbxref' => 'db' },
+			{ $featureprop_rel_name => 'type' },
 			],
 			order_by => $order_name
 		}
-	);
+		);
 	
 	# Create hash
 	my %feature_hash;
@@ -355,14 +375,14 @@ sub _getStrainInfo {
 	# Secondary Dbxrefs
 	# Separate query to prevent unwanted join behavior
 	my $feature_dbxrefs = $self->dbixSchema->resultset($dbxref_table_name)->search(
-		{
-			feature_id => $feature->feature_id
+	{
+		feature_id => $feature->feature_id
 		},
 		{
 			prefetch => {'dbxref' => 'db'},
 			order_by => 'db.name'
 		}
-	);
+		);
 	
 	$feature_hash{secondary_dbxrefs} = [] if $feature_dbxrefs->count;
 	while(my $dx = $feature_dbxrefs->next) {
@@ -399,87 +419,12 @@ sub _getStrainInfo {
 	# Convert age to proper units
 	if(defined $feature_hash{isolation_ages}) {
 		foreach my $age_hash (@{$feature_hash{isolation_ages}}) {
-			my($age, $unit) = Sequences::GenodoDateTime::ageOut($age_hash->{isolation_age});
+			my($age, $unit) = Sequences::GenodoDateTime::a1ut($age_hash->{isolation_age});
 			$age_hash->{isolation_age} = "$age $unit";
 		}
 	}
 	
 	return(\%feature_hash);
-}
-
-=cut
-sub _getVirulenceData {
-	my $self = shift;
-	my $strainID = shift;
-	my $virulence_table_name = 'RawVirulenceData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @virulenceData;
-	my $virCount = 0;
-
-	my $virulenceData = $self->dbixSchema->resultset($virulence_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $virulenceDataRow = $virulenceData->next) {
-		my %virRow;
-		$virRow{'gene_name'} = $virulenceDataRow->gene->uniquename;
-		$virRow{'feature_id'} = $virulenceDataRow->gene->feature_id;
-		push (@virulenceData, \%virRow);
-	}
-	return \@virulenceData;
-}
-
-sub _getAmrData {
-	my $self = shift;
-	my $strainID = shift;
-	my $amr_table_name = 'RawAmrData';
-	my $formDataGenerator = Modules::FormDataGenerator->new();
-
-	my @amrData;
-	my $amrCount = 0;
-
-	my $amrData = $self->dbixSchema->resultset($amr_table_name)->search(
-		{'me.genome_id' => 'public_'.$strainID , 'me.presence_absence' => 1},
-		{
-			join => ['gene'],
-			column => [qw/me.strain me.gene_name me.presence_absence gene.uniquename gene.feature_id/]
-		}
-		);
-
-	while (my $amrDataRow = $amrData->next) {
-		my %amrRow;
-		$amrRow{'gene_name'} = $amrDataRow->gene->uniquename;
-		$amrRow{'feature_id'} = $amrDataRow->gene->feature_id;
-		push (@amrData , \%amrRow);
-	}
-	return \@amrData;
-}
-=cut
-
-sub _getStrainLocation {
-	my $self = shift;
-	my $strainID = shift;
-	my $tableName = shift;
-	my $locationFeatureProps = $self->dbixSchema->resultset($tableName)->search(
-		{'type.name' => 'isolation_location' , 'me.feature_id' => "$strainID"},
-		{
-			column  => [qw/me.feature_id me.value type.name/],
-			join        => ['type']
-		}
-		);
-	my %strainLocation;
-	$strainLocation{'presence'} = 0;
-	while (my $location = $locationFeatureProps->next) {
-		$strainLocation{'presence'} = 1;
-		my $locValue = $location->value;
-		$strainLocation{'location'} = $locValue;
-	}
-	return \%strainLocation;
 }
 
 sub test : Runmode {
@@ -501,6 +446,125 @@ sub test : Runmode {
 	#$template->param('strainData' => 0);
 	
 	return $template->output();
+}
+
+=head2 geocode
+
+=cut
+
+sub geocode : Runmode {
+	my $self = shift;
+	my $q = $self->query();
+	my $address = $q->param("address");
+
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
+
+	my $queryResult = $locationManager->geocodeAddress($address);
+
+	return $queryResult;
+}
+
+sub download : Runmode {
+	my $self = shift;
+
+	my $username = $self->authen->username;
+
+	my $q = $self->query();
+	
+	# Need to replace these param checks with a single genome request.
+	my $strainID;
+	my $privateStrainID;
+	my $feature = $q->param("genome");
+	if($feature && $feature ne "") {
+		if($feature =~ m/^public_(\d+)/) {
+			$strainID = $1;
+			} elsif($feature =~ m/^private_(\d+)/) {
+				$privateStrainID = $1;
+				} else {
+					die "Error: invalid genome ID: $feature.";
+				}
+			}
+
+	#Check if user has access to the particular requested genome
+	my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, genomes => [$feature], user => $username, cvmemory => $self->cvmemory);
+
+	my ($err, $bad1, $bad2) = $warden->error; 
+
+	if($err) {
+ 		# User requested invalid strains or strains that they do not have permission to view
+ 		$self->session->param( status => '<strong>Permission Denied!</strong> You have not been granted access to uploaded genomes: '.join(', ',@$bad1, @$bad2) );
+ 		return $self->redirect( $self->home_page );
+ 	}
+
+	my @rs;
+
+	if($strainID) {
+		# Obtain all contigs and contig collections in feature table
+		my $contig_rs = $self->dbixSchema->resultset('Feature')->search(
+		{
+			#'me.feature_id' => "$strainID",
+			'object_id' => "$strainID",
+			'type.name' => "contig",
+			'type_2.name' => "part_of",
+
+			},
+			{
+				column  => [qw/feature_id uniquename residues/],
+				'+select' => [qw/feature_relationship_subjects.object_id/],
+				'+as' => [qw/object_id/],
+				join    => [
+				'type',
+				{'feature_relationship_subjects' => 'type'}
+				],
+			}
+			);
+
+		push @rs, $contig_rs;
+	}
+
+	# Obtain all uploaded contigs and contig collections in private
+	if($privateStrainID) {
+		my $contig_rs2 = $self->dbixSchema->resultset('PrivateFeature')->search(
+		{
+			#'me.feature_id' => "$privateStrainID",
+			'type.name' => "contig",
+			'type_2.name' => "part_of",
+
+			},
+			{
+				column  => [qw/feature_id uniquename residues/],
+				'+select' => [qw/private_feature_relationship_subjects.object_id/],
+				'+as' => [qw/object_id/],
+				join    => [
+				'type',
+				{'private_feature_relationship_subjects' => 'type'}
+				],
+			}
+			);
+
+		push @rs, $contig_rs2;
+
+	}
+
+    # Produce CSV output
+    my @rows;
+    foreach my $contigs (@rs) {
+    	while (my $contig = $contigs->next) {
+    		my $row = ">superphy|" . $contig->uniquename . "\n" . $contig->residues;
+    		push(@rows, $row);
+    	}
+    }
+    
+    # Pipe text to user
+    my $output = join("\n", @rows);
+    
+    $self->header_add( 
+    	-type => 'text/plain',
+    	-Content_Disposition => "attachment");
+
+    return $output;
 }
 
 1;

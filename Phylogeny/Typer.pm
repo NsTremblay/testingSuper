@@ -13,7 +13,7 @@
 
 =head1 AUTHOR
 
-  Matt Whiteside (mawhites@phac-aspc.gov.ca)
+  Matt Whiteside (matthew.whiteside@phac-aspc.gov.ca)
 
 =cut
 
@@ -66,7 +66,7 @@
 		
 		if(@_) {
 			$self->{'name'} = shift;
-			if($self->{'name'} =~ m/Stx(\w+)-/) {
+			if($self->{'name'} =~ m/\#REF\#Stx(\w+)-/) {
 				$self->{'stx'} = $1;
 				$self->{'is_signpost'} = 1;
 			}
@@ -113,7 +113,6 @@
 }
 
 
-
 package Phylogeny::Typer;
 
 use strict;
@@ -141,12 +140,12 @@ sub new {
 	bless( $self, $class );
 	
 	# DB connection
-	my $config_file = $params{config} //= dirname (__FILE__) . "/../Modules/genodo.cfg";
+	my $config_file = $params{config} //= dirname (__FILE__) . "/../../config/genodo.cfg";
 	my $dbix = $params{dbix_schema};
 	
 	unless($dbix) {
 		# No schema provided, connect to database
-		croak "[Error] config file not found ($config_file).\n" unless -e $config_file;
+		croak "[Error] Config file not found ($config_file).\n" unless -e $config_file;
 		
 		my $db_conf = new Config::Simple($config_file);
 		
@@ -155,8 +154,9 @@ sub new {
 						        dbHost  => $db_conf->param('db.host'),
 						        dbPort  => $db_conf->param('db.port'),
 						        dbUser  => $db_conf->param('db.user'),
-						        dbPass  => $db_conf->param('db.user')
+						        dbPass  => $db_conf->param('db.pass')
 		);
+		
 	} else {
 		# Use existing connection
 		$self->setDbix($dbix);
@@ -166,8 +166,8 @@ sub new {
 	$self->{tree_builder} = Phylogeny::TreeBuilder->new;
 	
 	# Reference sequences
-	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx1_superaln.affn';
-	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx2_superaln.affn';
+	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx1_superaln_reference.affn';
+	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx2_superaln_reference.affn';
 	
 	# Muscle exe
 	$self->{muscle} = $params{muscle} //= '/usr/bin/muscle';
@@ -181,6 +181,113 @@ sub new {
 =head2 untypedGenomes
 
 =cut
+
+=head2 insertTypingObjects
+
+  Setup feature objects to represent Stx1/2 sequences. Needs to only be
+  called once.
+
+=cut
+
+sub insertTypingObjects {
+	my $self = shift;
+	
+	# Retrieve need cvterm type_ids
+	my @type_names = qw/typing_sequence fusion_of virulence_factor/;
+	my $type_rs = $self->dbixSchema->resultset('Cvterm')->search(
+		{
+			name => \@type_names,
+		},
+		{
+			columns => ['name','cvterm_id']
+		}
+	);
+	
+	my %type;
+	while (my $type_row = $type_rs->next) {
+		$type{$type_row->name} = $type_row->cvterm_id;
+	}
+	
+	croak "[Error] Missing ontology type in cvterm table." unless scalar(keys %type) == scalar(@type_names);
+	
+	# Get organism ID
+	my $organism_row = $self->dbixSchema->resultset('Organism')->find({
+		genus => 'Escherichia',
+		species => 'coli'
+	});
+	my $organism_id = $organism_row->organism_id;
+	
+	# Insert missing features 
+	for my $g (1..2) {
+		
+		# Find query genes that make up each typing sequence
+		my $sua = "stx$g".'A';
+		my $sub = "stx$g".'B';
+		my $stx_rs = $self->dbixSchema->resultset('Feature')->search(
+			{
+				'name' => { '-in' => [$sua, $sub] },
+				'type_id' => $type{virulence_factor}
+			},
+			{
+				columns => ['name', 'feature_id']
+			}
+		);
+		
+		my %query_genes;
+		my $i = 0;
+		while (my $stx_row = $stx_rs->next) {
+			$query_genes{$stx_row->name} = $stx_row->feature_id;
+			$i++;
+		}
+		croak "[Error] Could not find all virulence_factor genes associated with stx$g." unless $i == 2;
+		
+		# Create a stx1/2 typing sequence references.
+		# All instances of stx1 or stx2 sequences in individual genomes will
+		# be linked to these reference features via 'variant_of' relationship
+		my $nm = "Shiga-toxin Subunit $g Reference Typing Sequence";
+		my $un = "stx$g\_subunit";
+		my $feature_hash = {
+			name => $nm,
+			uniquename => $un,
+			organism_id => $organism_id,
+			is_analysis => 'true',
+			type_id => $type{typing_sequence}
+		};
+		
+		my $f = $self->dbixSchema->resultset('Feature')->find_or_create(
+			$feature_hash,
+			{
+				'key' => 'feature_c1'
+			}
+		);
+		
+		# Link to query genes
+		$self->dbixSchema->resultset('FeatureRelationship')->find_or_create(
+			{
+				subject_id => $f->feature_id,
+				object_id => $query_genes{$sua},
+				type_id => $type{fusion_of},
+				rank => 0
+			},
+			{
+				'key' => 'feature_relationship_c1'
+			}
+		);
+		$self->dbixSchema->resultset('FeatureRelationship')->find_or_create(
+			{
+				subject_id => $f->feature_id,
+				object_id => $query_genes{$sub},
+				type_id => $type{fusion_of},
+				rank => 1
+			},
+			{
+				'key' => 'feature_relationship_c1'
+			}
+		);
+		
+	}
+	
+}
 
 =head2 dbAlignments
 
@@ -198,7 +305,7 @@ sub dbAlignments {
 	my $stx_rs = $self->dbixSchema->resultset('Feature')->search(
 		{
 			'me.name' => { '-in' => ['stx1A', 'stx1B', 'stx2A', 'stx2B'] },
-			'type.name' => 'gene'
+			'type.name' => 'virulence_factor'
 		},
 		{
 			join => ['type'],
@@ -208,9 +315,9 @@ sub dbAlignments {
 	
 	my %stx_genes;
 	my $n = 0;
-	map { $stx_genes{$_->feature_id} = $_->name; $n++; } $stx_rs->all;
-	
-	croak "[Error] missing/incorrect stx genes." unless $n == 4;
+	print "FEATURE IDs:\n";
+	map { print $_->name.": ".$_->feature_id."\n"; $stx_genes{$_->feature_id} = $_->name; $n++; } $stx_rs->all;
+	croak "[Error] Missing/incorrect stx genes." unless $n == 4;
 	
 	if($gp_ids) {
 		# Obtain alignments for selected genomes
@@ -290,7 +397,7 @@ sub dbAlignments {
 }
 
 
-=head2 stxType
+=head2 stxTyping
 
 
 =cut
@@ -310,21 +417,73 @@ sub stxTyping {
 	}
 }
 
-sub run {
+=head2 subtype
+
+Used in ExperimentalFeatures.pm
+
+=cut
+
+sub subtype {
 	my $self = shift;
-	my $ref_file = shift;
-	my $type_file = shift;
-	my $res_file = shift;
+	my $typing_gene = shift;
+	my $fasta_hashref = shift;
 	my $tree_file = shift;
+	my $result_file = shift;
+	
+	# map known typing genes to stored reference alignments
+	my $ref_file;
+	
+	if($typing_gene eq 'stx1_subunit') {
+		$ref_file = $self->{"stx1_superaln_reference"};
+	} elsif($typing_gene eq 'stx2_subunit') {
+		$ref_file = $self->{"stx2_superaln_reference"};
+	} else {
+		croak "[Error] unknown typing sequence $typing_gene. Need reference alignment with assigned subtypes\n"
+	}
+	
+	$self->run($ref_file, $fasta_hashref, $result_file, $tree_file);
+	
+}
+
+=head2 run
+
+Subtyping pipeline
+
+=cut
+
+sub run {
+	my $self        = shift;
+	my $ref_file    = shift; # fasta-format reference alignment
+	my $typing_seqs = shift; # fasta-format untyped sequences alignment
+	my $res_file    = shift; # tab-delimited subtype assigments
+	my $tree_file   = shift; # Newick tree with reference and untyped sequences
 	
 	# Merge reference and target alignments
 	my $aln_file = $self->{tmp_dir} . 'typer.aln';
+	my $aln_file2 = $self->{tmp_dir} . 'typer_in.aln';
 	my $muscle_cmd = $self->{muscle};
 	
-	$muscle_cmd .= " -profile -in1 $ref_file -in2 $type_file -out $aln_file";
+	if(ref($typing_seqs) eq 'HASH') {
+		open(OUT, ">$aln_file2") or die "[Error] Unable to write to file $aln_file2 ($!)\n";
+		foreach my $header (keys %$typing_seqs) {
+			print OUT ">$header\n".$typing_seqs->{$header}."\n";
+		}
+		close OUT;
+		
+		$muscle_cmd .= " -profile -in1 $ref_file -in2 $aln_file2 -out $aln_file";
+		
+	} elsif(-e $typing_seqs) {
+		
+		$muscle_cmd .= " -profile -in1 $ref_file -in2 $typing_seqs -out $aln_file";
+		
+	} else {
+		
+		croak "[Error] Invalid or missing arguments in run() method.\n";
+	}
+	
 	
 	unless(system($muscle_cmd) == 0) {
-		croak "[Error] muscle profile alignment failed (command: $muscle_cmd).\n";
+		croak "[Error] Muscle profile alignment failed (command: $muscle_cmd).\n";
 	}
 	print "MUSCLE COMPLETE\n";
 	
@@ -350,6 +509,7 @@ sub run {
 	print "PRINTING COMPLETE\n";
 }
 
+
 =head2 _newickToPerl
 
 Convert from Newick to Perl structure.
@@ -363,7 +523,7 @@ sub _newickToPerl {
 	my $newick_file = shift;
 	
 	my $newick;
-	open(IN, "<$newick_file") or die "Error: unable to read file $newick_file ($!)\n";
+	open(IN, "<$newick_file") or die "[Error] Unable to read file $newick_file ($!)\n";
 	
 	while(my $line = <IN>) {
 		chomp $line;
@@ -497,87 +657,6 @@ sub _computeTypes {
 	}
 }
 
-#sub _computeTypes {
-#	my $curr_node = shift;
-#	
-#	# Look for outgroups that can be used to
-#	# define type of any descendants
-#	my @marker_nodes;
-#	my @subtrees;
-#	my @unknown_nodes;
-#	
-#	foreach my $node (@{$curr_node->children}) {
-#		
-#		if($node->is_leaf && $node->stx_marker) {
-#			# This node can be used to assign type to descendants
-#			push @marker_nodes, $node;
-#		} elsif($node->is_leaf && !$node->stx_marker) {
-#			# This node does not have a type assigned
-#			push @unknown_nodes, $node;
-#		} else {
-#			# This node is a subtree which may have a type.
-#			push @subtrees, $node;
-#		}
-#	}
-#	
-#	if(@marker_nodes) {
-#		# Have opportunity to assign types
-#		
-#		# Due to possibility of multi-furcating nodes, need to check if
-#		# type is consistent for all Stx-typed nodes that are a child of this node
-#		my %all_types;
-#		map { $all_types{$_->stx_marker}++ } @marker_nodes;
-#		
-#		my $marker_type;
-#		my @possible_types = keys %all_types;
-#		if(@possible_types == 1) {
-#			$marker_type = shift @possible_types;
-#		} else {
-#			# Mixed stx-types
-#			_assignTypes($curr_node, 'multiple');
-#			return 'multiple';
-#		}
-#		
-#		# Need to check this split's type against the types of descendants
-#		foreach my $descendant (@subtrees) {
-#			my $this_type = _computeTypes($descendant);
-#			
-#			if($this_type && $this_type ne $marker_type) {
-#				# Mixed stx-types
-#				_assignTypes($curr_node, 'multiple');
-#				return 'multiple';
-#				
-#			}
-#		}
-#		
-#		# Have consistent type.
-#		# Set type for undefined descendants.
-#		_assignTypes($curr_node, $marker_type);
-#		return $marker_type;
-#		
-#	} elsif(@subtrees) {
-#		# No assignment will occur, iterate on subtrees
-#		my %all_types;
-#		foreach my $descendant (@subtrees) {
-#			my $this_type = _computeTypes($descendant);
-#			
-#			if($this_type) {
-#				$all_types{$this_type}++;
-#			}
-#		}
-#		
-#		my @possible_types = keys %all_types;
-#		if(@possible_types == 1) {
-#			return $possible_types[0];
-#		} else {
-#			return 'multiple';
-#		}
-#		
-#	} else {
-#		# No subtrees
-#		return $curr_node->stx_marker;
-#	}
-#}
 
 =head2 _assignTypes
 
@@ -633,8 +712,8 @@ sub _perlToNewick {
 	my $text_file = shift;
 	my $newick_file = shift;
 	
-	open(my $fh, ">", $text_file) or die "Error: unable to write to file $text_file ($!)\n";
-	open(my $fh2, ">", $newick_file) or die "Error: unable to write to file $newick_file ($!)\n";
+	open(my $fh, ">", $text_file) or die "[Error] Unable to write to file $text_file ($!)\n";
+	open(my $fh2, ">", $newick_file) or die "[Error] Unable to write to file $newick_file ($!)\n";
 	
 	_printNode($root, $fh, $fh2);
 	
