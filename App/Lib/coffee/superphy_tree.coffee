@@ -61,7 +61,7 @@ class TreeView extends ViewTemplate
     @_treeOps(@parentElem, legendID)
     
     # SVG layer
-    @parentElem.append("<div id='#{@elID}' class='#{@cssClass()}'></div>")
+    jQuery("<div id='#{@elID}' class='#{@cssClass()}'></div>").appendTo(@parentElem)
     @wrap = d3.select("##{@elID}").append("svg")
       .attr("width", @dim.w)
       .attr("height", @dim.h)
@@ -1527,7 +1527,7 @@ class TreeView extends ViewTemplate
     # control form
     controls = '<div class="row">'
       
-    controls += "<div class='col-sm-6'><div class='btn-group'>"
+    controls += "<div class='col-sm-6 span6'><div class='btn-group'>"
     
     # Fit to window
     fitButtonID = "tree_fit_button#{@elNum}"
@@ -1546,21 +1546,21 @@ class TreeView extends ViewTemplate
     # Find genome
     findButtonID = "tree_find_button#{@elNum}"
     findInputID = "tree_find_input#{@elNum}"
-    controls += "<div class='col-sm-3'><div class='input-group input-group-sm'>"
+    controls += "<div class='col-sm-3 span3'><div class='input-group input-prepend input-group-sm'>"
     controls += "<span class='input-group-btn'> <button id='#{findButtonID}' class='btn btn-default btn-sm' type='button'>Search</button></span>"
-    controls += "<input id='#{findInputID}' type='text' class='form-control'></div></div>"
+    controls += "<input id='#{findInputID}' type='text' class='form-control input-small'></div></div>"
     
     # Empty
-    controls += "<div class='col-sm-1'></div>"
+    controls += "<div class='col-sm-1 span1'></div>"
     
     # Link to legend
-    controls += "<div class='col-sm-2'><a href='##{legendID}'>Functions List</a></div>"
+    controls += "<div class='col-sm-2 span2'><a href='##{legendID}'>Functions List</a></div>"
       
     controls += "</div>" # End row
       
     opsHtml += "#{controls}"
    
-    el.append("<div class='tree_operations'>#{opsHtml}</div>")
+    jQuery("<div class='tree_operations'>#{opsHtml}</div>").appendTo(el)
       
     # Actions
     num = @elNum-1
