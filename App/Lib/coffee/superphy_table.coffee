@@ -79,6 +79,14 @@ class TableView extends ViewTemplate
     
     true # return success
   
+  # Message to appear in intro for genome table
+  intro: ->
+    {
+      element: document.querySelector('#genome_table1')
+      intro: "This is a genome table."
+      position: 'right'
+    }
+
   _template: (tmpl, values) ->
     
     html = null

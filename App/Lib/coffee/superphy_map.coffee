@@ -121,6 +121,14 @@ class MapView extends TableView
     
     true # return success
 
+  # Message to appear in intro for genome map
+  intro: ->
+    {
+      element: document.querySelector('.map-canvas')
+      intro: "This is a map."
+      position: 'right'
+    }
+
   _appendHeader: (genomes) ->
     
     table = '<thead><tr>'

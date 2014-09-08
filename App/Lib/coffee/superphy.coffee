@@ -149,6 +149,11 @@ class ViewController
       
     return true # return success
     
+  introOptions: ->
+    intros = []
+    intros.push(v.intro()) for v in @views
+    intros
+
   createGroup: (boxEl, buttonEl, clearButtonEl) ->
     
     # Current view number

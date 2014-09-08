@@ -466,7 +466,16 @@ class TreeView extends ViewTemplate
   # 
   # RETURNS
   # boolean 
-  #      
+  #
+
+  # Message to appear in intro for genome tree
+  intro: ->
+    {
+      element: document.querySelector('#genome_tree2')
+      intro: "This is the genome tree."
+      position: 'right'
+    }
+
   updateCSS: (gset, genomes) ->
   
     # Retrieve genome objects for each in gset
