@@ -1,4 +1,4 @@
-/*BEGIN;
+BEGIN;
 
 --
 -- SQL for creating additional table for storing private/public snps
@@ -19,7 +19,13 @@ CREATE TABLE snp_core (
 	allele              char(1) NOT NULL DEFAULT 'n',
 	position            integer NOT NULL DEFAULT -1,
 	gap_offset          integer NOT NULL DEFAULT 0,
-	aln_column          integer NOT NULL DEFAULT 0
+	aln_column          integer DEFAULT NULL,
+        frequency_a         integer DEFAULT 0,
+        frequency_t         integer DEFAULT 0,
+        frequency_c         integer DEFAULT 0,
+        frequency_g         integer DEFAULT 0,
+        frequency_gap       integer DEFAULT 0,
+        frequency_other     integer DEFAULT 0
 );
 
 ALTER TABLE public.snp_core OWNER TO postgres;
@@ -55,13 +61,29 @@ ALTER TABLE ONLY snp_core
 ALTER TABLE ONLY snp_core
     ADD CONSTRAINT snp_core_c1 UNIQUE (pangenome_region_id, position, gap_offset);
 
-ALTER TABLE ONLY snp_core
-    ADD CONSTRAINT snp_core_c2 UNIQUE (aln_column);
-
-
 --
 -- Indices
 --
+
+
+--
+-- Utility function - returns boolean indicating if allele frequency is valid SNP
+--   rather than potential SNP.
+--
+-- USAGE: SELECT snp_core.is_polymorphism FROM snp_core;
+--
+
+CREATE OR REPLACE FUNCTION is_polymorphism(rec snp_core)
+  RETURNS boolean
+  IMMUTABLE
+  LANGUAGE SQL
+AS $$
+SELECT 
+  CASE WHEN $1.frequency_a > 1 OR $1.frequency_t > 1 OR $1.frequency_c > 1 OR $1.frequency_g > 1 THEN TRUE
+       ELSE FALSE 
+  END
+  AS is_polymorphism;
+$$;
 
 
 -----------------------------------------------------------------------------
@@ -236,7 +258,7 @@ ALTER TABLE ONLY snp_alignment
 
 
 COMMIT;
-*/
+
 BEGIN;
 
 -----------------------------------------------------------------------------
