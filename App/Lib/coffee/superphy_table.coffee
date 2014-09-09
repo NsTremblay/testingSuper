@@ -83,7 +83,7 @@ class TableView extends ViewTemplate
   intro: ->
     {
       element: document.querySelector('#genome_table1')
-      intro: "This is a genome table."
+      intro: "This is the genome table."
       position: 'right'
     }
 

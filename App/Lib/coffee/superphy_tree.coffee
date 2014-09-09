@@ -470,10 +470,10 @@ class TreeView extends ViewTemplate
 
   # Message to appear in intro for genome tree
   intro: ->
-    {
+    { 
       element: document.querySelector('#genome_tree2')
-      intro: "This is the genome tree."
-      position: 'right'
+      intro: "This is the genome tree.  Use the legend below to help you."
+      position: 'top'
     }
 
   updateCSS: (gset, genomes) ->

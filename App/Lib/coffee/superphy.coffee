@@ -151,7 +151,17 @@ class ViewController
     
   introOptions: ->
     intros = []
+
+    # Append intros for each view
     intros.push(v.intro()) for v in @views
+
+    # Meta-data intro
+    intros.push({
+      element: document.querySelector('#search-utilities')
+      intro: "This is the meta-data and filter section."
+      position: 'right'
+      })
+    
     intros
 
   createGroup: (boxEl, buttonEl, clearButtonEl) ->

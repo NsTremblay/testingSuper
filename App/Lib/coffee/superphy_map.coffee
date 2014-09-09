@@ -125,7 +125,7 @@ class MapView extends TableView
   intro: ->
     {
       element: document.querySelector('.map-canvas')
-      intro: "This is a map."
+      intro: "This is a map.  Next to it is a list of genomes and their locations."
       position: 'right'
     }
 

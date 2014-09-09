@@ -155,6 +155,11 @@
         v = _ref[_i];
         intros.push(v.intro());
       }
+      intros.push({
+        element: document.querySelector('#search-utilities'),
+        intro: "This is the meta-data and filter section.",
+        position: 'right'
+      });
       return intros;
     };
 
@@ -3126,8 +3131,8 @@
     TreeView.prototype.intro = function() {
       return {
         element: document.querySelector('#genome_tree2'),
-        intro: "This is the genome tree.",
-        position: 'right'
+        intro: "This is the genome tree.  Use the legend below to help you.",
+        position: 'top'
       };
     };
 
@@ -5236,7 +5241,7 @@
     TableView.prototype.intro = function() {
       return {
         element: document.querySelector('#genome_table1'),
-        intro: "This is a genome table.",
+        intro: "This is the genome table.",
         position: 'right'
       };
     };
@@ -5659,7 +5664,7 @@
     MapView.prototype.intro = function() {
       return {
         element: document.querySelector('.map-canvas'),
-        intro: "This is a map.",
+        intro: "This is a map.  Next to it is a list of genomes and their locations.",
         position: 'right'
       };
     };
