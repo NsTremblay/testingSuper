@@ -264,7 +264,7 @@ sub geophy : Runmode {
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    my $user_groups = $self->_getUserGroups() // encode_json({error => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"});
+    my $user_groups = $self->_getUserGroups();
 
     $template->param(user_groups => $user_groups);
 
@@ -337,17 +337,16 @@ sub snps : Runmode {
 
 
 sub _getUserGroups {
-    #TODO: Prototype
     my $self = shift;
     my $username = $self->authen->username;
-    return undef unless $username;
-
+    
+    return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
+    
     my $userGroupsRs = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
-
-    return undef unless $userGroupsRs;
-
+    
+    return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $userGroupsRs;
+    
     my $userGroupsJson = $userGroupsRs->user_groups;
-
     my $user_groups_json = $userGroupsJson;
 
     return $user_groups_json;

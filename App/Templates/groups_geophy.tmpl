@@ -5,6 +5,7 @@
 
     <TMPL_INCLUDE NAME="header2.tmpl">
     <link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">
+    <script type="text/javascript" src="/App/Lib/js/superphy_user_groups.js"></script>
     <script type="text/javascript">
     var page_name = "geophy";
     </script>
@@ -41,8 +42,9 @@
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
-// Need to handle the case where the user is not logged in
 var user_groups = <TMPL_VAR user_groups>;
+
+var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'));
 
 //TODO: This is bloated and needs to be changed.
 var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'));
@@ -57,9 +59,10 @@ $(document).ready( function () {
 
 //TEST: Script for creating groups
 // Pull this into coffee script.
+//TODO: Making this a new class in coffeescript
 
-if (user_groups.error) {
-    $('.user-groups-menu').append('<div class="alert alert-info" role="alert">'+user_groups.error+'</div>'); 
+if (user_groups.status) {
+    //$('.user-groups-menu').append('<div class="alert alert-info" role="alert">'+user_groups.status+'</div>'); 
 }
 else {
 
@@ -69,11 +72,12 @@ else {
 
     var user_groups_dd_list = $('<ul class="dropdown-menu" role="menu" aria-labelledby="user-group-collection-dropdown"></ul>').appendTo(user_groups_dropdown);
 
-    var user_group_collections = {
+/*    var user_group_collections = {
         group_collections : {}
     };
+*/
 
-    $.each(user_groups, function(collection_name, groups_array) {
+/*    $.each(user_groups, function(collection_name, groups_array) {
         if(collection_name == 'genome_id') return;
         user_group_collections.group_collections[collection_name] = {};
         $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
@@ -89,7 +93,7 @@ else {
         });
     });
 
-    user_groups_dropdown.appendTo($('.user-groups-menu'));
+    user_groups_dropdown.appendTo($('.user-groups-menu'));*/
 
 }
 </script>
