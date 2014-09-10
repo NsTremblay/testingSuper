@@ -157,7 +157,7 @@ class ViewController
 
     # Meta-data intro
     intros.push({
-      element: document.querySelector('#search-utilities')
+      element: document.querySelector('#meta-form')
       intro: "This is the meta-data and filter section."
       position: 'right'
       })

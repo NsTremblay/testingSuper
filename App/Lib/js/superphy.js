@@ -156,7 +156,7 @@
         intros.push(v.intro());
       }
       intros.push({
-        element: document.querySelector('#search-utilities'),
+        element: document.querySelector('#meta-form'),
         intro: "This is the meta-data and filter section.",
         position: 'right'
       });
@@ -3132,7 +3132,7 @@
       return {
         element: document.querySelector('#genome_tree2'),
         intro: "This is the genome tree.  Use the legend below to help you.",
-        position: 'top'
+        position: 'left'
       };
     };
 

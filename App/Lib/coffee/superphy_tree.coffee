@@ -473,7 +473,7 @@ class TreeView extends ViewTemplate
     { 
       element: document.querySelector('#genome_tree2')
       intro: "This is the genome tree.  Use the legend below to help you."
-      position: 'top'
+      position: 'left'
     }
 
   updateCSS: (gset, genomes) ->

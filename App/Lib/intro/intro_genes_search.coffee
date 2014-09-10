@@ -54,9 +54,19 @@ startIntro = ->
           intro: "Welcome to SuperPhy's Virulence and AMR Genes page."
         }
         {
-          element: document.querySelector('#')
-          intro: ""
-          position: ''
+          element: document.querySelector('.selected-gene-list-wrapper')
+          intro: "These are your selected factors."
+          position: 'right'
+        }
+        {
+          element: document.querySelector('.gene-list-wrapper')
+          intro: "Select one or more factors."
+          position: 'right'
+        }
+        {
+          element: document.querySelector("#gene-category-wrapper")
+          intro: "Select from these categories to refine the list of genes."
+          position: 'left'
         }
         
       ]
