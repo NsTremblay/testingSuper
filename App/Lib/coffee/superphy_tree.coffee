@@ -470,11 +470,18 @@ class TreeView extends ViewTemplate
 
   # Message to appear in intro for genome tree
   intro: ->
-    { 
+    treeIntro = []
+    treeIntro.push({
       element: document.querySelector('#genome_tree2')
-      intro: "This is the genome tree.  Use the legend below to help you."
+      intro: "The phylogenetic relationships between the genomes are indicated by this tree.  Click the blue circles to select genomes.  Using the search bar, you can search for a specific genome, which will be indicated by a yellow circle.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.  You can also use the buttons above the tree to make the tree fit to the window size, reset the window to restore the original tree view, or expand all the clades."
       position: 'left'
-    }
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree_legend2')
+      intro: "Use this legend to help you."
+      position: 'left'
+      })
+    treeIntro
 
   updateCSS: (gset, genomes) ->
   

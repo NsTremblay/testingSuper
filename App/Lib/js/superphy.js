@@ -153,11 +153,16 @@
       _ref = this.views;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         v = _ref[_i];
-        intros.push(v.intro());
+        intros = intros.concat(v.intro());
       }
       intros.push({
         element: document.querySelector('#meta-form'),
-        intro: "This is the meta-data and filter section.",
+        intro: "This is the meta-data section.",
+        position: 'right'
+      });
+      intros.push({
+        element: document.querySelector('#filter-form'),
+        intro: "This is the filter section.",
         position: 'right'
       });
       return intros;
@@ -3129,11 +3134,19 @@
     };
 
     TreeView.prototype.intro = function() {
-      return {
+      var treeIntro;
+      treeIntro = [];
+      treeIntro.push({
         element: document.querySelector('#genome_tree2'),
-        intro: "This is the genome tree.  Use the legend below to help you.",
+        intro: "The phylogenetic relationships between the genomes are indicated by this tree.  Click the blue circles to select genomes.  Using the search bar, you can search for a specific genome, which will be indicated by a yellow circle.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.  You can also use the buttons above the tree to make the tree fit to the window size, reset the window to restore the original tree view, or expand all the clades.",
         position: 'left'
-      };
+      });
+      treeIntro.push({
+        element: document.querySelector('#tree_legend2'),
+        intro: "Use this legend to help you.",
+        position: 'left'
+      });
+      return treeIntro;
     };
 
     TreeView.prototype.updateCSS = function(gset, genomes) {
@@ -5239,11 +5252,14 @@
     };
 
     TableView.prototype.intro = function() {
-      return {
+      var tableIntro;
+      tableIntro = [];
+      tableIntro.push({
         element: document.querySelector('#genome_table1'),
-        intro: "This is the genome table.",
+        intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome.",
         position: 'right'
-      };
+      });
+      return tableIntro;
     };
 
     TableView.prototype._template = function(tmpl, values) {
@@ -5662,11 +5678,24 @@
     };
 
     MapView.prototype.intro = function() {
-      return {
+      var mapIntro;
+      mapIntro = [];
+      mapIntro.push({
         element: document.querySelector('.map-canvas'),
-        intro: "This is a map.  Next to it is a list of genomes and their locations.",
+        intro: "This map displays the location of genomes around the world.  Input a location in the search bar above to see genomes found in the area.",
         position: 'right'
-      };
+      });
+      mapIntro.push({
+        element: document.querySelector('.map-manifest'),
+        intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome.  Check 'Unknown Locations Off' if you want to remove unknown locations from the list (these don't appear on the map).",
+        position: 'left'
+      });
+      mapIntro.push({
+        element: document.querySelector('#reset-map-view'),
+        intro: "Clicking this will reset the map.",
+        position: 'bottom'
+      });
+      return mapIntro;
     };
 
     MapView.prototype._appendHeader = function(genomes) {

@@ -153,12 +153,18 @@ class ViewController
     intros = []
 
     # Append intros for each view
-    intros.push(v.intro()) for v in @views
-
+    intros = intros.concat(v.intro()) for v in @views
+    
     # Meta-data intro
     intros.push({
       element: document.querySelector('#meta-form')
-      intro: "This is the meta-data and filter section."
+      intro: "This is the meta-data section."
+      position: 'right'
+      })
+    # Filter intro
+    intros.push({
+      element: document.querySelector('#filter-form')
+      intro: "This is the filter section."
       position: 'right'
       })
     

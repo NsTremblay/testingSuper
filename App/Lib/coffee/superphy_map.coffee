@@ -123,11 +123,24 @@ class MapView extends TableView
 
   # Message to appear in intro for genome map
   intro: ->
-    {
+    mapIntro = []
+    mapIntro.push({
       element: document.querySelector('.map-canvas')
-      intro: "This is a map.  Next to it is a list of genomes and their locations."
+      intro: "This map displays the location of genomes around the world.  Input a location in the search bar above to see genomes found in the area."
       position: 'right'
-    }
+      })
+    mapIntro.push({
+      element: document.querySelector('.map-manifest')
+      intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome.  Check 'Unknown Locations Off' if you want to remove unknown locations from the list (these don't appear on the map)."
+      position: 'left'
+      })
+    mapIntro.push({
+      element: document.querySelector('#reset-map-view')
+      intro: "Clicking this will reset the map."
+      position: 'bottom'
+      })
+    mapIntro
+
 
   _appendHeader: (genomes) ->
     

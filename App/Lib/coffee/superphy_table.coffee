@@ -39,6 +39,7 @@ class TableView extends ViewTemplate
   elName: 'genome_table'
   
   locusData: null
+
   
   # FUNC update
   # Update genome table view
@@ -81,11 +82,13 @@ class TableView extends ViewTemplate
   
   # Message to appear in intro for genome table
   intro: ->
-    {
+    tableIntro = []
+    tableIntro.push({
       element: document.querySelector('#genome_table1')
-      intro: "This is the genome table."
+      intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome."
       position: 'right'
-    }
+      })
+    tableIntro
 
   _template: (tmpl, values) ->
     

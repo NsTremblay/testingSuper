@@ -30,7 +30,7 @@
     var intro, opts;
     opts = viewController.introOptions();
     opts.splice(0, 0, {
-      intro: "Welcome to SuperPhy's GeoPhy page."
+      intro: "The GeoPhy page provides users with the opportunity to view genome data simultaneously on a map and on a tree to answer any potential epidimiological questions."
     });
     intro = introJs();
     intro.setOptions({

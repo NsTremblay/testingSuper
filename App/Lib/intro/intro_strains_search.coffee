@@ -40,7 +40,12 @@ startIntro = ->
   
 
   opts = viewController.introOptions()
-  opts.splice(0,0,{intro: "Welcome to SuperPhy's Genome Search page."})
+  opts.splice(0,0,{intro: "This page will allow you to search for a genome."})
+  opts.splice(1,0,{
+      element: document.querySelector('#search_menu')
+      intro: "You can perform a search in three different ways: using the genome list, phylogenetic tree, or map."
+      position: 'bottom'
+      })
   # Create introJS object
   intro = introJs()
 
