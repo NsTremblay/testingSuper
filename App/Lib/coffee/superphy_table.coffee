@@ -85,7 +85,7 @@ class TableView extends ViewTemplate
     tableIntro = []
     tableIntro.push({
       element: document.querySelector('#genome_table1')
-      intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome."
+      intro: "These are the names of the genomes in the database."
       position: 'right'
       })
     tableIntro

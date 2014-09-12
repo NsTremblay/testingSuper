@@ -29,26 +29,51 @@
   startIntro = function() {
     var intro, opts;
     opts = viewController.introOptions();
-    opts.splice(0, 0, {
-      intro: "Welcome to SuperPhy's Virulence and AMR Genes page."
-    });
     intro = introJs();
     intro.setOptions({
       steps: [
         {
-          intro: "Welcome to SuperPhy's Virulence and AMR Genes page."
+          intro: "You can use this page to determine whether or not specified virulence factors and antimicrobial resistance genes are present in genomes of interest."
         }, {
-          element: document.querySelector('.selected-gene-list-wrapper'),
-          intro: "These are your selected factors.",
+          element: document.querySelector('#genes-menu-affix'),
+          intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes",
+          position: 'bottom'
+        }, {
+          element: document.querySelector('#vf-selected-list'),
+          intro: "Your selected virulence factors will appear here.  Click the blue x next to a factor to remove it.",
+          position: 'bottom'
+        }, {
+          element: document.querySelector('#vf-autocomplete'),
+          intro: "Use this to filter virulence factors by inputed gene name.",
+          position: 'bottom'
+        }, {
+          element: document.querySelector('#vf-table'),
+          intro: "Select one or more virulence factors to search for their presence in your specified genomes.  Click the links above to select or unselect all of the virulence factors.",
           position: 'right'
         }, {
-          element: document.querySelector('.gene-list-wrapper'),
-          intro: "Select one or more factors.",
-          position: 'right'
-        }, {
-          element: document.querySelector("#gene-category-wrapper"),
-          intro: "Select from these categories to refine the list of genes.",
+          element: document.querySelector("#vf-categories"),
+          intro: "You can select from these categories to refine the list of genes.  Click the reset button to reset your selections.",
           position: 'left'
+        }, {
+          element: document.querySelector('#amr-selected-list'),
+          intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue x next to a factor to remove it.",
+          position: 'bottom'
+        }, {
+          element: document.querySelector('#amr-autocomplete'),
+          intro: "Use this to filter antimicrobial resistance genes by inputed gene name.",
+          position: 'bottom'
+        }, {
+          element: document.querySelector('#amr-table'),
+          intro: "Select one or more antimicrobial resistance genes to search for their presence in your specified genomes.  Click the links above to select or unselect all of the antimicrobial resistance genes.",
+          position: 'right'
+        }, {
+          element: document.querySelector("#amr-categories"),
+          intro: "You can select from these categories to refine the list of genes.",
+          position: 'left'
+        }, {
+          element: document.querySelector('#next-btn'),
+          intro: "Click here to proceed and select your genomes.",
+          position: 'right'
         }
       ]
     });

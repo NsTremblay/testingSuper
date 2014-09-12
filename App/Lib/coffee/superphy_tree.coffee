@@ -473,8 +473,29 @@ class TreeView extends ViewTemplate
     treeIntro = []
     treeIntro.push({
       element: document.querySelector('#genome_tree2')
-      intro: "The phylogenetic relationships between the genomes are indicated by this tree.  Click the blue circles to select genomes.  Using the search bar, you can search for a specific genome, which will be indicated by a yellow circle.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.  You can also use the buttons above the tree to make the tree fit to the window size, reset the window to restore the original tree view, or expand all the clades."
+      intro: "The phylogenetic relationships between the genomes are indicated by this tree.  Click the blue circles to select genomes.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom."
       position: 'left'
+      })
+    scrollTo
+    treeIntro.push({
+      element: document.querySelector('#tree_find_input2')
+      intro: "Using the search bar, you can search for a specific genome, which will be indicated by a yellow circle."
+      position: 'bottom'
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree_fit_button2')
+      intro: "Click here to have the tree fit within the view window."
+      position: 'bottom'
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree_reset_button2')
+      intro: "Click here to reset the tree."
+      position: 'bottom'
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree_expand_button2')
+      intro: "Click here to expand all the clades."
+      position: 'bottom'
       })
     treeIntro.push({
       element: document.querySelector('#tree_legend2')

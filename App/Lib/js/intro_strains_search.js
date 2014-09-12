@@ -30,12 +30,22 @@
     var intro, opts;
     opts = viewController.introOptions();
     opts.splice(0, 0, {
-      intro: "This page will allow you to search for a genome."
+      intro: "You can use this page to search for information about the genomes in the database."
     });
     opts.splice(1, 0, {
-      element: document.querySelector('#search_menu'),
+      element: document.querySelector('#genomes-menu-affix'),
       intro: "You can perform a search in three different ways: using the genome list, phylogenetic tree, or map.",
       position: 'bottom'
+    });
+    opts.splice(3, 0, {
+      element: document.querySelector('.fa-search'),
+      intro: "Click the magnifying glass to get a detailed overview of each genome.",
+      position: 'right'
+    });
+    opts.splice(13, 0, {
+      element: document.querySelector('.fa-search'),
+      intro: "Click the magnifying glass to get a detailed overview of each genome.",
+      position: 'right'
     });
     intro = introJs();
     intro.setOptions({
