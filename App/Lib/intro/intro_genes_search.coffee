@@ -106,7 +106,6 @@ startIntro = ->
       ]
     }
   )
-
   intro.start()
 
   # Coffeescript will return the value of 

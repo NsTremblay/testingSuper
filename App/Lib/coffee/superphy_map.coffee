@@ -136,7 +136,7 @@ class MapView extends TableView
       })
     mapIntro.push({
       element: document.querySelector('#genome_map3')
-      intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome."
+      intro: "The genomes corresponding to locations on the map are shown here.  Check the boxes to select each genome."
       position: 'left'
       })
     mapIntro.push({

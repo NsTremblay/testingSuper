@@ -46,20 +46,25 @@ startIntro = ->
       intro: "You can perform a search in three different ways: using the genome list, phylogenetic tree, or map."
       position: 'bottom'
       })
-  opts.splice(3,0,{
-      element: document.querySelector('.fa-search')
-      intro: "Click the magnifying glass to get a detailed overview of each genome."
+   opts.splice(3,1,{
+      element: document.querySelector('#genome_table1')
+      intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome."
       position: 'right'
       })
-  opts.splice(13,0,{
-      element: document.querySelector('.fa-search')
-      intro: "Click the magnifying glass to get a detailed overview of each genome."
+    opts.splice(6,1,{
+      element: document.querySelector('#genome_tree2')
+      intro: "You can also click the blue circles to select genomes.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom."
       position: 'right'
+      })
+    opts.splice(10,1,{
+      element: document.querySelector('#genome_map3')
+      intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome."
+      position: 'top'
       })
 
   # Create introJS object
+  
   intro = introJs()
-
 
   # in order they appear
   intro.setOptions(

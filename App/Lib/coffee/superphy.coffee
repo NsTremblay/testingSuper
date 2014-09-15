@@ -152,21 +152,16 @@ class ViewController
   introOptions: ->
     intros = []
 
+     # Meta-data and filter intro
+    intros.push({
+      element: document.querySelector('#sidebar-group')
+      intro: "Any search can be further specified to include various meta-data by checking the corresponding boxes, and can be filtered by keyword or by selection."
+      position: 'right'
+      })
+
     # Append intros for each view
     intros = intros.concat(v.intro()) for v in @views
     
-    # Meta-data intro
-    intros.push({
-      element: document.querySelector('#meta-form')
-      intro: "This is the meta-data section."
-      position: 'right'
-      })
-    # Filter intro
-    intros.push({
-      element: document.querySelector('#filter-form')
-      intro: "This is the filter section."
-      position: 'right'
-      })
     
     intros
 
