@@ -43,10 +43,8 @@ startIntro = ->
   
   # Create introJS object
   intro = introJs()
-
-
-  # Set intros for each element
-  # in order they appear
+  
+  
   intro.setOptions(
     {
       steps : [
@@ -106,6 +104,13 @@ startIntro = ->
       ]
     }
   )
+
+  intro.onbeforechange (targetElement) ->
+    switch ($(targetElement).attr("data-step"))
+        when "10"
+          $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show')
+
+
   intro.start()
 
   # Coffeescript will return the value of 

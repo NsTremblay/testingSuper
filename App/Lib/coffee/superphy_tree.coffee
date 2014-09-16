@@ -478,7 +478,7 @@ class TreeView extends ViewTemplate
       position: 'right'
       })
     treeIntro.push({
-      element: document.querySelector('.btn-group')
+      element: document.querySelector('#tree_fit_button2', '#tree_reset_button2', '#tree_expand_button2')
       intro: "Use these buttons to have the tree fit within the window, to reset the tree, and to expand all the clades."
       position: 'bottom'
       })

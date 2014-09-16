@@ -28,7 +28,6 @@
 
   startIntro = function() {
     var intro, opts;
-    window.scrollTo(0, 0);
     opts = viewController.introOptions();
     opts.splice(0, 0, {
       intro: "You can use this page to search for information about the genomes in the database."
@@ -37,6 +36,21 @@
       element: document.querySelector('#genomes-menu-affix'),
       intro: "You can perform a search in three different ways: using the genome list, phylogenetic tree, or map.",
       position: 'bottom'
+    });
+    opts.splice(3, 1, {
+      element: document.querySelector('#genome_table1'),
+      intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome.",
+      position: 'right'
+    });
+    opts.splice(6, 1, {
+      element: document.querySelector('#genome_tree2'),
+      intro: "You can also click the blue circles to select genomes.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.",
+      position: 'right'
+    });
+    opts.splice(10, 1, {
+      element: document.querySelector('#genome_map3'),
+      intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome.",
+      position: 'top'
     });
     intro = introJs();
     intro.setOptions({

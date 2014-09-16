@@ -74,8 +74,16 @@
           element: document.querySelector('#next-btn'),
           intro: "Click here to proceed and select your genomes.",
           position: 'right'
+        }, {
+          opts: opts
         }
       ]
+    });
+    intro.onbeforechange(function(targetElement) {
+      switch ($(targetElement).attr("data-step")) {
+        case "10":
+          return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+      }
     });
     intro.start();
     return false;
