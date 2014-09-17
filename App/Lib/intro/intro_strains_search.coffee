@@ -70,6 +70,7 @@ startIntro = ->
   intro.setOptions(
     {
       steps : opts
+      scrollToElement: true
     }
   )
 

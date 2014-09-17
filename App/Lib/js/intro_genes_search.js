@@ -27,65 +27,95 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   startIntro = function() {
-    var intro, opts;
+    var currentTab, intro, opts;
     opts = viewController.introOptions();
     intro = introJs();
+    currentTab = null;
+    $('a[data-toggle="tab"]').on('shown', function(e) {
+      return currentTab = e.target;
+    });
+    $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+    opts.splice(0, 0, {
+      intro: "You can use this page to determine whether or not specified virulence factors and antimicrobial resistance genes are present in genomes of interest."
+    });
+    opts.splice(1, 0, {
+      element: document.querySelector('#genes-menu-affix'),
+      intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes",
+      position: 'bottom'
+    });
+    opts.splice(2, 0, {
+      element: document.querySelector('#vf-selected-list'),
+      intro: "Your selected virulence factors will appear here.  Click the blue x next to a factor to remove it.",
+      position: 'bottom'
+    });
+    opts.splice(3, 0, {
+      element: document.querySelector('#vf-autocomplete'),
+      intro: "Use this to filter virulence factors by inputted gene name.",
+      position: 'bottom'
+    });
+    opts.splice(4, 0, {
+      element: document.querySelector('#vf-table'),
+      intro: "Select one or more virulence factors to search for their presence in your specified genomes.  Click the links above to select or unselect all of the virulence factors.",
+      position: 'right'
+    });
+    opts.splice(5, 0, {
+      element: document.querySelector("#vf-categories"),
+      intro: "You can select from these categories to refine the list of genes.  Click the reset button to reset your selections.",
+      position: 'left'
+    });
+    opts.splice(6, 0, {
+      element: document.querySelector('#amr-selected-list'),
+      intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue x next to a factor to remove it.",
+      position: 'bottom'
+    });
+    opts.splice(7, 0, {
+      element: document.querySelector('#amr-autocomplete'),
+      intro: "Use this to filter antimicrobial resistance genes by inputted gene name.",
+      position: 'bottom'
+    });
+    opts.splice(8, 0, {
+      element: document.querySelector('#amr-table'),
+      intro: "Select one or more antimicrobial resistance genes to search for their presence in your specified genomes.  Click the links above to select or unselect all of the antimicrobial resistance genes.",
+      position: 'right'
+    });
+    opts.splice(9, 0, {
+      element: document.querySelector("#amr-categories"),
+      intro: "You can select from these categories to refine the list of genes.",
+      position: 'left'
+    });
+    opts.splice(10, 0, {
+      element: document.querySelector('#next-btn'),
+      intro: "Click here to proceed and select your genomes.",
+      position: 'right'
+    });
+    opts.splice(21, 0, {
+      element: document.querySelector('#gene-search-submit-button'),
+      intro: "Click here to submit your query and get your results.",
+      position: 'top'
+    });
+    opts.splice(22, 0, {
+      element: document.querySelector('#gene-search-reset-button'),
+      intro: "Click here to reset your query.",
+      position: 'top'
+    });
     intro.setOptions({
-      steps: [
-        {
-          intro: "You can use this page to determine whether or not specified virulence factors and antimicrobial resistance genes are present in genomes of interest."
-        }, {
-          element: document.querySelector('#genes-menu-affix'),
-          intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes",
-          position: 'bottom'
-        }, {
-          element: document.querySelector('#vf-selected-list'),
-          intro: "Your selected virulence factors will appear here.  Click the blue x next to a factor to remove it.",
-          position: 'bottom'
-        }, {
-          element: document.querySelector('#vf-autocomplete'),
-          intro: "Use this to filter virulence factors by inputed gene name.",
-          position: 'bottom'
-        }, {
-          element: document.querySelector('#vf-table'),
-          intro: "Select one or more virulence factors to search for their presence in your specified genomes.  Click the links above to select or unselect all of the virulence factors.",
-          position: 'right'
-        }, {
-          element: document.querySelector("#vf-categories"),
-          intro: "You can select from these categories to refine the list of genes.  Click the reset button to reset your selections.",
-          position: 'left'
-        }, {
-          element: document.querySelector('#amr-selected-list'),
-          intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue x next to a factor to remove it.",
-          position: 'bottom'
-        }, {
-          element: document.querySelector('#amr-autocomplete'),
-          intro: "Use this to filter antimicrobial resistance genes by inputed gene name.",
-          position: 'bottom'
-        }, {
-          element: document.querySelector('#amr-table'),
-          intro: "Select one or more antimicrobial resistance genes to search for their presence in your specified genomes.  Click the links above to select or unselect all of the antimicrobial resistance genes.",
-          position: 'right'
-        }, {
-          element: document.querySelector("#amr-categories"),
-          intro: "You can select from these categories to refine the list of genes.",
-          position: 'left'
-        }, {
-          element: document.querySelector('#next-btn'),
-          intro: "Click here to proceed and select your genomes.",
-          position: 'right'
-        }, {
-          opts: opts
-        }
-      ]
+      steps: opts,
+      scrollToElement: true
     });
     intro.onbeforechange(function(targetElement) {
-      switch ($(targetElement).attr("data-step")) {
-        case "10":
-          return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
-      }
+      return $.each(opts, function(index, step) {
+        if ($(targetElement).is(step.element)) {
+          switch (index) {
+            case 11:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 21:
+              return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
+          }
+        }
+      });
     });
     intro.start();
+    currentTab.tab('show');
     return false;
   };
 

@@ -54,7 +54,8 @@
     });
     intro = introJs();
     intro.setOptions({
-      steps: opts
+      steps: opts,
+      scrollToElement: true
     });
     intro.start();
     return false;
