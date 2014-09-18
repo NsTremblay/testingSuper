@@ -152,7 +152,7 @@
       intros = [];
       intros.push({
         element: document.querySelector('#sidebar-group'),
-        intro: "Any search can be further specified to include various meta-data by checking the corresponding boxes, and can be filtered by keyword or by selection.",
+        intro: "Any search can be further specified to include various meta-data by checking the corresponding boxes.  This will show more information for each genome on the list, tree, and map, but it will not affect the data.  Searches can also be filtered by keyword or by selection to limit the number of genomes displayed on the list, tree, and map.",
         position: 'right'
       });
       _ref = this.views;
@@ -3137,7 +3137,7 @@
         position: 'right'
       });
       treeIntro.push({
-        element: document.querySelector('#tree_fit_button2', '#tree_reset_button2', '#tree_expand_button2'),
+        element: document.querySelector('#tree-controls'),
         intro: "Use these buttons to have the tree fit within the window, to reset the tree, and to expand all the clades.",
         position: 'bottom'
       });
@@ -3769,7 +3769,7 @@
       var controls, expButtonID, findButtonID, findInputID, fitButtonID, num, opsHtml, resetButtonID;
       opsHtml = '';
       controls = '<div class="row">';
-      controls += "<div class='col-sm-6 span6'><div class='btn-group'>";
+      controls += "<div class='col-sm-6 span6'><div class='btn-group' id='tree-controls'>";
       fitButtonID = "tree_fit_button" + this.elNum;
       controls += "<button id='" + fitButtonID + "' type='button' class='btn btn-default btn-sm'>Fit to window</button>";
       resetButtonID = "tree_reset_button" + this.elNum;
@@ -5620,7 +5620,7 @@
         divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
         tableElem = jQuery("<table />").appendTo(divElem);
         mapManifest = jQuery('.map-manifest').append(divElem);
-        toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'));
+        toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'));
         that = this;
         toggleUnknownLocations.change(function() {
           return that.update(that.genomeController);
@@ -5701,7 +5701,7 @@
         position: 'left'
       });
       mapIntro.push({
-        element: document.querySelector('.toggle-unknown-location'),
+        element: document.querySelector('#unknown-location'),
         intro: "Check 'Unknown Locations Off' if you want to remove unknown locations from the list (these don't appear on the map).",
         position: 'left'
       });
@@ -6730,8 +6730,8 @@
       form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
       wrapper.append(form);
       submitEl = jQuery('<div class="row"></div>');
-      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
-      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success" id="submit-btn"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger" id="reset-btn"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
       submitButtonEl.click((function(_this) {
         return function(e) {
           e.preventDefault();

@@ -33,24 +33,49 @@
       intro: "The GeoPhy page provides users with the opportunity to view genome data simultaneously on a map and on a tree to answer any potential epidimiological questions."
     });
     opts.splice(1, 0, {
-      element: document.querySelector('#geophy-control-panel-body'),
-      intro: "Click 'Highlight Genomes' to isolate your selected genomes on the map and on the tree.  Click 'Reset Views' to reset genome selections, the map, and the tree.",
+      element: document.querySelector('#submit-btn'),
+      intro: "Click 'Highlight Genomes' to isolate your selected genomes on the map and on the tree.",
       position: 'bottom'
     });
-    opts.splice(4, 1, {
+    opts.splice(2, 0, {
+      element: document.querySelector('#reset-btn'),
+      intro: "Click 'Reset Views' to reset genome selections, the map, and the tree.",
+      position: 'bottom'
+    });
+    opts.splice(6, 1, {
       element: document.querySelector('#genome_map1'),
       intro: "The genomes corresponding to locations on the map are shown here.  Check the boxes of any genomes you would like to select.",
       position: 'right'
-    });
-    opts.splice(7, 1, {
-      element: document.querySelector('#genome_tree2'),
-      intro: "The phylogenetic relationships between the genomes are indicated by this tree.  Click the blue circles to select genomes.  Click the red boxes to select clades.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.",
-      position: 'left'
     });
     intro = introJs();
     intro.setOptions({
       steps: opts
     });
+    intro.onbeforechange(function(targetElement) {
+      return $.each(opts, function(index, step) {
+        if ($(targetElement).is(step.element)) {
+          switch (index) {
+            case 2:
+              return window.scrollTo(0, 0);
+            case 3:
+              return window.scrollTo(0, 0);
+            case 4:
+              return window.scrollTo(0, 0);
+            case 5:
+              return window.scrollTo(0, 0);
+            case 8:
+              return window.scrollTo(0, 0);
+            case 9:
+              return window.scrollTo(0, 0);
+            case 10:
+              return window.scrollTo(0, 0);
+            case 11:
+              return window.scrollTo(0, 0);
+          }
+        }
+      });
+    });
+    window.scrollTo(0, 0);
     intro.start();
     return false;
   };

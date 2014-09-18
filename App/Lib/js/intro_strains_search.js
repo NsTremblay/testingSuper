@@ -34,29 +34,58 @@
     });
     opts.splice(1, 0, {
       element: document.querySelector('#genomes-menu-affix'),
-      intro: "You can perform a search in three different ways: using the genome list, phylogenetic tree, or map.",
+      intro: "You can perform a genome search in three different ways: using the genome list, phylogenetic tree, or map.",
       position: 'bottom'
     });
-    opts.splice(3, 1, {
+    opts.splice(2, 0, {
+      element: document.querySelector('.download-view-link'),
+      intro: "You have the option to download the content of any of these views.",
+      position: 'left'
+    });
+    opts.splice(4, 1, {
       element: document.querySelector('#genome_table1'),
       intro: "These are the names of the genomes in the database.  Click on the magnifying glass for a detailed overview of each genome.",
       position: 'right'
     });
-    opts.splice(6, 1, {
+    opts.splice(7, 1, {
       element: document.querySelector('#genome_tree2'),
       intro: "You can also click the blue circles to select genomes.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom.",
       position: 'right'
     });
-    opts.splice(10, 1, {
+    opts.splice(11, 1, {
       element: document.querySelector('#genome_map3'),
       intro: "The genomes corresponding to locations on the map are shown here.  Click the magnifying glass for a detailed overview of each genome.",
       position: 'top'
     });
     intro = introJs();
     intro.setOptions({
-      steps: opts,
-      scrollToElement: true
+      steps: opts
     });
+    intro.onbeforechange(function(targetElement) {
+      return $.each(opts, function(index, step) {
+        if ($(targetElement).is(step.element)) {
+          switch (index) {
+            case 4:
+              return window.scrollTo(0, 0);
+            case 5:
+              return window.scrollTo(0, 800);
+            case 6:
+              return window.scrollTo(0, 800);
+            case 10:
+              return window.scrollTo(0, 1700);
+            case 11:
+              return window.scrollTo(0, 1700);
+            case 12:
+              return window.scrollTo(0, 1700);
+            case 13:
+              return window.scrollTo(0, 1700);
+            case 14:
+              return window.scrollTo(0, 1700);
+          }
+        }
+      });
+    });
+    window.scrollTo(0, 0);
     intro.start();
     return false;
   };

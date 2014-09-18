@@ -38,102 +38,255 @@ root = exports ? this
 #    
 startIntro = ->
   
-
+  # Array of intros from common elements (e.g. table, tree, map)
   opts = viewController.introOptions()
   
   # Create introJS object
   intro = introJs()
 
-  currentTab = null
-  $('a[data-toggle="tab"]').on 'shown', (e) ->
-    currentTab = e.target
-
+  # Starts the intro on the "Select Genes" tab
   $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
   
+  # "Select Genes" tab intros
   opts.splice(0,0,{
           intro: "You can use this page to determine whether or not specified virulence factors and antimicrobial resistance genes are present in genomes of interest."
           })
   opts.splice(1,0,{
-          element: document.querySelector('#genes-menu-affix')
-          intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes"
-          position: 'bottom'
+          element: document.querySelector('#gene-search-tabs')
+          intro: "Use the 'Select Genes' tab to select virulence factors and antimicrobial resistance genes.  Then, use the 'Select Genomes' tab to select your genomes of interest.  Finally, use the 'Submit Query' tab to submit your query.  Modifications to your selections can be made at any time."
+          position: 'top'
           })
   opts.splice(2,0,{
-          element: document.querySelector('#vf-selected-list')
-          intro: "Your selected virulence factors will appear here.  Click the blue x next to a factor to remove it."
-          position: 'bottom'
+          element: document.querySelector('#gene-lookup')
+          intro: "Click here for detailed information on virulence factors and antimicrobial resistance genes."
+          position: 'left'
           })
   opts.splice(3,0,{
+          element: document.querySelector('#genes-menu-affix')
+          intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes."
+          position: 'bottom'
+          })
+  opts.splice(4,0,{
+          element: document.querySelector('#vf-selected-list')
+          intro: "Your selected virulence factors will appear here.  Click the blue 'X' next to a factor to remove it."
+          position: 'bottom'
+          })
+  opts.splice(5,0,{
           element: document.querySelector('#vf-autocomplete')
           intro: "Use this to filter virulence factors by inputted gene name."
           position: 'bottom'
           })
-  opts.splice(4,0,{
+  opts.splice(6,0,{
           element: document.querySelector('#vf-table')
           intro: "Select one or more virulence factors to search for their presence in your specified genomes.  Click the links above to select or unselect all of the virulence factors."
           position: 'right'
           })
-  opts.splice(5,0,{
+  opts.splice(7,0,{
           element: document.querySelector("#vf-categories")
-          intro: "You can select from these categories to refine the list of genes.  Click the reset button to reset your selections."
+          intro: "You can select from these categories to refine the list of genes.  Click the 'Reset' button to reset your selections."
           position: 'left'
           })
-  opts.splice(6,0,{
+  opts.splice(8,0,{
           element: document.querySelector('#amr-selected-list')
-          intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue x next to a factor to remove it."
+          intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue 'X' next to a factor to remove it."
           position: 'bottom'
           })
-  opts.splice(7,0,{
+  opts.splice(9,0,{
           element: document.querySelector('#amr-autocomplete')
           intro: "Use this to filter antimicrobial resistance genes by inputted gene name."
           position: 'bottom'
           })
-  opts.splice(8,0,{
+  opts.splice(10,0,{
           element: document.querySelector('#amr-table')
           intro: "Select one or more antimicrobial resistance genes to search for their presence in your specified genomes.  Click the links above to select or unselect all of the antimicrobial resistance genes."
           position: 'right'
           })
-  opts.splice(9,0,{
+  opts.splice(11,0,{
           element: document.querySelector("#amr-categories")
-          intro: "You can select from these categories to refine the list of genes."
+          intro: "You can select from these categories to refine the list of genes.  Click the 'Reset' button to reset your selections."
           position: 'left'
           })
-  opts.splice(10,0,{
-          element: document.querySelector('#next-btn')
+  opts.splice(12,0,{
+          element: document.querySelector('#next-btn1')
           intro: "Click here to proceed and select your genomes."
           position: 'right'
           })
-  opts.splice(21,0,{
+  # "Select Genomes" tab intros
+  opts.splice(13,0,{
+          element: document.querySelector('#search_menu')
+          intro: "You can perform a genome search in three different ways: using the genome list, phylogenetic tree, or map."
+          position: 'bottom'
+          })
+  opts.splice(14,0,{
+          element: document.querySelector('.download-view-link')
+          intro: "You have the option to download the content of any of these views."
+          position: 'left'
+          })
+  opts.splice(16,0,{
+          element: document.querySelector('#selected_genomes')
+          intro: "Your selected genomes will appear here.  Click the blue 'X' next to a factor to remove it."
+          position: 'bottom'
+          })
+  opts.splice(27,0,{
+          element: document.querySelector('#next-btn2')
+          intro: "Click here to proceed and submit your query."
+          position: 'bottom'
+          })
+  # "Submit Query" tab intros
+  opts.splice(28,0,{
+          element: document.querySelector('#vf-selected-count')
+          intro: "This displays the number of virulence genes you've selected."
+          position: 'right'
+          })
+  opts.splice(29,0,{
+          element: document.querySelector('#amr-selected-count')
+          intro: "This displays the number of AMR genes you've selected."
+          position: 'right'
+          })
+  opts.splice(30,0,{
+          element: document.querySelector('#selected_genome_count')
+          intro: "This displays the number of genomes you've selected."
+          position: 'right'
+          })
+  opts.splice(31,0,{
           element: document.querySelector('#gene-search-submit-button')
           intro: "Click here to submit your query and get your results."
-          position: 'top'
+          position: 'bottom'
           })
-  opts.splice(22,0,{
+  opts.splice(32,0,{
           element: document.querySelector('#gene-search-reset-button')
           intro: "Click here to reset your query."
-          position: 'top'
+          position: 'bottom'
           })
 
   intro.setOptions(
     {
       steps : opts
-      scrollToElement: true
     }
   )
 
+  # Manages scroll heights and active tabs depending on the step number
   intro.onbeforechange (targetElement) ->
     $.each opts, (index, step) ->
       if $(targetElement).is(step.element)
         switch index
+          when 1
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 2
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 3
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 4
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 5
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 6
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 7
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 8
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 9
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 10
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
           when 11
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 12
+            $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+          when 13
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 14
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 15
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 16
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 17
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 18
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 19
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 20
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
           when 21
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 22
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 23
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 24
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 25
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 26
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 27
+            $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+          when 28
+            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+          when 29
+            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+          when 30
+            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+          when 31
+            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+          when 32
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
 
+  # Prevents intro elements from appearing out of view
+  intro.onbeforechange (targetElement) ->
+    $.each opts, (index, step) ->
+      if $(targetElement).is(step.element)
+        switch index
+          when 0
+            window.scrollTo(0,0)
+          when 1
+            window.scrollTo(0,0)
+          when 2
+            window.scrollTo(0,0)
+          when 3
+            window.scrollTo(0,300)
+          when 4
+            window.scrollTo(0,500)
+          when 5
+            window.scrollTo(0,500)
+          when 6
+            window.scrollTo(0,500)
+          when 7
+            window.scrollTo(0,1200)
+          when 8
+            window.scrollTo(0,1500)
+          when 9
+            window.scrollTo(0,1500)
+          when 10
+            window.scrollTo(0,1500)
+          when 11
+            window.scrollTo(0,1500)
+          when 12
+            window.scrollTo(0,0)
+          when 13
+            window.scrollTo(0,0)
+          when 14
+            window.scrollTo(0,0)
+          when 15
+            window.scrollTo(0,0)
+          when 16
+            window.scrollTo(0,0)
+          when 17
+            window.scrollTo(0,0)
+          when 18
+            window.scrollTo(0,0)
+          when 19
+            window.scrollTo(0,0)
+          when 20
+            window.scrollTo(0,0)
+          when 21
+            window.scrollTo(0,0)
+
+  window.scrollTo(0,0)
   intro.start()
-
-  currentTab.tab 'show'
-
 
 
   # Coffeescript will return the value of 

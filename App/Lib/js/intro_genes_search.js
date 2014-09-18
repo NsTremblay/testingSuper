@@ -27,95 +27,240 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   startIntro = function() {
-    var currentTab, intro, opts;
+    var intro, opts;
     opts = viewController.introOptions();
     intro = introJs();
-    currentTab = null;
-    $('a[data-toggle="tab"]').on('shown', function(e) {
-      return currentTab = e.target;
-    });
     $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
     opts.splice(0, 0, {
       intro: "You can use this page to determine whether or not specified virulence factors and antimicrobial resistance genes are present in genomes of interest."
     });
     opts.splice(1, 0, {
-      element: document.querySelector('#genes-menu-affix'),
-      intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes",
-      position: 'bottom'
+      element: document.querySelector('#gene-search-tabs'),
+      intro: "Use the 'Select Genes' tab to select virulence factors and antimicrobial resistance genes.  Then, use the 'Select Genomes' tab to select your genomes of interest.  Finally, use the 'Submit Query' tab to submit your query.  Modifications to your selections can be made at any time.",
+      position: 'top'
     });
     opts.splice(2, 0, {
-      element: document.querySelector('#vf-selected-list'),
-      intro: "Your selected virulence factors will appear here.  Click the blue x next to a factor to remove it.",
+      element: document.querySelector('#genes-menu-affix'),
+      intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes.",
       position: 'bottom'
     });
     opts.splice(3, 0, {
+      element: document.querySelector('#vf-selected-list'),
+      intro: "Your selected virulence factors will appear here.  Click the blue 'X' next to a factor to remove it.",
+      position: 'bottom'
+    });
+    opts.splice(4, 0, {
       element: document.querySelector('#vf-autocomplete'),
       intro: "Use this to filter virulence factors by inputted gene name.",
       position: 'bottom'
     });
-    opts.splice(4, 0, {
+    opts.splice(5, 0, {
       element: document.querySelector('#vf-table'),
       intro: "Select one or more virulence factors to search for their presence in your specified genomes.  Click the links above to select or unselect all of the virulence factors.",
       position: 'right'
     });
-    opts.splice(5, 0, {
+    opts.splice(6, 0, {
       element: document.querySelector("#vf-categories"),
-      intro: "You can select from these categories to refine the list of genes.  Click the reset button to reset your selections.",
+      intro: "You can select from these categories to refine the list of genes.  Click the 'Reset' button to reset your selections.",
       position: 'left'
     });
-    opts.splice(6, 0, {
+    opts.splice(7, 0, {
       element: document.querySelector('#amr-selected-list'),
-      intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue x next to a factor to remove it.",
+      intro: "Your selected antimicrobial resistance genes will appear here.  Click the blue 'X' next to a factor to remove it.",
       position: 'bottom'
     });
-    opts.splice(7, 0, {
+    opts.splice(8, 0, {
       element: document.querySelector('#amr-autocomplete'),
       intro: "Use this to filter antimicrobial resistance genes by inputted gene name.",
       position: 'bottom'
     });
-    opts.splice(8, 0, {
+    opts.splice(9, 0, {
       element: document.querySelector('#amr-table'),
       intro: "Select one or more antimicrobial resistance genes to search for their presence in your specified genomes.  Click the links above to select or unselect all of the antimicrobial resistance genes.",
       position: 'right'
     });
-    opts.splice(9, 0, {
+    opts.splice(10, 0, {
       element: document.querySelector("#amr-categories"),
-      intro: "You can select from these categories to refine the list of genes.",
+      intro: "You can select from these categories to refine the list of genes.  Click the 'Reset' button to reset your selections.",
       position: 'left'
     });
-    opts.splice(10, 0, {
-      element: document.querySelector('#next-btn'),
+    opts.splice(11, 0, {
+      element: document.querySelector('#next-btn1'),
       intro: "Click here to proceed and select your genomes.",
       position: 'right'
     });
-    opts.splice(21, 0, {
+    opts.splice(12, 0, {
+      element: document.querySelector('#search_menu'),
+      intro: "You can perform a genome search in three different ways: using the genome list, phylogenetic tree, or map.",
+      position: 'bottom'
+    });
+    opts.splice(13, 0, {
+      element: document.querySelector('.download-view-link'),
+      intro: "You have the option to download the content of any of these views.",
+      position: 'left'
+    });
+    opts.splice(15, 0, {
+      element: document.querySelector('#selected_genomes'),
+      intro: "Your selected genomes will appear here.  Click the blue 'X' next to a factor to remove it.",
+      position: 'bottom'
+    });
+    opts.splice(26, 0, {
+      element: document.querySelector('#next-btn2'),
+      intro: "Click here to proceed and submit your query.",
+      position: 'bottom'
+    });
+    opts.splice(27, 0, {
+      element: document.querySelector('#vf-selected-count'),
+      intro: "This displays the number of virulence genes you've selected.",
+      position: 'right'
+    });
+    opts.splice(28, 0, {
+      element: document.querySelector('#amr-selected-count'),
+      intro: "This displays the number of AMR genes you've selected.",
+      position: 'right'
+    });
+    opts.splice(29, 0, {
+      element: document.querySelector('#selected_genome_count'),
+      intro: "This displays the number of genomes you've selected.",
+      position: 'right'
+    });
+    opts.splice(30, 0, {
       element: document.querySelector('#gene-search-submit-button'),
       intro: "Click here to submit your query and get your results.",
-      position: 'top'
+      position: 'bottom'
     });
-    opts.splice(22, 0, {
+    opts.splice(31, 0, {
       element: document.querySelector('#gene-search-reset-button'),
       intro: "Click here to reset your query.",
-      position: 'top'
+      position: 'bottom'
     });
     intro.setOptions({
-      steps: opts,
-      scrollToElement: true
+      steps: opts
     });
     intro.onbeforechange(function(targetElement) {
       return $.each(opts, function(index, step) {
         if ($(targetElement).is(step.element)) {
           switch (index) {
+            case 1:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 2:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 3:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 4:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 5:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 6:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 7:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 8:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 9:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 10:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
             case 11:
+              return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
+            case 12:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 13:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 14:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 15:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 16:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 17:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 18:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 19:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 20:
               return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
             case 21:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 22:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 23:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 24:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 25:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 26:
+              return $('#gene-search-tabs a[href="#gene-search-genomes"]').tab('show');
+            case 27:
+              return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
+            case 28:
+              return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
+            case 29:
+              return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
+            case 30:
+              return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
+            case 31:
               return $('#gene-search-tabs a[href="#gene-search-submit"]').tab('show');
           }
         }
       });
     });
+    intro.onbeforechange(function(targetElement) {
+      return $.each(opts, function(index, step) {
+        if ($(targetElement).is(step.element)) {
+          switch (index) {
+            case 0:
+              return window.scrollTo(0, 0);
+            case 1:
+              return window.scrollTo(0, 0);
+            case 2:
+              return window.scrollTo(0, 0);
+            case 3:
+              return window.scrollTo(0, 300);
+            case 4:
+              return window.scrollTo(0, 500);
+            case 5:
+              return window.scrollTo(0, 500);
+            case 6:
+              return window.scrollTo(0, 500);
+            case 7:
+              return window.scrollTo(0, 1200);
+            case 8:
+              return window.scrollTo(0, 1500);
+            case 9:
+              return window.scrollTo(0, 1500);
+            case 10:
+              return window.scrollTo(0, 1500);
+            case 11:
+              return window.scrollTo(0, 0);
+            case 12:
+              return window.scrollTo(0, 0);
+            case 13:
+              return window.scrollTo(0, 0);
+            case 14:
+              return window.scrollTo(0, 0);
+            case 15:
+              return window.scrollTo(0, 0);
+            case 16:
+              return window.scrollTo(0, 0);
+            case 17:
+              return window.scrollTo(0, 0);
+            case 18:
+              return window.scrollTo(0, 0);
+            case 19:
+              return window.scrollTo(0, 0);
+            case 20:
+              return window.scrollTo(0, 0);
+            case 21:
+              return window.scrollTo(0, 0);
+          }
+        }
+      });
+    });
+    window.scrollTo(0, 0);
     intro.start();
-    currentTab.tab('show');
     return false;
   };
 

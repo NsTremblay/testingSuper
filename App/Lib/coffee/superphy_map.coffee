@@ -80,7 +80,7 @@ class MapView extends TableView
       divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
       tableElem = jQuery("<table />").appendTo(divElem)
       mapManifest = jQuery('.map-manifest').append(divElem)
-      toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
+      toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
 
       that = @
       toggleUnknownLocations.change( () ->
@@ -140,7 +140,7 @@ class MapView extends TableView
       position: 'left'
       })
     mapIntro.push({
-      element: document.querySelector('.toggle-unknown-location')
+      element: document.querySelector('#unknown-location')
       intro: "Check 'Unknown Locations Off' if you want to remove unknown locations from the list (these don't appear on the map)."
       position: 'left'
       })
