@@ -58,8 +58,43 @@ __PACKAGE__->table("snp_core");
 =head2 aln_column
 
   data_type: 'integer'
+  is_nullable: 1
+
+=head2 frequency_a
+
+  data_type: 'integer'
   default_value: 0
-  is_nullable: 0
+  is_nullable: 1
+
+=head2 frequency_t
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_c
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_g
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_gap
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_other
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
 
 =cut
 
@@ -80,7 +115,19 @@ __PACKAGE__->add_columns(
   "gap_offset",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
   "aln_column",
-  { data_type => "integer", default_value => 0, is_nullable => 0 },
+  { data_type => "integer", is_nullable => 1 },
+  "frequency_a",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_t",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_c",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_g",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_gap",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_other",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -115,18 +162,6 @@ __PACKAGE__->add_unique_constraint(
   "snp_core_c1",
   ["pangenome_region_id", "position", "gap_offset"],
 );
-
-=head2 C<snp_core_c2>
-
-=over 4
-
-=item * L</aln_column>
-
-=back
-
-=cut
-
-__PACKAGE__->add_unique_constraint("snp_core_c2", ["aln_column"]);
 
 =head1 RELATIONS
 
@@ -206,8 +241,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:L2d5I3iarMeKqarjuS97KQ
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-09-17 13:50:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:uL3JE2TET2SauOaSVzt/jQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

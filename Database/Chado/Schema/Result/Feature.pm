@@ -302,6 +302,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 core_region
+
+Type: might_have
+
+Related object: L<Database::Chado::Schema::Result::CoreRegion>
+
+=cut
+
+__PACKAGE__->might_have(
+  "core_region",
+  "Database::Chado::Schema::Result::CoreRegion",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 dbxref
 
 Type: belongs_to
@@ -742,21 +757,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 loci_genotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LociGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "loci_genotypes",
-  "Database::Chado::Schema::Result::LociGenotype",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 organism
 
 Type: belongs_to
@@ -858,21 +858,6 @@ Related object: L<Database::Chado::Schema::Result::RawAmrData>
 __PACKAGE__->has_many(
   "raw_amr_datas",
   "Database::Chado::Schema::Result::RawAmrData",
-  { "foreign.gene_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 raw_virulence_datas
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::RawVirulenceData>
-
-=cut
-
-__PACKAGE__->has_many(
-  "raw_virulence_datas",
-  "Database::Chado::Schema::Result::RawVirulenceData",
   { "foreign.gene_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -997,21 +982,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 snps_genotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpsGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snps_genotypes",
-  "Database::Chado::Schema::Result::SnpsGenotype",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 studyprop_features
 
 Type: has_many
@@ -1068,8 +1038,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bQvHPo/l36dRD+EUiiqeOw
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-09-17 13:50:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/dbt3rpoGmKN9oVAwNXOWA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

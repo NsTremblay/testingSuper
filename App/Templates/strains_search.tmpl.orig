@@ -2,18 +2,37 @@
 <html>
 
 <head>
-	<TMPL_INCLUDE NAME="header2.tmpl">
-	<script src="/App/Lib/js/superphy_menu.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">	
-	<script type="text/javascript">
-	var page_name = "strains";
-	</script>
+<<<<<<< HEAD
+
+	<link rel="stylesheet" href="/App/Styling/css/jquery-ui-1.10.3.custom.css">
+	<script src="/App/Styling/js/jquery-1.9.1.js"></script>
+	<script src="/App/Styling/js/jquery-ui-1.10.3.custom.js"></script>
+	
+	<script src="/App/Styling/js/bootstrap-3.1.1/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/bootstrap-3.1.1/bootstrap.min.css">
+	
+	<script src="/App/Styling/js/d3.v3/d3.v3.js" charset="utf-8"></script>
+
+	<script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0u9jfoY0r61ho7q03kopUM57W975RgDs&sensor=true"></script>
+	<script type="text/javascript" src="http://google-maps-utility-library-v3.googlecode.com/svn/trunk/markerclusterer/src/markerclusterer.js"></script>
+
+	<script src="/App/Lib/js/superphy.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/font-awesome-4.0.3/css/font-awesome.css">
+	<link rel="stylesheet" href="/App/Styling/css/superphy.css">
 
 	<script src="/App/Styling/js/intro.js-0.9.0/intro.min.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/intro.js-0.9.0/introjs.min.css">
-	<!--<link rel="stylesheet" href="/App/Styling/css/intro.js-0.9.0/introjs-rtl.min.css">-->
+	<link rel="stylesheet" href="/App/Styling/css/intro.js-0.9.0/introjs-rtl.min.css">
 	<script src="/App/Lib/js/intro_example.js"></script>
 
+=======
+	<TMPL_INCLUDE NAME="header2.tmpl">
+	<script src="/App/Lib/js/superphy_menu.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">	
+>>>>>>> shot_caller
+	<script type="text/javascript">
+		var page_name = "strains";
+	</script>
 	
 </head>
 
@@ -21,7 +40,13 @@
 
 	<TMPL_INCLUDE NAME="page_top.tmpl">
 
+<<<<<<< HEAD
+	<div>
+		<a class="btn btn-large btn-success" href="javascript:void(0);" onclick="startIntro();">Start INTRO</a>
+	</div>
+=======
 	<div id="search_menu"></div>
+>>>>>>> shot_caller
 
 	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 
@@ -59,6 +84,7 @@ $(document).ready(function(){
 	//	viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 	//});
 });
+
 </script>
 
 </html>

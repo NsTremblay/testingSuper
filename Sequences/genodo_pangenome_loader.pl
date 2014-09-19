@@ -471,14 +471,10 @@ foreach my $tarray (@tasks) {
 }
 elapsed_time("Data parsed");
 
-$chado->end_files();
-
 unless ($NOLOAD) {
 	$chado->load_data();
 	build_genome_tree();
 }
-
-$chado->flush_caches();
 
 $chado->remove_lock();
 elapsed_time("Data loaded");

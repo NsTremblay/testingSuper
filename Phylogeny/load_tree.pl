@@ -63,7 +63,7 @@ unless($tree_file) {
 	
 	# write alignment file
 	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
-	$t->writeSnpAlignment($tmp_file);
+	$t->snpAlignment(file => $tmp_file);
 	
 	# clear output file for safety
 	$tree_file = $tmp_dir . 'genodo_genome_tree.txt';
@@ -75,7 +75,7 @@ unless($tree_file) {
 }
 
 # Load tree into database
-#$t->loadTree($tree_file);
+$t->loadTree($tree_file);
 
 exit(0);
 

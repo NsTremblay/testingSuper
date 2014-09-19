@@ -722,7 +722,7 @@ sub initialize_db_caches {
 		
 	}
 	
-    $dbh->commit;
+    $dbh->commit || croak "Initialization of $table failed: ".$self->dbh->errstr();
     
     return;
 }
@@ -842,7 +842,7 @@ sub initialize_snp_caches {
 	$self->{core_alignment}{buffer_num} = 0; 
 	$self->{core_alignment}{new_rows} = [];
     
-    $dbh->commit;
+    $dbh->commit || croak "Initialization of tmp_snp_cache failed: ".$self->dbh->errstr();
     
     return;
 }
@@ -1616,6 +1616,8 @@ sub load_data {
 		$self->print_snp_data();
 	}
 
+	$self->end_files();
+
 	my %nextvalue = $self->nextvalueHash();
 	
 	foreach my $table (@update_tables) {
@@ -1655,14 +1657,15 @@ sub load_data {
 	
 	# Update cache with newly created loci/allele features added in this run
 	$self->push_cache();
+	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 	
 	# Do live replacement of snp_alignment and core_alignment tables
 	if($self->{snp_aware}) {
-		$self->push_core_alignment();
-		$self->push_snp_alignment();
+		 $self->push_core_alignment();
+		 $self->push_snp_alignment();
 	}
-	
-	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
+
+	$self->flush_caches();
 	
 	if($self->vacuum) {
 		warn "Optimizing database (this may take a while) ...\n";
@@ -2314,7 +2317,7 @@ sub handle_pangenome_loci {
 		
 		croak "Error: no alignment column assigned to core pangenome region $parent_id." unless defined $column;
 		
-		# Update snp in alignment for genome
+		# Update value in core region alignment for genome
 		$self->has_core_region($genome_id,$pub,$column);
     } 
 }
@@ -2637,9 +2640,9 @@ sub handle_snp {
 	} else {
 		# Existing core snp
 		$ref_snp_id = $snp_hash->{snp_id};
-		$column = $snp_hash->{column};
+		$column = $snp_hash->{col};
 
-		my @frequencyArray = @{$snp_hash->{freqA}};
+		my @frequencyArray = @{$snp_hash->{freq}};
 		
 		# Update frequency
 		@frequencyArray = _update_frequency_array($c1, @frequencyArray);
@@ -2655,8 +2658,9 @@ sub handle_snp {
 
 			# Set all previous variations to new column value
 			$self->{snp_alignment}{update_tmp_variations}->execute($column, $ref_snp_id);
-			$self->dbh->commit;
+			$self->dbh->commit || croak "Update of tmp_snp_cache column for snp $ref_snp_id failed: ".$self->dbh->errstr();
 
+			print "ASSIGNING COLUMN $column to NEW SNP $ref_snp_id\n";
 
 		} elsif(defined $column) {
 			# Snp in alignment
@@ -3025,11 +3029,14 @@ sub print_ftree {
 
 sub print_sc {
 	my $self = shift;
-	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col,@freqA) = @_;
-	
+	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col,$freqA) = @_;
+
+	# col can be null
+	$col = '\N' unless defined $col;
+
 	my $fh = $self->file_handles('snp_core');		
 
-	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$col,@freqA)),"\n";
+	print $fh join("\t", ($sc_id,$ref_id,$nuc,$pos,$gap,$col,@$freqA)),"\n";
 }
 
 sub print_cr {
@@ -3896,7 +3903,7 @@ sub alter_snp {
 	if($self->{snp_alignment}{buffer_num} == $self->{snp_alignment}{bulk_set_size}) {
 		
 		$self->{snp_alignment}{insert_tmp_variations}->execute(@{$self->{snp_alignment}{buffer_stack}});
-		$self->dbh->commit;
+		$self->dbh->commit || croak "Insertion of snp variations into tmp_snp_cache table failed: ".$self->dbh->errstr();
 		$self->{snp_alignment}{buffer_num} = 0;
 		$self->{snp_alignment}{buffer_stack} = [];
 	}
@@ -3946,7 +3953,7 @@ sub has_core_region {
 	if($self->{core_alignment}{buffer_num} == $self->{core_alignment}{bulk_set_size}) {
 		
 		$self->{core_alignment}{insert_tmp_presence}->execute(@{$self->{core_alignment}{buffer_stack}});
-		$self->dbh->commit;
+		$self->dbh->commit || croak "Insertion of core presence/absence values into tmp_core_cache table failed: ".$self->dbh->errstr();
 		$self->{core_alignment}{buffer_num} = 0;
 		$self->{core_alignment}{buffer_stack} = [];
 	}
@@ -3982,19 +3989,33 @@ sub print_snp_data {
 	
 	my $dbh = $self->dbh;
 	my $filler_pg = 1;
+	my @new_snps;
 
 	while( my ($snp_name, $snp_data) = each %{$self->cache('core_snp')} ) {
 		my $new_snp_data = $self->cache('new_core_snp', $snp_name);
 
+		print "PRINTING: $snp_name\t";
+
 		if($new_snp_data) {
 			# Print data for new core snp entry
-			$self->print_sc(@$new_snp_data,$snp_data->{col},$snp_data->{freqA});
+			push @new_snps, [@$new_snp_data,$snp_data->{col},$snp_data->{freq}];
+			my $c = $snp_data->{col} || '\N';
+			print "NEW: ".join(',',@$new_snp_data, $c,@{$snp_data->{freq}});
+			
 		} else {
 			# Print data for updated core snp
 			# pangenome region ID cannot be NULL, so just plugin some value to satisfy constraint in temp update table.
 			# Note: this value is not used to join or update values in target table.
-			$self->print_usc2($snp_data->{snp_id},$filler_pg,$snp_data->{col},$snp_data->{freqA})
+			$self->print_usc2($snp_data->{snp_id},$filler_pg,$snp_data->{col},$snp_data->{freq});
+			my $c = $snp_data->{col} || '\N';
+			print "UPDATEDOLD: $snp_data->{snp_id}\t$c,".join(',',@{$snp_data->{freq}});
 		}
+		print "\n";
+	}
+	
+
+	foreach my $snp_row (sort {$a->[0] <=> $b->[0]} @new_snps) {
+		$self->print_sc(@$snp_row);
 	}
 
 }
@@ -4039,7 +4060,7 @@ sub push_snp_alignment {
 	}
 	my $sql = "CREATE INDEX tmp_snp_cache_idx1 ON public.tmp_snp_cache (name)";
     $dbh->do($sql);
-    $dbh->commit;
+    $dbh->commit || croak "Insertion of snp variations into tmp_snp_cache table failed: ".$self->dbh->errstr();
 
 	# New additions to core
 	my $new_core_aln = $self->{snp_alignment}->{core_alignment};
@@ -4091,7 +4112,7 @@ sub push_snp_alignment {
 		# Make genome snp changes to core string
 		$retrieve_sth->execute($g);
 
-		while (my $bunch_of_rows = $retrieve_sth->fetchrow_arrayref(undef, 5000)) {
+		while (my $bunch_of_rows = $retrieve_sth->fetchall_arrayref(undef, 5000)) {
 			snp_edits($genome_string, $bunch_of_rows);
 		}
 		
@@ -4191,8 +4212,10 @@ dups.Row > 1";
 	$sth5->execute();
 	
 	while(my ($name) = $sth5->fetchrow_array()) {
-		carp('WARNING: Identical SNP strings found for genome: '.$name.'. Might indicate duplicate genomes in DB.');
+		#carp('WARNING: Identical SNP strings found for genome: '.$name.'. Might indicate duplicate genomes in DB.');
 	}
+
+	$dbh->commit || croak "Insertion of snp alignment failed: ".$self->dbh->errstr();
 }
 
 =head2 push_core_alignment
@@ -4235,7 +4258,7 @@ sub push_core_alignment {
 	}
 	my $sql = "CREATE INDEX tmp_core_pangenome_cache_idx1 ON public.tmp_core_pangenome_cache (genome)";
     $dbh->do($sql);
-    $dbh->commit;
+    $dbh->commit || croak "Insertion of core prensence/absence values into tmp_core_cache table failed: ".$self->dbh->errstr();
 	
 	# New additions to core string
 	my $new_cols = $self->{core_alignment}->{added_columns};
@@ -4338,6 +4361,8 @@ FROM $stable tmp
 WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
 
 	$dbh->do("$query3") or croak("Error when executing: $query3 ($!).\n");
+
+	$dbh->commit || croak "Insertion of core alignment failed: ".$self->dbh->errstr();
 }
 
 # List of all genomes
@@ -4415,7 +4440,7 @@ sub _snpsList {
 		next if $self->{snp_alignment}{modified_columns}{$snp_id};
 
 		$db_snps{$snp_row->[1]} = [] unless defined $db_snps{$snp_row->[1]};
-		push @{$db_snps{$snp_row->[2]}}, [$snp_id, $snp_row->[0]];
+		push @{$db_snps{$snp_row->[1]}}, [$snp_id, $snp_row->[0]];
 	}
 	
 	# New Snps
@@ -4423,7 +4448,7 @@ sub _snpsList {
 	while(my ($snp_id, $snp_row) = each %{$self->{snp_alignment}{new_columns}}) {
 		
 		$new_snps{$snp_row->[1]} = [] unless defined $new_snps{$snp_row->[1]};
-		push @{$new_snps{$snp_row->[2]}}, [$snp_id, $snp_row->[0]];
+		push @{$new_snps{$snp_row->[1]}}, [$snp_id, $snp_row->[0]];
 	}
 	
 	return (\%db_snps, \%new_snps);
@@ -4593,7 +4618,7 @@ sub _absentCoreRegions {
 	
 	my %missing_regions;
 	unless(defined $genome_regions) {
-		warn "WARNING: genome $genome has no associated pangenome regions. All snps will be marked as missing (e.g. '-').\n";
+		#warn "WARNING: genome $genome has no associated pangenome regions. All snps will be marked as missing (e.g. '-').\n";
 		return \%missing_regions; 
 	}
 		

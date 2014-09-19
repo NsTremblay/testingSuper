@@ -93,7 +93,7 @@ Args:
 sub build_njtree {
 	my ($self, $msa_file, $tree_file) = @_;
 	
-	my $cmd = join(' ', $self->cc_exe, $self->cc_opt, '<', $msa_file, '>', $tree_file);
+	my $cmd = join(' ', $self->cc_exe, $self->cc_opt, '--in='.$msa_file, '--out='.$tree_file);
 	
 	unless(system($cmd) == 0) {
 		die "clearcut error ($!).\n";

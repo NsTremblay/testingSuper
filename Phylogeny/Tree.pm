@@ -103,6 +103,20 @@ sub loadTree {
 	# Parse newick tree
 	my $ptree = $self->newickToPerl($newick_file);
 	
+	$self->loadPerlTree($ptree);
+
+}
+
+=head2 loadPerlTree
+
+See loadTree. Adds ability to load a perl-language
+tree.
+
+=cut
+
+sub loadPerlTree {
+	my ($self, $ptree) = @_;
+	
 	# Save entire tree in database as Data::Dumper perl structure
 	$Data::Dumper::Indent = 0;
 	my $ptree_string = Data::Dumper->Dump([$ptree], ['tree']);
@@ -556,8 +570,9 @@ sub newickToPerl {
         	
         	if( $x eq ')' || $x eq '(' || $x eq ',') {
 				$tree->{name} = $tok;
+				$tree->{'length'} = 0; # Initialize to 0
           	} elsif ($x eq ':') {
-          		$tree->{'length'} = $tok+=0;  # Force number
+          		$tree->{'length'} = 0+$tok;  # Force number
           	}
 		}
 	}
@@ -653,36 +668,36 @@ sub geneTree {
 	return $jtree_string;
 }
 
-=cut writeSnpAlignment
+# =cut writeSnpAlignment
 
-	Output the snp-based alignment in fasta format from the snp_alignment table
+# 	Output the snp-based alignment in fasta format from the snp_alignment table
 	
-=cut
+# =cut
 
-sub writeSnpAlignment {
-	my $self = shift;
-	my $filenm = shift;
+# sub writeSnpAlignment {
+# 	my $self = shift;
+# 	my $filenm = shift;
 	
-	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search();
+# 	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search();
 	
-	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
+# 	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
 	
 	
-	while(my $aln_row = $aln_rs->next) {
+# 	while(my $aln_row = $aln_rs->next) {
 		
-		my $nm = $aln_row->name;
-		next if $nm eq 'core';
+# 		my $nm = $aln_row->name;
+# 		next if $nm eq 'core';
 		
-		# Print fasta SNP sequence for genome
-		print $out ">$nm\n";
-		print $out $aln_row->alignment;
-		print $out "\n";
+# 		# Print fasta SNP sequence for genome
+# 		print $out ">$nm\n";
+# 		print $out $aln_row->alignment;
+# 		print $out "\n";
 		
-	}
+# 	}
 	
-	close $out;
+# 	close $out;
 	
-}
+# }
 
 =head2 pairwise_distances
 
@@ -704,6 +719,247 @@ sub pairwise_distances {
 	
 	return(1);
 }
+
+=head2 find_lca
+
+Given a set of leaf nodes, find the lowest (or most recent) common ancestor internal node
+
+Args:
+1. A hash reference representing internal node in PERL-based tree
+2. Array of strings that match the 'name' value in leaf nodes
+
+=cut
+
+sub find_lca {
+	my $self = shift;
+	my $root = shift;
+	my @targetNodes = @_;
+	
+	my %targets;
+	map { $targets{$_} = 1 } @targetNodes;
+
+	my $subtreeNode = _recursive_lca($root, \%targets);
+
+	foreach my $n (keys %targets) {
+		if($targets{$n} < 2) {
+			my $msg = "WARNING: $n leaf node not found in traversal. LCA may be incorrect.\n";
+			carp $msg;
+			get_logger->warn($msg);
+		}
+	}
+
+	return($subtreeNode);
+}
+
+sub _recursive_lca {
+	my $root = shift;
+	my $targets = shift;
+
+	# Check if one of our target nodes is a descendent
+	# If yes, then this root is the LCA
+	if($root->{children}) {
+		my $descendent = 0;
+		my @internals;
+		foreach my $c (@{$root->{children}}) {
+			if($c->{children}) {
+				push @internals, $c;
+			} else {
+				if($targets->{$c->{name}}) {
+					# Found target node
+					$targets->{$c->{name}}++;
+					return $root;
+				}
+			}
+		}
+
+		# Check subtrees for LCA
+		# If targets scattered over multiple subtrees
+		# then this root the LCA
+		my @subtrees;
+		foreach my $i (@internals) {
+			my $s = _recursive_lca($i, $targets);
+			push @subtrees, $s if $s;
+
+			if(@subtrees > 1) {
+				return $root;
+			}
+		}
+
+		# The LCA is in this one subtree
+		if(@subtrees) {
+			return $subtrees[0];
+		}
+	}
+	
+	# LCA not found in this branch
+	return 0;
+}
+
+
+=head2 find_leaves
+
+Given a single internal node, return all descendant leaves
+
+Args:
+1. A hash reference representing internal node in PERL-based tree
+2. A boolean indicating weather to include length from root. Each leaf node
+will be in array
+
+=cut
+
+sub find_leaves {
+	my $self = shift;
+	my $root = shift;
+	my $len = shift;
+
+	$len = $len // 0;
+	$root->{length} = $root->{length} // 0;
+	my $tot_len = $root->{length}+$len;
+
+	if($root->{children}) {
+		my @leaves;
+		foreach my $c (@{$root->{children}}) {
+			push @leaves, $self->find_leaves($c, $tot_len);
+		}
+		print "Num leaves at this point: ".scalar(@leaves)."\n";
+		return @leaves;
+	} else {
+		return { node => $root, len => $tot_len };
+	}
+}
+
+=head2 snpAlignment
+
+Retrieves snp alignment
+
+Args:
+A hash with the following optional keys:
+1. file => output file name. If not provided a hash-ref is returned with alignment strings
+2. genomes => the subset of genomes to retrieve snp alignments for. If not provided, all genomes used.
+
+Returns:
+hashref of genome_name => alignment (provided, file argument is not used)
+
+=cut
+
+sub snpAlignment {
+	my $self = shift;
+	my %args = @_;
+
+
+	my $conds = {};
+
+	if($args{genomes}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search(
+		$conds,
+		{
+			columns => [qw/name alignment/]
+		}
+	);
+
+	if($args{genomes} && scalar(@{$args{genomes}}) != $aln_rs->count()) {
+		croak "Error: requested genomes not found in the snp_alignment table (genomes: ".join(', ', @{$args{genomes}}).").\n";
+	}
+
+	my %alignment;
+	my $print = ($args{file}) ? 1 : 0;
+	my $out;
+	if($print) {
+		open($out, '>'.$args{file}) or croak "Error: unable to write to file $args{file} ($!).\n";
+	}
+
+	while(my $aln_row = $aln_rs->next) {
+		my $nm = $aln_row->name;
+		next if $nm eq 'core';
+		if($print) {
+			print $out ">$nm\n".$aln_row->alignment."\n";
+		} else {
+			$alignment{$nm} = $aln_row->alignment;
+		}
+		
+	}
+
+	if($print) {
+		close $out;
+	} else {
+		return \%alignment;
+	}
+}
+
+=head2 pgAlignment
+
+Retrieves pangenome core presence/absence alignment.
+T = present
+A = absent
+
+Args:
+A hash with the following optional keys:
+1. file => output file name. If not provided a hash-ref is returned with alignment strings
+2. genomes => the subset of genomes to retrieve snp alignments for. If not provided, all genomes used.
+
+Returns:
+hashref of genome_name => alignment (provided, file argument is not used)
+
+=cut
+
+sub pgAlignment {
+	my $self = shift;
+	my %args = @_;
+
+
+	my $conds = {};
+
+	if($args{genomes}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset("CoreAlignment")->search(
+		$conds,
+		{
+			columns => [qw/name alignment/]
+		}
+	);
+
+	if($args{genomes} && scalar(@{$args{genomes}}) != $aln_rs->count()) {
+		croak "Error: requested genomes not found in the snp_alignment table (genomes: ".join(', ', @{$args{genomes}}).").\n";
+	}
+
+	my %alignment;
+	my $print = ($args{file}) ? 1 : 0;
+	my $out;
+	if($print) {
+		open($out, '>'.$args{file}) or croak "Error: unable to write to file $args{file} ($!).\n";
+	}
+
+	while(my $aln_row = $aln_rs->next) {
+		my $nm = $aln_row->name;
+		next if $nm eq 'core';
+		my $aln = $aln_row->alignment;
+		$aln =~ tr/01/AT/;
+		if($print) {
+			print $out ">$nm\n$aln\n";
+		} else {
+			$alignment{$nm} = $aln;
+		}
+		
+	}
+
+	if($print) {
+		close $out;
+	} else {
+		return \%alignment;
+	}
+}
+
+
+
+
+
 
 
 1;
