@@ -46,6 +46,7 @@ startIntro = ->
 
   # Starts the intro on the "Select Genes" tab
   $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+
   
   # "Select Genes" tab intros
   opts.splice(0,0,{
@@ -62,7 +63,7 @@ startIntro = ->
           position: 'left'
           })
   opts.splice(3,0,{
-          element: document.querySelector('#genes-menu-affix')
+          element: document.querySelector('.affix-top')
           intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes."
           position: 'bottom'
           })
@@ -113,11 +114,11 @@ startIntro = ->
           })
   # "Select Genomes" tab intros
   opts.splice(13,0,{
-          element: document.querySelector('#search_menu')
+          element: document.querySelector('#superphy-icon-menu')
           intro: "You can perform a genome search in three different ways: using the genome list, phylogenetic tree, or map."
-          position: 'bottom'
+          position: 'top'
           })
-  opts.splice(14,0,{
+  opts.splice(15,0,{
           element: document.querySelector('.download-view-link')
           intro: "You have the option to download the content of any of these views."
           position: 'left'
@@ -130,11 +131,10 @@ startIntro = ->
   opts.splice(27,0,{
           element: document.querySelector('#next-btn2')
           intro: "Click here to proceed and submit your query."
-          position: 'bottom'
+          position: 'right'
           })
-  # "Submit Query" tab intros
   opts.splice(28,0,{
-          element: document.querySelector('#vf-selected-count')
+          element: document.querySelector('#gene-search-submit')
           intro: "This displays the number of virulence genes you've selected."
           position: 'right'
           })
@@ -172,122 +172,106 @@ startIntro = ->
         switch index
           when 1
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,0)
           when 2
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,0)
           when 3
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,0)
           when 4
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,450)
           when 5
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,450)
           when 6
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,450)
           when 7
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,450)
           when 8
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,1400)
           when 9
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,1400)
           when 10
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,1400)
           when 11
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
+            window.scrollTo(0,1400)
           when 12
             $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
           when 13
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,0)
           when 14
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,0)
           when 15
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,50)
           when 16
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,50)
           when 17
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,100)
           when 18
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,1150)
           when 19
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,1150)
           when 20
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,1200)
           when 21
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,1200)
           when 22
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,2000)
           when 23
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,2000)
           when 24
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,2000)
           when 25
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,2000)
           when 26
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
+            window.scrollTo(0,2000)
           when 27
             $('#gene-search-tabs a[href="#gene-search-genomes"]').tab 'show'
           when 28
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+            window.scrollTo(0,0)
           when 29
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+            window.scrollTo(0,0)
           when 30
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+            window.scrollTo(0,0)
           when 31
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
+            window.scrollTo(0,0)
           when 32
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
-
-  # Prevents intro elements from appearing out of view
-  intro.onbeforechange (targetElement) ->
-    $.each opts, (index, step) ->
-      if $(targetElement).is(step.element)
-        switch index
-          when 0
-            window.scrollTo(0,0)
-          when 1
-            window.scrollTo(0,0)
-          when 2
-            window.scrollTo(0,0)
-          when 3
-            window.scrollTo(0,300)
-          when 4
-            window.scrollTo(0,500)
-          when 5
-            window.scrollTo(0,500)
-          when 6
-            window.scrollTo(0,500)
-          when 7
-            window.scrollTo(0,1200)
-          when 8
-            window.scrollTo(0,1500)
-          when 9
-            window.scrollTo(0,1500)
-          when 10
-            window.scrollTo(0,1500)
-          when 11
-            window.scrollTo(0,1500)
-          when 12
-            window.scrollTo(0,0)
-          when 13
-            window.scrollTo(0,0)
-          when 14
-            window.scrollTo(0,0)
-          when 15
-            window.scrollTo(0,0)
-          when 16
-            window.scrollTo(0,0)
-          when 17
-            window.scrollTo(0,0)
-          when 18
-            window.scrollTo(0,0)
-          when 19
-            window.scrollTo(0,0)
-          when 20
-            window.scrollTo(0,0)
-          when 21
             window.scrollTo(0,0)
 
   window.scrollTo(0,0)
-  intro.start()
+  
+  # Takes the user back to the "Select Genes" page
+  intro.oncomplete  ->
+    $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab 'show'
 
+  intro.start() 
 
   # Coffeescript will return the value of 
 	# the last statement from function
