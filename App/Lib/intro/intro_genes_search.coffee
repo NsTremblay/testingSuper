@@ -134,7 +134,7 @@ startIntro = ->
           position: 'right'
           })
   opts.splice(28,0,{
-          element: document.querySelector('#gene-search-submit')
+          element: document.querySelector('#vf-selected-count')
           intro: "This displays the number of virulence genes you've selected."
           position: 'right'
           })

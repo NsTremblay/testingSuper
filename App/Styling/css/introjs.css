@@ -21,6 +21,7 @@
 
 .introjs-fixParent {
   z-index: auto !important;
+  position: absolute;
 }
 
 .introjs-showElement {

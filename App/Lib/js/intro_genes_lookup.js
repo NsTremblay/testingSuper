@@ -3,10 +3,10 @@
 /*
 
 
- File: intro_home.coffee
- Desc: CoffeeScript for home page intro
+ File: intro_genes_lookup.coffee
+ Desc: Coffeescript for genes/lookup page intros
  Author: Jason Masih jason.masih@phac-aspc.gc.ca
- Date: Sept 9, 2014
+ Date: Sept 22, 2014
  
 
  Name all files like this intro_[page_name].coffee
@@ -32,20 +32,13 @@
     intro.setOptions({
       steps: [
         {
-          element: document.querySelector("#strains"),
-          intro: "Get a detailed overview of any genome in our database."
+          element: document.querySelector('#vfgenes'),
+          intro: "Use this to look up detailed information about individual virulence factors.  The search bar can be used to filter virulence factors in the list.",
+          position: 'top'
         }, {
-          element: document.querySelector("#groups"),
-          intro: ""
-        }, {
-          element: document.querySelector("#genes"),
-          intro: "Check for the presence of specific virulence factors and antimicrobial resistance genes in genomes of interest."
-        }, {
-          element: document.querySelector("#geophy"),
-          intro: "View genome data simultaneously on a map and on a tree."
-        }, {
-          element: document.querySelector("#genome-uploader"),
-          intro: "Upload your own genome data for analysis."
+          element: document.querySelector('#amrgenes'),
+          intro: "Use this to look up detailed information about individual antimicrobial resistance genes. The search bar can be used to filter antimicrobial resistance factors in the list.",
+          position: 'top'
         }
       ]
     });
