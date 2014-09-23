@@ -44,7 +44,7 @@ var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
 var user_groups = <TMPL_VAR user_groups>;
 
-var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'));
+var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
 
 //TODO: This is bloated and needs to be changed.
 var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'));
@@ -57,45 +57,20 @@ $(document).ready( function () {
     $('.download-view').empty();
 });
 
-//TEST: Script for creating groups
-// Pull this into coffee script.
-//TODO: Making this a new class in coffeescript
+//Set the clear filter button to clear out selected groups as well
+$('#remove-filter').on('click', function(){
+    $('.user-groups-menu').empty();
+    user_groups_menu.appendGroupForm(user_groups)
+    user_groups_menu.processUserGroups(user_groups);
+});
 
-if (user_groups.status) {
-    //$('.user-groups-menu').append('<div class="alert alert-info" role="alert">'+user_groups.status+'</div>'); 
-}
-else {
+//Set the geophy reset views button to clear out selected groups as well
+$('.geophy-reset').on('click', function(){
+    $('.user-groups-menu').empty();
+    user_groups_menu.appendGroupForm(user_groups)
+    user_groups_menu.processUserGroups(user_groups);
+});
 
-    //Append the user groups to .user-groups-menu 
-    var user_groups_dropdown = $('<div class="dropdown"></div>');
-    var user_groups_dd_button = $('<button class="btn btn-default dropdown-toggle" type="button" id="user-group-collection-dropdown-dropdown" data-toggle="dropdown">My Saved Groups <span class="caret"></span></button>').appendTo(user_groups_dropdown);
-
-    var user_groups_dd_list = $('<ul class="dropdown-menu" role="menu" aria-labelledby="user-group-collection-dropdown"></ul>').appendTo(user_groups_dropdown);
-
-/*    var user_group_collections = {
-        group_collections : {}
-    };
-*/
-
-/*    $.each(user_groups, function(collection_name, groups_array) {
-        if(collection_name == 'genome_id') return;
-        user_group_collections.group_collections[collection_name] = {};
-        $('<li role="presentation" class="divider"></li>').appendTo(user_groups_dd_list);
-        $('<li role="presentation" class="dropdown-header">Collection: '+collection_name+'</li>').appendTo(user_groups_dd_list);
-        $.each(groups_array, function(index,group){
-            if(!user_group_collections.group_collections[collection_name][group]) {
-                user_group_collections.group_collections[collection_name][group] = [];
-                $('<li role="presentation"><a role="menuitem" tabindex="-1" href="#">'+group+'</a></li>').appendTo(user_groups_dd_list);
-            }
-            else {
-                user_group_collections.group_collections[collection_name][group].push(user_groups.genome_id[index]);
-            }
-        });
-    });
-
-    user_groups_dropdown.appendTo($('.user-groups-menu'));*/
-
-}
 </script>
 
 </html>

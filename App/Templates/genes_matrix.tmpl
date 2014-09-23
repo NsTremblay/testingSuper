@@ -6,15 +6,16 @@
 	<TMPL_INCLUDE NAME="header2.tmpl">
 	<link rel="stylesheet" href="/App/Styling/css/genes_matrix.css">
 	<script src="/App/Lib/js/superphy_menu.js"></script>
-	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">  
+	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css"> 
+    <script type="text/javascript" src="/App/Lib/js/superphy_user_groups.js"></script>
 	<script>var page_name = 'genes';</script>
-	
+
 </head>
 
 <body>
 
 	<TMPL_INCLUDE NAME="page_top.tmpl">
-	
+
 	<div class="toc">	
 		<div class="well toc-well" >
 			<div id="vf_result_legend" class="legend" style="display: none;">
@@ -36,7 +37,7 @@
 			</div>
 		</div>
 	</div>
-	
+
 	<div id="results">
 
 		<div id="vf_results" style="display: none;">
@@ -68,10 +69,10 @@
 				</div>
 			</div>
 		</div>
-		
+
 	</div>
 
-	
+
 	<div id="groups">
 		<hr/>
 		<div id="search_menu"></div>
@@ -85,69 +86,79 @@
 
 	<TMPL_INCLUDE NAME="page_bottom.tmpl">
 
-	<script type="text/javascript">	
-		// Initialise JSON data objects
-		var alleles = <TMPL_VAR allele_json>;
-		var genes = <TMPL_VAR gene_json>;
-		var public_genomes = <TMPL_VAR public_genomes>;
-		var private_genomes = <TMPL_VAR private_genomes>;
-		var genome_subset = null;
-		var tree = <TMPL_VAR tree_json>;
-		
-		<TMPL_IF genome_json>
-		genome_subset = <TMPL_VAR genome_json>;
-		</TMPL_IF>
-		
-		// Data objects
-		viewController.init(public_genomes, private_genomes, 'multi_select', null, genome_subset);
-		
-		// Views
-		if(!jQuery.isEmptyObject( genes.vf )) {
-			
-			var matrixObj1 = { 
-				nodes: genes.vf,
-				links: alleles
-			};
-			viewController.createView('matrix', $('#vf_result_matrix'), matrixObj1);
-			viewController.createTicker('matrix', $("#vf_result_histogram"), matrixObj1);
-			$('#vf_result_legend').show()
-			$('#vf_results').show()
-		}
-		
-		if(!jQuery.isEmptyObject( genes.amr )) {
-			
-			var matrixObj2 = { 
-				nodes: genes.amr,
-				links: alleles
-			};
-			viewController.createView('matrix', $('#amr_result_matrix'), matrixObj2);
-			viewController.createTicker('matrix', $("#amr_result_histogram"), matrixObj2);
-			
-			// Unhide
-			$('#amr_result_legend').show()
-			$('#amr_results').show()
-		}
-		
-		// Search forms
-		viewController.sideBar($('#search-utilities'));
-		
-		// Genome selection form
-		viewController.createView('table', $('#strains_table'));
-		viewController.createView('tree', $('#strains_tree'), tree);
-		viewController.createView('map', $('#strains_map'), ['satellite']);
+</body>
 
-		var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
-		
-		// Code to create groups
-		var addMore = true;
-		var submit = false;
-		var filter = false;
-		viewController.createGroupsForm($('#expanding_groups'), addMore, submit, filter);
+<script type="text/javascript">	
+// Initialise JSON data objects
+var alleles = <TMPL_VAR allele_json>;
+var genes = <TMPL_VAR gene_json>;
+var public_genomes = <TMPL_VAR public_genomes>;
+var private_genomes = <TMPL_VAR private_genomes>;
+var genome_subset = null;
+var tree = <TMPL_VAR tree_json>;
 
-		
-		</script>
+<TMPL_IF genome_json>
+genome_subset = <TMPL_VAR genome_json>;
+</TMPL_IF>
 
+// Data objects
+viewController.init(public_genomes, private_genomes, 'multi_select', null, genome_subset);
 
-	</body>
+// Views
+if(!jQuery.isEmptyObject( genes.vf )) {
 
-	</html>
+	var matrixObj1 = { 
+		nodes: genes.vf,
+		links: alleles
+	};
+	viewController.createView('matrix', $('#vf_result_matrix'), matrixObj1);
+	viewController.createTicker('matrix', $("#vf_result_histogram"), matrixObj1);
+	$('#vf_result_legend').show()
+	$('#vf_results').show()
+}
+
+if(!jQuery.isEmptyObject( genes.amr )) {
+
+	var matrixObj2 = { 
+		nodes: genes.amr,
+		links: alleles
+	};
+
+	viewController.createView('matrix', $('#amr_result_matrix'), matrixObj2);
+	viewController.createTicker('matrix', $("#amr_result_histogram"), matrixObj2);
+
+// Unhide
+$('#amr_result_legend').show();
+$('#amr_results').show();
+}
+
+// Search forms
+viewController.sideBar($('#search-utilities'));
+
+// Genome selection form
+viewController.createView('table', $('#strains_table'));
+viewController.createView('tree', $('#strains_tree'), tree);
+viewController.createView('map', $('#strains_map'), ['satellite']);
+
+var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
+
+// Code to create groups
+var addMore = true;
+var submit = false;
+var filter = false;
+viewController.createGroupsForm($('#expanding_groups'), addMore, submit, filter);
+
+var user_groups = <TMPL_VAR user_groups>;
+
+var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
+
+//Set the clear filter button to clear out selected groups as well
+$('#remove-filter').on('click', function(){
+	$('.user-groups-menu').empty();
+	user_groups_menu.appendGroupForm(user_groups)
+	user_groups_menu.processUserGroups(user_groups);
+});
+
+</script>
+
+</html>

@@ -13,7 +13,8 @@
   var SuperphyError, UserGroups, root,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+    __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
@@ -37,9 +38,10 @@
   })(Error);
 
   UserGroups = (function() {
-    function UserGroups(userGroupsObj, parentElem) {
+    function UserGroups(userGroupsObj, parentElem, viewController) {
       this.userGroupsObj = userGroupsObj;
       this.parentElem = parentElem;
+      this.viewController = viewController;
       this._updateSelections = __bind(this._updateSelections, this);
       if (!this.userGroupsObj) {
         throw new SuperphyError('User groups object cannot be empty/null.');
@@ -47,110 +49,147 @@
       if (!this.parentElem) {
         throw new SuperphyError('Parent div not specified.');
       }
+      if (!this.viewController) {
+        throw new SuperphyError('ViewController object is required');
+      }
       this.user_group_collections = {
         group_collections: {}
       };
+      this.appendGroupForm(this.userGroupsObj);
       this.processUserGroups(this.userGroupsObj);
     }
 
-    UserGroups.prototype.processUserGroups = function(uGpObj) {
-      var $select_group, $select_group_collection, collection_array, collection_name, editSpan, group_collections_group_select, group_collections_select, group_collections_select_options, group_name, index, _i, _len;
+    UserGroups.prototype.appendGroupForm = function(uGpObj) {
+      var editSpan;
       if (uGpObj.status) {
         return this.parentElem.append('<div class="alert alert-info" role="alert">' + uGpObj.status + '</div>');
       } else {
-        group_collections_select = jQuery('<select id="select-group-collections" class="form-control" placeholder="--Select from group collections--"></select>').appendTo(this.parentElem);
-        group_collections_group_select = jQuery('<select id="select-group-collections-groups" class="form-control" placeholder="--Select from groups--"></select>').appendTo(this.parentElem);
+        this.group_collections_select = jQuery('<select id="select-group-collections" class="form-control" placeholder="--Select from group collections--"></select>').appendTo(this.parentElem);
+        this.group_collections_group_select = jQuery('<select id="select-group-collections-groups" class="form-control" placeholder="--Select from groups--"></select>').appendTo(this.parentElem);
         editSpan = jQuery('<span>You can edit your existing groups <a href="/groups/shiny"> here</a>.</span>').appendTo(this.parentElem);
-        group_collections_select_options = [];
-        for (collection_name in uGpObj) {
-          collection_array = uGpObj[collection_name];
-          if (!(collection_name !== 'genome_id')) {
-            continue;
-          }
-          group_collections_select_options.push({
-            value: "" + collection_name,
-            name: "" + collection_name
-          });
-          this.user_group_collections.group_collections[collection_name] = {};
-          this.user_group_collections.group_collections[collection_name]['Ungrouped'] = [];
-          for (index = _i = 0, _len = collection_array.length; _i < _len; index = ++_i) {
-            group_name = collection_array[index];
-            if (!(this.user_group_collections.group_collections[collection_name][group_name] || group_name === null)) {
-              this.user_group_collections.group_collections[collection_name][group_name] = [];
-            }
-            if (group_name !== null) {
-              this.user_group_collections.group_collections[collection_name][group_name].push(uGpObj.genome_id[index]);
-            }
-            if (group_name === null) {
-              this.user_group_collections.group_collections[collection_name]['Ungrouped'].push(uGpObj.genome_id[index]);
-            }
-          }
-          if (!this.user_group_collections.group_collections[collection_name]['Ungrouped'].length) {
-            delete this.user_group_collections.group_collections[collection_name]['Ungrouped'];
-          }
-        }
-        $select_group_collection = group_collections_select.selectize({
-          onChange: (function(_this) {
-            return function(value) {
-              _this.select_group.disable();
-              _this.select_group.clearOptions();
-              if (!value.length) {
-                return;
-              }
-              true;
-              return _this.select_group.load(function(callback) {
-                var groups_results, k, v, _ref;
-                _this.select_group.enable();
-                groups_results = [];
-                _ref = _this.user_group_collections.group_collections[value];
-                for (k in _ref) {
-                  v = _ref[k];
-                  groups_results.push({
-                    name: k,
-                    value: k
-                  });
-                }
-                return callback(groups_results);
-              });
-            };
-          })(this),
-          searchField: ['name'],
-          options: group_collections_select_options,
-          render: {
-            option: (function(_this) {
-              return function(data, escape) {
-                return "<div class='option'>" + data.name + "</div>";
-              };
-            })(this),
-            item: (function(_this) {
-              return function(data, escape) {
-                return "<div class='item'>" + data.name + "</div>";
-              };
-            })(this)
-          }
-        });
-        $select_group = group_collections_group_select.selectize({
-          onChange: (function(_this) {
-            return function(value) {
-              return _this._updateSelections(value);
-            };
-          })(this),
-          valueField: 'value',
-          labelField: 'name',
-          searchField: ['name']
-        });
-        this.select_group_collection = $select_group_collection[0].selectize;
-        this.select_group = $select_group[0].selectize;
-        this.select_group.disable();
         return true;
       }
     };
 
+    UserGroups.prototype.processUserGroups = function(uGpObj) {
+      var $select_group, $select_group_collection, collection_array, collection_name, group_collections_select_options, group_name, index, _i, _len;
+      if (uGpObj.status) {
+        return;
+      }
+      group_collections_select_options = [];
+      for (collection_name in uGpObj) {
+        collection_array = uGpObj[collection_name];
+        if (!(collection_name !== 'genome_id')) {
+          continue;
+        }
+        group_collections_select_options.push({
+          value: "" + collection_name,
+          name: "" + collection_name
+        });
+        this.user_group_collections.group_collections[collection_name] = {};
+        this.user_group_collections.group_collections[collection_name]['Ungrouped'] = [];
+        for (index = _i = 0, _len = collection_array.length; _i < _len; index = ++_i) {
+          group_name = collection_array[index];
+          if (!(this.user_group_collections.group_collections[collection_name][group_name] || group_name === null)) {
+            this.user_group_collections.group_collections[collection_name][group_name] = [];
+          }
+          if (group_name !== null) {
+            this.user_group_collections.group_collections[collection_name][group_name].push(uGpObj.genome_id[index]);
+          }
+          if (group_name === null) {
+            this.user_group_collections.group_collections[collection_name]['Ungrouped'].push(uGpObj.genome_id[index]);
+          }
+        }
+        if (!this.user_group_collections.group_collections[collection_name]['Ungrouped'].length) {
+          delete this.user_group_collections.group_collections[collection_name]['Ungrouped'];
+        }
+      }
+      $select_group_collection = this.group_collections_select.selectize({
+        onChange: (function(_this) {
+          return function(value) {
+            _this.select_group.disable();
+            _this.select_group.clearOptions();
+            if (!value.length) {
+              return;
+            }
+            true;
+            return _this.select_group.load(function(callback) {
+              var groups_results, k, v, _ref;
+              _this.select_group.enable();
+              groups_results = [];
+              _ref = _this.user_group_collections.group_collections[value];
+              for (k in _ref) {
+                v = _ref[k];
+                groups_results.push({
+                  name: k,
+                  value: k
+                });
+              }
+              return callback(groups_results);
+            });
+          };
+        })(this),
+        searchField: ['name'],
+        options: group_collections_select_options,
+        render: {
+          option: (function(_this) {
+            return function(data, escape) {
+              return "<div class='option'>" + data.name + "</div>";
+            };
+          })(this),
+          item: (function(_this) {
+            return function(data, escape) {
+              return "<div class='item'>" + data.name + "</div>";
+            };
+          })(this)
+        }
+      });
+      $select_group = this.group_collections_group_select.selectize({
+        onChange: (function(_this) {
+          return function(value) {
+            return _this._updateSelections(value);
+          };
+        })(this),
+        valueField: 'value',
+        labelField: 'name',
+        searchField: ['name']
+      });
+      this.select_group_collection = $select_group_collection[0].selectize;
+      this.select_group = $select_group[0].selectize;
+      this.select_group.disable();
+      return true;
+    };
+
     UserGroups.prototype._updateSelections = function(group_name) {
-      var collection_name;
+      var collection_name, genome_id, group_genomes, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1;
       collection_name = this.select_group_collection.getValue();
-      console.log(collection_name);
-      console.log(group_name);
+      _ref = Object.keys(viewController.genomeController.public_genomes);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        genome_id = _ref[_i];
+        this.viewController.select(genome_id, false);
+      }
+      _ref1 = Object.keys(viewController.genomeController.private_genomes);
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        genome_id = _ref1[_j];
+        this.viewController.select(genome_id, false);
+      }
+      if (group_name === "") {
+
+      } else {
+        group_genomes = this.user_group_collections.group_collections[collection_name][group_name];
+        for (_k = 0, _len2 = group_genomes.length; _k < _len2; _k++) {
+          genome_id = group_genomes[_k];
+          if (__indexOf.call(viewController.genomeController.pubVisible, genome_id) >= 0) {
+            this.viewController.select(genome_id, true);
+          }
+        }
+        for (_l = 0, _len3 = group_genomes.length; _l < _len3; _l++) {
+          genome_id = group_genomes[_l];
+          if (__indexOf.call(viewController.genomeController.pvtVisible, genome_id) >= 0) {
+            this.viewController.select(genome_id, true);
+          }
+        }
+      }
       return true;
     };
 

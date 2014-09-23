@@ -309,6 +309,10 @@ sub matrix : Runmode {
 	
 	$template->param(title1 => 'VIRULENCE &amp; AMR');
 	$template->param(title2 => 'RESULTS');
+
+    my $user_groups = $self->_getUserGroups();
+
+    $template->param(user_groups => $user_groups);
 		
 	return $template->output();
 }
@@ -897,6 +901,20 @@ sub sequences : Runmode {
 	
 }
 
+sub _getUserGroups {
+    my $self = shift;
+    my $username = $self->authen->username;
+    
+    return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
+    
+    my $userGroupsRs = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
+    
+    return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $userGroupsRs;
+    
+    my $userGroupsJson = $userGroupsRs->user_groups;
+    my $user_groups_json = $userGroupsJson;
 
+    return $user_groups_json;
+}
 
 1;
