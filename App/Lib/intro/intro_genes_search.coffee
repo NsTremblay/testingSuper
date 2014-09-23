@@ -165,6 +165,7 @@ startIntro = ->
     }
   )
 
+
   # Manages scroll heights and active tabs depending on the step number
   intro.onbeforechange (targetElement) ->
     $.each opts, (index, step) ->
@@ -264,6 +265,7 @@ startIntro = ->
           when 32
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
             window.scrollTo(0,0)
+
 
   window.scrollTo(0,0)
   
