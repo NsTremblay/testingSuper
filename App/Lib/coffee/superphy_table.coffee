@@ -162,7 +162,7 @@ class TableView extends ViewTemplate
       name = gObj.meta_array[0]
       if @locusData?
         name += @locusData.genomeString(g)
-        
+
       if style == 'redirect'
         # Links
         
