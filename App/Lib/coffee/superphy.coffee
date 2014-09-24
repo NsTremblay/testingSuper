@@ -154,7 +154,7 @@ class ViewController
 
      # Meta-data and filter intro
     intros.push({
-      element: document.querySelector('#sidebar-group')
+      element: document.querySelector('#search-utilities')
       intro: "Any search can be further specified to include various meta-data by checking the corresponding boxes.  This will show more information for each genome on the list, tree, and map, but it will not affect the data.  Searches can also be filtered by keyword or by selection to limit the number of genomes displayed on the list, tree, and map."
       position: 'right'
       })

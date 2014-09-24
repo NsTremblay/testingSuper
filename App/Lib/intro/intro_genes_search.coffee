@@ -134,29 +134,9 @@ startIntro = ->
           position: 'right'
           })
   opts.splice(28,0,{
-          element: document.querySelector('#vf-selected-count')
-          intro: "This displays the number of virulence genes you've selected."
-          position: 'right'
-          })
-  opts.splice(29,0,{
-          element: document.querySelector('#amr-selected-count')
-          intro: "This displays the number of AMR genes you've selected."
-          position: 'right'
-          })
-  opts.splice(30,0,{
-          element: document.querySelector('#selected_genome_count')
-          intro: "This displays the number of genomes you've selected."
-          position: 'right'
-          })
-  opts.splice(31,0,{
-          element: document.querySelector('#gene-search-submit-button')
-          intro: "Click here to submit your query and get your results."
-          position: 'bottom'
-          })
-  opts.splice(32,0,{
-          element: document.querySelector('#gene-search-reset-button')
-          intro: "Click here to reset your query."
-          position: 'bottom'
+          element: document.querySelector('#search')
+          intro: "Here you can see a summary of your query.  Click 'Submit' to submit your query and get your results.  Click 'Reset' to reset your query.  You can use the tabs to go back and modify your query."
+          position: 'top'
           })
 
   intro.setOptions(
@@ -253,18 +233,8 @@ startIntro = ->
           when 28
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
             window.scrollTo(0,0)
-          when 29
-            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
-            window.scrollTo(0,0)
-          when 30
-            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
-            window.scrollTo(0,0)
-          when 31
-            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
-            window.scrollTo(0,0)
-          when 32
-            $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
-            window.scrollTo(0,0)
+
+  
 
 
   window.scrollTo(0,0)
