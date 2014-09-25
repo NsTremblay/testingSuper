@@ -85,6 +85,13 @@
         }
       });
     });
+    intro.onchange(function(targetElement) {
+      var $parentElement;
+      $parentElement = $(targetElement).parents(".introjs-fixParent");
+      if ($parentElement.css("position") === "fixed") {
+        return $parentElement.css("position", "absolute");
+      }
+    });
     window.scrollTo(0, 0);
     intro.start();
     return false;

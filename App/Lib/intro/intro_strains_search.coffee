@@ -100,6 +100,9 @@ startIntro = ->
           when 14
             window.scrollTo(0,1700)
 
+  intro.onchange (targetElement) ->
+    $parentElement = $(targetElement).parents(".introjs-fixParent")
+    $parentElement.css "position", "absolute" if $parentElement.css("position") is "fixed"
 
   window.scrollTo(0,0)
   intro.start()
