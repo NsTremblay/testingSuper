@@ -75,6 +75,18 @@
         }
       });
     });
+    intro.onchange(function(targetElement) {
+      return $.each(opts, function(index, step) {
+        if ($(targetElement).is(step.element)) {
+          switch (index) {
+            case 3:
+              return document.getElementById('sidebar-wrapper').style.position = "absolute";
+            case 4:
+              return document.getElementById('sidebar-wrapper').style.position = "fixed";
+          }
+        }
+      });
+    });
     window.scrollTo(0, 0);
     intro.start();
     return false;

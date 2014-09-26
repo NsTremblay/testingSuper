@@ -101,11 +101,19 @@ startIntro = ->
             window.scrollTo(0,1700)
 
   intro.onchange (targetElement) ->
-    $parentElement = $(targetElement).parents(".introjs-fixParent")
-    $parentElement.css "position", "absolute" if $parentElement.css("position") is "fixed"
+   $.each opts, (index, step) ->
+      if $(targetElement).is(step.element)
+        switch index
+          when 3
+            document.getElementById('sidebar-wrapper').style.position = "absolute"
+          when 4
+            document.getElementById('sidebar-wrapper').style.position = "fixed"
 
   window.scrollTo(0,0)
   intro.start()
+
+  
+
 
   # Coffeescript will return the value of 
 	# the last statement from function

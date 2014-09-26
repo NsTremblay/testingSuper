@@ -234,7 +234,14 @@ startIntro = ->
             $('#gene-search-tabs a[href="#gene-search-submit"]').tab 'show'
             window.scrollTo(0,0)
 
-  
+  intro.onchange (targetElement) ->
+   $.each opts, (index, step) ->
+      if $(targetElement).is(step.element)
+        switch index
+          when 14
+            document.getElementById('sidebar-wrapper').style.position = "absolute"
+          when 15
+            document.getElementById('sidebar-wrapper').style.position = "fixed"
 
 
   window.scrollTo(0,0)

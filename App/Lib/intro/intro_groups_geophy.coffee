@@ -90,6 +90,15 @@ startIntro = ->
           when 11
             window.scrollTo(0,0)
 
+  intro.onchange (targetElement) ->
+     $.each opts, (index, step) ->
+        if $(targetElement).is(step.element)
+          switch index
+            when 3
+              document.getElementById('sidebar-wrapper').style.position = "absolute"
+            when 4
+              document.getElementById('sidebar-wrapper').style.position = "fixed"
+
   window.scrollTo(0,0)
   intro.start()
 
