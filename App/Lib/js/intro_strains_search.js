@@ -77,10 +77,6 @@
               return window.scrollTo(0, 1700);
             case 12:
               return window.scrollTo(0, 1700);
-            case 13:
-              return window.scrollTo(0, 1700);
-            case 14:
-              return window.scrollTo(0, 1700);
           }
         }
       });
@@ -97,8 +93,10 @@
         }
       });
     });
-    window.scrollTo(0, 0);
     intro.start();
+    intro.oncomplete(function() {
+      return window.scrollTo(0, 0);
+    });
     return false;
   };
 

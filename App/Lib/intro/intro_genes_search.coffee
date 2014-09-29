@@ -243,8 +243,6 @@ startIntro = ->
           when 15
             document.getElementById('sidebar-wrapper').style.position = "fixed"
 
-
-  window.scrollTo(0,0)
   
   # Takes the user back to the "Select Genes" page
   intro.oncomplete  ->

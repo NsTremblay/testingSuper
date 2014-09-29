@@ -95,10 +95,6 @@ startIntro = ->
             window.scrollTo(0,1700)
           when 12
             window.scrollTo(0,1700)
-          when 13
-            window.scrollTo(0,1700)
-          when 14
-            window.scrollTo(0,1700)
 
   intro.onchange (targetElement) ->
    $.each opts, (index, step) ->
@@ -108,12 +104,11 @@ startIntro = ->
             document.getElementById('sidebar-wrapper').style.position = "absolute"
           when 4
             document.getElementById('sidebar-wrapper').style.position = "fixed"
-
-  window.scrollTo(0,0)
+  
   intro.start()
 
-  
-
+  intro.oncomplete ->
+    window.scrollTo(0,0)
 
   # Coffeescript will return the value of 
 	# the last statement from function

@@ -224,7 +224,6 @@
         }
       });
     });
-    window.scrollTo(0, 0);
     intro.oncomplete(function() {
       return $('#gene-search-tabs a[href="#gene-search-querygenes"]').tab('show');
     });

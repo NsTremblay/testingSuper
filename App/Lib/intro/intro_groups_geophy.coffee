@@ -99,8 +99,10 @@ startIntro = ->
             when 4
               document.getElementById('sidebar-wrapper').style.position = "fixed"
 
-  window.scrollTo(0,0)
   intro.start()
+
+  intro.oncomplete ->
+    window.scrollTo(0,0)
 
   # Coffeescript will return the value of 
 	# the last statement from function

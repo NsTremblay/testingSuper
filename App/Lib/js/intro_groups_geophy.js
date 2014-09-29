@@ -87,8 +87,10 @@
         }
       });
     });
-    window.scrollTo(0, 0);
     intro.start();
+    intro.oncomplete(function() {
+      return window.scrollTo(0, 0);
+    });
     return false;
   };
 
