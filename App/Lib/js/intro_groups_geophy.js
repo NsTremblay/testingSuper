@@ -30,7 +30,7 @@
     var intro, opts;
     opts = viewController.introOptions();
     opts.splice(0, 0, {
-      intro: "The GeoPhy page provides users with the opportunity to view genome data simultaneously on a map and on a tree to answer any potential epidimiological questions."
+      intro: "The GeoPhy page provides users with the opportunity to view genome data simultaneously on a map and on a tree to answer any potential epidemiological questions."
     });
     opts.splice(1, 0, {
       element: document.querySelector('#submit-btn'),

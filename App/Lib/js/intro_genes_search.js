@@ -41,12 +41,12 @@
     });
     opts.splice(2, 0, {
       element: document.querySelector('#gene-lookup'),
-      intro: "Click here for detailed information on virulence factors and antimicrobial resistance genes.",
+      intro: "Click here for detailed information on specific virulence factors and antimicrobial resistance genes.",
       position: 'left'
     });
     opts.splice(3, 0, {
       element: document.querySelector('.affix-top'),
-      intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes.",
+      intro: "You can choose your search method by selecting virulence factors or by antimicrobial resistance genes.  Your search can consist of either or both virulence factors and antimicrobial resistance genes.",
       position: 'bottom'
     });
     opts.splice(4, 0, {
