@@ -63,6 +63,11 @@ sub home : StartRunmode{
 	my $self = shift;
 	my $template = $self->load_tmpl( 'home.tmpl' , die_on_bad_params=>0 );
 
+	my $session_id = $self->session->id();
+
+	print STDERR "Session id at home page is: $session_id\n";
+	print STDERR "User currently logged in is: " . $self->authen->username . "\n" if $self->authen->username;
+
 	my $genomeCount = $self->dbixSchema->resultset('Feature')->count(
 		{'type.name' =>  'contig_collection'},
 		{

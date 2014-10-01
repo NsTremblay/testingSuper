@@ -652,66 +652,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 gap_position_contig_collections
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::GapPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "gap_position_contig_collections",
-  "Database::Chado::Schema::Result::GapPosition",
-  { "foreign.contig_collection_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 gap_position_contigs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::GapPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "gap_position_contigs",
-  "Database::Chado::Schema::Result::GapPosition",
-  { "foreign.contig_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 gap_position_loci
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::GapPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "gap_position_loci",
-  "Database::Chado::Schema::Result::GapPosition",
-  { "foreign.locus_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 gap_position_pangenome_regions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::GapPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "gap_position_pangenome_regions",
-  "Database::Chado::Schema::Result::GapPosition",
-  { "foreign.pangenome_region_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 genome_locations
 
 Type: has_many
@@ -802,36 +742,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 private_gap_positions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_gap_positions",
-  "Database::Chado::Schema::Result::PrivateGapPosition",
-  { "foreign.pangenome_region_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 private_snp_positions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "private_snp_positions",
-  "Database::Chado::Schema::Result::PrivateSnpPosition",
-  { "foreign.pangenome_region_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 pubpri_feature_relationships
 
 Type: has_many
@@ -888,66 +798,6 @@ Related object: L<Database::Chado::Schema::Result::SnpCore>
 __PACKAGE__->has_many(
   "snp_cores",
   "Database::Chado::Schema::Result::SnpCore",
-  { "foreign.pangenome_region_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_position_contig_collections
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_position_contig_collections",
-  "Database::Chado::Schema::Result::SnpPosition",
-  { "foreign.contig_collection_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_position_contigs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_position_contigs",
-  "Database::Chado::Schema::Result::SnpPosition",
-  { "foreign.contig_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_position_loci
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_position_loci",
-  "Database::Chado::Schema::Result::SnpPosition",
-  { "foreign.locus_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 snp_position_pangenome_regions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpPosition>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snp_position_pangenome_regions",
-  "Database::Chado::Schema::Result::SnpPosition",
   { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -1068,8 +918,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:bQvHPo/l36dRD+EUiiqeOw
+# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-08-25 11:49:01
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bf5eMkCqkx35nRV1gufEpA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

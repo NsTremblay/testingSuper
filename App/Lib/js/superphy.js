@@ -5574,8 +5574,13 @@
       this.genomeController = genomeController;
       this.mapArgs = mapArgs;
       MapView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
-      this.sortField = 'isolation_location';
+      this.sortField = 'isolation_country';
       this.sortAsc = 'true';
+      this.locationMetaFields = {
+        'isolation_country': 'Country',
+        'isolation_province_state': 'Province/State',
+        'isolation_city': 'City'
+      };
       mapSplitLayout = jQuery('<div class="map-split-layout row"></div>').appendTo(jQuery(this.parentElem));
       mapSearchEl = jQuery('<div class="map-search-wrapper col-md-6 span6"></div>').appendTo(mapSplitLayout);
       mapSearchRow = jQuery('<div class="geospatial-row row"></div>').appendTo(mapSearchEl);
@@ -5658,7 +5663,7 @@
           }
         }
         if (!unknownsOff) {
-          _ref3 = this.locationController.pvtNoLocaitons;
+          _ref3 = this.locationController.pvtNoLocations;
           for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
             i = _ref3[_l];
             if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
@@ -5714,7 +5719,7 @@
     };
 
     MapView.prototype._appendHeader = function(genomes) {
-      var i, sortIcon, t, tName, table, v, values, _i, _j, _len, _len1, _ref;
+      var i, sortIcon, t, tName, table, tk, tv, v, values, _i, _j, _len, _len1, _ref, _ref1;
       table = '<thead><tr>';
       values = [];
       i = -1;
@@ -5735,26 +5740,27 @@
           sortIcon: 'fa-sort'
         };
       }
-      if (this.sortField === 'isolation_location') {
-        sortIcon = 'fa-sort-asc';
-        if (!this.sortAsc) {
-          sortIcon = 'fa-sort-desc';
+      _ref = this.locationMetaFields;
+      for (tk in _ref) {
+        tv = _ref[tk];
+        sortIcon = null;
+        if (tk === this.sortField) {
+          sortIcon = 'fa-sort-asc';
+          if (!this.sortAsc) {
+            sortIcon = 'fa-sort-desc';
+          }
+        } else {
+          sortIcon = 'fa-sort';
         }
         values[++i] = {
-          type: 'isolation_location',
-          name: 'Location',
+          type: tk,
+          name: tv,
           sortIcon: sortIcon
         };
-      } else {
-        values[++i] = {
-          type: 'isolation_location',
-          name: 'Location',
-          sortIcon: 'fa-sort'
-        };
       }
-      _ref = genomes.mtypes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        t = _ref[_i];
+      _ref1 = genomes.mtypes;
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        t = _ref1[_i];
         if (!genomes.visibleMeta[t]) {
           continue;
         }
@@ -5783,7 +5789,7 @@
     };
 
     MapView.prototype._appendGenomes = function(visibleG, genomes, style, priv) {
-      var checked, cls, d, g, gObj, location, name, row, table, thiscls, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+      var checked, cls, d, g, gObj, k, location, name, row, table, thiscls, v, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _ref7;
       cls = this.cssClass();
       table = '';
       if (priv && visibleG.length) {
@@ -5814,19 +5820,27 @@
             shortName: gObj.meta_array[0],
             klass: thiscls
           });
-          if (location) {
-            row += this._template('td1_location', {
-              location: JSON.parse(gObj.isolation_location[0]).formatted_address
-            });
+          _ref = this.locationMetaFields;
+          for (k in _ref) {
+            v = _ref[k];
+            if (location) {
+              row += this._template('td1_location', {
+                location: (_ref1 = this.mapController.allMarkers[g][k]) != null ? _ref1 : 'NA'
+              });
+            }
           }
-          if (!location) {
-            row += this._template('td1_nolocation', {
-              location: 'Unknown'
-            });
+          _ref2 = this.locationMetaFields;
+          for (k in _ref2) {
+            v = _ref2[k];
+            if (!location) {
+              row += this._template('td1_nolocation', {
+                location: 'Unknown'
+              });
+            }
           }
-          _ref = gObj.meta_array.slice(1);
-          for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-            d = _ref[_j];
+          _ref3 = gObj.meta_array.slice(1);
+          for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
+            d = _ref3[_j];
             row += this._template('td', {
               data: d
             });
@@ -5845,19 +5859,27 @@
             klass: thiscls,
             checked: checked
           });
-          if (location) {
-            row += this._template('td1_location', {
-              location: JSON.parse(gObj.isolation_location[0]).formatted_address
-            });
+          _ref4 = this.locationMetaFields;
+          for (k in _ref4) {
+            v = _ref4[k];
+            if (location) {
+              row += this._template('td1_location', {
+                location: (_ref5 = this.mapController.allMarkers[g][k]) != null ? _ref5 : 'NA'
+              });
+            }
           }
-          if (!location) {
-            row += this._template('td1_nolocation', {
-              location: 'Unknown'
-            });
+          _ref6 = this.locationMetaFields;
+          for (k in _ref6) {
+            v = _ref6[k];
+            if (!location) {
+              row += this._template('td1_nolocation', {
+                location: 'Unknown'
+              });
+            }
           }
-          _ref1 = gObj.meta_array.slice(1);
-          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-            d = _ref1[_k];
+          _ref7 = gObj.meta_array.slice(1);
+          for (_k = 0, _len2 = _ref7.length; _k < _len2; _k++) {
+            d = _ref7[_k];
             row += this._template('td', {
               data: d
             });
@@ -6220,7 +6242,7 @@
       this.resetMap = __bind(this.resetMap, this);
       SatelliteCartographer.__super__.constructor.call(this, this.satelliteCartographDiv, this.satelliteCartograhOpt);
       this.locationController = this.satelliteCartograhOpt[0];
-      this.allMarkers = this.locationController.pubMarkers.concat(this.locationController.pvtMarkers);
+      this.allMarkers = jQuery.extend(this.locationController.pubMarkers, this.locationController.pvtMarkers);
       this.setMarkers(this.allMarkers);
     }
 
@@ -6250,13 +6272,13 @@
     };
 
     SatelliteCartographer.prototype.updateVisible = function() {
-      var genomes, marker, _i, _len, _ref, _ref1, _ref2;
+      var genomes, marker, marker_id, _ref, _ref1, _ref2;
       genomes = this.locationController.genomeController;
       this.visibleLocations = [];
       this.clusteredMarkers = [];
       _ref = this.allMarkers;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        marker = _ref[_i];
+      for (marker_id in _ref) {
+        marker = _ref[marker_id];
         if (this.map.getBounds() !== void 0 && this.map.getBounds().contains(marker.getPosition()) && ((_ref1 = marker.feature_id, __indexOf.call(genomes.pubVisible, _ref1) >= 0) || (_ref2 = marker.feature_id, __indexOf.call(genomes.pvtVisible, _ref2) >= 0))) {
           this.clusteredMarkers.push(marker);
           this.visibleLocations.push(marker.feature_id);
@@ -6266,7 +6288,7 @@
     };
 
     SatelliteCartographer.prototype.setMarkers = function(markerList) {
-      var circleIcon, marker, mcOptions, _i, _len;
+      var circleIcon, marker, marker_id, mcOptions;
       circleIcon = {
         path: google.maps.SymbolPath.CIRCLE,
         fillColor: '#FF0000',
@@ -6275,16 +6297,18 @@
         strokeColor: '#FF0000',
         strokeWeight: 1
       };
-      for (_i = 0, _len = markerList.length; _i < _len; _i++) {
-        marker = markerList[_i];
+      this.clusteredMarkers = [];
+      for (marker_id in markerList) {
+        marker = markerList[marker_id];
         marker.setMap(this.map);
         marker.setIcon(circleIcon);
+        this.clusteredMarkers.push(marker);
       }
       mcOptions = {
         gridSize: 50,
         maxZoom: 15
       };
-      this.markerClusterer = new MarkerClusterer(this.map, markerList, mcOptions);
+      this.markerClusterer = new MarkerClusterer(this.map, this.clusteredMarkers, mcOptions);
       return true;
     };
 
@@ -6409,7 +6433,7 @@
       maxZndex = google.maps.Marker.MAX_ZINDEX;
       zInd = maxZndex + 1;
       markerLatLng = new google.maps.LatLng(location.centerLatLng);
-      return overlay = new CartographerOverlay(map, location.centerLatLng, location.locationName);
+      return overlay = new CartographerOverlay(map, location.centerLatLng, location.locationFormattedAddress);
     };
 
     InfoSatelliteCartographer.prototype.showLegend = function() {
@@ -6486,7 +6510,7 @@
 
     LocationController.prototype.pubNoLocations = null;
 
-    LocationController.prototype.pvtNoLocaitons = null;
+    LocationController.prototype.pvtNoLocations = null;
 
     LocationController.prototype.pubMarkers = null;
 
@@ -6497,9 +6521,9 @@
       this.pubLocations = [];
       this.pvtLocations = [];
       this.pubNoLocations = [];
-      this.pvtNoLocaitons = [];
-      this.pubMarkers = [];
-      this.pvtMarkers = [];
+      this.pvtNoLocations = [];
+      this.pubMarkers = {};
+      this.pvtMarkers = {};
       _ref = genomes.public_genomes;
       for (pubGenomeId in _ref) {
         public_genome = _ref[pubGenomeId];
@@ -6508,43 +6532,55 @@
         } else {
           pubMarkerObj = this._parseLocation(public_genome);
           this.pubLocations.push(pubGenomeId);
+          public_genome.isolation_country = pubMarkerObj['locationCountry'];
+          public_genome.isolation_province_state = pubMarkerObj['locationProvinceState'];
+          public_genome.isolation_city = pubMarkerObj['locationCity'];
           pubMarker = new google.maps.Marker({
             position: pubMarkerObj['centerLatLng'],
             title: public_genome.uniquename,
             feature_id: pubGenomeId,
             uniquename: public_genome.uniquename,
-            location: pubMarkerObj['locationName'],
+            location: pubMarkerObj['locationFormattedAddress'],
+            isolation_country: pubMarkerObj['locationCountry'],
+            isolation_province_state: pubMarkerObj['locationProvinceState'],
+            isolation_city: pubMarkerObj['locationCity'],
             privacy: 'public'
           });
-          this.pubMarkers.push(pubMarker);
+          this.pubMarkers[pubGenomeId] = pubMarker;
         }
       }
       _ref1 = genomes.private_genomes;
       for (pvtGenomeId in _ref1) {
         private_genome = _ref1[pvtGenomeId];
         if (!((private_genome.isolation_location != null) && private_genome.isolation_location !== "")) {
-          this.pvtNoLocaitons.push(pvtGenomeId);
+          this.pvtNoLocations.push(pvtGenomeId);
         } else {
           pvtMarkerObj = this._parseLocation(private_genome);
           this.pvtLocations.push(pvtGenomeId);
+          private_genome.isolation_country = pvtMarkerObj['locationCountry'];
+          private_genome.isolation_province_state = pvtMarkerObj['locationProvinceState'];
+          private_genome.isolation_city = pvtMarkerObj['locationCity'];
           pvtMarker = new google.maps.Marker({
             position: pvtMarkerObj['centerLatLng'],
             title: private_genome.uniquename,
             feature_id: pvtGenomeId,
             uniquename: private_genome.uniquename,
-            location: pvtMarkerObj['locationName'],
+            location: pvtMarkerObj['locationFormattedAddress'],
+            isolation_country: pvtMarkerObj['locationCountry'],
+            isolation_province_state: pvtMarkerObj['locationProvinceState'],
+            isolation_city: pvtMarkerObj['locationCity'],
             privacy: 'private'
           });
-          this.pvtMarkers.push(pvtMarker);
+          this.pvtMarkers[pvtGenomeId] = pvtMarker;
         }
       }
       return true;
     };
 
     LocationController.prototype._parseLocation = function(genome) {
-      var centerLatLng, genomeLocation, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationName, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng;
+      var add_cmp, centerLatLng, genomeLocation, locationAddressComponents, locationCenter, locationCenterLat, locationCenterLng, locationCoordinates, locationFormattedAddress, locationViewPortNE, locationViewPortNELat, locationViewPortNELng, locationViewPortSW, locationViewPortSWLat, locationViewPortSWLng, markerBounds, markerObj, neLatLng, swLatLng, _i, _len, _ref, _ref1;
       genomeLocation = JSON.parse(genome.isolation_location[0]);
-      locationName = genomeLocation.formatted_address;
+      locationFormattedAddress = genomeLocation.formatted_address;
       locationCoordinates = genomeLocation.geometry;
       locationCenter = locationCoordinates.location;
       locationCenterLat = locationCenter.lat;
@@ -6555,12 +6591,27 @@
       locationViewPortNE = locationCoordinates.bounds.northeast;
       locationViewPortNELat = locationViewPortNE.lat;
       locationViewPortNELng = locationViewPortNE.lng;
+      locationAddressComponents = {
+        'country': void 0,
+        'administrative_area_level_1': void 0,
+        'locality': void 0
+      };
+      _ref = genomeLocation.address_components;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        add_cmp = _ref[_i];
+        if (_ref1 = add_cmp.types[0], __indexOf.call(Object.keys(locationAddressComponents), _ref1) >= 0) {
+          locationAddressComponents[add_cmp.types[0]] = add_cmp.long_name;
+        }
+      }
       centerLatLng = new google.maps.LatLng(locationCenterLat, locationCenterLng);
       swLatLng = new google.maps.LatLng(locationViewPortSWLat, locationViewPortSWLng);
       neLatLng = new google.maps.LatLng(locationViewPortNELat, locationViewPortNELng);
       markerBounds = new google.maps.LatLngBounds(swLatLng, neLatLng);
       markerObj = {};
-      markerObj['locationName'] = locationName;
+      markerObj['locationFormattedAddress'] = locationFormattedAddress;
+      markerObj['locationCountry'] = locationAddressComponents['country'];
+      markerObj['locationProvinceState'] = locationAddressComponents['administrative_area_level_1'];
+      markerObj['locationCity'] = locationAddressComponents['locality'];
       markerObj['centerLatLng'] = centerLatLng;
       markerObj['markerBounds'] = markerBounds;
       return markerObj;
@@ -6730,8 +6781,8 @@
       form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
       wrapper.append(form);
       submitEl = jQuery('<div class="row"></div>');
-      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success" id="submit-btn"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
-      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger" id="reset-btn"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
       submitButtonEl.click((function(_this) {
         return function(e) {
           e.preventDefault();
@@ -6755,6 +6806,7 @@
             g = _ref1[_j];
             _this.viewController.select(g, false);
           }
+          jQuery('#reset-map-view').click();
           return true;
         };
       })(this));
