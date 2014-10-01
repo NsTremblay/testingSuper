@@ -1,7 +1,7 @@
 ###
 
 
- File: intros_groups_geophy.coffee
+ File: intro_groups_geophy.coffee
  Desc: CoffeeScript for groups/geophy page intros
  Author: Jason Masih jason.masih@phac-aspc.gc.ca
  Date: Sept 9, 2014
