@@ -457,16 +457,7 @@ class TreeView extends ViewTemplate
     
     true # return success
     
-  # FUNC updateCSS
-  # Change CSS class for all genomes to match underlying genome properties
-  #
-  # PARAMS
-  # simple hash object with private and public list of genome Ids to update
-  # genomeController object
-  # 
-  # RETURNS
-  # boolean 
-  #
+  
 
   # Message to appear in intro for genome tree
   intro: ->
@@ -494,6 +485,17 @@ class TreeView extends ViewTemplate
       })
     treeIntro
 
+
+  # FUNC updateCSS
+  # Change CSS class for all genomes to match underlying genome properties
+  #
+  # PARAMS
+  # simple hash object with private and public list of genome Ids to update
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #
   updateCSS: (gset, genomes) ->
   
     # Retrieve genome objects for each in gset
