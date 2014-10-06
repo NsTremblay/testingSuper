@@ -3076,6 +3076,17 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
+      iNodes.append('rect').style("fill", "red").attr("width", function(n) {
+        if (n._children != null) {
+          if (n.num_leaves > 50) {
+            return 100;
+          } else {
+            return n.num_leaves * 2;
+          }
+        } else {
+          return 0;
+        }
+      }).attr("height", 10).attr("y", -4).attr("x", 4).attr("rx", 5);
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });

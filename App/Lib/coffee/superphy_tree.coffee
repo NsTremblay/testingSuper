@@ -349,6 +349,20 @@ class TreeView extends ViewTemplate
     # Append command elements to new internal nodes
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
+
+    # Appends bar.  Size of bar reflects number of genomes.
+    iNodes.append('rect')
+      .style("fill", "red")
+      .attr("width", (n) ->
+        if n._children?
+          if n.num_leaves > 50
+            100
+          else n.num_leaves * 2
+        else 0)
+      .attr("height", 10)
+      .attr("y", -4)
+      .attr("x", 4)
+      .attr("rx", 5)
       
     cmdBox = iNodes
       .append('text')
