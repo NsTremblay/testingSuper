@@ -335,7 +335,12 @@ class TreeView extends ViewTemplate
     nodesEnter
       .append("text")
       .attr("class","treelabel")
-      .attr("dx", ".6em")
+      .attr("x", (n) ->
+        if n._children?
+          if n.num_leaves > 50
+            110
+          else (n.num_leaves*2)+10
+        else "0.6em")
       .attr("dy", ".4em")
       .attr("text-anchor", "start")
       .text((d) ->
@@ -360,9 +365,9 @@ class TreeView extends ViewTemplate
           else n.num_leaves * 2
         else 0)
       .attr("height", 10)
-      .attr("y", -4)
+      .attr("y", -5)
       .attr("x", 4)
-      .attr("rx", 5)
+      .attr("rx", 0)
       
     cmdBox = iNodes
       .append('text')

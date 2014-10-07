@@ -3065,7 +3065,17 @@
           return viewController.redirect(d.genome);
         });
       }
-      nodesEnter.append("text").attr("class", "treelabel").attr("dx", ".6em").attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
+      nodesEnter.append("text").attr("class", "treelabel").attr("x", function(n) {
+        if (n._children != null) {
+          if (n.num_leaves > 50) {
+            return 110;
+          } else {
+            return (n.num_leaves * 2) + 10;
+          }
+        } else {
+          return "0.6em";
+        }
+      }).attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
         if (d.leaf) {
           return d.viewname;
         } else {
@@ -3086,7 +3096,7 @@
         } else {
           return 0;
         }
-      }).attr("height", 10).attr("y", -4).attr("x", 4).attr("rx", 5);
+      }).attr("height", 10).attr("y", -5).attr("x", 4).attr("rx", 0);
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });
