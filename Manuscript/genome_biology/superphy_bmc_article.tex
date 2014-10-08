@@ -1,0 +1,467 @@
+%% BioMed_Central_Tex_Template_v1.06
+%%                                      %
+%  bmc_article.tex            ver: 1.06 %
+%                                       %
+
+%%IMPORTANT: do not delete the first line of this template
+%%It must be present to enable the BMC Submission system to
+%%recognise this template!!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                     %%
+%%  LaTeX template for BioMed Central  %%
+%%     journal article submissions     %%
+%%                                     %%
+%%          <8 June 2012>              %%
+%%                                     %%
+%%                                     %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                                                 %%
+%% For instructions on how to fill out this Tex template           %%
+%% document please refer to Readme.html and the instructions for   %%
+%% authors page on the biomed central website                      %%
+%% http://www.biomedcentral.com/info/authors/                      %%
+%%                                                                 %%
+%% Please do not use \input{...} to include other tex files.       %%
+%% Submit your LaTeX manuscript as one .tex document.              %%
+%%                                                                 %%
+%% All additional figures and files should be attached             %%
+%% separately and not embedded in the \TeX\ document itself.       %%
+%%                                                                 %%
+%% BioMed Central currently use the MikTex distribution of         %%
+%% TeX for Windows) of TeX and LaTeX.  This is available from      %%
+%% http://www.miktex.org                                           %%
+%%                                                                 %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% additional documentclass options:
+%  [doublespacing]
+%  [linenumbers]   - put the line numbers on margins
+
+%%% loading packages, author definitions
+
+%\documentclass[twocolumn]{bmcart}% uncomment this for twocolumn layout and comment line below
+\documentclass{bmcart}
+
+%%% Load packages
+%\usepackage{amsthm,amsmath}
+%\RequirePackage{natbib}
+%\RequirePackage{hyperref}
+\usepackage[utf8]{inputenc} %unicode support
+%\usepackage[applemac]{inputenc} %applemac support if unicode package fails
+%\usepackage[latin1]{inputenc} %UNIX support if unicode package fails
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                             %%
+%%  If you wish to display your graphics for   %%
+%%  your own use using includegraphic or       %%
+%%  includegraphics, then comment out the      %%
+%%  following two lines of code.               %%
+%%  NB: These line *must* be included when     %%
+%%  submitting to BMC.                         %%
+%%  All figure files must be submitted as      %%
+%%  separate graphics through the BMC          %%
+%%  submission process, not included in the    %%
+%%  submitted article.                         %%
+%%                                             %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\def\includegraphic{}
+\def\includegraphics{}
+
+
+
+%%% Put your definitions there:
+\startlocaldefs
+\endlocaldefs
+
+
+%%% Begin ...
+\begin{document}
+
+%%% Start of article front matter
+\begin{frontmatter}
+
+\begin{fmbox}
+\dochead{Research}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Enter the title of your article here     %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\title{SuperPhy: Predictive genomics for priority food-borne pathogens}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Enter the authors here                   %%
+%%                                          %%
+%% Specify information, if available,       %%
+%% in the form:                             %%
+%%   <key>={<id1>,<id2>}                    %%
+%%   <key>=                                 %%
+%% Comment or delete the keys which are     %%
+%% not used. Repeat \author command as much %%
+%% as required.                             %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\author[
+   addressref={aff1},                   % id's of addresses, e.g. {aff1,aff2}
+   % corref={aff1},                       % id of corresponding address, if any
+   % noteref={n1},                        % id's of article notes, if any
+   email={matthew.whiteside@phac-aspc.gc.ca}   % email address
+]{\inits{MD}\fnm{Matthew D} \snm{Whiteside}}
+\author[
+   addressref={aff1},
+   email={chad.r.laing@phac-aspc.gc.ca}
+]{\inits{CR}\fnm{Chad R} \snm{Laing}}
+\author[
+  addressref={aff1},
+  email={akiff.manji@phac-aspc.gc.ca}
+]{\inits{A}\fnm{Akiff} \snm{Manji}}
+\author[
+  addressref={aff1},
+  email={peter.kruczkiewicz@phac-aspc.gc.ca}
+]{\inits{P}\fnm{Peter} \snm{Kruczkiewicz}}
+\author[
+  addressref={aff1},
+  email={eduardo.taboada@phac-aspc.gc.ca}
+]{\inits{EN}\fnm{Eduardo N} \snm{Taboada}}
+\author[
+  addressref={aff1},
+  email={vic.gannon@phac-aspc.gc.ca}
+]{\inits{VPJ}\fnm{Victor PJ} \snm{Gannon}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Enter the authors' addresses here        %%
+%%                                          %%
+%% Repeat \address commands as much as      %%
+%% required.                                %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\address[id=aff1]{%                           % unique id
+  \orgname{Laboratory for Foodborne Zoonoses, Public Health Agency of Canada}, % university, etc
+  \street{Twp Rd 9-1},                     %
+  \postcode{T1J 3Z4}                                % post or zip code
+  \city{Lethbridge},                              % city
+  \cny{Canada}                                    % country
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Enter short notes here                   %%
+%%                                          %%
+%% Short notes will be after addresses      %%
+%% on first page.                           %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{artnotes}
+%\note{Sample of title note}     % note to the article
+\note[id=n1]{Equal contributor} % note, connected to author
+\end{artnotes}
+
+\end{fmbox}% comment this for two column layout
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% The Abstract begins here                 %%
+%%                                          %%
+%% Please refer to the Instructions for     %%
+%% authors on http://www.biomedcentral.com  %%
+%% and include the section headings         %%
+%% accordingly for your article type.       %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{abstractbox}
+
+\begin{abstract} % abstract
+% \parttitle{First part title} %if any
+% \parttitle{Second part title} %if any
+
+Predictive genomics involves the translation of raw genome sequence data into an assessment of the phenotypes exhibited by the organism from which the genome came. These phenotypes can range from how well the organism is able to survive in a particular environment, such as high salt concentration, to
+whether the organism will cause severe human disease. Advances in DNA sequencing technology have created new opportunities in the field of predictive genomics, which has application to fields as diverse as clinical medicine and epidemiology, where performing real-time, genome-based surveillance and identification of phenotypic characteristics of pathogens may be life-saving and reduce costs to the health care system through improved diagnostic, prevention and treatment efforts.
+
+New analytical tools and infrastructure are needed to analyze the raw genomic data generated by current sequencing technology, a task that is recognized as a challenge worldwide. Significant progress has been made in the development of generic tools that are broadly applicable to all microorganisms; however, a fundamental missing component is the ability to analyze this data in the context of organism-specific knowledge. This accumulated knowledge from decades of research can provide a meaningful interpretation and context for the data. 
+
+In this study, we have implemented an online predictive genomics platform
+(http://lfz.corefacility.ca/superphy/) for Escherichia coli. The platform integrates the analyses tools and genome sequence data for all publicly available genomes and facilitate the upload of genome sequences from users under public or private settings. The predictive genomics platform provides near real-time analyses of thousands of genome sequences using novel computational approaches with results that are understandable and useful to a wide community, including those in the fields of clinical medicine, epidemiology, ecology, and evolution. Specific analyses include identification of: 1) virulence and antimicrobial resistance determinants 2) epidemiological associations between specific genotypes, biomarkers, geospatial distribution, host, source, and other meta-data; 3) statistically significant clade-specific genome markers (presence / absence of specific genomic regions, and single-nucleotide polymorphisms) in bacterial populations; 4) \textit{in silico} molecular type for traditional wet-lab typing methods including Shiga-toxin subtyping.
+
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% The keywords begin here                  %%
+%%                                          %%
+%% Put each keyword in separate \kwd{}.     %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{keyword}
+\kwd{sample}
+\kwd{article}
+\kwd{author}
+\end{keyword}
+
+% MSC classifications codes, if any
+%\begin{keyword}[class=AMS]
+%\kwd[Primary ]{}
+%\kwd{}
+%\kwd[; secondary ]{}
+%\end{keyword}
+
+\end{abstractbox}
+%
+%\end{fmbox}% uncomment this for twcolumn layout
+
+\end{frontmatter}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% The Main Body begins here                %%
+%%                                          %%
+%% Please refer to the instructions for     %%
+%% authors on:                              %%
+%% http://www.biomedcentral.com/info/authors%%
+%% and include the section headings         %%
+%% accordingly for your article type.       %%
+%%                                          %%
+%% See the Results and Discussion section   %%
+%% for details on how to create sub-sections%%
+%%                                          %%
+%% use \cite{...} to cite references        %%
+%%  \cite{koon} and                         %%
+%%  \cite{oreg,khar,zvai,xjon,schn,pond}    %%
+%%  \nocite{smith,marg,hunn,advi,koha,mouse}%%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%% start of article main body
+% <put your article body there>
+
+%%%%%%%%%%%%%%%%
+%% Background %%
+%%
+\section*{Introduction}
+Predictive genomics involves the translation of raw whole-genome sequence data into an assessment of the phenotypes exhibited by the organism from which the genome came. Whole-genome sequencing (WGS) of bacterial isolates is now routinely employed in outbreak investigations and basic science research [1,2]. Currently a small number of organizations are employing WGS as part of routine surveillance efforts [3,4], such as Public Health England in its comprehensive \textit{Salmonella} genome sequencing program. Obtaining WGS data and performing rudimentary comparative analyses is now commonplace, but meaningful interpretation of the raw data, also known as predictive genomics, lags considerably behind these perfunctory analyses [5].
+
+Bioinformaticians are able to use the requisite analytical tools and typically have access to the required computer infrastructure to compare genomes; however, they often lack the organism-specific knowledge necessary to meaningfully interpret the data for end-users. Conversely, microbiologists often have organism-specific knowledge but lack the bioinformatics wherewithal to meaningfully interpret the WGS data. This leads to fragmented workflows, group-specific data silos, the re-computation of common analyses, and failures to make important discoveries that would benefit the full community of users. As such, the enormous potential benefits of WGS are often not realized.
+
+%BEGIN -- we used these paragraphs in the BIOINFORMATICS 2014 paper, need to change
+Some efforts have been made to automate complex bioinformatics workflows, such as Taverna [6] and Galaxy [7], and while they are effective at simplifying the process, data are not integrated with these tools requiring users to transfer genome sequences from public or private databases and perform their own separate analyses. Likewise, online repositories of genome sequence data such as the National Center for Biotechnology Information (http://www.ncbi.nlm.nih.gov/) and the Genomes Online Database (http://www.genomesonline.org) provide a wealth of data, but are decoupled from an efficient analytical platform.
+
+Only recently have platforms emerged that attempt to provide both large-scale data storage and analyses. Relevant to microbiology, MicroScope and PATRIC provide broad pre-computed analyses for public genomes [8,9]. MicroScope, limited to publicly available closed and annotated genomes, contains information for >1100 genomes, while PATRIC, which has a gene annotation workflow and includes incomplete genomes, contains 10 000 genome sequences. Analyses compare the phylogeny, biological pathways and gene functions of bacterial species. Several of the analyses in MicroScope focus on comparing the genome structure. Both tools allow users to add genome-associated data such
+as transcriptomics results to aid in the understanding of gene functions.
+
+The Integrated Microbial Genomes (IMG) project is a combined genome annotation and analysis platform [10]. While more limited in scope in comparison to PATRIC or MicroScope, IMG allows the submission of genomic data by users. Other platforms are organism specific, such as Sybil; a platform for the comparative analyses of Streptococcus pneumoniae based on BLASTp searches [11]. Outside of these broad analyses suites, other large-scale genome tools tend to focus on a specific analysis. For example, several tools provide a global phylogenetic tree for public bacterial genomes [12–14]. 
+%-- END duplicated paragraphs
+
+Several large WGS data analyses platforms are currently being developed world-wide, such as the Global Microbial Identifier project. These platforms take a very comprehensive approach and will be extremely useful in providing broad-based genome sequence analyses for all microbes of public health interest. These large projects promise to revolutionize molecular epidemiology. However, the outputs of these platforms out of necessity are very generic in nature and must be interpreted by species-specific experts for the data to be of use in answering specific biological questions. A recent study on outbreak investigations using WGS listed a main obstacle of routine adoption as “a paucity of user-friendly and clinically focused bioinformatics platforms” [5]. While some components necessary for phenotypic prediction based on WGS data have been developed, there is currently no single integrated platform built to provide predictive genomic analyses for organism-specific end-users.
+
+This need to provide pathogen specific information in currently unmet, and required by workers in the field to interpret the WGS data. For example, the assessment of risk posed by Shiga-toxin producing \textit{E. coli} (STEC) is based in part on the serotype, type of toxin produced, virulence attributes such as LEE, seropathotype, lineage, SNP clade and other features. These attributes are not readily extracted from more broad-based comparative genomic analyses, where the primary objective is discrimination among organisms and not in their characterization. Recently, the international STEC working group stated that while they value single large genomics databases for all micro-organisms and generic genomic analyses tools, they also saw the need for species-specific BioTools to serve the needs of their community.
+
+We have previously developed Panseq, a suite of software tools that has allowed users to compare the genomes from a wide variety of bacteria [15]. Using this program, the differences in the accessory genome and the single nucleotide variation in the core genome can be obtained and used to construct highly discriminatory and robust phylogenies. This ability to discriminate among groups of strains in turn allows inferences to be made quickly about the clonal spread of organisms in space and time, information that is invaluable in identifying and controlling sources of infections in disease outbreaks and the most important routes of sporadic disease transmission. 
+
+While high resolution genotyping information is helpful in epidemiological studies, there is also a need for researchers, clinicians and policy makers to understand disease risks associated with specific clonal groups of pathogens. Even pathogens of the same species can differ significantly in the frequency that they are associated with disease, the specific disease syndromes with which they are associated, disease severity, resistance to biological, chemical and physical agents, and host reservoir.
+
+In this study we begin to bridge the gap between bioinformatics and organism-specific knowledge. SuperPhy incorporates discoveries from the decades of research on the pathogenesis and epidemiology of \textit{E. coli}, and translates the tremendous amount of data, genotypic and phenotypic, that have previously been generated into organism-specific knowledge. This knowledge is used in the SuperPhy predictive genomics platform to discover relationships among and about sub-groups that would otherwise be impossible. It allows non-bioinformaticians such as epidemiologists to analyze strains of interest in real-time, and receive understandable, interpreted output that can help to guide public health responses. SuperPhy allows researchers to quickly analyze new data against the background of all known \textit{E. coli}, allowing novel insights to be made rapidly.
+
+Additionally, SuperPhy provides rapid identification and whole-genome-based characterization, including \textit{in silico} typing, and the identification of anti-microbial resistance and virulence determinants, potential risk to human health and other phenotypic predictions. It can help recognize pathogen-specific disease clusters, and relate unknown isolates to known pathogroups.
+
+SuperPhy allows users to identify genotypic clusters that vary in virulence (genopathotypes) and the statistically supported genetic elements responsible for these phenotypic differences. Predictive genomics is currently the missing translation layer between the vast amounts of information that many platforms are capable of producing, and true biological knowledge in a specific domain that is needed to test hypotheses.
+
+
+\section*{Implementation}
+\subsection{Webserver creation and data management}
+%BEGIN -- Duplicated text from previous publication
+\subsubsection{Database Schema}
+Data are stored and accessed using the Chado schema [24] for PostgrSQL 9.2 (http://www.postgresql.org/), which is a highly scalable and fast relational database (up to 350000 read queries per second, supporting up to 64 computing cores). In Chado, ontologies are used to assign types to entities, attributes and relationships. This ontology-centric design makes Chado highly adaptable. By not defining types in relational layers and instead using a mutable controlled vocabulary to assign types, the schema can be easily re-used or changed over time without having to change the relational structure. Figure 3 shows the main entity types and corresponding relationship types that will be used in our predictive genomics server. Contig collection is the parent term assigned to any genome project uploaded by a user or obtained from an external database and is used to store global attributes. A collection term contains one or more DNA sequences that are labelled contig. The contig types can be assembled contigs or fully closed chromosomes or plasmids. Additional experimental features for each genome include: pan-genome loci, antimicrobial resistance genes, virulence factor alleles, and single nucleotide polymorphisms (SNPs) in the core genome. A predefined set of required and optional genome meta-data fields and permissible values have been selected from the minimum information about a genome sequence (MIGS) specification [25].
+
+\subsubsection{Privacy}
+The database has three privacy levels associated with every data entry, which govern use of the data. The three modes are: 1) `public', where the information is available to all upon upload; 2) `private', which allows the registered user only to use the uploaded information in online computation; and 3) `private until a specified date', after which the data type is automatically converted to `public', available for open access. Private data remains private, but can be combined with public data for user-specific analyses. Previous strain-groups and analyses are saved for future use, and all results from the analyses may be download for offline use.
+
+\subsubsection{User interface}
+The user-interface is created using HTML, CSS and Javascript within the Perl CGI::Application framework. The Phylogenetic tree graphical display is constructed with the Data Driven Documents (D3) JavaScript library [26] and manipulation of world maps with the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/). Group comparisons utilize the RStudio Shiny web application framework for R \cite{}.
+
+\subsubsection{Server hardware}
+SuperPhy is hosted on a server with X CPUs and Y GB of RAM, running Ubuntu Server 12.04 hosted at the National Microbiology Laboratory in Winnipeg, Canada.
+
+%-- END duplicated
+
+\subsection{Comparative genomic analyses}
+Our previous pan-genomic analyses tool, Panseq is used for the background comparative analyses \cite{laing_pan-genome_2010}. It iteratively adds new genomic sequences, and compares them to those already stored in the platform. This computational approach allows a continuous influx of new sequence data without large time or memory requirements. 
+
+\subsubsection{Tree construction}
+Phylogenies are created using a two-tier approach. Initially the presence / absence of the previously computed pan-genome is used to localize a new genome to a clade on the phylogenetic tree of all organisms with a fast neighbor-joining approach. The genomes in this clade and its parent are used to build a maximum likelihood tree with FastTreeMP under the GTR substitution model. Lastly, the ML tree of the clade and parent-clade of the new genome are combined with the phylogeny of all the genomes in the database using the supertree method of SuperTriplets \cite{ranwez_supertriplets:_2010}.
+
+
+\subsubsection{Virulence and anti-microbial resistance markers}
+The presence / absence of virulence and AMR genes, and single-nucleotide polymorphisms in shared genomic regions are automatically computed using Panseq. The non-redundant query set of AMR genes from the Comprehensive Antibiotic Resistance Database (CARD) \cite{mcarthur_comprehensive_2013} is used for \tetxtit{in silico}AMR determinant screening. All AMR genes are organized and stored in the database according to their Antibiotic Resistance Ontology annotation to aid in identifying the presence of different antimicrobial resistance mechanisms \cite{}[30]. The virulence gene database was constructed by obtaining all gene alleles of known virulence factors for E. coli from the Virulence Factor Database \cite{chen_vfdb_2011}, supplemented with additional virulence factors gleaned from the literature. 
+
+\subsubsection{Group comparisons}
+The statistical identification of markers that differ between groups based on both single nucleotide polymorphisms and the presence / absence of genomic loci is implemented using Fisher’s Exact Test from the R statistical package \cite{r_foundation_for_statistical_computing_r:_2005}. All single-nucleotide polymorphisms and genomic presence / absence data reside in the database, requiring only the retrieval and Ρ-value computation for the strains of interest, allowing for the real time analysis.
+
+\subsection{Predictive genomic analyses}
+
+The genome(s) of interest will are shown in the phylogenetic context of a tree containing all genome sequences in the platform, whereby the most closely related strains are immediately visible.
+
+The user community will provide constant feedback as the platform evolves. A process of continuous integration will ensure that new innovations are implemented and optimizations applied based on the feedback.
+
+
+
+\ldots
+% \subsection*{Sub-heading for section}
+% Text for this sub-heading \ldots
+% \subsubsection*{Sub-sub heading for section}
+% Text for this sub-sub-heading \ldots
+% \paragraph*{Sub-sub-sub heading for section}
+% Text for this sub-sub-sub-heading \ldots
+% In this section we examine the growth rate of the mean of $Z_0$, $Z_1$ and $Z_2$. In
+% addition, we examine a common modeling assumption and note the
+% importance of considering the tails of the extinction time $T_x$ in
+% studies of escape dynamics.
+% We will first consider the expected resistant population at $vT_x$ for
+% some $v>0$, (and temporarily assume $\alpha=0$)
+% %
+% \[
+%  E \bigl[Z_1(vT_x) \bigr]= E
+% \biggl[\mu T_x\int_0^{v\wedge
+% 1}Z_0(uT_x)
+% \exp \bigl(\lambda_1T_x(v-u) \bigr)\,du \biggr].
+% \]
+% %
+% If we assume that sensitive cells follow a deterministic decay
+% $Z_0(t)=xe^{\lambda_0 t}$ and approximate their extinction time as
+% $T_x\approx-\frac{1}{\lambda_0}\log x$, then we can heuristically
+% estimate the expected value as
+% %
+% \begin{eqnarray}\label{eqexpmuts}
+% E\bigl[Z_1(vT_x)\bigr] &=& \frac{\mu}{r}\log x
+% \int_0^{v\wedge1}x^{1-u}x^{({\lambda_1}/{r})(v-u)}\,du
+% \nonumber\\
+% &=& \frac{\mu}{r}x^{1-{\lambda_1}/{\lambda_0}v}\log x\int_0^{v\wedge
+% 1}x^{-u(1+{\lambda_1}/{r})}\,du
+% \nonumber\\
+% &=& \frac{\mu}{\lambda_1-\lambda_0}x^{1+{\lambda_1}/{r}v} \biggl(1-\exp \biggl[-(v\wedge1) \biggl(1+
+% \frac{\lambda_1}{r}\biggr)\log x \biggr] \biggr).
+% \end{eqnarray}
+% %
+% Thus we observe that this expected value is finite for all $v>0$ (also see \cite{koon,khar,zvai,xjon,marg}).
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                                          %%
+%% Backmatter begins here                   %%
+%%                                          %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{backmatter}
+
+\section*{Competing interests}
+  The authors declare that they have no competing interests.
+
+\section*{Author's contributions}
+    Text for this section \ldots
+
+\section*{Acknowledgements}
+  We would like to thank YOU, for reading this far.  \ldots
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                  The Bibliography                       %%
+%%                                                         %%
+%%  Bmc_mathpys.bst  will be used to                       %%
+%%  create a .BBL file for submission.                     %%
+%%  After submission of the .TEX file,                     %%
+%%  you will be prompted to submit your .BBL file.         %%
+%%                                                         %%
+%%                                                         %%
+%%  Note that the displayed Bibliography will not          %%
+%%  necessarily be rendered by Latex exactly as specified  %%
+%%  in the online Instructions for Authors.                %%
+%%                                                         %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% if your bibliography is in bibtex format, use those commands:
+\bibliographystyle{bmc-mathphys} % Style BST file
+\bibliography{superphy_bmc_article}      % Bibliography file (usually '*.bib' )
+
+% or include bibliography directly:
+% \begin{thebibliography}
+% \bibitem{b1}
+% \end{thebibliography}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               %%
+%% Figures                       %%
+%%                               %%
+%% NB: this is for captions and  %%
+%% Titles. All graphics must be  %%
+%% submitted separately and NOT  %%
+%% included in the Tex document  %%
+%%                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%
+%% Do not use \listoffigures as most will included as separate files
+
+\section*{Figures}
+  \begin{figure}[h!]
+  \caption{\csentence{Sample figure title.}
+      A short description of the figure content
+      should go here.}
+      \end{figure}
+
+\begin{figure}[h!]
+  \caption{\csentence{Sample figure title.}
+      Figure legend text.}
+      \end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               %%
+%% Tables                        %%
+%%                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Use of \listoftables is discouraged.
+%%
+\section*{Tables}
+\begin{table}[h!]
+\caption{Sample table title. This is where the description of the table should go.}
+      \begin{tabular}{cccc}
+        \hline
+           & B1  &B2   & B3\\ \hline
+        A1 & 0.1 & 0.2 & 0.3\\
+        A2 & ... & ..  & .\\
+        A3 & ..  & .   & .\\ \hline
+      \end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%                               %%
+%% Additional Files              %%
+%%                               %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section*{Additional Files}
+  \subsection*{Additional file 1 --- Sample additional file title}
+    Additional file descriptions text (including details of how to
+    view the file, if it is in a non-standard format or the file extension).  This might
+    refer to a multi-page table or a figure.
+
+  \subsection*{Additional file 2 --- Sample additional file title}
+    Additional file descriptions text.
+
+
+\end{backmatter}
+\end{document}

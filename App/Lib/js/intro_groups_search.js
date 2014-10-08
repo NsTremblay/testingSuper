@@ -3,10 +3,10 @@
 /*
 
 
- File: intro_example.coffee
- Desc: Coffeescript example for introJS
- Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
- Date: Sept 5, 2014
+ File: intro_groups_search.coffee
+ Desc: CoffeeScript for groups/search page intros
+ Author: Jason Masih jason.masih@phac-aspc.gc.ca
+ Date: Sept 9, 2014
  
 
  Name all files like this intro_[page_name].coffee
@@ -27,21 +27,23 @@
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
   startIntro = function() {
-    var intro;
+    var intro, opts;
+    opts = viewController.introOptions();
+    opts.splice(0, 0, {
+      intro: "Welcome to SuperPhy's Group Analyses page."
+    });
+    opts.splice(2, 0, {
+      element: document.querySelector('#genome-group-list1'),
+      intro: "This is the Group 1 box.",
+      position: 'bottom'
+    }, {
+      element: document.querySelector('#genome-group-list2'),
+      intro: "This is the Group 2 box.",
+      position: 'bottom'
+    });
     intro = introJs();
     intro.setOptions({
-      steps: [
-        {
-          intro: "Hello world! "
-        }, {
-          element: document.querySelector('.title_part1'),
-          intro: "This is a tooltip. ",
-          position: 'right'
-        }, {
-          element: document.querySelector('#genome_selection_window'),
-          intro: "Ok, wasn't that fun? "
-        }
-      ]
+      steps: opts
     });
     intro.start();
     return false;

@@ -3,10 +3,10 @@
 /*
 
 
- File: intro_example.coffee
- Desc: Coffeescript example for introJS
- Author: Matt Whiteside matthew.whiteside@phac-aspc.gc.ca
- Date: Sept 5, 2014
+ File: intro_genes_lookup.coffee
+ Desc: Coffeescript for genes/lookup page intros
+ Author: Jason Masih jason.masih@phac-aspc.gc.ca
+ Date: Sept 22, 2014
  
 
  Name all files like this intro_[page_name].coffee
@@ -32,14 +32,13 @@
     intro.setOptions({
       steps: [
         {
-          intro: "Hello world! "
+          element: document.querySelector('#vfgenes'),
+          intro: "Use this to look up detailed information about individual virulence factors.  The search bar can be used to filter virulence factors in the list.",
+          position: 'top'
         }, {
-          element: document.querySelector('.title_part1'),
-          intro: "This is a tooltip. ",
-          position: 'right'
-        }, {
-          element: document.querySelector('#genome_selection_window'),
-          intro: "Ok, wasn't that fun? "
+          element: document.querySelector('#amrgenes'),
+          intro: "Use this to look up detailed information about individual antimicrobial resistance genes. The search bar can be used to filter antimicrobial resistance factors in the list.",
+          position: 'top'
         }
       ]
     });

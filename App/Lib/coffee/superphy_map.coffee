@@ -87,7 +87,7 @@ class MapView extends TableView
       divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
       tableElem = jQuery("<table />").appendTo(divElem)
       mapManifest = jQuery('.map-manifest').append(divElem)
-      toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
+      toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
 
       that = @
       toggleUnknownLocations.change( () ->
@@ -127,6 +127,37 @@ class MapView extends TableView
     console.log 'MapView update elapsed time: ' +ft
     
     true # return success
+
+  # Message to appear in intro for genome map
+  intro: ->
+    mapIntro = []
+    mapIntro.push({
+      element: document.querySelector('.map-canvas')
+      intro: "This map displays the location of genomes around the world."
+      position: 'right'
+      })
+    mapIntro.push({
+      element: document.querySelector('.map-search-location')
+      intro: "Input a location here to see genomes found in that region."
+      position: 'right'
+      })
+    mapIntro.push({
+      element: document.querySelector('#genome_map3')
+      intro: "The genomes corresponding to locations on the map are shown here.  Check the boxes to select each genome."
+      position: 'left'
+      })
+    mapIntro.push({
+      element: document.querySelector('#unknown-location')
+      intro: "Check 'Unknown Locations Off' if you want to remove unknown locations from the list (these don't appear on the map)."
+      position: 'left'
+      })
+    mapIntro.push({
+      element: document.querySelector('#reset-map-view')
+      intro: "Clicking this will reset the map view."
+      position: 'bottom'
+      })
+    mapIntro
+
 
   _appendHeader: (genomes) ->
     

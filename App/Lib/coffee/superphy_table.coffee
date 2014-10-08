@@ -39,6 +39,7 @@ class TableView extends ViewTemplate
   elName: 'genome_table'
   
   locusData: null
+
   
   # FUNC update
   # Update genome table view
@@ -79,6 +80,16 @@ class TableView extends ViewTemplate
     
     true # return success
   
+  # Message to appear in intro for genome table
+  intro: ->
+    tableIntro = []
+    tableIntro.push({
+      element: document.querySelector('#genome_table1')
+      intro: "These are the names of the genomes in the database.  Check the boxes to select each genome."
+      position: 'right'
+      })
+    tableIntro
+
   _template: (tmpl, values) ->
     
     html = null
