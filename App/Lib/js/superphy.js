@@ -3066,12 +3066,8 @@
         });
       }
       nodesEnter.append("text").attr("class", "treelabel").attr("x", function(n) {
-        if (n._children != null) {
-          if (n.num_leaves > 50) {
-            return 110;
-          } else {
-            return (n.num_leaves * 2) + 10;
-          }
+        if (!n.leaf) {
+          return 20 * (Math.log(n.num_leaves)) + 10;
         } else {
           return "0.6em";
         }
@@ -3086,13 +3082,9 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      iNodes.append('rect').style("fill", "red").attr("width", function(n) {
+      svgNodes.append('rect').style("fill", "red").attr("width", function(n) {
         if (n._children != null) {
-          if (n.num_leaves > 50) {
-            return 100;
-          } else {
-            return n.num_leaves * 2;
-          }
+          return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
         }

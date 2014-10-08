@@ -336,11 +336,10 @@ class TreeView extends ViewTemplate
       .append("text")
       .attr("class","treelabel")
       .attr("x", (n) ->
-        if n._children?
-          if n.num_leaves > 50
-            110
-          else (n.num_leaves*2)+10
-        else "0.6em")
+        if !n.leaf
+          20*(Math.log(n.num_leaves))+10
+        else
+          "0.6em")
       .attr("dy", ".4em")
       .attr("text-anchor", "start")
       .text((d) ->
@@ -356,13 +355,11 @@ class TreeView extends ViewTemplate
     num = @elNum-1
 
     # Appends bar.  Size of bar reflects number of genomes.
-    iNodes.append('rect')
+    svgNodes.append('rect')
       .style("fill", "red")
       .attr("width", (n) ->
         if n._children?
-          if n.num_leaves > 50
-            100
-          else n.num_leaves * 2
+          20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 10)
       .attr("y", -5)
@@ -450,7 +447,7 @@ class TreeView extends ViewTemplate
     nodesExit.select("rect")
       .attr("width", 1e-6)
       .attr("height",1e-6)
-      
+
     # Reinsert previous root on top 
     # (when filter is applied the viewable tree can
     # have a root that does not match global tree root. 
