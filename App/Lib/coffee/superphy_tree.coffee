@@ -357,6 +357,7 @@ class TreeView extends ViewTemplate
     # Appends bar.  Size of bar reflects number of genomes.
     svgNodes.append('rect')
       .style("fill", "red")
+      .attr("class", "genomeMeter")
       .attr("width", (n) ->
         if n._children?
           20*(Math.log(n.num_leaves))
@@ -364,8 +365,11 @@ class TreeView extends ViewTemplate
       .attr("height", 10)
       .attr("y", -5)
       .attr("x", 4)
-      .attr("rx", 0)
-      
+
+    svgNodes.append('rect')
+      .attr("class", "metaMeter")
+      .
+
     cmdBox = iNodes
       .append('text')
       .attr("class","treeicon expandcollapse")
@@ -419,6 +423,12 @@ class TreeView extends ViewTemplate
   
     nodesUpdate.select("circle")
         .attr("r", 4)
+
+    nodesUpdate.selectAll("rect.genomeMeter")
+      .attr("width", (n) ->
+        if n._children?
+          20*(Math.log(n.num_leaves))
+        else 0)
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")

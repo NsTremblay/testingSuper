@@ -3082,13 +3082,13 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      svgNodes.append('rect').style("fill", "red").attr("width", function(n) {
+      svgNodes.append('rect').style("fill", "red").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
           return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
         }
-      }).attr("height", 10).attr("y", -5).attr("x", 4).attr("rx", 0);
+      }).attr("height", 10).attr("y", -5).attr("x", 4);
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });
@@ -3105,6 +3105,13 @@
         return "translate(" + d.y + "," + d.x + ")";
       });
       nodesUpdate.select("circle").attr("r", 4);
+      nodesUpdate.selectAll("rect.genomeMeter").attr("width", function(n) {
+        if (n._children != null) {
+          return 20 * (Math.log(n.num_leaves));
+        } else {
+          return 0;
+        }
+      });
       nodesUpdate.filter(function(d) {
         return !d.children;
       }).select("text").style("fill-opacity", 1);
