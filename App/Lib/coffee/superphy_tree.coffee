@@ -366,9 +366,7 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-    svgNodes.append('rect')
-      .attr("class", "metaMeter")
-      .
+
 
     cmdBox = iNodes
       .append('text')
