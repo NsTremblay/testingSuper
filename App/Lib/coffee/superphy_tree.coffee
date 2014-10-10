@@ -355,7 +355,8 @@ class TreeView extends ViewTemplate
     num = @elNum-1
 
     # Appends bar.  Size of bar reflects number of genomes.
-    svgNodes.append('rect')
+    svgNodes
+      .append('rect')
       .style("fill", "red")
       .attr("class", "genomeMeter")
       .attr("width", (n) ->
@@ -365,8 +366,6 @@ class TreeView extends ViewTemplate
       .attr("height", 10)
       .attr("y", -5)
       .attr("x", 4)
-
-
 
     cmdBox = iNodes
       .append('text')
@@ -379,7 +378,7 @@ class TreeView extends ViewTemplate
     cmdBox.on("click", (d) -> 
       viewController.viewAction(num, 'expand_collapse', d, @.parentNode) 
     )
-    
+
     # # select/unselect clade
     # if @style is 'select'
       # # select
