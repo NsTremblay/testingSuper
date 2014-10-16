@@ -1560,7 +1560,7 @@
 
   GenomeController = (function() {
     function GenomeController(public_genomes, private_genomes, subset) {
-      var i, newPri, newPub, _i, _len;
+      var count, g, i, id, newPri, newPub, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       this.public_genomes = public_genomes;
       this.private_genomes = private_genomes;
       if (subset == null) {
@@ -1582,6 +1582,16 @@
       }
       this.update();
       this.filter();
+      _ref = this.public_genomes;
+      for (g = _j = 0, _len1 = _ref.length; _j < _len1; g = ++_j) {
+        id = _ref[g];
+        count = this.countMeta(g);
+      }
+      _ref1 = this.private_genomes;
+      for (g = _k = 0, _len2 = _ref1.length; _k < _len2; g = ++_k) {
+        id = _ref1[g];
+        count = this.countMeta(g);
+      }
       this.genomeSetId = 0;
     }
 
@@ -2655,6 +2665,47 @@
       return true;
     };
 
+    SelectionView.prototype.countMeta = function(genome) {
+      var count;
+      count = {};
+      if (genome.serotype != null) {
+        count[serotype][genome.serotype] = 1;
+      } else {
+        count[serotype][genome.serotype] = 0;
+      }
+      if (genome.isolation_host != null) {
+        count[isolation_host][genome.isolation_host] = 1;
+      } else {
+        count[isolation_host][genome.isolation_host] = 0;
+      }
+      if (genome.isolation_source != null) {
+        count[isolation_source][genome.isolation_source] = 1;
+      } else {
+        count[isolation_source][genome.isolation_source] = 0;
+      }
+      if (genome.isolation_date != null) {
+        count[isolation_date][genome.isolation_date] = 1;
+      } else {
+        count[isolation_date][genome.isolation_date] = 0;
+      }
+      if (genome.syndrome != null) {
+        count[syndrome][genome.syndrome] = 1;
+      } else {
+        count[syndrome][genome.syndrome] = 0;
+      }
+      if (genome.stx1_subtype != null) {
+        count[stx1_subtype][genome.stx1_subtype] = 1;
+      } else {
+        count[stx1_subtype][genome.stx1_subtype] = 0;
+      }
+      if (genome.stx2_subtype != null) {
+        count[stx2_subtype][genome.stx2_subtype] = 1;
+      } else {
+        count[stx2_subtype][genome.stx2_subtype] = 0;
+      }
+      return count;
+    };
+
     SelectionView.prototype.add = function(genomeSet, genomes) {
       var listElem;
       listElem = jQuery("#" + this.elID);
@@ -2809,6 +2860,8 @@
    */
 
   TreeView = (function(_super) {
+    var counts;
+
     __extends(TreeView, _super);
 
     function TreeView(parentElem, style, elNum, treeArgs) {
@@ -2918,6 +2971,8 @@
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
+
+    counts = {};
 
     TreeView.prototype.update = function(genomes, sourceNode) {
       var cladeSelect, cmdBox, currLeaves, dt, elID, iNodes, id, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;

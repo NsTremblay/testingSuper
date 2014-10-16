@@ -161,6 +161,8 @@ class TreeView extends ViewTemplate
   
   x_factor: 1.5
   y_factor: 5000
+
+  counts = {}
   
   # FUNC update
   # Update genome tree view
@@ -866,7 +868,7 @@ class TreeView extends ViewTemplate
           ld = @locusData.locusNode(node.name)
           node.viewname += ld[0]
           node.assignedGroup = ld[1] if ld[1]?
-        
+
       else
         # Mask filtered node
         node.hidden = true
