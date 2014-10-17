@@ -861,6 +861,10 @@ class TreeView extends ViewTemplate
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
+        counts = genomes.countMeta(g)
+
+        console.log(Object.keys(counts))
+
         
         # Append locus data
         # This will overwrite assignedGroup

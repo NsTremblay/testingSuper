@@ -1721,6 +1721,46 @@
       return true;
     };
 
+    GenomeController.prototype.countMeta = function(genome) {
+      var count;
+      count = {};
+      if (genome.isolation_host != null) {
+        count[isolation_host][genome.isolation_host] = 1;
+      } else {
+        count[isolation_host][genome.isolation_host] = 0;
+      }
+      if (genome.isolation_source != null) {
+        count[isolation_source][genome.isolation_source] = 1;
+      } else {
+        count[isolation_source][genome.isolation_source] = 0;
+      }
+      if (genome.isolation_date != null) {
+        count[isolation_date][genome.isolation_date] = 1;
+      } else {
+        count[isolation_date][genome.isolation_date] = 0;
+      }
+      if (genome.syndrome != null) {
+        count[syndrome][genome.syndrome] = 1;
+      } else {
+        count[syndrome][genome.syndrome] = 0;
+      }
+      if (genome.stx1_subtype != null) {
+        count[stx1_subtype][genome.stx1_subtype] = 1;
+      } else {
+        count[stx1_subtype][genome.stx1_subtype] = 0;
+      }
+      if (genome.stx2_subtype != null) {
+        count[stx2_subtype][genome.stx2_subtype] = 1;
+      } else {
+        count[stx2_subtype][genome.stx2_subtype] = 0;
+      }
+      return count;
+    };
+
+    GenomeController.prototype.addMetaCounts = function(g, counts) {
+      return alert(Object.keys(counts));
+    };
+
     GenomeController.prototype.filterBySelection = function() {
       var g, gset, i, pubGenomeIds, pvtGenomeIds, _i, _j, _len, _len1, _ref, _ref1;
       gset = this.selected();
@@ -2665,47 +2705,6 @@
       return true;
     };
 
-    SelectionView.prototype.countMeta = function(genome) {
-      var count;
-      count = {};
-      if (genome.serotype != null) {
-        count[serotype][genome.serotype] = 1;
-      } else {
-        count[serotype][genome.serotype] = 0;
-      }
-      if (genome.isolation_host != null) {
-        count[isolation_host][genome.isolation_host] = 1;
-      } else {
-        count[isolation_host][genome.isolation_host] = 0;
-      }
-      if (genome.isolation_source != null) {
-        count[isolation_source][genome.isolation_source] = 1;
-      } else {
-        count[isolation_source][genome.isolation_source] = 0;
-      }
-      if (genome.isolation_date != null) {
-        count[isolation_date][genome.isolation_date] = 1;
-      } else {
-        count[isolation_date][genome.isolation_date] = 0;
-      }
-      if (genome.syndrome != null) {
-        count[syndrome][genome.syndrome] = 1;
-      } else {
-        count[syndrome][genome.syndrome] = 0;
-      }
-      if (genome.stx1_subtype != null) {
-        count[stx1_subtype][genome.stx1_subtype] = 1;
-      } else {
-        count[stx1_subtype][genome.stx1_subtype] = 0;
-      }
-      if (genome.stx2_subtype != null) {
-        count[stx2_subtype][genome.stx2_subtype] = 1;
-      } else {
-        count[stx2_subtype][genome.stx2_subtype] = 0;
-      }
-      return count;
-    };
-
     SelectionView.prototype.add = function(genomeSet, genomes) {
       var listElem;
       listElem = jQuery("#" + this.elID);
@@ -3478,6 +3477,8 @@
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
+          counts = genomes.countMeta(g);
+          console.log(Object.keys(counts));
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];

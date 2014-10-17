@@ -1984,6 +1984,55 @@ class GenomeController
     
     true
     
+
+   # FUNC countMeta
+  # Creates count object for each genome and sets values to 1 if
+  # metadata type values exist
+  #
+  # PARAMS
+  # genome
+  # 
+  # RETURNS
+  # count
+  #
+  countMeta: (genome) ->
+
+    count = {}
+
+    if genome.serotype?
+      count[serotype][genome.serotype] = 1
+    else 
+      count[serotype][genome.serotype] = 0
+    if genome.isolation_host?
+      count[isolation_host][genome.isolation_host] = 1
+    else 
+      count[isolation_host][genome.isolation_host] = 0
+    if genome.isolation_source?
+      count[isolation_source][genome.isolation_source] = 1
+    else 
+      count[isolation_source][genome.isolation_source] = 0
+    if genome.isolation_date?
+      count[isolation_date][genome.isolation_date] = 1
+    else 
+      count[isolation_date][genome.isolation_date] = 0
+    if genome.syndrome?
+      count[syndrome][genome.syndrome] = 1
+    else 
+      count[syndrome][genome.syndrome] = 0
+    if genome.stx1_subtype?
+      count[stx1_subtype][genome.stx1_subtype] = 1
+    else 
+      count[stx1_subtype][genome.stx1_subtype] = 0
+    if genome.stx2_subtype?
+      count[stx2_subtype][genome.stx2_subtype] = 1
+    else 
+      count[stx2_subtype][genome.stx2_subtype] = 0
+
+    count
+
+  addMetaCounts: (g,counts) ->
+    alert(Object.keys(counts))
+    
   # FUNC filterBySelection
   # Updates the pubVisable and pvtVisable id lists to match currently selected genomes
   # If no genomes are selected, resets filter to show all genomes
@@ -2862,52 +2911,8 @@ class SelectionView
     true
 
 
-  # FUNC countMeta
-  # Creates count object for each genome and sets values to 1 if
-  # metadata type values exist
-  #
-  # PARAMS
-  # genome
-  # 
-  # RETURNS
-  # count
-  #
-  countMeta: (genome) ->
 
-    count = {}
 
-    if genome.serotype?
-      count[serotype][genome.serotype] = 1
-    else 
-      count[serotype][genome.serotype] = 0
-    if genome.isolation_host?
-      count[isolation_host][genome.isolation_host] = 1
-    else 
-      count[isolation_host][genome.isolation_host] = 0
-    if genome.isolation_source?
-      count[isolation_source][genome.isolation_source] = 1
-    else 
-      count[isolation_source][genome.isolation_source] = 0
-    if genome.isolation_date?
-      count[isolation_date][genome.isolation_date] = 1
-    else 
-      count[isolation_date][genome.isolation_date] = 0
-    if genome.syndrome?
-      count[syndrome][genome.syndrome] = 1
-    else 
-      count[syndrome][genome.syndrome] = 0
-    if genome.stx1_subtype?
-      count[stx1_subtype][genome.stx1_subtype] = 1
-    else 
-      count[stx1_subtype][genome.stx1_subtype] = 0
-    if genome.stx2_subtype?
-      count[stx2_subtype][genome.stx2_subtype] = 1
-    else 
-      count[stx2_subtype][genome.stx2_subtype] = 0
-
-    count
-
-    
   # FUNC add
   # Add single genome to list view
   # Should be faster than calling update (which will reinsert all genomes)
