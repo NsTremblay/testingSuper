@@ -136,6 +136,10 @@ sub loadFasta {
 		#my @aro = grep(!/^ARO:1000001/, @tmp);
 		
 		my ($spc) = ($seq->desc() =~ m/ \[(.+)\]$/);
+
+		unless(defined $spc){
+			$spc = "E. coli";
+		}
 		
 		die "Sequence $id has no defined species" unless $spc;
 		
