@@ -1560,7 +1560,7 @@
 
   GenomeController = (function() {
     function GenomeController(public_genomes, private_genomes, subset) {
-      var count, g, i, id, newPri, newPub, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+      var countPri, countPub, g, i, id, newPri, newPub, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       this.public_genomes = public_genomes;
       this.private_genomes = private_genomes;
       if (subset == null) {
@@ -1585,12 +1585,12 @@
       _ref = this.public_genomes;
       for (g = _j = 0, _len1 = _ref.length; _j < _len1; g = ++_j) {
         id = _ref[g];
-        count = this.countMeta(g);
+        countPub = this.countMeta(g);
       }
       _ref1 = this.private_genomes;
       for (g = _k = 0, _len2 = _ref1.length; _k < _len2; g = ++_k) {
         id = _ref1[g];
-        count = this.countMeta(g);
+        countPri = this.countMeta(g);
       }
       this.genomeSetId = 0;
     }
@@ -1722,43 +1722,79 @@
     };
 
     GenomeController.prototype.countMeta = function(genome) {
-      var count;
+      var a, attributes, count, _i, _len;
       count = {};
-      if (genome.isolation_host != null) {
-        count[isolation_host][genome.isolation_host] = 1;
-      } else {
-        count[isolation_host][genome.isolation_host] = 0;
+      attributes = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+      for (_i = 0, _len = attributes.length; _i < _len; _i++) {
+        a = attributes[_i];
+        count[a] = {};
       }
-      if (genome.isolation_source != null) {
-        count[isolation_source][genome.isolation_source] = 1;
-      } else {
-        count[isolation_source][genome.isolation_source] = 0;
-      }
-      if (genome.isolation_date != null) {
-        count[isolation_date][genome.isolation_date] = 1;
-      } else {
-        count[isolation_date][genome.isolation_date] = 0;
-      }
-      if (genome.syndrome != null) {
-        count[syndrome][genome.syndrome] = 1;
-      } else {
-        count[syndrome][genome.syndrome] = 0;
-      }
-      if (genome.stx1_subtype != null) {
-        count[stx1_subtype][genome.stx1_subtype] = 1;
-      } else {
-        count[stx1_subtype][genome.stx1_subtype] = 0;
-      }
-      if (genome.stx2_subtype != null) {
-        count[stx2_subtype][genome.stx2_subtype] = 1;
-      } else {
-        count[stx2_subtype][genome.stx2_subtype] = 0;
-      }
+      count['serotype'][genome.serotype] = 1;
+      count['isolation_host'][genome.isolation_host] = 1;
+      count['isolation_source'][genome.isolation_source] = 1;
+      count['isolation_date'][genome.isolation_date] = 1;
+      count['syndrome'][genome.syndrome] = 1;
+      count['stx1_subtype'][genome.stx1_subtype] = 1;
+      count['stx2_subtype'][genome.stx2_subtype] = 1;
       return count;
     };
 
     GenomeController.prototype.addMetaCounts = function(g, counts) {
-      return alert(Object.keys(counts));
+      var genomeCount, k, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2, _ref3, _ref4, _ref5, _ref6, _results;
+      genomeCount = this.countMeta(g);
+      _ref = Object.keys(counts['serotype']);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        k = _ref[_i];
+        if (k === g.serotype) {
+          counts['serotype'][g.serotype]++;
+        }
+      }
+      _ref1 = Object.keys(counts['isolation_host']);
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        k = _ref1[_j];
+        if (k === g.isolation_host) {
+          counts['isolation_host'][g.isolation_host]++;
+        }
+      }
+      _ref2 = Object.keys(counts['isolation_source']);
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        k = _ref2[_k];
+        if (k === g.isolation_source) {
+          counts['isolation_source'][g.isolation_source]++;
+        }
+      }
+      _ref3 = Object.keys(counts['isolation_date']);
+      for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+        k = _ref3[_l];
+        if (k === g.isolation_date) {
+          counts['isolation_date'][g.isolation_date]++;
+        }
+      }
+      _ref4 = Object.keys(counts['syndrome']);
+      for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
+        k = _ref4[_m];
+        if (k === g.syndrome) {
+          counts['syndrome'][g.syndrome]++;
+        }
+      }
+      _ref5 = Object.keys(counts['stx1_subtype']);
+      for (_n = 0, _len5 = _ref5.length; _n < _len5; _n++) {
+        k = _ref5[_n];
+        if (k === g.stx1_subtype) {
+          counts['stx1_subtype'][g.stx1_subtype]++;
+        }
+      }
+      _ref6 = Object.keys(counts['stx2_subtype']);
+      _results = [];
+      for (_o = 0, _len6 = _ref6.length; _o < _len6; _o++) {
+        k = _ref6[_o];
+        if (k === g.stx2_subtype) {
+          _results.push(counts['stx2_subtype'][g.stx2_subtype]++);
+        } else {
+          _results.push(void 0);
+        }
+      }
+      return _results;
     };
 
     GenomeController.prototype.filterBySelection = function() {
@@ -3478,7 +3514,7 @@
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
           counts = genomes.countMeta(g);
-          console.log(Object.keys(counts));
+          console.log(counts['isolation_host']);
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];

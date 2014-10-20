@@ -863,7 +863,7 @@ class TreeView extends ViewTemplate
         node.hidden   = false
         counts = genomes.countMeta(g)
 
-        console.log(Object.keys(counts))
+        console.log(counts['isolation_host'])
 
         
         # Append locus data

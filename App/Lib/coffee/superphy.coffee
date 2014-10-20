@@ -1844,10 +1844,10 @@ class GenomeController
       
     # Initialize the metadata count
     for id,g in @public_genomes
-      count = @countMeta(g) 
+      countPub = @countMeta(g) 
 
     for id,g in @private_genomes
-      count = @countMeta(g)
+      countPri = @countMeta(g)
     
     # Track changes in the set of visible genomes through
     # incremental ID
@@ -1998,40 +1998,43 @@ class GenomeController
   countMeta: (genome) ->
 
     count = {}
+    attributes = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
+    for a in attributes
+      count[a] = {}
 
-    if genome.serotype?
-      count[serotype][genome.serotype] = 1
-    else 
-      count[serotype][genome.serotype] = 0
-    if genome.isolation_host?
-      count[isolation_host][genome.isolation_host] = 1
-    else 
-      count[isolation_host][genome.isolation_host] = 0
-    if genome.isolation_source?
-      count[isolation_source][genome.isolation_source] = 1
-    else 
-      count[isolation_source][genome.isolation_source] = 0
-    if genome.isolation_date?
-      count[isolation_date][genome.isolation_date] = 1
-    else 
-      count[isolation_date][genome.isolation_date] = 0
-    if genome.syndrome?
-      count[syndrome][genome.syndrome] = 1
-    else 
-      count[syndrome][genome.syndrome] = 0
-    if genome.stx1_subtype?
-      count[stx1_subtype][genome.stx1_subtype] = 1
-    else 
-      count[stx1_subtype][genome.stx1_subtype] = 0
-    if genome.stx2_subtype?
-      count[stx2_subtype][genome.stx2_subtype] = 1
-    else 
-      count[stx2_subtype][genome.stx2_subtype] = 0
+    count['serotype'][genome.serotype] = 1
+    count['isolation_host'][genome.isolation_host] = 1
+    count['isolation_source'][genome.isolation_source] = 1
+    count['isolation_date'][genome.isolation_date] = 1
+    count['syndrome'][genome.syndrome] = 1
+    count['stx1_subtype'][genome.stx1_subtype] = 1
+    count['stx2_subtype'][genome.stx2_subtype] = 1
 
     count
 
   addMetaCounts: (g,counts) ->
-    alert(Object.keys(counts))
+    genomeCount = @countMeta(g)
+    for k in Object.keys(counts['serotype'])
+      if k == g.serotype
+        counts['serotype'][g.serotype]++
+    for k in Object.keys(counts['isolation_host'])
+      if k == g.isolation_host
+        counts['isolation_host'][g.isolation_host]++
+    for k in Object.keys(counts['isolation_source'])
+      if k == g.isolation_source
+        counts['isolation_source'][g.isolation_source]++
+    for k in Object.keys(counts['isolation_date'])
+      if k == g.isolation_date
+        counts['isolation_date'][g.isolation_date]++
+    for k in Object.keys(counts['syndrome'])
+      if k == g.syndrome
+        counts['syndrome'][g.syndrome]++
+    for k in Object.keys(counts['stx1_subtype'])
+      if k == g.stx1_subtype
+        counts['stx1_subtype'][g.stx1_subtype]++
+    for k in Object.keys(counts['stx2_subtype'])
+      if k == g.stx2_subtype
+        counts['stx2_subtype'][g.stx2_subtype]++
     
   # FUNC filterBySelection
   # Updates the pubVisable and pvtVisable id lists to match currently selected genomes
