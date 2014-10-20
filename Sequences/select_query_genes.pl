@@ -138,7 +138,7 @@ sub loadFasta {
 		my ($spc) = ($seq->desc() =~ m/ \[(.+)\]$/);
 
 		unless(defined $spc){
-			$spc = "E. coli";
+			$spc = "Escherichia coli";
 		}
 		
 		die "Sequence $id has no defined species" unless $spc;
