@@ -163,6 +163,7 @@ class TreeView extends ViewTemplate
   y_factor: 5000
 
   counts = {}
+
   
   # FUNC update
   # Update genome tree view
@@ -380,6 +381,8 @@ class TreeView extends ViewTemplate
     cmdBox.on("click", (d) -> 
       viewController.viewAction(num, 'expand_collapse', d, @.parentNode) 
     )
+
+    console.log(counts['isolation_host'])
 
     # # select/unselect clade
     # if @style is 'select'
@@ -828,7 +831,7 @@ class TreeView extends ViewTemplate
   _sync: (genomes) ->
     
     # Need to keep handle on the true root
-    @root = @_syncNode(@trueRoot, genomes, 0)
+    @root = @_syncNode(@trueRoot, genomes, 0, counts)
     
     # Check if genome set has changed
     if (genomes.genomeSetId != @currentGenomeSet) || @resetWindow
@@ -840,7 +843,7 @@ class TreeView extends ViewTemplate
 
     true
     
-  _syncNode: (node, genomes, sumLengths) ->
+  _syncNode: (node, genomes, sumLengths, count) ->
     
     # Restore to original branch length
     # Compute cumulative branch length
@@ -863,8 +866,6 @@ class TreeView extends ViewTemplate
         node.hidden   = false
         counts = genomes.countMeta(g)
 
-        console.log(counts['isolation_host'])
-
         
         # Append locus data
         # This will overwrite assignedGroup
@@ -886,7 +887,7 @@ class TreeView extends ViewTemplate
       # Iterate through the original children array
       children = []
       for c in node.daycare
-        u = @_syncNode(c, genomes, node.sum_length)
+        u = @_syncNode(c, genomes, node.sum_length, counts)
         
         unless u.hidden
           children.push(u)

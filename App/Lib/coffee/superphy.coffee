@@ -2002,39 +2002,31 @@ class GenomeController
     for a in attributes
       count[a] = {}
 
-    count['serotype'][genome.serotype] = 1
-    count['isolation_host'][genome.isolation_host] = 1
-    count['isolation_source'][genome.isolation_source] = 1
-    count['isolation_date'][genome.isolation_date] = 1
-    count['syndrome'][genome.syndrome] = 1
-    count['stx1_subtype'][genome.stx1_subtype] = 1
-    count['stx2_subtype'][genome.stx2_subtype] = 1
+    count['serotype'][genome.serotype] = 0
+    count['isolation_host'][genome.isolation_host] = 0
+    count['isolation_source'][genome.isolation_source] = 0
+    count['isolation_date'][genome.isolation_date] = 0
+    count['syndrome'][genome.syndrome] = 0
+    count['stx1_subtype'][genome.stx1_subtype] = 0
+    count['stx2_subtype'][genome.stx2_subtype] = 0
+
+    if count['serotype'][genome.serotype]?
+      count['serotype'][genome.serotype]++
+    if count['isolation_host'][genome.isolation_host]?  
+      count['isolation_host'][genome.isolation_host]++
+    if count['isolation_source'][genome.isolation_source]?
+      count['isolation_source'][genome.isolation_source]++
+    if count['isolation_date'][genome.isolation_date]?
+      count['isolation_date'][genome.isolation_date]++
+    if count['syndrome'][genome.syndrome]?
+      count['syndrome'][genome.syndrome]++
+    if count['stx1_subtype'][genome.stx1_subtype]?
+      count['stx1_subtype'][genome.stx1_subtype]++
+    if count['stx2_subtype'][genome.stx2_subtype]?
+      count['stx2_subtype'][genome.stx2_subtype]++
 
     count
 
-  addMetaCounts: (g,counts) ->
-    genomeCount = @countMeta(g)
-    for k in Object.keys(counts['serotype'])
-      if k == g.serotype
-        counts['serotype'][g.serotype]++
-    for k in Object.keys(counts['isolation_host'])
-      if k == g.isolation_host
-        counts['isolation_host'][g.isolation_host]++
-    for k in Object.keys(counts['isolation_source'])
-      if k == g.isolation_source
-        counts['isolation_source'][g.isolation_source]++
-    for k in Object.keys(counts['isolation_date'])
-      if k == g.isolation_date
-        counts['isolation_date'][g.isolation_date]++
-    for k in Object.keys(counts['syndrome'])
-      if k == g.syndrome
-        counts['syndrome'][g.syndrome]++
-    for k in Object.keys(counts['stx1_subtype'])
-      if k == g.stx1_subtype
-        counts['stx1_subtype'][g.stx1_subtype]++
-    for k in Object.keys(counts['stx2_subtype'])
-      if k == g.stx2_subtype
-        counts['stx2_subtype'][g.stx2_subtype]++
     
   # FUNC filterBySelection
   # Updates the pubVisable and pvtVisable id lists to match currently selected genomes
