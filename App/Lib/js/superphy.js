@@ -1559,6 +1559,8 @@
    */
 
   GenomeController = (function() {
+    var a, counter, mtypesDisplayed, _i, _len;
+
     function GenomeController(public_genomes, private_genomes, subset) {
       var countPri, countPub, g, i, id, newPri, newPub, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       this.public_genomes = public_genomes;
@@ -1631,6 +1633,15 @@
 
     GenomeController.prototype.filtered = 0;
 
+    counter = {};
+
+    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+
+    for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
+      a = mtypesDisplayed[_i];
+      counter[a] = {};
+    }
+
     GenomeController.prototype.update = function() {
       var g, id, ma, _ref, _ref1;
       _ref = this.public_genomes;
@@ -1651,7 +1662,7 @@
     };
 
     GenomeController.prototype.filter = function(searchTerms) {
-      var g, i, pubGenomeIds, pvtGenomeIds, results, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      var g, i, pubGenomeIds, pvtGenomeIds, results, _j, _k, _len1, _len2, _ref, _ref1, _ref2, _ref3;
       if (searchTerms == null) {
         searchTerms = null;
       }
@@ -1673,12 +1684,12 @@
             g = _ref1[i];
             g.visible = false;
           }
-          for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
-            g = pubGenomeIds[_i];
+          for (_j = 0, _len1 = pubGenomeIds.length; _j < _len1; _j++) {
+            g = pubGenomeIds[_j];
             this.public_genomes[g].visible = true;
           }
-          for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
-            g = pvtGenomeIds[_j];
+          for (_k = 0, _len2 = pvtGenomeIds.length; _k < _len2; _k++) {
+            g = pvtGenomeIds[_k];
             this.private_genomes[g].visible = true;
           }
           this.pubVisible = pubGenomeIds.sort((function(_this) {
@@ -1721,47 +1732,48 @@
       return true;
     };
 
-    GenomeController.prototype.countMeta = function(genome) {
-      var a, attributes, count, _i, _len;
-      count = {};
-      attributes = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
-      for (_i = 0, _len = attributes.length; _i < _len; _i++) {
-        a = attributes[_i];
-        count[a] = {};
+    GenomeController.prototype.countMeta = function(genome, count) {
+      count = counter;
+      if (counter['serotype'][genome.serotype] != null) {
+        counter['serotype'][genome.serotype]++;
+      } else {
+        counter['serotype'][genome.serotype] = 1;
       }
-      count['serotype'][genome.serotype] = 0;
-      count['isolation_host'][genome.isolation_host] = 0;
-      count['isolation_source'][genome.isolation_source] = 0;
-      count['isolation_date'][genome.isolation_date] = 0;
-      count['syndrome'][genome.syndrome] = 0;
-      count['stx1_subtype'][genome.stx1_subtype] = 0;
-      count['stx2_subtype'][genome.stx2_subtype] = 0;
-      if (count['serotype'][genome.serotype] != null) {
-        count['serotype'][genome.serotype]++;
+      if (counter['isolation_host'][genome.isolation_host] != null) {
+        counter['isolation_host'][genome.isolation_host]++;
+      } else {
+        counter['isolation_host'][genome.isolation_host] = 1;
       }
-      if (count['isolation_host'][genome.isolation_host] != null) {
-        count['isolation_host'][genome.isolation_host]++;
+      if (counter['isolation_source'][genome.isolation_source] != null) {
+        counter['isolation_source'][genome.isolation_source]++;
+      } else {
+        counter['isolation_source'][genome.isolation_source] = 1;
       }
-      if (count['isolation_source'][genome.isolation_source] != null) {
-        count['isolation_source'][genome.isolation_source]++;
+      if (counter['isolation_date'][genome.isolation_date] != null) {
+        counter['isolation_date'][genome.isolation_date]++;
+      } else {
+        counter['isolation_date'][genome.isolation_date] = 1;
       }
-      if (count['isolation_date'][genome.isolation_date] != null) {
-        count['isolation_date'][genome.isolation_date]++;
+      if (counter['syndrome'][genome.syndrome] != null) {
+        counter['syndrome'][genome.syndrome]++;
+      } else {
+        counter['syndrome'][genome.syndrome] = 1;
       }
-      if (count['syndrome'][genome.syndrome] != null) {
-        count['syndrome'][genome.syndrome]++;
+      if (counter['stx1_subtype'][genome.stx1_subtype] != null) {
+        counter['stx1_subtype'][genome.stx1_subtype]++;
+      } else {
+        counter['stx1_subtype'][genome.stx1_subtype] = 1;
       }
-      if (count['stx1_subtype'][genome.stx1_subtype] != null) {
-        count['stx1_subtype'][genome.stx1_subtype]++;
+      if (counter['stx2_subtype'][genome.stx2_subtype] != null) {
+        counter['stx2_subtype'][genome.stx2_subtype]++;
+      } else {
+        counter['stx2_subtype'][genome.stx2_subtype] = 1;
       }
-      if (count['stx2_subtype'][genome.stx2_subtype] != null) {
-        count['stx2_subtype'][genome.stx2_subtype]++;
-      }
-      return count;
+      return counter;
     };
 
     GenomeController.prototype.filterBySelection = function() {
-      var g, gset, i, pubGenomeIds, pvtGenomeIds, _i, _j, _len, _len1, _ref, _ref1;
+      var g, gset, i, pubGenomeIds, pvtGenomeIds, _j, _k, _len1, _len2, _ref, _ref1;
       gset = this.selected();
       pubGenomeIds = gset["public"];
       pvtGenomeIds = gset["private"];
@@ -1779,13 +1791,13 @@
           g = _ref1[i];
           g.visible = false;
         }
-        for (_i = 0, _len = pubGenomeIds.length; _i < _len; _i++) {
-          g = pubGenomeIds[_i];
+        for (_j = 0, _len1 = pubGenomeIds.length; _j < _len1; _j++) {
+          g = pubGenomeIds[_j];
           this.public_genomes[g].visible = true;
           this.public_genomes[g].isSelected = false;
         }
-        for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
-          g = pvtGenomeIds[_j];
+        for (_k = 0, _len2 = pvtGenomeIds.length; _k < _len2; _k++) {
+          g = pvtGenomeIds[_k];
           this.private_genomes[g].visible = true;
           this.private_genomes[g].isSelected = false;
         }
@@ -1804,15 +1816,15 @@
     };
 
     GenomeController.prototype._runFilter = function(searchTerms) {
-      var firstTerm, id, pubGenomeIds, pubSet, pvtGenomeIds, pvtSet, regex, t, _i, _len;
+      var firstTerm, id, pubGenomeIds, pubSet, pvtGenomeIds, pvtSet, regex, t, _j, _len1;
       if (!typeIsArray(searchTerms)) {
         throw new SuperphyError('Invalid argument. GenomeController method _runFilter() requires array of search term objects as input.');
       }
       pubGenomeIds = Object.keys(this.public_genomes);
       pvtGenomeIds = Object.keys(this.private_genomes);
       firstTerm = true;
-      for (_i = 0, _len = searchTerms.length; _i < _len; _i++) {
-        t = searchTerms[_i];
+      for (_j = 0, _len1 = searchTerms.length; _j < _len1; _j++) {
+        t = searchTerms[_j];
         if (firstTerm) {
           if (t.op != null) {
             throw new SuperphyError("Invalid filter input. First search term object cannot contain an operator property 'op'.");
@@ -1849,11 +1861,11 @@
           pubSet = [];
           if (t.dataField === 'isolation_date') {
             pubSet = (function() {
-              var _j, _len1, _ref, _results;
+              var _k, _len2, _ref, _results;
               _ref = Object.keys(this.public_genomes);
               _results = [];
-              for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-                id = _ref[_j];
+              for (_k = 0, _len2 = _ref.length; _k < _len2; _k++) {
+                id = _ref[_k];
                 if (this.passDate(this.public_genomes[id], t.before, t.date)) {
                   _results.push(id);
                 }
@@ -1861,11 +1873,11 @@
               return _results;
             }).call(this);
             pvtSet = (function() {
-              var _j, _len1, _ref, _results;
+              var _k, _len2, _ref, _results;
               _ref = Object.keys(this.private_genomes);
               _results = [];
-              for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-                id = _ref[_j];
+              for (_k = 0, _len2 = _ref.length; _k < _len2; _k++) {
+                id = _ref[_k];
                 if (this.passDate(this.private_genomes[id], t.before, t.date)) {
                   _results.push(id);
                 }
@@ -1875,11 +1887,11 @@
           } else {
             regex = new RegExp(escapeRegExp(t.searchTerm), "i");
             pubSet = (function() {
-              var _j, _len1, _ref, _results;
+              var _k, _len2, _ref, _results;
               _ref = Object.keys(this.public_genomes);
               _results = [];
-              for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-                id = _ref[_j];
+              for (_k = 0, _len2 = _ref.length; _k < _len2; _k++) {
+                id = _ref[_k];
                 if (this.match(this.public_genomes[id], t.dataField, regex, t.negate)) {
                   _results.push(id);
                 }
@@ -1887,11 +1899,11 @@
               return _results;
             }).call(this);
             pvtSet = (function() {
-              var _j, _len1, _ref, _results;
+              var _k, _len2, _ref, _results;
               _ref = Object.keys(this.private_genomes);
               _results = [];
-              for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-                id = _ref[_j];
+              for (_k = 0, _len2 = _ref.length; _k < _len2; _k++) {
+                id = _ref[_k];
                 if (this.match(this.private_genomes[id], t.dataField, regex, t.negate)) {
                   _results.push(id);
                 }
@@ -1904,10 +1916,10 @@
         } else {
           if (t.dataField === 'isolation_date') {
             pubSet = (function() {
-              var _j, _len1, _results;
+              var _k, _len2, _results;
               _results = [];
-              for (_j = 0, _len1 = pubGenomeIds.length; _j < _len1; _j++) {
-                id = pubGenomeIds[_j];
+              for (_k = 0, _len2 = pubGenomeIds.length; _k < _len2; _k++) {
+                id = pubGenomeIds[_k];
                 if (this.passDate(this.public_genomes[id], t.before, t.date)) {
                   _results.push(id);
                 }
@@ -1915,10 +1927,10 @@
               return _results;
             }).call(this);
             pvtSet = (function() {
-              var _j, _len1, _results;
+              var _k, _len2, _results;
               _results = [];
-              for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
-                id = pvtGenomeIds[_j];
+              for (_k = 0, _len2 = pvtGenomeIds.length; _k < _len2; _k++) {
+                id = pvtGenomeIds[_k];
                 if (this.passDate(this.private_genomes[id], t.before, t.date)) {
                   _results.push(id);
                 }
@@ -1930,10 +1942,10 @@
           } else {
             regex = new RegExp(escapeRegExp(t.searchTerm), "i");
             pubSet = (function() {
-              var _j, _len1, _results;
+              var _k, _len2, _results;
               _results = [];
-              for (_j = 0, _len1 = pubGenomeIds.length; _j < _len1; _j++) {
-                id = pubGenomeIds[_j];
+              for (_k = 0, _len2 = pubGenomeIds.length; _k < _len2; _k++) {
+                id = pubGenomeIds[_k];
                 if (this.match(this.public_genomes[id], t.dataField, regex, t.negate)) {
                   _results.push(id);
                 }
@@ -1941,10 +1953,10 @@
               return _results;
             }).call(this);
             pvtSet = (function() {
-              var _j, _len1, _results;
+              var _k, _len2, _results;
               _results = [];
-              for (_j = 0, _len1 = pvtGenomeIds.length; _j < _len1; _j++) {
-                id = pvtGenomeIds[_j];
+              for (_k = 0, _len2 = pvtGenomeIds.length; _k < _len2; _k++) {
+                id = pvtGenomeIds[_k];
                 if (this.match(this.private_genomes[id], t.dataField, regex, t.negate)) {
                   _results.push(id);
                 }
@@ -2009,11 +2021,11 @@
     };
 
     GenomeController.prototype.union = function(arr1, arr2) {
-      var arr, i, _i, _len, _ref;
+      var arr, i, _j, _len1, _ref;
       arr = [];
       _ref = arr1.concat(arr2);
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        i = _ref[_i];
+      for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+        i = _ref[_j];
         if (__indexOf.call(arr, i) < 0) {
           arr.push(i);
         }
@@ -2022,12 +2034,12 @@
     };
 
     GenomeController.prototype.label = function(genome, visibleMeta, joinStr) {
-      var lab, na, t, _i, _len, _ref, _ref1, _ref2;
+      var lab, na, t, _j, _len1, _ref, _ref1, _ref2;
       na = 'NA';
       lab = [genome.displayname];
       _ref = this.mtypes;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        t = _ref[_i];
+      for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+        t = _ref[_j];
         if (t !== 'accession') {
           if (visibleMeta[t]) {
             lab.push(((_ref1 = genome[t]) != null ? _ref1 : [na]).join(' '));
@@ -2125,11 +2137,11 @@
     };
 
     GenomeController.prototype.assignGroup = function(gset, grpNum) {
-      var cls, g, _i, _j, _len, _len1, _ref, _ref1;
+      var cls, g, _j, _k, _len1, _len2, _ref, _ref1;
       if ((gset["public"] != null) && typeof gset["public"] !== 'undefined') {
         _ref = gset["public"];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          g = _ref[_i];
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          g = _ref[_j];
           this.public_genomes[g].assignedGroup = grpNum;
           cls = 'genome_group' + grpNum;
           this.public_genomes[g].cssClass = cls;
@@ -2137,8 +2149,8 @@
       }
       if ((gset["private"] != null) && typeof gset["private"] !== 'undefined') {
         _ref1 = gset["private"];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          g = _ref1[_j];
+        for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+          g = _ref1[_k];
           this.private_genomes[g].assignedGroup = grpNum;
           cls = 'genome_group' + grpNum;
           this.private_genomes[g].cssClass = cls;
@@ -2148,19 +2160,19 @@
     };
 
     GenomeController.prototype.deleteGroup = function(gset) {
-      var g, _i, _j, _len, _len1, _ref, _ref1;
+      var g, _j, _k, _len1, _len2, _ref, _ref1;
       if ((gset["public"] != null) && typeof gset["public"] !== 'undefined') {
         _ref = gset["public"];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          g = _ref[_i];
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          g = _ref[_j];
           this.public_genomes[g].assignedGroup = null;
           this.public_genomes[g].cssClass = null;
         }
       }
       if ((gset["private"] != null) && typeof gset["public"] !== 'undefined') {
         _ref1 = gset["private"];
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          g = _ref1[_j];
+        for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+          g = _ref1[_k];
           this.private_genomes[g].assignedGroup = null;
           this.private_genomes[g].cssClass = null;
         }
@@ -2207,10 +2219,10 @@
       pub = [];
       pvt = [];
       pub = (function() {
-        var _i, _len, _results;
+        var _j, _len1, _results;
         _results = [];
-        for (_i = 0, _len = gids.length; _i < _len; _i++) {
-          g = gids[_i];
+        for (_j = 0, _len1 = gids.length; _j < _len1; _j++) {
+          g = gids[_j];
           if (this.publicRegexp.test(g)) {
             _results.push(g);
           }
@@ -2218,10 +2230,10 @@
         return _results;
       }).call(this);
       pvt = (function() {
-        var _i, _len, _results;
+        var _j, _len1, _results;
         _results = [];
-        for (_i = 0, _len = gids.length; _i < _len; _i++) {
-          g = gids[_i];
+        for (_j = 0, _len1 = gids.length; _j < _len1; _j++) {
+          g = gids[_j];
           if (this.privateRegexp.test(g)) {
             _results.push(g);
           }
@@ -2303,11 +2315,11 @@
       var genomes, id, pubSet, pvtSet, regex;
       regex = new RegExp(escapeRegExp(searchStr), "i");
       pubSet = (function() {
-        var _i, _len, _ref, _results;
+        var _j, _len1, _ref, _results;
         _ref = this.pubVisible;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          id = _ref[_i];
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          id = _ref[_j];
           if (this.match(this.public_genomes[id], 'displayname', regex, false)) {
             _results.push(id);
           }
@@ -2315,11 +2327,11 @@
         return _results;
       }).call(this);
       pvtSet = (function() {
-        var _i, _len, _ref, _results;
+        var _j, _len1, _ref, _results;
         _ref = this.pvtVisible;
         _results = [];
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          id = _ref[_i];
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          id = _ref[_j];
           if (this.match(this.private_genomes[id], 'displayname', regex, false)) {
             _results.push(id);
           }
@@ -2858,8 +2870,6 @@
    */
 
   TreeView = (function(_super) {
-    var counts;
-
     __extends(TreeView, _super);
 
     function TreeView(parentElem, style, elNum, treeArgs) {
@@ -2969,8 +2979,6 @@
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
-
-    counts = {};
 
     TreeView.prototype.update = function(genomes, sourceNode) {
       var cladeSelect, cmdBox, currLeaves, dt, elID, iNodes, id, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
@@ -3142,13 +3150,32 @@
           return 0;
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
+      svgNodes.append('rect').style("fill", "green").attr("class", "metaMeter").attr("width", function(n) {
+        if (n._children != null) {
+          return n.metaCount['isolation_host']['Bos taurus (cow)'];
+        } else {
+          return 0;
+        }
+      }).attr("height", 10).attr("y", 5).attr("x", 4);
+      svgNodes.append('rect').style("fill", "blue").attr("class", "metaMeter").attr("width", function(n) {
+        if (n._children != null) {
+          return n.metaCount['isolation_host']['Environmental source'];
+        } else {
+          return 0;
+        }
+      }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+        if (n._children != null) {
+          return n.metaCount['isolation_host']['Bos taurus (cow)'] + 4;
+        } else {
+          return 4;
+        }
+      });
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });
       cmdBox.on("click", function(d) {
         return viewController.viewAction(num, 'expand_collapse', d, this.parentNode);
       });
-      console.log(counts['isolation_host']);
       if (this.style === 'select') {
         cladeSelect = iNodes.append('rect').attr("class", "selectClade").attr("width", 8).attr("height", 8).attr("y", -4).attr("x", -25);
         cladeSelect.on("click", function(d) {
@@ -3456,6 +3483,8 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
+      var counts;
+      counts = {};
       this.root = this._syncNode(this.trueRoot, genomes, 0, counts);
       if ((genomes.genomeSetId !== this.currentGenomeSet) || this.resetWindow) {
         this._expansionLayout();
@@ -3466,7 +3495,7 @@
       return true;
     };
 
-    TreeView.prototype._syncNode = function(node, genomes, sumLengths, count) {
+    TreeView.prototype._syncNode = function(node, genomes, sumLengths, counts) {
       var c, child, children, g, isExpanded, ld, u, _i, _len, _ref;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
@@ -3477,7 +3506,7 @@
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
-          counts = genomes.countMeta(g);
+          genomes.countMeta(g, counts);
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];
@@ -3489,6 +3518,9 @@
           node.hidden = true;
         }
       } else {
+        node.metaCount = {};
+        node.metaCount = $.extend(true, {}, counts);
+        console.log(node.metaCount['isolation_host']);
         isExpanded = true;
         if (node._children != null) {
           isExpanded = false;

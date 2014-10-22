@@ -161,9 +161,6 @@ class TreeView extends ViewTemplate
   
   x_factor: 1.5
   y_factor: 5000
-
-  counts = {}
-
   
   # FUNC update
   # Update genome tree view
@@ -370,6 +367,33 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
+    svgNodes
+      .append('rect')
+      .style("fill", "green")
+      .attr("class", "metaMeter")
+      .attr("width", (n) ->
+        if n._children?
+          n.metaCount['isolation_host']['Bos taurus (cow)']
+        else 0)
+      .attr("height", 10)
+      .attr("y", 5)
+      .attr("x", 4)
+
+    svgNodes
+      .append('rect')
+      .style("fill", "blue")
+      .attr("class", "metaMeter")
+      .attr("width", (n) ->
+        if n._children?
+          n.metaCount['isolation_host']['Environmental source']
+        else 0)
+      .attr("height", 10)
+      .attr("y", 5)
+      .attr("x", (n) ->
+        if n._children?
+          n.metaCount['isolation_host']['Bos taurus (cow)'] + 4
+        else 4)
+
     cmdBox = iNodes
       .append('text')
       .attr("class","treeicon expandcollapse")
@@ -382,7 +406,6 @@ class TreeView extends ViewTemplate
       viewController.viewAction(num, 'expand_collapse', d, @.parentNode) 
     )
 
-    console.log(counts['isolation_host'])
 
     # # select/unselect clade
     # if @style is 'select'
@@ -431,6 +454,7 @@ class TreeView extends ViewTemplate
         if n._children?
           20*(Math.log(n.num_leaves))
         else 0)
+
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
@@ -829,9 +853,13 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   _sync: (genomes) ->
+
+    counts = {}
     
+
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0, counts)
+
     
     # Check if genome set has changed
     if (genomes.genomeSetId != @currentGenomeSet) || @resetWindow
@@ -843,7 +871,7 @@ class TreeView extends ViewTemplate
 
     true
     
-  _syncNode: (node, genomes, sumLengths, count) ->
+  _syncNode: (node, genomes, sumLengths, counts) ->
     
     # Restore to original branch length
     # Compute cumulative branch length
@@ -864,7 +892,7 @@ class TreeView extends ViewTemplate
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
-        counts = genomes.countMeta(g)
+        genomes.countMeta(g, counts)
 
         
         # Append locus data
@@ -879,6 +907,11 @@ class TreeView extends ViewTemplate
         node.hidden = true
        
     else
+
+      node.metaCount = {}
+      node.metaCount = $.extend(true, {}, counts)
+      console.log(node.metaCount['isolation_host'])
+
       # Internal node
       
       isExpanded = true
