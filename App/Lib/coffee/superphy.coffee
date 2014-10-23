@@ -1896,10 +1896,6 @@ class GenomeController
   
   filtered: 0
 
-  counter = {}
-  mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
-  for a in mtypesDisplayed
-    counter[a] = {}
   
    
   # FUNC update
@@ -2002,31 +1998,29 @@ class GenomeController
   #
   countMeta: (genome, count) ->
 
-    count = counter
+    if count['serotype'][genome.serotype]?
+      count['serotype'][genome.serotype]++
+    else count['serotype'][genome.serotype] = 1
+    if count['isolation_host'][genome.isolation_host]?  
+      count['isolation_host'][genome.isolation_host]++
+    else count['isolation_host'][genome.isolation_host] = 1
+    if count['isolation_source'][genome.isolation_source]?
+      count['isolation_source'][genome.isolation_source]++
+    else count['isolation_source'][genome.isolation_source] = 1
+    if count['isolation_date'][genome.isolation_date]?
+      count['isolation_date'][genome.isolation_date]++
+    else count['isolation_date'][genome.isolation_date] = 1
+    if count['syndrome'][genome.syndrome]?
+      count['syndrome'][genome.syndrome]++
+    else count['syndrome'][genome.syndrome] = 1
+    if count['stx1_subtype'][genome.stx1_subtype]?
+      count['stx1_subtype'][genome.stx1_subtype]++
+    else count['stx1_subtype'][genome.stx1_subtype] = 1
+    if count['stx2_subtype'][genome.stx2_subtype]?
+      count['stx2_subtype'][genome.stx2_subtype]++
+    else count['stx2_subtype'][genome.stx2_subtype] = 1
 
-    if counter['serotype'][genome.serotype]?
-      counter['serotype'][genome.serotype]++
-    else counter['serotype'][genome.serotype] = 1
-    if counter['isolation_host'][genome.isolation_host]?  
-      counter['isolation_host'][genome.isolation_host]++
-    else counter['isolation_host'][genome.isolation_host] = 1
-    if counter['isolation_source'][genome.isolation_source]?
-      counter['isolation_source'][genome.isolation_source]++
-    else counter['isolation_source'][genome.isolation_source] = 1
-    if counter['isolation_date'][genome.isolation_date]?
-      counter['isolation_date'][genome.isolation_date]++
-    else counter['isolation_date'][genome.isolation_date] = 1
-    if counter['syndrome'][genome.syndrome]?
-      counter['syndrome'][genome.syndrome]++
-    else counter['syndrome'][genome.syndrome] = 1
-    if counter['stx1_subtype'][genome.stx1_subtype]?
-      counter['stx1_subtype'][genome.stx1_subtype]++
-    else counter['stx1_subtype'][genome.stx1_subtype] = 1
-    if counter['stx2_subtype'][genome.stx2_subtype]?
-      counter['stx2_subtype'][genome.stx2_subtype]++
-    else counter['stx2_subtype'][genome.stx2_subtype] = 1
-
-    counter
+    count
 
     
   # FUNC filterBySelection

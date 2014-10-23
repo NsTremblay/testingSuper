@@ -161,6 +161,7 @@ class TreeView extends ViewTemplate
   
   x_factor: 1.5
   y_factor: 5000
+
   
   # FUNC update
   # Update genome tree view
@@ -369,7 +370,7 @@ class TreeView extends ViewTemplate
 
     svgNodes
       .append('rect')
-      .style("fill", "green")
+      .style("fill", "blue")
       .attr("class", "metaMeter")
       .attr("width", (n) ->
         if n._children?
@@ -378,21 +379,6 @@ class TreeView extends ViewTemplate
       .attr("height", 10)
       .attr("y", 5)
       .attr("x", 4)
-
-    svgNodes
-      .append('rect')
-      .style("fill", "blue")
-      .attr("class", "metaMeter")
-      .attr("width", (n) ->
-        if n._children?
-          n.metaCount['isolation_host']['Environmental source']
-        else 0)
-      .attr("height", 10)
-      .attr("y", 5)
-      .attr("x", (n) ->
-        if n._children?
-          n.metaCount['isolation_host']['Bos taurus (cow)'] + 4
-        else 4)
 
     cmdBox = iNodes
       .append('text')
@@ -455,6 +441,11 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
+    nodesUpdate.selectAll("rect.metaMeter")
+      .attr("width", (n) ->
+        if n._children?
+          n.metaCount['isolation_host']['Bos taurus (cow)']
+        else 0)
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
@@ -854,8 +845,11 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
 
+
     counts = {}
-    
+    mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
+    for a in mtypesDisplayed
+      counts[a] = {}
 
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0, counts)
@@ -909,8 +903,8 @@ class TreeView extends ViewTemplate
     else
 
       node.metaCount = {}
-      node.metaCount = $.extend(true, {}, counts)
-      console.log(node.metaCount['isolation_host'])
+      for k, v of counts
+        node.metaCount[k] = v
 
       # Internal node
       
