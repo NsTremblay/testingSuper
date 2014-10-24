@@ -1364,17 +1364,18 @@ sub cache_contig_id {
 	
 }
 
-=head2 cache_contig_collection_id
+=head2 cache_cache_snp_genome_id
 
 =over
 
 =item Usage
 
-  $obj->cache_contig_collection_id(genome_feature_id, $is_public, $uniquename, [$access_category])
+  $obj->cache_cache_snp_genome_id_id(genome_feature_id, $is_public, $uniquename, [$access_category])
 
 =item Function
 
-Saves the new contig collections uploaded in this run in memory
+Saves the new contig collections uploaded in this run in memory. New snp alignment entries, tree
+entries will be added for these genomes
 
 =item Returns
 
@@ -1391,7 +1392,7 @@ Nothing
 
 =cut
 
-sub cache_contig_collection_id {
+sub cache_snp_genome_id {
 	my ($self, $genome_feature_id, $is_public, $uniquename, $access_category) = @_;
 
 	my $cache_name = 'snp_genome';
@@ -1405,7 +1406,8 @@ sub cache_contig_collection_id {
 	$self->cache($cache_name, $cache_key, 
 		{ 
 			uniquename => $uniquename, visible => $access_category, 
-			displayname => FormDataGenerator::displayname($uniquename, $user_genome, $access_category)
+			displayname => FormDataGenerator::displayname($uniquename, $user_genome, $access_category),
+			feature_id => $genome_feature_id
 		}
 	);
 }
@@ -1804,7 +1806,8 @@ sub load_data {
 		open(my $in, ">$input_tree_file") or croak "Unable to write to file $input_tree_file ($!)";
 		foreach my $key (keys %{$self->{cache}{snp_genome}}){
 			my $ghash = $self->{cache}{snp_genome}{$key};
-			print $in join("\t", $key, $ghash->{uniquename}, $ghash->{displayname}, $ghash->{visible});
+			print $in join("\t", $key, $ghash->{uniquename}, $ghash->{displayname}, $ghash->{visible},
+				$ghash->{feature_id});
 			push @new_genomes, $key;
 		}
 		close $in;
@@ -1815,9 +1818,7 @@ sub load_data {
 		$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
 		
-
-		
-		($public_tree_file, $global_tree_file) = build_tree(, $added_genomes);
+		build_tree($input_tree_file, $global_tree_file, $public_tree_file);
 
 	}
 	
@@ -2182,7 +2183,7 @@ sub swap_alignment_tables {
 
 =item Usage
 
-  $obj->build_tree()
+  $obj->build_tree($genome_input_filename, $global_tree_output_filename, $public_tree_output_filename)
 
 =item Function
 
@@ -2194,7 +2195,14 @@ Nothing
 
 =item Arguments
 
-Nothing
+1 - Filename containing input set of genomes to add to tree. Tab-delim file organized:
+    - genome label (e.g. private_123344)
+    - uniquename
+    - displayname
+    - access category (e.g. public|private|release)
+    - feature_id
+2 - Filename to output PERL-format global tree (all private and publicly-viewable genomes)
+3 - Filename to output PERL-format public tree (only publicly viewable genomes)
 
 =back
 
@@ -2202,11 +2210,7 @@ Nothing
 
 sub build_tree {
 	my $self = shift;
-	
-
-	my $input_file = $work_dir . 'genodo_genome_tree_inputs.txt';
-	my $public_file = $work_dir . 'genodo_genome_tree_public.txt';
-	my $global_file = $work_dir . 'genodo_genome_tree_global.txt';
+	my ($input_file, $public_file, $global_file) = @_;
 
 	my @program = ("$root_directory/Phylogeny/add_to_tree.pl",
 		"--pipeline",
@@ -2214,14 +2218,12 @@ sub build_tree {
 		"--dbhost ".$self->{dbi_connection_parameters}->{dbhost},
 		"--dbport ".$self->{dbi_connection_parameters}->{dbport},
 		"--dbuser ".$self->{dbi_connection_parameters}->{dbuser},
-		"--dbpass ".$self->{dbi_connection_parameters}->{dbpass}
+		"--dbpass ".$self->{dbi_connection_parameters}->{dbpass},
+		"--tmpdir ".$self->tmp_dir(),
+		"--input ".$input_file,
+		"--globalf ".$global_file,
+		"--publicf ".$public_file
 	);
-
-	open(my $in, ">$input_file") or croak "Error: Unable to write to file $input_file ($!).\n";
-	foreach my $g (@$genomes) {
-		
-	}
-	close $inl
 		
 	my $cmd = join(' ',@program);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -2229,8 +2231,6 @@ sub build_tree {
 	unless($success) {
 		croak "Error: Phylogenetic tree build failed ($stderr).\n";
 	}
-
-	return ($global_file, $public_file);
 }
 
 =head2 update_tracker

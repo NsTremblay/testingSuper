@@ -307,8 +307,7 @@ sub genomes {
 		}
 
 		# Save new genome feature in cache
-		$chado->cache_contig_collection_id($curr_feature_id, $is_public, $uniquename, 
-			$upload_params->{category});
+		$chado->cache_snp_genome_id($curr_feature_id, $is_public, $uniquename, $upload_params->{category});
 
 	}
 

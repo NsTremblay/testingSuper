@@ -157,7 +157,7 @@ sub loadPerlTree {
 	my $public_list = $self->visableGenomes;
 	
 	# Prune private genomes from tree
-	my $public_tree = $self->pruneTree($ptree, $public_list, 0);
+	my $public_tree = $self->prepTree($ptree, $public_list, 0);
 	
 	# Save perl copy for instances where we need to do some editing
 	my $ptree_string2 = Data::Dumper->Dump([$public_tree], ['tree']);
@@ -192,7 +192,7 @@ sub loadPerlTree {
 
 }
 
-=head2 pruneTree
+=head2 prepTree
 
 	Trim non-visable nodes. Collapse nodes above certain depth.
 	In the D3 tree library, to collapse a node, the children array is
@@ -200,7 +200,7 @@ sub loadPerlTree {
 
 =cut
 
-sub pruneTree {
+sub prepTree {
 	my ($self, $root, $nodes, $restrict_depth) = @_;
 	
 	# Set global
@@ -392,7 +392,7 @@ sub userTree {
 	my $ptree = $self->globalTree;
 	
 	# Remove genomes not visable to user
-	my $user_tree = $self->pruneTree($ptree, $visable);
+	my $user_tree = $self->prepTree($ptree, $visable);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);
@@ -511,7 +511,7 @@ sub nodeTree {
 		my $ptree = $self->globalTree;
 	
 		# Remove genomes not visable to user
-		my $tree = $self->pruneTree($ptree, $visable, 0);
+		my $tree = $self->prepTree($ptree, $visable, 0);
 		
 		# Exand nodes along path to target leaf node
 		DEBUG encode_json($tree);
@@ -680,7 +680,7 @@ sub geneTree {
 #	}
 	
 	# Remove genomes not visable to user
-	my $user_tree = $self->pruneTree($tree, $visable);
+	my $user_tree = $self->prepTree($tree, $visable);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);
@@ -1076,7 +1076,7 @@ sub compareTrees {
 }
 
 
-=head2 pruneTree
+=head2 pruneNode
 
 	Trim single node matching 'name' from tree
 

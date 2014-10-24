@@ -89,21 +89,24 @@ my %target_info;
 open(my $in, "<$input_file") or croak "Unable to read file $input_file ($!).\n";
 while(my $row = <$in>) {
 	chomp $row;
-	my ($genome, $uniquename, $displayname, $access) = split(/\t/, $row);
+	my ($genome, $uniquename, $displayname, $access, $feature_id) = split(/\t/, $row);
 	push @target_set, $genome;
 	$target_info{$genome} = {
-		uniquename => $uniquename, displayname => $displayname, access => $access
+		uniquename => $uniquename, displayname => $displayname, access => $access,
+		feature_id => $feature_id
 	};
 
 }
 close $in;
 
+if($test) {
+	# Remove target nodes from tree to run test
+	$root = $t->pruneNode($root, \%target_info);
+}
+
 
 # Build fast approx tree
 my ($nj_root, $nj_leaves) = buildNJtree();
-
-printTree($nj_root, 0);
-print "LEAVES\n".join(',',map {$_->{name}} @$nj_leaves)."\n" if $v;
 
 # Sometimes a supertree approach is not possible
 # In which case, the entire ML genome tree needs to 
@@ -132,11 +135,7 @@ foreach my $targetG (@target_set) {
 	do {
 
 		# Get candidate subtree set
-		print "LEAF\n$leaf->{name}\n" if $v;
 		my ($rs, $genome_set) = find_umbrella($leaf, $level);
-
-		print "UMBRELLA: $rs / [",join(',',@$genome_set),"]\n";
-		exit(0);
 
 		if($rs) {
 			# Target genome not embedded in suitable subtree,
@@ -190,20 +189,30 @@ if($short_circuit) {
 my @final_leaves = $t->find_leaves($root);
 croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
 
-# Load into DB or print to file
-if($output_file) {
-	
-	open(my $out, "<$output_file") or croak "Error: Unable to write to file $output_file ($!).\n";
+if($test) {
+	my $rs = $t->compareTrees($root, $t->globalTree);
+
+	my ($result) = ($rs ? 'are equal' : 'DIFFER');
+
+	print "\nThe test tree and original tree $result!\n";
+} else {
+
+	my $public_root = finalize_tree($root);
+
+	# Print global tree
+	open(my $out, "<$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
 	$Data::Dumper::Indent = 0;
 	my $tree_string = Data::Dumper->Dump([$root], ['tree']);
 	print $out $tree_string;
 	close $out;
 
-} else {
-	$t->loadPerlTree($root);
+	# Print public tree
+	open($out, "<$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
+	$Data::Dumper::Indent = 0;
+	$tree_string = Data::Dumper->Dump([$public_root], ['tree']);
+	print $out $tree_string;
+	close $out;
 }
-
-
 
 ## Subs
 
@@ -307,10 +316,6 @@ sub find_umbrella {
 		return($rs, []);
 	}
 
-	print " STARTING UMBRELLA:\n";
-	printTree($node, 0);
-
-
 	# Check for valid umbrella node
 	# Move up tree to root until one is found, or root is reached
 	my $found = 0;
@@ -339,7 +344,6 @@ sub find_umbrella {
 				$node = $node->{parent};
 			} else {
 				# Reached root
-				print "ABORT!! Too few genomes and reached root\n" if $v;
 				$rs = 1;
 				return($rs, []);
 			}
@@ -367,8 +371,6 @@ sub find_umbrella {
 
 		}
 
-		print "TRYING AGAIN"
-
 	} while(!$found);
 	
 	
@@ -385,7 +387,6 @@ sub _isOutgroup {
 	my $outg = { node => undef, len => -1};
 	my $target_len;
 	foreach my $l (@$leaves) {
-		print "CHECKING :".$l->{node}->{name}."\n";
 		$outg = $l if $l->{len} > $outg->{len};
 		if($l->{node}->{name} eq $leafName) {
 			$target_len = $l->{len};
@@ -399,13 +400,13 @@ sub _isOutgroup {
 
 # Build subtree
 sub buildSubtree {
+	my $genome_set = shift;
+
 	# Target genome is first in set
-	my $genome_set = [qw/public_100765 public_100802 public_100112/];
 	my $target_genome = pop @$genome_set; 
 
 	# Find LCA of leaf nodes
 	my $subtree_root = $t->find_lca($root, $genome_set);
-
 
 	# Build tree for genomes in LCA subtree
 	my @leaves = $t->find_leaves($subtree_root);
@@ -494,13 +495,20 @@ sub finalize_tree {
 	my $public_list = $t->visableGenomes;
 
 	# Add new genomes public list
-	foreach my $g (@visible_target_set) {
-		$public_list{$g} 
+	foreach my $g (keys %target_info) {
+		my $ghash = $target_info{$g};
+
+		$public_list->{$g} = {
+			feature_id  => $ghash->{feature_id},
+			displayname => $ghash->{displayname},
+			uniquename  => $ghash->{uniquename},
+			access      => $ghash->{access}
+		};
 	}
 	
 	# Prune private genomes from tree
-	my $public_tree = $self->pruneTree($ptree, $public_list, 0);
+	my $public_tree = $t->prepTree($ptree, $public_list, 0);
 
-
+	return($public_tree);
 }
 
