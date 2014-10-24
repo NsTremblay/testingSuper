@@ -2858,6 +2858,8 @@
    */
 
   TreeView = (function(_super) {
+    var mtypesDisplayed;
+
     __extends(TreeView, _super);
 
     function TreeView(parentElem, style, elNum, treeArgs) {
@@ -2897,7 +2899,20 @@
       this.cluster = d3.layout.cluster().size([this.width, this.height]).sort(null).value(function(d) {
         return Number(d.length);
       }).separation(function(a, b) {
-        return 1;
+        var a_num_leaves, b_num_leaves;
+        a_num_leaves = 1;
+        if ((__indexOf.call(a, 'num_leaves') >= 0)) {
+          a_num_leaves = a.num_leaves;
+        } else {
+          a_num_leaves = 1;
+        }
+        b_num_leaves = 1;
+        if ((__indexOf.call(b, 'num_leaves') >= 0)) {
+          b_num_leaves = b.num_leaves;
+        } else {
+          b_num_leaves = 1;
+        }
+        return a_num_leaves + b_num_leaves;
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
@@ -2967,6 +2982,8 @@
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
+
+    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
       var cladeSelect, cmdBox, currLeaves, dt, elID, iNodes, id, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
@@ -3465,9 +3482,8 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
-      var a, counts, mtypesDisplayed, _i, _len;
+      var a, counts, _i, _len;
       counts = {};
-      mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         a = mtypesDisplayed[_i];
         counts[a] = {};
@@ -3482,7 +3498,7 @@
       return true;
     };
 
-    TreeView.prototype._syncNode = function(node, genomes, sumLengths, counts) {
+    TreeView.prototype._syncNode = function(node, genomes, sumLengths, count) {
       var c, child, children, g, isExpanded, k, ld, u, v, _i, _len, _ref;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
@@ -3493,7 +3509,7 @@
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
-          genomes.countMeta(g, counts);
+          genomes.countMeta(g, count);
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];
@@ -3506,8 +3522,8 @@
         }
       } else {
         node.metaCount = {};
-        for (k in counts) {
-          v = counts[k];
+        for (k in count) {
+          v = count[k];
           node.metaCount[k] = v;
         }
         isExpanded = true;
@@ -3518,7 +3534,7 @@
         _ref = node.daycare;
         for (_i = 0, _len = _ref.length; _i < _len; _i++) {
           c = _ref[_i];
-          u = this._syncNode(c, genomes, node.sum_length, counts);
+          u = this._syncNode(c, genomes, node.sum_length, count);
           if (!u.hidden) {
             children.push(u);
           }

@@ -54,7 +54,18 @@ class TreeView extends ViewTemplate
       .size([@width, @height])
       .sort(null)
       .value((d) -> Number(d.length) )
-      .separation((a, b) -> 1)
+      .separation((a, b) -> 
+        a_num_leaves = 1
+        if ('num_leaves' in a)
+          a_num_leaves = a.num_leaves
+        else
+          a_num_leaves = 1
+        b_num_leaves = 1
+        if ('num_leaves' in b)
+          b_num_leaves = b.num_leaves
+        else
+          b_num_leaves = 1
+        a_num_leaves + b_num_leaves)
       
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
@@ -161,6 +172,8 @@ class TreeView extends ViewTemplate
   
   x_factor: 1.5
   y_factor: 5000
+
+  mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
 
   
   # FUNC update
@@ -847,7 +860,6 @@ class TreeView extends ViewTemplate
 
 
     counts = {}
-    mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
     for a in mtypesDisplayed
       counts[a] = {}
 
@@ -865,7 +877,7 @@ class TreeView extends ViewTemplate
 
     true
     
-  _syncNode: (node, genomes, sumLengths, counts) ->
+  _syncNode: (node, genomes, sumLengths, count) ->
     
     # Restore to original branch length
     # Compute cumulative branch length
@@ -886,7 +898,7 @@ class TreeView extends ViewTemplate
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
-        genomes.countMeta(g, counts)
+        genomes.countMeta(g, count)
 
         
         # Append locus data
@@ -899,11 +911,11 @@ class TreeView extends ViewTemplate
       else
         # Mask filtered node
         node.hidden = true
-       
+
     else
 
       node.metaCount = {}
-      for k, v of counts
+      for k,v of count
         node.metaCount[k] = v
 
       # Internal node
@@ -914,7 +926,7 @@ class TreeView extends ViewTemplate
       # Iterate through the original children array
       children = []
       for c in node.daycare
-        u = @_syncNode(c, genomes, node.sum_length, counts)
+        u = @_syncNode(c, genomes, node.sum_length, count)
         
         unless u.hidden
           children.push(u)
