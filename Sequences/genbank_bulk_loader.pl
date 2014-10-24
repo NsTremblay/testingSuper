@@ -183,7 +183,7 @@ foreach my $fasta_file (@fasta_files) {
 
 	if($rs->first) {
 		print $jobfh "$filename\tfailed\n";
-                print LOG "***FATAL ERROR*** appears sequence is already in DB\n\n";
+        print LOG "***FATAL ERROR*** appears sequence is already in DB\n\n";
 		print LOG "\tDB loading failed.\n\n";
                 unlink $genodo_file unless $SAVE_TMPFILES;
                 next;	
@@ -194,14 +194,15 @@ foreach my $fasta_file (@fasta_files) {
 	my $real_fasta_file = "$FASTADIR$fasta_file";
         $command = "perl $curr_wd/genodo_fasta_loader.pl";
         @args = ($command,
-                "--fastafile $real_fasta_file",
-                "--configfile $CONFIGFILE",
-                "--propfile $genodo_file",         
+                "--fasta $real_fasta_file",
+                "--config $CONFIGFILE",
+                "--attributes $genodo_file",
+                "--use_fasta_names"         
 		);
-		push @args, "--recreate_cache" if $first_file; # sync the cache the first time this is run
+		push @args, "--recreate_cache", "--remove_lock" if $first_file; # sync the cache the first time this is run
 		$first_file = 0;
 
-       $cmd =  join(" ",@args);
+    	$cmd =  join(" ",@args);
 
         ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 

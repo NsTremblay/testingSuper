@@ -407,7 +407,7 @@ sub validate_genome_properties {
 		
 		if($valid_f_tags{$type}) {
 			if(ref $hash->{$type} eq 'ARRAY') {
-				# SOme scripts return every value as arrayref
+				# Some scripts return every value as arrayref
 				# Feature values are always singletons, so this
 				# should be safe
 				# There is no logical option for multiple names
@@ -611,7 +611,7 @@ sub contig {
 		# Get description and name from FASTA header
 		
 		# Uniquename and name
-		my $name = $contig->display_id;
+		$name = $contig->display_id;
 		
 		# Description
 		$desc = $contig->description

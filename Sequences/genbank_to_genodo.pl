@@ -224,7 +224,7 @@ my %species_aliases = (
  goat_aliases => ['Capra aegagrus hircus','goat'],
  dog_aliases => ['Canis lupus familiaris','dog'],
  sheep_aliases => ['Ovis aries','sheep'],
- bison_aliases => ['Bison bison', 'buffalo'],
+ bison_aliases => ['Bison bison', 'buffalo', 'bison'],
  cat_aliases => ['Felis catus', 'cat'],
  onion_aliases => ['Allium cepa', 'common onion'],
  mouse_aliases => ['Mus musculus', 'mouse'],
@@ -246,7 +246,7 @@ foreach my $species_alias_list (values %species_aliases) {
 # Any single occurence of these words will be used to identify source
 # Only full words will be matched, cannot be part of a word
 my %source_alias_lists = (
- Stool => [qw/feces stool diarrhea fecal diarrhoeal/],
+ Stool => [qw/feces stool diarrhea fecal faeces diarrhoeal/],
  Urine => [qw/urine/],
  Blood => [qw/blood/],
  Milk => [qw/milk/],
@@ -256,15 +256,15 @@ my %source_alias_lists = (
  Cecum => [qw/cecum/],
  Liver => [qw/liver/],
  'Cerebrospinal fluid' => [qw/cerebrospinal/],
- 'Meat-based food' => [qw/beef meat hamburger/],
+ 'Meat-based food' => [qw/beef meat hamburger sausage/],
  'Vegetable-based food' => [qw/spinach/],
- 'Water' => [qw/water/],
+ 'Water' => [qw/water/]
 );
 
 my %environmental_sources = (
 	'Meat-based food' => 1,
 	'Vegetable-based food' => 1,
-	'Water' => 1,
+	'Water' => 1
 );
 
 # Convert to giant alias hash
@@ -397,8 +397,6 @@ for my $link ( @dblinks ) {
 
 # WGS & WGS_SCAFLD
 # Currently we ignore these tags
-
-# source features
 my @source_features = grep { $_->primary_tag eq 'source' } $seq_obj->get_SeqFeatures;
 
 my $feat_obj = $source_features[0]; # There should only be one
@@ -435,6 +433,8 @@ if($feat_obj->has_tag('serotype') || $feat_obj->has_tag('serovar')) {
 	push @types, $feat_obj->get_tag_values('serovar') if $feat_obj->has_tag('serovar');
 	
 	foreach my $v (@types) {
+		$v =~ s/\:\s+/\:/;
+		$v =~ s/^0(\d+\:H|\d+\:N)/O$1/;
 		saveTag('serotype', $v);
 	}
 	$serotype = $types[0];
@@ -575,7 +575,7 @@ if($species_string =~ m/Escherichia coli (.+)$/) {
 	$current_name = $strain;
 	$current_name = $serotype . ' Str. '. $current_name if $serotype;
 
-}else {
+} else {
         croak "Error: species tag missing or species is not Escherichia coli.\n";
 }
 

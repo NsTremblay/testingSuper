@@ -712,7 +712,7 @@ new value of next table id (to set)
 sub nextoid {  
   my $self = shift;
   my $table= shift;
-  my $arg  = shift if defined(@_);
+  my $arg  = shift if @_;
   
   if (defined($arg) && $arg eq '++') {
       return $self->{'nextoid'}{$table}++;
@@ -1120,7 +1120,7 @@ new value of first_feature_id (to set)
 
 sub first_feature_id {
     my $self = shift;
-    my $first_feature_id = shift if defined(@_);
+    my $first_feature_id = shift if @_;
     return $self->{'first_feature_id'} = $first_feature_id if defined($first_feature_id);
     return $self->{'first_feature_id'};
 }
@@ -1737,12 +1737,9 @@ sub handle_dbxref {
 		if($dbxref_id = $self->cache('dbxref',"$database|$accession|$version")) {
 			# dbxref has been created previously in this run
 			
-			# Make sure dbxref has not been added for this feature before
-			if($self->constraint(name  => 'feature_dbxref_c1', terms => [ $feature_id, $dbxref_id]) ) {
-				
-				$self->print_fdbx($self->nextoid('feature_dbxref'), $feature_id, $dbxref_id);
-          		$self->nextoid('feature_dbxref','++');
-        	}
+			$self->print_fdbx($self->nextoid('feature_dbxref'), $feature_id, $dbxref_id);
+          	$self->nextoid('feature_dbxref','++');
+        	
       	} else {
       		# New dbxref for this run
       		
@@ -2005,7 +2002,7 @@ new value of dbh (to set)
 sub dbh {
     my $self = shift;
 
-    my $dbh = shift if defined(@_);
+    my $dbh = shift if @_;
     return $self->{'dbh'} = $dbh if defined($dbh);
     return $self->{'dbh'};
 }
@@ -2036,7 +2033,7 @@ new value of tmp_dir (to set)
 sub tmp_dir {
     my $self = shift;
 
-    my $tmp_dir = shift if defined(@_);
+    my $tmp_dir = shift if @_;
     return $self->{'tmp_dir'} = $tmp_dir if defined($tmp_dir);
     return $self->{'tmp_dir'};
 }
@@ -2067,7 +2064,7 @@ new value of dbname (to set)
 sub dbname {
     my $self = shift;
 
-    my $dbname = shift if defined(@_);
+    my $dbname = shift if @_;
     return $self->{'dbname'} = $dbname if defined($dbname);
     return $self->{'dbname'};
 }
@@ -2253,7 +2250,7 @@ Boolean value of vacuum parameter (0/1)
 sub vacuum {
     my $self = shift;
 
-    my $v = shift if defined(@_);
+    my $v = shift if @_;
     return $self->{'vacuum'} = $v if defined($v);
     return $self->{'vacuum'};
 }
@@ -2284,7 +2281,7 @@ Boolean value of web_upload parameter (0/1)
 sub web_upload {
     my $self = shift;
 
-    my $v = shift if defined(@_);
+    my $v = shift if @_;
     return $self->{'web_upload'} = $v if defined($v);
     return $self->{'web_upload'};
 }
@@ -2314,7 +2311,7 @@ new value of save_tmpfiles (to set)
 
 sub save_tmpfiles {
     my $self = shift;
-    my $save_tmpfiles = shift if defined(@_);
+    my $save_tmpfiles = shift if @_;
     return $self->{'save_tmpfiles'} = $save_tmpfiles if defined($save_tmpfiles);
     return $self->{'save_tmpfiles'};
 }
@@ -2345,7 +2342,7 @@ new value of recreate_cache (to set)
 
 sub recreate_cache {
     my $self = shift;
-    my $recreate_cache = shift if defined(@_);
+    my $recreate_cache = shift if @_;
 
     return $self->{'recreate_cache'} = $recreate_cache if defined($recreate_cache);
     return $self->{'recreate_cache'};

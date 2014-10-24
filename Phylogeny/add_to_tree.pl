@@ -38,39 +38,72 @@ use Carp;
 use Getopt::Long;
 
 ## Arguments
-my ($config);
+my ($pipeline_mode, $test, $input_file, $global_output_file, $public_output_file,
+	$dbhost, $dbname, $dbport, $dbuser, $dbpass, $tmp_dir);
 GetOptions(
-    'config=s' => \$config,
+    'pipeline'   => $pipeline_mode,
+    'test'       => $test,
+    'dbname=s'   => $dbname,
+    'dbhost=s'   => $dbhost,
+    'dbport=i'   => $dbport,
+    'dbuser=s'   => $dbuser,
+    'dbpass=s'   => $dbpass,
+    'tmpdir=s'   => $tmp_dir,
+    'input=s'    => $input_file,
+    'globalf=s'  => $global_output_file,
+    'publicf=s'  => $public_output_file,
 );
 
-croak "Missing argument. You must supply the config filename.\n" unless $config;
-my $tmp_dir;
-my $v = 1;
-if(my $conf = new Config::Simple($config)) {
-	$tmp_dir    = $conf->param('tmp.dir');
-} else {
-	die Config::Simple->error();
-}
-croak "Invalid configuration file." unless $tmp_dir;
+# Temp directory
+croak "Missing argument. You must supply temp directory --tmpdir.\n" unless $tmp_dir && -d $tmp_dir;
 
-my $t = Phylogeny::Tree->new(config => $config);
+# Inputs
+croak "Missing argument. You must supply input file --input .\n" unless $input_file && -r $input_file;
+
+# DB connection params
+croak "Missing argument(s). You must supply database connection parameters:  --dbname, --dbhost, --dbport, --dbuser & --dbpass.\n"
+	unless $dbhost && $dbname && $dbport && $dbuser && $dbpass;
+
+# Output filenames
+croak "Missing argument(s). You must supply output filenames --globalf & --publicf .\n" unless $global_output_file && $public_output_file;
+
+my $v = 1;
+
+my $t = Phylogeny::Tree->new(
+	dbname  => $dbname,
+    dbhost  => $dbhost,
+    dbport  => $dbport,
+    dbuser  => $dbuser,
+    dbpass  => $dbpass
+);
 my $tree_builder = Phylogeny::TreeBuilder->new();
 
-###
-# TESTING SET
-###
-my @test_set = qw/public_100756 public_100112 public_100930 public_100619 public_100802 public_172974/;
-my @target_set = qw/public_100756/;
 
-# Obtain working tree
+# Obtain working tree (should not include genomes)
 my $root = $t->globalTree;
 my $num_orig_leaves = scalar($t->find_leaves($root));
+
+# Process inputs
+my @target_set;
+my %target_info;
+open(my $in, "<$input_file") or croak "Unable to read file $input_file ($!).\n";
+while(my $row = <$in>) {
+	chomp $row;
+	my ($genome, $uniquename, $displayname, $access) = split(/\t/, $row);
+	push @target_set, $genome;
+	$target_info{$genome} = {
+		uniquename => $uniquename, displayname => $displayname, access => $access
+	};
+
+}
+close $in;
+
 
 # Build fast approx tree
 my ($nj_root, $nj_leaves) = buildNJtree();
 
 printTree($nj_root, 0);
-print "LEAVES\n".join(',',map {$_->{name}} @$nj_leaves)."\n";
+print "LEAVES\n".join(',',map {$_->{name}} @$nj_leaves)."\n" if $v;
 
 # Sometimes a supertree approach is not possible
 # In which case, the entire ML genome tree needs to 
@@ -94,13 +127,12 @@ foreach my $targetG (@target_set) {
 	}
 	croak "Error: new genome $targetG not found in core_alignment table.\n" unless $leaf;
 
-
 	my $terminate = 0;
 	my $level = 2;
 	do {
 
 		# Get candidate subtree set
-		print "LEAF\n$leaf->{name}\n";
+		print "LEAF\n$leaf->{name}\n" if $v;
 		my ($rs, $genome_set) = find_umbrella($leaf, $level);
 
 		print "UMBRELLA: $rs / [",join(',',@$genome_set),"]\n";
@@ -158,8 +190,19 @@ if($short_circuit) {
 my @final_leaves = $t->find_leaves($root);
 croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
 
-# Load into DB
-$t->loadPerlTree($root);
+# Load into DB or print to file
+if($output_file) {
+	
+	open(my $out, "<$output_file") or croak "Error: Unable to write to file $output_file ($!).\n";
+	$Data::Dumper::Indent = 0;
+	my $tree_string = Data::Dumper->Dump([$root], ['tree']);
+	print $out $tree_string;
+	close $out;
+
+} else {
+	$t->loadPerlTree($root);
+}
+
 
 
 ## Subs
@@ -174,10 +217,15 @@ sub buildNJtree {
 		 unlink $pg_file or carp "Warning: could not delete temp file $pg_file ($!).\n";
 	}
 
-	if(@test_set) {
-		$t->pgAlignment(genomes => \@test_set, file => $pg_file)
+	if($test) {
+		$t->pgAlignment(omit => \@target_set, file => $pg_file);
 	} else {
-		$t->pgAlignment(file => $pg_file)
+		if($pipeline_mode) {
+			$t->pgAlignment(file => $pg_file, temp_table => 'PipelineCoreAlignment');
+		} else {
+			$t->pgAlignment(file => $pg_file)
+		}
+		
 	}
 
 	my $nj_file = $tmp_dir . 'superphy_core_tree.txt';
@@ -369,8 +417,12 @@ sub buildSubtree {
 		 unlink $align_file or carp "Warning: could not delete temp file $align_file ($!).\n";
 	}
 
-	$t->snpAlignment(genomes => \@subtree_genomes, file => $align_file);
-
+	if($pipeline_mode) {
+		$t->snpAlignment(genomes => \@subtree_genomes, file => $align_file, temp_table => 'PipelineSnpAlignment');
+	} else {
+		$t->snpAlignment(genomes => \@subtree_genomes, file => $align_file);
+	}
+	
 	my $tree_file = $tmp_dir . 'superphy_snp_tree.txt';
 	open(my $out, ">".$tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
 	close $out;
@@ -388,7 +440,11 @@ sub buildMLtree {
 
 	# write alignment file
 	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
-	$t->snpAlignment(file => $tmp_file);
+	if($pipeline_mode) {
+		$t->snpAlignment(file => $tmp_file, temp_table => 'PipelineSnpAlignment');
+	} else {
+		$t->snpAlignment(file => $tmp_file);
+	}
 	
 	# clear output file for safety
 	my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
@@ -420,6 +476,31 @@ sub printTree {
 	} else {
 		print "L-Node: <$n ($l)\n";
 	}
+
+}
+
+=head2 finalize_tree
+
+Prunes tree remove non-visible genomes.
+
+Note: includes new genomes added to tree which
+may not be in database
+
+=cut
+
+sub finalize_tree {
+	my $ptree = shift;
+
+	my $public_list = $t->visableGenomes;
+
+	# Add new genomes public list
+	foreach my $g (@visible_target_set) {
+		$public_list{$g} 
+	}
+	
+	# Prune private genomes from tree
+	my $public_tree = $self->pruneTree($ptree, $public_list, 0);
+
 
 }
 

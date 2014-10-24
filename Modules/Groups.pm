@@ -57,10 +57,10 @@ sub search : StartRunmode {
     if($has_private) {
         my $tree_string = $tree->fullTree($visable_nodes);
         $template->param(tree_json => $tree_string);
-        } else {
-            my $tree_string = $tree->fullTree();
-            $template->param(tree_json => $tree_string);
-        }
+    } else {
+        my $tree_string = $tree->fullTree();
+        $template->param(tree_json => $tree_string);
+    }
 
     # Groups Manager, only active if user logged in
     $template->param(groups_manager => 0) unless $username;

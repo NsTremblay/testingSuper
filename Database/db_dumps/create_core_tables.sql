@@ -10,7 +10,7 @@ SET default_tablespace = '';
 
 -----------------------------------------------------------------------------
 --
--- Table Name: core_region; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: core_region; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE core_region (
@@ -19,7 +19,7 @@ CREATE TABLE core_region (
 	aln_column             integer NOT NULL DEFAULT 0
 );
 
-ALTER TABLE public.core_region OWNER TO postgres;
+ALTER TABLE public.core_region OWNER TO genodo;
 
 --
 -- primary key
@@ -31,7 +31,7 @@ CREATE SEQUENCE core_region_core_region_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.core_region_core_region_id_seq OWNER TO postgres;
+ALTER TABLE public.core_region_core_region_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE core_region_core_region_id_seq OWNED BY core_region.core_region_id;
 
@@ -63,7 +63,7 @@ ALTER TABLE ONLY core_region
 
 -----------------------------------------------------------------------------
 --
--- Table Name: core_alignment; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: core_alignment; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE core_alignment (
@@ -73,7 +73,7 @@ CREATE TABLE core_alignment (
 	alignment text
 );
 
-ALTER TABLE public.core_alignment OWNER TO postgres;
+ALTER TABLE public.core_alignment OWNER TO genodo;
 
 --
 -- primary key
@@ -85,7 +85,7 @@ CREATE SEQUENCE core_alignment_core_alignment_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.core_alignment_core_alignment_id_seq OWNER TO postgres;
+ALTER TABLE public.core_alignment_core_alignment_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE core_alignment_core_alignment_id_seq OWNED BY core_alignment.core_alignment_id;
 

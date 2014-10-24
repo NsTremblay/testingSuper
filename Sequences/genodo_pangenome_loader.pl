@@ -158,7 +158,7 @@ unless($panseq_dir) {
 	}
 	
 	my $pan_cfg_file = $root_dir . 'pg.conf';
-	my $core_threshold = 3;
+	my $core_threshold = 1633;
 	
 	open(my $out, '>', $pan_cfg_file) or die "Cannot write to file $pan_cfg_file ($!).\n";
 	print $out
@@ -174,8 +174,10 @@ fragmentationSize	1000
 percentIdentityCutoff	90
 coreGenomeThreshold	$core_threshold
 runMode	pan
-storeAlleles	1
 nameOrId	name
+storeAlleles	1
+allelesToKeep	1
+maxNumberResultsInMemory	500
 |;
 	close $out;
 	
@@ -214,10 +216,10 @@ open IN, "<", $anno_file or croak "[Error] unable to read file $anno_file ($!).\
 
 while(<IN>) {
 	chomp;
-	#my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
-	my ($panseq_name, $locus_id, $desc) = split(/\t/, $_);
-	$anno_functions{$locus_id} = [undef,$desc];
-	#$anno_functions{$q} = [$subid,$desc];
+	my ($q, $qlen, $s, $slen, $t) = split(/\t/, $_);
+	# my ($panseq_name, $locus_id, $desc) = split(/\t/, $_);
+	# $anno_functions{$locus_id} = [undef,$desc];
+	$anno_functions{$q} = [$s,$t];
 }
 close IN;
 elapsed_time('Annotations');
@@ -244,8 +246,8 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 		my ($locus_id, $uniquename) = ($id =~ m/^lcl\|(\d+)\|(lcl\|.+)$/);
 		croak "Error: unable to parse header $id in pangenome fasta file $pan_file.\n" unless $uniquename && $locus_id;
 		
-		if($anno_functions{$locus_id}) {
-			($func_id, $func) = @{$anno_functions{$locus_id}};
+		if($anno_functions{$id}) {
+			($func_id, $func) = @{$anno_functions{$id}};
 		}
 		
 		my $seq = $entry->seq;
@@ -254,6 +256,7 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
 		
 		# Cache feature id another info for reference pangenome fragment
+		print "$uniquename\n";
 		$chado->cache('feature',$uniquename,$pg_feature_id);
 	
 		$chado->cache('core',$pg_feature_id,$in_core);
@@ -311,7 +314,7 @@ my @tasks;
 		
 		# pangenome reference region feature ID
 		my $query_id = $chado->cache('feature', $uniquename);
-		croak "Pangenome reference segment $locus has no assigned feature ID\n" unless $query_id;
+		croak "Pangenome reference segment $locus has no assigned feature ID ($uniquename)\n" unless $query_id;
 		
 		my $num_seqs = ($locus_block =~ tr/>/>/);
 		my $do_tree = 0;

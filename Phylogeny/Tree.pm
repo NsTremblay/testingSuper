@@ -58,6 +58,7 @@ sub new {
 	my %params = @_;
 	my $config_file = $params{config};
 	my $dbix = $params{dbix_schema};
+	my $dbname = $params{dbname};
 	
 	if($config_file) {
 		# No schema provided, connect to database
@@ -72,12 +73,31 @@ sub new {
 						        dbUser  => $db_conf->param('db.user'),
 						        dbPass  => $db_conf->param('db.pass')
 		);
+
 	} elsif($dbix) {
 		# Use existing connection
 		$self->setDbix($dbix);
 		
+	} elsif($dbname) {
+		# Use command-line args to defined connection parameters
+		my $dbport = $params{dport};
+		my $dbhost = $params{dbhost};
+		my $dbuser = $params{dbuser};
+		my $dbpass = $params{dbpass};
+
+		croak "Error: missing db connection parameter." unless $dbport && $dbhost && $dbuser && $dbpass;
+
+
+		$self->connectDatabase( dbi     => "dbi:Pg",
+						        dbName  => $dbname,
+						        dbHost  => $dbhost,
+						        dbPort  => $dbport,
+						        dbUser  => $dbuser,
+						        dbPass  => $dbpass
+		);
+
 	} else {
-		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object or config filename.";
+		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object, db connectrion paramters on command-line or config filename.";
 	}
 	
 	#Log::Log4perl->easy_init($DEBUG);
@@ -582,7 +602,7 @@ sub newickToPerl {
 
 =cut visableGenomes
 
-	Get all public genomes for any user.  
+	Get all public genomes for any user.
 
 	This is meant to be called outside of normal website operations, specifically
 	when a new phylogenetic tree is being loaded.  Visable genomes for a user will be computed
@@ -854,7 +874,12 @@ sub snpAlignment {
 		$conds->{name} = {'-in' => $args{genomes}};
 	}
 
-	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search(
+	my $table = "SnpAlignment";
+	if($args{temp_table}) {
+		$table = $args{temp_table}
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset($table)->search(
 		$conds,
 		{
 			columns => [qw/name alignment/]
@@ -918,7 +943,17 @@ sub pgAlignment {
 		$conds->{name} = {'-in' => $args{genomes}};
 	}
 
-	my $aln_rs = $self->dbixSchema->resultset("CoreAlignment")->search(
+	if($args{omit}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	my $table = "CoreAlignment";
+	if($args{temp_table}) {
+		$table = $args{temp_table}
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset($table)->search(
 		$conds,
 		{
 			columns => [qw/name alignment/]
@@ -956,10 +991,149 @@ sub pgAlignment {
 	}
 }
 
+=head2 compareTrees
+
+0 = equal
+1 = different
+
+Checks if identical leaf labels are found in same level / branch in traversal of tree
+e.g. isomorphic
+
+Assumes root nodes have children
+
+=cut
+sub compareTrees {
+	my $self  = shift;
+	my $treeA = shift;
+	my $treeB = shift;
+
+	my @levela = ($treeA);
+	my @levelb = ($treeB);
+	my @nextlevela;
+	my @nextlevelb;
+	my %leafa;
+
+	while(@levela && @levelb) {
+		# Note: @levela guaranteed to have same size as @levelb
+
+		foreach my $a (@levela) {
+			# a should always have children nodes, otherwise wouldn't be in level array
+			
+			foreach my $c (@{$a->{children}}) {
+
+				# Record nodes at next level
+				if($c->{children}) {
+					push @nextlevela, $c;
+				} else {
+					$leafa{$c->{name}} = 1;
+				}
+			}
+			
+		}
+		
+		foreach my $b (@levelb) {
+			# b should always have children nodes, otherwise wouldn't be in level array
+			
+			foreach my $c (@{$b->{children}}) {
+
+				# Compare nodes at next level
+				if($c->{children}) {
+					push @nextlevelb, $c;
+				} else {
+					if($leafa{$c->{name}}) {
+						$leafa{$c->{name}}++
+					} else {
+						# Leaf node not fount in A at this level
+						return 1;
+					}
+				}
+			}
+			
+		}
+		
+		if(scalar(@nextlevela) != scalar(@nextlevelb)) {
+			# Different num of children
+			return 1;
+		}
+
+		# Check if all leaf nodes in A also in B at this level
+		foreach my $c (values %leafa) {
+			return 1 unless $c == 2;
+		}
+
+		# Levels identical, move to next level
+		@levela = @nextlevela;
+		@nextlevela = ();
+		%leafa = ();
+		@levelb = @nextlevelb;
+		@nextlevelb = ();
+	}
+
+	# Level order traversal complete
+	# No isomorphisms detected
+	return 0;
+	
+}
 
 
+=head2 pruneTree
 
+	Trim single node matching 'name' from tree
 
+=cut
+
+sub pruneNode {
+	my ($self, $node, $remove_names) = @_;
+	
+	if($node->{children}) {
+		# Internal node
+		
+		# Find unpruned descendent nodes
+		my @visableNodes;
+		
+		foreach my $childnode (@{$node->{children}}) {
+			my ($visableNode) = $self->pruneNode($childnode, $remove_names);
+			if($visableNode) {
+				push @visableNodes, $visableNode;
+			}
+		}
+		
+		# Finished recursion
+		# Transform internal node if needed
+		
+		if(@visableNodes > 1) {
+			# Update children
+			
+			$node->{children} = \@visableNodes;
+			
+			return ($node); # record is empty unless $restrict_depth is true
+			
+		} elsif(@visableNodes == 1) {
+			# No internal node needed, replace with singleton child node
+			# Sum lengths
+			my $replacementNode = shift @visableNodes;
+			$replacementNode->{'length'} += $node->{'length'};
+			return ($replacementNode);
+
+		} else {
+			# Empty node, remove
+			return;
+		}
+		
+	} else {
+		# Leaf node
+		
+		my $genome_name = $node->{name};
+		
+		if($remove_names->{$genome_name}) {
+			# Remove node
+			return;
+		} else {
+			
+			return ($node);
+		}
+	}
+}
 
 
 1;

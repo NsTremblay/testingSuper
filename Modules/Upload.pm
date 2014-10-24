@@ -223,7 +223,7 @@ sub submit_genome : Runmode {
     	$t->param($param => \@syndromes);
     }
     
-    $t->param(rm    => '/genome-uploader/upload_genome');
+    $t->param(rm    => '/upload/upload_genome');
 	$t->param(title => 'Upload a genome');
 	
 	# Error detected, fill in old values and error messages
@@ -331,7 +331,7 @@ sub upload_genome : Runmode {
 	);
 	
 	# optional
-	if($results->valid('g_locate_method') eq 'name') {
+	if($results->valid('g_locate_method') eq 'name' && $results->valid('g_location_country')) {
 		my $country = $results->valid('g_location_country');
 		my $state = $results->valid('g_location_state');
 		my $city = $results->valid('g_location_city');
@@ -469,7 +469,7 @@ sub upload_genome : Runmode {
 	$tracking_row->update;
 	
 	# Send user to status page
-	$self->redirect( "/genome-uploader/status?tracking_id=$tracking_id" );
+	$self->redirect( "/upload/status?tracking_id=$tracking_id" );
 }
 
 =head2 status
@@ -528,7 +528,7 @@ sub status : Runmode {
     	my $feature_row = $feature_rs->first();
     	
     	if($feature_row) {
-    		$t->param(strain_link => '/strain_info?privateSingleStrainID='.$feature_row->feature_id);
+    		$t->param(strain_link => '/strains/info?genome=private_'.$feature_row->feature_id);
     		$t->param(not_found => 0);
     	} else {
     		$t->param(strain_link => 0);
@@ -594,9 +594,9 @@ sub list : Runmode {
 				#feature_id => $upload_row->get_column('feature_id'),
 				can_delete => $upload_row->get_column('can_share'),
 				can_modify => $upload_row->get_column('can_modify'),
-				view_rm => '/strain_info?privateSingleStrainID=' . $upload_row->get_column('feature_id'),
-				edit_rm => '/genome-uploader/edit_genome?upload_id=' . $upload_row->upload_id,
-				delete_rm => '/genome-uploader/delete_genome?upload_id=' . $upload_row->upload_id,
+				view_rm => '/strains/info?genome=private_' . $upload_row->get_column('feature_id'),
+				edit_rm => '/upload/edit_genome?upload_id=' . $upload_row->upload_id,
+				delete_rm => '/upload/delete_genome?upload_id=' . $upload_row->upload_id,
 			};
 	}
 
@@ -652,7 +652,7 @@ sub delete_genome : Runmode {
 	# Only admins can delete genomes (aka has can_share priviledges)
 	unless($test_row && $test_row->get_column('can_share')) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to delete this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
 	
 	# Keep record of all deletions
@@ -681,7 +681,7 @@ sub delete_genome : Runmode {
 	
 	# Redirect to genome list page
 	$self->session->param( operation_status => '<strong>Success!</strong> Genome has been deleted.' );
-	$self->redirect('/genome-uploader/list');
+	$self->redirect('/upload/list');
    
 }
 
@@ -707,7 +707,7 @@ sub edit_genome : Runmode {
 	
 	unless($test_row) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to edit this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
     
     # Grab everything!!
@@ -895,7 +895,7 @@ sub edit_genome : Runmode {
     $t->param(selected_syndromes => \@syndrome_keys);
      
     $t->param(new_genome => 0);
-    $t->param(rm    => '/genome-uploader/update_genome');
+    $t->param(rm    => '/upload/update_genome');
 	$t->param(title => 'Modify Genome Attributes');
 	$t->param($errs) if $errs;    # created by rm update_genome
 	
@@ -925,7 +925,7 @@ sub update_genome : Runmode {
 	
 	unless($test_row) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to update this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
     
     # Validate form and fasta file
@@ -970,7 +970,7 @@ sub update_genome : Runmode {
     	# Attempt to change privacy
     	unless($test_row->get_column('can_share')) {
     		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to modify the privacy settings for this genome.');
-			$self->redirect('/genome-uploader/list');
+			$self->redirect('/upload/list');
     	} else {
     		$feature_row->upload->category($results->valid('g_privacy'));
     	}
@@ -1384,7 +1384,7 @@ sub update_genome : Runmode {
 	
 	# Redirect to genome list page
 	$self->session->param( operation_status => '<strong>Success!</strong> Genome has been updated.' );
-	$self->redirect('/genome-uploader/list');
+	$self->redirect('/upload/list');
 }
 
 =head2 meta_ontology
