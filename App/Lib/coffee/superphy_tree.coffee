@@ -858,13 +858,13 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
 
+    count = {}
 
-    counts = {}
     for a in mtypesDisplayed
-      counts[a] = {}
+      count[a] = {}
 
     # Need to keep handle on the true root
-    @root = @_syncNode(@trueRoot, genomes, 0, counts)
+    @root = @_syncNode(@trueRoot, genomes, 0, count)
 
     
     # Check if genome set has changed
@@ -878,10 +878,12 @@ class TreeView extends ViewTemplate
     true
     
   _syncNode: (node, genomes, sumLengths, count) ->
+
     
     # Restore to original branch length
     # Compute cumulative branch length
     node.length = node.storage*1
+
     node.sum_length = sumLengths + node.length
     
     if node.leaf? and node.leaf is "true"
@@ -914,14 +916,16 @@ class TreeView extends ViewTemplate
 
     else
 
-      node.metaCount = {}
-      for k,v of count
-        node.metaCount[k] = v
-
       # Internal node
       
+
       isExpanded = true
       isExpanded = false if node._children?
+
+      node.metaCount = {}
+      if !isExpanded
+        for k,v of count
+          node.metaCount[k] = v
       
       # Iterate through the original children array
       children = []

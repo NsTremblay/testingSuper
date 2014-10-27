@@ -3482,13 +3482,13 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
-      var a, counts, _i, _len;
-      counts = {};
+      var a, count, _i, _len;
+      count = {};
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         a = mtypesDisplayed[_i];
-        counts[a] = {};
+        count[a] = {};
       }
-      this.root = this._syncNode(this.trueRoot, genomes, 0, counts);
+      this.root = this._syncNode(this.trueRoot, genomes, 0, count);
       if ((genomes.genomeSetId !== this.currentGenomeSet) || this.resetWindow) {
         this._expansionLayout();
         this.currentGenomeSet = genomes.genomeSetId;
@@ -3521,14 +3521,16 @@
           node.hidden = true;
         }
       } else {
-        node.metaCount = {};
-        for (k in count) {
-          v = count[k];
-          node.metaCount[k] = v;
-        }
         isExpanded = true;
         if (node._children != null) {
           isExpanded = false;
+        }
+        node.metaCount = {};
+        if (!isExpanded) {
+          for (k in count) {
+            v = count[k];
+            node.metaCount[k] = v;
+          }
         }
         children = [];
         _ref = node.daycare;
