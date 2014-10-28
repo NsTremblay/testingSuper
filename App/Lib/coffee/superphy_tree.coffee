@@ -387,7 +387,7 @@ class TreeView extends ViewTemplate
       .attr("class", "metaMeter")
       .attr("width", (n) ->
         if n._children?
-          n.metaCount['isolation_host']['Bos taurus (cow)']
+          n.metaCount['isolation_host']['Homo sapiens (human)']
         else 0)
       .attr("height", 10)
       .attr("y", 5)
@@ -457,7 +457,7 @@ class TreeView extends ViewTemplate
     nodesUpdate.selectAll("rect.metaMeter")
       .attr("width", (n) ->
         if n._children?
-          n.metaCount['isolation_host']['Bos taurus (cow)']
+          n.metaCount['isolation_host']['Homo sapiens (human)']
         else 0)
 
     nodesUpdate.filter((d) -> !d.children )
@@ -885,6 +885,10 @@ class TreeView extends ViewTemplate
     node.length = node.storage*1
 
     node.sum_length = sumLengths + node.length
+
+    node.metaCount = {}
+    for a in mtypesDisplayed
+      node.metaCount[a] = {}
     
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
@@ -902,7 +906,6 @@ class TreeView extends ViewTemplate
         node.hidden   = false
         genomes.countMeta(g, count)
 
-        
         # Append locus data
         # This will overwrite assignedGroup
         if @locusData?
@@ -917,16 +920,16 @@ class TreeView extends ViewTemplate
     else
 
       # Internal node
-      
 
       isExpanded = true
       isExpanded = false if node._children?
 
-      node.metaCount = {}
-      if !isExpanded
-        for k,v of count
-          node.metaCount[k] = v
-      
+      for k,v of count
+        node.metaCount[k] = v
+        for k2, v2 of count[k]
+          node.metaCount[k][k2] = v2
+      console.log(node.metaCount['isolation_host']['Homo sapiens (human)'])
+
       # Iterate through the original children array
       children = []
       for c in node.daycare
@@ -934,6 +937,7 @@ class TreeView extends ViewTemplate
         
         unless u.hidden
           children.push(u)
+      
           
       if children.length == 0
         node.hidden = true

@@ -3157,7 +3157,7 @@
       }).attr("height", 10).attr("y", -5).attr("x", 4);
       svgNodes.append('rect').style("fill", "blue").attr("class", "metaMeter").attr("width", function(n) {
         if (n._children != null) {
-          return n.metaCount['isolation_host']['Bos taurus (cow)'];
+          return n.metaCount['isolation_host']['Homo sapiens (human)'];
         } else {
           return 0;
         }
@@ -3187,7 +3187,7 @@
       });
       nodesUpdate.selectAll("rect.metaMeter").attr("width", function(n) {
         if (n._children != null) {
-          return n.metaCount['isolation_host']['Bos taurus (cow)'];
+          return n.metaCount['isolation_host']['Homo sapiens (human)'];
         } else {
           return 0;
         }
@@ -3499,9 +3499,14 @@
     };
 
     TreeView.prototype._syncNode = function(node, genomes, sumLengths, count) {
-      var c, child, children, g, isExpanded, k, ld, u, v, _i, _len, _ref;
+      var a, c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _j, _len, _len1, _ref, _ref1;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
+      node.metaCount = {};
+      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
+        a = mtypesDisplayed[_i];
+        node.metaCount[a] = {};
+      }
       if ((node.leaf != null) && node.leaf === "true") {
         g = genomes.genome(node.genome);
         if ((g != null) && g.visible) {
@@ -3525,17 +3530,20 @@
         if (node._children != null) {
           isExpanded = false;
         }
-        node.metaCount = {};
-        if (!isExpanded) {
-          for (k in count) {
-            v = count[k];
-            node.metaCount[k] = v;
+        for (k in count) {
+          v = count[k];
+          node.metaCount[k] = v;
+          _ref = count[k];
+          for (k2 in _ref) {
+            v2 = _ref[k2];
+            node.metaCount[k][k2] = v2;
           }
         }
+        console.log(node.metaCount['isolation_host']['Homo sapiens (human)']);
         children = [];
-        _ref = node.daycare;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          c = _ref[_i];
+        _ref1 = node.daycare;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          c = _ref1[_j];
           u = this._syncNode(c, genomes, node.sum_length, count);
           if (!u.hidden) {
             children.push(u);
