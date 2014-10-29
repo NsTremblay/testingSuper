@@ -858,13 +858,8 @@ class TreeView extends ViewTemplate
   #      
   _sync: (genomes) ->
 
-    count = {}
-
-    for a in mtypesDisplayed
-      count[a] = {}
-
     # Need to keep handle on the true root
-    @root = @_syncNode(@trueRoot, genomes, 0, count)
+    @root = @_syncNode(@trueRoot, genomes, 0)
 
     
     # Check if genome set has changed
@@ -877,7 +872,7 @@ class TreeView extends ViewTemplate
 
     true
     
-  _syncNode: (node, genomes, sumLengths, count) ->
+  _syncNode: (node, genomes, sumLengths) ->
 
     
     # Restore to original branch length
@@ -889,7 +884,7 @@ class TreeView extends ViewTemplate
     node.metaCount = {}
     for a in mtypesDisplayed
       node.metaCount[a] = {}
-    
+
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
       g = genomes.genome(node.genome)
@@ -900,11 +895,11 @@ class TreeView extends ViewTemplate
         # Update node with sync'd genome properties
         
         node.viewname = g.viewname
-        
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
-        genomes.countMeta(g, count)
+
+        genomes.countMeta(g, node.metaCount)
 
         # Append locus data
         # This will overwrite assignedGroup
@@ -924,21 +919,20 @@ class TreeView extends ViewTemplate
       isExpanded = true
       isExpanded = false if node._children?
 
-      for k,v of count
-        node.metaCount[k] = v
-        for k2, v2 of count[k]
-          node.metaCount[k][k2] = v2
-      console.log(node.metaCount['isolation_host']['Homo sapiens (human)'])
-
       # Iterate through the original children array
       children = []
       for c in node.daycare
-        u = @_syncNode(c, genomes, node.sum_length, count)
+        u = @_syncNode(c, genomes, node.sum_length)
         
         unless u.hidden
           children.push(u)
+
+        for k,v of c.metaCount
+          node.metaCount[k] = v
+          for k2,v2 of c.metaCount[k]
+            node.metaCount[k][k2] += v2
+      console.log(node.metaCount['isolation_host']['Homo sapiens (human)'])
       
-          
       if children.length == 0
         node.hidden = true
         

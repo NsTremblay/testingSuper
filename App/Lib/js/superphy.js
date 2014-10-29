@@ -3482,13 +3482,7 @@
     };
 
     TreeView.prototype._sync = function(genomes) {
-      var a, count, _i, _len;
-      count = {};
-      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
-        a = mtypesDisplayed[_i];
-        count[a] = {};
-      }
-      this.root = this._syncNode(this.trueRoot, genomes, 0, count);
+      this.root = this._syncNode(this.trueRoot, genomes, 0);
       if ((genomes.genomeSetId !== this.currentGenomeSet) || this.resetWindow) {
         this._expansionLayout();
         this.currentGenomeSet = genomes.genomeSetId;
@@ -3498,8 +3492,8 @@
       return true;
     };
 
-    TreeView.prototype._syncNode = function(node, genomes, sumLengths, count) {
-      var a, c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _j, _len, _len1, _ref, _ref1;
+    TreeView.prototype._syncNode = function(node, genomes, sumLengths) {
+      var a, c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
       node.metaCount = {};
@@ -3514,7 +3508,7 @@
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
-          genomes.countMeta(g, count);
+          genomes.countMeta(g, node.metaCount);
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];
@@ -3530,25 +3524,26 @@
         if (node._children != null) {
           isExpanded = false;
         }
-        for (k in count) {
-          v = count[k];
-          node.metaCount[k] = v;
-          _ref = count[k];
-          for (k2 in _ref) {
-            v2 = _ref[k2];
-            node.metaCount[k][k2] = v2;
-          }
-        }
-        console.log(node.metaCount['isolation_host']['Homo sapiens (human)']);
         children = [];
-        _ref1 = node.daycare;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          c = _ref1[_j];
-          u = this._syncNode(c, genomes, node.sum_length, count);
+        _ref = node.daycare;
+        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
+          c = _ref[_j];
+          u = this._syncNode(c, genomes, node.sum_length);
           if (!u.hidden) {
             children.push(u);
           }
+          _ref1 = c.metaCount;
+          for (k in _ref1) {
+            v = _ref1[k];
+            node.metaCount[k] = v;
+            _ref2 = c.metaCount[k];
+            for (k2 in _ref2) {
+              v2 = _ref2[k2];
+              node.metaCount[k][k2] += v2;
+            }
+          }
         }
+        console.log(node.metaCount['isolation_host']['Homo sapiens (human)']);
         if (children.length === 0) {
           node.hidden = true;
         } else if (children.length === 1) {
