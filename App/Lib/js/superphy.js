@@ -6306,7 +6306,8 @@
       }
       mcOptions = {
         gridSize: 50,
-        maxZoom: 15
+        maxZoom: 15,
+        batchSize: 100
       };
       this.markerClusterer = new MarkerClusterer(this.map, this.clusteredMarkers, mcOptions);
       return true;
@@ -6456,23 +6457,24 @@
     CartographerOverlay.prototype = new google.maps.OverlayView();
 
     CartographerOverlay.prototype.onAdd = function() {
-      var div, img, panes;
+      var div, panes, selectedMarker, svg;
       div = document.createElement('div');
       div.id = "selectedGenome";
       div.style.borderStyle = 'none';
       div.style.borderWidth = '0px';
       div.style.position = 'absolute';
-      div.style.width = '22px';
-      div.style.height = '40px';
+      div.style.width = '15px';
+      div.style.height = '15px';
       div.style.cursor = 'pointer';
-      img = document.createElement('img');
-      img.src = '/App/Pictures/marker_icon_green.png';
-      img.style.width = '100%';
-      img.style.height = '100%';
-      img.style.position = 'absolute';
-      img.id = "selectedGenomeMarker";
-      img.title = this.title;
-      div.appendChild(img);
+      svg = d3.select(div).append('svg').attr('height', '15px').attr('width', '15px');
+      selectedMarker = svg.append("g").attr('transform', 'translate(0,0)');
+      selectedMarker.append("circle").attr('cx', 7.5).attr('cy', 7.5).attr('r', '5px').style({
+        'fill': '#ffc966',
+        'stroke': '#ffa500',
+        'stroke-width': '3px',
+        'fill-opacity': '0.5'
+      });
+      selectedMarker.append("title").text(this.title);
       this.div = div;
       panes = this.getPanes();
       return panes.floatPane.appendChild(div);
@@ -6488,8 +6490,8 @@
       overlayProjection = this.getProjection();
       location = overlayProjection.fromLatLngToDivPixel(this.latLng);
       div = this.div;
-      div.style.left = (location.x - 11) + 'px';
-      return div.style.top = (location.y - 40) + 'px';
+      div.style.left = (location.x - 7.5) + 'px';
+      return div.style.top = (location.y - 7.5) + 'px';
     };
 
     return CartographerOverlay;
