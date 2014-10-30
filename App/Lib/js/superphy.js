@@ -3496,13 +3496,13 @@
       var a, c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
-      node.metaCount = {};
-      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
-        a = mtypesDisplayed[_i];
-        node.metaCount[a] = {};
-      }
       if ((node.leaf != null) && node.leaf === "true") {
         g = genomes.genome(node.genome);
+        node.metaCount = {};
+        for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
+          a = mtypesDisplayed[_i];
+          node.metaCount[a] = {};
+        }
         if ((g != null) && g.visible) {
           node.viewname = g.viewname;
           node.selected = (g.isSelected != null) && g.isSelected;
@@ -3524,6 +3524,7 @@
         if (node._children != null) {
           isExpanded = false;
         }
+        node.metaCount = {};
         children = [];
         _ref = node.daycare;
         for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
@@ -3535,15 +3536,15 @@
           _ref1 = c.metaCount;
           for (k in _ref1) {
             v = _ref1[k];
-            node.metaCount[k] = v;
+            node.metaCount[k] = {};
             _ref2 = c.metaCount[k];
             for (k2 in _ref2) {
               v2 = _ref2[k2];
               node.metaCount[k][k2] += v2;
+              console.log(node.metaCount[k][k2]);
             }
           }
         }
-        console.log(node.metaCount['isolation_host']['Homo sapiens (human)']);
         if (children.length === 0) {
           node.hidden = true;
         } else if (children.length === 1) {

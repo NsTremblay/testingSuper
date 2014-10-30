@@ -881,13 +881,13 @@ class TreeView extends ViewTemplate
 
     node.sum_length = sumLengths + node.length
 
-    node.metaCount = {}
-    for a in mtypesDisplayed
-      node.metaCount[a] = {}
-
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
       g = genomes.genome(node.genome)
+
+      node.metaCount = {}
+      for a in mtypesDisplayed
+        node.metaCount[a] = {}
 
       # Genome can be missing if a subset of genomes was used
       # Or if it was filtered     
@@ -919,6 +919,8 @@ class TreeView extends ViewTemplate
       isExpanded = true
       isExpanded = false if node._children?
 
+      node.metaCount = {}
+
       # Iterate through the original children array
       children = []
       for c in node.daycare
@@ -928,10 +930,11 @@ class TreeView extends ViewTemplate
           children.push(u)
 
         for k,v of c.metaCount
-          node.metaCount[k] = v
+          node.metaCount[k] = {}
           for k2,v2 of c.metaCount[k]
             node.metaCount[k][k2] += v2
-      console.log(node.metaCount['isolation_host']['Homo sapiens (human)'])
+            console.log(node.metaCount[k][k2])
+
       
       if children.length == 0
         node.hidden = true
