@@ -1896,7 +1896,7 @@ class GenomeController
   
   filtered: 0
 
-  
+  mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
    
   # FUNC update
   # Update genome names displayed to user
@@ -1997,6 +1997,10 @@ class GenomeController
   # count
   #
   countMeta: (genome, count) ->
+
+    count = {}
+    for a in mtypesDisplayed
+      count[a] = {}
 
     if count['serotype'][genome.serotype]?
       count['serotype'][genome.serotype]++

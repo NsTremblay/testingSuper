@@ -381,17 +381,47 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-    svgNodes
-      .append('rect')
-      .style("fill", "blue")
-      .attr("class", "metaMeter")
-      .attr("width", (n) ->
-        if n._children?
-          n.metaCount['isolation_host']['Homo sapiens (human)']
-        else 0)
-      .attr("height", 10)
-      .attr("y", 5)
-      .attr("x", 4)
+  
+    if genomes.visibleMeta['isolation_host']
+      svgNodes
+        .append('rect')
+        .style("fill", "blue")
+        .attr("class", "metaMeterHuman")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
+          else 0)
+        .attr("height", 10)
+        .attr("y", 5)
+        .attr("x", 4)
+      svgNodes
+        .append('rect')
+        .style("fill", "green")
+        .attr("class", "metaMeterCow")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
+          else 0)
+        .attr("height", 10)
+        .attr("y", 5)
+        .attr("x", (n) ->
+          if n._children?
+            4 + 75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
+          else 0)
+      svgNodes
+        .append('rect')
+        .style("fill", "#ffcc00")
+        .attr("class", "metaMeterUndefined")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['undefined']) / n.num_leaves
+          else 0)
+        .attr("height", 10)
+        .attr("y", 5)
+        .attr("x", (n) ->
+          if n._children?
+            4 + 75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves + 75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
+          else 0)
 
     cmdBox = iNodes
       .append('text')
@@ -454,11 +484,23 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
-    nodesUpdate.selectAll("rect.metaMeter")
-      .attr("width", (n) ->
-        if n._children?
-          n.metaCount['isolation_host']['Homo sapiens (human)']
-        else 0)
+    if genomes.visibleMeta['isolation_host']
+      nodesUpdate.selectAll("rect.metaMeterHuman")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
+          else 0)
+      nodesUpdate.selectAll("rect.metaMeterCow")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
+          else 0)
+      nodesUpdate.selectAll("rect.metaMeterUndefined")
+        .attr("width", (n) ->
+          if n._children?
+            75 * (n.metaCount['isolation_host']['undefined']) / n.num_leaves
+          else 0)
+
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
@@ -480,6 +522,10 @@ class TreeView extends ViewTemplate
 
     nodesExit.select("circle")
       .attr("r", 1e-6)
+
+    if !genomes.visibleMeta?
+      nodesExit.select("rect.metaMeter")
+        .attr("width", 0)
     
     nodesExit.select("text")
       .style("fill-opacity", 1e-6)
@@ -861,7 +907,6 @@ class TreeView extends ViewTemplate
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0)
 
-    
     # Check if genome set has changed
     if (genomes.genomeSetId != @currentGenomeSet) || @resetWindow
       # Need to set starting expansion layout
@@ -885,10 +930,6 @@ class TreeView extends ViewTemplate
       # Genome leaf node
       g = genomes.genome(node.genome)
 
-      node.metaCount = {}
-      for a in mtypesDisplayed
-        node.metaCount[a] = {}
-
       # Genome can be missing if a subset of genomes was used
       # Or if it was filtered     
       if g? and g.visible
@@ -898,8 +939,6 @@ class TreeView extends ViewTemplate
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
-
-        genomes.countMeta(g, node.metaCount)
 
         # Append locus data
         # This will overwrite assignedGroup
@@ -911,6 +950,9 @@ class TreeView extends ViewTemplate
       else
         # Mask filtered node
         node.hidden = true
+
+      unless node.metaCount? && !g?
+        node.metaCount = genomes.countMeta(g)
 
     else
 
@@ -929,12 +971,12 @@ class TreeView extends ViewTemplate
         unless u.hidden
           children.push(u)
 
-        for k,v of c.metaCount
-          node.metaCount[k] = {}
-          for k2,v2 of c.metaCount[k]
-            node.metaCount[k][k2] += v2
-            console.log(node.metaCount[k][k2])
-
+          for k,v of u.metaCount
+            node.metaCount[k] = {} unless node.metaCount[k]?
+            for k2,v2 of u.metaCount[k]
+              if node.metaCount[k][k2]?
+                node.metaCount[k][k2] += v2
+              else node.metaCount[k][k2] = v2
       
       if children.length == 0
         node.hidden = true

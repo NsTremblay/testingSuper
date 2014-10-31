@@ -1559,6 +1559,8 @@
    */
 
   GenomeController = (function() {
+    var mtypesDisplayed;
+
     function GenomeController(public_genomes, private_genomes, subset) {
       var countPri, countPub, g, i, id, newPri, newPub, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
       this.public_genomes = public_genomes;
@@ -1630,6 +1632,8 @@
     GenomeController.prototype.privateRegexp = new RegExp('^private_');
 
     GenomeController.prototype.filtered = 0;
+
+    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     GenomeController.prototype.update = function() {
       var g, id, ma, _ref, _ref1;
@@ -1722,6 +1726,12 @@
     };
 
     GenomeController.prototype.countMeta = function(genome, count) {
+      var a, _i, _len;
+      count = {};
+      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
+        a = mtypesDisplayed[_i];
+        count[a] = {};
+      }
       if (count['serotype'][genome.serotype] != null) {
         count['serotype'][genome.serotype]++;
       } else {
@@ -3155,13 +3165,41 @@
           return 0;
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
-      svgNodes.append('rect').style("fill", "blue").attr("class", "metaMeter").attr("width", function(n) {
-        if (n._children != null) {
-          return n.metaCount['isolation_host']['Homo sapiens (human)'];
-        } else {
-          return 0;
-        }
-      }).attr("height", 10).attr("y", 5).attr("x", 4);
+      if (genomes.visibleMeta['isolation_host']) {
+        svgNodes.append('rect').style("fill", "blue").attr("class", "metaMeterHuman").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        }).attr("height", 10).attr("y", 5).attr("x", 4);
+        svgNodes.append('rect').style("fill", "green").attr("class", "metaMeterCow").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+          if (n._children != null) {
+            return 4 + 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        });
+        svgNodes.append('rect').style("fill", "#ffcc00").attr("class", "metaMeterUndefined").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['undefined'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+          if (n._children != null) {
+            return 4 + 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves + 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        });
+      }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });
@@ -3185,13 +3223,29 @@
           return 0;
         }
       });
-      nodesUpdate.selectAll("rect.metaMeter").attr("width", function(n) {
-        if (n._children != null) {
-          return n.metaCount['isolation_host']['Homo sapiens (human)'];
-        } else {
-          return 0;
-        }
-      });
+      if (genomes.visibleMeta['isolation_host']) {
+        nodesUpdate.selectAll("rect.metaMeterHuman").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        });
+        nodesUpdate.selectAll("rect.metaMeterCow").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        });
+        nodesUpdate.selectAll("rect.metaMeterUndefined").attr("width", function(n) {
+          if (n._children != null) {
+            return 75 * n.metaCount['isolation_host']['undefined'] / n.num_leaves;
+          } else {
+            return 0;
+          }
+        });
+      }
       nodesUpdate.filter(function(d) {
         return !d.children;
       }).select("text").style("fill-opacity", 1);
@@ -3208,6 +3262,9 @@
         };
       })(this)).remove();
       nodesExit.select("circle").attr("r", 1e-6);
+      if (genomes.visibleMeta == null) {
+        nodesExit.select("rect.metaMeter").attr("width", 0);
+      }
       nodesExit.select("text").style("fill-opacity", 1e-6);
       nodesExit.select("rect").attr("width", 1e-6).attr("height", 1e-6);
       if (!oldRoot.root && this.root !== oldRoot) {
@@ -3493,22 +3550,16 @@
     };
 
     TreeView.prototype._syncNode = function(node, genomes, sumLengths) {
-      var a, c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      var c, child, children, g, isExpanded, k, k2, ld, u, v, v2, _i, _len, _ref, _ref1, _ref2;
       node.length = node.storage * 1;
       node.sum_length = sumLengths + node.length;
       if ((node.leaf != null) && node.leaf === "true") {
         g = genomes.genome(node.genome);
-        node.metaCount = {};
-        for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
-          a = mtypesDisplayed[_i];
-          node.metaCount[a] = {};
-        }
         if ((g != null) && g.visible) {
           node.viewname = g.viewname;
           node.selected = (g.isSelected != null) && g.isSelected;
           node.assignedGroup = g.assignedGroup;
           node.hidden = false;
-          genomes.countMeta(g, node.metaCount);
           if (this.locusData != null) {
             ld = this.locusData.locusNode(node.name);
             node.viewname += ld[0];
@@ -3519,6 +3570,9 @@
         } else {
           node.hidden = true;
         }
+        if (!((node.metaCount != null) && (g == null))) {
+          node.metaCount = genomes.countMeta(g);
+        }
       } else {
         isExpanded = true;
         if (node._children != null) {
@@ -3527,21 +3581,26 @@
         node.metaCount = {};
         children = [];
         _ref = node.daycare;
-        for (_j = 0, _len1 = _ref.length; _j < _len1; _j++) {
-          c = _ref[_j];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          c = _ref[_i];
           u = this._syncNode(c, genomes, node.sum_length);
           if (!u.hidden) {
             children.push(u);
-          }
-          _ref1 = c.metaCount;
-          for (k in _ref1) {
-            v = _ref1[k];
-            node.metaCount[k] = {};
-            _ref2 = c.metaCount[k];
-            for (k2 in _ref2) {
-              v2 = _ref2[k2];
-              node.metaCount[k][k2] += v2;
-              console.log(node.metaCount[k][k2]);
+            _ref1 = u.metaCount;
+            for (k in _ref1) {
+              v = _ref1[k];
+              if (node.metaCount[k] == null) {
+                node.metaCount[k] = {};
+              }
+              _ref2 = u.metaCount[k];
+              for (k2 in _ref2) {
+                v2 = _ref2[k2];
+                if (node.metaCount[k][k2] != null) {
+                  node.metaCount[k][k2] += v2;
+                } else {
+                  node.metaCount[k][k2] = v2;
+                }
+              }
             }
           }
         }
