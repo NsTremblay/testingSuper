@@ -381,47 +381,31 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-  
+    colours = ['blue', 'green', '#ffcc00', 'purple', 'blue', 'green', '#ffcc00', 'purple']
+    randomColour1 = colours[Math.floor(Math.random() * colours.length)]
+    randomColour2 = colours[Math.floor(Math.random() * colours.length)]
+    randomColour3 = colours[Math.floor(Math.random() * colours.length)]
+
     if genomes.visibleMeta['isolation_host']
-      svgNodes
-        .append('rect')
-        .style("fill", "blue")
-        .attr("class", "metaMeterHuman")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
-          else 0)
-        .attr("height", 10)
-        .attr("y", 5)
-        .attr("x", 4)
-      svgNodes
-        .append('rect')
-        .style("fill", "green")
-        .attr("class", "metaMeterCow")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
-          else 0)
-        .attr("height", 10)
-        .attr("y", 5)
-        .attr("x", (n) ->
-          if n._children?
-            4 + 75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
-          else 0)
-      svgNodes
-        .append('rect')
-        .style("fill", "#ffcc00")
-        .attr("class", "metaMeterUndefined")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['undefined']) / n.num_leaves
-          else 0)
-        .attr("height", 10)
-        .attr("y", 5)
-        .attr("x", (n) ->
-          if n._children?
-            4 + 75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves + 75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
-          else 0)
+      j = 0
+      i = 0
+      while i < superphyMetaOntology["hosts"].length
+        s = superphyMetaOntology["hosts"][i]
+        svgNodes
+          .append("rect")
+          .style("fill", colours[j++])
+          .attr("class", "metaMeter")
+          .attr("width", (n) ->
+            if n._children? && !isNaN(n.metaCount['isolation_host'][s])
+              75 * (n.metaCount['isolation_host'][s]) / n.num_leaves
+            else 0)
+          .attr("height", 10)
+          .attr("y", 5)
+          .attr("x", (n) ->
+            if n._children? && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])
+              4 + (75*(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]]) / n.num_leaves)
+            else 4)
+        i++
 
     cmdBox = iNodes
       .append('text')
@@ -484,22 +468,21 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
+  
     if genomes.visibleMeta['isolation_host']
-      nodesUpdate.selectAll("rect.metaMeterHuman")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['Homo sapiens (human)']) / n.num_leaves
-          else 0)
-      nodesUpdate.selectAll("rect.metaMeterCow")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['Bos taurus (cow)']) / n.num_leaves
-          else 0)
-      nodesUpdate.selectAll("rect.metaMeterUndefined")
-        .attr("width", (n) ->
-          if n._children?
-            75 * (n.metaCount['isolation_host']['undefined']) / n.num_leaves
-          else 0)
+      i = 0
+      while i < superphyMetaOntology["hosts"].length
+        s = superphyMetaOntology["hosts"][i]
+        nodesUpdate.selectAll("rect.metaMeter")
+          .attr("width", (n) ->
+            if n._children? && !isNaN(n.metaCount['isolation_host'][s])
+              75 * (n.metaCount['isolation_host'][s]) / n.num_leaves
+            else 0)
+          .attr("x", (n) ->
+            if n._children? && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])
+              4 + (75*(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]]) / n.num_leaves)
+            else 4)
+      i++
 
 
     nodesUpdate.filter((d) -> !d.children )

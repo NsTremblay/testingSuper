@@ -2996,7 +2996,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, currLeaves, dt, elID, iNodes, id, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, randomColour1, randomColour2, randomColour3, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3165,40 +3165,30 @@
           return 0;
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
+      colours = ['blue', 'green', '#ffcc00', 'purple', 'blue', 'green', '#ffcc00', 'purple'];
+      randomColour1 = colours[Math.floor(Math.random() * colours.length)];
+      randomColour2 = colours[Math.floor(Math.random() * colours.length)];
+      randomColour3 = colours[Math.floor(Math.random() * colours.length)];
       if (genomes.visibleMeta['isolation_host']) {
-        svgNodes.append('rect').style("fill", "blue").attr("class", "metaMeterHuman").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        }).attr("height", 10).attr("y", 5).attr("x", 4);
-        svgNodes.append('rect').style("fill", "green").attr("class", "metaMeterCow").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        }).attr("height", 10).attr("y", 5).attr("x", function(n) {
-          if (n._children != null) {
-            return 4 + 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        });
-        svgNodes.append('rect').style("fill", "#ffcc00").attr("class", "metaMeterUndefined").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['undefined'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        }).attr("height", 10).attr("y", 5).attr("x", function(n) {
-          if (n._children != null) {
-            return 4 + 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves + 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        });
+        j = 0;
+        i = 0;
+        while (i < superphyMetaOntology["hosts"].length) {
+          s = superphyMetaOntology["hosts"][i];
+          svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("width", function(n) {
+            if ((n._children != null) && !isNaN(n.metaCount['isolation_host'][s])) {
+              return 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
+            } else {
+              return 0;
+            }
+          }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+            if ((n._children != null) && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])) {
+              return 4 + (75 * n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]] / n.num_leaves);
+            } else {
+              return 4;
+            }
+          });
+          i++;
+        }
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
@@ -3224,27 +3214,24 @@
         }
       });
       if (genomes.visibleMeta['isolation_host']) {
-        nodesUpdate.selectAll("rect.metaMeterHuman").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['Homo sapiens (human)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        });
-        nodesUpdate.selectAll("rect.metaMeterCow").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['Bos taurus (cow)'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        });
-        nodesUpdate.selectAll("rect.metaMeterUndefined").attr("width", function(n) {
-          if (n._children != null) {
-            return 75 * n.metaCount['isolation_host']['undefined'] / n.num_leaves;
-          } else {
-            return 0;
-          }
-        });
+        i = 0;
+        while (i < superphyMetaOntology["hosts"].length) {
+          s = superphyMetaOntology["hosts"][i];
+          nodesUpdate.selectAll("rect.metaMeter").attr("width", function(n) {
+            if ((n._children != null) && !isNaN(n.metaCount['isolation_host'][s])) {
+              return 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
+            } else {
+              return 0;
+            }
+          }).attr("x", function(n) {
+            if ((n._children != null) && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])) {
+              return 4 + (75 * n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]] / n.num_leaves);
+            } else {
+              return 4;
+            }
+          });
+        }
+        i++;
       }
       nodesUpdate.filter(function(d) {
         return !d.children;
