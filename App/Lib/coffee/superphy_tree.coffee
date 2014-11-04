@@ -175,6 +175,56 @@ class TreeView extends ViewTemplate
 
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
 
+  metaOntology = {
+   "syndromes" : [
+      "Bacteriuria",
+      "Bloody diarrhea",
+      "Crohn's Disease",
+      "Diarrhea",
+      "Gastroenteritis",
+      "Hemolytic-uremic syndrome",
+      "Hemorrhagic colitis",
+      "Mastitis",
+      "Meningitis",
+      "Peritonitis",
+      "Pneumonia",
+      "Pyelonephritis",
+      "Septicaemia",
+      "Ulcerateive colitis",
+      "Urinary tract infection (cystitis)"
+   ],
+   "hosts" : [
+      "Bos taurus (cow)",
+      "Canis lupus familiaris (dog)",
+      "Environmental source",
+      "Felis catus (cat)",
+      "Gallus gallus (chicken)",
+      "Homo sapiens (human)",
+      "Mus musculus (mouse)",
+      "Oryctolagus cuniculus (rabbit)",
+      "Ovis aries (sheep)",
+      "Sus scrofa (pig)"
+      "undefined"
+   ],
+   "sources" : [
+      "Blood",
+      "Cecum",
+      "Colon",
+      "Feces",
+      "Ileum",
+      "Intestine",
+      "Liver",
+      "Meat",
+      "Meat-based food",
+      "Stool",
+      "Urine",
+      "Vegetable-based food",
+      "Water",
+      "Yolk",
+      "cerebrospinal_fluid"
+   ]
+}
+
   
   # FUNC update
   # Update genome tree view
@@ -368,7 +418,7 @@ class TreeView extends ViewTemplate
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
 
-    # Appends bar.  Size of bar reflects number of genomes.
+    # Appends genomeMeter.  Size of bar reflects number of genomes.
     svgNodes
       .append('rect')
       .style("fill", "red")
@@ -389,21 +439,27 @@ class TreeView extends ViewTemplate
     if genomes.visibleMeta['isolation_host']
       j = 0
       i = 0
-      while i < superphyMetaOntology["hosts"].length
-        s = superphyMetaOntology["hosts"][i]
+      y = 5
+      x = 0
+      while i < metaOntology["hosts"].length
+        s = metaOntology["hosts"][i]
+        y += 5
         svgNodes
           .append("rect")
           .style("fill", colours[j++])
           .attr("class", "metaMeter")
+          .attr("id", s)
           .attr("width", (n) ->
             if n._children? && !isNaN(n.metaCount['isolation_host'][s])
-              75 * (n.metaCount['isolation_host'][s]) / n.num_leaves
+              (n.metaCount['isolation_host'][s])
             else 0)
           .attr("height", 10)
-          .attr("y", 5)
+          .attr("y", y)
           .attr("x", (n) ->
-            if n._children? && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])
-              4 + (75*(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]]) / n.num_leaves)
+            if n._children? && i > 0 && ('#' + s)?
+              x += $('#' + s).width()
+              console.log(x)
+              4 + x
             else 4)
         i++
 
@@ -467,23 +523,6 @@ class TreeView extends ViewTemplate
         if n._children?
           20*(Math.log(n.num_leaves))
         else 0)
-
-  
-    if genomes.visibleMeta['isolation_host']
-      i = 0
-      while i < superphyMetaOntology["hosts"].length
-        s = superphyMetaOntology["hosts"][i]
-        nodesUpdate.selectAll("rect.metaMeter")
-          .attr("width", (n) ->
-            if n._children? && !isNaN(n.metaCount['isolation_host'][s])
-              75 * (n.metaCount['isolation_host'][s]) / n.num_leaves
-            else 0)
-          .attr("x", (n) ->
-            if n._children? && i > 0 && !isNaN(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]])
-              4 + (75*(n.metaCount['isolation_host'][superphyMetaOntology["hosts"][i - 1]]) / n.num_leaves)
-            else 4)
-      i++
-
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
