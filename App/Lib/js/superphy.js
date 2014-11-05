@@ -2997,12 +2997,12 @@
 
     metaOntology = {
       "syndromes": ["Bacteriuria", "Bloody diarrhea", "Crohn's Disease", "Diarrhea", "Gastroenteritis", "Hemolytic-uremic syndrome", "Hemorrhagic colitis", "Mastitis", "Meningitis", "Peritonitis", "Pneumonia", "Pyelonephritis", "Septicaemia", "Ulcerateive colitis", "Urinary tract infection (cystitis)"],
-      "hosts": ["Bos taurus (cow)", "Canis lupus familiaris (dog)", "Environmental source", "Felis catus (cat)", "Gallus gallus (chicken)", "Homo sapiens (human)", "Mus musculus (mouse)", "Oryctolagus cuniculus (rabbit)", "Ovis aries (sheep)", "Sus scrofa (pig)", "undefined"],
+      "hosts": ["Bos taurus (cow)", "undefined", "Environmental source", "Homo sapiens (human)", "Mus musculus (mouse)", "Oryctolagus cuniculus (rabbit)", "Sus scrofa (pig)", "Gallus gallus (chicken)", "Canis lupus familiaris (dog)", "Ovis aries (sheep)", "Felis catus (cat)"],
       "sources": ["Blood", "Cecum", "Colon", "Feces", "Ileum", "Intestine", "Liver", "Meat", "Meat-based food", "Stool", "Urine", "Vegetable-based food", "Water", "Yolk", "cerebrospinal_fluid"]
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, randomColour1, randomColour2, randomColour3, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, randomColour1, randomColour2, randomColour3, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3171,29 +3171,29 @@
           return 0;
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
-      colours = ['blue', 'green', '#ffcc00', 'purple', 'blue', 'green', '#ffcc00', 'purple'];
+      colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
       randomColour1 = colours[Math.floor(Math.random() * colours.length)];
       randomColour2 = colours[Math.floor(Math.random() * colours.length)];
       randomColour3 = colours[Math.floor(Math.random() * colours.length)];
       if (genomes.visibleMeta['isolation_host']) {
         j = 0;
         i = 0;
-        y = 5;
         x = 0;
         while (i < metaOntology["hosts"].length) {
-          s = metaOntology["hosts"][i];
-          y += 5;
+          if (metaOntology["hosts"][i] != null) {
+            s = metaOntology["hosts"][i];
+          }
           svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
-            if ((n._children != null) && !isNaN(n.metaCount['isolation_host'][s])) {
-              return n.metaCount['isolation_host'][s];
+            if ((n._children != null) && (n.metaCount['isolation_host'][s] != null)) {
+              return 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
             } else {
               return 0;
             }
-          }).attr("height", 10).attr("y", y).attr("x", function(n) {
-            if ((n._children != null) && i > 0 && (('#' + s) != null)) {
-              x += $("[id=" + s + "]").width();
+          }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+            if ((n._children != null) && i > 0 && (n.metaCount['isolation_host'][metaOntology["hosts"][i - 1]] != null)) {
+              x += n.metaCount['isolation_host'][metaOntology["hosts"][i - 1]];
               console.log(x);
-              return 4 + x;
+              return x + 4;
             } else {
               return 4;
             }

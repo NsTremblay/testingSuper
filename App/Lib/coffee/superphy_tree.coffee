@@ -195,16 +195,16 @@ class TreeView extends ViewTemplate
    ],
    "hosts" : [
       "Bos taurus (cow)",
-      "Canis lupus familiaris (dog)",
+      "undefined",
       "Environmental source",
-      "Felis catus (cat)",
-      "Gallus gallus (chicken)",
       "Homo sapiens (human)",
       "Mus musculus (mouse)",
       "Oryctolagus cuniculus (rabbit)",
+      "Sus scrofa (pig)",
+      "Gallus gallus (chicken)",
+      "Canis lupus familiaris (dog)",
       "Ovis aries (sheep)",
-      "Sus scrofa (pig)"
-      "undefined"
+      "Felis catus (cat)"
    ],
    "sources" : [
       "Blood",
@@ -431,7 +431,7 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-    colours = ['blue', 'green', '#ffcc00', 'purple', 'blue', 'green', '#ffcc00', 'purple']
+    colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
     randomColour1 = colours[Math.floor(Math.random() * colours.length)]
     randomColour2 = colours[Math.floor(Math.random() * colours.length)]
     randomColour3 = colours[Math.floor(Math.random() * colours.length)]
@@ -439,27 +439,26 @@ class TreeView extends ViewTemplate
     if genomes.visibleMeta['isolation_host']
       j = 0
       i = 0
-      y = 5
       x = 0
       while i < metaOntology["hosts"].length
-        s = metaOntology["hosts"][i]
-        y += 5
+        if metaOntology["hosts"][i]?
+          s = metaOntology["hosts"][i]
         svgNodes
           .append("rect")
           .style("fill", colours[j++])
           .attr("class", "metaMeter")
           .attr("id", s)
           .attr("width", (n) ->
-            if n._children? && !isNaN(n.metaCount['isolation_host'][s])
-              (n.metaCount['isolation_host'][s])
+            if n._children? && n.metaCount['isolation_host'][s]?
+              75 * n.metaCount['isolation_host'][s] / n.num_leaves
             else 0)
           .attr("height", 10)
-          .attr("y", y)
+          .attr("y", 5)
           .attr("x", (n) ->
-            if n._children? && i > 0 && ('#' + s)?
-              x += $('#' + s).width()
+            if n._children? && i > 0 && n.metaCount['isolation_host'][metaOntology["hosts"][i-1]]?
+              x += n.metaCount['isolation_host'][metaOntology["hosts"][i-1]]
               console.log(x)
-              4 + x
+              x + 4
             else 4)
         i++
 
