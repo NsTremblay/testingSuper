@@ -432,14 +432,12 @@ class TreeView extends ViewTemplate
       .attr("x", 4)
 
     colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
-    randomColour1 = colours[Math.floor(Math.random() * colours.length)]
-    randomColour2 = colours[Math.floor(Math.random() * colours.length)]
-    randomColour3 = colours[Math.floor(Math.random() * colours.length)]
 
     if genomes.visibleMeta['isolation_host']
       j = 0
       i = 0
       x = 0
+      arr = []
       while i < metaOntology["hosts"].length
         if metaOntology["hosts"][i]?
           s = metaOntology["hosts"][i]
@@ -450,13 +448,14 @@ class TreeView extends ViewTemplate
           .attr("id", s)
           .attr("width", (n) ->
             if n._children? && n.metaCount['isolation_host'][s]?
-              75 * n.metaCount['isolation_host'][s] / n.num_leaves
+              arr[i] = (75 * (n.metaCount['isolation_host'][s]) / n.num_leaves)
+              arr[i]
             else 0)
           .attr("height", 10)
           .attr("y", 5)
           .attr("x", (n) ->
-            if n._children? && i > 0 && n.metaCount['isolation_host'][metaOntology["hosts"][i-1]]?
-              x += n.metaCount['isolation_host'][metaOntology["hosts"][i-1]]
+            if n._children? && i > 0 && arr[i-1]?
+              x += arr[i-1]
               console.log(x)
               x + 4
             else 4)

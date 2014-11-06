@@ -3002,7 +3002,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, randomColour1, randomColour2, randomColour3, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var arr, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3172,26 +3172,25 @@
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
       colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
-      randomColour1 = colours[Math.floor(Math.random() * colours.length)];
-      randomColour2 = colours[Math.floor(Math.random() * colours.length)];
-      randomColour3 = colours[Math.floor(Math.random() * colours.length)];
       if (genomes.visibleMeta['isolation_host']) {
         j = 0;
         i = 0;
         x = 0;
+        arr = [];
         while (i < metaOntology["hosts"].length) {
           if (metaOntology["hosts"][i] != null) {
             s = metaOntology["hosts"][i];
           }
           svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
             if ((n._children != null) && (n.metaCount['isolation_host'][s] != null)) {
-              return 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
+              arr[i] = 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
+              return arr[i];
             } else {
               return 0;
             }
           }).attr("height", 10).attr("y", 5).attr("x", function(n) {
-            if ((n._children != null) && i > 0 && (n.metaCount['isolation_host'][metaOntology["hosts"][i - 1]] != null)) {
-              x += n.metaCount['isolation_host'][metaOntology["hosts"][i - 1]];
+            if ((n._children != null) && i > 0 && (arr[i - 1] != null)) {
+              x += arr[i - 1];
               console.log(x);
               return x + 4;
             } else {
