@@ -437,10 +437,12 @@ class TreeView extends ViewTemplate
       j = 0
       i = 0
       x = 0
+      y = -5
       arr = []
       while i < metaOntology["hosts"].length
         if metaOntology["hosts"][i]?
           s = metaOntology["hosts"][i]
+          y += 10
         svgNodes
           .append("rect")
           .style("fill", colours[j++])
@@ -449,15 +451,16 @@ class TreeView extends ViewTemplate
           .attr("width", (n) ->
             if n._children? && n.metaCount['isolation_host'][s]?
               arr[i] = (75 * (n.metaCount['isolation_host'][s]) / n.num_leaves)
+              console.log(n.num_leaves, metaOntology["hosts"][i-1], arr[i-1], metaOntology["hosts"][i], arr[i], x)
               arr[i]
             else 0)
           .attr("height", 10)
-          .attr("y", 5)
+          .attr("y", y)
           .attr("x", (n) ->
             if n._children? && i > 0 && arr[i-1]?
-              x += arr[i-1]
-              console.log(x)
-              x + 4
+              n.xpos += arr[i-1]
+              console.log(n.xpos)
+              n.xpos + 4
             else 4)
         i++
 

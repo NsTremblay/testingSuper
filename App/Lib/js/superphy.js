@@ -3002,7 +3002,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var arr, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var arr, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3176,10 +3176,12 @@
         j = 0;
         i = 0;
         x = 0;
+        y = -5;
         arr = [];
         while (i < metaOntology["hosts"].length) {
           if (metaOntology["hosts"][i] != null) {
             s = metaOntology["hosts"][i];
+            y += 10;
           }
           svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
             if ((n._children != null) && (n.metaCount['isolation_host'][s] != null)) {
@@ -3188,11 +3190,11 @@
             } else {
               return 0;
             }
-          }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+          }).attr("height", 10).attr("y", y).attr("x", function(n) {
             if ((n._children != null) && i > 0 && (arr[i - 1] != null)) {
-              x += arr[i - 1];
-              console.log(x);
-              return x + 4;
+              n.xpos += arr[i - 1];
+              console.log(n.xpos);
+              return n.xpos + 4;
             } else {
               return 4;
             }
