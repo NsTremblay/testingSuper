@@ -1,6 +1,7 @@
 #!/usr/bin/env R
 library(ggplot2)
 library(gridBase)
+library(gridExtra)
 library(gtable)
 library(ggdendro)
 library(RColorBrewer)
@@ -28,8 +29,11 @@ columnData <- data.frame(fragments = rownames(binaryData), genomes = rep(colname
 
 #create the genome size histogram
 p <- ggplot(columnData, aes(x = fragments)) + geom_density()
-panHeatMap <- p
+gp <- ggplotGrob(p)
 
-ggsave(filename="../panGenomeHeatmap.pdf", plot=panHeatMap)
+
+pdf("../panGenomeHeatmap.pdf")
+grid.arrange(gp)
+dev.off()
 
 
