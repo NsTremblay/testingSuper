@@ -1,9 +1,10 @@
 #!/usr/bin/env R
 library(ggplot2)
+library(gridBase)
+library(gtable)
 library(ggdendro)
 library(RColorBrewer)
 library(argparser)
-library(fastcluster)
 
 
 parser <- arg.parser("Create a heatmap of the pan-genome distribution")
@@ -24,12 +25,10 @@ binaryData <- read.table(file=argv$input, header=TRUE,sep="\t",check.names=TRUE,
 columnData <- data.frame(fragments = rownames(binaryData), genomes = rep(colnames(binaryData), each = nrow(binaryData)))
 
 
-hc <- hclust.vector(binaryData, method="ward", metric="euclidean")
-hcdata <-dendro_data(hc, type = "rectangle")
 
 #create the genome size histogram
-panHeatMap <- ggplot() + theme_bw() + geom_segment(data=segment(hcdata), aes(x=x, y=y, xend=xend, yend=yend))
-
+p <- ggplot(columnData, aes(x = fragments)) + geom_density()
+panHeatMap <- p
 
 ggsave(filename="../panGenomeHeatmap.pdf", plot=panHeatMap)
 
