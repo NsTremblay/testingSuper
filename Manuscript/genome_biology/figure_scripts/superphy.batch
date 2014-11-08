@@ -1,0 +1,16 @@
+queryDirectory  /home/chad/superphy_data/
+baseDirectory   /home/chad/panseq/output/superphy/
+numberOfCores   23
+mummerDirectory /usr/bin/
+blastDirectory  /usr/bin/
+minimumNovelRegionSize  1000
+muscleExecutable    /usr/bin/muscle
+fragmentationSize   1000
+percentIdentityCutoff   90
+coreGenomeThreshold 1633
+runMode     pan
+storeAlleles    1
+nameOrId    name
+overwrite   1
+allelesToKeep   1
+maxNumberResultsInMemory    1600
