@@ -6,6 +6,7 @@ library(gtable)
 library(ggdendro)
 library(RColorBrewer)
 library(argparser)
+library(reshape2)
 
 
 parser <- arg.parser("Create a heatmap of the pan-genome distribution")
@@ -23,17 +24,30 @@ argv <- parse.args(parser)
 #run settings
 binaryData <- read.table(file=argv$input, header=TRUE,sep="\t",check.names=TRUE,row.names=1);
 
-columnData <- data.frame(fragments = rownames(binaryData), genomes = rep(colnames(binaryData), each = nrow(binaryData)))
+rNames <- rownames(binaryData)
+cNames <- colnames(binaryData)
 
+#we want to be able to refer to the rownames as the "id" for the melted data
+binaryData$id = rownames(binaryData)
+#melt the data to long form for ease of ggplot2
+#the ids are the rownames, the genome names are the variables, and the actual numeric data is the value
+mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="variable")
 
+#create the pan-genome heatmap, with columns for genomes, and rows for fragments
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value)) + scale_fill_gradient(low="white",high="black")
 
-#create the genome size histogram
-p <- ggplot(columnData, aes(x = fragments)) + geom_density()
-gp <- ggplotGrob(p)
+#using the gtable package (http://cran.r-project.org/web/packages/gtable/index.html)
+#add a row to the heatmap for the dendrogram
+finalImage <- ggplotGrob(heatmap)
+#pos=0 adds a row above the current row, default is below
+finalImage <- gtable_add_rows(finalImage, unit(2,"in"), pos=0)
+finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
 
-
-pdf("../panGenomeHeatmap.pdf")
-grid.arrange(gp)
+#cannot use ggsave with the multiple grobs needed for the image
+#need to go the "traditional" R way
+pdf("../panGenomeHeatmap.pdf",width=10,height=10)
+grid.arrange(finalImage)
 dev.off()
+
 
 
