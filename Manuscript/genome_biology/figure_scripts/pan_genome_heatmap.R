@@ -34,7 +34,10 @@ binaryData$id = rownames(binaryData)
 mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="variable")
 
 #create the pan-genome heatmap, with columns for genomes, and rows for fragments
-heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value)) + scale_fill_gradient(low="white",high="black")
+#create a mapping for values and colours (this will allow the legend to use these)
+#values, rather than a continuous gradient
+
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value)) + scale_fill_gradient(low="white",high="black", breaks=c(0,1))
 
 #using the gtable package (http://cran.r-project.org/web/packages/gtable/index.html)
 #add a row to the heatmap for the dendrogram
@@ -45,7 +48,7 @@ finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
 
 #cannot use ggsave with the multiple grobs needed for the image
 #need to go the "traditional" R way
-pdf("../panGenomeHeatmap.pdf",width=10,height=10)
+pdf("../panGenomeHeatmap.pdf")
 grid.arrange(finalImage)
 dev.off()
 
