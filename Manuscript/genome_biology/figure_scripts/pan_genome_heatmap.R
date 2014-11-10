@@ -34,13 +34,15 @@ orderOfTree <-newickTree$tip.label
 orderOfTree
 
 rNames <- rownames(binaryData)
-cNames <- colnames(binaryData)
 
 #we want to be able to refer to the rownames as the "id" for the melted data
-binaryData$id <- rownames(binaryData)
+orderedBinaryData <- binaryData[,orderOfTree]
+orderedBinaryData$id <- rNames
+
+
 #melt the data to long form for ease of ggplot2
 #the ids are the rownames, the genome names are the variables, and the actual numeric data is the value
-mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="variable")
+mData <- melt(orderedBinaryData,id.vars=c("id"), value.name="value", variable.name="variable")
 
 #create the pan-genome heatmap, with columns for genomes, and rows for fragments
 #create a mapping for values and colours (this will allow the legend to use these)
