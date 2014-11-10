@@ -194,10 +194,10 @@ class TreeView extends ViewTemplate
       "Urinary tract infection (cystitis)"
    ],
    "hosts" : [
+      "Homo sapiens (human)",
       "Bos taurus (cow)",
       "undefined",
       "Environmental source",
-      "Homo sapiens (human)",
       "Mus musculus (mouse)",
       "Oryctolagus cuniculus (rabbit)",
       "Sus scrofa (pig)",
@@ -438,7 +438,9 @@ class TreeView extends ViewTemplate
       i = 0
       x = 0
       y = -5
-      arr = []
+      for n in @nodes
+        n.arr = []
+        n.xpos = 0
       while i < metaOntology["hosts"].length
         if metaOntology["hosts"][i]?
           s = metaOntology["hosts"][i]
@@ -450,18 +452,19 @@ class TreeView extends ViewTemplate
           .attr("id", s)
           .attr("width", (n) ->
             if n._children? && n.metaCount['isolation_host'][s]?
-              arr[i] = (75 * (n.metaCount['isolation_host'][s]) / n.num_leaves)
-              console.log(n.num_leaves, metaOntology["hosts"][i-1], arr[i-1], metaOntology["hosts"][i], arr[i], x)
-              arr[i]
+              width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
+              if width != 0
+                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
+              width
             else 0)
           .attr("height", 10)
-          .attr("y", y)
+          .attr("y", 5)
           .attr("x", (n) ->
-            if n._children? && i > 0 && arr[i-1]?
-              n.xpos += arr[i-1]
-              console.log(n.xpos)
-              n.xpos + 4
-            else 4)
+            if n._children? && n.arr[i-1]? && i > 0
+              n.xpos += n.arr[i-1]
+              console.log(n.num_leaves, metaOntology["hosts"][i-1], n.arr[i-1], metaOntology["hosts"][i], n.arr[i], n.xpos)
+            else n.xpos = 0
+            n.xpos + 4)
         i++
 
     cmdBox = iNodes

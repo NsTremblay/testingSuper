@@ -2997,12 +2997,12 @@
 
     metaOntology = {
       "syndromes": ["Bacteriuria", "Bloody diarrhea", "Crohn's Disease", "Diarrhea", "Gastroenteritis", "Hemolytic-uremic syndrome", "Hemorrhagic colitis", "Mastitis", "Meningitis", "Peritonitis", "Pneumonia", "Pyelonephritis", "Septicaemia", "Ulcerateive colitis", "Urinary tract infection (cystitis)"],
-      "hosts": ["Bos taurus (cow)", "undefined", "Environmental source", "Homo sapiens (human)", "Mus musculus (mouse)", "Oryctolagus cuniculus (rabbit)", "Sus scrofa (pig)", "Gallus gallus (chicken)", "Canis lupus familiaris (dog)", "Ovis aries (sheep)", "Felis catus (cat)"],
+      "hosts": ["Homo sapiens (human)", "Bos taurus (cow)", "undefined", "Environmental source", "Mus musculus (mouse)", "Oryctolagus cuniculus (rabbit)", "Sus scrofa (pig)", "Gallus gallus (chicken)", "Canis lupus familiaris (dog)", "Ovis aries (sheep)", "Felis catus (cat)"],
       "sources": ["Blood", "Cecum", "Colon", "Feces", "Ileum", "Intestine", "Liver", "Meat", "Meat-based food", "Stool", "Urine", "Vegetable-based food", "Water", "Yolk", "cerebrospinal_fluid"]
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var arr, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3177,27 +3177,36 @@
         i = 0;
         x = 0;
         y = -5;
-        arr = [];
+        _ref2 = this.nodes;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          n = _ref2[_k];
+          n.arr = [];
+          n.xpos = 0;
+        }
         while (i < metaOntology["hosts"].length) {
           if (metaOntology["hosts"][i] != null) {
             s = metaOntology["hosts"][i];
             y += 10;
           }
           svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
+            var width;
             if ((n._children != null) && (n.metaCount['isolation_host'][s] != null)) {
-              arr[i] = 75 * n.metaCount['isolation_host'][s] / n.num_leaves;
-              return arr[i];
+              width = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_host'][s]) / n.num_leaves;
+              if (width !== 0) {
+                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_host'][s]) / n.num_leaves;
+              }
+              return width;
             } else {
               return 0;
             }
-          }).attr("height", 10).attr("y", y).attr("x", function(n) {
-            if ((n._children != null) && i > 0 && (arr[i - 1] != null)) {
-              n.xpos += arr[i - 1];
-              console.log(n.xpos);
-              return n.xpos + 4;
+          }).attr("height", 10).attr("y", 5).attr("x", function(n) {
+            if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
+              n.xpos += n.arr[i - 1];
+              console.log(n.num_leaves, metaOntology["hosts"][i - 1], n.arr[i - 1], metaOntology["hosts"][i], n.arr[i], n.xpos);
             } else {
-              return 4;
+              n.xpos = 0;
             }
+            return n.xpos + 4;
           });
           i++;
         }
@@ -3252,9 +3261,9 @@
         svgNode = this.canvas.select("#" + elID);
         svgNode.moveToFront();
       }
-      _ref2 = this.nodes;
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        n = _ref2[_k];
+      _ref3 = this.nodes;
+      for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+        n = _ref3[_l];
         n.x0 = n.x;
         n.y0 = n.y;
       }
