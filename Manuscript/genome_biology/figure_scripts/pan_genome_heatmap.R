@@ -37,7 +37,7 @@ mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="var
 #create a mapping for values and colours (this will allow the legend to use these)
 #values, rather than a continuous gradient
 
-heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value, width=5)) + scale_fill_continuous(low="white",high="black", breaks=c(0,1), guide="legend") + scale_x_discrete(expand=c(0,0),labels=c("")) + scale_y_discrete(expand=c(0,0),labels=c(""))
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(aes(fill=value, width=5)) + scale_fill_continuous(low="white",high="black", breaks=c(0,1), guide="legend") + scale_x_discrete(expand=c(0,0),labels=c("")) + scale_y_discrete(expand=c(0,0),labels=c(""))
 
 #using the gtable package (http://cran.r-project.org/web/packages/gtable/index.html)
 #add a row to the heatmap for the dendrogram
