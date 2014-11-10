@@ -28,7 +28,7 @@ rNames <- rownames(binaryData)
 cNames <- colnames(binaryData)
 
 #we want to be able to refer to the rownames as the "id" for the melted data
-binaryData$id = rownames(binaryData)
+binaryData$id <- rownames(binaryData)
 #melt the data to long form for ease of ggplot2
 #the ids are the rownames, the genome names are the variables, and the actual numeric data is the value
 mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="variable")
@@ -37,7 +37,7 @@ mData <- melt(binaryData,id.vars=c("id"), value.name="value", variable.name="var
 #create a mapping for values and colours (this will allow the legend to use these)
 #values, rather than a continuous gradient
 
-heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value)) + scale_fill_gradient(low="white",high="black", breaks=c(0,1))
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_tile(aes(fill=value, width=5)) + scale_fill_continuous(low="white",high="black", breaks=c(0,1), guide="legend")
 
 #using the gtable package (http://cran.r-project.org/web/packages/gtable/index.html)
 #add a row to the heatmap for the dendrogram
@@ -48,7 +48,7 @@ finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
 
 #cannot use ggsave with the multiple grobs needed for the image
 #need to go the "traditional" R way
-pdf("../panGenomeHeatmap.pdf")
+pdf("../panGenomeHeatmap.pdf",width=20, height=20)
 grid.arrange(finalImage)
 dev.off()
 
