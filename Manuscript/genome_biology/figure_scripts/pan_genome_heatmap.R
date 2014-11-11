@@ -4,10 +4,10 @@ library(gridBase)
 library(gridExtra)
 library(gtable)
 library(ggdendro)
-library(RColorBrewer)
 library(argparser)
 library(reshape2)
 library(ape)
+library(phangorn)
 
 
 parser <- arg.parser("Create a heatmap of the pan-genome distribution")
@@ -31,13 +31,12 @@ newickTree <- read.tree(file=argv$tree)
 
 #order of the genomes in the tree
 orderOfTree <-newickTree$tip.label 
-orderOfTree
 
-rNames <- rownames(binaryData)
+#we want the data under the tree to be in the same order
+orderedBinaryData <- binaryData[,orderOfTree]
 
 #we want to be able to refer to the rownames as the "id" for the melted data
-orderedBinaryData <- binaryData[,orderOfTree]
-orderedBinaryData$id <- rNames
+orderedBinaryData$id <- rownames(binaryData)
 
 
 #melt the data to long form for ease of ggplot2
@@ -55,6 +54,16 @@ heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=10, hpad=0, v
 finalImage <- ggplotGrob(heatmap)
 #pos=0 adds a row above the current row, default is below
 finalImage <- gtable_add_rows(finalImage, unit(2,"in"), pos=0)
+
+#extract dendrogram data for plotting
+#first need to make the tree rooted and ultrametric for use as an hclust 
+#object. Need phangorn for the midpoint function
+rootedTree <- midpoint(newickTree)
+ultraTree <- compute.brlen(rootedTree, method="Grafen", power=3)
+binaryTree <- multi2di(ultraTree, random=FALSE)
+hclustTree <- as.hclust(binaryTree)
+dendroTree <- as.dendrogram(hclustTree)
+#finalImage <-gtable_add_grob(finalImage, ggplot(segement(dendroData)))
 finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
 
 #cannot use ggsave with the multiple grobs needed for the image
