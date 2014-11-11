@@ -1,4 +1,4 @@
-#!/usr/bin/env 
+#!/usr/bin/env R
 library(ggplot2)
 library(argparser)
 library(RColorBrewer)

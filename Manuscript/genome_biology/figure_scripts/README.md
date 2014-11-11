@@ -21,6 +21,7 @@ Panseq commit d67bca1ac6ba35dd43ef59c3260c3e89828e356a run with the file in this
 
 # SNP tree building
 
+## clearcut
 The snp.phylip alignment from the above Panseq run was converted into a fasta alignment via the script phylip_to_fasta.pl and the command:
 
     perl phylip_to_fasta.pl snp.phylip > snp.fasta
@@ -35,3 +36,12 @@ The tree names were then converted from the numerical 1-2324 values to their cor
     treeNumberToName.pl clearcut_snp.tre phylip_name_conversion.txt > clearcut_snp_name.tre
 
 
+## FastTreeMP
+
+FastTreeMP was run on the snp.phylip file generated from Panseq above as:
+
+    FastTreeMP -nt -gtr < snp.phylip > fast_snp.tre
+
+The tree names were then converted from the numerical 1-2324 values to their corresponding names in the phylip_name_conversionl.txt file with the Panseq script treeNumberToName.pl with the command:
+
+    treeNumberToName.pl clearcut_snp.tre phylip_name_conversion.txt > fast_snp_name.tre
