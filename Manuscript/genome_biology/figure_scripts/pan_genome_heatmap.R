@@ -47,28 +47,25 @@ mData <- melt(orderedBinaryData,id.vars=c("id"), value.name="value", variable.na
 
 heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=10, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(low="white",high="black", breaks=c(0,1), guide="legend") + scale_x_discrete(expand=c(0,0),labels=c("")) + scale_y_discrete(expand=c(0,0),labels=c("")) + coord_equal()
 
-#using the gtable package (http://cran.r-project.org/web/packages/gtable/index.html)
-#add a row to the heatmap for the dendrogram
-finalImage <- ggplotGrob(heatmap)
-#pos=0 adds a row above the current row, default is below
-finalImage <- gtable_add_rows(finalImage, unit(2,"in"), pos=0)
 
 #extract dendrogram data for plotting
 #first need to make the tree rooted and ultrametric for use as an hclust 
 #object. 
-
 ultraTree <- compute.brlen(newickTree, method="Grafen", power=1)
 binaryTree <- multi2di(ultraTree, random=FALSE)
 hclustTree <- as.hclust(binaryTree)
 dendroTree <- as.dendrogram(hclustTree)
 ddata <- dendro_data(dendroTree, type="rectangle")
 
-#finalImage <-gtable_add_grob(finalImage, ggdendrogram(ddata), t=1, l=4, b=1, r=4)
-finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
+#using the gtable package (http://cran.r-pject.org/web/packages/gtable/index.html)
+#add a row to the heatmap for the dendrogram
+
+heatGrob <- ggplotGrob(heatmap)
+#pos=0 adds a row above the current row, default is below
+ggTreeGrob <- ggplotGrob(ggplot(segment(ddata)) + geom_segment(aes(x=x,y=y,xend=xend,yend=yend)))
 
 #cannot use ggsave with the multiple grobs needed for the image
 #need to go the "traditional" R way
-
 pdf("../panGenomeHeatmap.pdf",width=20, height=20)
-grid.arrange(finalImage)
+grid.arrange(ggTreeGrob,heatGrob)
 dev.off()
