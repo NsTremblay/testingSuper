@@ -7,8 +7,6 @@ library(ggdendro)
 library(argparser)
 library(reshape2)
 library(ape)
-library(phangorn)
-
 
 parser <- arg.parser("Create a heatmap of the pan-genome distribution")
 parser <- add.argument(parser
@@ -57,17 +55,20 @@ finalImage <- gtable_add_rows(finalImage, unit(2,"in"), pos=0)
 
 #extract dendrogram data for plotting
 #first need to make the tree rooted and ultrametric for use as an hclust 
-#object. Need phangorn for the midpoint function
-rootedTree <- midpoint(newickTree)
-ultraTree <- compute.brlen(rootedTree, method="Grafen", power=3)
+#object. 
+
+ultraTree <- compute.brlen(newickTree, method="Grafen", power=1)
 binaryTree <- multi2di(ultraTree, random=FALSE)
 hclustTree <- as.hclust(binaryTree)
 dendroTree <- as.dendrogram(hclustTree)
-#finalImage <-gtable_add_grob(finalImage, ggplot(segement(dendroData)))
+ddata <- dendro_data(dendroTree, type="rectangle")
+
+#finalImage <-gtable_add_grob(finalImage, ggdendrogram(ddata), t=1, l=4, b=1, r=4)
 finalImage <- gtable_add_grob(finalImage, rectGrob(), t=1, l=4, b=1, r=4)
 
 #cannot use ggsave with the multiple grobs needed for the image
 #need to go the "traditional" R way
+
 pdf("../panGenomeHeatmap.pdf",width=20, height=20)
 grid.arrange(finalImage)
 dev.off()
