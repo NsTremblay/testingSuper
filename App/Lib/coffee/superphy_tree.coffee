@@ -207,6 +207,7 @@ class TreeView extends ViewTemplate
       "Felis catus (cat)"
    ],
    "sources" : [
+      "undefined"
       "Blood",
       "Cecum",
       "Colon",
@@ -433,14 +434,16 @@ class TreeView extends ViewTemplate
 
     colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
 
+  
+    for n in @nodes
+      n.arr = []
+      n.xpos = 0   
+
     if genomes.visibleMeta['isolation_host']
       j = 0
       i = 0
       x = 0
       y = -5
-      for n in @nodes
-        n.arr = []
-        n.xpos = 0
       while i < metaOntology["hosts"].length
         if metaOntology["hosts"][i]?
           s = metaOntology["hosts"][i]
@@ -463,6 +466,37 @@ class TreeView extends ViewTemplate
             if n._children? && n.arr[i-1]? && i > 0
               n.xpos += n.arr[i-1]
               console.log(n.num_leaves, metaOntology["hosts"][i-1], n.arr[i-1], metaOntology["hosts"][i], n.arr[i], n.xpos)
+            else n.xpos = 0
+            n.xpos + 4)
+        i++
+
+    if genomes.visibleMeta['isolation_source']
+      j = 0
+      i = 0
+      x = 0
+      y = -5
+      while i < metaOntology["sources"].length
+        if metaOntology["sources"][i]?
+          s = metaOntology["sources"][i]
+          y += 10
+        svgNodes
+          .append("rect")
+          .style("fill", colours[j++])
+          .attr("class", "metaMeter")
+          .attr("id", s)
+          .attr("width", (n) ->
+            if n._children? && n.metaCount['isolation_source'][s]?
+              width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
+              if width != 0
+                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
+              width
+            else 0)
+          .attr("height", 10)
+          .attr("y", 16)
+          .attr("x", (n) ->
+            if n._children? && n.arr[i-1]? && i > 0
+              n.xpos += n.arr[i-1]
+              console.log(n.num_leaves, metaOntology["sources"][i-1], n.arr[i-1], metaOntology["sources"][i], n.arr[i], n.xpos)
             else n.xpos = 0
             n.xpos + 4)
         i++
