@@ -432,12 +432,13 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-    colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
+    host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
 
   
     for n in @nodes
       n.arr = []
-      n.xpos = 0   
+      n.xpos = 0
+      
 
     if genomes.visibleMeta['isolation_host']
       j = 0
@@ -450,49 +451,55 @@ class TreeView extends ViewTemplate
           y += 10
         svgNodes
           .append("rect")
-          .style("fill", colours[j++])
+          .style("fill", host_colours[j++])
           .attr("class", "metaMeter")
           .attr("id", s)
           .attr("width", (n) ->
             if n._children? && n.metaCount['isolation_host'][s]?
               width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
-              if width != 0
-                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
-              width
-            else 0)
+            else width = 0
+            if width == 0
+              n.arr[i] = 0
+            else
+              n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
+            width)
           .attr("height", 10)
           .attr("y", 5)
           .attr("x", (n) ->
             if n._children? && n.arr[i-1]? && i > 0
               n.xpos += n.arr[i-1]
-              console.log(n.num_leaves, metaOntology["hosts"][i-1], n.arr[i-1], metaOntology["hosts"][i], n.arr[i], n.xpos)
             else n.xpos = 0
             n.xpos + 4)
         i++
 
+    source_colours = ['purple', '#ffcc00', 'blue', 'green', 'cyan', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'magenta']
+
     if genomes.visibleMeta['isolation_source']
       j = 0
       i = 0
+      k = 0
       x = 0
       y = -5
       while i < metaOntology["sources"].length
         if metaOntology["sources"][i]?
           s = metaOntology["sources"][i]
-          y += 10
+        y += 10
         svgNodes
           .append("rect")
-          .style("fill", colours[j++])
+          .style("fill", source_colours[j++])
           .attr("class", "metaMeter")
           .attr("id", s)
           .attr("width", (n) ->
             if n._children? && n.metaCount['isolation_source'][s]?
               width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
-              if width != 0
-                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
-              width
-            else 0)
+            else width = 0
+            if width == 0
+              n.arr[i] = 0
+            else
+              n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
+            width)
           .attr("height", 10)
-          .attr("y", 16)
+          .attr("y", 15)
           .attr("x", (n) ->
             if n._children? && n.arr[i-1]? && i > 0
               n.xpos += n.arr[i-1]

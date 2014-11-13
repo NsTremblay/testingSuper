@@ -3002,7 +3002,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+      var cladeSelect, cmdBox, currLeaves, dt, elID, host_colours, i, iNodes, id, j, k, leaves, linksEnter, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, source_colours, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3171,7 +3171,7 @@
           return 0;
         }
       }).attr("height", 10).attr("y", -5).attr("x", 4);
-      colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
+      host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
       _ref2 = this.nodes;
       for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
         n = _ref2[_k];
@@ -3188,21 +3188,22 @@
             s = metaOntology["hosts"][i];
             y += 10;
           }
-          svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
+          svgNodes.append("rect").style("fill", host_colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
             var width;
             if ((n._children != null) && (n.metaCount['isolation_host'][s] != null)) {
               width = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_host'][s]) / n.num_leaves;
-              if (width !== 0) {
-                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_host'][s]) / n.num_leaves;
-              }
-              return width;
             } else {
-              return 0;
+              width = 0;
             }
+            if (width === 0) {
+              n.arr[i] = 0;
+            } else {
+              n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_host'][s]) / n.num_leaves;
+            }
+            return width;
           }).attr("height", 10).attr("y", 5).attr("x", function(n) {
             if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
               n.xpos += n.arr[i - 1];
-              console.log(n.num_leaves, metaOntology["hosts"][i - 1], n.arr[i - 1], metaOntology["hosts"][i], n.arr[i], n.xpos);
             } else {
               n.xpos = 0;
             }
@@ -3211,28 +3212,32 @@
           i++;
         }
       }
+      source_colours = ['purple', '#ffcc00', 'blue', 'green', 'cyan', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'magenta'];
       if (genomes.visibleMeta['isolation_source']) {
         j = 0;
         i = 0;
+        k = 0;
         x = 0;
         y = -5;
         while (i < metaOntology["sources"].length) {
           if (metaOntology["sources"][i] != null) {
             s = metaOntology["sources"][i];
-            y += 10;
           }
-          svgNodes.append("rect").style("fill", colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
+          y += 10;
+          svgNodes.append("rect").style("fill", source_colours[j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
             var width;
             if ((n._children != null) && (n.metaCount['isolation_source'][s] != null)) {
               width = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_source'][s]) / n.num_leaves;
-              if (width !== 0) {
-                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_source'][s]) / n.num_leaves;
-              }
-              return width;
             } else {
-              return 0;
+              width = 0;
             }
-          }).attr("height", 10).attr("y", 16).attr("x", function(n) {
+            if (width === 0) {
+              n.arr[i] = 0;
+            } else {
+              n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount['isolation_source'][s]) / n.num_leaves;
+            }
+            return width;
+          }).attr("height", 10).attr("y", 15).attr("x", function(n) {
             if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
               n.xpos += n.arr[i - 1];
               console.log(n.num_leaves, metaOntology["sources"][i - 1], n.arr[i - 1], metaOntology["sources"][i], n.arr[i], n.xpos);
