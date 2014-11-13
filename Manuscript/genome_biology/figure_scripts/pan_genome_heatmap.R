@@ -45,9 +45,19 @@ mData <- melt(orderedBinaryData,id.vars=c("id"), value.name="value", variable.na
 #create a mapping for values and colours (this will allow the legend to use these)
 #values, rather than a continuous gradient
 
-heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=10, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(low="grey",high="black", breaks=c(0,1), guide="legend") + scale_x_discrete(expand=c(0,0),labels=c("")) + scale_y_discrete(expand=c(0,0),labels=c("")) + coord_equal()
-
-
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=1, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(expand=c(0,0), low="grey",high="black", breaks=c(0,1), guide="legend") + coord_equal()  + theme(
+          axis.text.x=element_blank(),
+          axis.text.y=element_blank(),
+          #axis.ticks=element_blank(),
+          #axis.ticks.margin=unit(0,"in"),
+          #axis.title.x=element_blank(),
+          #axis.title.y=element_blank(),
+          #legend.position="none",
+          panel.background=element_blank(),
+          #panel.border=element_blank(),
+          #panel.grid.major=element_blank(),
+          #panel.grid.minor=element_blank(),
+          plot.background=element_blank()) #top, right, bottom, left
 #extract dendrogram data for plotting
 #first need to make the tree rooted and ultrametric for use as an hclust 
 #object. 
@@ -60,37 +70,35 @@ ddata <- dendro_data(dendroTree, type="rectangle")
 #using the gtable package (http://cran.r-pject.org/web/packages/gtable/index.html)
 heatGrob <- ggplotGrob(heatmap) 
 #pos=0 adds a row above the current row, default is below
-ggTree <- ggdendrogram(ddata, segments=TRUE, labels=FALSE, leaf_labels=FALSE,rotate=FALSE) + scale_y_continuous(expand = c(0,0)) + scale_x_continuous(expand = c(0,0)) +theme(axis.line=element_blank(),
-      axis.text.x=element_blank(),
-      axis.text.y=element_blank(),
-      axis.ticks=element_blank(),
-      axis.title.x=element_blank(),
-      axis.title.y=element_blank(),
-      legend.position="none",
-      panel.background=element_blank(),
-      panel.border=element_blank(),
-      panel.grid.major=element_blank(),
-      panel.grid.minor=element_blank(),
-      plot.background=element_blank(),
-      plot.margin = unit(c(0,0,0,0),"in")) 
+#no matter the removal of the axes and legends, the space on the bottom and left remains for them. There must be a simple solution for this, but unfortunately I could not find it. Instead, the hack of adjusting the bottom and left margins by -4 produce an end result that is the same.
+ggTree <- ggplot(segment(ddata)) + geom_segment(aes(x=x, y=y, xend=xend, yend=yend)) + scale_y_continuous(expand = c(0,0),breaks=NULL) + scale_x_discrete(expand = c(0,0),breaks=NULL) +theme(axis.line=element_blank(),
+  axis.text.x=element_blank(),
+  axis.text.y=element_blank(),
+  axis.ticks=element_blank(),
+  axis.ticks.margin=unit(0,"in"),
+  axis.title.x=element_blank(),
+  axis.title.y=element_blank(),
+  legend.position="none",
+  panel.background=element_blank(),
+  panel.border=element_blank(),
+  panel.grid.major=element_blank(),
+  panel.grid.minor=element_blank(),
+  plot.background=element_blank(),
+  plot.margin = unit(c(0,0,-4,-4),"mm")) #top, right, bottom, left
 
 ggTreeGrob <- ggplotGrob(ggTree)
-
 finalImage <- gtable_add_rows(heatGrob, unit(3,"in"), 0)
+finalImage <-gtable_add_grob(finalImage, ggTreeGrob, t=1, b=2, l=4)
 
-print(ncol(finalImage))
-print(nrow(finalImage))
-finalImage <- gtable_add_grob(finalImage, ggTreeGrob,t=1,l=4,name="heatmap")
-finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="red")),
-                     t = 1, l=1)
-finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="green")),
-                     t = 1, l=2)
-finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="blue")),
-                     t = 1, l=3)
-finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="purple")),
-                     t = 1, l=5)
-finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="orange")),
-                     t = 1, l=6)
+
+#this was for debugging the layout of the table rows and columns
+# print(ncol(finalImage))
+# print(nrow(finalImage))
+# finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="red")),t = 1, l=1)
+# finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="green")), t = 1, l=2)
+# finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="blue")), t = 1, l=3)
+# finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="purple")), t = 1, b=2, l=4)
+#finalImage <- gtable_add_grob(finalImage, rectGrob(gp=gpar(fill="orange")), t = 1, l=5)
 
 #cannot use ggsave with the multiple grobs needed for the image
 #need to go the "traditional" R way
