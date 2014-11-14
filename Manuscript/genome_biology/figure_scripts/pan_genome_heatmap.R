@@ -27,11 +27,23 @@ binaryData <- read.table(file=argv$input, header=TRUE,sep="\t",check.names=TRUE,
 #tree of the same data, with the same names on the leaves as column headers for the table
 newickTree <- read.tree(file=argv$tree)
 
+#first need to make the tree rooted, binary and ultrametric for use as an hclust 
+#object. 
+binaryTree <- multi2di(newickTree, random=FALSE)
+ultraTree <- compute.brlen(binaryTree, method="Grafen")
+hclustTree <- as.hclust(ultraTree)
+
+#extract dendrogram data for plotting
+ddata <- dendro_data(hclustTree)
+
 #order of the genomes in the tree
-orderOfTree <-newickTree$tip.label 
+orderOfTree <-ultraTree$tip.label 
+
+#get the order of rows from most "core" to least
+coreOrder <- rev(sort(rowSums(binaryData)))
 
 #we want the data under the tree to be in the same order
-orderedBinaryData <- binaryData[,orderOfTree]
+orderedBinaryData <- binaryData[coreOrder,orderOfTree]
 
 #we want to be able to refer to the rownames as the "id" for the melted data
 orderedBinaryData$id <- rownames(binaryData)
@@ -42,52 +54,43 @@ orderedBinaryData$id <- rownames(binaryData)
 mData <- melt(orderedBinaryData,id.vars=c("id"), value.name="value", variable.name="variable")
 
 #create the pan-genome heatmap, with columns for genomes, and rows for fragments
-#create a mapping for values and colours (this will allow the legend to use these)
-#values, rather than a continuous gradient
-
-heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=1, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(expand=c(0,0), low="grey",high="black", breaks=c(0,1), guide="legend") + coord_equal()  + theme(
+heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=1, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(expand=c(0,0), low="white",high="black", breaks=c(0,1), guide="legend", labels=c("Absent","Present")) + coord_equal() + xlab("Genomes") + ylab("Genomic regions")  + theme(
           axis.text.x=element_blank(),
           axis.text.y=element_blank(),
           #axis.ticks=element_blank(),
           #axis.ticks.margin=unit(0,"in"),
-          #axis.title.x=element_blank(),
-          #axis.title.y=element_blank(),
+          axis.title.x=element_text(size=rel(2)),
+          axis.title.y=element_text(size=rel(2)),
           #legend.position="none",
+          legend.title=element_blank(),
+          legend.background=element_rect(fill="grey"),
           panel.background=element_blank(),
           #panel.border=element_blank(),
           #panel.grid.major=element_blank(),
           #panel.grid.minor=element_blank(),
           plot.background=element_blank()) #top, right, bottom, left
-#extract dendrogram data for plotting
-#first need to make the tree rooted and ultrametric for use as an hclust 
-#object. 
-ultraTree <- compute.brlen(newickTree, method="Grafen", power=1)
-binaryTree <- multi2di(ultraTree, random=FALSE)
-hclustTree <- as.hclust(binaryTree)
-dendroTree <- as.dendrogram(hclustTree)
-ddata <- dendro_data(dendroTree, type="rectangle")
 
 #using the gtable package (http://cran.r-pject.org/web/packages/gtable/index.html)
 heatGrob <- ggplotGrob(heatmap) 
 #pos=0 adds a row above the current row, default is below
 #no matter the removal of the axes and legends, the space on the bottom and left remains for them. There must be a simple solution for this, but unfortunately I could not find it. Instead, the hack of adjusting the bottom and left margins by -4 produce an end result that is the same.
 ggTree <- ggplot(segment(ddata)) + geom_segment(aes(x=x, y=y, xend=xend, yend=yend)) + scale_y_continuous(expand = c(0,0),breaks=NULL) + scale_x_discrete(expand = c(0,0),breaks=NULL) +theme(axis.line=element_blank(),
-  axis.text.x=element_blank(),
-  axis.text.y=element_blank(),
-  axis.ticks=element_blank(),
-  axis.ticks.margin=unit(0,"in"),
-  axis.title.x=element_blank(),
-  axis.title.y=element_blank(),
-  legend.position="none",
-  panel.background=element_blank(),
-  panel.border=element_blank(),
-  panel.grid.major=element_blank(),
-  panel.grid.minor=element_blank(),
-  plot.background=element_blank(),
-  plot.margin = unit(c(0,0,-4,-4),"mm")) #top, right, bottom, left
+                      axis.text.x=element_blank(),
+                      axis.text.y=element_blank(),
+                      axis.ticks=element_blank(),
+                      axis.ticks.margin=unit(0,"in"),
+                      axis.title.x=element_blank(),
+                      axis.title.y=element_blank(),
+                      legend.position="none",
+                      panel.background=element_blank(),
+                      panel.border=element_blank(),
+                      panel.grid.major=element_blank(),
+                      panel.grid.minor=element_blank(),
+                      plot.background=element_blank(),
+                      plot.margin = unit(c(0,0,-4,-4),"mm")) #top, right, bottom, left
 
 ggTreeGrob <- ggplotGrob(ggTree)
-finalImage <- gtable_add_rows(heatGrob, unit(3,"in"), 0)
+finalImage <- gtable_add_rows(heatGrob, unit(5,"in"), 0)
 finalImage <-gtable_add_grob(finalImage, ggTreeGrob, t=1, b=2, l=4)
 
 
