@@ -29,6 +29,8 @@ newickTree <- read.tree(file=argv$tree)
 
 #first need to make the tree rooted, binary and ultrametric for use as an hclust 
 #object. 
+#the chronos and chronopl methods would not work (died with error)
+#we are mostly concerned with the shape anyway, so went with the compute.brlen solution
 binaryTree <- multi2di(newickTree, random=FALSE)
 ultraTree <- compute.brlen(binaryTree, method="Grafen")
 hclustTree <- as.hclust(ultraTree)
@@ -54,6 +56,7 @@ orderedBinaryData$id <- rownames(binaryData)
 mData <- melt(orderedBinaryData,id.vars=c("id"), value.name="value", variable.name="variable")
 
 #create the pan-genome heatmap, with columns for genomes, and rows for fragments
+#the expand=c(0,0) ensures that the heatmap fills the entire area
 heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=1, hpad=0, vpad=0, aes(fill=value, width=5)) + scale_fill_continuous(expand=c(0,0), low="white",high="black", breaks=c(0,1), guide="legend", labels=c("Absent","Present")) + coord_equal() + xlab("Genomes") + ylab("Genomic regions")  + theme(
           axis.text.x=element_blank(),
           axis.text.y=element_blank(),
@@ -74,6 +77,7 @@ heatmap <- ggplot(mData, aes(x=variable, y=id)) + geom_raster(size=1, hpad=0, vp
 heatGrob <- ggplotGrob(heatmap) 
 #pos=0 adds a row above the current row, default is below
 #no matter the removal of the axes and legends, the space on the bottom and left remains for them. There must be a simple solution for this, but unfortunately I could not find it. Instead, the hack of adjusting the bottom and left margins by -4 produce an end result that is the same.
+#the scale_x and scale_y expand=c(0,0) is required to ensure the tree fills the entire cell; without this, it does not.
 ggTree <- ggplot(segment(ddata)) + geom_segment(aes(x=x, y=y, xend=xend, yend=yend)) + scale_y_continuous(expand = c(0,0),breaks=NULL) + scale_x_discrete(expand = c(0,0),breaks=NULL) +theme(axis.line=element_blank(),
                       axis.text.x=element_blank(),
                       axis.text.y=element_blank(),
