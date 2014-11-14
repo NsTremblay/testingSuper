@@ -175,58 +175,23 @@ class TreeView extends ViewTemplate
 
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
 
-  metaOntology = {
-   "syndromes" : [
-      "Bacteriuria",
-      "Bloody diarrhea",
-      "Crohn's Disease",
-      "Diarrhea",
-      "Gastroenteritis",
-      "Hemolytic-uremic syndrome",
-      "Hemorrhagic colitis",
-      "Mastitis",
-      "Meningitis",
-      "Peritonitis",
-      "Pneumonia",
-      "Pyelonephritis",
-      "Septicaemia",
-      "Ulcerateive colitis",
-      "Urinary tract infection (cystitis)"
-   ],
-   "hosts" : [
-      "Homo sapiens (human)",
-      "Bos taurus (cow)",
-      "undefined",
-      "Environmental source",
-      "Mus musculus (mouse)",
-      "Oryctolagus cuniculus (rabbit)",
-      "Sus scrofa (pig)",
-      "Gallus gallus (chicken)",
-      "Canis lupus familiaris (dog)",
-      "Ovis aries (sheep)",
-      "Felis catus (cat)"
-   ],
-   "sources" : [
-      "undefined"
-      "Blood",
-      "Cecum",
-      "Colon",
-      "Feces",
-      "Ileum",
-      "Intestine",
-      "Liver",
-      "Meat",
-      "Meat-based food",
-      "Stool",
-      "Urine",
-      "Vegetable-based food",
-      "Water",
-      "Yolk",
-      "cerebrospinal_fluid"
-   ]
-}
+  # FUNC addMetaOntology
+  # Creates metaOntology object containing names of metadata and each type.
+  #
+  # PARAMS
+  # node
+  #
+  # RETURNS
+  # metaOntology object
+  #
+  addMetaOntology: (n) ->
+    metaOntology = {}
+    for t in mtypesDisplayed
+      metaOntology[t] = []
+      for k,v of n.metaCount[t]
+        metaOntology[t].push(k)
+    metaOntology
 
-  
   # FUNC update
   # Update genome tree view
   #
@@ -284,7 +249,8 @@ class TreeView extends ViewTemplate
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
       n.x = n.x * @branch_scale_factor_x
-      
+
+    metaOntology = @addMetaOntology(@root)
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -433,80 +399,131 @@ class TreeView extends ViewTemplate
       .attr("x", 4)
 
     host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
+    colours = {
+      'serotype' : [
+        'green',
+        'darkseagreen',
+        'greenyellow',
+        'mediumspringgreen',
+        'emeraldgreen',
+        'mint',
+        'darkgreen',
+        'honeydew',
+        'cobaltgreen',
+        'palegreen'
+      ]
+      'isolation_host' : [
+        'dodgerblue',
+        'blue',
+        'mediumslateblue'
+        'cornflowerblue',
+        'lightskyblue',
+        'midnightblue',
+        'cadetblue',
+        'lightsteelblue',
+        'slategray',
+        'darkturquoise'
+      ]
+      'isolation_source' : [
+        'black',
+        'dimgray',
+        '#CCCCCC',
+        '#737373',
+        '#F2F2F2',
+        'silver',
+        '#C1C1C1',
+        'darkturkoise',
+        'cyan',
+        'lightsteelblue 1'
+      ]
+      'isolation_date' : [
+        'blue',
+        'midnightblue',
+        'dodgerblue',
+        'cornflowerblue',
+        'lightskyblue',
+        'cadetblue',
+        'slategray',
+        'darkturkoise',
+        'cyan',
+        'lightsteelblue 1'
+      ]
+      'syndrome' : [
+        'blue',
+        'midnightblue',
+        'dodgerblue',
+        'cornflowerblue',
+        'lightskyblue',
+        'cadetblue',
+        'slategray',
+        'darkturkoise',
+        'cyan',
+        'lightsteelblue 1'
+      ]
+      'stx1_subtype' : [
+        'blue',
+        'midnightblue',
+        'dodgerblue',
+        'cornflowerblue',
+        'lightskyblue',
+        'cadetblue',
+        'slategray',
+        'darkturkoise',
+        'cyan',
+        'lightsteelblue 1'
+      ]
+      'stx2_subtype' : [
+        'blue',
+        'midnightblue',
+        'dodgerblue',
+        'cornflowerblue',
+        'lightskyblue',
+        'cadetblue',
+        'slategray',
+        'darkturkoise',
+        'cyan',
+        'lightsteelblue 1'
+      ]
+    }
 
-  
     for n in @nodes
       n.arr = []
       n.xpos = 0
       
-
-    if genomes.visibleMeta['isolation_host']
-      j = 0
-      i = 0
-      x = 0
-      y = -5
-      while i < metaOntology["hosts"].length
-        if metaOntology["hosts"][i]?
-          s = metaOntology["hosts"][i]
-          y += 10
-        svgNodes
-          .append("rect")
-          .style("fill", host_colours[j++])
-          .attr("class", "metaMeter")
-          .attr("id", s)
-          .attr("width", (n) ->
-            if n._children? && n.metaCount['isolation_host'][s]?
-              width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
-            else width = 0
-            if width == 0
-              n.arr[i] = 0
-            else
-              n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_host'][s])) / n.num_leaves)
-            width)
-          .attr("height", 10)
-          .attr("y", 5)
-          .attr("x", (n) ->
-            if n._children? && n.arr[i-1]? && i > 0
-              n.xpos += n.arr[i-1]
-            else n.xpos = 0
-            n.xpos + 4)
-        i++
+    y = -5
+    for m in mtypesDisplayed
+      if genomes.visibleMeta[m]
+        j = 0
+        i = 0
+        x = 0
+        y += 10
+        while i < metaOntology[m].length
+          if metaOntology[m][i]?
+            s = metaOntology[m][i]
+          svgNodes
+            .append("rect")
+            .style("fill", colours[m][j++])
+            .attr("class", "metaMeter")
+            .attr("id", s)
+            .attr("width", (n) ->
+              if n._children? && n.metaCount[m][s]?
+                width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+              else width = 0
+              if width == 0
+                n.arr[i] = 0
+              else
+                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+              width)
+            .attr("height", 10)
+            .attr("y", y)
+            .attr("x", (n) ->
+              if n._children? && n.arr[i-1]? && i > 0
+                n.xpos += n.arr[i-1]
+              else n.xpos = 0
+              n.xpos + 4)
+          i++
 
     source_colours = ['purple', '#ffcc00', 'blue', 'green', 'cyan', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'magenta']
-
-    if genomes.visibleMeta['isolation_source']
-      j = 0
-      i = 0
-      k = 0
-      x = 0
-      y = -5
-      while i < metaOntology["sources"].length
-        if metaOntology["sources"][i]?
-          s = metaOntology["sources"][i]
-        y += 10
-        svgNodes
-          .append("rect")
-          .style("fill", source_colours[j++])
-          .attr("class", "metaMeter")
-          .attr("id", s)
-          .attr("width", (n) ->
-            if n._children? && n.metaCount['isolation_source'][s]?
-              width = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
-            else width = 0
-            if width == 0
-              n.arr[i] = 0
-            else
-              n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount['isolation_source'][s])) / n.num_leaves)
-            width)
-          .attr("height", 10)
-          .attr("y", 15)
-          .attr("x", (n) ->
-            if n._children? && n.arr[i-1]? && i > 0
-              n.xpos += n.arr[i-1]
-              console.log(n.num_leaves, metaOntology["sources"][i-1], n.arr[i-1], metaOntology["sources"][i], n.arr[i], n.xpos)
-            else n.xpos = 0
-            n.xpos + 4)
-        i++
 
     cmdBox = iNodes
       .append('text')
