@@ -496,23 +496,25 @@ class TreeView extends ViewTemplate
         j = 0
         i = 0
         x = 0
-        y += 10
+        y += 12
         while i < metaOntology[m].length
           if metaOntology[m][i]?
             s = metaOntology[m][i]
           svgNodes
             .append("rect")
-            .style("fill", colours[m][j++])
+            .style("fill", host_colours[j++])
             .attr("class", "metaMeter")
-            .attr("id", s)
+            .attr("id", 
+              if i == 9
+                "Other"
+              else s)
             .attr("width", (n) ->
               if n._children? && n.metaCount[m][s]?
                 width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
-              else width = 0
-              if width == 0
-                n.arr[i] = 0
-              else
                 n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+              else 
+                width = 0
+                n.arr[i] = 0
               width)
             .attr("height", 10)
             .attr("y", y)
@@ -1061,6 +1063,7 @@ class TreeView extends ViewTemplate
               if node.metaCount[k][k2]?
                 node.metaCount[k][k2] += v2
               else node.metaCount[k][k2] = v2
+
       
       if children.length == 0
         node.hidden = true

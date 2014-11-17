@@ -3001,12 +3001,19 @@
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         t = mtypesDisplayed[_i];
         metaOntology[t] = [];
+        n.counterDesc = [];
         _ref = n.metaCount[t];
         for (k in _ref) {
           v = _ref[k];
+          n.counterDesc.push(v);
+          n.counterDesc.sort(function(a, b) {
+            return a - b;
+          });
+          n.counterDesc.reverse();
           metaOntology[t].push(k);
         }
       }
+      console.log(n.counterDesc);
       return metaOntology;
     };
 
@@ -3204,22 +3211,19 @@
           j = 0;
           i = 0;
           x = 0;
-          y += 10;
+          y += 12;
           while (i < metaOntology[m].length) {
             if (metaOntology[m][i] != null) {
               s = metaOntology[m][i];
             }
-            svgNodes.append("rect").style("fill", colours[m][j++]).attr("class", "metaMeter").attr("id", s).attr("width", function(n) {
+            svgNodes.append("rect").style("fill", host_colours[j++]).attr("class", "metaMeter").attr("id", i === 9 ? "Other" : s).attr("width", function(n) {
               var width;
               if ((n._children != null) && (n.metaCount[m][s] != null)) {
                 width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
+                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
               } else {
                 width = 0;
-              }
-              if (width === 0) {
                 n.arr[i] = 0;
-              } else {
-                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
               }
               return width;
             }).attr("height", 10).attr("y", y).attr("x", function(n) {
