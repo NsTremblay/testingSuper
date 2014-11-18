@@ -186,10 +186,15 @@ class TreeView extends ViewTemplate
   #
   addMetaOntology: (n) ->
     metaOntology = {}
+    metaSorted = []
     for t in mtypesDisplayed
       metaOntology[t] = []
       for k,v of n.metaCount[t]
-        metaOntology[t].push(k)
+        metaSorted.push([k,v])
+        metaSorted.sort((a,b) -> a[1]-b[1]).reverse()
+        console.log(metaSorted)
+        for arr in metaSorted
+          metaOntology[t].push(arr[0])
     metaOntology
 
   # FUNC update
@@ -503,6 +508,7 @@ class TreeView extends ViewTemplate
           svgNodes
             .append("rect")
             .style("fill", host_colours[j++])
+            .style("fill-opacity", 1)
             .attr("class", "metaMeter")
             .attr("id", 
               if i == 9
@@ -608,10 +614,6 @@ class TreeView extends ViewTemplate
 
     nodesExit.select("circle")
       .attr("r", 1e-6)
-
-    if !genomes.visibleMeta?
-      nodesExit.select("rect.metaMeter")
-        .attr("width", 0)
     
     nodesExit.select("text")
       .style("fill-opacity", 1e-6)

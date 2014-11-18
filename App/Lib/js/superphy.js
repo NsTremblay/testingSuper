@@ -2996,24 +2996,26 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.addMetaOntology = function(n) {
-      var k, metaOntology, t, v, _i, _len, _ref;
+      var arr, k, metaOntology, metaSorted, t, v, _i, _j, _len, _len1, _ref;
       metaOntology = {};
+      metaSorted = [];
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         t = mtypesDisplayed[_i];
         metaOntology[t] = [];
-        n.counterDesc = [];
         _ref = n.metaCount[t];
         for (k in _ref) {
           v = _ref[k];
-          n.counterDesc.push(v);
-          n.counterDesc.sort(function(a, b) {
-            return a - b;
-          });
-          n.counterDesc.reverse();
-          metaOntology[t].push(k);
+          metaSorted.push([k, v]);
+          metaSorted.sort(function(a, b) {
+            return a[1] - b[1];
+          }).reverse();
+          console.log(metaSorted);
+          for (_j = 0, _len1 = metaSorted.length; _j < _len1; _j++) {
+            arr = metaSorted[_j];
+            metaOntology[t].push(arr[0]);
+          }
         }
       }
-      console.log(n.counterDesc);
       return metaOntology;
     };
 
@@ -3216,7 +3218,7 @@
             if (metaOntology[m][i] != null) {
               s = metaOntology[m][i];
             }
-            svgNodes.append("rect").style("fill", host_colours[j++]).attr("class", "metaMeter").attr("id", i === 9 ? "Other" : s).attr("width", function(n) {
+            svgNodes.append("rect").style("fill", host_colours[j++]).style("fill-opacity", 1).attr("class", "metaMeter").attr("id", i === 9 ? "Other" : s).attr("width", function(n) {
               var width;
               if ((n._children != null) && (n.metaCount[m][s] != null)) {
                 width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
@@ -3278,9 +3280,6 @@
         };
       })(this)).remove();
       nodesExit.select("circle").attr("r", 1e-6);
-      if (genomes.visibleMeta == null) {
-        nodesExit.select("rect.metaMeter").attr("width", 0);
-      }
       nodesExit.select("text").style("fill-opacity", 1e-6);
       nodesExit.select("rect").attr("width", 1e-6).attr("height", 1e-6);
       if (!oldRoot.root && this.root !== oldRoot) {
