@@ -27,6 +27,9 @@ binaryData <- read.table(file=argv$input, header=TRUE,sep="\t",check.names=TRUE,
 #given Panseq settings
 colsums <- colSums(binaryData)
 rowsums <- rowSums(binaryData)
+panGenoneSize <- length(rowsums[rowsums <= 100])
+print(panGenoneSize)
+q()
 approxGenomeSize <- colsums * as.numeric(argv$fragmentSize)
 genomeSizeHistoData <- data.frame(approxGenomeSize)
 panGenomeHistoData <- data.frame(rowsums)
@@ -40,10 +43,11 @@ lineColor <- "#2c2c2a"
 h <- ggplot(data = genomeSizeHistoData
            ,aes(x = approxGenomeSize))
 genomeSize <- h + geom_histogram(binwidth =100000, fill=fillColor, colour=lineColor) + scale_x_continuous("Genome Size (Mbp)") + scale_y_continuous("Frequency") + theme_bw()
-ggsave(filename="../genomeSize.pdf", plot=genomeSize)
+#ggsave(filename="../genomeSize.pdf", plot=genomeSize)
 
 
 #create the pan-genome distribution histogram
 panH <- ggplot(data = panGenomeHistoData, aes(x = rowsums))
 panSize <- panH + geom_histogram(binwidth = 100, fill=fillColor, colour=lineColor) + scale_x_continuous("No. of Genomes") + scale_y_continuous("Frequency") + theme_bw()
-ggsave(filename="../panGenomeSize.pdf", plot=panSize)
+
+#ggsave(filename="../panGenomeSize.pdf", plot=panSize)

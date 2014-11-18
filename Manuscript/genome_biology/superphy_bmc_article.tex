@@ -284,7 +284,7 @@ Additionally, SuperPhy provides rapid identification and whole-genome-based char
 SuperPhy allows users to identify genotypic clusters that vary in virulence (genopathotypes) and the statistically supported genetic elements responsible for these phenotypic differences. Predictive genomics is currently the missing translation layer between the vast amounts of information that many platforms are capable of producing, and true biological knowledge in a specific domain that is needed to test hypotheses.
 
 
-\section*{Implementation}
+\section{Implementation}
 \subsection{Webserver application and database}
 
 Genome data and analyses are administered using a PostgreSQL 9.3 database with a schema adapted from the Generic Model Organism Database (GMOD) Chado schema \cite{mungall_chado_2007}. The Chado relational database schema uses a flexible, ontology-centric approach to organizing biological entities, relationships, properties and analysis. Entries in generic tables are assiged types using a mutable, controlled vocabulary. By not defining entity types directly into the relational layer, the database can be highly adaptable and can grow to add new analyses or biological data.
@@ -327,28 +327,32 @@ As some genomes have identical isolation locations, their markers render at exac
 \section{Example Analyses}
 
 \subsection{Pan-genome}
-The proof-of-concept implementation of SuperPhy utilizes all publicly available \textit{E. coli} genome sequences from GenBank \cite{benson_genbank_2012}. \textit{E. coli} is ubiquitous in the intestines of mammals, with only a small subset causing disease in humans or animals \cite{tenaillon_population_2010}. The population was initially described as being broadly distributed among four large and two smaller phylogenetic groups \cite{selander_methods_1986,goullet_comparative_1989}, and recent studies have found that the species has an open pan-genome, meaning that the addition of new genomes is likely to add additional genes to the pan-genome, and that the pan-genome is highly variable, with around 80\% of an individual genome comprised of accessory genes and 20\% from the core-genome \cite{lukjancenko_comparison_2010}; a stable proportion of approximately 4000 genes are present in at least 50\% of the genomes \cite{gordienko_evolution_2013}.
+The proof-of-concept implementation of SuperPhy utilizes all publicly available \textit{E. coli} genome sequences from GenBank \cite{benson_genbank_2012}. \textit{E. coli} is ubiquitous, gram-negative bacterial species found in the intestines of healthy mammals, with only a small subset causing disease in humans or animals \cite{tenaillon_population_2010}. The population structure of \textit{E. coli} was initially described as being broadly distributed among four large and two smaller phylogenetic groups \cite{selander_methods_1986,goullet_comparative_1989}. Recent studies have found that the species has an open pan-genome, meaning that the addition of new genomes is likely to add additional genes to the pool \cite{medini_microbial_2005}. The pan-genome is highly variable, with around 80\% of an individual genome comprised of accessory genes, with the remainder from the shared core-genome \cite{lukjancenko_comparison_2010}; a stable proportion of approximately 4000 genes are present in at least 50\% of the genomes \cite{gordienko_evolution_2013}.
 
+\includegraphics[width=\textwidth]{images/panGenomeSize.pdf}
+
+The pan-genome distribution of the 2324 \textit{E. coli} genomes in the SuperPhy database as 1000bp genomic segments is presented in Figure X. As can be seen, the majority (29.7Mbp) of the 37.44 Mbp pan-genome is present in fewer than 100 genomes, with the core genome size (present in at least 2300 genomes) observed to be 1.86Mbp. Only 5.84Mbp of the pan-genome was found in greater than 100 genomes, but fewer than 2300 genomes.
+
+\subsection{Virulence genes}
+
+\subsection{Anti-microbial resistance determinants}
+
+\subsection{Group comparisons}
+
+\subsection{Geospatial and phylogenetic concordance}
 \includegraphics[width=\textwidth]{images/map.png}
+Maps are highly integrated with the Superphy genome search and filtering controls, and this feature is designed to work seamlessly across all components of the website. The filtering system will only show map markers and genomes on the map table that are part of the filter / search query. Therefore, users can quickly and easily identify and select genomes with particular attributes, isolated from a region of interest, before querying additional information. Users can also add sortable metadata fields to the map table by selecting from the list of check boxes in the metadata side control panel. 
 
 For ease of access, each map comes with a quick search that will pan and zoom to a location of interest. The accompanying map table will update the list of genomes currently in the map view port. As an example here we show the map when a user searches for `United Kingdom'.
 
 \includegraphics[width=\textwidth]{images/uk-map.png}
 
-\subsubsection{Maps in Search}
-Maps are highly integrated with the Superphy genome search and filtering controls, and this feature is designed to work seamlessly across all components of the website. The filtering system will only show map markers and genomes on the map table that are part of the filter / search query. Therefore, users can quickly and easily identify and select genomes with particular attributes, isolated from a region of interest, before querying additional information. Users can also add sortable metadata fields to the map table by selecting from the list of check boxes in the metadata side control panel. 
-
-\subsubsection{Maps in Genome Information}
-Maps are used to highlight geospatial information about genomes. Once a user has requested information about a particular genome they are directed to a page that contains a detailed overview of that genome. If there is location data available a distinct marker is displayed on the map and genome is highlighted in the map table. Maps are designed such that users can quickly jump to another genome info page right from the map table.
-
-\includegraphics[width=\textwidth]{images/genome-info.png}
-
-\subsubsection{Maps in Geospatial-Phylogeny Information}
 The interactive phylogenetic tree in SuperPhy is a powerful visual tool for discerning evolutionary relationships between genomes. The GeoPhy tab presents a synchronized tree and map within a single view, which allows users to view these evolutionary relationships across space and time, aiding in the answering of research and epidemiological questions.
 
 As an example, a user can select a clade of genomes by clicking in the phylogenetic tree view and have these same strains mirrored in the geospatial view. Conversely, strains on the map can be selected and their phylogenetic relationship shown. Such visualizations can help determine whether a cluster of strains is potentially part of an outbreak, or help to determine the spread of particular genomic types across space and time.
 
 \includegraphics[width=\textwidth]{images/geophy.png}
+
 
 % \subsection*{Sub-heading for section}
 % Text for this sub-heading \ldots
@@ -399,7 +403,7 @@ As an example, a user can select a clade of genomes by clicking in the phylogene
 \begin{backmatter}
 
 \section*{Competing interests}
-  The authors declare that they have no competing interests.
+  The authors declare that they are competing for your interest.
 
 \section*{Author's contributions}
     Text for this section \ldots
