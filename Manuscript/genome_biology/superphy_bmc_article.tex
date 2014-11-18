@@ -49,8 +49,11 @@
 %%% Load packages
 %\usepackage{amsthm,amsmath}
 %\RequirePackage{natbib}
-%\RequirePackage{hyperref}
+\RequirePackage{hyperref}
 \usepackage[utf8]{inputenc} %unicode support
+\usepackage{lscape}
+\usepackage{graphicx}
+\usepackage{pdflscape}
 %\usepackage[applemac]{inputenc} %applemac support if unicode package fails
 %\usepackage[latin1]{inputenc} %UNIX support if unicode package fails
 
@@ -71,8 +74,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\def\includegraphic{}
-\def\includegraphics{}
+% \def\includegraphic{}
+% \def\includegraphics{}
 
 
 
@@ -285,7 +288,7 @@ SuperPhy allows users to identify genotypic clusters that vary in virulence (gen
 
 Genome data and analyses are administered using a PostgreSQL 9.3 database with a schema adapted from the Generic Model Organism Database (GMOD) Chado schema \cite{mungall_chado_2007}. The Chado relational database schema uses a flexible, ontology-centric approach to organizing biological entities, relationships, properties and analysis. Entries in generic tables are assiged types using a mutable, controlled vocabulary. By not defining entity types directly into the relational layer, the database can be highly adaptable and can grow to add new analyses or biological data.
 
-The application layer for the Superphy website is build using Perl's CGI::Application framework, R's RShiny framework and several public and custom Javascript libraries. The phylogenetic tree display and interaction is built on top of the Data Driven Documents (D3) JavaScript library. Geospatial views are built using the Google Maps JavaScript API v3 (https://developers.google.com/maps/documentation/javascript/). Group comparisons are processed and displayed using the RStudio Shiny web application framework for R \cite{racine_rstudio:_2012}.
+The application layer for the Superphy website is build using the Perl CGI Application framework, the RShiny framework and several public and custom Javascript libraries. The phylogenetic tree display and interaction is built on top of the Data Driven Documents (D3) JavaScript library. Geospatial views are built using the Google Maps JavaScript API v3 \url{https://developers.google.com/maps/documentation/javascript/}. Group comparisons are processed and displayed using the RStudio Shiny web application framework for R \cite{racine_rstudio:_2012}.
 
 The webserver application code base, database schema and public data are hosted at the following Github repository: ...
 
@@ -309,51 +312,46 @@ The genome(s) of interest will are shown in the phylogenetic context of a tree c
 
 The user community will provide constant feedback as the platform evolves. A process of continuous integration will ensure that new innovations are implemented and optimizations applied based on the feedback.
 
-Maps are one of the core visualization tools of Superphy and provide users with an interactive interface for obtaining and searching genomes with geospatial meta-information. Superphy has leveraged Google Maps along with their companion Javascript library, Google Maps API (V3), to provide a scalable visual interface for thousands of genomes to the user. Maps are ubiquitous throughout the application and have been designed in different flavours to enhance the various analysis tools the platform has to offer.
+Maps are one of the core visualization tools of Superphy and provide users with an interactive interface for obtaining and searching genomes with geospatial meta-information. Superphy has leveraged Google Maps along with their companion Javascript library, Google Maps API (V3), to provide a scalable visual interface for thousands of genomes to the user. Maps are ubiquitous throughout the application and have been designed in different flavours to enhance the various analyses tools the platform has to offer.
 
-%%
-\subsection{Design and Performance}
-Genomes with available isolation location meta-data are geocoded for their latitude and longitude and  are displayed on the maps as circular markers. Currently, there are hundreds to thousands of genomes with, sometimes overlapping, geospatial information in Superphy's database. Simply rendering each of the genome locations on the map can lead to a severe bottleneck in browser performance. Moreover, the utility as a visualization tool is degraded as map markers crowd the view port and become difficult to distinguish from one another.\\
+\subsection{Maps design and performance}
+Genomes with available isolation location meta-data are geocoded for their latitude and longitude and  are displayed on the maps as circular markers. Currently, there are hundreds to thousands of genomes with, sometimes overlapping, geospatial information in the database. Simply rendering each of the genome locations on the map can lead to a severe bottleneck in browser performance. Moreover, the utility as a visualization tool is degraded as map markers crowd the view port and become difficult to distinguish from one another.
 
 To address these issues, we implemented marker clustering. Locations that fall within a certain defined distance from each other are clustered together into a single marker rendered at the geometric center of the cluster, and a count of the number of clustered locations is shown on the marker icon. As the user zooms in on the map the number of markers to display is reduced and individual locations re-materialize as single markers. A counter-effect occurs as the user zooms out of the map. 
 
-\pagebreak
-\begin{landscape}
-Some genomes have identical isolation locations, therefore, markers for these genomes render at exactly the same spot on the map. Discerning genomes, at these locations, directly on the map is not currently feasible. As a result, maps are accompanied by a dynamic and sortable table of genome names that are, as a default setting, sorted by Country. Users also have the option of sorting by Province/State and City. As users zoom in and out and pan across the maps, the table changes to show only those genomes currently in the map view port. We have also made isolation locations for each genome available for download in a tab delimited text file.\\
+Some genomes have identical isolation locations, therefore, markers for these genomes render at exactly the same spot on the map. Discerning genomes, at these locations, directly on the map is not currently feasible. As a result, maps are accompanied by a dynamic and sortable table of genome names that are, as a default setting, sorted by Country. Users also have the option of sorting by ProvinceState and City. As users zoom in and out and pan across the maps, the table changes to show only those genomes currently in the map view port. We have also made isolation locations for each genome available for download in a tab delimited text file.
 
-\includegraphics[scale=0.36]{images/map.png}
-\end{landscape}
-\pagebreak
+\newpage
+\begin{figure}[htbp]
+    \includegraphics[width=\textwidth]{images/map.png}
+\end{figure}
 
-\begin{landscape}
-For ease of access, each map comes with a quick search, that will pan and zoom to a location of interest. The accompanying map table will update the list of genomes currently in the map view port. As an example here we show the map when a user searches for `'United Kingdom':\\
 
-\includegraphics[scale=0.36]{images/uk-map.png}
-\end{landscape}
+For ease of access, each map comes with a quick search, that will pan and zoom to a location of interest. The accompanying map table will update the list of genomes currently in the map view port. As an example here we show the map when a user searches for `'United Kingdom':
+
+%\includegraphics[scale=0.36]{images/uk-map.png}
+
 
 \subsection{Maps in Search}
 Maps are highly integrated with Superphy's genome search and filtering controls, and this feature is designed to work seamlessly across all components of the website. The filtering system will only show map markers and genomes on the map table that are part of the filter/search query. Therefore, users can quickly and easily identify and select genomes with particular attributes, isolated from a region of interest, before querying deeper information about the genome(s) of interest. Users can also add additional sortable metadata fields to the map table by selecting from the list of check boxes in the metadata side control panel. 
 \pagebreak
 
-\begin{landscape}
 \subsection{Maps in Genome Information}
-Maps are used to highlight geospatial information about genomes. Once a user has requested information about a particular genome they are directed to a page that contains a detailed overview of that genome. If there is location data available a distinct marker is displayed on the map and genome is highlighted in the map table. Maps are designed such that users can quickly jump to another genome info page right from the map table.\\
+Maps are used to highlight geospatial information about genomes. Once a user has requested information about a particular genome they are directed to a page that contains a detailed overview of that genome. If there is location data available a distinct marker is displayed on the map and genome is highlighted in the map table. Maps are designed such that users can quickly jump to another genome info page right from the map table.
 
-\includegraphics[scale=0.36]{images/genome-info.png}
-\end{landscape}
+%\includegraphics[scale=0.36]{images/genome-info.png}
+
 
 \subsection{Maps in Geospatial-Phylogeny Information}
 Superphy's interactive phylogenetic tree is a powerful visual tool for discerning evolutionary relationships between genomes. Synchronizing the tree and map into a single view (GeoPhy) allows users to view these evolutionary relationships across space and time, and can potentially answer interesting scientific and epidemiological questions. Filter and search features are also built directly into GeoPhy allowing users to execute deep queries.
 
 As an example, a user can search for a particular clade of genomes in the tree and view geospatial arrangements to discern if they were part of an outbreak, or they may select genomes isolated from a particular host and location and view their phylogenetic relationships.
 
-\pagebreak
-\begin{landscape}
-\includegraphics[scale=0.33]{images/geophy.png}
-\end{landscape}
+
+%\includegraphics[scale=0.33]{images/geophy.png}
 
 
-\ldots
+
 % \subsection*{Sub-heading for section}
 % Text for this sub-heading \ldots
 % \subsubsection*{Sub-sub heading for section}
