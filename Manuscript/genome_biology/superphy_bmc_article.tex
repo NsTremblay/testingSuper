@@ -321,36 +321,26 @@ To address these issues, we implemented marker clustering. Locations that fall w
 
 Some genomes have identical isolation locations, therefore, markers for these genomes render at exactly the same spot on the map. Discerning genomes, at these locations, directly on the map is not currently feasible. As a result, maps are accompanied by a dynamic and sortable table of genome names that are, as a default setting, sorted by Country. Users also have the option of sorting by ProvinceState and City. As users zoom in and out and pan across the maps, the table changes to show only those genomes currently in the map view port. We have also made isolation locations for each genome available for download in a tab delimited text file.
 
-\newpage
-\begin{figure}[htbp]
-    \includegraphics[width=\textwidth]{images/map.png}
-\end{figure}
+\includegraphics[width=\textwidth]{images/map.png}
 
+For ease of access, each map comes with a quick search, that will pan and zoom to a location of interest. The accompanying map table will update the list of genomes currently in the map view port. As an example here we show the map when a user searches for `United Kingdom'
 
-For ease of access, each map comes with a quick search, that will pan and zoom to a location of interest. The accompanying map table will update the list of genomes currently in the map view port. As an example here we show the map when a user searches for `'United Kingdom':
+\includegraphics[width=\textwidth]{images/uk-map.png}
 
-%\includegraphics[scale=0.36]{images/uk-map.png}
+\subsubsection{Maps in Search}
+Maps are highly integrated with Superphy genome search and filtering controls, and this feature is designed to work seamlessly across all components of the website. The filtering system will only show map markers and genomes on the map table that are part of the filter/search query. Therefore, users can quickly and easily identify and select genomes with particular attributes, isolated from a region of interest, before querying deeper information about the genome(s) of interest. Users can also add additional sortable metadata fields to the map table by selecting from the list of check boxes in the metadata side control panel. 
 
-
-\subsection{Maps in Search}
-Maps are highly integrated with Superphy's genome search and filtering controls, and this feature is designed to work seamlessly across all components of the website. The filtering system will only show map markers and genomes on the map table that are part of the filter/search query. Therefore, users can quickly and easily identify and select genomes with particular attributes, isolated from a region of interest, before querying deeper information about the genome(s) of interest. Users can also add additional sortable metadata fields to the map table by selecting from the list of check boxes in the metadata side control panel. 
-\pagebreak
-
-\subsection{Maps in Genome Information}
+\subsubsection{Maps in Genome Information}
 Maps are used to highlight geospatial information about genomes. Once a user has requested information about a particular genome they are directed to a page that contains a detailed overview of that genome. If there is location data available a distinct marker is displayed on the map and genome is highlighted in the map table. Maps are designed such that users can quickly jump to another genome info page right from the map table.
 
-%\includegraphics[scale=0.36]{images/genome-info.png}
+\includegraphics[width=\textwidth]{images/genome-info.png}
 
-
-\subsection{Maps in Geospatial-Phylogeny Information}
-Superphy's interactive phylogenetic tree is a powerful visual tool for discerning evolutionary relationships between genomes. Synchronizing the tree and map into a single view (GeoPhy) allows users to view these evolutionary relationships across space and time, and can potentially answer interesting scientific and epidemiological questions. Filter and search features are also built directly into GeoPhy allowing users to execute deep queries.
+\subsubsection{Maps in Geospatial-Phylogeny Information}
+Superphy interactive phylogenetic tree is a powerful visual tool for discerning evolutionary relationships between genomes. Synchronizing the tree and map into a single view (GeoPhy) allows users to view these evolutionary relationships across space and time, and can potentially answer interesting scientific and epidemiological questions. Filter and search features are also built directly into GeoPhy allowing users to execute deep queries.
 
 As an example, a user can search for a particular clade of genomes in the tree and view geospatial arrangements to discern if they were part of an outbreak, or they may select genomes isolated from a particular host and location and view their phylogenetic relationships.
 
-
-%\includegraphics[scale=0.33]{images/geophy.png}
-
-
+\includegraphics[width=\textwidth]{images/geophy.png}
 
 % \subsection*{Sub-heading for section}
 % Text for this sub-heading \ldots
