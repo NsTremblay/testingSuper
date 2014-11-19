@@ -5,6 +5,7 @@ use warnings;
 use IO::File;
 
 my $inputFile = $ARGV[0];
+my $convert = $ARGV[1] // 0;
 
 my $inFH = IO::File->new('<' . $inputFile) or die "$!";
 
@@ -22,6 +23,11 @@ while(my $line = $inFH->getline){
 	else{
 		print STDERR "No sequence found!";
 		exit(1);
+	}
+
+	if($convert){
+		$seq =~ s/0/A/g;
+		$seq =~ s/1/T/g;
 	}
 
 	print '>' . $name . "\n" . $seq . "\n";
