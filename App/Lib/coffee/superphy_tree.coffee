@@ -48,24 +48,26 @@ class TreeView extends ViewTemplate
     @height = @dim.h - @margin.top - @margin.bottom
     @xzoom = d3.scale.linear().domain([0, @width]).range([0, @width])
     @yzoom = d3.scale.linear().domain([0, @height]).range([0, @height])
-    
+
     # Tree layout rendering object
     @cluster = d3.layout.cluster()
       .size([@width, @height])
       .sort(null)
       .value((d) -> Number(d.length) )
-      .separation((a, b) -> 
-        a_num_leaves = 1
-        if ('num_leaves' in a)
-          a_num_leaves = a.num_leaves
+      .separation((a, b) ->
+        a_height = 1
+        if ('num_leaves' in a) && ('total_height' in a)
+          a_height = a.num_leaves + a.total_height
         else
-          a_num_leaves = 1
-        b_num_leaves = 1
-        if ('num_leaves' in b)
-          b_num_leaves = b.num_leaves
+          a_height = 100
+        b_height = 1
+        if ('num_leaves' in b) && ('total_height' in b)
+          b_height = b.num_leaves + b.total_height
         else
-          b_num_leaves = 1
-        a_num_leaves + b_num_leaves)
+          b_height = 100
+
+        console.log(a.num_leaves, a.total_height, a_height + b_height)
+        a_height + b_height)
       
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
@@ -169,6 +171,8 @@ class TreeView extends ViewTemplate
   duration: 1000
   
   expandDepth: 10
+
+  rank = 0
   
   x_factor: 1.5
   y_factor: 5000
@@ -190,11 +194,9 @@ class TreeView extends ViewTemplate
     for t in mtypesDisplayed
       metaOntology[t] = []
       for k,v of n.metaCount[t]
+        metaOntology[t].push(k)
         metaSorted.push([k,v])
         metaSorted.sort((a,b) -> a[1]-b[1]).reverse()
-        console.log(metaSorted)
-        for arr in metaSorted
-          metaOntology[t].push(arr[0])
     metaOntology
 
   # FUNC update
@@ -254,6 +256,9 @@ class TreeView extends ViewTemplate
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
       n.x = n.x * @branch_scale_factor_x
+      n.arr = []
+      n.xpos = 0
+      n.total_height = 0
 
     metaOntology = @addMetaOntology(@root)
     
@@ -391,15 +396,19 @@ class TreeView extends ViewTemplate
     num = @elNum-1
 
     # Appends genomeMeter.  Size of bar reflects number of genomes.
+   
     svgNodes
       .append('rect')
       .style("fill", "red")
+      .style("stroke-width", 0.5)
+      .style("stroke", "black")
       .attr("class", "genomeMeter")
       .attr("width", (n) ->
         if n._children?
+          rank = 1
           20*(Math.log(n.num_leaves))
         else 0)
-      .attr("height", 10)
+      .attr("height", 7)
       .attr("y", -5)
       .attr("x", 4)
 
@@ -491,9 +500,6 @@ class TreeView extends ViewTemplate
       ]
     }
 
-    for n in @nodes
-      n.arr = []
-      n.xpos = 0
       
     y = -5
     for m in mtypesDisplayed
@@ -501,28 +507,33 @@ class TreeView extends ViewTemplate
         j = 0
         i = 0
         x = 0
-        y += 12
+        inc = 8
+        y += 8
+        rank += 1
         while i < metaOntology[m].length
           if metaOntology[m][i]?
             s = metaOntology[m][i]
           svgNodes
             .append("rect")
-            .style("fill", host_colours[j++])
-            .style("fill-opacity", 1)
+            .style("fill", colours[m][j++])
+            .style("stroke-width", 0.5)
+            .style("stroke", "black")
             .attr("class", "metaMeter")
             .attr("id", 
-              if i == 9
+              if i == 4
                 "Other"
               else s)
             .attr("width", (n) ->
               if n._children? && n.metaCount[m][s]?
                 width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+                n.total_height = rank * inc
               else 
                 width = 0
                 n.arr[i] = 0
+                n.total_height = 0
               width)
-            .attr("height", 10)
+            .attr("height", 7)
             .attr("y", y)
             .attr("x", (n) ->
               if n._children? && n.arr[i-1]? && i > 0

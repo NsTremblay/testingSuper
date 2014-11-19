@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var mtypesDisplayed;
+    var mtypesDisplayed, rank;
 
     __extends(TreeView, _super);
 
@@ -2909,20 +2909,21 @@
       this.cluster = d3.layout.cluster().size([this.width, this.height]).sort(null).value(function(d) {
         return Number(d.length);
       }).separation(function(a, b) {
-        var a_num_leaves, b_num_leaves;
-        a_num_leaves = 1;
-        if ((__indexOf.call(a, 'num_leaves') >= 0)) {
-          a_num_leaves = a.num_leaves;
+        var a_height, b_height;
+        a_height = 1;
+        if ((__indexOf.call(a, 'num_leaves') >= 0) && (__indexOf.call(a, 'total_height') >= 0)) {
+          a_height = a.num_leaves + a.total_height;
         } else {
-          a_num_leaves = 1;
+          a_height = 100;
         }
-        b_num_leaves = 1;
-        if ((__indexOf.call(b, 'num_leaves') >= 0)) {
-          b_num_leaves = b.num_leaves;
+        b_height = 1;
+        if ((__indexOf.call(b, 'num_leaves') >= 0) && (__indexOf.call(b, 'total_height') >= 0)) {
+          b_height = b.num_leaves + b.total_height;
         } else {
-          b_num_leaves = 1;
+          b_height = 100;
         }
-        return a_num_leaves + b_num_leaves;
+        console.log(a.num_leaves, a.total_height, a_height + b_height);
+        return a_height + b_height;
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
@@ -2989,6 +2990,8 @@
 
     TreeView.prototype.expandDepth = 10;
 
+    rank = 0;
+
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
@@ -2996,7 +2999,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.addMetaOntology = function(n) {
-      var arr, k, metaOntology, metaSorted, t, v, _i, _j, _len, _len1, _ref;
+      var k, metaOntology, metaSorted, t, v, _i, _len, _ref;
       metaOntology = {};
       metaSorted = [];
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
@@ -3005,22 +3008,18 @@
         _ref = n.metaCount[t];
         for (k in _ref) {
           v = _ref[k];
+          metaOntology[t].push(k);
           metaSorted.push([k, v]);
           metaSorted.sort(function(a, b) {
             return a[1] - b[1];
           }).reverse();
-          console.log(metaSorted);
-          for (_j = 0, _len1 = metaSorted.length; _j < _len1; _j++) {
-            arr = metaSorted[_j];
-            metaOntology[t].push(arr[0]);
-          }
         }
       }
       return metaOntology;
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, host_colours, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, source_colours, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, host_colours, i, iNodes, id, inc, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, source_colours, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3054,6 +3053,9 @@
         n = _ref[_i];
         n.y = n.sum_length * this.branch_scale_factor_y;
         n.x = n.x * this.branch_scale_factor_x;
+        n.arr = [];
+        n.xpos = 0;
+        n.total_height = 0;
       }
       metaOntology = this.addMetaOntology(this.root);
       if (this.expansionContraction) {
@@ -3183,13 +3185,14 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      svgNodes.append('rect').style("fill", "red").attr("class", "genomeMeter").attr("width", function(n) {
+      svgNodes.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
+          rank = 1;
           return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
         }
-      }).attr("height", 10).attr("y", -5).attr("x", 4);
+      }).attr("height", 7).attr("y", -5).attr("x", 4);
       host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
       colours = {
         'serotype': ['green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen'],
@@ -3200,35 +3203,33 @@
         'stx1_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
         'stx2_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1']
       };
-      _ref2 = this.nodes;
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        n = _ref2[_k];
-        n.arr = [];
-        n.xpos = 0;
-      }
       y = -5;
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
+      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
+        m = mtypesDisplayed[_k];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
           x = 0;
-          y += 12;
+          inc = 8;
+          y += 8;
+          rank += 1;
           while (i < metaOntology[m].length) {
             if (metaOntology[m][i] != null) {
               s = metaOntology[m][i];
             }
-            svgNodes.append("rect").style("fill", host_colours[j++]).style("fill-opacity", 1).attr("class", "metaMeter").attr("id", i === 9 ? "Other" : s).attr("width", function(n) {
+            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", i === 4 ? "Other" : s).attr("width", function(n) {
               var width;
               if ((n._children != null) && (n.metaCount[m][s] != null)) {
                 width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
+                n.total_height = rank * inc;
               } else {
                 width = 0;
                 n.arr[i] = 0;
+                n.total_height = 0;
               }
               return width;
-            }).attr("height", 10).attr("y", y).attr("x", function(n) {
+            }).attr("height", 7).attr("y", y).attr("x", function(n) {
               if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
                 n.xpos += n.arr[i - 1];
               } else {
@@ -3288,9 +3289,9 @@
         svgNode = this.canvas.select("#" + elID);
         svgNode.moveToFront();
       }
-      _ref3 = this.nodes;
-      for (_m = 0, _len4 = _ref3.length; _m < _len4; _m++) {
-        n = _ref3[_m];
+      _ref2 = this.nodes;
+      for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
+        n = _ref2[_l];
         n.x0 = n.x;
         n.y0 = n.y;
       }
