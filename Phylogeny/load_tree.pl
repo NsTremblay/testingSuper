@@ -43,6 +43,7 @@ my ($tree_file,$config);
 
 GetOptions(
     'tree=s' => \$tree_file,
+    'format=s' => 
     'config=s' => \$config,
 );
 

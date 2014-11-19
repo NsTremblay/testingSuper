@@ -119,6 +119,9 @@ use constant CREATE_CACHE_TABLE =>
 		contig_id       int
 	)";
 use constant INSERT_CHR => "INSERT INTO pipeline_cache (tracker_id, chr_num, name, description) VALUES (?,?,?,?)";
+use constant INSERT_FOOTPRINT => "UPDATE pipeline_cache SET contig_num = ?, contig_sizes = ? WHERE tracker_id = ?";
+# Genome footprints
+use constant INSERT_FOOTPRINT => "INSERT INTO pipeline_footprint (tracker_id, access, contig_num, contig_sizes) VALUES (?,?,?,?)";
 
 # Globals
 my $update_step_sth;
@@ -266,11 +269,11 @@ if(@tracking_ids) {
 	# # Load pan-genome results
 	# load_pg($pg_dir);
 
-	# Build the genome tree
-	build_genome_tree();
+	# # Build the genome tree
+	# build_genome_tree();
 	
-	# Recompute the metadata JSON objects
-	recompute_metadata();
+	# # Recompute the metadata JSON objects
+	# recompute_metadata();
 
 	# Update individual genome records, notify users, remove tmp files
 	close_out(\@tracking_ids);
@@ -710,7 +713,8 @@ sub rename_sequences {
 	my $in = Bio::SeqIO->new(-file   => $fasta_file,
                              -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
     
-    my $contig_num = 1;                          
+    my $contig_num = 1;
+    my @footprint;                       
 	while (my $entry = $in->next_seq) {
 		my $name = $entry->display_id;
 		my $desc = $entry->description;
@@ -719,11 +723,15 @@ sub rename_sequences {
 		$insert_query->execute($tracker_id,$contig_num,$name,$desc) or die "Unable to insert chr name/description into DB cache ($!).";
 		print $out ">lcl|upl_$tracker_id|$contig_num\n$seq\n\n";
 		$contig_num++;
+
+		push @footprint, length($seq);
 	}
 	
 	close $out;
 	
 	move($tmp_file, $fasta_file) or die "Unable to move tmp file to $fasta_file ($!).";
+
+	return([sort @footprint]);
 }
 
 
@@ -1218,64 +1226,64 @@ sub load_data {
 }
 
 
-=head2 recompute_metadata 
+# =head2 recompute_metadata 
 
-Recompute the json objects that contain genomes and their properties
+# Recompute the json objects that contain genomes and their properties
 
-=cut
+# =cut
 
-sub recompute_metadata {
+# sub recompute_metadata {
 	
-	INFO "Loading Metadata into DB";
+# 	INFO "Loading Metadata into DB";
 	
-	unless($noload) {
-		my @loading_args = ("perl $FindBin::Bin/../Database/load_meta_data.pl",
-		'--config '.$config);
+# 	unless($noload) {
+# 		my @loading_args = ("perl $FindBin::Bin/../Database/load_meta_data.pl",
+# 		'--config '.$config);
 		
-		my $cmd = join(' ',@loading_args);
-		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+# 		my $cmd = join(' ',@loading_args);
+# 		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 		
-		if($success) {
-			INFO "Metadata JSON objects loaded successfully."
-		} else {
-			die "Loading of Metadata JSON objects failed ($stderr).";
-		}
-	}
-}
+# 		if($success) {
+# 			INFO "Metadata JSON objects loaded successfully."
+# 		} else {
+# 			die "Loading of Metadata JSON objects failed ($stderr).";
+# 		}
+# 	}
+# }
 
-=head2 recompute_metadata 
+# =head2 build_genome_tree
 
-Rebuild global genome tree with new sequences
+# Rebuild global genome tree with new sequences
 
-=cut
+# =cut
 
-sub build_genome_tree {
+# sub build_genome_tree {
 
-	INFO "Recompute and loading genome phylogenetic tree";
+# 	INFO "Recompute and loading genome phylogenetic tree";
 
-	unless($noload) {
-		# Intialize the Tree building modules
-		my $tree_builder = Phylogeny::TreeBuilder->new();
-		my $tree_io = Phylogeny::Tree->new(config => $config);
+# 	unless($noload) {
+# 		# Intialize the Tree building modules
+# 		my $tree_builder = Phylogeny::TreeBuilder->new();
+# 		my $tree_io = Phylogeny::Tree->new(config => $config);
 		
-		# write alignment file
-		my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
-		$tree_io->writeSnpAlignment($tmp_file);
+# 		# write alignment file
+# 		my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
+# 		$tree_io->writeSnpAlignment($tmp_file);
 		
-		# clear output file for safety
-		my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
-		open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
-		close $out;
+# 		# clear output file for safety
+# 		my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
+# 		open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+# 		close $out;
 		
-		# build newick tree
-		$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+# 		# build newick tree
+# 		$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
 		
-		# Load tree into database
-		my $tree = $tree_io->loadTree($tree_file);
+# 		# Load tree into database
+# 		my $tree = $tree_io->loadTree($tree_file);
 
-		INFO "Phylogenetic tree loaded successfully.";
-	}
-}
+# 		INFO "Phylogenetic tree loaded successfully.";
+# 	}
+# }
 
 =head2 close_out
 

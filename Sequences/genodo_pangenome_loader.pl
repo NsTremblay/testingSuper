@@ -192,13 +192,15 @@ maxNumberResultsInMemory	500
 	
 	# Blast pangenome regions
 	my $input_fasta = $panseq_dir . 'panGenomeFragments.fasta';
+	my $input_fasta1 = $panseq_dir . 'coreGenomeFragments.fasta';
+	my $input_fasta2 = $panseq_dir . 'accessoryGenomeFragments.fasta';
+	`cat $input_fasta1 $input_fasta2 > $input_fasta`;
 	my $blast_file = $panseq_dir . 'anno.txt';
 	my $blast_cmd = "$blast_dir/blastx -evalue 0.0001 -outfmt ".'\"6 qseqid qlen sseqid slen stitle\" '."-db $nr_location -max_target_seqs 1 -query -";
 	my $num_cores = 8;
 	my $filesize = -s $input_fasta;
 	my $blocksize = int($filesize/$num_cores);
-	#my $parallel_cmd = "cat $input_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
-	my $parallel_cmd = "grep \">\" -m 64 -A 1 $input_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
+	my $parallel_cmd = "cat $input_fasta | $parallel_exe --gnu -j $num_cores --block $blocksize --recstart '>' --pipe $blast_cmd > $blast_file";
 	
 	print "\trunning blast on pangenome fragments...\n";
 	system($parallel_cmd) == 0 or croak "[Error] BLAST failed.\n";
@@ -256,7 +258,6 @@ foreach my $pan_file ($core_fasta_file, $acc_fasta_file) {
 		my $pg_feature_id = $chado->handle_pangenome_segment($in_core, $func, $func_id, $seq);
 		
 		# Cache feature id another info for reference pangenome fragment
-		print "$uniquename\n";
 		$chado->cache('feature',$uniquename,$pg_feature_id);
 	
 		$chado->cache('core',$pg_feature_id,$in_core);
@@ -305,9 +306,10 @@ my @tasks;
 	local $/ = "\nLocus ";
 	
 	while(my $locus_block = <$in>) {
-		
+
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
+		next unless $locus;
 		#my ($locus_id, $uniquename) = ($locus =~ m/^lcl\|(\w+)\|(lcl\|.+)$/);
 		my ($uniquename) = ($locus =~ m/^(lcl\|.+)$/);
 		croak "Error: unable to parse header $locus in the locus alleles fasta file.\n" unless $uniquename;
@@ -348,13 +350,17 @@ my @tasks;
 	close $in;
 }
 
+##
+@tasks = (grep $_->[3], @tasks)[0..9];
+##
+
 # Print tasks to file
 my $jobfile = $alndir . "/jobs.txt";
 open my $out, '>', $jobfile or croak "Error: unable to open file $jobfile ($!).";
 foreach my $t (@tasks) {
 	# Only need alignment or tree if do_snps or do_tree is true
 	if($t->[2] || $t->[3]) {
-		print $out join("\t",$t->[0],$t->[2],$t->[3]),"\n";
+		print $out join("\t",$t->[0],$t->[2],$t->[3],0),"\n";
 	}
 }
 close $out;
@@ -401,7 +407,9 @@ elapsed_time("Loci locations");
 
 # Iterate through each pangenome segment and load it
 foreach my $tarray (@tasks) {
-	my ($pg_id, $locus_id, $do_tree, $do_snps) = @$tarray;
+	my ($pg_id, $pg_name, $do_tree, $do_snps) = @$tarray;
+
+	print join(',', 'new JOB:', $pg_id, $pg_name, $do_tree, $do_snps),"\n";
 	
 	# Load sequences from file
 	my $num_ok = 0;  # Some locus sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
@@ -412,7 +420,7 @@ foreach my $tarray (@tasks) {
 	while(my $entry = $fasta->next_seq()) {
 		my $header = $entry->display_id;
 		my $seq = $entry->seq;
-		$num_ok++ if pangenome_locus($pg_id,$locus_id,$header,$seq,\@sequence_group);
+		$num_ok++ if pangenome_locus($pg_id,$pg_name,$header,$seq,\@sequence_group);
 	}
 	
 	if($do_tree && $num_ok > 2) {
@@ -445,9 +453,9 @@ foreach my $tarray (@tasks) {
 		
 		foreach my $old (keys %conversions) {
 			my $new = $conversions{$old};
-			my $num_repl = $tree =~ s/$old/$new/g;
+			my ($num_repl) = ($tree =~ s/\Q$old\E/\Q$new\E/g);
 			warn "No replacements made in phylogenetic tree. $old not found." unless $num_repl;
-			warn "Multiple replacements made in phylogenetic tree. $old is not unique." unless $num_repl;
+			warn "Multiple replacements ($num_repl) made in phylogenetic tree. $old is not unique." if $num_repl > 1;
 		}
 		
 		$chado->handle_phylogeny($tree, $pg_id, \@sequence_group);
@@ -532,7 +540,7 @@ sub cleanup_handler {
 =cut
 
 sub pangenome_locus {
-	my ($query_id, $locus_id, $header, $seq, $seq_group) = @_;
+	my ($query_id, $query_name, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	my $genome_ids = parse_loci_header($header);
@@ -542,11 +550,11 @@ sub pangenome_locus {
 	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
 	
 	# location hash
-	my $loc_hash = $loci{$query_id}->{$genome_ids->{position_file_header}}->{$genome_ids->{allele}};
+	my $loc_hash = $loci{$query_id}->{$genome_ids->{position_file_header}}->{$genome_ids->{copy}};
 	unless(defined $loc_hash) {
-		warn "Missing location information for locus allele $locus_id ($query_id) in contig $header (lookup details: ".
+		warn "Missing location information for locus allele $query_name ($query_id) in contig $header (lookup details: ".
 			$genome_ids->{position_file_header}.",".
-			$genome_ids->{allele}.").\n" unless defined $loc_hash;
+			$genome_ids->{copy}.").\n" unless defined $loc_hash;
 		return;
 	}
 	
@@ -582,7 +590,8 @@ sub pangenome_locus {
 	my $uniquename = "locus:$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
-	my ($result, $allele_id) = $chado->validate_feature($query_id,$genome_ids->{genome},$uniquename,$pub_value);
+	my ($result, $allele_id) = $chado->validate_feature(query => $query_id, genome => $genome_ids->{genome}, uniquename => $uniquename,
+			public => $pub_value, feature_type => 'pangenome');
 	
 	if($result eq 'new_conflict') {
 		warn "Attempt to add new region multiple times. Dropping duplicate of pangenome region $uniquename.";
@@ -624,13 +633,13 @@ sub pangenome_locus {
 		my $dbxref = '\N';
 		
 		#  name
-		my $name = $locus_id;
+		my $name = "loci derived from $query_id";
 		
 		# Add entry in core pangenome alignment table for genome, if it doesn't exist
-		$chado->add_core_row($genome_ids->{genome}, $is_public);
+		$chado->cache_snp_genome_id($curr_feature_id, $is_public, $uniquename, 'public');
 		
 		# Feature relationships
-		$chado->handle_parent($curr_feature_id, $genome_ids->{genome}, $contig_id, $is_public);
+		$chado->handle_parent(subject => $curr_feature_id, genome => $genome_ids->{genome}, contig => $contig_id, public => $is_public);
 		$chado->handle_pangenome_loci($curr_feature_id, $query_id, $is_public, $genome_ids->{genome});
 		
 		# Additional Feature Types
@@ -649,7 +658,7 @@ sub pangenome_locus {
 	
 	# Record event in cache
 	my $event = $is_new ? 'insert' : 'update';
-	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $genome_ids->{genome},
+	$chado->feature_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $genome_ids->{genome},
 		query_id => $query_id, is_public => $pub_value);
 	
 	push @$seq_group, {
@@ -676,11 +685,8 @@ sub find_snps {
 	my $locus = $genome_info->{allele};
 	my $is_public = $genome_info->{public};
 	
-	# Add row in SNP alignment table for genome, if it doesn't exist
-	$chado->add_snp_row($contig_collection,$is_public);
-	
 	# Load snp variations from file
-	my $var_file = $data_dir . "/$ref_id\__$genome\__snp_variations.txt";
+	my $var_file = $data_dir . "/$ref_id/$genome\__snp_variations.txt";
 	open(my $in, "<", $var_file) or croak "Error: unable to read file $var_file ($!).\n";
 	
 	while(my $snp_line = <$in>) {
@@ -706,7 +712,7 @@ sub locate_snps {
 	my $is_public = $genome_info->{public};
 	
 	# Load snp alignment positions from file
-	my $pos_file = $data_dir . "/$ref_id\__$genome\__snp_positions.txt";
+	my $pos_file = $data_dir . "/$ref_id/$genome\__snp_positions.txt";
 	open($in, "<", $pos_file) or croak "Error: unable to read file $pos_file ($!).\n";
 	
 	while(my $snp_line = <$in>) {
@@ -751,19 +757,19 @@ sub elapsed_time {
 sub parse_loci_header {
 	my $header = shift;
 	
-	my ($access, $contig_collection_id, $access2, $contig_id, $allele_num) = ($header =~ m/^lcl\|(public|private)_(\d+)\|(public|private)_(\d+)_\-a(\d+)$/);
+	my ($access, $contig_collection_id, $access2, $contig_id, $allele_num) = ($header =~ m/^lcl\|(public|private)_(\d+)\|(public|private)_(\d+)(?:_\-a(\d+))?$/);
 	croak "Invalid contig_collection ID format: $header\n" unless $access;
 	croak "Invalid contig ID format: $header\n" unless $access2;
-	croak "Invalid allele number format: $header\n" unless $allele_num;
 	croak "Invalid header: $header" unless $access eq $access2;
-	
+
+	$allele_num = 1 unless $allele_num;
 	$header =~ s/_\-a\d+$//;
 	
 	return {
 		access => $access,
 		genome => $contig_collection_id,
-		contig => $contig_id,
-		allele => $allele_num,
+		feature => $contig_id,
+		copy => $allele_num,
 		position_file_header => $header
 	};
 }

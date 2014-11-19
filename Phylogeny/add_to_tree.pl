@@ -39,19 +39,20 @@ use Getopt::Long;
 
 ## Arguments
 my ($pipeline_mode, $test, $input_file, $global_output_file, $public_output_file,
-	$dbhost, $dbname, $dbport, $dbuser, $dbpass, $tmp_dir);
+	$dbhost, $dbname, $dbport, $dbuser, $dbpass, $tmp_dir, $supertree);
 GetOptions(
-    'pipeline'   => $pipeline_mode,
-    'test'       => $test,
-    'dbname=s'   => $dbname,
-    'dbhost=s'   => $dbhost,
-    'dbport=i'   => $dbport,
-    'dbuser=s'   => $dbuser,
-    'dbpass=s'   => $dbpass,
-    'tmpdir=s'   => $tmp_dir,
-    'input=s'    => $input_file,
-    'globalf=s'  => $global_output_file,
-    'publicf=s'  => $public_output_file,
+    'pipeline'   => \$pipeline_mode,
+    'test'       => \$test,
+    'dbname=s'   => \$dbname,
+    'dbhost=s'   => \$dbhost,
+    'dbport=i'   => \$dbport,
+    'dbuser=s'   => \$dbuser,
+    'dbpass=s'   => \$dbpass,
+    'tmpdir=s'   => \$tmp_dir,
+    'input=s'    => \$input_file,
+    'globalf=s'  => \$global_output_file,
+    'publicf=s'  => \$public_output_file,
+    'supertree'  => \$supertree
 );
 
 # Temp directory
@@ -78,11 +79,6 @@ my $t = Phylogeny::Tree->new(
 );
 my $tree_builder = Phylogeny::TreeBuilder->new();
 
-
-# Obtain working tree (should not include genomes)
-my $root = $t->globalTree;
-my $num_orig_leaves = scalar($t->find_leaves($root));
-
 # Process inputs
 my @target_set;
 my %target_info;
@@ -95,109 +91,139 @@ while(my $row = <$in>) {
 		uniquename => $uniquename, displayname => $displayname, access => $access,
 		feature_id => $feature_id
 	};
-
 }
 close $in;
 
-if($test) {
-	# Remove target nodes from tree to run test
-	$root = $t->pruneNode($root, \%target_info);
-}
 
+if($supertree) {
+	# Rebuild only part of tree using supertree approach
 
-# Build fast approx tree
-my ($nj_root, $nj_leaves) = buildNJtree();
+	# Obtain working tree (should not include genomes)
+	my $root = $t->globalTree;
+	my $num_orig_leaves = scalar($t->find_leaves($root));
 
-# Sometimes a supertree approach is not possible
-# In which case, the entire ML genome tree needs to 
-# be built.
-my $short_circuit = 0;
-
-# Keep track of which new genomes are inserted into main tree
-my %waiting_targets;
-map { $waiting_targets{$_} = 1 } @target_set;
-
-# Use supertree approach to add new genomes to existing ML tree
-foreach my $targetG (@target_set) {
-
-	# Find corresponding leaf node
-	my $leaf;
-	foreach my $l (@$nj_leaves) {
-		if($l->{name} eq $targetG) {
-			$leaf = $l;
-			last;
-		}
+	if($test) {
+		# Remove target nodes from tree to run test
+		$root = $t->pruneNode($root, \%target_info);
 	}
-	croak "Error: new genome $targetG not found in core_alignment table.\n" unless $leaf;
 
-	my $terminate = 0;
-	my $level = 2;
-	do {
 
-		# Get candidate subtree set
-		my ($rs, $genome_set) = find_umbrella($leaf, $level);
+	# Build fast approx tree
+	my ($nj_root, $nj_leaves) = buildNJtree();
 
-		if($rs) {
-			# Target genome not embedded in suitable subtree,
-			# need to rebuild entire ML genome tree
-			$short_circuit = 1;
-			$terminate = 1;
+	# Sometimes a supertree approach is not possible
+	# In which case, the entire ML genome tree needs to 
+	# be built.
+	my $short_circuit = 0;
 
-		} else {
-			# Attempt build of subtree using ML approach
-			my ($new_subtree_root, $old_subtree_root) = buildSubtree($genome_set);
+	# Keep track of which new genomes are inserted into main tree
+	my %waiting_targets;
+	map { $waiting_targets{$_} = 1 } @target_set;
 
-			# Check if target is outgroup
-			my @subtree_leaves = $t->find_leaves($new_subtree_root);
+	# Use supertree approach to add new genomes to existing ML tree
+	foreach my $targetG (@target_set) {
 
-			if(_isOutgroup($targetG, \@subtree_leaves)) {
-				# Target is outgroup in subtree,
-				# move to larger subtree
-				$level++;
-				$terminate = 0;
+		# Find corresponding leaf node
+		my $leaf;
+		foreach my $l (@$nj_leaves) {
+			if($l->{name} eq $targetG) {
+				$leaf = $l;
+				last;
+			}
+		}
+		croak "Error: new genome $targetG not found in core_alignment table.\n" unless $leaf;
+
+		my $terminate = 0;
+		my $level = 2;
+		do {
+
+			# Get candidate subtree set
+			my ($rs, $genome_set) = find_umbrella($leaf, $level, \%waiting_targets);
+
+			if($rs) {
+				# Target genome not embedded in suitable subtree,
+				# need to rebuild entire ML genome tree
+				$short_circuit = 1;
+				$terminate = 1;
 
 			} else {
-				# Build successful
-				# Reattach subtree to main tree
-				foreach my $k (keys %{$old_subtree_root}) {
-					$new_subtree_root->{$k} = $old_subtree_root->{$k};
+				# Attempt build of subtree using ML approach
+				my ($new_subtree_root, $old_subtree_root) = buildSubtree($root, $genome_set);
+
+				# Check if target is outgroup
+				my @subtree_leaves = $t->find_leaves($new_subtree_root);
+
+				if(_isOutgroup($targetG, \@subtree_leaves)) {
+					# Target is outgroup in subtree,
+					# move to larger subtree
+					$level++;
+					$terminate = 0;
+
+				} else {
+					# Build successful
+					# Reattach subtree to main tree
+					foreach my $k (keys %{$old_subtree_root}) {
+						$new_subtree_root->{$k} = $old_subtree_root->{$k};
+					}
+
+					# $root now contains $targetG, move on to next genome
+					$terminate = 1;
 				}
 
-				# $root now contains $targetG, move on to next genome
-				$terminate = 1;
 			}
 
-		}
+		} while(!$terminate);
+		
+		last if $short_circuit;
 
-	} while(!$terminate);
-	
-	last if $short_circuit;
+		# Genome inserted into ML tree using supertree approach
+		$waiting_targets{$targetG} = 0;
 
-	# Genome inserted into ML tree using supertree approach
-	$waiting_targets{$targetG} = 0;
-
-} # End of iteration of target_genomes
+	} # End of iteration of target_genomes
 
 
-if($short_circuit) {
-	# The supertree approach failed for one or more new genomes
-	# Rebuild entire ML tree
-	$root = buildMLtree();
-}
+	if($short_circuit) {
+		# The supertree approach failed for one or more new genomes
+		# Rebuild entire ML tree
+		$root = buildMLtree();
+	}
 
-# Verify correct number of leaves
-my @final_leaves = $t->find_leaves($root);
-croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
+	# Verify correct number of leaves
+	my @final_leaves = $t->find_leaves($root);
+	croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
 
-if($test) {
-	my $rs = $t->compareTrees($root, $t->globalTree);
+	if($test) {
+		my $rs = $t->compareTrees($root, $t->globalTree);
 
-	my ($result) = ($rs ? 'are equal' : 'DIFFER');
+		my ($result) = ($rs ? 'are equal' : 'DIFFER');
 
-	print "\nThe test tree and original tree $result!\n";
+		print "\nThe test tree and original tree $result!\n";
+	} else {
+
+		my $public_root = finalize_tree($root);
+
+		# Print global tree
+		open(my $out, "<$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
+		$Data::Dumper::Indent = 0;
+		my $tree_string = Data::Dumper->Dump([$root], ['tree']);
+		print $out $tree_string;
+		close $out;
+
+		# Print public tree
+		open($out, "<$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
+		$Data::Dumper::Indent = 0;
+		$tree_string = Data::Dumper->Dump([$public_root], ['tree']);
+		print $out $tree_string;
+		close $out;
+	}
+
 } else {
+	# Asked for full tree build, not supertree approach
 
-	my $public_root = finalize_tree($root);
+	my $root = buildMLtree();
+
+	# Prune private genomes from tree
+	my $public_tree = $t->prepTree($root, \%target_info, 0);
 
 	# Print global tree
 	open(my $out, "<$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
@@ -209,10 +235,12 @@ if($test) {
 	# Print public tree
 	open($out, "<$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
 	$Data::Dumper::Indent = 0;
-	$tree_string = Data::Dumper->Dump([$public_root], ['tree']);
+	$tree_string = Data::Dumper->Dump([$public_tree], ['tree']);
 	print $out $tree_string;
 	close $out;
+
 }
+
 
 ## Subs
 
@@ -293,6 +321,7 @@ Returns:
 sub find_umbrella {
 	my $leaf = shift;
 	my $level = shift;
+	my $waiting_targets = shift;
 
 	my $rs;
 	my $min_set_size = 5;
@@ -329,7 +358,7 @@ sub find_umbrella {
 		my @tmp;
 		my $theLeaf; # The target genome leaf node, now with length filled in
 		foreach my $l (@leaves) {
-			push @tmp, $l unless $waiting_targets{$l->{node}->{name}};
+			push @tmp, $l unless $waiting_targets->{$l->{node}->{name}};
 			$theLeaf = $l if $l->{node}->{name} eq $leaf->{name};
 		}
 		@leaves = @tmp;
@@ -400,6 +429,7 @@ sub _isOutgroup {
 
 # Build subtree
 sub buildSubtree {
+	my $root = shift;
 	my $genome_set = shift;
 
 	# Target genome is first in set

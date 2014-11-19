@@ -820,9 +820,6 @@ sub add_pangenome_loci {
 	# name
 	my $name = "$pg_id locus";
 
-	# Add entry in core pangenome alignment table for genome, if it doesn't exist
-	$chado->add_core_row($genome_ids->{genome}, $is_public);
-	
 	# Feature relationships
 	$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
 	$chado->handle_pangenome_loci($curr_feature_id, $pg_id, $is_public);
@@ -1091,7 +1088,7 @@ sub vfamr {
 			if($id =~ m/^upl_/) {
 				# New, add
 				# NOTE: will check if attempt to insert allele multiple times
-				$num_ok++ if allele($query_id, $id, $entry->seq, \%sequence_group);	
+				$num_ok++ if allele(\%loci, $query_id, $id, $entry->seq, \%sequence_group);	
 				$has_new = 1;
 			} else {
 				# Already in DB, update
@@ -1110,8 +1107,7 @@ sub vfamr {
 		load_tree($query_id, \%sequence_group) if $do_tree && $num_ok > 2;
 	}
 
-
-
+	$chado->typing($TMPDIR);
 
 }
 
@@ -1121,7 +1117,7 @@ sub vfamr {
 =cut
 
 sub allele {
-	my ($query_id, $header, $seq, $seq_group) = @_;
+	my ($loci, $query_id, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
 	
@@ -1135,7 +1131,7 @@ sub allele {
 	my $pub_value = 'FALSE';
 	
 	# location hash
-	my $loc_hash = $loci{$query_id}->{$header};
+	my $loc_hash = $loci->{$query_id}->{$header};
 	croak "Missing location information for locus allele $query_id in contig $header.\n" unless defined $loc_hash;
 	
 	# Retrieve contig_collection and contig feature IDs
@@ -1225,15 +1221,19 @@ sub allele {
 	$chado->loci_cache('insert' => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
 		query_id => $query_id, is_public => $pub_value);
 	
-	push @$seq_group,
-		{
-			genome => $contig_collection_id,
-			allele => $allele_id,
-			header => $header,
-			#copy => $allele_num,
-			public => $is_public,
-			is_new => 1
-		};
+	my $allele_hash = {
+		genome => $contig_collection_id,
+		allele => $allele_id,
+		#copy => $allele_num,
+		public => $is_public,
+		is_new => 1,
+		seq => $seq
+	};
+	push @$seq_group, $allele_hash;
+		
+	if($chado->is_typing_sequence($query_id)) {
+		$chado->record_typing_sequences($query_id, $allele_hash);
+	}
 	
 	return 1;
 	

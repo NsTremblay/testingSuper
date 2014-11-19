@@ -21,6 +21,8 @@ use Phylogeny::Typer;
 use Phylogeny::Tree;
 use Phylogeny::TreeBuilder;
 use Modules::FormDataGenerator;
+use JSON qw/encode_json/;
+use IO::CaptureOutput qw(capture_exec);
 
 =head1 NAME
 
@@ -337,6 +339,10 @@ sub new {
 	
 	$self->{snp_aware} = 0;
 	$self->{snp_aware} = 1 if $ft eq 'pangenome' || $ft eq 'party_mix';
+
+
+	$self->{supertree} = 0;
+	$self->{supertree} = 1 if $arg{use_supertree};
 	
 	$self->initialize_sequences();
 	$self->initialize_ontology();
@@ -1364,13 +1370,13 @@ sub cache_contig_id {
 	
 }
 
-=head2 cache_cache_snp_genome_id
+=head2 cache_snp_genome_id
 
 =over
 
 =item Usage
 
-  $obj->cache_cache_snp_genome_id_id(genome_feature_id, $is_public, $uniquename, [$access_category])
+  $obj->cache_snp_genome_id(genome_feature_id, $is_public, $uniquename, [$access_category])
 
 =item Function
 
@@ -1406,7 +1412,7 @@ sub cache_snp_genome_id {
 	$self->cache($cache_name, $cache_key, 
 		{ 
 			uniquename => $uniquename, visible => $access_category, 
-			displayname => FormDataGenerator::displayname($uniquename, $user_genome, $access_category),
+			displayname => Modules::FormDataGenerator::displayname($uniquename, $user_genome, $access_category),
 			feature_id => $genome_feature_id
 		}
 	);
@@ -1796,6 +1802,9 @@ sub load_data {
 	my $input_tree_file = $self->tmp_dir() . 'genodo_genome_tree_inputs.txt';
 	my $public_tree_file = $self->tmp_dir() . 'genodo_genome_tree_public.txt';
 	my $global_tree_file = $self->tmp_dir() . 'genodo_genome_tree_global.txt';
+	my $tmp_snp_matrix_file;
+	my $snp_matrix_file = $self->tmp_dir() . 'genodo_snp_matrix.txt';;
+	my $bkp_matrix_file = $self->tmp_dir() . 'genodo_previous_snp_matrix.txt';
 	if($self->{snp_aware}) {
 
 		# Make temp tables to load core and snp data
@@ -1817,9 +1826,11 @@ sub load_data {
 		$self->push_snp_alignment(\@new_genomes);
 		$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
-		
-		build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+		# Compute new tree, output to file
+		$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
 
+		# Compute new snp matrix
+		$tmp_snp_matrix_file = $self->binary_state_snp_matrix('pipeline_snp_alignment');
 	}
 	
 
@@ -1862,16 +1873,23 @@ sub load_data {
 
 	if($self->{snp_aware}) {
 		# Hot swap temp core and snp tables with live tables
-		$self->swap_alignment_tables()
+		$self->swap_alignment_tables();
 
 		# Load tree
+		$self->load_tree($public_tree_file, $global_tree_file);
 
+		# Copy matrix file to final destination
+		if(-e $snp_matrix_file) {
+			mv $snp_matrix_file $bkp_matrix_file or croak "Unable to move old snp matrix file ($!)";
+			mv $tmp_snp_matrix_file $snp_matrix_file or croak "Unable to move new snp matrix file ($!)";
+		}
 
-		# Load meta data
 	}
-	
-	# Update cache with newly created loci/allele features added in this run
+
 	my $ft = $self->{feature_type};
+
+
+	# Update cache with newly created loci/allele features added in this run
 	if($ft eq 'party_mix') {
 		$self->push_cache('vfamr');
 		$self->push_cache('pangenome');
@@ -1881,7 +1899,10 @@ sub load_data {
 	
 	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 	
-	
+	if($ft eq 'party_mix' || $ft eq 'vfamr' || $ft eq 'genome') {
+		# Update and reload meta data since either stx types or genome properties changed
+		$self->recompute_metadata();
+	}
 
 	$self->flush_caches();
 	
@@ -2083,6 +2104,10 @@ sub clone_alignment_tables {
 		my $stable = $ts->[0];
 		my $ttable = $ts->[1];
 
+		# Delete existing tmp table (fails silently in cases where table is missing)
+		my $sql0 = "DROP TABLE $ttable";
+		$dbh->do($sql0);
+
 		# Copy data and basic structure from source table
 		my $sql1 = "CREATE TABLE $ttable AS SELECT * FROM $stable";
 		$dbh->do($sql1) or croak("Error when executing: $sql1 ($!).\n");
@@ -2091,7 +2116,7 @@ sub clone_alignment_tables {
 
 		# Link sequence to target table, set as primary key
 		my $sql2 = "ALTER TABLE ONLY $ttable ALTER COLUMN $stable\_id SET DEFAULT ".
-			"nextval('$stable\_$stable\__id_seq'::regclass)";
+			"nextval('$stable\_$stable\_id_seq'::regclass)";
 		$dbh->do($sql2) or croak("Error when executing: $sql2 ($!).\n");
 
 		my $sql3 = "ALTER TABLE ONLY $ttable ".
@@ -2212,7 +2237,7 @@ sub build_tree {
 	my $self = shift;
 	my ($input_file, $public_file, $global_file) = @_;
 
-	my @program = ("$root_directory/Phylogeny/add_to_tree.pl",
+	my @program = ('perl', "$root_directory/Phylogeny/add_to_tree.pl",
 		"--pipeline",
 		"--dbname ".$self->{dbi_connection_parameters}->{dbname},
 		"--dbhost ".$self->{dbi_connection_parameters}->{dbhost},
@@ -2222,8 +2247,12 @@ sub build_tree {
 		"--tmpdir ".$self->tmp_dir(),
 		"--input ".$input_file,
 		"--globalf ".$global_file,
-		"--publicf ".$public_file
+		"--publicf ".$public_file,
 	);
+
+	if($self->{supertree}) {
+		push @program, "--supertree";
+	}
 		
 	my $cmd = join(' ',@program);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -2232,6 +2261,125 @@ sub build_tree {
 		croak "Error: Phylogenetic tree build failed ($stderr).\n";
 	}
 }
+
+=head2 load_tree
+
+=over
+
+=item Usage
+
+  $obj->load_tree($global_tree_output_filename, $public_tree_output_filename)
+
+=item Function
+
+Updates entries in tree table for the global genome trees
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+1 - Filename with PERL-format global tree (all private and publicly-viewable genomes)
+2 - Filename with PERL-format public tree (only publicly viewable genomes)
+
+=back
+
+=cut
+
+sub load_tree {
+	my $self = shift;
+	my ($public_file, $global_file) = @_;
+
+	open(my $in1, "<$public_file") or croak "Error: unable to read file $public_file ($!).\n";
+	my $ptree = <$in1>;
+	chomp $ptree;
+	close $in1;
+
+	open(my $in2, "<$global_file") or croak "Error: unable to read file $global_file ($!).\n";
+	my $gtree = <$in2>;
+	chomp $gtree;
+	close $in1;
+
+	my $jtree = encode_json($ptree);
+
+	# Update or create tree entries
+	my $dbh = $self->dbh();
+
+	my $select_sth = $dbh->prepare("SELECT count(*) FROM tree WHERE name = ?");
+	my $update_sth = $dbh->prepare("UPDATE tree SET tree_string = ? WHERE name = ?");
+	my $insert_sth = $dbh->prepare("INSERT INTO tree (name, format, tree_string) VALUES (?,?,?)");
+	my @row;
+
+	# Global
+	$select_sth->execute('global');
+	if(@row = $select_sth->fetchrow_array() && $row[0]) {
+		$update_sth->execute($gtree, 'global');
+	} else {
+		$insert_sth->execute('global', 'perl', $gtree);
+	}
+
+	# Perl public
+	$select_sth->execute('perlpub');
+	if(@row = $select_sth->fetchrow_array() && $row[0]) {
+		$update_sth->execute($ptree, 'perlpub');
+	} else {
+		$insert_sth->execute('perlpub', 'perl', $ptree);
+	}
+
+	# JSON public
+	$select_sth->execute('jsonpub');
+	if(@row = $select_sth->fetchrow_array() && $row[0]) {
+		$update_sth->execute($jtree, 'jsonpub');
+	} else {
+		$insert_sth->execute('jsonpub', 'perl', $jtree);
+	}
+
+}
+
+=head2 recompute_metadata
+
+=over
+
+=item Usage
+
+  $obj->recompute_metadata()
+
+=item Function
+
+Updates the json objects that contain genomes and their properties
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+None
+
+=back
+
+=cut
+
+sub recompute_metadata {
+	my $self = shift;
+
+	my @program = ('perl', "$root_directory/Database/load_meta_data.pl",
+		"--dbname ".$self->{dbi_connection_parameters}->{dbname},
+		"--dbhost ".$self->{dbi_connection_parameters}->{dbhost},
+		"--dbport ".$self->{dbi_connection_parameters}->{dbport},
+		"--dbuser ".$self->{dbi_connection_parameters}->{dbuser},
+		"--dbpass ".$self->{dbi_connection_parameters}->{dbpass}
+	);
+	
+	my $cmd = join(' ',@program);
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+	unless($success) {
+		croak "Loading of Metadata JSON objects failed ($stderr).";
+	}
+}
+
 
 =head2 update_tracker
 
@@ -2326,9 +2474,9 @@ sub validate_feature {
 	my %arg = @_;
 
 	my $ft = $arg{feature_type};
-	croak "Missing argument in validate_feature: feature_type. Must be (allele|pangenome|genome|party_mix)" unless $ft;
+	croak "Missing argument in validate_feature: feature_type. Must be (allele|pangenome|genome)" unless $ft;
 	unless ($ft =~ m/$ALLOWED_FEATURE_TYPES/) {
-		croak "Invalid argument in validate_feature: feature_type ($ft). Must be (allele|pangenome|genome|party_mix)"
+		croak "Invalid argument in validate_feature: feature_type ($ft). Must be (allele|pangenome|genome)"
 	}
 
 	# Check memory caches
@@ -2382,7 +2530,7 @@ sub validate_feature {
 		my $genome_id = $arg{genome};
 		$self->{queries}{pangenome}{validate_2}->execute($genome_id, $query_id, $pub);
 
-		while(my ($this_id) = $self->{queries}{pangenome}{validate}->fetchrow_array) {
+		while(my ($this_id) = $self->{queries}{pangenome}{validate_2}->fetchrow_array) {
 			if($feature_id ne $this_id) {
 				return('db_conflict', $this_id);
 			}
@@ -2537,7 +2685,7 @@ sub retrieve_core_snp {
 	my ($id, $pos, $gap_offset) = @_;
 	
 	
-	my $snp_hash;
+	my $snp_hash = undef;
 	
 	if(defined $self->cache('core_snp', "$id.$pos.$gap_offset")) {
 		# Search for existing core snp entries in cached values
@@ -2736,7 +2884,7 @@ sub handle_parent {
     my %args = @_;
 
     my $child_id = $args{subject} or croak "Error: missing argument 'subject' in handle_parent().\n";
-    my $pub = $args{pub};
+    my $pub = $args{public};
     croak "Error: missing argument 'public' in handle_parent().\n" unless defined($pub);
 
     my @rtypes;
@@ -3157,6 +3305,7 @@ sub handle_snp {
 	croak "Positioning violation! $c2 character with gap offset value $rgap_offset for core sequence." if ($rgap_offset && $c2 ne '-') || (!$rgap_offset && $c2 eq '-');
 	
 	# Retrieve reference snp, if it exists
+	my $uniquename = "$ref_id.$ref_pos.$rgap_offset";
 	my $snp_hash = $self->retrieve_core_snp($ref_id, $ref_pos, $rgap_offset);
 
 	my ($ref_snp_id, $column);
@@ -3174,15 +3323,15 @@ sub handle_snp {
 		
 		# Update frequency
 		@frequencyArray = _update_frequency_array($c1, @frequencyArray);
-		$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset")->{freq} = \@frequencyArray;
+		$self->cache('core_snp',$uniquename)->{freq} = \@frequencyArray;
 		
 		# Does the updated allele frequency indicate that this is now a polymorphism
 		if(!defined($column) && _is_polymorphism(@frequencyArray)) {
 			# Now officially snp, add new snp column to alignment
 
 			($column) = $self->add_snp_column($c2, $ref_snp_id);
-			$self->cache('core_snp',"$ref_id.$ref_pos.$rgap_offset")->{col} = $column;
-			$self->{snp_alignment}{new_columns}{$ref_snp_id} = [$column, $ref_id];
+			$self->cache('core_snp',$uniquename)->{col} = $column;
+			$self->{snp_alignment}{new_columns}{$ref_snp_id} = [$column, $ref_id, $uniquename];
 
 			# Set all previous variations to new column value
 			$self->{snp_alignment}{update_tmp_variations}->execute($column, $ref_snp_id);
@@ -3219,9 +3368,9 @@ sub _update_frequency_array {
 		$frequencyArray[0]++;
 	} elsif($nuc eq 'T') {
 		$frequencyArray[1]++;
-	} elsif($nuc eq 'C') {
-		$frequencyArray[2]++;
 	} elsif($nuc eq 'G') {
+		$frequencyArray[2]++;
+	} elsif($nuc eq 'C') {
 		$frequencyArray[3]++;
 	} elsif($nuc eq '-') {
 		$frequencyArray[4]++;
@@ -3325,13 +3474,28 @@ Nothing
 sub handle_snp_alignment_block {
 	my $self = shift;
 	my ($contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public) = @_;
+
+	# Block transitions should occur at:
+	# termination of a gap in one sequence
+	#   or
+	# A gap column at the start of a new block (which could be a run-on of a previous gap)
+	# Gap columns inside alignment blocks with aligned nt preceding it can easily be derived.
+	if($gap1 == 0 && $gap2 != 0 && ($start2 != $end2 || ($start1+1) != $end1)) {
+		croak "Positioning violation in alignment block! gap in reference sequence aligned with nt in comparison sequence must be of length 1\n\tdetails: ".
+			join(', ',$contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public)."\n";
+	} elsif($gap2 == 0 && $gap2 != 0 && ($start1 != $end1 || ($start2+1) != $end2+1)) {
+		croak "Positioning violation in alignment block! gap in comparison sequence aligned with nt in reference sequence must be of length 1\n\tdetails: ".
+			join(', ',$contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public)."\n";
+	} elsif($gap2 != $gap1 && (($start2+1) < $end2 || ($start1+1) < $end1)) {
+		croak "Positioning violation in alignment block! in extended alignment blocks, gaps must be equal representing gap columns in both sequences\n\tdetails: ".
+			join(', ',$contig_collection, $contig, $ref_id, $locus, $start1, $start2, $end1, $end2, $gap1, $gap2, $is_public)."\n";
+	}
 	
-	croak "Positioning violation in reference alignment! gap positions should have length 1 (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap1 && ($start1 != $end1);
-	croak "Positioning violation in comparison alignment! gap positions should have length 1 (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap2 && ($start2 != $end2);
-	croak "Positioning violation in snp alignment! received gap column (sequence: $contig_collection, $contig, $ref_id, $locus)." if $gap2 && $gap1;
 	
-	if($gap1) {
+	if($gap1 && $start1 == $end1) {
 		# Reference gaps go into 'special' table
+		# Note: When there are gap offset values for both reference and comparison sequence (not necessarily equal if there was preceding gaps), 
+		# implies that a gap column was encountered. Gap columns inside alignment blocks are ignored.
 		
 		my $snp_hash = $self->cache('core_snp',"$ref_id.$start1.$gap1");
 		croak "Error: SNP in reference pangenome region $ref_id (pos: $start1, gap-offset: $gap1) not found." unless defined $snp_hash && defined $snp_hash->{snp_id};
@@ -4853,6 +5017,8 @@ sub push_snp_alignment {
 		# Remove snps for regions not in genome
 		my $missing_regions = &_absentCoreRegions($g, $pgregions, $pgmap->{$g});
 		$genome_string = $self->mask_missing_in_new($genome_string, $missing_regions, $db_snps, $new_snps);
+
+
 		
 		# Print to DB file
 		print $tmpfh join("\t", ($g,$curr_column,$genome_string)),"\n";
@@ -5098,6 +5264,92 @@ WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
 	$dbh->commit || croak "Insertion of core alignment failed: ".$self->dbh->errstr();
 }
 
+
+=head2 binary_state_snp_matrix
+
+=over
+
+=item Usage
+
+  $obj->binary_state_snp_matrix($curr_snp_alignment_table); 
+
+=item Function
+
+  Convert snp_alignment into a binary snp matrix 1/0/NA indicating presence/absence/missing region.
+  This file is loaded into R/Shiny module for group comparisons.
+
+=item Returns
+
+  filename containing new binary matrix
+
+=item Arguments
+
+  Name of DB cache table containing up-to-date snp alignment for all genomes
+
+=back
+
+=cut
+
+sub binary_state_snp_matrix {
+	my $self = shift;
+	my $snp_table = shift;
+
+	my $snp_columns = $self->_snpsColumns();
+
+	my $bfile = $self->tmp_dir . "pipeline_binary_snp_matrix.txt";
+	open(my $out, ">$bfile") or croak "Error: unable to write to file $bfile ($!).\n";
+
+	my $sql = "SELECT name, aln_column, alignment FROM $snp_table";
+	my $sth = $self->dbh->prepare($sql) or croak("Error when preparing: $sql ($!).\n");
+	$sql->execute() or croak("Error when executing: $sql ($!).\n");
+
+
+	my $aln_len;
+	my $first = 1;
+	my $jchar = "\t";
+	while(my ($genome, $len, $aln) = $sth->fetchrow_array) {
+
+		# Header
+		if($first) {
+			$aln_len = $len;
+			$first = 0;
+			foreach my $i (0..$len-1) {
+				my $snp_hash = $snp_columns->{$i};
+				croak "Error: unexpected column $i. No snp states defined for $i.\n" unless defined $snp_hash;
+				print $out "Genomes$jchar",join($jchar, $snp_hash->{names}),"\n";
+			}
+		} elsif($len != $aln_len) {
+			croak "Error: The length of snp alignment string for genome $genome does not match other strings.\n";
+		}
+
+		print $out "$genome$jchar";
+
+		# Print out the indicator variables for each SNP state corresponding to each alignment column
+		foreach my $i (0..$len-1) {
+			my $n = substr($aln, $i, 1);
+			
+			my $snp_hash = $snp_columns->{$i};
+			if($n =~ m/ATGC/i) {
+				# Nucleotide at this position, fill in binary values
+
+				croak "Error: unexpected nucleotide state for snp in column $i. Nucleotide frequency value is not correct for this snp.\n" 
+					unless defined $snp_hash->{$n};
+				my @binary_array = $snp_hash->{starting_array};
+				@binary_array[$snp_hash->{$n}] = 1;
+				print $out join($jchar, @binary_array),"\n";
+
+			} else {
+				# Missing / gap / invalid nt at this position, fill in NA
+				print $out join($jchar, @{$snp_hash->{missing_array}}),"\n";
+			}
+			
+		}
+
+	}
+
+	return $bfile;
+}
+
 # List of all genomes
 sub _genomeList {
 	my $self = shift;
@@ -5161,7 +5413,7 @@ sub _coreRegionList {
 	return \%pgregions;
 }
 
-# List of snps
+# List of altered snps
 sub _snpsList {
 	my $self = shift;
 	
@@ -5185,6 +5437,86 @@ sub _snpsList {
 	}
 	
 	return (\%db_snps, \%new_snps);
+}
+
+# Map snp alignment columns -> snp_id mapping
+sub _snpsColumns {
+	my $self = shift;
+	
+	my %snp_columns;
+	my @states = qw/A T G C/;
+
+	# Get list of snp alignment columns already in DB
+	my $sql = "SELECT snp_core_id, aln_column, frequency_a, frequency_t, frequency_g, frequency_c ".
+		   "FROM snp_core WHERE aln_column is NOT NULL and snp_core.is_polymorphism = TRUE ORDER BY aln_column";
+	my $sth = $self->dbh->prepare($sql);
+	$sth->execute();
+
+	while(my $snp_row = $sth->fetchrow_arrayref) {
+		my ($snp_id, $col, @freqs) = @$snp_row;
+		
+		my %snp_states = (
+			starting_array => [],
+			missing_array => [],
+			names => []
+		);
+		my $j = 0;
+		for my $i (0..@states) {
+			my $s = $states[$i];
+			my $f = $freqs[$i];
+
+			if($f) {
+				# At least one genome with state
+				$snp_states{$s} = $j;
+				push @{$snp_states{starting_array}}, 0;
+				push @{$snp_states{missing_array}}, 'NA';
+				push @{$snp_states{names}}, "$snp_id\_$s";
+				$j++;
+			}
+		}
+
+		if(defined $snp_columns{$col}) {
+			croak "Error: snp assigned to the same alignment column $col";
+		} else {
+			$snp_columns{$col} = \%snp_states;
+		}
+		
+	}
+	
+	# Get list of snp alignment columns being added to DB
+	my %new_snps;
+	while(my ($snp_id, $snp_row) = each %{$self->{snp_alignment}{new_columns}}) {
+		my $uniquename = $snp_row->[2];
+		my $col = $snp_row->[0];
+		my $snp_hash = $self->cache('core_snp', $uniquename);
+
+		my %snp_states = (
+			starting_array => [],
+			names => []
+		);
+		my $j = 0;
+		for my $i (0..@states) {
+			my $s = $states[$i];
+			my $f = @{$snp_hash->{freq}}[$i];
+
+			if($f) {
+				# At least one genome with state
+				$snp_states{$s} = $j;
+				push @{$snp_states{starting_array}}, 0;
+				push @{$snp_states{names}}, "$snp_id\_$s";
+				$j++;
+			}
+		}
+
+		if(defined $snp_columns{$col}) {
+			croak "Error: snp assigned to the same alignment column $col";
+		} else {
+			$snp_columns{$col} = \%snp_states;
+		}
+
+	}
+	
+	return (\%snp_columns);
 }
 
 # Map genomes to array of core regions

@@ -84,6 +84,7 @@ close $in;
 my $log_file = "$alndir/parallel_log.txt";
 open my $log, '>', $log_file or croak "Error: unable to create log file $log_file ($!).\n";
 my $now = time();
+my $start = time();
 print $log "parallel_tree_builder.pl - ".localtime()."\n";
 
 ########
@@ -92,21 +93,23 @@ print $log "parallel_tree_builder.pl - ".localtime()."\n";
 
 my $num = 0;
 my $tot = scalar(@jobs);
-print "NUM JOBS: $tot\n";
 
 foreach my $jarray (@jobs) {
 	$num++;
 	$pm->start and next; # do the fork
 
+	my $st = time();
 	my ($pg_id,$do_tree,$do_snp,$add_seq) = @$jarray;
-	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
-	print $log "\t$pg_id success\n";
+	build_tree($pg_id,$do_tree,$do_snp,$add_seq,$st);
+	my $en = time();
+	my $time = $en - $st;
+	print $log "\t$pg_id success (elapsed time $time)\n";
 
 	$pm->finish; # do the exit in the child process
 }
 
 $pm->wait_all_children;
-my $time = time() - $now;
+my $time = time() - $start;
 print $log "complete (runtime: $time)\n";
 close $log;
 exit(0);
@@ -116,7 +119,7 @@ exit(0);
 ########
 
 sub build_tree {
-	my ($pg_id, $do_tree, $do_snp, $add_seqs) = @_;
+	my ($pg_id, $do_tree, $do_snp, $add_seqs, $time) = @_;
 	
 	local *STDOUT = $log;
 	local *STDERR = $log;
@@ -151,7 +154,7 @@ sub build_tree {
 	} else {
 		# Generate new alignment
 		
-		my @loading_args = ($muscle_exe, "-in $fasta_file -out $fasta_file");
+		my @loading_args = ($muscle_exe, '-diags -maxiters 2', "-in $fasta_file -out $fasta_file");
 		my $cmd = join(' ',@loading_args);
 		
 		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -161,6 +164,7 @@ sub build_tree {
 		}
 		
 	}
+	$time = elapsed_time("\talignment ", $time);
 	
 	if($do_tree) {
 		my $tree_file = "$treedir/$pg_id\_tree.phy";
@@ -175,6 +179,7 @@ sub build_tree {
 		print $out $tree;
 		close $out;
 	}
+	$time = elapsed_time("\ttree ", $time);
 	
 	if($do_snp) {
 		
@@ -214,9 +219,21 @@ sub build_tree {
 		}
 		
 		croak "Missing reference sequence in SNP alignment for set $pg_id\n" unless $refseq;
+		# Create output directory
+		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
 		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
 	}
+	$time = elapsed_time("\tsnp ", $time);
 	
+}
+
+sub elapsed_time {
+	my ($mes, $prev) = @_;
+	
+	my $now = time();
+	printf("$mes: %.2f\n", $now - $prev);
+	
+	return $now;
 }
 
 __END__
@@ -257,12 +274,11 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			// Gap col in ref
 			
 			if(seq[i] != '-') {
-				// Nt col in comp
-				// Block transition
+				// Nt position in comp
+				// Trigger block transition
 				if(i != 0) {
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 				}
-				
 				
 				// Reset block counters
 				s = p;
@@ -273,8 +289,12 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 				p2++;
 				
 			} else {
-				// Gap col in comp
-				// No transition
+				// Gap col
+				// Block transition when at start of new block
+				// Trigger block transition
+				if(s == p) {
+	
+				}
 				
 				// Advance counters
 				g2++;
@@ -284,11 +304,11 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			g++;
 			
 		} else {
-			// Nt col in ref
+			// Nt position in ref
 			
 			if(seq[i] == '-') {
-				// Gap col in comp
-				// Block transition
+				// Gap position in comp
+				// Trigger block transition
 				if(i != 0) {
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 				}
@@ -302,18 +322,17 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 				g2++;
 				
 			} else {
-				// Nt col in comp
+				// Nt position in comp
 				
-				if((g != 0 && g2 == 0) || (g == 0 && g2 != 0)) {
+				if((g != 0 && g2 == 0) || (g == 0 && g2 != 0) || (g != 0 && g2 != 0 && s == p && s2 == p2)) {
 					// Termination of gap in one sequence
-					// Ignores gap columns
-					// Block transition
+					// Or gap column at start of block
+					// Trigger block transition
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 					
 					// Reset block counters
 					s = p;
-					s2 = p;
-					
+					s2 = p2;
 				}
 				
 				// Advance counters
@@ -359,8 +378,8 @@ void snp_positions(SV* seqs_arrayref, SV* names_arrayref, char* refseq, char* fi
 		SV* seq = av_shift(seqs);
 		char filename[120];
 		char filename2[120];
-		sprintf(filename, "%s__%s__snp_variations.txt", fileroot, (char*)SvPV_nolen(name));
-		sprintf(filename2, "%s__%s__snp_positions.txt", fileroot, (char*)SvPV_nolen(name));
+		sprintf(filename, "%s/%s__snp_variations.txt", fileroot, (char*)SvPV_nolen(name));
+		sprintf(filename2, "%s/%s__snp_positions.txt", fileroot, (char*)SvPV_nolen(name));
 		
 		write_positions(refseq, (char*)SvPV_nolen(seq), filename, filename2);
 		
