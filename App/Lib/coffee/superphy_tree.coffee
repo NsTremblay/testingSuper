@@ -59,14 +59,12 @@ class TreeView extends ViewTemplate
         if ('num_leaves' in a) && ('total_height' in a)
           a_height = a.num_leaves + a.total_height
         else
-          a_height = 100
+          a_height = 1
         b_height = 1
         if ('num_leaves' in b) && ('total_height' in b)
           b_height = b.num_leaves + b.total_height
         else
-          b_height = 100
-
-        console.log(a.num_leaves, a.total_height, a_height + b_height)
+          b_height = 1
         a_height + b_height)
       
     # Append tree commands
@@ -179,6 +177,7 @@ class TreeView extends ViewTemplate
 
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
 
+
   # FUNC addMetaOntology
   # Creates metaOntology object containing names of metadata and each type.
   #
@@ -190,13 +189,18 @@ class TreeView extends ViewTemplate
   #
   addMetaOntology: (n) ->
     metaOntology = {}
-    metaSorted = []
+    metaSorted = {}
     for t in mtypesDisplayed
       metaOntology[t] = []
+      metaSorted[t] = []
       for k,v of n.metaCount[t]
-        metaOntology[t].push(k)
-        metaSorted.push([k,v])
-        metaSorted.sort((a,b) -> a[1]-b[1]).reverse()
+        metaSorted[t].push([k,v])
+        metaSorted[t].sort((a,b) -> a[1]-b[1]).reverse()
+        for a in metaSorted[t]
+          tarr = a.slice(0,1)
+          set = tarr.filter()
+          metaOntology[t].push(set)
+      console.log(metaOntology[t])
     metaOntology
 
   # FUNC update
@@ -528,7 +532,7 @@ class TreeView extends ViewTemplate
                 width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
                 n.total_height = rank * inc
-              else 
+              else
                 width = 0
                 n.arr[i] = 0
                 n.total_height = 0

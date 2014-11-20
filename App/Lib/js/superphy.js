@@ -2914,15 +2914,14 @@
         if ((__indexOf.call(a, 'num_leaves') >= 0) && (__indexOf.call(a, 'total_height') >= 0)) {
           a_height = a.num_leaves + a.total_height;
         } else {
-          a_height = 100;
+          a_height = 1;
         }
         b_height = 1;
         if ((__indexOf.call(b, 'num_leaves') >= 0) && (__indexOf.call(b, 'total_height') >= 0)) {
           b_height = b.num_leaves + b.total_height;
         } else {
-          b_height = 100;
+          b_height = 1;
         }
-        console.log(a.num_leaves, a.total_height, a_height + b_height);
         return a_height + b_height;
       });
       legendID = "tree_legend" + this.elNum;
@@ -2999,21 +2998,29 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.addMetaOntology = function(n) {
-      var k, metaOntology, metaSorted, t, v, _i, _len, _ref;
+      var a, k, metaOntology, metaSorted, set, t, tarr, v, _i, _j, _len, _len1, _ref, _ref1;
       metaOntology = {};
-      metaSorted = [];
+      metaSorted = {};
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         t = mtypesDisplayed[_i];
         metaOntology[t] = [];
+        metaSorted[t] = [];
         _ref = n.metaCount[t];
         for (k in _ref) {
           v = _ref[k];
-          metaOntology[t].push(k);
-          metaSorted.push([k, v]);
-          metaSorted.sort(function(a, b) {
+          metaSorted[t].push([k, v]);
+          metaSorted[t].sort(function(a, b) {
             return a[1] - b[1];
           }).reverse();
+          _ref1 = metaSorted[t];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            a = _ref1[_j];
+            tarr = a.slice(0, 1);
+            set = _.uniq(tarr);
+            metaOntology[t].push(set);
+          }
         }
+        console.log(metaOntology[t]);
       }
       return metaOntology;
     };
