@@ -326,7 +326,19 @@ The proof-of-concept implementation of SuperPhy utilizes all publicly available 
 
 The pan-genome distribution of the 2324 \textit{E. coli} genomes in the SuperPhy database as 1000bp genomic segments is presented in Figure X. As can be seen, the majority (29.7Mbp) of the 37.44 Mbp pan-genome is present in fewer than 100 genomes, with the core genome size (present in at least 2300 genomes) observed to be 1.86Mbp. Only 5.84Mbp of the pan-genome was found in greater than 100 genomes, but fewer than 2300 genomes.
 
-\subsection{Virulence genes}
+
+%I think we can show VFs and group comparison via phylogenetic clade by replicating the study
+%we can then do a separate for AMR, and possibly for GeoPhy as well
+\subsection{Analyses of Hazen et al. (2013)}
+Hazen et al. (2013) examined the attaching and effacing \textit{E. coli} (AEEC) using phylogenomic analyses of 144 genomes \cite{hazen_refining_2013}. By definition this group includes \textit{E. coli} capable of forming attaching and effacing lesions via the locus of enterocyte effeacement (LEE) \cite{croxen_recent_2013}. Within this large group are those \textit{E. coli} that also produce Shiga-toxin, forming the group known as enterohemorrhagic \textit{E. coli}, and those that do not produce Stx, known as  the enteropathogenic \textit{E. coli}, which themselves may or may not contain plasmid-encoded genes for the bundle-forming pilus.  The Hazen et al. (2013) study identified five distinct lineages of AEEC and examined the distribution of virulence factors associated with the AEEC group, notably genes encoding the LEE, Stx, and non-LEE encoded effector proteins. The study also identified regions that were over-represented or specific to each of the five lineages.
+
+Using SuperPhy, the above analyses can be replicated. 
+1) Select only LEE containing strains via VF (hmmm ... maybe we can't do this)
+2) look at distribution of LEE, stx and effector proteins of strains
+3) identify phylogeny (hopefully 5 lineages)
+4) using group compare, create a group for each lineage
+5) find markers for each group
+
 
 \subsection{Anti-microbial resistance determinants}
 
