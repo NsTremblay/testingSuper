@@ -2998,35 +2998,22 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.addMetaOntology = function(n) {
-      var a, k, metaOntology, metaSorted, set, t, tarr, v, _i, _j, _len, _len1, _ref, _ref1;
+      var k, metaOntology, t, v, _i, _len, _ref;
       metaOntology = {};
-      metaSorted = {};
       for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
         t = mtypesDisplayed[_i];
         metaOntology[t] = [];
-        metaSorted[t] = [];
         _ref = n.metaCount[t];
         for (k in _ref) {
           v = _ref[k];
-          metaSorted[t].push([k, v]);
-          metaSorted[t].sort(function(a, b) {
-            return a[1] - b[1];
-          }).reverse();
-          _ref1 = metaSorted[t];
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            a = _ref1[_j];
-            tarr = a.slice(0, 1);
-            set = _.uniq(tarr);
-            metaOntology[t].push(set);
-          }
+          metaOntology[t].push(k);
         }
-        console.log(metaOntology[t]);
       }
       return metaOntology;
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, host_colours, i, iNodes, id, inc, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, source_colours, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, host_colours, i, iNodes, id, inc, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3202,10 +3189,10 @@
       }).attr("height", 7).attr("y", -5).attr("x", 4);
       host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
       colours = {
-        'serotype': ['green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen'],
-        'isolation_host': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise'],
-        'isolation_source': ['black', 'dimgray', '#CCCCCC', '#737373', '#F2F2F2', 'silver', '#C1C1C1', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
-        'isolation_date': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
+        'serotype': ['green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen', 'green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen'],
+        'isolation_host': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise', 'dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise'],
+        'isolation_source': ['#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF'],
+        'isolation_date': ['#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803'],
         'syndrome': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
         'stx1_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
         'stx2_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1']
@@ -3220,16 +3207,22 @@
           inc = 8;
           y += 8;
           rank += 1;
-          while (i < metaOntology[m].length) {
+          while (i < 5) {
             if (metaOntology[m][i] != null) {
               s = metaOntology[m][i];
             }
             svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", i === 4 ? "Other" : s).attr("width", function(n) {
               var width;
               if ((n._children != null) && (n.metaCount[m][s] != null)) {
-                width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
-                n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
-                n.total_height = rank * inc;
+                if (i < 4) {
+                  width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
+                  n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
+                  n.total_height = rank * inc;
+                }
+                if (i === 4) {
+                  width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
+                  console.log(metaOntology['isolation_host']);
+                }
               } else {
                 width = 0;
                 n.arr[i] = 0;
@@ -3248,7 +3241,6 @@
           }
         }
       }
-      source_colours = ['purple', '#ffcc00', 'blue', 'green', 'cyan', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'magenta'];
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
       });

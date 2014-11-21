@@ -189,18 +189,10 @@ class TreeView extends ViewTemplate
   #
   addMetaOntology: (n) ->
     metaOntology = {}
-    metaSorted = {}
     for t in mtypesDisplayed
       metaOntology[t] = []
-      metaSorted[t] = []
       for k,v of n.metaCount[t]
-        metaSorted[t].push([k,v])
-        metaSorted[t].sort((a,b) -> a[1]-b[1]).reverse()
-        for a in metaSorted[t]
-          tarr = a.slice(0,1)
-          set = tarr.filter()
-          metaOntology[t].push(set)
-      console.log(metaOntology[t])
+        metaOntology[t].push(k)
     metaOntology
 
   # FUNC update
@@ -428,6 +420,16 @@ class TreeView extends ViewTemplate
         'darkgreen',
         'honeydew',
         'cobaltgreen',
+        'palegreen',
+        'green',
+        'darkseagreen',
+        'greenyellow',
+        'mediumspringgreen',
+        'emeraldgreen',
+        'mint',
+        'darkgreen',
+        'honeydew',
+        'cobaltgreen',
         'palegreen'
       ]
       'isolation_host' : [
@@ -440,31 +442,66 @@ class TreeView extends ViewTemplate
         'cadetblue',
         'lightsteelblue',
         'slategray',
+        'darkturquoise',
+        'dodgerblue',
+        'blue',
+        'mediumslateblue'
+        'cornflowerblue',
+        'lightskyblue',
+        'midnightblue',
+        'cadetblue',
+        'lightsteelblue',
+        'slategray',
         'darkturquoise'
       ]
       'isolation_source' : [
-        'black',
-        'dimgray',
-        '#CCCCCC',
-        '#737373',
-        '#F2F2F2',
-        'silver',
-        '#C1C1C1',
-        'darkturkoise',
-        'cyan',
-        'lightsteelblue 1'
+        '#9400B2',
+        '#550066',
+        '#7A5D7F',
+        '#B0A6B2',
+        '#D400FF',
+        '#9400B2',
+        '#550066',
+        '#7A5D7F',
+        '#B0A6B2',
+        '#D400FF',
+        '#9400B2',
+        '#550066',
+        '#7A5D7F',
+        '#B0A6B2',
+        '#D400FF',
+        '#9400B2',
+        '#550066',
+        '#7A5D7F',
+        '#B0A6B2',
+        '#D400FF'
       ]
       'isolation_date' : [
-        'blue',
-        'midnightblue',
-        'dodgerblue',
-        'cornflowerblue',
-        'lightskyblue',
-        'cadetblue',
-        'slategray',
-        'darkturkoise',
-        'cyan',
-        'lightsteelblue 1'
+        '#B28C02',
+        '#665001',
+        '#7F6D28',
+        '#B2A46F',
+        '#FFC803',
+        '#B28C02',
+        '#665001',
+        '#7F6D28',
+        '#B2A46F',
+        '#FFC803',
+        '#B28C02',
+        '#665001',
+        '#7F6D28',
+        '#B2A46F',
+        '#FFC803',
+        '#B28C02',
+        '#665001',
+        '#7F6D28',
+        '#B2A46F',
+        '#FFC803',
+        '#B28C02',
+        '#665001',
+        '#7F6D28',
+        '#B2A46F',
+        '#FFC803',
       ]
       'syndrome' : [
         'blue',
@@ -514,7 +551,7 @@ class TreeView extends ViewTemplate
         inc = 8
         y += 8
         rank += 1
-        while i < metaOntology[m].length
+        while i < 5
           if metaOntology[m][i]?
             s = metaOntology[m][i]
           svgNodes
@@ -529,9 +566,13 @@ class TreeView extends ViewTemplate
               else s)
             .attr("width", (n) ->
               if n._children? && n.metaCount[m][s]?
-                width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
-                n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
-                n.total_height = rank * inc
+                if i < 4
+                  width = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+                  n.arr[i] = (20*(Math.log(n.num_leaves) * (n.metaCount[m][s])) / n.num_leaves)
+                  n.total_height = rank * inc
+                if i == 4
+                  width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
+                  console.log(metaOntology['isolation_host'])
               else
                 width = 0
                 n.arr[i] = 0
@@ -546,7 +587,6 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
-    source_colours = ['purple', '#ffcc00', 'blue', 'green', 'cyan', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'magenta']
 
     cmdBox = iNodes
       .append('text')
