@@ -3193,9 +3193,9 @@
         'isolation_host': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise', 'dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise'],
         'isolation_source': ['#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF'],
         'isolation_date': ['#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803'],
-        'syndrome': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
-        'stx1_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1'],
-        'stx2_subtype': ['blue', 'midnightblue', 'dodgerblue', 'cornflowerblue', 'lightskyblue', 'cadetblue', 'slategray', 'darkturkoise', 'cyan', 'lightsteelblue 1']
+        'syndrome': ['#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D'],
+        'stx1_subtype': ['#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340'],
+        'stx2_subtype': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise', 'dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise']
       };
       y = -5;
       for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
@@ -3204,25 +3204,24 @@
           j = 0;
           i = 0;
           x = 0;
-          inc = 8;
-          y += 8;
+          inc = 7;
+          y += 7;
           rank += 1;
           while (i < 5) {
             if (metaOntology[m][i] != null) {
               s = metaOntology[m][i];
             }
-            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", i === 4 ? "Other" : s).attr("width", function(n) {
+            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", i === 4 && "Other" ? void 0 : s).attr("width", function(n) {
               var width;
-              if ((n._children != null) && (n.metaCount[m][s] != null)) {
-                if (i < 4) {
-                  width = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
-                  n.arr[i] = 20 * (Math.log(n.num_leaves) * n.metaCount[m][s]) / n.num_leaves;
-                  n.total_height = rank * inc;
-                }
-                if (i === 4) {
-                  width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
-                  console.log(metaOntology['isolation_host']);
-                }
+              if ((n._children != null) && (n.metaCount[m][s] != null) && n.metaCount[m][s] !== 0 && i < 4) {
+                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][s] / n.num_leaves;
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][s] / n.num_leaves;
+                n.total_height = rank * inc;
+                console.log(n.num_leaves, i, width);
+              } else if ((n._children != null) && i === 4) {
+                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
+                n.total_height = rank * inc;
               } else {
                 width = 0;
                 n.arr[i] = 0;
