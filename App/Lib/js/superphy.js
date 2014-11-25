@@ -2997,23 +2997,8 @@
 
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
-    TreeView.prototype.addMetaOntology = function(n) {
-      var k, metaOntology, t, v, _i, _len, _ref;
-      metaOntology = {};
-      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
-        t = mtypesDisplayed[_i];
-        metaOntology[t] = [];
-        _ref = n.metaCount[t];
-        for (k in _ref) {
-          v = _ref[k];
-          metaOntology[t].push(k);
-        }
-      }
-      return metaOntology;
-    };
-
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, host_colours, i, iNodes, id, inc, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, s, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3050,16 +3035,30 @@
         n.arr = [];
         n.xpos = 0;
         n.total_height = 0;
+        n.metaOntology = {};
+        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
+          t = mtypesDisplayed[_j];
+          n.metaOntology[t] = [];
+          n.metaOntology[t] = ((function() {
+            var _results;
+            _results = [];
+            for (k in n.metaCount[t]) {
+              _results.push(k);
+            }
+            return _results;
+          })()).sort(function(a, b) {
+            return n.metaCount[t][b] - n.metaCount[t][a];
+          });
+        }
       }
-      metaOntology = this.addMetaOntology(this.root);
       if (this.expansionContraction) {
         yedge = this.width - 30;
         ypos = this.edgeNode.y;
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            n = _ref1[_j];
+          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+            n = _ref1[_k];
             n.y = n.y - yshift;
           }
         }
@@ -3187,19 +3186,18 @@
           return 0;
         }
       }).attr("height", 7).attr("y", -5).attr("x", 4);
-      host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple'];
       colours = {
-        'serotype': ['green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen', 'green', 'darkseagreen', 'greenyellow', 'mediumspringgreen', 'emeraldgreen', 'mint', 'darkgreen', 'honeydew', 'cobaltgreen', 'palegreen'],
-        'isolation_host': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise', 'dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise'],
-        'isolation_source': ['#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF', '#9400B2', '#550066', '#7A5D7F', '#B0A6B2', '#D400FF'],
-        'isolation_date': ['#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803', '#B28C02', '#665001', '#7F6D28', '#B2A46F', '#FFC803'],
-        'syndrome': ['#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D', '#B22821', '#661713', '#7F0600', '#381412', '#450F0D'],
-        'stx1_subtype': ['#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340', '#B2AEA7', '#66635F', '#7F7C75', '#383634', '#454340'],
-        'stx2_subtype': ['dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise', 'dodgerblue', 'blue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue', 'midnightblue', 'cadetblue', 'lightsteelblue', 'slategray', 'darkturquoise']
+        'serotype': ['#1E7F00', '#A9FFB4', '#6CAF74', '#06530F', '#00EF1D'],
+        'isolation_host': ['#D5278A', '#EB63B0', '#F6B3D9', '#A3025D', '#5B0536'],
+        'isolation_source': ['blue', 'dodgerblue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue'],
+        'isolation_date': ['#F9E800', '#E7C74C', '#B69000', '#FFE584', '#DBAF09'],
+        'syndrome': ['#9C06EE', '#733E91', '#8D69A0', '#3C0C56', '#E5B5FF'],
+        'stx1_subtype': ['#FF6A00', '#FFBF92', '#E89F6B', '#B24A00', '#823701'],
+        'stx2_subtype': ['#278275', '#ADDED8', '#57B3A7', '#0A594E', '#082E29']
       };
       y = -5;
-      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
-        m = mtypesDisplayed[_k];
+      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
+        m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
@@ -3208,17 +3206,19 @@
           y += 7;
           rank += 1;
           while (i < 5) {
-            if (metaOntology[m][i] != null) {
-              s = metaOntology[m][i];
-            }
-            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", i === 4 && "Other" ? void 0 : s).attr("width", function(n) {
+            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
+              if (i === 4 && "Other") {
+
+              } else {
+                return n.metaOntology[m][i];
+              }
+            }).attr("width", function(n) {
               var width;
-              if ((n._children != null) && (n.metaCount[m][s] != null) && n.metaCount[m][s] !== 0 && i < 4) {
-                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][s] / n.num_leaves;
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][s] / n.num_leaves;
+              if ((n._children != null) && (n.metaCount[m][n.metaOntology[m][i]] != null) && i < 4 && (n.metaOntology[m][i] != null)) {
+                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
                 n.total_height = rank * inc;
-                console.log(n.num_leaves, i, width);
-              } else if ((n._children != null) && i === 4) {
+              } else if ((n._children != null) && i === 4 && (n.metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
                 n.total_height = rank * inc;
@@ -3288,8 +3288,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_l = 0, _len3 = _ref2.length; _l < _len3; _l++) {
-        n = _ref2[_l];
+      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
+        n = _ref2[_m];
         n.x0 = n.x;
         n.y0 = n.y;
       }

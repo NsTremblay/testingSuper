@@ -178,22 +178,6 @@ class TreeView extends ViewTemplate
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
 
 
-  # FUNC addMetaOntology
-  # Creates metaOntology object containing names of metadata and each type.
-  #
-  # PARAMS
-  # node
-  #
-  # RETURNS
-  # metaOntology object
-  #
-  addMetaOntology: (n) ->
-    metaOntology = {}
-    for t in mtypesDisplayed
-      metaOntology[t] = []
-      for k,v of n.metaCount[t]
-        metaOntology[t].push(k)
-    metaOntology
 
   # FUNC update
   # Update genome tree view
@@ -255,8 +239,10 @@ class TreeView extends ViewTemplate
       n.arr = []
       n.xpos = 0
       n.total_height = 0
-
-    metaOntology = @addMetaOntology(@root)
+      n.metaOntology = {}
+      for t in mtypesDisplayed
+        n.metaOntology[t] = []
+        n.metaOntology[t] = (k for k of n.metaCount[t]).sort (a, b) -> n.metaCount[t][b] - n.metaCount[t][a]
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -408,166 +394,55 @@ class TreeView extends ViewTemplate
       .attr("y", -5)
       .attr("x", 4)
 
-    host_colours = ['blue', 'green', '#ffcc00', 'cyan', 'purple', 'orange', 'magenta', 'blue', 'green', '#ffcc00', 'purple']
     colours = {
       'serotype' : [
-        'green',
-        'darkseagreen',
-        'greenyellow',
-        'mediumspringgreen',
-        'emeraldgreen',
-        'mint',
-        'darkgreen',
-        'honeydew',
-        'cobaltgreen',
-        'palegreen',
-        'green',
-        'darkseagreen',
-        'greenyellow',
-        'mediumspringgreen',
-        'emeraldgreen',
-        'mint',
-        'darkgreen',
-        'honeydew',
-        'cobaltgreen',
-        'palegreen'
+        '#1E7F00',
+        '#A9FFB4',
+        '#6CAF74',
+        '#06530F',
+        '#00EF1D'
       ]
       'isolation_host' : [
-        'dodgerblue',
-        'blue',
-        'mediumslateblue'
-        'cornflowerblue',
-        'lightskyblue',
-        'midnightblue',
-        'cadetblue',
-        'lightsteelblue',
-        'slategray',
-        'darkturquoise',
-        'dodgerblue',
-        'blue',
-        'mediumslateblue'
-        'cornflowerblue',
-        'lightskyblue',
-        'midnightblue',
-        'cadetblue',
-        'lightsteelblue',
-        'slategray',
-        'darkturquoise'
+        '#D5278A',
+        '#EB63B0',
+        '#F6B3D9',
+        '#A3025D',
+        '#5B0536'
       ]
       'isolation_source' : [
-        '#9400B2',
-        '#550066',
-        '#7A5D7F',
-        '#B0A6B2',
-        '#D400FF',
-        '#9400B2',
-        '#550066',
-        '#7A5D7F',
-        '#B0A6B2',
-        '#D400FF',
-        '#9400B2',
-        '#550066',
-        '#7A5D7F',
-        '#B0A6B2',
-        '#D400FF',
-        '#9400B2',
-        '#550066',
-        '#7A5D7F',
-        '#B0A6B2',
-        '#D400FF'
+        'blue',
+        'dodgerblue',
+        'mediumslateblue'
+        'cornflowerblue',
+        'lightskyblue'
       ]
       'isolation_date' : [
-        '#B28C02',
-        '#665001',
-        '#7F6D28',
-        '#B2A46F',
-        '#FFC803',
-        '#B28C02',
-        '#665001',
-        '#7F6D28',
-        '#B2A46F',
-        '#FFC803',
-        '#B28C02',
-        '#665001',
-        '#7F6D28',
-        '#B2A46F',
-        '#FFC803',
-        '#B28C02',
-        '#665001',
-        '#7F6D28',
-        '#B2A46F',
-        '#FFC803',
-        '#B28C02',
-        '#665001',
-        '#7F6D28',
-        '#B2A46F',
-        '#FFC803',
+        '#F9E800',
+        '#E7C74C',
+        '#B69000',
+        '#FFE584',
+        '#DBAF09'
       ]
       'syndrome' : [
-        '#B22821',
-        '#661713',
-        '#7F0600',
-        '#381412',
-        '#450F0D',
-        '#B22821',
-        '#661713',
-        '#7F0600',
-        '#381412',
-        '#450F0D',
-        '#B22821',
-        '#661713',
-        '#7F0600',
-        '#381412',
-        '#450F0D',
-        '#B22821',
-        '#661713',
-        '#7F0600',
-        '#381412',
-        '#450F0D'
+        '#9C06EE',
+        '#733E91',
+        '#8D69A0',
+        '#3C0C56',
+        '#E5B5FF'
       ]
       'stx1_subtype' : [
-        '#B2AEA7',
-        '#66635F',
-        '#7F7C75',
-        '#383634',
-        '#454340',
-        '#B2AEA7',
-        '#66635F',
-        '#7F7C75',
-        '#383634',
-        '#454340',
-        '#B2AEA7',
-        '#66635F',
-        '#7F7C75',
-        '#383634',
-        '#454340',
-        '#B2AEA7',
-        '#66635F',
-        '#7F7C75',
-        '#383634',
-        '#454340',
+        '#FF6A00',
+        '#FFBF92',
+        '#E89F6B',
+        '#B24A00',
+        '#823701'
       ]
       'stx2_subtype' : [
-        'dodgerblue',
-        'blue',
-        'mediumslateblue'
-        'cornflowerblue',
-        'lightskyblue',
-        'midnightblue',
-        'cadetblue',
-        'lightsteelblue',
-        'slategray',
-        'darkturquoise',
-        'dodgerblue',
-        'blue',
-        'mediumslateblue'
-        'cornflowerblue',
-        'lightskyblue',
-        'midnightblue',
-        'cadetblue',
-        'lightsteelblue',
-        'slategray',
-        'darkturquoise'
+        '#278275',
+        '#ADDED8',
+        '#57B3A7',
+        '#0A594E',
+        '#082E29'
       ]
     }
 
@@ -581,25 +456,22 @@ class TreeView extends ViewTemplate
         y += 7
         rank += 1
         while i < 5
-          if metaOntology[m][i]?
-            s = metaOntology[m][i]
           svgNodes
             .append("rect")
             .style("fill", colours[m][j++])
             .style("stroke-width", 0.5)
             .style("stroke", "black")
             .attr("class", "metaMeter")
-            .attr("id", 
+            .attr("id", (n) ->
               if i == 4 && 
                 "Other"
-              else s)
+              else n.metaOntology[m][i])
             .attr("width", (n) ->
-              if n._children? && n.metaCount[m][s]? && n.metaCount[m][s] isnt 0 && i < 4
-                width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][s]) / n.num_leaves)
-                n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][s]) / n.num_leaves)
+              if n._children? && n.metaCount[m][n.metaOntology[m][i]]? && i < 4 && n.metaOntology[m][i]?
+                width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
+                n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
                 n.total_height = rank * inc
-                console.log(n.num_leaves, i, width)
-              else if n._children? && i is 4
+              else if n._children? && i is 4 && n.metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
                 n.total_height = rank * inc
