@@ -2998,7 +2998,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3178,7 +3178,8 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      svgNodes.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
+      rect_block = svgNodes.append("g").attr("class", "rect_block");
+      rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
           rank = 1;
           return 20 * (Math.log(n.num_leaves));
@@ -3187,13 +3188,13 @@
         }
       }).attr("height", 7).attr("y", -5).attr("x", 4);
       colours = {
-        'serotype': ['#1E7F00', '#A9FFB4', '#6CAF74', '#06530F', '#00EF1D'],
-        'isolation_host': ['#D5278A', '#EB63B0', '#F6B3D9', '#A3025D', '#5B0536'],
-        'isolation_source': ['blue', 'dodgerblue', 'mediumslateblue', 'cornflowerblue', 'lightskyblue'],
-        'isolation_date': ['#F9E800', '#E7C74C', '#B69000', '#FFE584', '#DBAF09'],
-        'syndrome': ['#9C06EE', '#733E91', '#8D69A0', '#3C0C56', '#E5B5FF'],
-        'stx1_subtype': ['#FF6A00', '#FFBF92', '#E89F6B', '#B24A00', '#823701'],
-        'stx2_subtype': ['#278275', '#ADDED8', '#57B3A7', '#0A594E', '#082E29']
+        'serotype': ['#0B4712', '#366E3C', '#619667', '#8CBD91', '#B8E5BC'],
+        'isolation_host': ['#840147', '#9E3A70', '#B97499', '#D4ADC2', '#EFE7EB'],
+        'isolation_source': ['#011289', '#363F7C', '#6C73A2', '#A2A7C7', '#D9DBED'],
+        'isolation_date': ['#E6CC00', '#ECD83F', '#F2E57F', '#ECE599', '#EEEECD'],
+        'syndrome': ['#5B0080', '#7E389B', '#A271B6', '#C6AAD1', '#EAE3ED'],
+        'stx1_subtype': ['#F56A00', '#F78A2C', '#FAAB59', '#FCCC86', '#FFEDB3'],
+        'stx2_subtype': ['#008582', '#22A395', '#6BC2B9', '#A0E0D4', '#D6FFF0']
       };
       y = -5;
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
@@ -3206,7 +3207,7 @@
           y += 7;
           rank += 1;
           while (i < 5) {
-            svgNodes.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
+            rect_block.append("g").append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
               if (i === 4 && "Other") {
 
               } else {

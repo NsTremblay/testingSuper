@@ -377,9 +377,11 @@ class TreeView extends ViewTemplate
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
 
+    rect_block = svgNodes.append("g").attr("class", "rect_block")
+
     # Appends genomeMeter.  Size of bar reflects number of genomes.
    
-    svgNodes
+    rect_block
       .append('rect')
       .style("fill", "red")
       .style("stroke-width", 0.5)
@@ -396,53 +398,53 @@ class TreeView extends ViewTemplate
 
     colours = {
       'serotype' : [
-        '#1E7F00',
-        '#A9FFB4',
-        '#6CAF74',
-        '#06530F',
-        '#00EF1D'
+        '#0B4712',
+        '#366E3C',
+        '#619667',
+        '#8CBD91',
+        '#B8E5BC'
       ]
       'isolation_host' : [
-        '#D5278A',
-        '#EB63B0',
-        '#F6B3D9',
-        '#A3025D',
-        '#5B0536'
+        '#840147',
+        '#9E3A70',
+        '#B97499',
+        '#D4ADC2',
+        '#EFE7EB'
       ]
       'isolation_source' : [
-        'blue',
-        'dodgerblue',
-        'mediumslateblue'
-        'cornflowerblue',
-        'lightskyblue'
+        '#011289',
+        '#363F7C',
+        '#6C73A2'
+        '#A2A7C7',
+        '#D9DBED'
       ]
       'isolation_date' : [
-        '#F9E800',
-        '#E7C74C',
-        '#B69000',
-        '#FFE584',
-        '#DBAF09'
+        '#E6CC00',
+        '#ECD83F',
+        '#F2E57F',
+        '#ECE599',
+        '#EEEECD'
       ]
       'syndrome' : [
-        '#9C06EE',
-        '#733E91',
-        '#8D69A0',
-        '#3C0C56',
-        '#E5B5FF'
+        '#5B0080',
+        '#7E389B',
+        '#A271B6',
+        '#C6AAD1',
+        '#EAE3ED'
       ]
       'stx1_subtype' : [
-        '#FF6A00',
-        '#FFBF92',
-        '#E89F6B',
-        '#B24A00',
-        '#823701'
+        '#F56A00',
+        '#F78A2C',
+        '#FAAB59',
+        '#FCCC86',
+        '#FFEDB3'
       ]
       'stx2_subtype' : [
-        '#278275',
-        '#ADDED8',
-        '#57B3A7',
-        '#0A594E',
-        '#082E29'
+        '#008582',
+        '#22A395',
+        '#6BC2B9',
+        '#A0E0D4',
+        '#D6FFF0'
       ]
     }
 
@@ -456,7 +458,8 @@ class TreeView extends ViewTemplate
         y += 7
         rank += 1
         while i < 5
-          svgNodes
+          rect_block
+            .append("g")
             .append("rect")
             .style("fill", colours[m][j++])
             .style("stroke-width", 0.5)
@@ -543,7 +546,7 @@ class TreeView extends ViewTemplate
       .attr("transform", (d) -> "translate(" + d.y + "," + d.x + ")" )
   
     nodesUpdate.select("circle")
-        .attr("r", 4)
+      .attr("r", 4)
 
     nodesUpdate.selectAll("rect.genomeMeter")
       .attr("width", (n) ->
