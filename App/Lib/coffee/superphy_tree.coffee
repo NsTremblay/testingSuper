@@ -449,6 +449,7 @@ class TreeView extends ViewTemplate
     }
 
     y = -5
+    centred = 1.5
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]
         j = 0
@@ -456,17 +457,17 @@ class TreeView extends ViewTemplate
         x = 0
         inc = 7
         y += 7
+        centred += -3.5
         rank += 1
         while i < 5
           rect_block
-            .append("g")
             .append("rect")
             .style("fill", colours[m][j++])
             .style("stroke-width", 0.5)
             .style("stroke", "black")
             .attr("class", "metaMeter")
             .attr("id", (n) ->
-              if i == 4 && 
+              if i == 4
                 "Other"
               else n.metaOntology[m][i])
             .attr("width", (n) ->
@@ -554,6 +555,10 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
+    svgNodes.selectAll('.rect_block')
+      .transition()
+      .attr("transform", "translate(" + 0 + "," + centred + ")" )
+
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
         .style("fill-opacity", 1)
@@ -566,7 +571,7 @@ class TreeView extends ViewTemplate
           "\uf146"
       )
     
-    # Transition exiting ndoes to the parent's new position.
+    # Transition exiting nodes to the parent's new position.
     nodesExit = svgNodes.exit().transition()
       .duration(@duration)
       .attr("transform", (d) => "translate(" + @launchPt.y + "," + @launchPt.x + ")")

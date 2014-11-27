@@ -2998,7 +2998,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3197,6 +3197,7 @@
         'stx2_subtype': ['#008582', '#22A395', '#6BC2B9', '#A0E0D4', '#D6FFF0']
       };
       y = -5;
+      centred = 1.5;
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
@@ -3205,11 +3206,12 @@
           x = 0;
           inc = 7;
           y += 7;
+          centred += -3.5;
           rank += 1;
           while (i < 5) {
-            rect_block.append("g").append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
-              if (i === 4 && "Other") {
-
+            rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
+              if (i === 4) {
+                return "Other";
               } else {
                 return n.metaOntology[m][i];
               }
@@ -3264,6 +3266,7 @@
           return 0;
         }
       });
+      svgNodes.selectAll('.rect_block').transition().attr("transform", "translate(" + 0 + "," + centred + ")");
       nodesUpdate.filter(function(d) {
         return !d.children;
       }).select("text").style("fill-opacity", 1);
