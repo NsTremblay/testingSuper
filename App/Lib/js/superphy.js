@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var mtypesDisplayed, rank;
+    var mtypesDisplayed, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -2989,7 +2989,7 @@
 
     TreeView.prototype.expandDepth = 10;
 
-    rank = 0;
+    visible_bars = 0;
 
     TreeView.prototype.x_factor = 1.5;
 
@@ -2998,7 +2998,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, i, iNodes, id, inc, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, mtype_rank, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, vBars, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3178,10 +3178,10 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      rect_block = svgNodes.append("g").attr("class", "rect_block");
+      rect_block = svgNodes.append("g").attr("class", "rect_block 'v'" + visible_bars);
       rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
-          rank = 1;
+          visible_bars = 1;
           return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
@@ -3197,17 +3197,19 @@
         'stx2_subtype': ['#008582', '#22A395', '#6BC2B9', '#A0E0D4', '#D6FFF0']
       };
       y = -5;
+      mtype_rank = 0;
       centred = 1.5;
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
+        mtype_rank += 1;
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
           x = 0;
-          inc = 7;
-          y += 7;
+          height = 7;
+          y += height;
           centred += -3.5;
-          rank += 1;
+          visible_bars += 1;
           while (i < 5) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
               if (i === 4) {
@@ -3220,18 +3222,18 @@
               if ((n._children != null) && (n.metaCount[m][n.metaOntology[m][i]] != null) && i < 4 && (n.metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
-                n.total_height = rank * inc;
+                n.total_height = visible_bars * height;
               } else if ((n._children != null) && i === 4 && (n.metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
-                n.total_height = rank * inc;
+                n.total_height = visible_bars * height;
               } else {
                 width = 0;
                 n.arr[i] = 0;
                 n.total_height = 0;
               }
               return width;
-            }).attr("height", 7).attr("y", y).attr("x", function(n) {
+            }).attr("height", height).attr("y", y).attr("x", function(n) {
               if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
                 n.xpos += n.arr[i - 1];
               } else {
@@ -3242,6 +3244,9 @@
             i++;
           }
         }
+      }
+      if (visible_bars > 1) {
+        svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove();
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
@@ -3266,7 +3271,12 @@
           return 0;
         }
       });
-      svgNodes.selectAll('.rect_block').transition().attr("transform", "translate(" + 0 + "," + centred + ")");
+      m = 0;
+      while (m < visible_bars + 1) {
+        vBars = '.' + 'v' + m;
+        svgNodes.selectAll('.rect_block, ' + vBars).transition().duration(this.duration).attr("transform", "translate(" + 0 + "," + centred + ")");
+        m++;
+      }
       nodesUpdate.filter(function(d) {
         return !d.children;
       }).select("text").style("fill-opacity", 1);

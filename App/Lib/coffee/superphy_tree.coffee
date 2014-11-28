@@ -170,7 +170,7 @@ class TreeView extends ViewTemplate
   
   expandDepth: 10
 
-  rank = 0
+  visible_bars = 0
   
   x_factor: 1.5
   y_factor: 5000
@@ -377,7 +377,7 @@ class TreeView extends ViewTemplate
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
 
-    rect_block = svgNodes.append("g").attr("class", "rect_block")
+    rect_block = svgNodes.append("g").attr("class", "rect_block 'v'" + visible_bars)
 
     # Appends genomeMeter.  Size of bar reflects number of genomes.
    
@@ -389,7 +389,7 @@ class TreeView extends ViewTemplate
       .attr("class", "genomeMeter")
       .attr("width", (n) ->
         if n._children?
-          rank = 1
+          visible_bars = 1
           20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 7)
@@ -449,16 +449,18 @@ class TreeView extends ViewTemplate
     }
 
     y = -5
+    mtype_rank = 0
     centred = 1.5
     for m in mtypesDisplayed
+      mtype_rank += 1
       if genomes.visibleMeta[m]
         j = 0
         i = 0
         x = 0
-        inc = 7
-        y += 7
+        height = 7
+        y += height
         centred += -3.5
-        rank += 1
+        visible_bars += 1
         while i < 5
           rect_block
             .append("rect")
@@ -474,17 +476,17 @@ class TreeView extends ViewTemplate
               if n._children? && n.metaCount[m][n.metaOntology[m][i]]? && i < 4 && n.metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
-                n.total_height = rank * inc
+                n.total_height = visible_bars * height
               else if n._children? && i is 4 && n.metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
-                n.total_height = rank * inc
+                n.total_height = visible_bars * height
               else
                 width = 0
                 n.arr[i] = 0
                 n.total_height = 0
               width)
-            .attr("height", 7)
+            .attr("height", height)
             .attr("y", y)
             .attr("x", (n) ->
               if n._children? && n.arr[i-1]? && i > 0
@@ -493,6 +495,8 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
+    if visible_bars > 1
+      svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove()
 
     cmdBox = iNodes
       .append('text')
@@ -555,9 +559,14 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
-    svgNodes.selectAll('.rect_block')
-      .transition()
-      .attr("transform", "translate(" + 0 + "," + centred + ")" )
+    m = 0
+    while m < visible_bars + 1
+      vBars = '.' + 'v' + m
+      svgNodes.selectAll('.rect_block, ' + vBars)
+        .transition()
+        .duration(@duration)
+        .attr("transform", "translate(" + 0 + "," + centred + ")" )
+      m++
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
