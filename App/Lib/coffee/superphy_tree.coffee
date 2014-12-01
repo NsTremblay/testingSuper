@@ -377,7 +377,7 @@ class TreeView extends ViewTemplate
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
 
-    rect_block = svgNodes.append("g").attr("class", "rect_block 'v'" + visible_bars)
+    rect_block = svgNodes.append("g")
 
     # Appends genomeMeter.  Size of bar reflects number of genomes.
    
@@ -495,8 +495,11 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
+    rect_block.attr("class", "rect_block 'v'" + visible_bars)
+
     if visible_bars > 1
       svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove()
+      console.log(visible_bars)
 
     cmdBox = iNodes
       .append('text')
@@ -559,12 +562,10 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
 
-    m = 0
+    m = 1
     while m < visible_bars + 1
-      vBars = '.' + 'v' + m
-      svgNodes.selectAll('.rect_block, ' + vBars)
+      svgNodes.selectAll('.rect_block, ' + '.' + 'v' + m)
         .transition()
-        .duration(@duration)
         .attr("transform", "translate(" + 0 + "," + centred + ")" )
       m++
 

@@ -2998,7 +2998,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, mtype_rank, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, vBars, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, mtype_rank, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3178,7 +3178,7 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      rect_block = svgNodes.append("g").attr("class", "rect_block 'v'" + visible_bars);
+      rect_block = svgNodes.append("g");
       rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
           visible_bars = 1;
@@ -3245,8 +3245,10 @@
           }
         }
       }
+      rect_block.attr("class", "rect_block 'v'" + visible_bars);
       if (visible_bars > 1) {
         svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove();
+        console.log(visible_bars);
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
@@ -3271,10 +3273,9 @@
           return 0;
         }
       });
-      m = 0;
+      m = 1;
       while (m < visible_bars + 1) {
-        vBars = '.' + 'v' + m;
-        svgNodes.selectAll('.rect_block, ' + vBars).transition().duration(this.duration).attr("transform", "translate(" + 0 + "," + centred + ")");
+        svgNodes.selectAll('.rect_block, ' + '.' + 'v' + m).transition().attr("transform", "translate(" + 0 + "," + centred + ")");
         m++;
       }
       nodesUpdate.filter(function(d) {
