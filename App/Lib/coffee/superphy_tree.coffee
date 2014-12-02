@@ -56,15 +56,16 @@ class TreeView extends ViewTemplate
       .value((d) -> Number(d.length) )
       .separation((a, b) ->
         a_height = 1
+        b_height = 1
         if ('num_leaves' in a) && ('total_height' in a)
           a_height = a.num_leaves + a.total_height
         else
           a_height = 1
-        b_height = 1
         if ('num_leaves' in b) && ('total_height' in b)
           b_height = b.num_leaves + b.total_height
         else
           b_height = 1
+        console.log(a_height + b_height)
         a_height + b_height)
       
     # Append tree commands
@@ -495,11 +496,12 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
-    rect_block.attr("class", "rect_block 'v'" + visible_bars)
+    rect_block.attr("class", "rect_block v" + visible_bars)
 
     if visible_bars > 1
       svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove()
-      console.log(visible_bars)
+    if visible_bars == 1 && ($('.' + 'v' + (visible_bars + 1))[0])
+      svgNodes.select('.rect_block, ' + 'v' + (visible_bars + 1)).remove()
 
     cmdBox = iNodes
       .append('text')

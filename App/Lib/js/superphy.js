@@ -2911,17 +2911,18 @@
       }).separation(function(a, b) {
         var a_height, b_height;
         a_height = 1;
+        b_height = 1;
         if ((__indexOf.call(a, 'num_leaves') >= 0) && (__indexOf.call(a, 'total_height') >= 0)) {
           a_height = a.num_leaves + a.total_height;
         } else {
           a_height = 1;
         }
-        b_height = 1;
         if ((__indexOf.call(b, 'num_leaves') >= 0) && (__indexOf.call(b, 'total_height') >= 0)) {
           b_height = b.num_leaves + b.total_height;
         } else {
           b_height = 1;
         }
+        console.log(a_height + b_height);
         return a_height + b_height;
       });
       legendID = "tree_legend" + this.elNum;
@@ -3245,10 +3246,12 @@
           }
         }
       }
-      rect_block.attr("class", "rect_block 'v'" + visible_bars);
+      rect_block.attr("class", "rect_block v" + visible_bars);
       if (visible_bars > 1) {
         svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove();
-        console.log(visible_bars);
+      }
+      if (visible_bars === 1 && ($('.' + 'v' + (visible_bars + 1))[0])) {
+        svgNodes.select('.rect_block, ' + 'v' + (visible_bars + 1)).remove();
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
