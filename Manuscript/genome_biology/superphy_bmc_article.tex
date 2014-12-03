@@ -305,6 +305,12 @@ The statistical identification of markers that differ between groups based on bo
 
 The R Shiny interface is used for group creation and all metadata fields are pre-populated for all strains in the database. This makes comparing, for example, all human and non-human strains of a given serotype as simple as selecting groups based on the auto-filled serotype and host metadata fields, and clicking the compare button. Additionally, custom groups of any genomes can be created by any user, and saved to the user-profile so they become available whenever the user is logged in. These custom groups can include private genomes available only to the logged-in user.
 
+\subsection{Stx typing}
+Shiga-toxin (Stx) subtype assignment of the \textit{E. coli} strains is calculated from the phylogenetic distribution of the query alleles in relation to Stx genes with confirmed subtype. A phylogenetic tree of all identified \textit{stx1} and \textit{stx2} was created, and clades specific to a Shiga-toxin subtype were identified based on the scheme presented by \cite{scheutz_multicenter_2012}. Membership in these pre-defined clades marks the subtype of a genome; those strains that fall outside of known sub-type clades are marked as unknown. Multiple sequence alignments of the Stx genes are stored in the database for user reference.
+
+
+
+
 \subsection{Continuous integration}
 The user community will provide constant feedback as the platform evolves. A process of continuous integration will ensure that new innovations are implemented and optimizations applied based on the feedback.
 
