@@ -6,8 +6,14 @@
 	<script src="/App/Lib/js/superphy_menu.js"></script>
 	<link rel="stylesheet" href="/App/Styling/css/superphy_menu.css">	
 	<script type="text/javascript">
-		var page_name = "strains";
+	var page_name = "strains";
 	</script>
+
+	<script src="/App/Styling/js/intro.js-0.9.0/intro.min.js"></script>
+	<link rel="stylesheet" href="/App/Styling/css/intro.js-0.9.0/introjs.min.css">
+	<script src="/App/Lib/js/intro_strains_search.js"></script>
+	<script src="/App/Lib/js/superphy.js"></script>
+
 	
 </head>
 
@@ -16,7 +22,7 @@
 	<TMPL_INCLUDE NAME="page_top.tmpl">
 
 	<div id="search_menu"></div>
-
+	
 	<TMPL_INCLUDE NAME="genome_selection_window.tmpl">
 
 	<TMPL_INCLUDE NAME="page_bottom.tmpl">
@@ -53,7 +59,6 @@ $(document).ready(function(){
 	//	viewController.getView($('#strains_map').data("views-index")-1).mapController.resetMap();
 	//});
 });
-
 </script>
 
 </html>

@@ -259,7 +259,10 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			if(seq[i] != '-') {
 				// Nt col in comp
 				// Block transition
-				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2) if $i != 0;
+				if(i != 0) {
+					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+				}
+				
 				
 				// Reset block counters
 				s = p;
@@ -286,7 +289,10 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			if(seq[i] == '-') {
 				// Gap col in comp
 				// Block transition
-				fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2) if $i != 0;
+				if(i != 0) {
+					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+				}
+				
 				
 				// Reset block counters
 				s = p;

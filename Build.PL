@@ -52,6 +52,7 @@ my $build=Module::Build->new(
 		'Parallel::ForkManager'=>0,
 		'Inline::C'=>0,
 		'String::Random'=>0,
+		'Switch'=>0,
 	}
 );
 $build->create_build_script();

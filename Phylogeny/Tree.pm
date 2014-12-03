@@ -371,6 +371,7 @@ sub userTree {
 Return json string of phylogenetic visable to all users
 
 =cut
+
 sub publicTree {
 	my $self = shift;
 	
@@ -393,6 +394,7 @@ Return perl data-structure phylogenetic containing all nodes (INCLUDING PRIVATE!
 Returns a perl hash-ref and not a string.
 
 =cut
+
 sub globalTree {
 	my $self = shift;
 	
@@ -420,6 +422,7 @@ Return perl data-structure phylogenetic containing only public genomes
 Returns a perl hash-ref and not a string.
 
 =cut
+
 sub perlPublicTree {
 	my $self = shift;
 	
@@ -465,6 +468,7 @@ NOTE: Nodes are NO LONGER collapsed above a certain depth. This is done on
 the fly using javascript.
 
 =cut
+
 sub nodeTree {
 	my ($self, $node, $visable) = @_;
 	
@@ -507,6 +511,7 @@ Input: file name containing Newick string
 Returns: hash-ref
 
 =cut
+
 sub newickToPerl {
 	my $self = shift;
 	my $newick_file = shift;
@@ -570,6 +575,7 @@ sub newickToPerl {
 	the same query in this method again.
 
 =cut
+
 sub visableGenomes {
 	my ($self) = @_;
 	
@@ -676,6 +682,27 @@ sub writeSnpAlignment {
 	
 	close $out;
 	
+}
+
+=head2 pairwise_distances
+
+Args:
+1. file name containg nt MSA in FASTA format
+2. file name for newick tree output
+
+=cut
+
+sub pairwise_distances {
+	my ($self, $msa_file, $tree_file) = @_;
+	
+	my $cmd = join(' ', $self->cc_exe, $self->cc_opt, '<', $msa_file, '>', $tree_file);
+	
+	unless(system($cmd) == 0) {
+		die "clearcut error ($!).\n";
+		return 0;
+	}
+	
+	return(1);
 }
 
 

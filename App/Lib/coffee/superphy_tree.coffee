@@ -466,7 +466,34 @@ class TreeView extends ViewTemplate
   # 
   # RETURNS
   # boolean 
-  #      
+  #
+
+  # Message to appear in intro for genome tree
+  intro: ->
+    treeIntro = []
+
+    treeIntro.push({
+      element: document.querySelector('#tree_find_input2')
+      intro: "Use this search bar to search for a specific genome.  The genome will be indicated by a yellow circle on the tree, which shows its phylogenetic relationships with other genomes.  Click 'Functions List' to view a list of functions."
+      position: 'right'
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree-controls')
+      intro: "Use these buttons to have the tree fit within the window, to reset the tree, and to expand all the clades."
+      position: 'bottom'
+      })
+    treeIntro.push({
+      element: document.querySelector('#genome_tree2')
+      intro: "You can also click the blue circles to select genomes.  Clades can be selected by clicking the red boxes.  Pan by clicking and dragging.  Clicking on the '+' and '-' symbols will expand or collapse each clade.  Use the clickwheel on your mouse to zoom."
+      position: 'left'
+      })
+    treeIntro.push({
+      element: document.querySelector('#tree_legend2')
+      intro: "Use this legend to help you."
+      position: 'left'
+      })
+    treeIntro
+
   updateCSS: (gset, genomes) ->
   
     # Retrieve genome objects for each in gset
@@ -1527,7 +1554,7 @@ class TreeView extends ViewTemplate
     # control form
     controls = '<div class="row">'
       
-    controls += "<div class='col-sm-6 span6'><div class='btn-group'>"
+    controls += "<div class='col-sm-6 span6'><div class='btn-group' id='tree-controls'>"
     
     # Fit to window
     fitButtonID = "tree_fit_button#{@elNum}"

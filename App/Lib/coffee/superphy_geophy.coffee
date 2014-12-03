@@ -173,6 +173,7 @@ class GeoPhy
       @viewController.resetFilter()
       @viewController.select(g, false) for g in @viewController.genomeController.pubVisible
       @viewController.select(g, false) for g in @viewController.genomeController.pvtVisible
+      jQuery('#reset-map-view').click()
       true
       ) 
 
