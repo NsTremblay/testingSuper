@@ -121,7 +121,7 @@ stx1B	3000119	shiga-like toxin 1 subunit B encoded within prophage CP-933V		Toxi
 stx2A	3000120	shiga-like toxin II A subunit encoded by bacteriophage BP-933W		Toxin	Shiga-like toxin		Escherichia coli O157:H7 EDL933 (EHEC) 	
 stx2B	3000121	shiga-like toxin II B subunit encoded by bacteriophage BP-933W		Toxin	Shiga-like toxin		Escherichia coli O157:H7 EDL933 (EHEC) 	
 tia	3000122			Invasion	Tia/Hek			
-tir	3000123	putative translocated intimin receptor protein		LEE-encoded TTSS effectors	Tir		Escherichia coli O157:H7 EDL933 (EHEC) 	
+tir	3000123	translocated intimin receptor protein		LEE-encoded TTSS effectors	Tir		Escherichia coli O157:H7 EDL933 (EHEC) 	
 toxB	3000124	ToxB		Adherence	ToxB		Escherichia coli O157:H7 EDL933 (EHEC)	
 tsh	3000125			Autotransporter	Temperature-sensitive hemagglutinin			
 vat	3000126			Autotransporter	Vacuolating autotransporter gene			
@@ -306,8 +306,7 @@ neuC	3000306			unclassified	unclassified
 mceA	3000307			unclassified	unclassified			
 mtfA	3000308			unclassified	unclassified			
 csvA	3000309			unclassified	unclassified				
-papGI	3000311			Adherence	P fimbriae			
-tir-3	3000312			LEE-encoded TTSS effectors	Tir			
+papGI	3000311			Adherence	P fimbriae					
 avian-hlyE	3000313			Toxin	Hemolysin/cytolysin A			
 mcbA	3000314			unclassified	unclassified			
 papA_15	3000315			Adherence	P fimbriae			
@@ -347,8 +346,7 @@ wzx_O6	3000351			unclassified	unclassified
 wzy_O55	3000352			unclassified	unclassified			
 espC	3000353			Autotransporter	EspC, SPATE			
 afrA	3000354			unclassified	unclassified			
-ospE	3000355			unclassified	unclassified			
-tir-1	3000356			LEE-encoded TTSS effectors	Tir			
+ospE	3000355			unclassified	unclassified					
 cofA	3000357			unclassified	unclassified			
 nadAB	3000358			unclassified	unclassified			
 cdtB-2	3000359			Toxin	Cytolethal distending toxin			
