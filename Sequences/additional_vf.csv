@@ -280,8 +280,7 @@ traT	3000278			unclassified	unclassified
 sopA	3000279			unclassified	unclassified			
 papA_12	3000280			Adherence	P fimbriae			
 afaD8	3000281			unclassified	unclassified			
-kpsM-II	3000282			unclassified	unclassified			
-eae_pi	3000283			Adherence	Intimin			
+kpsM-II	3000282			unclassified	unclassified				
 usp	3000284			Toxin	Colicin-like Usp			
 saa	3000285			unclassified	unclassified			
 epeA	3000286			unclassified	unclassified			
@@ -290,8 +289,7 @@ ralG	3000288			unclassified	unclassified
 cda	3000289			unclassified	unclassified			
 wzy_O103	3000290			unclassified	unclassified			
 flmA54	3000291			unclassified	unclassified			
-csbA	3000292			unclassified	unclassified			
-eae_epsilon	3000293			Adherence	Intimin			
+csbA	3000292			unclassified	unclassified				
 virK	3000294			unclassified	unclassified			
 papGIV	3000295			Adherence	P fimbriae			
 cswA	3000296			unclassified	unclassified			
@@ -307,8 +305,7 @@ faeGab	3000305			Adherence	k88 fimbriae
 neuC	3000306			unclassified	unclassified			
 mceA	3000307			unclassified	unclassified			
 mtfA	3000308			unclassified	unclassified			
-csvA	3000309			unclassified	unclassified			
-eae_eta	3000310			Adherence	Intimin			
+csvA	3000309			unclassified	unclassified				
 papGI	3000311			Adherence	P fimbriae			
 tir-3	3000312			LEE-encoded TTSS effectors	Tir			
 avian-hlyE	3000313			Toxin	Hemolysin/cytolysin A			
@@ -322,8 +319,7 @@ bmaE	3000320			unclassified	unclassified
 rfbE	3000321			unclassified	unclassified			
 icsB	3000322			unclassified	unclassified			
 fotA	3000323			unclassified	unclassified			
-cdtB-3	3000324			Toxin	Cytolethal distending toxin			
-eae_delta	3000325			Adherence	Intimin			
+cdtB-3	3000324			Toxin	Cytolethal distending toxin				
 cseA	3000326			unclassified	unclassified			
 eltA	3000327			Toxin	Heat-labile enterotoxin			
 papA_9	3000328			Adherence	P fimbriae			
@@ -333,10 +329,8 @@ etpD	3000331			unclassified	unclassified
 papA_14	3000332			Adherence	P fimbriae			
 tibA	3000333			Autotransporter	AIDA-I type			
 etpA	3000334			Adherence	EtpA			
-drbE_121	3000335			unclassified	unclassified			
-eae_beta	3000336			Adherence	Intimin			
-rfbO101	3000337			unclassified	unclassified			
-eae_iota2	3000338			Adherence	Intimin			
+drbE_121	3000335			unclassified	unclassified				
+rfbO101	3000337			unclassified	unclassified				
 papA_16	3000339			Adherence	P fimbriae			
 cia	3000340			unclassified	unclassified			
 wbdI	3000341			unclassified	unclassified			
@@ -361,7 +355,6 @@ cdtB-2	3000359			Toxin	Cytolethal distending toxin
 cotA	3000360			unclassified	unclassified			
 afr2G	3000361			unclassified	unclassified			
 z5102	3000362			Secretion system	LEE locus encoded TTSS			
-eae_zeta	3000363			Adherence	Intimin			
 lpfAO113	3000364			unclassified	unclassified			
 z5143	3000365			Secretion system	LEE locus encoded TTSS			
 agg-3A	3000366			Adherence	AAF/III fimbriae			
@@ -383,17 +376,13 @@ f17c-A	3000381			unclassified	unclassified
 bfpA_beta	3000382			Adherence	Bundle forming pilus			
 sepA	3000383			unclassified	unclassified			
 senB	3000384			unclassified	unclassified			
-f17b-A	3000385			unclassified	unclassified			
-eae_mu	3000386			Adherence	Intimin			
+f17b-A	3000385			unclassified	unclassified				
 cei	3000387			unclassified	unclassified			
 virG	3000388			unclassified	unclassified			
-espA-3	3000389			Secretion system	LEE locus encoded TTSS			
-eae_alpha	3000390			Adherence	Intimin			
+espA-3	3000389			Secretion system	LEE locus encoded TTSS					
 papA_10	3000391			Adherence	P fimbriae			
-mcjA	3000392			unclassified	unclassified			
-eae_beta2	3000393			Adherence	Intimin			
-neuA	3000394			unclassified	unclassified			
-eae_lambda	3000395			Adherence	Intimin			
+mcjA	3000392			unclassified	unclassified				
+neuA	3000394			unclassified	unclassified					
 sTa	3000396			Toxin	Heat-stable enterotoxin 1 (EAST1)			
 papA_48	3000397			Adherence	P fimbriae			
 cS3	3000398			unclassified	unclassified			
@@ -406,8 +395,7 @@ gafD	3000404			unclassified	unclassified
 caa	3000405			unclassified	unclassified			
 faeGac	3000406			Adherence	K88 fimbriae			
 nlpI	3000407			unclassified	unclassified			
-virA	3000408			unclassified	unclassified			
-eae_nu	3000409			Adherence	Intimin			
+virA	3000408			unclassified	unclassified						
 lT-IIaB	3000410			unclassified	unclassified			
 cdtB-2/3	3000411			Toxin	Cytolethal distending toxin			
 csnA	3000412			unclassified	unclassified			
@@ -435,8 +423,7 @@ cfaB	3000433			Adherence	CFA/I fimbriae 
 ipgD	3000434			unclassified	unclassified			
 afaE5	3000435			unclassified	unclassified			
 z5121	3000436			Secretion system	LEE locus encoded TTSS			
-lpfAR141	3000437			unclassified	unclassified			
-eae_iota	3000438			Adherence	Intimin			
+lpfAR141	3000437			unclassified	unclassified					
 csuA	3000439			unclassified	unclassified			
 mtfS	3000440			unclassified	unclassified			
 pet	3000441			Autotransporter	Pet, SPATE			
@@ -444,8 +431,7 @@ espB-3	3000442			Effector	unclassified
 ospF	3000443			unclassified	unclassified			
 ipgB2	3000444			unclassified	unclassified			
 stcE	3000445			Protease	unclassified			
-paa_ETEC	3000446			Adherence	Porcine attaching-effacing associated protein			
-eae_alpha2	3000447			Adherence	Intimin			
+paa_ETEC	3000446			Adherence	Porcine attaching-effacing associated protein				
 ipgB1	3000448			unclassified	unclassified			
 cba	3000449			unclassified	unclassified			
 aap	3000450			Adherence	Dispersin 			
@@ -457,8 +443,7 @@ colY	3000455			unclassified	unclassified
 afaE7	3000456			unclassified	unclassified			
 wzy_O113	3000457			unclassified	unclassified			
 fanC	3000458			unclassified	unclassified			
-csdA	3000459			unclassified	unclassified			
-eae_epsilon2	3000460			Adherence	Intimin			
+csdA	3000459			unclassified	unclassified						
 espM	3000461			Effector	unclassified			
 gadA	3000462			unclassified	unclassified			
 st	3000463			unclassified	unclassified			
@@ -468,8 +453,7 @@ cka	3000466			unclassified	unclassified
 pixA	3000467			unclassified	unclassified			
 espA-1	3000468			Secretion system	LEE locus encoded TTSS			
 cnf2	3000469			Toxin	Cytotoxic necrotizing factor			
-mchB	3000470			unclassified	unclassified			
-eae_gamma	3000471			Adherence	Intimin			
+mchB	3000470			unclassified	unclassified					
 col5	3000472			unclassified	unclassified			
 cdtB-1	3000473			unclassified	unclassified			
 fedAac	3000474			unclassified	unclassified			
