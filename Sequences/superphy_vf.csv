@@ -17,7 +17,7 @@ chuX	3000015			Iron uptake	Hemin uptake
 chuY	3000016			Iron uptake	Hemin uptake			
 cif	3000017			Non-LEE encoded TTSS effectors	Cell-cycle-inhibitory factor Cif			
 cnf1	3000018			Toxin	Cytotoxic necrotizing factor			
-eae	3000019	intimin adherence protein		Adherence	Intimin		Escherichia coli O157:H7 EDL933 (EHEC)	
+eae	3000019	intimin adherence protein		Adherence, Secretion system	Intimin, LEE locus encoded TTSS		Escherichia coli O157:H7 EDL933 (EHEC)	
 ecpA	3000020	hypothetical protein		Adherence	E. coli common pilus (ECP)		Escherichia coli O157:H7 EDL933 (EHEC)	
 ecpB	3000021	hypothetical protein		Adherence	E. coli common pilus (ECP)		Escherichia coli O157:H7 EDL933 (EHEC) 	
 ecpC	3000022	putative enzyme		Adherence	E. coli common pilus (ECP)		Escherichia coli O157:H7 EDL933 (EHEC) 	
