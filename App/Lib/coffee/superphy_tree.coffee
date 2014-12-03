@@ -65,7 +65,6 @@ class TreeView extends ViewTemplate
           b_height = b.num_leaves + b.total_height
         else
           b_height = 1
-        console.log(a_height + b_height)
         a_height + b_height)
       
     # Append tree commands
@@ -496,12 +495,15 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
-    rect_block.attr("class", "rect_block v" + visible_bars)
-
+    rect_block.attr("class", 'v' + visible_bars)
+    
+    console.log(visible_bars)
     if visible_bars > 1
-      svgNodes.select('.rect_block, ' + '.' + 'v' + (visible_bars - 1)).remove()
-    if visible_bars == 1 && ($('.' + 'v' + (visible_bars + 1))[0])
-      svgNodes.select('.rect_block, ' + 'v' + (visible_bars + 1)).remove()
+      svgNodes.selectAll('.v' + (visible_bars - 1)).remove()
+      if ($('.v' + (visible_bars + 1))[0])
+        svgNodes.selectAll('.v' + (visible_bars + 1)).remove()
+    if visible_bars is 1 && ($('.v2')[0])
+      svgNodes.selectAll('.v2').remove()
 
     cmdBox = iNodes
       .append('text')
@@ -562,11 +564,12 @@ class TreeView extends ViewTemplate
       .attr("width", (n) ->
         if n._children?
           20*(Math.log(n.num_leaves))
-        else 0)
+        else 
+          0)
 
     m = 1
     while m < visible_bars + 1
-      svgNodes.selectAll('.rect_block, ' + '.' + 'v' + m)
+      svgNodes.selectAll('.v' + m)
         .transition()
         .attr("transform", "translate(" + 0 + "," + centred + ")" )
       m++
