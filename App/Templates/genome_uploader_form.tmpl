@@ -10,7 +10,7 @@
 		<input type="hidden" name="upload_id" value="<TMPL_VAR upload_id>">
 		</TMPL_IF>
 		
-		<fieldset class="form-horizontal">
+		<fieldset id="requiredFields" class="form-horizontal">
 			<h4>These fields are required:</h4>
 			
 			<div class="form-group">
@@ -527,7 +527,7 @@
 		
 		<div style="background-color:#FFFFFF" class="form-actions">
 			<button id="submitGenome" type="button" class="btn btn-small btn-success"><i class="icon-upload icon-white"></i> Submit</button>
-			<button type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
+			<button id="clearform" type="reset" class="btn btn-small btn-danger" name="cancel" value="Cancel" onclick="reload()"><i class="icon-remove icon-white"></i> Clear Form</button>
 		</div>
 		
 	</form>
