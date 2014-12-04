@@ -55,17 +55,9 @@ class TreeView extends ViewTemplate
       .sort(null)
       .value((d) -> Number(d.length) )
       .separation((a, b) ->
-        a_height = 1
-        b_height = 1
-        if ('num_leaves' in a) && ('total_height' in a)
-          a_height = a.num_leaves + a.total_height
-        else
-          a_height = 1
-        if ('num_leaves' in b) && ('total_height' in b)
-          b_height = b.num_leaves + b.total_height
-        else
-          b_height = 1
-        a_height + b_height)
+        if (a.parent == b.parent)
+          5
+        else 3)
       
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
@@ -494,6 +486,9 @@ class TreeView extends ViewTemplate
               else n.xpos = 0
               n.xpos + 4)
           i++
+
+    if ($('#treenode:has(g.v' + visible_bars + ')'))
+      svgNodes.select('.v' + visible_bars).remove()
 
     rect_block.attr("class", 'v' + visible_bars)
     

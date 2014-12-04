@@ -2909,20 +2909,11 @@
       this.cluster = d3.layout.cluster().size([this.width, this.height]).sort(null).value(function(d) {
         return Number(d.length);
       }).separation(function(a, b) {
-        var a_height, b_height;
-        a_height = 1;
-        b_height = 1;
-        if ((__indexOf.call(a, 'num_leaves') >= 0) && (__indexOf.call(a, 'total_height') >= 0)) {
-          a_height = a.num_leaves + a.total_height;
+        if (a.parent === b.parent) {
+          return 5;
         } else {
-          a_height = 1;
+          return 3;
         }
-        if ((__indexOf.call(b, 'num_leaves') >= 0) && (__indexOf.call(b, 'total_height') >= 0)) {
-          b_height = b.num_leaves + b.total_height;
-        } else {
-          b_height = 1;
-        }
-        return a_height + b_height;
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
@@ -3244,6 +3235,9 @@
             i++;
           }
         }
+      }
+      if ($('#treenode:has(g.v' + visible_bars + ')')) {
+        svgNodes.select('.v' + visible_bars).remove();
       }
       rect_block.attr("class", 'v' + visible_bars);
       console.log(visible_bars);
