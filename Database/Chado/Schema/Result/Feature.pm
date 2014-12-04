@@ -272,36 +272,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 analysisfeatures
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Analysisfeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "analysisfeatures",
-  "Database::Chado::Schema::Result::Analysisfeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 cell_line_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::CellLineFeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "cell_line_features",
-  "Database::Chado::Schema::Result::CellLineFeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 core_region
 
 Type: might_have
@@ -337,21 +307,6 @@ __PACKAGE__->belongs_to(
   },
 );
 
-=head2 elements
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Element>
-
-=cut
-
-__PACKAGE__->has_many(
-  "elements",
-  "Database::Chado::Schema::Result::Element",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 feature_cvterms
 
 Type: has_many
@@ -378,66 +333,6 @@ Related object: L<Database::Chado::Schema::Result::FeatureDbxref>
 __PACKAGE__->has_many(
   "feature_dbxrefs",
   "Database::Chado::Schema::Result::FeatureDbxref",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_expressions
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeatureExpression>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_expressions",
-  "Database::Chado::Schema::Result::FeatureExpression",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_genotype_chromosomes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeatureGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_genotype_chromosomes",
-  "Database::Chado::Schema::Result::FeatureGenotype",
-  { "foreign.chromosome_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_genotype_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeatureGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_genotype_features",
-  "Database::Chado::Schema::Result::FeatureGenotype",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_phenotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeaturePhenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_phenotypes",
-  "Database::Chado::Schema::Result::FeaturePhenotype",
   { "foreign.feature_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -727,36 +622,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 genome_locations
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::GenomeLocation>
-
-=cut
-
-__PACKAGE__->has_many(
-  "genome_locations",
-  "Database::Chado::Schema::Result::GenomeLocation",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 library_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LibraryFeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "library_features",
-  "Database::Chado::Schema::Result::LibraryFeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 organism
 
 Type: belongs_to
@@ -770,21 +635,6 @@ __PACKAGE__->belongs_to(
   "Database::Chado::Schema::Result::Organism",
   { organism_id => "organism_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
-);
-
-=head2 phylonodes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Phylonode>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phylonodes",
-  "Database::Chado::Schema::Result::Phylonode",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 pripub_feature_relationships
@@ -858,6 +708,21 @@ Related object: L<Database::Chado::Schema::Result::RawAmrData>
 __PACKAGE__->has_many(
   "raw_amr_datas",
   "Database::Chado::Schema::Result::RawAmrData",
+  { "foreign.gene_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 raw_virulence_datas
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::RawVirulenceData>
+
+=cut
+
+__PACKAGE__->has_many(
+  "raw_virulence_datas",
+  "Database::Chado::Schema::Result::RawVirulenceData",
   { "foreign.gene_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -982,21 +847,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 studyprop_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::StudypropFeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "studyprop_features",
-  "Database::Chado::Schema::Result::StudypropFeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 type
 
 Type: belongs_to
@@ -1027,19 +877,9 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 geocodes
 
-Type: many_to_many
-
-Composing rels: L</genome_locations> -> geocode
-
-=cut
-
-__PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
-
-
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-09-17 13:50:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/dbt3rpoGmKN9oVAwNXOWA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wCUdEWkgQZk8O9vIsX/VhA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

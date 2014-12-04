@@ -67,7 +67,8 @@ my @tables = (
 	"private_snp_position",
 	"gap_position",
 	"private_gap_position",
-	"core_region"
+	"core_region",
+	"accessory_region"
 );
 
 # Tables in order that data is updated
@@ -119,6 +120,7 @@ my %sequences = (
   	gap_position                 => "gap_position_gap_position_id_seq",
   	private_gap_position         => "private_gap_position_gap_position_id_seq",
   	core_region                  => "core_region_core_region_id_seq",
+  	accessory_region             => "accessory_region_accessory_region_id_seq",
   	upload                       => "upload_upload_id_seq",
     db                           => "db_db_id_seq",
     dbxref                       => "dbxref_dbxref_id_seq",
@@ -149,7 +151,8 @@ my %table_ids = (
   	private_snp_position         => "snp_position_id",
   	gap_position                 => "gap_position_id",
   	private_gap_position         => "gap_position_id",
-  	core_region                  => "core_region",
+  	core_region                  => "core_region_id",
+  	accessory_region             => "accessory_region_id",
   	db                           => "db_id",
 	dbxref                       => "dbxref_id",
 	feature_dbxref               => "feature_dbxref_id",
@@ -208,6 +211,7 @@ my %copystring = (
    gap_position                 => "(gap_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,snp_id,locus_pos)",
    private_gap_position         => "(gap_position_id,contig_collection_id,contig_id,pangenome_region_id,locus_id,snp_id,locus_pos)",
    core_region                  => "(core_region_id,pangenome_region_id,aln_column)",
+   accessory_region             => "(accessory_region_id,pangenome_region_id,aln_column)",
    dbxref                       => "(dbxref_id,db_id,accession,version,description)",
    feature_dbxref               => "(feature_dbxref_id,feature_id,dbxref_id)",
    db                           => "(db_id,name,description)",
@@ -259,7 +263,7 @@ my $ALLOWED_LOCI_CACHE_KEYS = "feature_id|uniquename|genome_id|query_id|is_publi
 # Tables for which caches are maintained
 my $ALLOWED_CACHE_KEYS = 
 	"collection|contig|feature|sequence|core|core_snp|new_core_snp|snp_alignment|uploaded_feature|".
-	"core_alignment|core_region|db|dbxref|snp_genome";
+	"core_alignment|core_region|acc_region|db|dbxref|snp_genome|function";
 
 # Valid feature types
 # Note: party_mix => ExperimentalFeatures.pm initialized to manage all feature types concurrently
@@ -834,14 +838,9 @@ sub initialize_snp_caches {
     $self->{snp_alignment}->{core_position} = $pos // 0;
     
 	# Create tmp table
-	$sth = $dbh->prepare(VERIFY_TMP_TABLE);
-    $sth->execute('tmp_snp_cache');
-    my ($table_exists) = $sth->fetchrow_array;
-    if($table_exists) {
-    	my $sql = "DROP TABLE tmp_snp_cache";
-    	$dbh->do($sql);
-    }
-   
+	$sql = "DROP TABLE IF EXISTS tmp_snp_cache";
+	$dbh->do($sql);
+    
    $sql = 
 	"CREATE TABLE public.tmp_snp_cache (
 		name varchar(100),
@@ -870,22 +869,16 @@ sub initialize_snp_caches {
 	
 	
 	# Setup core region cache
-	$sql = "SELECT max(aln_column) FROM core_alignment WHERE name = 'core'";
+	$sql = "SELECT max(core_column) FROM pangenome_alignment WHERE name = 'core'";
 	$sth = $dbh->prepare($sql);
     $sth->execute();
     ($pos) = $sth->fetchrow_array();
     $self->{core_alignment}->{added_columns} = 0;
     $self->{core_alignment}->{core_position} = $pos // 0;
 	
-	
 	# Create tmp table
-	$sth = $dbh->prepare(VERIFY_TMP_TABLE);
-    $sth->execute('tmp_core_pangenome_cache');
-    ($table_exists) = $sth->fetchrow_array;
-    if($table_exists) {
-    	my $sql = "DROP TABLE tmp_core_pangenome_cache";
-    	$dbh->do($sql);
-    }
+	$sql = "DROP TABLE IF EXISTS tmp_core_pangenome_cache";
+	$dbh->do($sql);
    
    $sql = 
 	"CREATE TABLE public.tmp_core_pangenome_cache (
@@ -895,7 +888,7 @@ sub initialize_snp_caches {
     $dbh->do($sql);
     
     # Prepare bulk insert
-    $bulk_set_size = 100;
+    $bulk_set_size = 1000;
     $insert_query = 'INSERT INTO tmp_core_pangenome_cache (genome,aln_column) VALUES (?,?)';
     $insert_query .= ', (?,?)' x ($bulk_set_size-1);
     $self->{core_alignment}{insert_tmp_presence} = $dbh->prepare($insert_query);
@@ -905,7 +898,39 @@ sub initialize_snp_caches {
 	$self->{core_alignment}{buffer_stack} = [];
 	$self->{core_alignment}{buffer_num} = 0; 
 	
-    $dbh->commit || croak "Initialization of tmp_snp_cache failed: ".$self->dbh->errstr();
+
+	# Setup accessory region cache
+	$sql = "SELECT max(acc_column) FROM pangenome_alignment WHERE name = 'core'";
+	$sth = $dbh->prepare($sql);
+    $sth->execute();
+    ($pos) = $sth->fetchrow_array();
+    $self->{acc_alignment}->{added_columns} = 0;
+    $self->{acc_alignment}->{core_position} = $pos // 0;
+	
+	# Create tmp table
+	$sql = "DROP TABLE IF EXISTS tmp_acc_pangenome_cache";
+	$dbh->do($sql);
+   
+   $sql = 
+	"CREATE TABLE public.tmp_acc_pangenome_cache (
+		genome varchar(100),
+		aln_column int
+	)";
+    $dbh->do($sql);
+    
+    # Prepare bulk insert
+    $bulk_set_size = 1000;
+    $insert_query = 'INSERT INTO tmp_acc_pangenome_cache (genome,aln_column) VALUES (?,?)';
+    $insert_query .= ', (?,?)' x ($bulk_set_size-1);
+    $self->{acc_alignment}{insert_tmp_presence} = $dbh->prepare($insert_query);
+    $self->{acc_alignment}{bulk_set_size} = $bulk_set_size;
+    
+    # Setup up insert buffer
+	$self->{acc_alignment}{buffer_stack} = [];
+	$self->{acc_alignment}{buffer_num} = 0;
+
+
+    $dbh->commit || croak "Initialization of SNP caches failed: ".$self->dbh->errstr();
     
     return;
 }
@@ -1072,6 +1097,46 @@ sub nextoid {
   return $self->{'nextoid'}{$table} if ($table);
 }
 
+=head2 abort
+
+=over
+
+=item Usage
+
+  $obj->abort()
+
+=item Function
+
+Discards current transaction and releases lock.
+This function is called by external error handlers. The rollback is
+critical to discard any changes/additions to the DB before removing
+the DB lock (which does a commit). 
+
+=item Returns
+
+Nothing
+
+=item Arguments
+
+None
+
+=back
+
+=cut
+
+sub abort {
+    my ($self, %argv) = @_;
+
+    my $dbh = $self->dbh;
+
+    # Abort any pending DB transactions
+    $dbh->rollback;
+   
+    $self->remove_lock();
+
+    return;
+}
+
 
 =head2 remove_lock
 
@@ -1101,6 +1166,9 @@ sub remove_lock {
     my ($self, %argv) = @_;
 
     my $dbh = $self->dbh;
+
+    # Abort any pending DB transactions
+    $dbh->rollback;
    
     my $sql = "SELECT name,hostname,starttime FROM gff_meta";
     my $select_query = $dbh->prepare($sql) or carp "Select prepare failed";
@@ -1748,11 +1816,13 @@ sub prepare_queries {
 		$sql = "SELECT contig_collection_id, locus_id, allele FROM private_snp_variation WHERE snp_id = ?";
 		$self->{'queries'}{'retrieve_private_snp_column'} = $dbh->prepare($sql);
 		# Core alignment queries
-		$sql = "SELECT count(*) FROM core_alignment WHERE name = ?";
-		$self->{'queries'}{'validate_core_alignment'} = $dbh->prepare($sql);
+		$sql = "SELECT count(*) FROM pangenome_alignment WHERE name = ?";
+		$self->{'queries'}{'validate_core_alignment'} = $self->{'queries'}{'validate_acc_alignment'} = $dbh->prepare($sql);
 		$sql = "SELECT aln_column FROM core_region WHERE pangenome_region_id = ?";
 		$self->{'queries'}{'validate_core_region'} = $dbh->prepare($sql);
-		
+		# Accessory alignment queries
+		$sql = "SELECT aln_column FROM accessory_region WHERE pangenome_region_id = ?";
+		$self->{'queries'}{'validate_acc_region'} = $dbh->prepare($sql);
 	}
 	
 	
@@ -1791,8 +1861,14 @@ sub load_data {
 
 	# Print mutable in-memory values to file,
 	# now that program has terminated.
+	my $found_snps;
 	if($self->{snp_aware}) {
-		$self->print_snp_data();
+		$found_snps = defined($self->cache('core_snp'));
+		if ($found_snps) {
+			$self->print_snp_data() 
+		} else {
+			warn "Warning: No SNPs were found in this run (either new SNP positions or variations at existing positions).";
+		}
 	}
 
 	$self->end_files();
@@ -1804,7 +1880,10 @@ sub load_data {
 	my $global_tree_file = $self->tmp_dir() . 'genodo_genome_tree_global.txt';
 	my $tmp_snp_matrix_file;
 	my $snp_matrix_file = $self->tmp_dir() . 'genodo_snp_matrix.txt';;
-	my $bkp_matrix_file = $self->tmp_dir() . 'genodo_previous_snp_matrix.txt';
+	my $bkp_snp_matrix_file = $self->tmp_dir() . 'genodo_previous_snp_matrix.txt';
+	my $tmp_pg_matrix_file;
+	my $pg_matrix_file = $self->tmp_dir() . 'genodo_snp_matrix.txt';;
+	my $bkp_pg_matrix_file = $self->tmp_dir() . 'genodo_previous_snp_matrix.txt';
 	if($self->{snp_aware}) {
 
 		# Make temp tables to load core and snp data
@@ -1816,24 +1895,32 @@ sub load_data {
 		foreach my $key (keys %{$self->{cache}{snp_genome}}){
 			my $ghash = $self->{cache}{snp_genome}{$key};
 			print $in join("\t", $key, $ghash->{uniquename}, $ghash->{displayname}, $ghash->{visible},
-				$ghash->{feature_id});
+				$ghash->{feature_id}),"\n";
 			push @new_genomes, $key;
 		}
 		close $in;
 
-		# Compute new snp_alignment and core_alignment
-		$self->push_core_alignment(\@new_genomes);
-		$self->push_snp_alignment(\@new_genomes);
+		# Compute pangenome alignment
+		$self->push_pg_alignment(\@new_genomes);
 		$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
-		# Compute new tree, output to file
-		$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+		# Compute new pangenome matrix file
+		$tmp_pg_matrix_file = $self->binary_state_pg_matrix('pipeline_pangenome_alignment');
 
-		# Compute new snp matrix
-		$tmp_snp_matrix_file = $self->binary_state_snp_matrix('pipeline_snp_alignment');
+
+		if($found_snps) {
+			# Compute snp alignment
+			$self->push_snp_alignment(\@new_genomes);
+			$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
+
+			# Compute new tree, output to file
+			$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+
+			# Compute new snp matrix file
+			$tmp_snp_matrix_file = $self->binary_state_snp_matrix('pipeline_snp_alignment');
+		}
 	}
 	
-
 	my %nextvalue = $self->nextvalueHash();
 	
 	foreach my $table (@update_tables) {
@@ -1875,15 +1962,22 @@ sub load_data {
 		# Hot swap temp core and snp tables with live tables
 		$self->swap_alignment_tables();
 
-		# Load tree
-		$self->load_tree($public_tree_file, $global_tree_file);
+		if($found_snps) {
+			# Load tree
+			$self->load_tree($public_tree_file, $global_tree_file);
 
-		# Copy matrix file to final destination
-		if(-e $snp_matrix_file) {
-			mv $snp_matrix_file $bkp_matrix_file or croak "Unable to move old snp matrix file ($!)";
-			mv $tmp_snp_matrix_file $snp_matrix_file or croak "Unable to move new snp matrix file ($!)";
+			# Copy snp matrix file to final destination
+			if(-e $snp_matrix_file) {
+				rename($snp_matrix_file, $bkp_snp_matrix_file) or croak "Unable to move old snp matrix file ($!)";
+			}
+			rename($tmp_snp_matrix_file, $snp_matrix_file) or croak "Unable to move new snp matrix file ($!)";
 		}
-
+		
+		# Copy pangenome matrix file to final destination
+		if(-e $pg_matrix_file) {
+			rename($pg_matrix_file, $bkp_pg_matrix_file) or croak "Unable to move old pangenome matrix file ($!)";
+		}
+		rename($tmp_pg_matrix_file, $pg_matrix_file) or croak "Unable to move new pangneome matrix file ($!)";
 	}
 
 	my $ft = $self->{feature_type};
@@ -1896,7 +1990,8 @@ sub load_data {
 	} else {
 		$self->push_cache($ft);
 	}
-	
+
+	# Commit this giant transaction
 	$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 	
 	if($ft eq 'party_mix' || $ft eq 'vfamr' || $ft eq 'genome') {
@@ -2097,15 +2192,15 @@ sub clone_alignment_tables {
 
 	my @table_sets = (
 		['snp_alignment', 'pipeline_snp_alignment'],
-		['core_alignment','pipeline_core_alignment']
+		['pangenome_alignment','pipeline_pangenome_alignment']
 	);
 
 	foreach my $ts (@table_sets) {
 		my $stable = $ts->[0];
 		my $ttable = $ts->[1];
-
-		# Delete existing tmp table (fails silently in cases where table is missing)
-		my $sql0 = "DROP TABLE $ttable";
+	
+		# Delete existing tmp table
+		my $sql0 = "DROP TABLE IF EXISTS $ttable";
 		$dbh->do($sql0);
 
 		# Copy data and basic structure from source table
@@ -2162,7 +2257,7 @@ sub swap_alignment_tables {
 
 	my @table_sets = (
 		['snp_alignment', 'pipeline_snp_alignment', 'drop_snp_alignment'],
-		['core_alignment','pipeline_core_alignment', 'drop_core_alignment']
+		['pangenome_alignment','pipeline_pangenome_alignment', 'drop_pangenome_alignment']
 	);
 
 	foreach my $ts (@table_sets) {
@@ -2291,19 +2386,13 @@ sub load_tree {
 	my $self = shift;
 	my ($public_file, $global_file) = @_;
 
-	open(my $in1, "<$public_file") or croak "Error: unable to read file $public_file ($!).\n";
-	my $ptree = <$in1>;
-	chomp $ptree;
-	close $in1;
+	# Load trees into memory
+	my ($ptree, $ptree_string) = $self->read_tree_file($public_file);
 
-	open(my $in2, "<$global_file") or croak "Error: unable to read file $global_file ($!).\n";
-	my $gtree = <$in2>;
-	chomp $gtree;
-	close $in1;
-
-	my $jtree = encode_json($ptree);
+	my ($gtree, $gtree_string) = $self->read_tree_file($global_file);
 
 	# Update or create tree entries
+	my $jtree_string = encode_json($ptree);
 	my $dbh = $self->dbh();
 
 	my $select_sth = $dbh->prepare("SELECT count(*) FROM tree WHERE name = ?");
@@ -2314,27 +2403,69 @@ sub load_tree {
 	# Global
 	$select_sth->execute('global');
 	if(@row = $select_sth->fetchrow_array() && $row[0]) {
-		$update_sth->execute($gtree, 'global');
+		$update_sth->execute($gtree_string, 'global');
 	} else {
-		$insert_sth->execute('global', 'perl', $gtree);
+		$insert_sth->execute('global', 'perl', $gtree_string);
 	}
 
 	# Perl public
 	$select_sth->execute('perlpub');
 	if(@row = $select_sth->fetchrow_array() && $row[0]) {
-		$update_sth->execute($ptree, 'perlpub');
+		$update_sth->execute($ptree_string, 'perlpub');
 	} else {
-		$insert_sth->execute('perlpub', 'perl', $ptree);
+		$insert_sth->execute('perlpub', 'perl', $ptree_string);
 	}
 
 	# JSON public
 	$select_sth->execute('jsonpub');
 	if(@row = $select_sth->fetchrow_array() && $row[0]) {
-		$update_sth->execute($jtree, 'jsonpub');
+		$update_sth->execute($jtree_string, 'jsonpub');
 	} else {
-		$insert_sth->execute('jsonpub', 'perl', $jtree);
+		$insert_sth->execute('jsonpub', 'json', $jtree_string);
 	}
 
+}
+
+=head2 read_tree_file
+
+=over
+
+=item Usage
+
+  $obj->read_tree_file(filename)
+
+=item Function
+
+Loads a perl-formatted string from the file into memory
+
+=item Returns
+
+A perl variable containing pointer to tree root hashref and string representation of
+tree
+
+=item Arguments
+
+1 - Filename with PERL-format tree string
+
+=back
+
+=cut
+
+sub read_tree_file {
+	my $self = shift;
+	my $file = shift;
+	
+	open(my $in, "<$file") or die "Error: unable to read file $file ($!).\n";
+
+    local($/) = "";
+    my ($str) = <$in>;
+   
+    close $in;
+    
+    my $tree;
+    eval $str;
+
+    return ($tree, $str);
 }
 
 =head2 recompute_metadata
@@ -2803,6 +2934,51 @@ sub retrieve_core_column {
 	return $column;
 }
 
+=head2 retrieve_acc_column
+
+=over
+
+=item Usage
+
+  $obj->retrieve_acc_column($query_id)
+
+=item Function
+
+Returns and caches the column associated with a
+accessory pangenome region
+
+=item Returns
+
+Column id associated with the accessory pangenome feature
+
+=item Arguments
+
+The feature_id for the query pangenome feature
+
+=back
+
+=cut
+
+sub retrieve_acc_column {
+    my $self = shift;
+	my ($id) = @_;
+	
+	# Search for existing entries in cached values
+	my $column;
+	
+	if(defined $self->cache('acc_region', $id)) {
+		$column = $self->cache('acc_region', $id);
+	} else {
+		# Search for existing entries in accessory_region table
+		$self->{queries}{'validate_acc_region'}->execute($id);
+		$column = $self->{queries}{'validate_acc_region'}->fetchrow_array;
+		
+		$self->cache('acc_region', $id,  $column) if defined $column;
+	}
+	
+	return $column;
+}
+
 
 =head2 retrieve_chr_info
 
@@ -2995,7 +3171,18 @@ sub handle_pangenome_loci {
 		
 		# Update value in core region alignment for genome
 		$self->has_core_region($genome_id,$pub,$column);
-    } 
+
+    }  else {
+    	# This is accessory region
+    	
+    	# Retrieve column for accessory region
+		my $column = $self->retrieve_acc_column($parent_id);
+		
+		croak "Error: no alignment column assigned to access_category pangenome region $parent_id." unless defined $column;
+		
+		# Update value in core region alignment for genome
+		$self->has_acc_region($genome_id,$pub,$column);
+    }
 }
 
 
@@ -3176,6 +3363,8 @@ sub handle_phylogeny {
 
 =item Function
 
+Handles the insertion of a new pangenome segment. Only call on 
+NEW segements.
 
 
 =item Returns
@@ -3257,17 +3446,39 @@ sub handle_pangenome_segment {
 	# Print pangenome feature
 	$self->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public);  
 	$self->nextfeature($is_public, '++');
+
+	# Update caches
+
+	# Feature ID
+	$self->cache('feature', $uniquename, $curr_feature_id);
 	
+	# Core status
+	$self->cache('core', $curr_feature_id, $in_core);
+
+	# Function
+	$self->cache('function', $curr_feature_id, [$func_id, $func]) if $func_id && $func;
 	
-	# Create column in core alignment for this new core region		
-	my $column = $self->add_core_column();
-		
-	$table = 'core_region';
-	my $ref_core_id = $self->nextoid($table);	                                 	
-	$self->print_cr($ref_core_id,$curr_feature_id,$column);
-	$self->nextoid($table,'++');
-	$self->cache('core_region',$curr_feature_id, $column);
-			
+	if($in_core) {
+		# Sequence
+		$self->cache('sequence',$curr_feature_id,$seq);
+
+		# Create column in core alignment for this new core region
+		my $column = $self->add_core_column();
+		$table = 'core_region';
+		my $ref_core_id = $self->nextoid($table);	                                 	
+		$self->print_cr($ref_core_id,$curr_feature_id,$column);
+		$self->nextoid($table,'++');
+		$self->cache('core_region',$curr_feature_id, $column);
+
+	} else {
+		# Create column in accessory alignment for this new accessory region
+		my $column = $self->add_acc_column();
+		$table = 'accessory_region';
+		my $ref_acc_id = $self->nextoid($table);	                                 	
+		$self->print_ar($ref_acc_id,$curr_feature_id,$column);
+		$self->nextoid($table,'++');
+		$self->cache('acc_region',$curr_feature_id, $column);
+	}
 	
 	return($curr_feature_id);
 }
@@ -3313,11 +3524,21 @@ sub handle_snp {
 	unless($snp_hash) {
 		# Create new core snp
 		$ref_snp_id = $self->add_core_snp($ref_id, $ref_pos, $rgap_offset, $c2, $c1);
+
+		# if($DEBUG) {
+		# 	print "ADDING new core snp $ref_id.$ref_pos.$rgap_offset\n";
+		# }
 		
 	} else {
 		# Existing core snp
 		$ref_snp_id = $snp_hash->{snp_id};
 		$column = $snp_hash->{col};
+
+		# if($DEBUG) {
+		# 	print "EXISTING core snp $ref_id.$ref_pos.$rgap_offset with ID $ref_snp_id.\n";
+		# 	my ($word) = (defined($column) ? 'IS assigned - '.$column : 'NOT assigned');
+		# 	print "Snp alignment column $word.\n";
+		# }
 
 		my @frequencyArray = @{$snp_hash->{freq}};
 		
@@ -3326,7 +3547,7 @@ sub handle_snp {
 		$self->cache('core_snp',$uniquename)->{freq} = \@frequencyArray;
 		
 		# Does the updated allele frequency indicate that this is now a polymorphism
-		if(!defined($column) && _is_polymorphism(@frequencyArray)) {
+		if(!defined($column) && _is_polymorphism($c2, @frequencyArray)) {
 			# Now officially snp, add new snp column to alignment
 
 			($column) = $self->add_snp_column($c2, $ref_snp_id);
@@ -3337,7 +3558,7 @@ sub handle_snp {
 			$self->{snp_alignment}{update_tmp_variations}->execute($column, $ref_snp_id);
 			$self->dbh->commit || croak "Update of tmp_snp_cache column for snp $ref_snp_id failed: ".$self->dbh->errstr();
 
-			print "ASSIGNING COLUMN $column to NEW SNP $ref_snp_id\n";
+			# print "ASSIGNING COLUMN $column to NEW SNP $ref_snp_id\n" if $DEBUG;
 
 		} elsif(defined $column) {
 			# Snp in alignment
@@ -3382,11 +3603,21 @@ sub _update_frequency_array {
 }
 
 sub _is_polymorphism {
-	my @frequencyArray = @_;
+	my ($bkg, @frequencyArray) = @_;
+
+	my $states = 0;
+
+	$states++ if $bkg =~ m/[ATGC]/i;
+
+	$states++ if $frequencyArray[0] >= 1 && $bkg ne 'A';
+
+	$states++ if $frequencyArray[1] >= 1 && $bkg ne 'T';
+
+	$states++ if $frequencyArray[2] >= 1 && $bkg ne 'G';
+
+	$states++ if $frequencyArray[3] >= 1 && $bkg ne 'C';
 	
-	foreach my $n (@frequencyArray[0..3]) {
-		return 1 if $n > 1;
-	}
+	return 1 if $states > 1;
 
 	return 0;
 }
@@ -3943,6 +4174,15 @@ sub print_cr {
 	my $fh = $self->file_handles('core_region');		
 
 	print $fh join("\t", ($cr_id,$ref_id,$col)),"\n";
+}
+
+sub print_ar {
+	my $self = shift;
+	my ($ar_id,$ref_id,$col) = @_;
+	
+	my $fh = $self->file_handles('accessory_region');		
+
+	print $fh join("\t", ($ar_id,$ref_id,$col)),"\n";
 }
 
 sub print_sv {
@@ -4714,6 +4954,41 @@ sub add_core_column {
 	return($c);
 }
 
+=cut
+
+=head2 add_acc_column
+
+=over
+
+=item Usage
+
+  $obj->add_acc_column($nuc); 
+
+=item Function
+
+  For new accessory pangenome region, add column in each genome's alignment string and in the default 'core' string
+
+=item Returns
+
+  The column number of the new accessory alignment column
+
+=item Arguments
+
+  None
+
+=back
+
+=cut
+
+sub add_acc_column {
+	my $self = shift;
+		
+	my $c = $self->{acc_alignment}->{core_position}++;
+	$self->{acc_alignment}->{added_columns}++;
+	
+	return($c);
+}
+
 # =head2 add_snp_row
 
 # =over
@@ -4859,6 +5134,56 @@ sub has_core_region {
 	}
 }
 
+=head2 has_acc_region
+
+=over
+
+=item Usage
+
+  $obj->has_acc_region($genome_id, $is_public, $column); 
+
+=item Function
+
+  Change the accessory alignment string at a single position for a genome
+
+=item Returns
+
+  Nothing
+
+=item Arguments
+
+  The genome featureID, boolean indicating if genome is in public or private
+  feature table, the alignment column number
+
+=back
+
+=cut
+
+sub has_acc_region {
+	my $self = shift;
+	my $genome_id = shift;
+	my $is_public = shift;
+	my $col = shift;
+	
+	# Validate alignment positions
+	my $maxc = $self->{acc_alignment}->{core_position};
+	croak "Invalid core alignment position $col (max: $maxc)." unless $col <= $maxc;
+	
+	my $pre = $is_public ? 'public_' : 'private_';
+	my $genome = $pre . $genome_id;
+	
+	push @{$self->{acc_alignment}{buffer_stack}}, $genome, $col;
+	$self->{acc_alignment}{buffer_num}++;
+
+	if($self->{acc_alignment}{buffer_num} == $self->{acc_alignment}{bulk_set_size}) {
+		
+		$self->{acc_alignment}{insert_tmp_presence}->execute(@{$self->{acc_alignment}{buffer_stack}});
+		$self->dbh->commit || croak "Insertion of accessory presence/absence values into tmp_accessory_cache table failed: ".$self->dbh->errstr();
+		$self->{acc_alignment}{buffer_num} = 0;
+		$self->{acc_alignment}{buffer_stack} = [];
+	}
+}
+
 =head2 print_snp_data
 
 =over
@@ -4894,13 +5219,11 @@ sub print_snp_data {
 	while( my ($snp_name, $snp_data) = each %{$self->cache('core_snp')} ) {
 		my $new_snp_data = $self->cache('new_core_snp', $snp_name);
 
-		print "PRINTING: $snp_name\t";
-
 		if($new_snp_data) {
 			# Print data for new core snp entry
 			push @new_snps, [@$new_snp_data,$snp_data->{col},$snp_data->{freq}];
 			my $c = $snp_data->{col} || '\N';
-			print "NEW: ".join(',',@$new_snp_data, $c,@{$snp_data->{freq}});
+			#print "NEW: ".join(',',@$new_snp_data, $c, @{$snp_data->{freq}});
 			
 		} else {
 			# Print data for updated core snp
@@ -4908,12 +5231,11 @@ sub print_snp_data {
 			# Note: this value is not used to join or update values in target table.
 			$self->print_usc2($snp_data->{snp_id},$filler_pg,$snp_data->{col},$snp_data->{freq});
 			my $c = $snp_data->{col} || '\N';
-			print "UPDATEDOLD: $snp_data->{snp_id}\t$c,".join(',',@{$snp_data->{freq}});
+			#print "UPDATEDOLD: $snp_data->{snp_id}\t$c,".join(',',@{$snp_data->{freq}});
 		}
-		print "\n";
+		#print "\n";
 	}
 	
-
 	foreach my $snp_row (sort {$a->[0] <=> $b->[0]} @new_snps) {
 		$self->print_sc(@$snp_row);
 	}
@@ -5018,8 +5340,6 @@ sub push_snp_alignment {
 		my $missing_regions = &_absentCoreRegions($g, $pgregions, $pgmap->{$g});
 		$genome_string = $self->mask_missing_in_new($genome_string, $missing_regions, $db_snps, $new_snps);
 
-
-		
 		# Print to DB file
 		print $tmpfh join("\t", ($g,$curr_column,$genome_string)),"\n";
 	}
@@ -5067,7 +5387,6 @@ sub push_snp_alignment {
 	$dbh->do($query1) or croak("Error when executing: $query1 ($!).\n");
 	
 	my $query2 = "COPY $stable (name,aln_column,alignment) FROM STDIN;";
-	print STDERR $query2,"\n";
 	$dbh->do($query2) or croak("Error when executing: $query2 ($!).\n");
 
 	while (<$tmpfh>) {
@@ -5118,17 +5437,18 @@ dups.Row > 1";
 	$dbh->commit || croak "Insertion of snp alignment failed: ".$self->dbh->errstr();
 }
 
-=head2 push_core_alignment
+=head2 push_pg_alignment
 
 =over
 
 =item Usage
 
-  $obj->push_core_alignment($new_genomes); 
+  $obj->push_pg_alignment($new_genomes); 
 
 =item Function
 
   Add the current tmp_core_cache to the core_alignment table
+  Ditto accessory
 
 =item Returns
 
@@ -5142,38 +5462,56 @@ dups.Row > 1";
 
 =cut
 
-sub push_core_alignment {
+sub push_pg_alignment {
 	my $self = shift;
 	my $new_genomes = shift;
 	
 	my $dbh = $self->dbh;
 	
 	# Insert the remaining rows in the buffer
-	my $num_rows = scalar(@{$self->{core_alignment}{buffer_stack}});
-	if($num_rows) {
-		$num_rows = $num_rows/2;
-		my $insert_query = 'INSERT INTO tmp_core_pangenome_cache (genome,aln_column) VALUES (?,?)';
-	    $insert_query .= ', (?,?)' x ($num_rows-1);
-	    my $insert_sth = $dbh->prepare($insert_query);
-	    $insert_sth->execute(@{$self->{core_alignment}{buffer_stack}});
+	foreach my $cache_tables (['core_alignment', 'tmp_core_pangenome_cache'], ['acc_alignment', 'tmp_acc_pangenome_cache']) {
+		my $cache = $cache_tables->[0];
+		my $table = $cache_tables->[1];
+
+		my $num_rows = scalar(@{$self->{$cache}{buffer_stack}});
+		if($num_rows) {
+			$num_rows = $num_rows/2;
+			my $insert_query = "INSERT INTO $table (genome,aln_column) VALUES (?,?)";
+		    $insert_query .= ', (?,?)' x ($num_rows-1);
+		    my $insert_sth = $dbh->prepare($insert_query);
+		    $insert_sth->execute(@{$self->{$cache}{buffer_stack}});
+		}
+		my $sql = "CREATE INDEX $table\_idx1 ON public.$table (genome)";
+	    $dbh->do($sql);
+	    $dbh->commit || croak "Insertion of core prensence/absence values into tmp_core_cache table failed: ".$self->dbh->errstr();
 	}
-	my $sql = "CREATE INDEX tmp_core_pangenome_cache_idx1 ON public.tmp_core_pangenome_cache (genome)";
-    $dbh->do($sql);
-    $dbh->commit || croak "Insertion of core prensence/absence values into tmp_core_cache table failed: ".$self->dbh->errstr();
 	
 	# New additions to core string
-	my $new_cols = $self->{core_alignment}->{added_columns};
-	my $new_core_aln = '0' x $new_cols;
-	my $curr_column = $self->{core_alignment}->{core_position};
+	my $new_core_cols = $self->{core_alignment}->{added_columns};
+	my $new_core_aln = '0' x $new_core_cols;
+	my $curr_core_column = $self->{core_alignment}->{core_position};
+
+	# New additions to acc string
+	my $new_acc_cols = $self->{acc_alignment}->{added_columns};
+	my $new_acc_aln = '0' x $new_acc_cols;
+	my $curr_acc_column = $self->{acc_alignment}->{core_position};
 
 	# Retrieve the full core alignment string (not just the new columns appended in this run)
-	$sql = "SELECT alignment FROM core_alignment WHERE name = 'core'";
+	my $sql = "SELECT core_alignment FROM pangenome_alignment WHERE name = 'core'";
 	my $sth = $dbh->prepare($sql);
 	$sth->execute;
 	my ($old_core_aln) = $sth->fetchrow_array();
 	$old_core_aln = '' unless defined $old_core_aln;
 	my $full_core_aln = $old_core_aln . $new_core_aln;
-	croak "Alignment length does not match position counter $curr_column (length:".length($full_core_aln).")" unless length($full_core_aln) == $curr_column;
+	croak "Core alignment length does not match position counter $curr_core_column (length:".length($full_core_aln).")" unless length($full_core_aln) == $curr_core_column;
+
+	$sql = "SELECT acc_alignment FROM pangenome_alignment WHERE name = 'core'";
+	$sth = $dbh->prepare($sql);
+	$sth->execute;
+	my ($old_acc_aln) = $sth->fetchrow_array();
+	$old_acc_aln = '' unless defined $old_acc_aln;
+	my $full_acc_aln = $old_acc_aln . $new_acc_aln;
+	croak "Accessory alignment length does not match position counter $curr_acc_column (length:".length($full_acc_aln).")" unless length($full_acc_aln) == $curr_acc_column;
 	
 	# Genomes
 	my $genomes = $self->_genomeList;
@@ -5181,7 +5519,7 @@ sub push_core_alignment {
 	# Prepare loading file for COPY FROM operation
 	my $file_path = $self->{tmp_dir};
 	my ($tmpfh,$tmpfile) = new File::Temp(
-		TEMPLATE => "chado-core-alignment-XXXX",
+		TEMPLATE => "chado-pg-alignment-XXXX",
 		SUFFIX   => '.dat',
 		UNLINK   => $self->save_tmpfiles() ? 0 : 1, 
 		DIR      => $file_path,
@@ -5189,25 +5527,32 @@ sub push_core_alignment {
 	chmod 0644, $tmpfh;
 	
 	# Print core alignment additions to loading file
-	print $tmpfh join("\t", ('core',$curr_column,$new_core_aln)),"\n";
+	print $tmpfh join("\t", ('core',$curr_core_column,$new_core_aln,$curr_acc_column,$new_acc_aln)),"\n";
 	
 	# Iterate through new genomes
-	my $retrieve_sth = $dbh->prepare("SELECT aln_column, '1' FROM tmp_core_pangenome_cache WHERE genome = ?");
-	print 'NG:'.join(',',@$new_genomes),"\n";
+	my $retrieve_core_sth = $dbh->prepare("SELECT aln_column, '1' FROM tmp_core_pangenome_cache WHERE genome = ?");
+	my $retrieve_acc_sth = $dbh->prepare("SELECT aln_column, '1' FROM tmp_acc_pangenome_cache WHERE genome = ?");
+	
 	foreach my $g (@$new_genomes) {
 		
 		$genomes->{$g} = 0;
 		
-		# Insert presence indicators into core string for genome
-		$retrieve_sth->execute($g);
-		my $genome_string = $full_core_aln;
+		# Insert presence indicators into core/acc strings for genome
+		$retrieve_core_sth->execute($g);
+		$retrieve_acc_sth->execute($g);
+		my $genome_core_string = $full_core_aln;
+		my $genome_acc_string = $full_acc_aln;
 		
-		while (my $bunch_of_rows = $retrieve_sth->fetchall_arrayref(undef, 5000)) {
-			snp_edits($genome_string, $bunch_of_rows);
+		while (my $bunch_of_rows = $retrieve_core_sth->fetchall_arrayref(undef, 5000)) {
+			snp_edits($genome_core_string, $bunch_of_rows);
+		}
+
+		while (my $bunch_of_rows = $retrieve_acc_sth->fetchall_arrayref(undef, 5000)) {
+			snp_edits($genome_acc_string, $bunch_of_rows);
 		}
 		
 		# Print to DB file
-		print $tmpfh join("\t", ($g,$curr_column,$genome_string)),"\n";
+		print $tmpfh join("\t", ($g,$curr_core_column,$genome_core_string,$curr_acc_column,$genome_acc_string)),"\n";
 	}
 	
 	# Iterate through old genomes
@@ -5216,22 +5561,21 @@ sub push_core_alignment {
 		
 		next unless $genomes->{$g};
 		
-		print $tmpfh join("\t", ($g,$curr_column,$new_core_aln)),"\n";
+		print $tmpfh join("\t", ($g,$curr_core_column,$new_core_aln,$curr_acc_column,$new_acc_aln)),"\n";
 	}
 	
 	# Run upsert operation
-	warn "Upserting data in pipeline_core_alignment table ...\n";
+	warn "Upserting data in pipeline_pangenome_alignment table ...\n";
 	seek($tmpfh,0,0);
 	
-	my $ttable = 'pipeline_core_alignment';
-	my $stable = 'tmp_core_alignment';
+	my $ttable = 'pipeline_pangenome_alignment';
+	my $stable = 'tmp_pangenome_alignment';
 	my $query0 = "DROP TABLE IF EXISTS $stable";
 	my $query1 = "CREATE TABLE $stable (LIKE $ttable INCLUDING ALL)";
 	$dbh->do($query0) or croak("Error when executing: $query0 ($!).\n");
 	$dbh->do($query1) or croak("Error when executing: $query1 ($!).\n");
 	
-	my $query2 = "COPY $stable (name,aln_column,alignment) FROM STDIN;";
-	print STDERR $query2,"\n";
+	my $query2 = "COPY $stable (name,core_column,core_alignment,acc_column,acc_alignment) FROM STDIN;";
 	$dbh->do($query2) or croak("Error when executing: $query2 ($!).\n");
 
 	while (<$tmpfh>) {
@@ -5249,19 +5593,21 @@ sub push_core_alignment {
 	# update the target table
 	my $query3 = 
 "WITH upsert AS
-(UPDATE $ttable t SET alignment = overlay(t.alignment placing s.alignment from t.aln_column+1), 
- aln_column = s.aln_column 
+(UPDATE $ttable t SET core_alignment = overlay(t.core_alignment placing s.core_alignment from t.core_column+1), 
+ core_column = s.core_column,
+ acc_alignment = overlay(t.acc_alignment placing s.acc_alignment from t.acc_column+1), 
+ acc_column = s.acc_column
  FROM $stable s WHERE t.name = s.name
  RETURNING t.name
 )
-INSERT INTO $ttable (name,aln_column,alignment)
-SELECT name,aln_column,alignment
+INSERT INTO $ttable (name,core_column,core_alignment,acc_column,acc_alignment)
+SELECT name,core_column,core_alignment,acc_column,acc_alignment
 FROM $stable tmp
 WHERE NOT EXISTS (SELECT 1 FROM upsert up WHERE up.name = tmp.name);";
 
 	$dbh->do("$query3") or croak("Error when executing: $query3 ($!).\n");
 
-	$dbh->commit || croak "Insertion of core alignment failed: ".$self->dbh->errstr();
+	$dbh->commit || croak "Insertion of pangenome alignment failed: ".$self->dbh->errstr();
 }
 
 
@@ -5301,7 +5647,7 @@ sub binary_state_snp_matrix {
 
 	my $sql = "SELECT name, aln_column, alignment FROM $snp_table";
 	my $sth = $self->dbh->prepare($sql) or croak("Error when preparing: $sql ($!).\n");
-	$sql->execute() or croak("Error when executing: $sql ($!).\n");
+	$sth->execute() or croak("Error when executing: $sql ($!).\n");
 
 
 	my $aln_len;
@@ -5313,14 +5659,18 @@ sub binary_state_snp_matrix {
 		if($first) {
 			$aln_len = $len;
 			$first = 0;
+			print $out "Genomes";
 			foreach my $i (0..$len-1) {
 				my $snp_hash = $snp_columns->{$i};
 				croak "Error: unexpected column $i. No snp states defined for $i.\n" unless defined $snp_hash;
-				print $out "Genomes$jchar",join($jchar, $snp_hash->{names}),"\n";
+				print $out "$jchar",join($jchar, @{$snp_hash->{names}});
 			}
+			print $out "\n";
 		} elsif($len != $aln_len) {
 			croak "Error: The length of snp alignment string for genome $genome does not match other strings.\n";
 		}
+
+		next if $genome eq 'core';
 
 		print $out "$genome$jchar";
 
@@ -5328,22 +5678,130 @@ sub binary_state_snp_matrix {
 		foreach my $i (0..$len-1) {
 			my $n = substr($aln, $i, 1);
 			
-			my $snp_hash = $snp_columns->{$i};
-			if($n =~ m/ATGC/i) {
+			my $snp_hash = $snp_columns->{"$i"};
+			if($n =~ m/[ATGC]/i) {
 				# Nucleotide at this position, fill in binary values
 
 				croak "Error: unexpected nucleotide state for snp in column $i. Nucleotide frequency value is not correct for this snp.\n" 
 					unless defined $snp_hash->{$n};
-				my @binary_array = $snp_hash->{starting_array};
+				my @binary_array = @{$snp_hash->{starting_array}};
 				@binary_array[$snp_hash->{$n}] = 1;
-				print $out join($jchar, @binary_array),"\n";
+				print $out "$jchar".join($jchar, @binary_array);
 
 			} else {
 				# Missing / gap / invalid nt at this position, fill in NA
-				print $out join($jchar, @{$snp_hash->{missing_array}}),"\n";
+				print $out "$jchar".join($jchar, @{$snp_hash->{missing_array}});
 			}
 			
 		}
+
+		print $out "\n";
+
+	}
+
+	return $bfile;
+}
+
+=head2 binary_state_pg_matrix
+
+=over
+
+=item Usage
+
+  $obj->binary_state_pg_matrix($curr_pg_alignment_table); 
+
+=item Function
+
+  Convert pg_alignment into a binary matrix 1/0 indicating presence/absence of pangenome region.
+  This file is loaded into R/Shiny module for group comparisons.
+
+=item Returns
+
+  filename containing new binary matrix
+
+=item Arguments
+
+  Name of DB cache table containing up-to-date pg alignment for all genomes
+
+=back
+
+=cut
+
+sub binary_state_pg_matrix {
+	my $self = shift;
+	my $pg_table = shift;
+
+	my $bfile = $self->tmp_dir . "pipeline_binary_pangenome_matrix.txt";
+	open(my $out, ">$bfile") or croak "Error: unable to write to file $bfile ($!).\n";
+
+	my $pg_columns = $self->_pgColumns();
+
+	my $sql = "SELECT name, core_column, core_alignment, acc_column, acc_alignment FROM $pg_table";
+	my $sth = $self->dbh->prepare($sql) or croak("Error when preparing: $sql ($!).\n");
+	$sth->execute() or croak("Error when executing: $sql ($!).\n");
+
+	my $core_aln_len;
+	my $acc_aln_len;
+	my $first = 1;
+	my $jchar = "\t";
+	while(my ($genome, $core_len, $core_aln, $acc_len, $acc_aln) = $sth->fetchrow_array) {
+
+		# Header
+		if($first) {
+			$core_aln_len = $core_len;
+			$acc_aln_len = $acc_len;
+			$first = 0;
+			print $out "PangenomeID";
+			foreach my $i (0..$core_len-1) {
+				my $core_id = $pg_columns->{core}->{"$i"};
+				croak "Error: unexpected column $i. No core pangenome region assigned to column $i.\n" unless defined $core_id;
+				print $out "$jchar$core_id";
+			}
+			foreach my $i (0..$acc_len-1) {
+				my $acc_id = $pg_columns->{acc}->{"$i"};
+				croak "Error: unexpected column $i. No accessory pangenome region assigned to column $i.\n" unless defined $acc_id;
+				print $out "$jchar$acc_id";
+			}
+			print $out "\n";
+
+			print $out "FunctionDesc";
+			foreach my $i (0..$core_len-1) {
+				my $f = $pg_columns->{core_function}->{"$i"};
+				if($f) {
+					print $out "$jchar$f";
+				} else {
+					print $out "$jchar".'NA';
+				}
+				
+			}
+			foreach my $i (0..$acc_len-1) {
+				my $f = $pg_columns->{acc_function}->{"$i"};
+				if($f) {
+					print $out "$jchar$f";
+				} else {
+					print $out "$jchar".'NA';
+				}
+			}
+			print $out "\n";
+
+		} elsif($core_len != $core_aln_len) {
+			croak "Error: The length of core alignment string for genome $genome does not match other strings.\n";
+		} elsif($acc_len != $acc_aln_len) {
+			croak "Error: The length of accesory alignment string for genome $genome does not match other strings.\n";
+		}
+
+		next if $genome eq 'core';
+
+		# Print genome
+		print $out "$genome$jchar";
+
+		# Print core alignment
+		print $out join($jchar, split(//, $core_aln));
+
+		# Print acc alignment
+		print $out join($jchar, split(//, $acc_aln));
+
+		print $out "\n";
 
 	}
 
@@ -5447,13 +5905,13 @@ sub _snpsColumns {
 	my @states = qw/A T G C/;
 
 	# Get list of snp alignment columns already in DB
-	my $sql = "SELECT snp_core_id, aln_column, frequency_a, frequency_t, frequency_g, frequency_c ".
+	my $sql = "SELECT snp_core_id, aln_column, allele, frequency_a, frequency_t, frequency_g, frequency_c ".
 		   "FROM snp_core WHERE aln_column is NOT NULL and snp_core.is_polymorphism = TRUE ORDER BY aln_column";
 	my $sth = $self->dbh->prepare($sql);
 	$sth->execute();
 
 	while(my $snp_row = $sth->fetchrow_arrayref) {
-		my ($snp_id, $col, @freqs) = @$snp_row;
+		my ($snp_id, $col, $allele, @freqs) = @$snp_row;
 		
 		my %snp_states = (
 			starting_array => [],
@@ -5461,11 +5919,11 @@ sub _snpsColumns {
 			names => []
 		);
 		my $j = 0;
-		for my $i (0..@states) {
+		for my $i (0 .. $#states) {
 			my $s = $states[$i];
 			my $f = $freqs[$i];
 
-			if($f) {
+			if($f > 0 || $s eq $allele) {
 				# At least one genome with state
 				$snp_states{$s} = $j;
 				push @{$snp_states{starting_array}}, 0;
@@ -5477,8 +5935,13 @@ sub _snpsColumns {
 
 		if(defined $snp_columns{$col}) {
 			croak "Error: snp assigned to the same alignment column $col";
+
+		} elsif(scalar(@{$snp_states{starting_array}}) <= 1) {
+			croak "Error: a snp polymorphism must have at least two states. Only 1 recorded for SNP $snp_id.\n";
+			
 		} else {
-			$snp_columns{$col} = \%snp_states;
+
+			$snp_columns{"$col"} = \%snp_states;
 		}
 		
 	}
@@ -5489,20 +5952,28 @@ sub _snpsColumns {
 		my $uniquename = $snp_row->[2];
 		my $col = $snp_row->[0];
 		my $snp_hash = $self->cache('core_snp', $uniquename);
+		my $new_hash = $self->cache('new_core_snp', $uniquename);
+
+		croak "Error: no core snp in cache matching uniquename $uniquename" unless $snp_hash;
+		croak "Error: no new core snp in cache matching uniquename $uniquename" unless $new_hash;
+
+		my $allele = $new_hash->[2];
 
 		my %snp_states = (
 			starting_array => [],
+			missing_array => [],
 			names => []
 		);
 		my $j = 0;
-		for my $i (0..@states) {
+		for my $i (0..$#states) {
 			my $s = $states[$i];
 			my $f = @{$snp_hash->{freq}}[$i];
 
-			if($f) {
+			if($f > 0 || $s eq $allele) {
 				# At least one genome with state
 				$snp_states{$s} = $j;
 				push @{$snp_states{starting_array}}, 0;
+				push @{$snp_states{missing_array}}, 'NA';
 				push @{$snp_states{names}}, "$snp_id\_$s";
 				$j++;
 			}
@@ -5510,14 +5981,82 @@ sub _snpsColumns {
 
 		if(defined $snp_columns{$col}) {
 			croak "Error: snp assigned to the same alignment column $col";
+
+		} elsif(scalar(@{$snp_states{starting_array}}) <= 1) {
+			croak "Error: a snp polymorphism must have at least two states. Only 1 recorded for SNP $snp_id, (bkg: $allele. A/T/G/C freq:".
+				join(',',@{$snp_hash->{freq}})."),(".
+				join(',',@{$snp_states{starting_array}}).")";
+	
 		} else {
-			$snp_columns{$col} = \%snp_states;
+			$snp_columns{"$col"} = \%snp_states;
 		}
 
 	}
 	
 	return (\%snp_columns);
 }
+
+# Map pg alignment columns -> pangenome region feature_id mapping
+sub _pgColumns {
+	my $self = shift;
+	
+	my %pg_columns;
+	
+	# Get list of pg core alignment columns already in DB
+	my $sql = "SELECT c.pangenome_region_id, c.aln_column, p.value FROM core_region c, feature f ".
+		"LEFT JOIN featureprop p ON f.feature_id = p.feature_id ".
+		"WHERE c.pangenome_region_id = f.feature_id AND ".
+		"p.type_id = ".$self->featureprop_types('panseq_function')." ".
+		"ORDER BY c.aln_column";
+	my $sth = $self->dbh->prepare($sql);
+	$sth->execute();
+
+	while(my $core_row = $sth->fetchrow_arrayref) {
+		my ($pg_id, $col, $func) = @$core_row;
+
+		if(defined $pg_columns{core}{"$col"}) {
+			croak "Error: core pangenome region assigned to the same alignment column $col";
+		} else {
+			$pg_columns{core}{"$col"} = $pg_id;
+			$pg_columns{core_function}{"$col"} = $func if $func;
+		}
+	}
+
+	# Get list of pg accessory alignment columns already in DB
+	$sql = "SELECT c.pangenome_region_id, c.aln_column, p.value FROM accessory_region c, feature f ".
+		"LEFT JOIN featureprop p ON f.feature_id = p.feature_id ".
+		"WHERE c.pangenome_region_id = f.feature_id AND ".
+		"p.type_id = ".$self->featureprop_types('panseq_function')." ".
+		"ORDER BY c.aln_column";
+	$sth = $self->dbh->prepare($sql);
+	$sth->execute();
+
+	while(my $acc_row = $sth->fetchrow_arrayref) {
+		my ($pg_id, $col, $func) = @$acc_row;
+
+		if(defined $pg_columns{acc}{$col}) {
+			croak "Error: accessory pangenome region assigned to the same alignment column $col";
+		} else {
+			$pg_columns{acc}{"$col"} = $pg_id;
+			$pg_columns{acc_function}{"$col"} = $func if $func;
+		}
+	}
+	
+	# Get list of core pangenome region alignment columns being added to DB
+	while(my ($pg_id, $col) = each %{$self->cache('core_region')}) {
+		$pg_columns{core}{"$col"} = $pg_id;
+		$pg_columns{core_function}{"$col"} = $self->cache('function',$pg_id) if $self->cache('function',$pg_id);
+	}
+
+	# Get list of accessory pangenome region alignment columns being added to DB
+	while(my ($pg_id, $col) = each %{$self->cache('acc_region')}) {
+		$pg_columns{acc}{"$col"} = $pg_id;
+		$pg_columns{acc_function}{"$col"} = $self->cache('function',$pg_id) if $self->cache('function',$pg_id);
+	}
+	
+	return (\%pg_columns);
+}
+
 
 # Map genomes to array of core regions
 sub _coreRegionMap {
@@ -5994,7 +6533,7 @@ sub record_typing_sequences {
 	
 	push @{$self->{feature_cache}{vfamr}{typing_watchlist}{$query_id}{$genome}}, $sequence_group;
 	
-	print "Recording $genome set for $query_id\n";
+	print "Recording $genome set for $query_id\n" if $DEBUG;
 }
 
 =head2 is_typing_sequence
@@ -6319,7 +6858,7 @@ sub handle_typing_sequence {
 	my $seq = $typing_dataset->{seq};
 	my $seqlen = length($seq);
 	my $type = $self->feature_types('allele_fusion');
-	$self->print_f($curr_feature_id,$organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
+	$self->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $seq, $is_public, $upload_id);  
 	$self->nextfeature($is_public, '++');
 		
 }

@@ -80,7 +80,7 @@ sub new {
 		
 	} elsif($dbname) {
 		# Use command-line args to defined connection parameters
-		my $dbport = $params{dport};
+		my $dbport = $params{dbport};
 		my $dbhost = $params{dbhost};
 		my $dbuser = $params{dbuser};
 		my $dbpass = $params{dbpass};
@@ -88,7 +88,7 @@ sub new {
 		croak "Error: missing db connection parameter." unless $dbport && $dbhost && $dbuser && $dbpass;
 
 
-		$self->connectDatabase( dbi     => "dbi:Pg",
+		$self->connectDatabase( dbi     => "Pg",
 						        dbName  => $dbname,
 						        dbHost  => $dbhost,
 						        dbPort  => $dbport,
@@ -925,6 +925,8 @@ Args:
 A hash with the following optional keys:
 1. file => output file name. If not provided a hash-ref is returned with alignment strings
 2. genomes => the subset of genomes to retrieve snp alignments for. If not provided, all genomes used.
+3. core => 1, uses only core region string, otherwise entire pangenome is used
+4. accessory => 1, uses only accessory region string, otherwise entire pangenome is used
 
 Returns:
 hashref of genome_name => alignment (provided, file argument is not used)
@@ -948,15 +950,24 @@ sub pgAlignment {
 		$conds->{name} = {'-in' => $args{genomes}};
 	}
 
-	my $table = "CoreAlignment";
+	my $table = "PangenomeAlignment";
 	if($args{temp_table}) {
 		$table = $args{temp_table}
+	}
+
+	my @columns = qw/genome/;
+	if($args{core}) {
+		push @columns, { alignment => 'core_alignment' };
+	} elsif($args{accessory}) {
+		push @columns, { alignment => 'acc_alignment' };
+	} else {
+		push @columns, { alignment => \'concat(core_alignment, acc_alignment)'};
 	}
 
 	my $aln_rs = $self->dbixSchema->resultset($table)->search(
 		$conds,
 		{
-			columns => [qw/name alignment/]
+			columns => \@columns
 		}
 	);
 
@@ -972,9 +983,9 @@ sub pgAlignment {
 	}
 
 	while(my $aln_row = $aln_rs->next) {
-		my $nm = $aln_row->name;
+		my $nm = $aln_row->genome;
 		next if $nm eq 'core';
-		my $aln = $aln_row->alignment;
+		my $aln = $aln_row->get_column('alignment');
 		$aln =~ tr/01/AT/;
 		if($print) {
 			print $out ">$nm\n$aln\n";

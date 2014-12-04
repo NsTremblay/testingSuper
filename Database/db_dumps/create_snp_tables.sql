@@ -75,15 +75,40 @@ ALTER TABLE ONLY snp_core
 
 CREATE OR REPLACE FUNCTION is_polymorphism(rec snp_core)
   RETURNS boolean
-  IMMUTABLE
-  LANGUAGE SQL
 AS $$
-SELECT 
-  CASE WHEN $1.frequency_a > 1 OR $1.frequency_t > 1 OR $1.frequency_c > 1 OR $1.frequency_g > 1 THEN TRUE
-       ELSE FALSE 
-  END
-  AS is_polymorphism;
-$$;
+DECLARE
+    states integer := 0;
+BEGIN
+	IF $1.allele = 'A' OR $1.allele = 'T' OR $1.allele = 'G' OR $1.allele = 'C' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_a >= 1 AND $1.allele != 'A' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_t >= 1 AND $1.allele != 'T' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_g >= 1 AND $1.allele != 'G' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_c >= 1 AND $1.allele != 'C' THEN
+		states = states + 1;
+	END IF;
+	
+	IF states > 1 THEN 
+		RETURN TRUE;
+    ELSE
+    	RETURN FALSE;
+ 	END IF;
+    
+END
+$$
+IMMUTABLE
+LANGUAGE 'plpgsql';
 
 
 -----------------------------------------------------------------------------

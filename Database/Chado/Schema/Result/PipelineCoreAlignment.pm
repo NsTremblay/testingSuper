@@ -1,12 +1,12 @@
 use utf8;
-package Database::Chado::Schema::Result::TmpSnpAlignment;
+package Database::Chado::Schema::Result::PipelineCoreAlignment;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-Database::Chado::Schema::Result::TmpSnpAlignment
+Database::Chado::Schema::Result::PipelineCoreAlignment
 
 =cut
 
@@ -15,20 +15,20 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-=head1 TABLE: C<tmp_snp_alignment>
+=head1 TABLE: C<pipeline_core_alignment>
 
 =cut
 
-__PACKAGE__->table("tmp_snp_alignment");
+__PACKAGE__->table("pipeline_core_alignment");
 
 =head1 ACCESSORS
 
-=head2 snp_alignment_id
+=head2 core_alignment_id
 
   data_type: 'integer'
   is_auto_increment: 1
   is_nullable: 0
-  sequence: 'snp_alignment_snp_alignment_id_seq'
+  sequence: 'core_alignment_core_alignment_id_seq'
 
 =head2 name
 
@@ -49,12 +49,12 @@ __PACKAGE__->table("tmp_snp_alignment");
 =cut
 
 __PACKAGE__->add_columns(
-  "snp_alignment_id",
+  "core_alignment_id",
   {
     data_type         => "integer",
     is_auto_increment => 1,
     is_nullable       => 0,
-    sequence          => "snp_alignment_snp_alignment_id_seq",
+    sequence          => "core_alignment_core_alignment_id_seq",
   },
   "name",
   { data_type => "varchar", is_nullable => 1, size => 100 },
@@ -68,17 +68,17 @@ __PACKAGE__->add_columns(
 
 =over 4
 
-=item * L</snp_alignment_id>
+=item * L</core_alignment_id>
 
 =back
 
 =cut
 
-__PACKAGE__->set_primary_key("snp_alignment_id");
+__PACKAGE__->set_primary_key("core_alignment_id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<tmp_snp_alignment_name_key>
+=head2 C<pipeline_core_alignment_c1>
 
 =over 4
 
@@ -88,11 +88,11 @@ __PACKAGE__->set_primary_key("snp_alignment_id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("tmp_snp_alignment_name_key", ["name"]);
+__PACKAGE__->add_unique_constraint("pipeline_core_alignment_c1", ["name"]);
 
 
 # Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rXWSaZXZjeyGVJLPi5KTdw
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ASLrsxMPyuDIs+6xZsYq5Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

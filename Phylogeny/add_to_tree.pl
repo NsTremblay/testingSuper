@@ -71,7 +71,7 @@ croak "Missing argument(s). You must supply output filenames --globalf & --publi
 my $v = 1;
 
 my $t = Phylogeny::Tree->new(
-	dbname  => $dbname,
+    dbname  => $dbname,
     dbhost  => $dbhost,
     dbport  => $dbport,
     dbuser  => $dbuser,
@@ -203,14 +203,14 @@ if($supertree) {
 		my $public_root = finalize_tree($root);
 
 		# Print global tree
-		open(my $out, "<$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
+		open(my $out, ">$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
 		$Data::Dumper::Indent = 0;
 		my $tree_string = Data::Dumper->Dump([$root], ['tree']);
 		print $out $tree_string;
 		close $out;
 
 		# Print public tree
-		open($out, "<$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
+		open($out, ">$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
 		$Data::Dumper::Indent = 0;
 		$tree_string = Data::Dumper->Dump([$public_root], ['tree']);
 		print $out $tree_string;
@@ -226,14 +226,14 @@ if($supertree) {
 	my $public_tree = $t->prepTree($root, \%target_info, 0);
 
 	# Print global tree
-	open(my $out, "<$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
+	open(my $out, ">$global_output_file") or croak "Error: Unable to write to file $global_output_file ($!).\n";
 	$Data::Dumper::Indent = 0;
 	my $tree_string = Data::Dumper->Dump([$root], ['tree']);
 	print $out $tree_string;
 	close $out;
 
 	# Print public tree
-	open($out, "<$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
+	open($out, ">$public_output_file") or croak "Error: Unable to write to file $public_output_file ($!).\n";
 	$Data::Dumper::Indent = 0;
 	$tree_string = Data::Dumper->Dump([$public_tree], ['tree']);
 	print $out $tree_string;
@@ -248,7 +248,7 @@ if($supertree) {
 sub buildNJtree {
 
 	# Build quick NJ tree to identify closely related genomes
-	my $pg_file = $tmp_dir . "superphy_core_aligment.txt";
+	my $pg_file = $tmp_dir . "superphy_pg_aligment.txt";
 
 	if(-e $pg_file) {
 		 unlink $pg_file or carp "Warning: could not delete temp file $pg_file ($!).\n";
@@ -258,7 +258,7 @@ sub buildNJtree {
 		$t->pgAlignment(omit => \@target_set, file => $pg_file);
 	} else {
 		if($pipeline_mode) {
-			$t->pgAlignment(file => $pg_file, temp_table => 'PipelineCoreAlignment');
+			$t->pgAlignment(file => $pg_file, temp_table => 'PipelinePangenomeAlignment');
 		} else {
 			$t->pgAlignment(file => $pg_file)
 		}

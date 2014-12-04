@@ -1,14 +1,4 @@
 #!/usr/bin/env perl 
-use strict;
-use warnings;
-
-use Getopt::Long;
-use FindBin;
-use lib "$FindBin::Bin/../";
-use DBI;
-use Carp qw/croak carp/;
-use Config::Simple;
-use Time::HiRes qw( time );
 
 =head1 NAME
 
@@ -47,6 +37,17 @@ This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
+
+use strict;
+use warnings;
+
+use Getopt::Long;
+use FindBin;
+use lib "$FindBin::Bin/../";
+use DBI;
+use Carp qw/croak carp/;
+use Config::Simple;
+use Time::HiRes qw( time );
 
 
 # Get cmd-line options
@@ -215,7 +216,7 @@ while($pg_sth->fetch) {
 		$pangenome_row[$row] = 1;
 	}
 
-	# Retrieve list of public genomes with segment
+	# Retrieve list of private genomes with segment
 	$priloci_sth->execute($pg_id);
 	while(my ($genome_id) = $priloci_sth->fetchrow_array()) {
 		my $genome = 'private_'. $genome_id;

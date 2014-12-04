@@ -116,10 +116,6 @@ sub digest {
  	return $digest;
 }
 
-sub _contigSorter {
-
-}
-
 =head2 digestFile
 
 Convert fasta file of contig sequences to checksum

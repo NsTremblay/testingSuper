@@ -39,7 +39,7 @@ __PACKAGE__->table("tmp_core_alignment");
 =head2 aln_column
 
   data_type: 'integer'
-  is_nullable: 0
+  is_nullable: 1
 
 =head2 alignment
 
@@ -59,7 +59,7 @@ __PACKAGE__->add_columns(
   "name",
   { data_type => "varchar", is_nullable => 1, size => 100 },
   "aln_column",
-  { data_type => "integer", is_nullable => 0 },
+  { data_type => "integer", is_nullable => 1 },
   "alignment",
   { data_type => "text", is_nullable => 1 },
 );
@@ -91,8 +91,8 @@ __PACKAGE__->set_primary_key("core_alignment_id");
 __PACKAGE__->add_unique_constraint("tmp_core_alignment_name_key", ["name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-09-17 13:50:53
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:+NNdfMndfA1I603pJcUQXQ
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:tIfybE8GYiATcvUugF9Z5A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

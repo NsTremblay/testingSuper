@@ -525,7 +525,7 @@ percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
 storeAlleles	1
-addMissingQuery	1
+allelesToKeep	5
 nameOrId	name
 |;
 	close $out;

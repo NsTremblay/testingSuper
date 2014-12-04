@@ -41,7 +41,7 @@ it under the same terms as Perl itself.
 
 $|=1;
 
-my ($CONFIG, $dbhost, $dbname, $dbport, $dbuser, $dbpass, $tmp_dir);
+my ($CONFIG, $dbhost, $dbname, $dbport, $dbuser, $dbpass);
 
 GetOptions(
     'config=s' => \$CONFIG,
@@ -50,11 +50,9 @@ GetOptions(
     'dbport=i' => \$dbport,
     'dbuser=s' => \$dbuser,
     'dbpass=s' => \$dbpass
-   # 'tmpdir=s' => \$tmp_dir
 );
 
 # Connect to DB
-croak "Missing parameter. You must supply a configuration filename.\n" unless $CONFIG;
 my $dbi = 'Pg';
 if($CONFIG) {
 
@@ -70,7 +68,7 @@ if($CONFIG) {
 	}
 
 } else {
-	croak "Missing DB connection paramters" unless $dbname && $dbhost && $dbpass && $dbuser;
+	croak "Missing DB connection paramters. Must provide config file or individual parameters." unless $dbname && $dbhost && $dbpass && $dbuser;
 }
 
 my $dbsource = 'dbi:' . $dbi . ':dbname=' . $dbname . ';host=' . $dbhost;

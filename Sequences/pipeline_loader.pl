@@ -202,7 +202,7 @@ sub cleanup_handler {
         
         if ($lock) {
             warn "Trying to remove the run lock (so that --remove_lock won't be needed)...\n";
-            $chado->remove_lock; #remove the lock only if we've set it
+            $chado->abort(); #remove any active locks, discard DB transaction
         }
         
         print STDERR "Exiting...\n";

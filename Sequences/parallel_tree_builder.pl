@@ -83,7 +83,6 @@ close $in;
 # Logger
 my $log_file = "$alndir/parallel_log.txt";
 open my $log, '>', $log_file or croak "Error: unable to create log file $log_file ($!).\n";
-my $now = time();
 my $start = time();
 print $log "parallel_tree_builder.pl - ".localtime()."\n";
 
@@ -100,7 +99,7 @@ foreach my $jarray (@jobs) {
 
 	my $st = time();
 	my ($pg_id,$do_tree,$do_snp,$add_seq) = @$jarray;
-	build_tree($pg_id,$do_tree,$do_snp,$add_seq,$st);
+	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
 	my $en = time();
 	my $time = $en - $st;
 	print $log "\t$pg_id success (elapsed time $time)\n";
@@ -119,10 +118,11 @@ exit(0);
 ########
 
 sub build_tree {
-	my ($pg_id, $do_tree, $do_snp, $add_seqs, $time) = @_;
+	my ($pg_id, $do_tree, $do_snp, $add_seqs) = @_;
 	
 	local *STDOUT = $log;
 	local *STDERR = $log;
+	my $time = time();
 	
 	my $fasta_file = "$fastadir/$pg_id.ffn";
 	
@@ -223,7 +223,7 @@ sub build_tree {
 		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
 		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
 	}
-	$time = elapsed_time("\tsnp ", $time);
+	elapsed_time("\tsnp ", $time);
 	
 }
 
@@ -275,7 +275,7 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			
 			if(seq[i] != '-') {
 				// Nt position in comp
-				// Trigger block transition
+				// Record block transition
 				if(i != 0) {
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 				}
@@ -289,11 +289,15 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 				p2++;
 				
 			} else {
-				// Gap col
-				// Block transition when at start of new block
-				// Trigger block transition
-				if(s == p) {
-	
+				// Gap column at start of new block
+				// Could be continuation of gap
+				// Record block transition
+				if(s == p && s2 == p) {
+					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
+					
+					// Reset block counters
+					s = p;
+					s2 = p2;
 				}
 				
 				// Advance counters
@@ -308,7 +312,7 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 			
 			if(seq[i] == '-') {
 				// Gap position in comp
-				// Trigger block transition
+				// Record block transition
 				if(i != 0) {
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 				}
@@ -327,7 +331,8 @@ void write_positions(char* refseq, char* seq, char* filename, char* filename2) {
 				if((g != 0 && g2 == 0) || (g == 0 && g2 != 0) || (g != 0 && g2 != 0 && s == p && s2 == p2)) {
 					// Termination of gap in one sequence
 					// Or gap column at start of block
-					// Trigger block transition
+					// Ignores embedded gap columns (these can be easily derived)
+					// Record block transition
 					fprintf(fh2, "%i\t%i\t%i\t%i\t%i\t%i\n", s, s2, p, p2, g, g2);
 					
 					// Reset block counters

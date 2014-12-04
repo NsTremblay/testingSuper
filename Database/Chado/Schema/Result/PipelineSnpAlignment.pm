@@ -1,12 +1,12 @@
 use utf8;
-package Database::Chado::Schema::Result::TmpSnpAlignment;
+package Database::Chado::Schema::Result::PipelineSnpAlignment;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-Database::Chado::Schema::Result::TmpSnpAlignment
+Database::Chado::Schema::Result::PipelineSnpAlignment
 
 =cut
 
@@ -15,11 +15,11 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-=head1 TABLE: C<tmp_snp_alignment>
+=head1 TABLE: C<pipeline_snp_alignment>
 
 =cut
 
-__PACKAGE__->table("tmp_snp_alignment");
+__PACKAGE__->table("pipeline_snp_alignment");
 
 =head1 ACCESSORS
 
@@ -78,7 +78,7 @@ __PACKAGE__->set_primary_key("snp_alignment_id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<tmp_snp_alignment_name_key>
+=head2 C<pipeline_snp_alignment_c1>
 
 =over 4
 
@@ -88,11 +88,11 @@ __PACKAGE__->set_primary_key("snp_alignment_id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("tmp_snp_alignment_name_key", ["name"]);
+__PACKAGE__->add_unique_constraint("pipeline_snp_alignment_c1", ["name"]);
 
 
 # Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rXWSaZXZjeyGVJLPi5KTdw
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ZECAfbVwaXiCxee400jEIA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
