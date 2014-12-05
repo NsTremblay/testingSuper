@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var mtypesDisplayed, visible_bars;
+    var mtypesDisplayed, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -2909,11 +2909,21 @@
       this.cluster = d3.layout.cluster().size([this.width, this.height]).sort(null).value(function(d) {
         return Number(d.length);
       }).separation(function(a, b) {
-        if (a.parent === b.parent) {
-          return 5;
+        var a_height, b_height;
+        a_height = 1;
+        b_height = 1;
+        if (a._children != null) {
+          a_height = visible_bars + 1;
+          console.log(total_height, visible_bars);
         } else {
-          return 3;
+          a_height = 2;
         }
+        if (b._children != null) {
+          b_height = visible_bars + 1;
+        } else {
+          b_height = 2;
+        }
+        return a_height + b_height;
       });
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
@@ -2982,6 +2992,8 @@
 
     visible_bars = 0;
 
+    total_height = 0;
+
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
@@ -2989,7 +3001,7 @@
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, mtype_rank, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3025,7 +3037,6 @@
         n.x = n.x * this.branch_scale_factor_x;
         n.arr = [];
         n.xpos = 0;
-        n.total_height = 0;
         n.metaOntology = {};
         for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
           t = mtypesDisplayed[_j];
@@ -3177,7 +3188,7 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -5).attr("x", 4);
+      }).attr("height", 7).attr("y", -2).attr("x", 4);
       colours = {
         'serotype': ['#0B4712', '#366E3C', '#619667', '#8CBD91', '#B8E5BC'],
         'isolation_host': ['#840147', '#9E3A70', '#B97499', '#D4ADC2', '#EFE7EB'],
@@ -3188,16 +3199,14 @@
         'stx2_subtype': ['#008582', '#22A395', '#6BC2B9', '#A0E0D4', '#D6FFF0']
       };
       y = -5;
-      mtype_rank = 0;
-      centred = 1.5;
+      centred = -1.5;
+      height = 7;
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
-        mtype_rank += 1;
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
           x = 0;
-          height = 7;
           y += height;
           centred += -3.5;
           visible_bars += 1;
@@ -3213,15 +3222,12 @@
               if ((n._children != null) && (n.metaCount[m][n.metaOntology[m][i]] != null) && i < 4 && (n.metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
-                n.total_height = visible_bars * height;
               } else if ((n._children != null) && i === 4 && (n.metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
-                n.total_height = visible_bars * height;
               } else {
                 width = 0;
                 n.arr[i] = 0;
-                n.total_height = 0;
               }
               return width;
             }).attr("height", height).attr("y", y).attr("x", function(n) {
@@ -3236,11 +3242,11 @@
           }
         }
       }
+      total_height = visible_bars * height;
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
       rect_block.attr("class", 'v' + visible_bars);
-      console.log(visible_bars);
       if (visible_bars > 1) {
         svgNodes.selectAll('.v' + (visible_bars - 1)).remove();
         if (($('.v' + (visible_bars + 1))[0])) {
@@ -3249,6 +3255,12 @@
       }
       if (visible_bars === 1 && ($('.v2')[0])) {
         svgNodes.selectAll('.v2').remove();
+      }
+      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
+        m = mtypesDisplayed[_m];
+        if (genomes.visibleMeta[m]) {
+          rect_block.select('.genomeMeter').remove();
+        }
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
@@ -3303,8 +3315,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
-        n = _ref2[_m];
+      for (_n = 0, _len5 = _ref2.length; _n < _len5; _n++) {
+        n = _ref2[_n];
         n.x0 = n.x;
         n.y0 = n.y;
       }

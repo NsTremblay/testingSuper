@@ -55,9 +55,17 @@ class TreeView extends ViewTemplate
       .sort(null)
       .value((d) -> Number(d.length) )
       .separation((a, b) ->
-        if (a.parent == b.parent)
-          5
-        else 3)
+        a_height = 1
+        b_height = 1
+        if a._children?
+          a_height = visible_bars + 1
+          console.log(total_height, visible_bars)
+        else a_height = 2
+        if b._children?
+          b_height = visible_bars + 1
+        else b_height = 2
+        a_height + b_height)
+
       
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
@@ -163,6 +171,8 @@ class TreeView extends ViewTemplate
   expandDepth: 10
 
   visible_bars = 0
+
+  total_height = 0  
   
   x_factor: 1.5
   y_factor: 5000
@@ -230,7 +240,6 @@ class TreeView extends ViewTemplate
       n.x = n.x * @branch_scale_factor_x
       n.arr = []
       n.xpos = 0
-      n.total_height = 0
       n.metaOntology = {}
       for t in mtypesDisplayed
         n.metaOntology[t] = []
@@ -385,7 +394,7 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 7)
-      .attr("y", -5)
+      .attr("y", -2)
       .attr("x", 4)
 
     colours = {
@@ -441,15 +450,13 @@ class TreeView extends ViewTemplate
     }
 
     y = -5
-    mtype_rank = 0
-    centred = 1.5
+    centred = -1.5
+    height = 7
     for m in mtypesDisplayed
-      mtype_rank += 1
       if genomes.visibleMeta[m]
         j = 0
         i = 0
         x = 0
-        height = 7
         y += height
         centred += -3.5
         visible_bars += 1
@@ -468,15 +475,12 @@ class TreeView extends ViewTemplate
               if n._children? && n.metaCount[m][n.metaOntology[m][i]]? && i < 4 && n.metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
-                n.total_height = visible_bars * height
               else if n._children? && i is 4 && n.metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
-                n.total_height = visible_bars * height
               else
                 width = 0
                 n.arr[i] = 0
-                n.total_height = 0
               width)
             .attr("height", height)
             .attr("y", y)
@@ -487,18 +491,24 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
           i++
 
+    total_height = visible_bars * height
+
+
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
 
     rect_block.attr("class", 'v' + visible_bars)
     
-    console.log(visible_bars)
     if visible_bars > 1
       svgNodes.selectAll('.v' + (visible_bars - 1)).remove()
       if ($('.v' + (visible_bars + 1))[0])
         svgNodes.selectAll('.v' + (visible_bars + 1)).remove()
     if visible_bars is 1 && ($('.v2')[0])
       svgNodes.selectAll('.v2').remove()
+
+    for m in mtypesDisplayed
+      if genomes.visibleMeta[m]
+        rect_block.select('.genomeMeter').remove()
 
     cmdBox = iNodes
       .append('text')
