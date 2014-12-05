@@ -193,34 +193,35 @@ sub load_gene {
 	);
 
 	#Create feature_cvterms for VFO terms
-	my $rank = 0;
-	my $accessionId = $_headerAttrs->{'VFOID'};
+	# TODO: This needs to get done when the ontology is loaded
+	#my $rank = 0;
+	#my $accessionId = $_headerAttrs->{'VFOID'};
 	#foreach my $accId (@$accessionIds) {
 		#my $accId =~ s/VFO://;
-		my $term_rs = $schema->resultset('Cvterm')->search(
-		{
-			'dbxref.accession' => $accessionId,
-			'dbxref.db_id' => $vfo_db_id,
-			},
-			{
-				join => 'dbxref'
-			}
-			);
-		my @matching = $term_rs->all;
-		die "ERROR: VFO term VFO:$accessionId not found in dbxref table." unless @matching;
-		die "ERROR: Multiple VFO terms matching VFO:accessionId found in cvterm table." unless @matching == 1;
+		# my $term_rs = $schema->resultset('Cvterm')->search(
+		# {
+		# 	'dbxref.accession' => $accessionId,
+		# 	'dbxref.db_id' => $vfo_db_id,
+		# 	},
+		# 	{
+		# 		join => 'dbxref'
+		# 	}
+		# 	);
+		# my @matching = $term_rs->all;
+		# die "ERROR: VFO term VFO:$accessionId not found in dbxref table." unless @matching;
+		# die "ERROR: Multiple VFO terms matching VFO:accessionId found in cvterm table." unless @matching == 1;
 
-		my $term = shift @matching;
+		# my $term = shift @matching;
 
-		$schema->resultset('FeatureCvterm')->create(
-		{
-			feature_id => $feature->feature_id,
-			cvterm_id => $term->cvterm_id,
-			pub_id => $pub_id,
-			rank => $rank
-		}
-		);
-		$rank++;
+		# $schema->resultset('FeatureCvterm')->create(
+		# {
+		# 	feature_id => $feature->feature_id,
+		# 	cvterm_id => $term->cvterm_id,
+		# 	pub_id => $pub_id,
+		# 	rank => $rank
+		# }
+		# );
+		# $rank++;
 	#}
 
 	# Add FeatureProps:
