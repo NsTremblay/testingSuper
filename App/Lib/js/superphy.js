@@ -2912,14 +2912,13 @@
         var a_height, b_height;
         a_height = 1;
         b_height = 1;
-        if (a._children != null) {
-          a_height = visible_bars + 1;
-          console.log(total_height, visible_bars);
+        if ((a._children != null) && visible_bars > 1) {
+          a_height = visible_bars;
         } else {
           a_height = 2;
         }
-        if (b._children != null) {
-          b_height = visible_bars + 1;
+        if ((b._children != null) && visible_bars > 1) {
+          b_height = visible_bars;
         } else {
           b_height = 2;
         }
@@ -2998,10 +2997,30 @@
 
     TreeView.prototype.y_factor = 5000;
 
-    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+
+    TreeView.prototype.addMetaOntology = function(node) {
+      var k, metaOntology, t, _i, _len;
+      metaOntology = {};
+      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
+        t = mtypesDisplayed[_i];
+        metaOntology[t] = [];
+        metaOntology[t] = ((function() {
+          var _results;
+          _results = [];
+          for (k in node.metaCount[t]) {
+            _results.push(k);
+          }
+          return _results;
+        })()).sort(function(a, b) {
+          return node.metaCount[t][b] - node.metaCount[t][a];
+        });
+      }
+      return metaOntology;
+    };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, k, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3037,21 +3056,6 @@
         n.x = n.x * this.branch_scale_factor_x;
         n.arr = [];
         n.xpos = 0;
-        n.metaOntology = {};
-        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
-          t = mtypesDisplayed[_j];
-          n.metaOntology[t] = [];
-          n.metaOntology[t] = ((function() {
-            var _results;
-            _results = [];
-            for (k in n.metaCount[t]) {
-              _results.push(k);
-            }
-            return _results;
-          })()).sort(function(a, b) {
-            return n.metaCount[t][b] - n.metaCount[t][a];
-          });
-        }
       }
       if (this.expansionContraction) {
         yedge = this.width - 30;
@@ -3059,13 +3063,14 @@
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-            n = _ref1[_k];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            n = _ref1[_j];
             n.y = n.y - yshift;
           }
         }
         this.expansionContraction = false;
       }
+      metaOntology = this.addMetaOntology(this.root);
       svgNodes = this.canvas.selectAll("g.treenode").data(this.nodes, function(d) {
         return d.id;
       });
@@ -3190,19 +3195,18 @@
         }
       }).attr("height", 7).attr("y", -2).attr("x", 4);
       colours = {
-        'serotype': ['#0B4712', '#366E3C', '#619667', '#8CBD91', '#B8E5BC'],
-        'isolation_host': ['#840147', '#9E3A70', '#B97499', '#D4ADC2', '#EFE7EB'],
-        'isolation_source': ['#011289', '#363F7C', '#6C73A2', '#A2A7C7', '#D9DBED'],
-        'isolation_date': ['#E6CC00', '#ECD83F', '#F2E57F', '#ECE599', '#EEEECD'],
-        'syndrome': ['#5B0080', '#7E389B', '#A271B6', '#C6AAD1', '#EAE3ED'],
-        'stx1_subtype': ['#F56A00', '#F78A2C', '#FAAB59', '#FCCC86', '#FFEDB3'],
-        'stx2_subtype': ['#008582', '#22A395', '#6BC2B9', '#A0E0D4', '#D6FFF0']
+        'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
+        'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
+        'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
+        'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
+        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+        'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
       };
       y = -5;
       centred = -1.5;
       height = 7;
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
+      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
+        m = mtypesDisplayed[_k];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
@@ -3210,21 +3214,21 @@
           y += height;
           centred += -3.5;
           visible_bars += 1;
-          while (i < 5) {
+          while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
-              if (i === 4) {
+              if (i === 6) {
                 return "Other";
               } else {
-                return n.metaOntology[m][i];
+                return metaOntology[m][i];
               }
             }).attr("width", function(n) {
               var width;
-              if ((n._children != null) && (n.metaCount[m][n.metaOntology[m][i]] != null) && i < 4 && (n.metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][n.metaOntology[m][i]] / n.num_leaves;
-              } else if ((n._children != null) && i === 4 && (n.metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]);
+              if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
+                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
+              } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
+                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
               } else {
                 width = 0;
                 n.arr[i] = 0;
@@ -3256,8 +3260,8 @@
       if (visible_bars === 1 && ($('.v2')[0])) {
         svgNodes.selectAll('.v2').remove();
       }
-      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
-        m = mtypesDisplayed[_m];
+      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
+        m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
           rect_block.select('.genomeMeter').remove();
         }
@@ -3315,8 +3319,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_n = 0, _len5 = _ref2.length; _n < _len5; _n++) {
-        n = _ref2[_n];
+      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
+        n = _ref2[_m];
         n.x0 = n.x;
         n.y0 = n.y;
       }
@@ -3769,6 +3773,7 @@
       padding = 20;
       yedge = (this.width - padding) * percCovered;
       xedge = (this.height - padding) * percCovered;
+      console.log(yedge, farthest);
       this.branch_scale_factor_y = yedge / farthest;
       this.branch_scale_factor_x = xedge / lowest;
       return true;

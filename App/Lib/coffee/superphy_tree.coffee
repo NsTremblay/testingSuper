@@ -57,12 +57,11 @@ class TreeView extends ViewTemplate
       .separation((a, b) ->
         a_height = 1
         b_height = 1
-        if a._children?
-          a_height = visible_bars + 1
-          console.log(total_height, visible_bars)
+        if a._children? && visible_bars > 1
+          a_height = visible_bars
         else a_height = 2
-        if b._children?
-          b_height = visible_bars + 1
+        if b._children? && visible_bars > 1
+          b_height = visible_bars
         else b_height = 2
         a_height + b_height)
 
@@ -177,8 +176,24 @@ class TreeView extends ViewTemplate
   x_factor: 1.5
   y_factor: 5000
 
-  mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
+  mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
 
+  # FUNC addMetaOntology
+  # Create metaOntology object
+  #
+  # PARAMS
+  # node
+  # 
+  # RETURNS
+  # metaOntology object 
+  #   
+  addMetaOntology: (node) ->
+
+    metaOntology = {}
+    for t in mtypesDisplayed
+      metaOntology[t] = []
+      metaOntology[t] = (k for k of node.metaCount[t]).sort (a, b) -> node.metaCount[t][b] - node.metaCount[t][a]
+    metaOntology
 
 
   # FUNC update
@@ -191,6 +206,7 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   update: (genomes, sourceNode=null) ->
+
     
     t1 = new Date()
     
@@ -240,10 +256,6 @@ class TreeView extends ViewTemplate
       n.x = n.x * @branch_scale_factor_x
       n.arr = []
       n.xpos = 0
-      n.metaOntology = {}
-      for t in mtypesDisplayed
-        n.metaOntology[t] = []
-        n.metaOntology[t] = (k for k of n.metaCount[t]).sort (a, b) -> n.metaCount[t][b] - n.metaCount[t][a]
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -256,8 +268,9 @@ class TreeView extends ViewTemplate
           n.y = n.y - yshift
         
       @expansionContraction = false
+
+    metaOntology = @addMetaOntology(@root)
       
-    
     # Collect existing nodes and create needed new nodes
     svgNodes = @canvas.selectAll("g.treenode")
       .data(@nodes, (d) -> d.id )
@@ -399,53 +412,58 @@ class TreeView extends ViewTemplate
 
     colours = {
       'serotype' : [
-        '#0B4712',
-        '#366E3C',
-        '#619667',
-        '#8CBD91',
-        '#B8E5BC'
+        '#004D11',
+        '#236932',
+        '#468554',
+        '#6AA276',
+        '#8DBE98',
+        '#B0DABA',
+        '#D4F7DC'
       ]
       'isolation_host' : [
-        '#840147',
-        '#9E3A70',
-        '#B97499',
-        '#D4ADC2',
-        '#EFE7EB'
+        '#9E0015',
+        '#AC2536',
+        '#BB4A58',
+        '#CA6F7A',
+        '#D9949B',
+        '#E8B9BD',
+        '#F7DEDF'
       ]
       'isolation_source' : [
-        '#011289',
-        '#363F7C',
-        '#6C73A2'
-        '#A2A7C7',
-        '#D9DBED'
-      ]
-      'isolation_date' : [
-        '#E6CC00',
-        '#ECD83F',
-        '#F2E57F',
-        '#ECE599',
-        '#EEEECD'
+        '#000752',
+        '#252B6D',
+        '#4A5089',
+        '#6F75A4',
+        '#949AC0',
+        '#B9BFDB',
+        '#DEE4F7'
       ]
       'syndrome' : [
-        '#5B0080',
-        '#7E389B',
-        '#A271B6',
-        '#C6AAD1',
-        '#EAE3ED'
+        '#520042',
+        '#6E2760',
+        '#8A4F7F',
+        '#A6779D',
+        '#C29EBC',
+        '#DEC6DA',
+        '#FBEEF9'
       ]
       'stx1_subtype' : [
-        '#F56A00',
-        '#F78A2C',
-        '#FAAB59',
-        '#FCCC86',
-        '#FFEDB3'
+        '#F05C00',
+        '#EF7123',
+        '#EE8746',
+        '#ED9D69',
+        '#ECB28C',
+        '#EBC8AF',
+        '#EADED2'
       ]
       'stx2_subtype' : [
-        '#008582',
-        '#22A395',
-        '#6BC2B9',
-        '#A0E0D4',
-        '#D6FFF0'
+        '#006B5C',
+        '#238174',
+        '#46988D',
+        '#6AAEA5',
+        '#8DC5BE',
+        '#B0DBD6',
+        '#D4F2EF'
       ]
     }
 
@@ -460,7 +478,7 @@ class TreeView extends ViewTemplate
         y += height
         centred += -3.5
         visible_bars += 1
-        while i < 5
+        while i < 7
           rect_block
             .append("rect")
             .style("fill", colours[m][j++])
@@ -468,16 +486,16 @@ class TreeView extends ViewTemplate
             .style("stroke", "black")
             .attr("class", "metaMeter")
             .attr("id", (n) ->
-              if i == 4
+              if i == 6
                 "Other"
-              else n.metaOntology[m][i])
+              else metaOntology[m][i])
             .attr("width", (n) ->
-              if n._children? && n.metaCount[m][n.metaOntology[m][i]]? && i < 4 && n.metaOntology[m][i]?
-                width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
-                n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][n.metaOntology[m][i]]) / n.num_leaves)
-              else if n._children? && i is 4 && n.metaOntology[m][i]?
-                width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
-                n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3]))
+              if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
+                width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
+                n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
+              else if n._children? && i is 6 && metaOntology[m][i]?
+                width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
+                n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
               else
                 width = 0
                 n.arr[i] = 0
@@ -492,8 +510,7 @@ class TreeView extends ViewTemplate
           i++
 
     total_height = visible_bars * height
-
-
+    
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
 
@@ -1235,6 +1252,8 @@ class TreeView extends ViewTemplate
     padding = 20
     yedge = (@width - padding) * percCovered
     xedge = (@height - padding) * percCovered
+
+    console.log(yedge, farthest)
     
     @branch_scale_factor_y = yedge/farthest
     @branch_scale_factor_x = xedge/lowest
