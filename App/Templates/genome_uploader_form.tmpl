@@ -236,55 +236,43 @@
 			</div>
 			
 			<div class="form-group">
-				<label class="control-label col-sm-2" for="inputLocationName inputLocationMapPoint">Location of Isolation</label>
-				<div class="col-sm-offset-2">
+				<label class="control-label col-sm-2" for="inputLocationName">Location of Isolation</label>
+				<div class="col-sm-8">
 					<div class="row">
-						<div class="col-sm-2">
-							<div class="radio">
-								<label>
-									<input type="radio" name="g_locate_method" value="name" id="inputLocationName" checked="checked">
-									Specify by name:
-								</label>
-							</div>
-						</div>
 
-						<div class="col-sm-3">
+						<div class="col-sm-4">
 							<select class="form-control" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
 						</div>
 
-						<div class="col-sm-3">
+						<div class="col-sm-4">
 							<input type="text" class="form-control" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
 						</div>
 
-						<div class="col-sm-3">
+						<div class="col-sm-4">
 							<input type="text" class="form-control" name="g_location_city" id="inputLocationCity" placeholder="City"/>
 						</div>
 					</div>
+					
+					<div class="row">
+						<div class="col-sm-12">
+							<span class="help-block"><em>Note: At minimum, the country of isolation must be specified</em></span>
+						</div>
+					</div>
+
+					<!-- Have a hidden form here with the isolation location input -->
 
 					<TMPL_VAR err_g_location_country>
 					<TMPL_VAR err_g_location_state>
 					<TMPL_VAR err_g_location_city>
-					
-					<div class="col-sm-12">
-						<div class="radio">
-							<label>
-								<input type="radio" name="g_locate_method" value="map" id="inputLocationMapPoint">
-								Or by location on map:
-							</label>
-						</div>
-						<!-- TODO: -->
-						<TMPL_INCLUDE NAME="genome_uploader_map_selector.tmpl">
-					</div>
-					<TMPL_VAR err_g_location_latlng>
+
 				</div>
 			</div>
 			
-			<div class="form-group">
+			<!--div class="form-group">
 				<div class="col-sm-offset-2 col-sm-8">
 					<span class="help-block">Data privacy:</span>
 				</div>
-			</div>
-			
+			</div-->
 
 			<TMPL_IF set_privacy>
 			<div class="form-group">
@@ -535,29 +523,6 @@
 </div>
 
 <script type="text/javascript">	
-$('#inputLocationMapPoint').click( function() {
-	$('#inputLocationCountry').attr("disabled", true);
-	$('#inputLocationCountry').attr("required", false);
-	$('#inputLocationState').attr("disabled", true);
-	$('#inputLocationCity').attr("disabled", true);
-	$('#inputLocationLatLng').val("");
-	$('#inputLocationLatLng').attr("disabled", false);
-	$('#inputLocationLatLng').attr("required", true);
-	$('#map-selector').show();
-	viewController.getView($('#map-selector').data("views-index")-1).mapController.resetMap();
-
-});
-
-$('#inputLocationName').click( function() {
-	$('#map').hide();
-	$('#inputLocationCountry').attr("disabled", false);
-	$('#inputLocationCountry').attr("required", true);
-	$('#inputLocationState').attr("disabled", false);
-	$('#inputLocationCity').attr("disabled", false);
-	$('#inputLocationLatLng').attr("disabled", true);
-	$('#inputLocationLatLng').attr("required", false);
-});
-
 
 var sourceCategories = <TMPL_VAR json_categories>;
 
@@ -624,6 +589,7 @@ $('#inputSource').change ( function() {
 	});
 	
 	$('#submitGenome').click( function() {
+		// TODO: run a geocode query here and check for the location
 		var emptyInput = 0;
 		$('input[required]').each( function() {
 			if (!$(this).val()){
