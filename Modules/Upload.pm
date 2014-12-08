@@ -50,7 +50,7 @@ use JSON;
 use Sequences::GenodoDateTime;
 use HTML::FillInForm;
 use XML::Simple;
-use Geo::Coder::Google;
+use Modules::LocationManager;
 use Role::Tiny::With;
 with 'Roles::Hosts';
 
@@ -330,29 +330,20 @@ sub upload_genome : Runmode {
 		mol_type => $results->valid('g_mol_type')
 	);
 	
-	# optional
+	#TODO: Need to check whether geocode result returns a 500 error
 	if($results->valid('g_locate_method') eq 'name') {
 		my $country = $results->valid('g_location_country');
 		my $state = $results->valid('g_location_state');
 		my $city = $results->valid('g_location_city');
-		my $locale_xml = qq|<location><country>$country</country>|;
-	
-		$locale_xml .= qq|<state>$state</state>| if $state;
-		$locale_xml .= qq|<city>$city</city>| if $city;
-		$locale_xml .= q|</location>|;
 		
-		my $geocoded_xml = _geocode_address($locale_xml);
+		my @locaiton_query_params = ($country, $state, $city);
+		my $location_query_string = join(',', @locaiton_query_params);
 
-		$genome_params{'isolation_location'} = $geocoded_xml;
+		my $geocoded_location_json = _geocode($location_query_string);
 
-	} elsif($results->valid('g_locate_method') eq 'map') {
-		my $latlng = $results->valid('g_location_latlng');
-		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
-		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
-		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
-		$genome_params{'isolation_latlng'} = $latlng_xml;
+		$genome_params{'isolation_location'} = $geocoded_location_json;
 
-	}
+	} 
 	
 	if($results->valid('g_syndrome')) {
 		my @syndrome_keys = $results->valid('g_syndrome');
@@ -811,7 +802,8 @@ sub edit_genome : Runmode {
     		
     	} elsif($property eq 'syndrome') {
     		push @syndrome_values, $value;
-    		
+    	
+    	# TODO: Need to change this since we no longer store xml (JSON is used instead)	
     	} elsif($property eq 'isolation_location') {
     		my $location_xml = XMLin($value);
     		
@@ -1132,29 +1124,21 @@ sub update_genome : Runmode {
 		mol_type => $results->valid('g_mol_type')
 	);
 	
-	# optional
+	#TODO: Need to check whether geocode result returns a 500 error
 	if($results->valid('g_locate_method') eq 'name') {
 		my $country = $results->valid('g_location_country');
 		my $state = $results->valid('g_location_state');
 		my $city = $results->valid('g_location_city');
-		my $locale_xml = qq|<location><country>$country</country>|;
-	
-		$locale_xml .= qq|<state>$state</state>| if $state;
-		$locale_xml .= qq|<city>$city</city>| if $city;
-		$locale_xml .= q|</location>|;
 
-		my $geocoded_xml = _geocode_address($locale_xml);
+		my @locaiton_query_params = ($country, $state, $city);
+		my $location_query_string = join(',', @locaiton_query_params);
 
-		$form_values{'isolation_location'} = $geocoded_xml;
+		my $geocoded_location_json = _geocode($location_query_string);
 
-	} elsif($results->valid('g_locate_method') eq 'map') {
-		my $latlng = $results->valid('g_location_latlng');
-		my $lat = $1 if $latlng =~ /\(([\w\d]*)", "/;
-		my $lng = $1 if $latlng =~ /", "([\w\d]*)\)/;
-		my $latlng_xml = "<coordinates><center><lat>$lat</lat><lng>$lng</lng></center></coordinates>";
-		$form_values{'isolation_latlng'} = $latlng_xml;
-	}
-	
+		$form_values{'isolation_location'} = $geocoded_location_json;
+
+	} 
+
 	if($results->valid('g_syndrome')) {
 		my @syndrome_keys = $results->valid('g_syndrome');
 		my @syndromes;
@@ -1535,7 +1519,8 @@ sub _dfv_common_rules {
 			g_host => { 'other' => [qw(g_host_name g_host_genus g_host_species)] },
 			g_source => { 'other' => [qw(g_other_source)] },
 			g_locate_method => { 'name' => [qw(g_location_country)] },
-			g_locate_method => { 'map' => [qw(g_location_latlng)] },
+			#TODO: Not accepting latlng inputs
+			#g_locate_method => { 'map' => [qw(g_location_latlng)] },
 			g_privacy => { 'release' => [qw/g_release_date/] },
 			g_age => [qw(g_age_unit)],
 			
@@ -1901,34 +1886,24 @@ sub _strip_time {
 	}
 }
 
-=head2 _geocode_address
+=head2 _geocode
 
 Convert a location to a latlng
 
 =cut
 
-sub _geocode_address {
-	#TODO
-	my $markedUpLocation = shift;
-	my $noMarkupLocation = $markedUpLocation;
-	$noMarkupLocation =~ s/(<[\/]*location>)//g;
-	$noMarkupLocation =~ s/<[\/]+[\w\d]*>//g;
-	$noMarkupLocation =~ s/<[\w\d]*>/, /g;
-	$noMarkupLocation =~ s/, //;
+sub _geocode {
+	my $self = shift;
+	#my $q = $self->query();
+	#my $address = $q->param("address");
 
-	my $googleGeocoder = Geo::Coder::Google->new(apiver => 3);
+	#Init the location manager
+	my $locationManager = Modules::LocationManager->new();
+	$locationManager->dbixSchema($self->dbixSchema);
 
-	my $latlong = $googleGeocoder->geocode($noMarkupLocation) or die "$!";
+	my $queryResult = $locationManager->geocodeAddress($address);
 
-	my %location;
-	$location{'coordinates'} = $latlong;
-	
-	my @_coordinates;
-	push(@_coordinates, \%location);
-	
-	$markedUpLocation .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."</lng></northeast></viewport></coordinates>";
-
-	return $markedUpLocation;
+	return $queryResult;
 }
 
 =cut
