@@ -241,7 +241,7 @@ sub genomes {
 		my ($genome_feature_properties, $upload_params) = load_input_parameters($prop_file);
 
 		# Validate genome parameters
-		my ($f, $fp, $dx) = validate_genome_properties($genome_feature_properties);
+		my ($f, $fp, $dx, $loc) = validate_genome_properties($genome_feature_properties);
 
 		# Validate upload parameters
 		validate_upload_parameters($upload_params);
@@ -284,13 +284,18 @@ sub genomes {
 		
 		# Properties
 		if(%$fp) {
-			$chado->handle_reserved_properties($curr_feature_id, $fp);
+			$chado->handle_genome_properties($curr_feature_id, $fp, $is_public, $upload_id);
 		}
 		
 		# Dbxref
 		my $dbxref_id = '\N';
 		if(%$dx) {
-			$dbxref_id = $chado->handle_dbxref($curr_feature_id, $dx);
+			$dbxref_id = $chado->handle_dbxref($curr_feature_id, $dx, $is_public);
+		}
+
+		# Location
+		if(%$loc) {
+			$chado->handle_genome_location($curr_feature_id, $loc, $is_public);
 		}
 		
 		
@@ -356,14 +361,15 @@ sub validate_genome_properties {
 	
 	my %valid_f_tags = qw/name 1 uniquename 1 organism 1 properties 1/;
 	my %valid_fp_tags = qw/mol_type 1 serotype 1 strain 1 keywords 1 isolation_host 1 
-		isolation_location 1 isolation_date 1 description 1 owner 1 finished 1 synonym 1
-		comment 1 isolation_source 1 isolation_latlng 1 isolation_age 1 severity 1
+		isolation_date 1 description 1 owner 1 finished 1 synonym 1
+		comment 1 isolation_source 1 isolation_age 1 severity 1
 		syndrome 1 pmid 1/;
 	my %valid_dbxref_tags = qw/primary_dbxref 1 secondary_dbxref 1/;
+	my %valid_l_tags = qw/isolation_location 1/; 
 	
 	# Make sure no unrecognized property types
 	# Assign value to proper table hash
-	my %f; my %fp; my %dx;
+	my %f; my %fp; my %dx; my %loc;
 	foreach my $type (keys %$hash) {
 		
 		if($valid_f_tags{$type}) {
@@ -415,6 +421,9 @@ sub validate_genome_properties {
 				}
 			}
 			
+		} elsif($valid_l_tags{$type}) {
+			$loc{$type} = $hash->{$type};
+			
 		} else {
 			croak "Invalid genome property type $type.";
 		}
@@ -435,7 +444,7 @@ sub validate_genome_properties {
 	
 	$fp{mol_type} = 'dna' unless $fp{mol_type};
 	
-	return(\%f, \%fp, \%dx);
+	return(\%f, \%fp, \%dx, \%loc);
 }
 
 

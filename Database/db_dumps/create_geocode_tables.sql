@@ -15,7 +15,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE geocoded_location
-  OWNER TO postgres;
+  OWNER TO genodo;
 COMMENT ON TABLE geocoded_location
   IS 'Stores latlng coordinates of genome locations in JSON objects.';
 COMMENT ON COLUMN geocoded_location.search_query IS 'Can be NULL if a pin-pointed location';
@@ -44,7 +44,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE genome_location
-  OWNER TO postgres;
+  OWNER TO genodo;
 
 COMMIT;
 
@@ -70,6 +70,6 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE private_genome_location
-  OWNER TO postgres;
+  OWNER TO genodo;
   
 COMMIT;

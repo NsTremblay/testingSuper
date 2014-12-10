@@ -26,9 +26,7 @@ __PACKAGE__->table("tmp_snp_alignment");
 =head2 snp_alignment_id
 
   data_type: 'integer'
-  is_auto_increment: 1
   is_nullable: 0
-  sequence: 'snp_alignment_snp_alignment_id_seq'
 
 =head2 name
 
@@ -39,7 +37,7 @@ __PACKAGE__->table("tmp_snp_alignment");
 =head2 aln_column
 
   data_type: 'integer'
-  is_nullable: 1
+  is_nullable: 0
 
 =head2 alignment
 
@@ -50,16 +48,11 @@ __PACKAGE__->table("tmp_snp_alignment");
 
 __PACKAGE__->add_columns(
   "snp_alignment_id",
-  {
-    data_type         => "integer",
-    is_auto_increment => 1,
-    is_nullable       => 0,
-    sequence          => "snp_alignment_snp_alignment_id_seq",
-  },
+  { data_type => "integer", is_nullable => 0 },
   "name",
   { data_type => "varchar", is_nullable => 1, size => 100 },
   "aln_column",
-  { data_type => "integer", is_nullable => 1 },
+  { data_type => "integer", is_nullable => 0 },
   "alignment",
   { data_type => "text", is_nullable => 1 },
 );
@@ -91,8 +84,8 @@ __PACKAGE__->set_primary_key("snp_alignment_id");
 __PACKAGE__->add_unique_constraint("tmp_snp_alignment_name_key", ["name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:rXWSaZXZjeyGVJLPi5KTdw
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-08 08:13:01
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:a9f/jrjtuaMsuRe0ZBuEJQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

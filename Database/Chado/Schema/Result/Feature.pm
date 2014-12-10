@@ -257,6 +257,21 @@ __PACKAGE__->add_unique_constraint("feature_c1", ["organism_id", "uniquename", "
 
 =head1 RELATIONS
 
+=head2 accessory_region
+
+Type: might_have
+
+Related object: L<Database::Chado::Schema::Result::AccessoryRegion>
+
+=cut
+
+__PACKAGE__->might_have(
+  "accessory_region",
+  "Database::Chado::Schema::Result::AccessoryRegion",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 amr_categories
 
 Type: has_many
@@ -622,6 +637,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 genome_locations
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GenomeLocation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "genome_locations",
+  "Database::Chado::Schema::Result::GenomeLocation",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 organism
 
 Type: belongs_to
@@ -877,9 +907,19 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 geocodes
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wCUdEWkgQZk8O9vIsX/VhA
+Type: many_to_many
+
+Composing rels: L</genome_locations> -> geocode
+
+=cut
+
+__PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-08 08:13:00
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Zz02bKSzw7iCZ2+46k3dPw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

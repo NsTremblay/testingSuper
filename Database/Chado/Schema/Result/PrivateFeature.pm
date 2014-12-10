@@ -414,6 +414,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 private_genome_locations
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGenomeLocation>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_genome_locations",
+  "Database::Chado::Schema::Result::PrivateGenomeLocation",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 private_snp_position_contig_collections
 
 Type: has_many
@@ -549,9 +564,19 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 0, on_delete => "NO ACTION", on_update => "NO ACTION" },
 );
 
+=head2 geocodes
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:omy6tUtumTYcyVugTQQP/w
+Type: many_to_many
+
+Composing rels: L</private_genome_locations> -> geocode
+
+=cut
+
+__PACKAGE__->many_to_many("geocodes", "private_genome_locations", "geocode");
+
+
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-08 08:13:00
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:J2qZSZ+0SWlGB2MrlY8Yog
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

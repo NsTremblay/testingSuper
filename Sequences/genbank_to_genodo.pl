@@ -828,7 +828,7 @@ sub guessLocation {
 			
 		}
 		
-	} elsif($country_line =~ m/^([\w\-\s]+)\:\s*([\w\-\s]+),\s*([\w\-\s]+)$/) {
+	} elsif($country_line =~ m/^([\w\-\s]+)\:\s*([\w\-\s\.\,]+),\s*([\w\-\s]+)$/) {
 		# Three words separated by a colon and comma, probably a country: city,state
 		
 		$country = $1;
@@ -855,6 +855,8 @@ sub guessLocation {
 				warn "***WARNING: no known states for country $country. Cannot verify correctness of state $state or city $city.\n" 
 			}
 		}
+	} else {
+		croak "Error: unrecognized location format in '$country_line'.\n";
 	}
 	
 	# Location: country, state, city should be populated now

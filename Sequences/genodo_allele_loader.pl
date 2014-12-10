@@ -273,80 +273,6 @@ $chado->file_handles();
 # Save data for inserting into database
 elapsed_time('db init');
 
-###############
-
-# # Inputs
-# my $panfile = $PANSEQDIR . '/pan_genome.txt';
-# my $locusfile = $PANSEQDIR . 'locus_alleles.fasta';
-
-# # Load locus locations
-# my %loci;
-# open(my $in, "<", $panfile) or croak "[Error] unable to read file $panfile ($!).\n";
-# <$in>; # header line
-# while (my $line = <$in>) {
-# 	chomp $line;
-	
-# 	my ($id, $locus, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
-	
-# 	if($allele > 0) {
-# 		# Hit
-		
-# 		# query gene
-# 		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-# 		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
-# 		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
-# 		$loci{$query_id}->{$genome} = {
-# 			allele => $allele,
-# 			start => $start,
-# 			end => $end,
-# 			contig => $contig
-# 		};
-# 	}
-	
-# }
-
-# close $in;
-elapsed_time('positions loaded');
-
-# # Load allele sequences
-# my $locusfile = $PANSEQDIR . 'locus_alleles.fasta';
-# {
-# 	# Slurp a group of fasta sequences for each locus.
-# 	# This could be disasterous if the memory req'd is large (swap-thrashing yikes!)
-# 	# otherwise, this should be faster than line-by-line.
-# 	# Also assumes specific FASTA format (i.e. sequence and header contain no line breaks or spaces)
-# 	open (my $in, "<", $locusfile) or croak "[Error] unable to read file $locusfile ($!).\n";
-# 	local $/ = "\nLocus ";
-	
-# 	while(my $locus_block = <$in>) {
-# 		$locus_block =~ s/^Locus //;
-# 		my ($locus) = ($locus_block =~ m/^(\S+)/);
-# 		my @sequence_group;
-# 		my $num_ok = 0;  # Some allele sequences fail checks, so the overall number of sequences can drop making trees irrelevant
-		
-# 		# query gene
-# 		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-# 		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-		
-# 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
-# 			my $header = $1;
-# 			my $seq = $2;
-		
-# 			# Load the sequence
-# 			$num_ok++ if allele($query_id,$query_name,$header,$seq,\@sequence_group);
-			
-# 		}
-		
-# 		# Build tree
-# 		build_tree($query_id, \@sequence_group) if $num_ok > 2;
-# 	}
-# 	close $in;
-	
-# }
-
-####################
-
 # Build alignments and trees in parallel
 
 # Output to file
@@ -409,9 +335,6 @@ my @tasks;
 	close $in;
 }
 
-##
-@tasks = (grep $_->[2], @tasks)[0..9];
-##
 
 # Print tasks to file
 my $jobfile = $alndir . "/jobs.txt";
@@ -527,7 +450,6 @@ elapsed_time("Data parsed");
 
 unless ($NOLOAD) {
 	$chado->load_data();
-	build_genome_tree();
 }
 
 $chado->remove_lock();
@@ -535,24 +457,6 @@ elapsed_time("Data loaded");
 
 my $rt = time() - $start;
 printf("Full runtime: %.2f\n", $rt);
-
-exit(0);
-
-####################
-
-elapsed_time("sequences parsed");
-
-# Do typing
-$chado->typing($TMPDIR);
-
-elapsed_time("in silico typing");
-
-# Finalize and load into DB
-$chado->load_data() unless $NOLOAD;
-
-$chado->remove_lock();
-
-elapsed_time("data loaded");
 
 exit(0);
 

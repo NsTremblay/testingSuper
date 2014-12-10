@@ -786,7 +786,7 @@ sub align {
 
 	my $sql2 = 
 	qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-	FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+	FROM private_feature f, pripub_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
 	WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
 	t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
 	f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
