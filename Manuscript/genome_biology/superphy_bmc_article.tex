@@ -345,12 +345,12 @@ The pan-genome distribution of the 2324 \textit{E. coli} genomes in the SuperPhy
 \subsection{Analyses of Hazen et al. (2013)}
 Hazen et al. (2013) examined the attaching and effacing \textit{E. coli} (AEEC) using phylogenomic analyses of 144 genomes \cite{hazen_refining_2013}. By definition this group includes \textit{E. coli} capable of forming attaching and effacing lesions via the locus of enterocyte effeacement (LEE) \cite{croxen_recent_2013}. Within this large group are those \textit{E. coli} that also produce Shiga-toxin, forming the group known as enterohemorrhagic \textit{E. coli}, and those that do not produce Stx, known as  the enteropathogenic \textit{E. coli}, which themselves may or may not contain plasmid-encoded genes for the bundle-forming pilus.  The Hazen et al. (2013) study identified five distinct lineages of AEEC and examined the distribution of virulence factors associated with the AEEC group, notably genes encoding the LEE, Stx, and non-LEE encoded effector proteins. The study also identified regions that were over-represented or specific to each of the five lineages.
 
-Using SuperPhy, the above analyses can be replicated. 
-1) Select only LEE containing strains via VF (hmmm ... maybe we can't do this)
-2) look at distribution of LEE, stx and effector proteins of strains
-3) identify phylogeny (hopefully 5 lineages)
-4) using group compare, create a group for each lineage
-5) find markers for each group
+Using SuperPhy, the above analyses were replicated in the following way. Initially, the distribution of LEE and Stx genes was determined within the `VF and AMR' tab of the platform. Under the `Virulence Factors' heading, an ontology is presented, with `LEE-encoded TTSS effector' and `Toxin' as ontology categories. All entries under each of these ontology categories were selected to limit the information retrieval to these genes of interest. In the `Select Genomes' tab, all genomes were selected and the query subsequently submitted. Immediately following the submission, an interactive matrix of the presence and allele copy number, or absence, of all genes of interest among all genomes in the database was presented. This matrix can be sorted by frequency, which allowed us in a single button press to observe the genomes containing all the LEE and Stx genes at the top of the list, sorted by decreasing gene abundance. All metadata information is also available and the matrix can be downloaded for offline manipulation and analyses.
+
+The phylogeny of all strains containing at least one of the LEE and Stx genes of interest was constructed by first creating a user-defined group to filter the genomes by. This custom metadata category was created by using the serotype and strain filters of the `Filter Menu Group Creation' tab of the `Group Analyses' tab and adding all genomes containing at least one the previously identified virulence factors. By having a user account on the site, all custom metadata tags are preserved and available upon login to SuperPhy. We filtered the phylogenetic tree under `Genome Info' with this custom group and observed the tree presented in Figure X. As can be seen, the tree of all genomes containing at least one of out VF genes contained Y main lineages.
+
+To identify statistically significant biomarkers for each of these lineages, we again created custom groups as before, with one group for each of the five lineages. Under the `Group Comparisons' tab of `Group Analyses', we selected all Y of the new custom groups, each containing all the genomes for the main observed lineages. By selecting `Compute All Pairwise Comparisons Between Selected Groups', all five lineages were automatically compared to each other, and the most statistically significant genomic regions that differed in presence / absence, as well as SNPs were reported. The results of these comparisons can be found in Supplementary File Z. As can be seen, the results largely agree with the study of Hazen et al. (2013) \cite{hazen_refining_2013}, with the following differences .... blah 
+
 
 
 \subsection{Anti-microbial resistance determinants}
@@ -371,7 +371,7 @@ As an example, a user can select a clade of genomes by clicking in the phylogene
 
 \includegraphics[width=\textwidth]{images/geophy.png}
 
-\section{Conclusions}
+\section{Conclusions and Future Directions}
 SuperPhy allows users to identify genotypic clusters that vary in virulence and the statistically supported genetic elements responsible for these phenotypic differences. Predictive genomics is currently the missing translation layer between the vast amounts of information that many platforms are capable of producing, and true biological knowledge in a specific domain that is needed to test hypotheses.
 
 % \subsection*{Sub-heading for section}

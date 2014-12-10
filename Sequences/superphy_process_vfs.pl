@@ -176,21 +176,21 @@ sub write_to_files {
 
 	close $ontology_fh;
 
-	my $fasta_out = Bio::SeqIO->new(
-		-file => $path_to_vf_fasta, 
-		-format => 'fasta'
-		);
+	# my $fasta_out = Bio::SeqIO->new(
+	# 	-file => $path_to_vf_fasta, 
+	# 	-format => 'fasta'
+	# 	);
 
-	open (my $seq_fh, ">", "./e_coli_VF_$filetimestamp.fasta") or die "Could not open sequence file handle: $!\n";
+	#open (my $seq_fh, ">", "./e_coli_VF_$filetimestamp.fasta") or die "Could not open sequence file handle: $!\n";
 
 	#Write out new fasta_file
-	while (my $seq = $fasta_out->next_seq()) {
-		my $new_id = $seq->id . "|VFO:" .$ontology_genes{$seq->id}{id} . "|";
-		print $seq_fh ">" . $new_id . " - " . $seq->desc . "\n";
-		print $seq_fh $seq->seq . "\n\n"
-	}
+	# while (my $seq = $fasta_out->next_seq()) {
+	# 	my $new_id = $seq->id . "|VFO:" .$ontology_genes{$seq->id}{id} . "|";
+	# 	print $seq_fh ">" . $new_id . " - " . $seq->desc . "\n";
+	# 	print $seq_fh $seq->seq . "\n\n"
+	# }
 
-	close $seq_fh;
+	#close $seq_fh;
 }
 
 #####################
@@ -251,7 +251,7 @@ sub write_to_ontology {
 	
 	if (ref($obj_to_write) eq 'ARRAY') {
 		#Gene Ontology ID
-		$obj_to_write->[1] = $ontology_gene_count;
+		#$obj_to_write->[1] = $ontology_gene_count;
 		# Categories and Sub Categories
 		
 		foreach (split(',', @$obj_to_write[4])) {
@@ -266,13 +266,15 @@ sub write_to_ontology {
 			}
 
 			$ontology_genes{$obj_to_write->[0]}{belongs_to} = [] unless exists $ontology_genes{$obj_to_write->[0]}{belongs_to};
-			$ontology_genes{$obj_to_write->[0]}{id} = $ontology_gene_count;
+			#$ontology_genes{$obj_to_write->[0]}{id} = $ontology_gene_count;
+			$ontology_genes{$obj_to_write->[0]}{id} = $obj_to_write->[1];
 
 			if ($obj_to_write->[5] eq 'unclassified') {
 				push(@{$ontology_genes{$obj_to_write->[0]}}{belongs_to}, $unclassified_id);
 			}
 			else {
-				$ontology_categories{$_}{subcategories}{$obj_to_write->[5]} = $ontology_subcategory_count++ unless exists $ontology_categories{$_}{subcategories}{$obj_to_write->[5]};
+				$ontology_subcategory_count++;
+				$ontology_categories{$_}{subcategories}{$obj_to_write->[5]} = $ontology_subcategory_count unless exists $ontology_categories{$_}{subcategories}{$obj_to_write->[5]};
 				push(@{$ontology_genes{$obj_to_write->[0]}}{belongs_to}, $ontology_subcategory_count);
 			}
 
@@ -284,11 +286,12 @@ sub write_to_ontology {
 	# }
 
 	# Update VFO ID in CSV
-	$obj_to_write->[1] = $ontology_gene_count;
+	#$obj_to_write->[1] = $ontology_gene_count;
 
 	#Write gene out to ontology
 	my $ontology_term = "[Term]\n".
-	"id: VFO: $ontology_gene_count\n".
+	#"id: VFO: $ontology_gene_count\n".
+	"id: VFO: " . $obj_to_write->[1] . "\n".
 	"name: " . $obj_to_write->[0] . "\n".
 	"namespace: e_coli_virulence\n".
 	"xref: VFO:www.mgc.ac.cn/VFs/\n".
@@ -301,6 +304,6 @@ sub write_to_ontology {
 
 	print $_ontology_fh $ontology_term;
 
-	
-	return;# $obj_to_write;
+	#return $obj_to_write;
+	return;
 }
