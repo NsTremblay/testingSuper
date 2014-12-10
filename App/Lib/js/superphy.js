@@ -2873,7 +2873,7 @@
     __extends(TreeView, _super);
 
     function TreeView(parentElem, style, elNum, treeArgs) {
-      var dialog, farthest, legendID, lowest, num, padding, percCovered, xedge, yedge;
+      var dialog, legendID, num;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
@@ -2915,31 +2915,15 @@
         if ((a._children != null) && visible_bars > 1) {
           a_height = visible_bars;
         } else {
-          a_height = 1;
+          a_height = 3;
         }
         if ((b._children != null) && visible_bars > 1) {
           b_height = visible_bars;
         } else {
-          b_height = 1;
+          b_height = 3;
         }
         return a_height + b_height;
       });
-      this.nodes = this.cluster.nodes(this.root);
-      farthest = d3.max(this.nodes, function(d) {
-        return d.sum_length * 1;
-      });
-      lowest = d3.max(this.nodes, function(d) {
-        return d.x;
-      });
-      percCovered = 0.10 * 100;
-      if (percCovered > 0.90) {
-        percCovered = 0.90;
-      }
-      padding = 20;
-      yedge = (this.width - padding) * percCovered;
-      xedge = (this.height - padding) * percCovered;
-      this.branch_scale_factor_y = yedge / farthest;
-      this.branch_scale_factor_x = xedge / lowest;
       legendID = "tree_legend" + this.elNum;
       this._treeOps(this.parentElem, legendID);
       jQuery("<div id='" + this.elID + "' class='" + (this.cssClass()) + "'></div>").appendTo(this.parentElem);
@@ -3043,6 +3027,7 @@
       t1 = new Date();
       oldRoot = this.root;
       this._sync(genomes);
+      this.nodes = this.cluster.nodes(this.root);
       if (sourceNode == null) {
         sourceNode = this.root;
       }
@@ -3053,6 +3038,7 @@
         y0: sourceNode.y0
       };
       if (this.reformat) {
+        this._scale();
         targetLen = 30;
         unit = targetLen / this.branch_scale_factor_y;
         unit = Math.round(unit * 10000) / 10000;
@@ -3063,12 +3049,17 @@
         this.scaleBar.select("line").attr('transform', 'scale(1,1)');
         this.reformat = false;
       }
+      console.log(visible_bars);
       _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         n = _ref[_i];
         n.y = n.sum_length * this.branch_scale_factor_y;
-        console.log(n.y);
-        n.x = n.x * this.branch_scale_factor_x;
+        if (visible_bars <= 1) {
+          n.x = n.x * this.branch_scale_factor_x;
+        }
+        if (visible_bars > 1) {
+          n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.1) + 1);
+        }
         n.arr = [];
         n.xpos = 0;
       }
@@ -3204,12 +3195,13 @@
       rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
           visible_bars = 1;
-          20 * (Math.log(n.num_leaves));
-          return console.log(n.num_leaves);
+          return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -2).attr("x", 4);
+      }).attr("height", 7).attr("y", -2).attr("x", 4).append("svg:title").text(function(n) {
+        return n.num_leaves + " genomes";
+      });
       colours = {
         'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
         'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
@@ -3257,8 +3249,13 @@
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            });
+            }).append("svg:title").text(m + ": " + metaOntology[m][i]);
             i++;
+          }
+        }
+        if (!genomes.visibleMeta[m]) {
+          if (visible_bars > 0) {
+            visible_bars -= 1;
           }
         }
       }
@@ -3772,6 +3769,26 @@
         }
       }
       return record;
+    };
+
+    TreeView.prototype._scale = function() {
+      var farthest, lowest, padding, percCovered, xedge, yedge;
+      farthest = d3.max(this.nodes, function(d) {
+        return d.sum_length * 1;
+      });
+      lowest = d3.max(this.nodes, function(d) {
+        return d.x;
+      });
+      percCovered = 0.10 * this.root.num_leaves;
+      if (percCovered > 0.90) {
+        percCovered = 0.90;
+      }
+      padding = 20;
+      yedge = (this.width - padding) * percCovered;
+      xedge = (this.height - padding) * percCovered;
+      this.branch_scale_factor_y = yedge / farthest;
+      this.branch_scale_factor_x = xedge / lowest;
+      return true;
     };
 
     TreeView.prototype._expandCollapse = function(genomes, d, el) {

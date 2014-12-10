@@ -59,25 +59,11 @@ class TreeView extends ViewTemplate
         b_height = 1
         if a._children? && visible_bars > 1
           a_height = visible_bars
-        else a_height = 1
+        else a_height = 3
         if b._children? && visible_bars > 1
           b_height = visible_bars
-        else b_height = 1
+        else b_height = 3
         a_height + b_height)
-
-    @nodes = @cluster.nodes(@root)
-
-    # Scale branch lengths based on number of leaves
-    farthest = d3.max(@nodes, (d) -> d.sum_length * 1)
-    lowest = d3.max(@nodes, (d) -> d.x )
-    percCovered = 0.10 * 100
-    percCovered = 0.90 if percCovered > 0.90
-    padding = 20
-    yedge = (@width - padding) * percCovered
-    xedge = (@height - padding) * percCovered
-    
-    @branch_scale_factor_y = yedge/farthest
-    @branch_scale_factor_x = xedge/lowest
 
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
@@ -207,7 +193,6 @@ class TreeView extends ViewTemplate
       metaOntology[t] = (k for k of node.metaCount[t]).sort (a, b) -> node.metaCount[t][b] - node.metaCount[t][a]
     metaOntology
 
-
   # FUNC update
   # Update genome tree view
   #
@@ -228,6 +213,8 @@ class TreeView extends ViewTemplate
     # filter visible, set selected, set class, set viewname
     # changes @root object
     @_sync(genomes)
+
+    @nodes = @cluster.nodes(@root) 
     
      # find starting point to launch new nodes/links
     sourceNode = @root unless sourceNode?
@@ -236,6 +223,7 @@ class TreeView extends ViewTemplate
     # Needs to compute some starting values for the tree view
     # any time tree genome subset changes or is reset
     if @reformat
+      @_scale()
       
       # Update scale bar
       targetLen = 30
@@ -259,9 +247,14 @@ class TreeView extends ViewTemplate
       
       @reformat = false
     
+    console.log(visible_bars)
+
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
-      n.x = n.x * @branch_scale_factor_x
+      if visible_bars <= 1
+        n.x = n.x * @branch_scale_factor_x
+      if visible_bars > 1
+        n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.1) + 1)
       n.arr = []
       n.xpos = 0
     
@@ -413,11 +406,12 @@ class TreeView extends ViewTemplate
         if n._children?
           visible_bars = 1
           20*(Math.log(n.num_leaves))
-          console.log(n.num_leaves)
         else 0)
       .attr("height", 7)
       .attr("y", -2)
       .attr("x", 4)
+      .append("svg:title")
+      .text((n)-> n.num_leaves + " genomes")
 
     colours = {
       'serotype' : [
@@ -516,7 +510,12 @@ class TreeView extends ViewTemplate
                 n.xpos += n.arr[i-1]
               else n.xpos = 0
               n.xpos + 4)
+            .append("svg:title")
+            .text(m + ": " + metaOntology[m][i])
           i++
+      if !genomes.visibleMeta[m]
+        if visible_bars > 0
+          visible_bars = visible_bars - 1
 
     total_height = visible_bars * height
     
@@ -1236,6 +1235,37 @@ class TreeView extends ViewTemplate
         node.internal_node_selected = 0
            
     record
+
+
+  # FUNC _scale
+  # Sets branch x and y scale factors. Needs to
+  # be called after tree rendered. Called after
+  # major changes to genomes (filter, reset view)
+  # Stretches tree so that it covers X% of view
+  # area. The X% is determined by the number of
+  # leaves in tree up to a max of 80%
+  # 
+  # PARAMS
+  # Nothing
+  # 
+  # RETURNS
+  # Boolean
+  #
+  _scale: ->
+    
+    # Scale branch lengths based on number of leaves
+    farthest = d3.max(@nodes, (d) -> d.sum_length * 1)
+    lowest = d3.max(@nodes, (d) -> d.x )
+    percCovered = 0.10 * @root.num_leaves
+    percCovered = 0.90 if percCovered > 0.90
+    padding = 20
+    yedge = (@width - padding) * percCovered 
+    xedge = (@height - padding) * percCovered
+    
+    @branch_scale_factor_y = yedge/farthest
+    @branch_scale_factor_x = xedge/lowest
+      
+    true
              
   _expandCollapse: (genomes, d, el) ->
     
