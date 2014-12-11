@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var mtypesDisplayed, total_height, visible_bars;
+    var checkbox_value, mtypesDisplayed, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -2991,6 +2991,8 @@
 
     visible_bars = 0;
 
+    checkbox_value = [];
+
     total_height = 0;
 
     TreeView.prototype.x_factor = 1.5;
@@ -3049,7 +3051,6 @@
         this.scaleBar.select("line").attr('transform', 'scale(1,1)');
         this.reformat = false;
       }
-      console.log(visible_bars);
       _ref = this.nodes;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         n = _ref[_i];
@@ -3210,6 +3211,18 @@
         'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
         'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
       };
+      $('.meta-option.checkbox').each(function(i, obj) {
+        return $(obj).click(function() {
+          if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
+            checkbox_value[i] = 1;
+          } else {
+            checkbox_value[i] = 0;
+          }
+          return visible_bars = checkbox_value.reduce(function(a, b) {
+            return a + b;
+          });
+        });
+      });
       y = -5;
       centred = -1.5;
       height = 7;
@@ -3221,7 +3234,6 @@
           x = 0;
           y += height;
           centred += -3.5;
-          visible_bars += 1;
           while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
               if (i === 6) {
@@ -3249,17 +3261,33 @@
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).append("svg:title").text(m + ": " + metaOntology[m][i]);
+            }).append("svg:title").text(function() {
+              if (i === 6) {
+                return m + ": Other";
+              } else {
+                return m + ": " + metaOntology[m][i];
+              }
+            });
             i++;
           }
         }
-        if (!genomes.visibleMeta[m]) {
-          if (visible_bars > 0) {
-            visible_bars -= 1;
-          }
-        }
       }
-      total_height = visible_bars * height;
+      this.cluster = this.cluster.separation(function(a, b) {
+        var a_height, b_height;
+        a_height = 1;
+        b_height = 1;
+        if ((a._children != null) && visible_bars > 1) {
+          a_height = visible_bars;
+        } else {
+          a_height = 3;
+        }
+        if ((b._children != null) && visible_bars > 1) {
+          b_height = visible_bars;
+        } else {
+          b_height = 3;
+        }
+        return a_height + b_height;
+      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
@@ -7016,8 +7044,8 @@
       form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
       wrapper.append(form);
       submitEl = jQuery('<div class="row"></div>');
-      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
-      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" id="submit-btn" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" id="reset-btn" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
       submitButtonEl.click((function(_this) {
         return function(e) {
           e.preventDefault();

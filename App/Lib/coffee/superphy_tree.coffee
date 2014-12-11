@@ -65,6 +65,7 @@ class TreeView extends ViewTemplate
         else b_height = 3
         a_height + b_height)
 
+
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
     @_treeOps(@parentElem, legendID)
@@ -169,6 +170,8 @@ class TreeView extends ViewTemplate
 
   visible_bars = 0
 
+  checkbox_value = []
+
   total_height = 0  
   
   x_factor: 1.5
@@ -204,7 +207,6 @@ class TreeView extends ViewTemplate
   #      
   update: (genomes, sourceNode=null) ->
 
-    
     t1 = new Date()
     
     # save old root, might require updating
@@ -246,8 +248,6 @@ class TreeView extends ViewTemplate
         .attr('transform','scale(1,1)')
       
       @reformat = false
-    
-    console.log(visible_bars)
 
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
@@ -470,6 +470,14 @@ class TreeView extends ViewTemplate
       ]
     }
 
+    $('.meta-option.checkbox').each((i,obj)->
+      $(obj).click(()->
+        if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
+            checkbox_value[i] = 1
+          else
+            checkbox_value[i] = 0
+          visible_bars = checkbox_value.reduce((a,b)-> a + b)))
+    
     y = -5
     centred = -1.5
     height = 7
@@ -480,7 +488,6 @@ class TreeView extends ViewTemplate
         x = 0
         y += height
         centred += -3.5
-        visible_bars += 1
         while i < 7
           rect_block
             .append("rect")
@@ -511,13 +518,24 @@ class TreeView extends ViewTemplate
               else n.xpos = 0
               n.xpos + 4)
             .append("svg:title")
-            .text(m + ": " + metaOntology[m][i])
+            .text(()->
+              if i == 6
+                m + ": Other"
+              else
+                m + ": " + metaOntology[m][i])
           i++
-      if !genomes.visibleMeta[m]
-        if visible_bars > 0
-          visible_bars = visible_bars - 1
 
-    total_height = visible_bars * height
+    @cluster = @cluster.separation((a, b) ->
+      a_height = 1
+      b_height = 1
+      if a._children? && visible_bars > 1
+        a_height = visible_bars
+      else a_height = 3
+      if b._children? && visible_bars > 1
+        b_height = visible_bars
+      else b_height = 3
+      a_height + b_height)
+
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
