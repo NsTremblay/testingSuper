@@ -38,13 +38,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% additional documentclass options:
-%  [doublespacing]
-%  [linenumbers]   - put the line numbers on margins
+% \documentclass[doublespacing]
+% [linenumbers]   - put the line numbers on margins
 
 %%% loading packages, author definitions
 
 %\documentclass[twocolumn]{bmcart}% uncomment this for twocolumn layout and comment line below
-\documentclass{bmcart}
+\documentclass[doublespacing, linenumbers]{bmcart}
+
+
 
 %%% Load packages
 %\usepackage{amsthm,amsmath}
@@ -227,7 +229,6 @@ In this study, we have implemented an online predictive genomics platform
 \end{abstractbox}
 %
 %\end{fmbox}% uncomment this for twcolumn layout
-
 \end{frontmatter}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -256,6 +257,7 @@ In this study, we have implemented an online predictive genomics platform
 %%%%%%%%%%%%%%%%
 %% Background %%
 %%
+
 \section*{Introduction}
 Predictive genomics involves the translation of whole-genome sequence data into an assessment of the phenotypes exhibited by the organism from which the genome came. Whole-genome sequencing (WGS) of bacterial isolates is now routinely employed in outbreak investigations and basic science research \cite{reuter_pilot_2013,fittipaldi_integrated_2013}. Currently a small number of organizations are employing WGS as part of routine surveillance efforts \cite{zankari_genotyping_2013,cody_real-time_2013}, such as Public Health England in its comprehensive \textit{Salmonella} genome sequencing program. Obtaining WGS data and performing exploratory comparative analyses is now commonplace, but meaningful interpretation of the raw data, also known as predictive genomics, lags considerably behind these initial analyses \cite{sherry_outbreak_2013}.
 
@@ -471,17 +473,17 @@ Current work involves the addition of more \textit{in silico} typing methods suc
 %%
 %% Do not use \listoffigures as most will included as separate files
 
-\section*{Figures}
-  \begin{figure}[h!]
-  \caption{\csentence{Sample figure title.}
-      A short description of the figure content
-      should go here.}
-      \end{figure}
+% \section*{Figures}
+%   \begin{figure}[h!]
+%   \caption{\csentence{Sample figure title.}
+%       A short description of the figure content
+%       should go here.}
+%       \end{figure}
 
-\begin{figure}[h!]
-  \caption{\csentence{Sample figure title.}
-      Figure legend text.}
-      \end{figure}
+% \begin{figure}[h!]
+%   \caption{\csentence{Sample figure title.}
+%       Figure legend text.}
+%       \end{figure}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                               %%
@@ -491,17 +493,17 @@ Current work involves the addition of more \textit{in silico} typing methods suc
 
 %% Use of \listoftables is discouraged.
 %%
-\section*{Tables}
-\begin{table}[h!]
-\caption{Sample table title. This is where the description of the table should go.}
-      \begin{tabular}{cccc}
-        \hline
-           & B1  &B2   & B3\\ \hline
-        A1 & 0.1 & 0.2 & 0.3\\
-        A2 & ... & ..  & .\\
-        A3 & ..  & .   & .\\ \hline
-      \end{tabular}
-\end{table}
+% \section*{Tables}
+% \begin{table}[h!]
+% \caption{Sample table title. This is where the description of the table should go.}
+%       \begin{tabular}{cccc}
+%         \hline
+%            & B1  &B2   & B3\\ \hline
+%         A1 & 0.1 & 0.2 & 0.3\\
+%         A2 & ... & ..  & .\\
+%         A3 & ..  & .   & .\\ \hline
+%       \end{tabular}
+% \end{table}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                               %%
@@ -509,14 +511,14 @@ Current work involves the addition of more \textit{in silico} typing methods suc
 %%                               %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section*{Additional Files}
-  \subsection*{Additional file 1 --- Sample additional file title}
-    Additional file descriptions text (including details of how to
-    view the file, if it is in a non-standard format or the file extension).  This might
-    refer to a multi-page table or a figure.
+% \section*{Additional Files}
+%   \subsection*{Additional file 1 --- Sample additional file title}
+%     Additional file descriptions text (including details of how to
+%     view the file, if it is in a non-standard format or the file extension).  This might
+%     refer to a multi-page table or a figure.
 
-  \subsection*{Additional file 2 --- Sample additional file title}
-    Additional file descriptions text.
+%   \subsection*{Additional file 2 --- Sample additional file title}
+%     Additional file descriptions text.
 
 
 \end{backmatter}
