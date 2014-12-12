@@ -3059,7 +3059,8 @@
           n.x = n.x * this.branch_scale_factor_x;
         }
         if (visible_bars > 1) {
-          n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.1) + 1);
+          n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.2) + 1);
+          console.log(n.x);
         }
         n.arr = [];
         n.xpos = 0;
@@ -3195,7 +3196,6 @@
       rect_block = svgNodes.append("g");
       rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
-          visible_bars = 1;
           return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
@@ -3272,22 +3272,6 @@
           }
         }
       }
-      this.cluster = this.cluster.separation(function(a, b) {
-        var a_height, b_height;
-        a_height = 1;
-        b_height = 1;
-        if ((a._children != null) && visible_bars > 1) {
-          a_height = visible_bars;
-        } else {
-          a_height = 3;
-        }
-        if ((b._children != null) && visible_bars > 1) {
-          b_height = visible_bars;
-        } else {
-          b_height = 3;
-        }
-        return a_height + b_height;
-      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
@@ -3297,9 +3281,13 @@
         if (($('.v' + (visible_bars + 1))[0])) {
           svgNodes.selectAll('.v' + (visible_bars + 1)).remove();
         }
+        svgNodes.selectAll('.v0').remove();
       }
-      if (visible_bars === 1 && ($('.v2')[0])) {
-        svgNodes.selectAll('.v2').remove();
+      if (visible_bars === 1) {
+        if (($('.v2')[0])) {
+          svgNodes.selectAll('.v2').remove();
+        }
+        svgNodes.selectAll('.v0').remove();
       }
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];

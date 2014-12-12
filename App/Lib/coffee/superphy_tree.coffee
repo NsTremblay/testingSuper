@@ -254,7 +254,8 @@ class TreeView extends ViewTemplate
       if visible_bars <= 1
         n.x = n.x * @branch_scale_factor_x
       if visible_bars > 1
-        n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.1) + 1)
+        n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
+        console.log(n.x)
       n.arr = []
       n.xpos = 0
     
@@ -404,7 +405,6 @@ class TreeView extends ViewTemplate
       .attr("class", "genomeMeter")
       .attr("width", (n) ->
         if n._children?
-          visible_bars = 1
           20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 7)
@@ -524,18 +524,6 @@ class TreeView extends ViewTemplate
               else
                 m + ": " + metaOntology[m][i])
           i++
-
-    @cluster = @cluster.separation((a, b) ->
-      a_height = 1
-      b_height = 1
-      if a._children? && visible_bars > 1
-        a_height = visible_bars
-      else a_height = 3
-      if b._children? && visible_bars > 1
-        b_height = visible_bars
-      else b_height = 3
-      a_height + b_height)
-
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
@@ -546,8 +534,23 @@ class TreeView extends ViewTemplate
       svgNodes.selectAll('.v' + (visible_bars - 1)).remove()
       if ($('.v' + (visible_bars + 1))[0])
         svgNodes.selectAll('.v' + (visible_bars + 1)).remove()
-    if visible_bars is 1 && ($('.v2')[0])
-      svgNodes.selectAll('.v2').remove()
+      svgNodes.selectAll('.v0').remove()
+    if visible_bars is 1
+      if ($('.v2')[0])
+        svgNodes.selectAll('.v2').remove()
+      svgNodes.selectAll('.v0').remove()
+
+
+    @cluster = @cluster.separation((a, b) ->
+        a_height = 1
+        b_height = 1
+        if a._children? && visible_bars > 1
+          a_height = visible_bars
+        else a_height = 3
+        if b._children? && visible_bars > 1
+          b_height = visible_bars
+        else b_height = 3
+        a_height + b_height)
 
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]
