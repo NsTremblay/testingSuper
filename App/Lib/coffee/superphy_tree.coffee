@@ -519,10 +519,25 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .append("svg:title")
             .text(()->
+              if m is "isolation_host" or m is "isolation_source"
+                str = m.charAt(0).toUpperCase() + m.slice(1)
+                str = str.replace("_", " ")
+                str = str.slice(0,10) + str.charAt(10).toUpperCase() + str.slice(11)
+              if m is "syndrome"
+                str = "Symptoms/Diseases"
+              if m is "stx1_subtype" or m is "stx2_subtype"
+                str = m.charAt(0).toUpperCase() + m.slice(1)
+                str = str.replace("_", " ")
+                str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
+              if m is "serotype"
+                str = m.charAt(0).toUpperCase() + m.slice(1)
               if i == 6
-                m + ": Other"
+                str + ": Other"
               else
-                m + ": " + metaOntology[m][i])
+                if metaOntology[m][i] is "undefined"
+                  str2 = "Undefined"
+                else str2 = metaOntology[m][i]
+                str + ": " + str2)
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))

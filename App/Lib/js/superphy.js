@@ -3059,7 +3059,7 @@
           n.x = n.x * this.branch_scale_factor_x;
         }
         if (visible_bars > 1) {
-          n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.2) + 1);
+          n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
           console.log(n.x);
         }
         n.arr = [];
@@ -3262,10 +3262,32 @@
               }
               return n.xpos + 4;
             }).append("svg:title").text(function() {
+              var str, str2;
+              if (m === "isolation_host" || m === "isolation_source") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+                str = str.replace("_", " ");
+                str = str.slice(0, 10) + str.charAt(10).toUpperCase() + str.slice(11);
+              }
+              if (m === "syndrome") {
+                str = "Symptoms/Diseases";
+              }
+              if (m === "stx1_subtype" || m === "stx2_subtype") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+                str = str.replace("_", " ");
+                str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
+              }
+              if (m === "serotype") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+              }
               if (i === 6) {
-                return m + ": Other";
+                return str + ": Other";
               } else {
-                return m + ": " + metaOntology[m][i];
+                if (metaOntology[m][i] === "undefined") {
+                  str2 = "Undefined";
+                } else {
+                  str2 = metaOntology[m][i];
+                }
+                return str + ": " + str2;
               }
             });
             i++;
@@ -3289,6 +3311,22 @@
         }
         svgNodes.selectAll('.v0').remove();
       }
+      this.cluster = this.cluster.separation(function(a, b) {
+        var a_height, b_height;
+        a_height = 1;
+        b_height = 1;
+        if ((a._children != null) && visible_bars > 1) {
+          a_height = visible_bars;
+        } else {
+          a_height = 3;
+        }
+        if ((b._children != null) && visible_bars > 1) {
+          b_height = visible_bars;
+        } else {
+          b_height = 3;
+        }
+        return a_height + b_height;
+      });
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
