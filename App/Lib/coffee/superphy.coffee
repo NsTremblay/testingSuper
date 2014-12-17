@@ -1841,6 +1841,13 @@ class GenomeController
  
     @update() # Initialize the viewname field
     @filter() # Initialize the visible genomes
+      
+    # Initialize the metadata count
+    for id,g in @public_genomes
+      countPub = @countMeta(g) 
+
+    for id,g in @private_genomes
+      countPri = @countMeta(g)
     
     # Track changes in the set of visible genomes through
     # incremental ID
@@ -1888,7 +1895,8 @@ class GenomeController
   privateRegexp: new RegExp('^private_')
   
   filtered: 0
-  
+
+  mtypesDisplayed = ['serotype','isolation_host','isolation_source','isolation_date','syndrome','stx1_subtype','stx2_subtype']
    
   # FUNC update
   # Update genome names displayed to user
@@ -1976,6 +1984,48 @@ class GenomeController
     @genomeSetId++
     
     true
+    
+
+   # FUNC countMeta
+  # Creates count object for each genome and sets values to 1 if
+  # metadata type values exist
+  #
+  # PARAMS
+  # genome
+  # 
+  # RETURNS
+  # count
+  #
+  countMeta: (genome, count) ->
+
+    count = {}
+    for a in mtypesDisplayed
+      count[a] = {}
+
+    if count['serotype'][genome.serotype]?
+      count['serotype'][genome.serotype]++
+    else count['serotype'][genome.serotype] = 1
+    if count['isolation_host'][genome.isolation_host]?  
+      count['isolation_host'][genome.isolation_host]++
+    else count['isolation_host'][genome.isolation_host] = 1
+    if count['isolation_source'][genome.isolation_source]?
+      count['isolation_source'][genome.isolation_source]++
+    else count['isolation_source'][genome.isolation_source] = 1
+    if count['isolation_date'][genome.isolation_date]?
+      count['isolation_date'][genome.isolation_date]++
+    else count['isolation_date'][genome.isolation_date] = 1
+    if count['syndrome'][genome.syndrome]?
+      count['syndrome'][genome.syndrome]++
+    else count['syndrome'][genome.syndrome] = 1
+    if count['stx1_subtype'][genome.stx1_subtype]?
+      count['stx1_subtype'][genome.stx1_subtype]++
+    else count['stx1_subtype'][genome.stx1_subtype] = 1
+    if count['stx2_subtype'][genome.stx2_subtype]?
+      count['stx2_subtype'][genome.stx2_subtype]++
+    else count['stx2_subtype'][genome.stx2_subtype] = 1
+
+    count
+
     
   # FUNC filterBySelection
   # Updates the pubVisable and pvtVisable id lists to match currently selected genomes
@@ -2854,7 +2904,10 @@ class SelectionView
       @remove(genomeID)
       
     true
-    
+
+
+
+
   # FUNC add
   # Add single genome to list view
   # Should be faster than calling update (which will reinsert all genomes)
