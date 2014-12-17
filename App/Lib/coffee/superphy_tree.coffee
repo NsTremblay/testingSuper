@@ -48,24 +48,14 @@ class TreeView extends ViewTemplate
     @height = @dim.h - @margin.top - @margin.bottom
     @xzoom = d3.scale.linear().domain([0, @width]).range([0, @width])
     @yzoom = d3.scale.linear().domain([0, @height]).range([0, @height])
-
+    
     # Tree layout rendering object
     @cluster = d3.layout.cluster()
       .size([@width, @height])
       .sort(null)
       .value((d) -> Number(d.length) )
-      .separation((a, b) ->
-        a_height = 1
-        b_height = 1
-        if a._children? && visible_bars > 1
-          a_height = visible_bars
-        else a_height = 3
-        if b._children? && visible_bars > 1
-          b_height = visible_bars
-        else b_height = 3
-        a_height + b_height)
-
-
+      .separation((a, b) -> 1)
+      
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
     @_treeOps(@parentElem, legendID)
@@ -124,6 +114,7 @@ class TreeView extends ViewTemplate
     
     @_legend(@legend)  
     
+    
     # Attach a clade dialog
     if @style is 'select'
       dialog = jQuery('#dialog-clade-select')
@@ -167,35 +158,10 @@ class TreeView extends ViewTemplate
   duration: 1000
   
   expandDepth: 10
-
-  visible_bars = 0
-
-  checkbox_value = []
-
-  total_height = 0  
   
   x_factor: 1.5
   y_factor: 5000
-
-  mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
-
-  # FUNC addMetaOntology
-  # Create metaOntology object
-  #
-  # PARAMS
-  # node
-  # 
-  # RETURNS
-  # metaOntology object 
-  #   
-  addMetaOntology: (node) ->
-
-    metaOntology = {}
-    for t in mtypesDisplayed
-      metaOntology[t] = []
-      metaOntology[t] = (k for k of node.metaCount[t]).sort (a, b) -> node.metaCount[t][b] - node.metaCount[t][a]
-    metaOntology
-
+  
   # FUNC update
   # Update genome tree view
   #
@@ -206,7 +172,7 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   update: (genomes, sourceNode=null) ->
-
+    
     t1 = new Date()
     
     # save old root, might require updating
@@ -215,8 +181,9 @@ class TreeView extends ViewTemplate
     # filter visible, set selected, set class, set viewname
     # changes @root object
     @_sync(genomes)
-
-    @nodes = @cluster.nodes(@root) 
+    
+    # Compute layout, return D3 node objects
+    @nodes = @cluster.nodes(@root)
     
      # find starting point to launch new nodes/links
     sourceNode = @root unless sourceNode?
@@ -225,7 +192,7 @@ class TreeView extends ViewTemplate
     # Needs to compute some starting values for the tree view
     # any time tree genome subset changes or is reset
     if @reformat
-      @_scale()
+      @_scale() # Set initial branch scale for this current view
       
       # Update scale bar
       targetLen = 30
@@ -248,16 +215,11 @@ class TreeView extends ViewTemplate
         .attr('transform','scale(1,1)')
       
       @reformat = false
-
+    
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
-      if visible_bars <= 1
-        n.x = n.x * @branch_scale_factor_x
-      if visible_bars > 1
-        n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
-        console.log(n.x)
-      n.arr = []
-      n.xpos = 0
+      n.x = n.x * @branch_scale_factor_x
+      
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -270,9 +232,8 @@ class TreeView extends ViewTemplate
           n.y = n.y - yshift
         
       @expansionContraction = false
-
-    metaOntology = @addMetaOntology(@root)
       
+    
     # Collect existing nodes and create needed new nodes
     svgNodes = @canvas.selectAll("g.treenode")
       .data(@nodes, (d) -> d.id )
@@ -374,11 +335,7 @@ class TreeView extends ViewTemplate
     nodesEnter
       .append("text")
       .attr("class","treelabel")
-      .attr("x", (n) ->
-        if !n.leaf
-          20*(Math.log(n.num_leaves))+10
-        else
-          "0.6em")
+      .attr("dx", ".6em")
       .attr("dy", ".4em")
       .attr("text-anchor", "start")
       .text((d) ->
@@ -392,185 +349,7 @@ class TreeView extends ViewTemplate
     # Append command elements to new internal nodes
     iNodes = nodesEnter.filter((n) -> !n.leaf && !n.root )
     num = @elNum-1
-
-    rect_block = svgNodes.append("g")
-
-    # Appends genomeMeter.  Size of bar reflects number of genomes.
-   
-    rect_block
-      .append('rect')
-      .style("fill", "red")
-      .style("stroke-width", 0.5)
-      .style("stroke", "black")
-      .attr("class", "genomeMeter")
-      .attr("width", (n) ->
-        if n._children?
-          20*(Math.log(n.num_leaves))
-        else 0)
-      .attr("height", 7)
-      .attr("y", -2)
-      .attr("x", 4)
-      .append("svg:title")
-      .text((n)-> n.num_leaves + " genomes")
-
-    colours = {
-      'serotype' : [
-        '#004D11',
-        '#236932',
-        '#468554',
-        '#6AA276',
-        '#8DBE98',
-        '#B0DABA',
-        '#D4F7DC'
-      ]
-      'isolation_host' : [
-        '#9E0015',
-        '#AC2536',
-        '#BB4A58',
-        '#CA6F7A',
-        '#D9949B',
-        '#E8B9BD',
-        '#F7DEDF'
-      ]
-      'isolation_source' : [
-        '#000752',
-        '#252B6D',
-        '#4A5089',
-        '#6F75A4',
-        '#949AC0',
-        '#B9BFDB',
-        '#DEE4F7'
-      ]
-      'syndrome' : [
-        '#520042',
-        '#6E2760',
-        '#8A4F7F',
-        '#A6779D',
-        '#C29EBC',
-        '#DEC6DA',
-        '#FBEEF9'
-      ]
-      'stx1_subtype' : [
-        '#F05C00',
-        '#EF7123',
-        '#EE8746',
-        '#ED9D69',
-        '#ECB28C',
-        '#EBC8AF',
-        '#EADED2'
-      ]
-      'stx2_subtype' : [
-        '#006B5C',
-        '#238174',
-        '#46988D',
-        '#6AAEA5',
-        '#8DC5BE',
-        '#B0DBD6',
-        '#D4F2EF'
-      ]
-    }
-
-    $('.meta-option.checkbox').each((i,obj)->
-      $(obj).click(()->
-        if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
-            checkbox_value[i] = 1
-          else
-            checkbox_value[i] = 0
-          visible_bars = checkbox_value.reduce((a,b)-> a + b)))
-    
-    y = -5
-    centred = -1.5
-    height = 7
-    for m in mtypesDisplayed
-      if genomes.visibleMeta[m]
-        j = 0
-        i = 0
-        x = 0
-        y += height
-        centred += -3.5
-        while i < 7
-          rect_block
-            .append("rect")
-            .style("fill", colours[m][j++])
-            .style("stroke-width", 0.5)
-            .style("stroke", "black")
-            .attr("class", "metaMeter")
-            .attr("id", (n) ->
-              if i == 6
-                "Other"
-              else metaOntology[m][i])
-            .attr("width", (n) ->
-              if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
-                width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
-                n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
-              else if n._children? && i is 6 && metaOntology[m][i]?
-                width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
-                n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
-              else
-                width = 0
-                n.arr[i] = 0
-              width)
-            .attr("height", height)
-            .attr("y", y)
-            .attr("x", (n) ->
-              if n._children? && n.arr[i-1]? && i > 0
-                n.xpos += n.arr[i-1]
-              else n.xpos = 0
-              n.xpos + 4)
-            .append("svg:title")
-            .text(()->
-              if m is "isolation_host" or m is "isolation_source"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,10) + str.charAt(10).toUpperCase() + str.slice(11)
-              if m is "syndrome"
-                str = "Symptoms/Diseases"
-              if m is "stx1_subtype" or m is "stx2_subtype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
-              if m is "serotype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-              if i == 6
-                str + ": Other"
-              else
-                if metaOntology[m][i] is "undefined"
-                  str2 = "Undefined"
-                else str2 = metaOntology[m][i]
-                str + ": " + str2)
-          i++
-    
-    if ($('#treenode:has(g.v' + visible_bars + ')'))
-      svgNodes.select('.v' + visible_bars).remove()
-
-    rect_block.attr("class", 'v' + visible_bars)
-    
-    if visible_bars > 1
-      svgNodes.selectAll('.v' + (visible_bars - 1)).remove()
-      if ($('.v' + (visible_bars + 1))[0])
-        svgNodes.selectAll('.v' + (visible_bars + 1)).remove()
-      svgNodes.selectAll('.v0').remove()
-    if visible_bars is 1
-      if ($('.v2')[0])
-        svgNodes.selectAll('.v2').remove()
-      svgNodes.selectAll('.v0').remove()
-
-
-    @cluster = @cluster.separation((a, b) ->
-        a_height = 1
-        b_height = 1
-        if a._children? && visible_bars > 1
-          a_height = visible_bars
-        else a_height = 3
-        if b._children? && visible_bars > 1
-          b_height = visible_bars
-        else b_height = 3
-        a_height + b_height)
-
-    for m in mtypesDisplayed
-      if genomes.visibleMeta[m]
-        rect_block.select('.genomeMeter').remove()
-
+      
     cmdBox = iNodes
       .append('text')
       .attr("class","treeicon expandcollapse")
@@ -582,8 +361,7 @@ class TreeView extends ViewTemplate
     cmdBox.on("click", (d) -> 
       viewController.viewAction(num, 'expand_collapse', d, @.parentNode) 
     )
-
-
+    
     # # select/unselect clade
     # if @style is 'select'
       # # select
@@ -624,21 +402,7 @@ class TreeView extends ViewTemplate
       .attr("transform", (d) -> "translate(" + d.y + "," + d.x + ")" )
   
     nodesUpdate.select("circle")
-      .attr("r", 4)
-
-    nodesUpdate.selectAll("rect.genomeMeter")
-      .attr("width", (n) ->
-        if n._children?
-          20*(Math.log(n.num_leaves))
-        else 
-          0)
-
-    m = 1
-    while m < visible_bars + 1
-      svgNodes.selectAll('.v' + m)
-        .transition()
-        .attr("transform", "translate(" + 0 + "," + centred + ")" )
-      m++
+        .attr("r", 4)
 
     nodesUpdate.filter((d) -> !d.children )
       .select("text")
@@ -652,7 +416,7 @@ class TreeView extends ViewTemplate
           "\uf146"
       )
     
-    # Transition exiting nodes to the parent's new position.
+    # Transition exiting ndoes to the parent's new position.
     nodesExit = svgNodes.exit().transition()
       .duration(@duration)
       .attr("transform", (d) => "translate(" + @launchPt.y + "," + @launchPt.x + ")")
@@ -667,7 +431,7 @@ class TreeView extends ViewTemplate
     nodesExit.select("rect")
       .attr("width", 1e-6)
       .attr("height",1e-6)
-
+      
     # Reinsert previous root on top 
     # (when filter is applied the viewable tree can
     # have a root that does not match global tree root. 
@@ -693,7 +457,16 @@ class TreeView extends ViewTemplate
     
     true # return success
     
-  
+  # FUNC updateCSS
+  # Change CSS class for all genomes to match underlying genome properties
+  #
+  # PARAMS
+  # simple hash object with private and public list of genome Ids to update
+  # genomeController object
+  # 
+  # RETURNS
+  # boolean 
+  #
 
   # Message to appear in intro for genome tree
   intro: ->
@@ -721,17 +494,6 @@ class TreeView extends ViewTemplate
       })
     treeIntro
 
-
-  # FUNC updateCSS
-  # Change CSS class for all genomes to match underlying genome properties
-  #
-  # PARAMS
-  # simple hash object with private and public list of genome Ids to update
-  # genomeController object
-  # 
-  # RETURNS
-  # boolean 
-  #
   updateCSS: (gset, genomes) ->
   
     # Retrieve genome objects for each in gset
@@ -1037,10 +799,10 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   _sync: (genomes) ->
-
+    
     # Need to keep handle on the true root
     @root = @_syncNode(@trueRoot, genomes, 0)
-
+    
     # Check if genome set has changed
     if (genomes.genomeSetId != @currentGenomeSet) || @resetWindow
       # Need to set starting expansion layout
@@ -1052,14 +814,12 @@ class TreeView extends ViewTemplate
     true
     
   _syncNode: (node, genomes, sumLengths) ->
-
     
     # Restore to original branch length
     # Compute cumulative branch length
     node.length = node.storage*1
-
     node.sum_length = sumLengths + node.length
-
+    
     if node.leaf? and node.leaf is "true"
       # Genome leaf node
       g = genomes.genome(node.genome)
@@ -1070,33 +830,28 @@ class TreeView extends ViewTemplate
         # Update node with sync'd genome properties
         
         node.viewname = g.viewname
+        
         node.selected = (g.isSelected? and g.isSelected)
         node.assignedGroup = g.assignedGroup
         node.hidden   = false
-
+        
         # Append locus data
         # This will overwrite assignedGroup
         if @locusData?
           ld = @locusData.locusNode(node.name)
           node.viewname += ld[0]
           node.assignedGroup = ld[1] if ld[1]?
-
+        
       else
         # Mask filtered node
         node.hidden = true
-
-      unless node.metaCount? && !g?
-        node.metaCount = genomes.countMeta(g)
-
+       
     else
-
       # Internal node
-
+      
       isExpanded = true
       isExpanded = false if node._children?
-
-      node.metaCount = {}
-
+      
       # Iterate through the original children array
       children = []
       for c in node.daycare
@@ -1104,15 +859,7 @@ class TreeView extends ViewTemplate
         
         unless u.hidden
           children.push(u)
-
-          for k,v of u.metaCount
-            node.metaCount[k] = {} unless node.metaCount[k]?
-            for k2,v2 of u.metaCount[k]
-              if node.metaCount[k][k2]?
-                node.metaCount[k][k2] += v2
-              else node.metaCount[k][k2] = v2
-
-      
+          
       if children.length == 0
         node.hidden = true
         
@@ -1271,8 +1018,7 @@ class TreeView extends ViewTemplate
         node.internal_node_selected = 0
            
     record
-
-
+    
   # FUNC _scale
   # Sets branch x and y scale factors. Needs to
   # be called after tree rendered. Called after
@@ -1295,13 +1041,14 @@ class TreeView extends ViewTemplate
     percCovered = 0.10 * @root.num_leaves
     percCovered = 0.90 if percCovered > 0.90
     padding = 20
-    yedge = (@width - padding) * percCovered 
+    yedge = (@width - padding) * percCovered
     xedge = (@height - padding) * percCovered
     
     @branch_scale_factor_y = yedge/farthest
     @branch_scale_factor_x = xedge/lowest
       
     true
+    
              
   _expandCollapse: (genomes, d, el) ->
     
