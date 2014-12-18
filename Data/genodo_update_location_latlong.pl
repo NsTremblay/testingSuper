@@ -112,6 +112,8 @@ while (my $locationRow = $locationFeatureProps->next) {
 	my $locationFeatureId = $locationRow->feature_id;
 	my $markedUpLocation = $locationRow->value;
 
+	print "Found location $markedUpLocation\n";
+
 	## Need to parse out <markup></markup> tags for geocoding.
 	my $noMarkupLocation = $markedUpLocation;
 	$noMarkupLocation =~ s/(<[\/]*location>)//g;
@@ -135,9 +137,10 @@ foreach my $locationToConvert (@locationList) {
 	print "Converting " . $locationToConvert->{'location'} . " to coordinates\n";
 	my @foundCoordinate = (grep $_->{location} eq $locationToConvert->{'location'} , @coordinates);
 	if (!@foundCoordinate) {
-		print "\tCalling geocoder...\n";
-		my $latlong = $googleGeocoder->geocode(location => $locationToConvert->{'location'});
-		print "\tFound coordinates " . %{$latlong->{geometry}->{location}}->{lat} . "," . %{$latlong->{geometry}->{location}}->{lng} . "\n";
+		my $location = $locationToConvert->{'location'};
+		print "\tCalling geocoder on location '$location'...\n";
+		my $latlong = $googleGeocoder->geocode(location => $location);
+		print "\tFound coordinates " . $latlong->{geometry}->{location}->{lat} . "," . $latlong->{geometry}->{location}->{lng} . "\n";
 		my %location;
 		$location{'location'} = $locationToConvert->{'location'};
 		$location{'coordinates'} = $latlong;
@@ -150,7 +153,7 @@ foreach my $locationToConvert (@locationList) {
 		updateDBLocation(\@newCoordinate , $locationToConvert);
 	}
 	else{
-		print "\tFound coordinates " . %{$foundCoordinate[0]->{coordinates}->{geometry}->{location}}->{lat} . "," . %{$foundCoordinate[0]->{coordinates}->{geometry}->{location}}->{lng} . "\n";
+		print "\tFound coordinates " . $foundCoordinate[0]->{coordinates}->{geometry}->{location}->{lat} . "," . $foundCoordinate[0]->{coordinates}->{geometry}->{location}->{lng} . "\n";
 		updateDBLocation(\@foundCoordinate , $locationToConvert);
 	}
 }
@@ -164,7 +167,7 @@ sub updateDBLocation {
 
 	my $locationRowToUpdate = $schema->resultset('Featureprop')->find({'me.featureprop_id' => $_locationToConvert->{'featureprop_id'}} , {'me.feature_id' => $_locationToConvert->{'feature_id'}});
 	my $row  = $locationRowToUpdate->value;
-	$row .= "<coordinates><center><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{location}}->{lng}."</lng></center><viewport><southwest><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}}->{lng}."</lng></southwest><northeast><lat>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lat}."</lat><lng>".%{$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}}->{lng}."</lng></northeast></viewport></coordinates>";
+	$row .= "<coordinates><center><lat>".$_coordinates[0]->{coordinates}->{geometry}->{location}->{lat}."</lat><lng>".$_coordinates[0]->{coordinates}->{geometry}->{location}->{lng}."</lng></center><viewport><southwest><lat>".$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}->{lat}."</lat><lng>".$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{southwest}->{lng}."</lng></southwest><northeast><lat>".$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}->{lat}."</lat><lng>".$_coordinates[0]->{coordinates}->{geometry}->{viewport}->{northeast}->{lng}."</lng></northeast></viewport></coordinates>";
 	my %newRow = ('value' => $row);
 	$locationRowToUpdate->update(\%newRow) or croak "Could not update row\n";
 }

@@ -212,7 +212,6 @@ $argv{tmp_dir}         = $TMPDIR;
 $argv{noload}          = $NOLOAD;
 $argv{recreate_cache}  = $RECREATE_CACHE;
 $argv{save_tmpfiles}   = $SAVE_TMPFILES;
-$argv{web_upload}      = $WEBUPLOAD;
 $argv{vacuum}          = $VACUUM;
 $argv{debug}           = $DEBUG;
 $argv{use_fasta_names} = $NONAMECACHE;
@@ -234,21 +233,6 @@ $chado->file_handles();
 warn "Preparing data for inserting into the $DBNAME database\n";
 warn "(This may take a while ...)\n";
 
-## Create upload entry, if private?
-my $upload_id;
-if($WEBUPLOAD) {
-	validate_upload_parameters($upload_params);
-
-	$upload_id = $chado->handle_upload(category     => $upload_params->{category},
-	                      upload_date  => $upload_params->{upload_date},
-	                      login_id     => $upload_params->{login_id},
-	                      release_date => $upload_params->{release_date},
-	                      tag          => $upload_params->{tag},
-	               		 );
-	  
-}
-
-
 # Create parent feature: contig_collection
 contig_collection($f, $fp, $dx);
 
@@ -268,10 +252,6 @@ $chado->end_files();
 $chado->flush_caches();
 
 $chado->load_data() unless $NOLOAD;
-
-if($WEBUPLOAD && $TRACKINGID && !$NOLOAD) {
-	$chado->update_tracker($TRACKINGID, $upload_id);
-}
 
 $chado->remove_lock();
 
@@ -407,7 +387,7 @@ sub validate_genome_properties {
 		
 		if($valid_f_tags{$type}) {
 			if(ref $hash->{$type} eq 'ARRAY') {
-				# SOme scripts return every value as arrayref
+				# Some scripts return every value as arrayref
 				# Feature values are always singletons, so this
 				# should be safe
 				# There is no logical option for multiple names
@@ -611,7 +591,7 @@ sub contig {
 		# Get description and name from FASTA header
 		
 		# Uniquename and name
-		my $name = $contig->display_id;
+		$name = $contig->display_id;
 		
 		# Description
 		$desc = $contig->description

@@ -106,21 +106,6 @@ __PACKAGE__->add_unique_constraint("synonym_c1", ["name", "type_id"]);
 
 =head1 RELATIONS
 
-=head2 cell_line_synonyms
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::CellLineSynonym>
-
-=cut
-
-__PACKAGE__->has_many(
-  "cell_line_synonyms",
-  "Database::Chado::Schema::Result::CellLineSynonym",
-  { "foreign.synonym_id" => "self.synonym_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 feature_synonyms
 
 Type: has_many
@@ -132,21 +117,6 @@ Related object: L<Database::Chado::Schema::Result::FeatureSynonym>
 __PACKAGE__->has_many(
   "feature_synonyms",
   "Database::Chado::Schema::Result::FeatureSynonym",
-  { "foreign.synonym_id" => "self.synonym_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 library_synonyms
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LibrarySynonym>
-
-=cut
-
-__PACKAGE__->has_many(
-  "library_synonyms",
-  "Database::Chado::Schema::Result::LibrarySynonym",
   { "foreign.synonym_id" => "self.synonym_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -167,8 +137,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:7tsoHbmDd89nEec7PLomng
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:btMkGLLgVnhI37fJH69VwQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

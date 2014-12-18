@@ -48,6 +48,7 @@ use Data::Dumper;
 use DateTime qw(ymd);
 use JSON;
 use Sequences::GenodoDateTime;
+use Modules::Footprint;
 use HTML::FillInForm;
 use XML::Simple;
 use Modules::LocationManager;
@@ -223,7 +224,7 @@ sub submit_genome : Runmode {
     	$t->param($param => \@syndromes);
     }
     
-    $t->param(rm    => '/genome-uploader/upload_genome');
+    $t->param(rm    => '/upload/upload_genome');
 	$t->param(title => 'Upload a genome');
 	
 	# Error detected, fill in old values and error messages
@@ -261,7 +262,7 @@ sub upload_genome : Runmode {
     # Validate form and fasta file
 	my $results = $self->check_rm( 'submit_genome', $self->_dfv_submit_genome_rules )
 		|| return $self->check_rm_error_page;
-		
+
 	# Everything is good to go, initiate a new job
 	my $user = $self->dbixSchema->resultset('Login')->find( { username => $self->authen->username } );
 	
@@ -335,6 +336,7 @@ sub upload_genome : Runmode {
 		my $country = $results->valid('g_location_country');
 		my $state = $results->valid('g_location_state');
 		my $city = $results->valid('g_location_city');
+		
 		
 		my @locaiton_query_params = ($country, $state, $city);
 		my $location_query_string = join(',', @locaiton_query_params);
@@ -440,27 +442,19 @@ sub upload_genome : Runmode {
 		}
 	);
 	$opt->write($optFile);
+
+	croak "Error: genome checksum parameter missing (g_footprint). Valid g_footprint parameter gets set in call to _valid_fasta_file() method."
+		unless $results->valid('g_footprint');
 	
-	# Fork program and run loading separately
-#	my $cmd = "perl $FindBin::Bin/../../Sequences/upload_wrapper.pl --optfile $optFile";
-#	my $daemon = Proc::Daemon->new(
-#		work_dir => "$FindBin::Bin/../../Sequences/",
-#        exec_command => $cmd
-#    );
-#
-#	# Fork
-##	my $kid_pid = $daemon->Init;
-#	
-#	# Update job record
-#	$tracking_row->pid($kid_pid);
-#	$tracking_row->command($cmd);
-#	
+
 	$tracking_row->feature_name($results->valid('g_name'));
+	$tracking_row->access_category($upload_params{category});
+	$tracking_row->footprint($results->valid('g_footprint'));
 	$tracking_row->step(1); # Step 1 complete
 	$tracking_row->update;
 	
 	# Send user to status page
-	$self->redirect( "/genome-uploader/status?tracking_id=$tracking_id" );
+	$self->redirect( "/upload/status?tracking_id=$tracking_id" );
 }
 
 =head2 status
@@ -519,7 +513,7 @@ sub status : Runmode {
     	my $feature_row = $feature_rs->first();
     	
     	if($feature_row) {
-    		$t->param(strain_link => '/strain_info?privateSingleStrainID='.$feature_row->feature_id);
+    		$t->param(strain_link => '/strains/info?genome=private_'.$feature_row->feature_id);
     		$t->param(not_found => 0);
     	} else {
     		$t->param(strain_link => 0);
@@ -585,9 +579,9 @@ sub list : Runmode {
 				#feature_id => $upload_row->get_column('feature_id'),
 				can_delete => $upload_row->get_column('can_share'),
 				can_modify => $upload_row->get_column('can_modify'),
-				view_rm => '/strain_info?privateSingleStrainID=' . $upload_row->get_column('feature_id'),
-				edit_rm => '/genome-uploader/edit_genome?upload_id=' . $upload_row->upload_id,
-				delete_rm => '/genome-uploader/delete_genome?upload_id=' . $upload_row->upload_id,
+				view_rm => '/strains/info?genome=private_' . $upload_row->get_column('feature_id'),
+				edit_rm => '/upload/edit_genome?upload_id=' . $upload_row->upload_id,
+				delete_rm => '/upload/delete_genome?upload_id=' . $upload_row->upload_id,
 			};
 	}
 
@@ -643,7 +637,7 @@ sub delete_genome : Runmode {
 	# Only admins can delete genomes (aka has can_share priviledges)
 	unless($test_row && $test_row->get_column('can_share')) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to delete this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
 	
 	# Keep record of all deletions
@@ -672,7 +666,7 @@ sub delete_genome : Runmode {
 	
 	# Redirect to genome list page
 	$self->session->param( operation_status => '<strong>Success!</strong> Genome has been deleted.' );
-	$self->redirect('/genome-uploader/list');
+	$self->redirect('/upload/list');
    
 }
 
@@ -698,7 +692,7 @@ sub edit_genome : Runmode {
 	
 	unless($test_row) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to edit this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
     
     # Grab everything!!
@@ -887,7 +881,7 @@ sub edit_genome : Runmode {
     $t->param(selected_syndromes => \@syndrome_keys);
      
     $t->param(new_genome => 0);
-    $t->param(rm    => '/genome-uploader/update_genome');
+    $t->param(rm    => '/upload/update_genome');
 	$t->param(title => 'Modify Genome Attributes');
 	$t->param($errs) if $errs;    # created by rm update_genome
 	
@@ -917,7 +911,7 @@ sub update_genome : Runmode {
 	
 	unless($test_row) {
 		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to update this genome.');
-		$self->redirect('/genome-uploader/list');
+		$self->redirect('/upload/list');
 	}
     
     # Validate form and fasta file
@@ -962,7 +956,7 @@ sub update_genome : Runmode {
     	# Attempt to change privacy
     	unless($test_row->get_column('can_share')) {
     		$self->session->param( operation_status => '<strong>Access Denied.</strong> You do not have sufficient permissions to modify the privacy settings for this genome.');
-			$self->redirect('/genome-uploader/list');
+			$self->redirect('/upload/list');
     	} else {
     		$feature_row->upload->category($results->valid('g_privacy'));
     	}
@@ -1129,7 +1123,7 @@ sub update_genome : Runmode {
 		my $country = $results->valid('g_location_country');
 		my $state = $results->valid('g_location_state');
 		my $city = $results->valid('g_location_city');
-
+		
 		my @locaiton_query_params = ($country, $state, $city);
 		my $location_query_string = join(',', @locaiton_query_params);
 
@@ -1368,7 +1362,7 @@ sub update_genome : Runmode {
 	
 	# Redirect to genome list page
 	$self->session->param( operation_status => '<strong>Success!</strong> Genome has been updated.' );
-	$self->redirect('/genome-uploader/list');
+	$self->redirect('/upload/list');
 }
 
 =head2 meta_ontology
@@ -1578,7 +1572,7 @@ sub _dfv_submit_genome_rules {
 	# Add checks on FASTA file
 	# Privacy setting is always required for new genomes
 	push @{$dfv_rules->{required}}, 'g_file', 'g_privacy';
-	$dfv_rules->{constraint_methods}->{g_file} = _valid_fasta_file($self->query->upload('g_file'));
+	$dfv_rules->{constraint_methods}->{g_file} = _valid_fasta_file($self->query->upload('g_file'), $self->dbh);
 	
 	# Check name is unique for every newly submitted genome
 	$dfv_rules->{constraint_methods}->{g_name} = [ FV_length_between( 5, 255 ), \&_genomename_does_not_exist ];
@@ -1662,7 +1656,7 @@ Check if uploaded file is valid
 =cut
 
 sub _valid_fasta_file {
-	my ($upload_handle) = @_;
+	my ($upload_handle, $dbh) = @_;
 	
 	return sub {
 		my $dfv = shift;
@@ -1687,12 +1681,15 @@ sub _valid_fasta_file {
 		
 		my $seqio;
 		my $total_length = 0;
-		my $too_short = 1000;
+		my $too_short = 3500000;
+		my $too_long = 7500000;
 		my $too_many_contigs = 10000;
+
 		eval {
 			$dfv->{profile}{msgs} ||= {};
 			$seqio = Bio::SeqIO->new(-fh => $fh, -format => 'fasta');
 			my $num_contigs = 0;
+			my @contigs;
 			while(my $seq = $seqio->next_seq) {
 				$total_length += $seq->length;
 				# Check if nucleotide sequence (allow any IUPAC symbols)
@@ -1711,6 +1708,7 @@ sub _valid_fasta_file {
 				}
 				
 				$num_contigs++;
+				push @contigs, $seq->seq;
 				
 				if($num_contigs > $too_many_contigs) {
 					my $message = "Detected over $too_many_contigs sequences in FASTA file. Only assembled genomes can be submitted";
@@ -1718,16 +1716,47 @@ sub _valid_fasta_file {
 					
 					# Dynamically change the profile error message for valid_fasta_file
 					$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
+					return;
 				}
 			}
 			
 			if($total_length < $too_short) {
-				my $message = "Sequence too short (total length: $total_length)";
+				my $message = "Sequence too short (total length: $total_length). Only whole genome sequences can be submitted\n";
 				get_logger->error($message);
 				
 				# Dynamically change the profile error message for valid_fasta_file
 				$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
+
+				return;
 			}
+
+			if($total_length > $too_long) {
+				my $message = "Genome sequence too long (total length: $total_length). Only assembled genomes can be submitted";
+				get_logger->error($message);
+				
+				# Dynamically change the profile error message for valid_fasta_file
+				$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
+
+				return;
+			}
+
+			# Make sure no dublicates
+			my $fp = Modules::Footprint->new(dbh => $dbh);
+			my $footprint = $fp->digest(\@contigs);
+			my @dups = $fp->validateFootprint($footprint);
+			$dfv->valid('g_footprint', $footprint);
+			if(@dups) {
+				my $message = "Duplicate of genome currently in database";
+				$message .= '. Genome is duplicate of '.join(', ', @dups);
+				get_logger->error($message);
+				
+				# Dynamically change the profile error message for valid_fasta_file
+				$dfv->{profile}{msgs}{constraints}{valid_fasta_file} = $message;
+
+				return;
+			}
+
+
 			
 		};
 		if($@) {
@@ -1735,7 +1764,7 @@ sub _valid_fasta_file {
 			return();
 		}
 		
-		return($total_length >= $too_short);
+		return(1);
 	}
 }
 
@@ -1894,8 +1923,8 @@ Convert a location to a latlng
 
 sub _geocode {
 	my $self = shift;
-	#my $q = $self->query();
-	#my $address = $q->param("address");
+	my $q = $self->query();
+	my $address = $q->param("address");
 
 	#Init the location manager
 	my $locationManager = Modules::LocationManager->new();
@@ -2178,6 +2207,9 @@ sub _geocode {
 	    closedir GFF;
 	}
 =cut
+
+
+
 
 
 1;
