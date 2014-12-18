@@ -1923,8 +1923,8 @@ Convert a location to a latlng
 
 sub _geocode {
 	my $self = shift;
-	#my $q = $self->query();
-	#my $address = $q->param("address");
+	my $q = $self->query();
+	my $address = $q->param("address");
 
 	#Init the location manager
 	my $locationManager = Modules::LocationManager->new();

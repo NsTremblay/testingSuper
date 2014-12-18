@@ -49,16 +49,15 @@ my $parallel_exe = '/usr/bin/parallel';
 my $nr_location = '/home/matt/blast_databases/nr_gammaproteobacteria';
 my $panseq_exe = '/home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl';
 my $align_script = "$FindBin::Bin/parallel_tree_builder.pl";
-my $blocksize = 3000;
+my $blocksize = 2000;
 my $partial_load = 0;
 
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
 # Parse command-line
 my ($panseq_dir, $config_file,
-	$NOLOAD, $RECREATE_CACHE, $SAVE_TMPFILES, $DEBUG,
+	$NOLOAD, $RECREATE_CACHE, $SAVE_TMPFILES, $DEBUG, $OVERRIDE,
     $REMOVE_LOCK,
-    $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI, $TMPDIR,
     $VACUUM, $LOGFILE);
 
 my $SLICE = undef;
@@ -73,6 +72,7 @@ GetOptions(
 	'debug' => \$DEBUG,
 	'vacuum' => \$VACUUM,
 	'slice=i' => \$SLICE,
+	'override' => \$OVERRIDE,
 	'log=s' => \$LOGFILE
 ) or ( system( 'pod2text', $0 ), exit -1 );
 
@@ -93,53 +93,24 @@ if(defined $SLICE) {
 my $logger = undef;
 if($LOGFILE) {
 	open($logger, ">$LOGFILE") or croak "Error: unable to write to file $LOGFILE ($!).\n";
+	print "Writing to log $LOGFILE\n";
 }
 
-# Connect to DB
-my ($dbname, $dbuser, $dbpass, $dbhost, $dbport, $dbi, $tmp_dir);
-
-if(my $db_conf = new Config::Simple($config_file)) {
-	$dbname    = $db_conf->param('db.name');
-	$dbuser    = $db_conf->param('db.user');
-	$dbpass    = $db_conf->param('db.pass');
-	$dbhost    = $db_conf->param('db.host');
-	$dbport    = $db_conf->param('db.port');
-	$dbi       = $db_conf->param('db.dbi');
-	$tmp_dir   = $db_conf->param('tmp.dir');
-} 
-else {
-	croak "[Error] unable to read configuration file ( " . Config::Simple->error() . ").\n";
-}
-
-croak "[Error] invalid configuration file." unless $dbname;
-
-my $dbsource = 'dbi:' . $dbi . ':dbname=' . $dbname . ';host=' . $dbhost;
-$dbsource . ';port=' . $dbport if $dbport;
-
-my $schema = Database::Chado::Schema->connect($dbsource, $dbuser, $dbpass) or croak "Error: could not connect to database ($!).\n";
 
 # Initialize the chado adapter
 my %argv;
 
-$argv{dbname}         = $dbname;
-$argv{dbuser}         = $dbuser;
-$argv{dbpass}         = $dbpass;
-$argv{dbhost}         = $dbhost;
-$argv{dbport}         = $dbport;
-$argv{dbi}            = $dbi;
-$argv{tmp_dir}        = $tmp_dir;
+$argv{config}         = $config_file;
 $argv{noload}         = $NOLOAD;
 $argv{recreate_cache} = $RECREATE_CACHE;
 $argv{save_tmpfiles}  = $SAVE_TMPFILES;
 $argv{vacuum}         = $VACUUM;
 $argv{debug}          = $DEBUG;
+$argv{override}       = $OVERRIDE;
 $argv{feature_type}   = 'pangenome';
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
-# Intialize the Tree building module
-my $tree_builder = Phylogeny::TreeBuilder->new();
-my $tree_io = Phylogeny::Tree->new(dbix_schema => $schema);
 
 # BEGIN
 my $now = my $start = time();
@@ -157,7 +128,7 @@ elapsed_time("Initialization complete");
 unless($panseq_dir) {
 	print "Running panseq...\n";
 	
-	my $root_dir = $tmp_dir . 'panseq_pangenome/';
+	my $root_dir = $chado->tmp_dir . 'panseq_pangenome/';
 	unless (-e $root_dir) {
 		mkdir $root_dir or croak "[Error] unable to create directory $root_dir ($!).\n";
 	}
@@ -313,7 +284,7 @@ print $logger  "$num_pg regions processed.\n" if $logger;
 my $alndir = File::Temp::tempdir(
 	"chado-alignments-XXXX",
 	CLEANUP  => $SAVE_TMPFILES ? 0 : 1, 
-	DIR      => $tmp_dir,
+	DIR      => $chado->tmp_dir,
 );
 chmod 0755, $alndir;
 

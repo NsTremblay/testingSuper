@@ -42,6 +42,8 @@ use Time::HiRes qw( time );
 # INIT
 ########
 
+my $v = 0;
+
 # Globals (set these to match local values)
 my $muscle_exe = '/usr/bin/muscle';
 
@@ -51,7 +53,7 @@ my $tree_io = Phylogeny::Tree->new(dbix_schema => 'empty');
 
 # Inialize the parallel manager
 # Max processes for parallel run
-my $pm = new Parallel::ForkManager(8);
+my $pm = new Parallel::ForkManager(20);
 
 # Get config
 my ($alndir) = 0;

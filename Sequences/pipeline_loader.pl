@@ -97,7 +97,6 @@ my ($CONFIGFILE, $ROOT, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
-    $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI, $TMPDIR,
     $VACUUM);
 
 GetOptions(
@@ -117,36 +116,13 @@ pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
 
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
-
 croak "You must supply the path to the top-level results directory" unless $ROOT;
 $ROOT .= '/' unless $ROOT =~ m/\/$/;
-
-# Load database connection info from config file
-die "You must supply a configuration filename" unless $CONFIGFILE;
-if(my $db_conf = new Config::Simple($CONFIGFILE)) {
-	$DBNAME    = $db_conf->param('db.name');
-	$DBUSER    = $db_conf->param('db.user');
-	$DBPASS    = $db_conf->param('db.pass');
-	$DBHOST    = $db_conf->param('db.host');
-	$DBPORT    = $db_conf->param('db.port');
-	$DBI       = $db_conf->param('db.dbi');
-	$TMPDIR    = $db_conf->param('tmp.dir');
-} else {
-	die Config::Simple->error();
-}
-croak "Invalid configuration file." unless $DBNAME;
-
 
 # Initialize the chado adapter
 my %argv;
 
-$argv{dbname}           = $DBNAME;
-$argv{dbuser}           = $DBUSER;
-$argv{dbpass}           = $DBPASS;
-$argv{dbhost}           = $DBHOST;
-$argv{dbport}           = $DBPORT;
-$argv{dbi}              = $DBI;
-$argv{tmp_dir}          = $TMPDIR;
+$argv{config}           = $CONFIGFILE;
 $argv{noload}           = $NOLOAD;
 $argv{recreate_cache}   = $RECREATE_CACHE;
 $argv{save_tmpfiles}    = $SAVE_TMPFILES;
@@ -1115,8 +1091,6 @@ sub vfamr {
 		# Load tree
 		load_tree($query_id, \%sequence_group) if $do_tree && $num_ok > 2;
 	}
-
-	$chado->typing($TMPDIR);
 
 }
 
