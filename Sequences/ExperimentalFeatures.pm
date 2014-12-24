@@ -1944,7 +1944,7 @@ sub load_data {
 			$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
 			# Compute new tree, output to file
-			$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+			#$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
 
 			# Compute new snp matrix file
 			($tmp_snp_matrix_file, $tmp_snp_func_file) = $self->binary_state_snp_matrix('pipeline_snp_alignment');
@@ -1995,7 +1995,7 @@ sub load_data {
 		# Copy pangenome and snp matrix files to final destination on VPN
 		# Load genome tree
 		if($found_snps) {
-			$self->load_tree($public_tree_file, $global_tree_file);
+			#$self->load_tree($public_tree_file, $global_tree_file);
 			#$self->send_matrix_files($tmp_pg_matrix_file, $tmp_pg_func_file, $tmp_snp_matrix_file, $tmp_snp_func_file);
 
 		} else {

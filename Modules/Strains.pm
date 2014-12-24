@@ -167,9 +167,9 @@ sub info : Runmode {
 		my @subunits;
 		foreach my $uniquename (qw/stx1_subunit stx2_subunit/) {
 			my $refseq = $self->dbixSchema->resultset('Feature')->find(
-			{
-				uniquename => $uniquename
-			}
+				{
+					uniquename => $uniquename
+				}
 			);
 			my $ref_id = $refseq->feature_id;
 			push @subunits, $ref_id;
