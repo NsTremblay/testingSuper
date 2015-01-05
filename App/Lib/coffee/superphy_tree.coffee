@@ -255,9 +255,12 @@ class TreeView extends ViewTemplate
         n.x = n.x * @branch_scale_factor_x
       if visible_bars > 1
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
-        console.log(n.x)
       n.arr = []
       n.xpos = 0
+      n.tt_mtype = []
+      n.meta_summary = {}
+      for m in mtypesDisplayed
+        n.meta_summary[m] = []
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -503,8 +506,13 @@ class TreeView extends ViewTemplate
               if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
+                if n.metaCount[m][metaOntology[m][i]] is 1
+                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
+                else
+                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               else if n._children? && i is 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
+                n.metaCount[m][metaOntology[m][i]] = n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
               else
                 width = 0
@@ -518,25 +526,34 @@ class TreeView extends ViewTemplate
               else n.xpos = 0
               n.xpos + 4)
             .append("svg:title")
-            .text(()->
+            .text((n)->
+              if n.metaCount[m][metaOntology[m][i]] is 1
+                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
+              else
+                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               if m is "isolation_host" or m is "isolation_source"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,10) + str.charAt(10).toUpperCase() + str.slice(11)
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+                tt_mtitle = tt_mtitle.replace("_", " ")
+                tt_mtitle = tt_mtitle.slice(0,10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11)
               if m is "syndrome"
-                str = "Symptoms/Diseases"
+                tt_mtitle = "Symptoms/Diseases"
               if m is "stx1_subtype" or m is "stx2_subtype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+                tt_mtitle = tt_mtitle.replace("_", " ")
+                tt_mtitle = tt_mtitle.slice(0,5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6)
               if m is "serotype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-              str2 = metaOntology[m][i] unless metaOntology[m][i] is "undefined"
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtype = metaOntology[m][i] unless metaOntology[m][i] is "undefined"
               if metaOntology[m][i] is "undefined"
-                str2 = "Undefined"
+                tt_mtype = "Undefined"
               if i == 6
-                str2 = "Other"
-              str + ": " + str2)
+                tt_mtype = "Other"
+              if n.metaCount[m][metaOntology[m][i]] is 1
+                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
+              else if n.metaCount[m][metaOntology[m][i]]?
+                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
+              console.log(n.tt_mtype[i])
+              tt_mtitle + ": " + n.tt_mtype[i])
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))

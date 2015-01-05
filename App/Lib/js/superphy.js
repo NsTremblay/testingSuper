@@ -3022,7 +3022,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3060,10 +3060,15 @@
         }
         if (visible_bars > 1) {
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
-          console.log(n.x);
         }
         n.arr = [];
         n.xpos = 0;
+        n.tt_mtype = [];
+        n.meta_summary = {};
+        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
+          m = mtypesDisplayed[_j];
+          n.meta_summary[m] = [];
+        }
       }
       if (this.expansionContraction) {
         yedge = this.width - 30;
@@ -3071,8 +3076,8 @@
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            n = _ref1[_j];
+          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+            n = _ref1[_k];
             n.y = n.y - yshift;
           }
         }
@@ -3226,8 +3231,8 @@
       y = -5;
       centred = -1.5;
       height = 7;
-      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
-        m = mtypesDisplayed[_k];
+      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
+        m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
@@ -3246,8 +3251,14 @@
               if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
+                if (n.metaCount[m][metaOntology[m][i]] === 1) {
+                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
+                } else {
+                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
+                }
               } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
+                n.metaCount[m][metaOntology[m][i]] = n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
               } else {
                 width = 0;
@@ -3261,34 +3272,45 @@
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).append("svg:title").text(function() {
-              var str, str2;
+            }).append("svg:title").text(function(n) {
+              var position, tt_mtitle, tt_mtype;
+              if (n.metaCount[m][metaOntology[m][i]] === 1) {
+                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
+              } else {
+                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
+              }
               if (m === "isolation_host" || m === "isolation_source") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 10) + str.charAt(10).toUpperCase() + str.slice(11);
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle = tt_mtitle.replace("_", " ");
+                tt_mtitle = tt_mtitle.slice(0, 10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11);
               }
               if (m === "syndrome") {
-                str = "Symptoms/Diseases";
+                tt_mtitle = "Symptoms/Diseases";
               }
               if (m === "stx1_subtype" || m === "stx2_subtype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle = tt_mtitle.replace("_", " ");
+                tt_mtitle = tt_mtitle.slice(0, 5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6);
               }
               if (m === "serotype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
               }
               if (metaOntology[m][i] !== "undefined") {
-                str2 = metaOntology[m][i];
+                tt_mtype = metaOntology[m][i];
               }
               if (metaOntology[m][i] === "undefined") {
-                str2 = "Undefined";
+                tt_mtype = "Undefined";
               }
               if (i === 6) {
-                str2 = "Other";
+                tt_mtype = "Other";
               }
-              return str + ": " + str2;
+              if (n.metaCount[m][metaOntology[m][i]] === 1) {
+                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)");
+              } else if (n.metaCount[m][metaOntology[m][i]] != null) {
+                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)");
+              }
+              console.log(n.tt_mtype[i]);
+              return tt_mtitle + ": " + n.tt_mtype[i];
             });
             i++;
           }
@@ -3327,8 +3349,8 @@
         }
         return a_height + b_height;
       });
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
+      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
+        m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
           rect_block.select('.genomeMeter').remove();
         }
@@ -3386,8 +3408,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
-        n = _ref2[_m];
+      for (_n = 0, _len5 = _ref2.length; _n < _len5; _n++) {
+        n = _ref2[_n];
         n.x0 = n.x;
         n.y0 = n.y;
       }
