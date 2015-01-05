@@ -258,6 +258,9 @@ class TreeView extends ViewTemplate
         console.log(n.x)
       n.arr = []
       n.xpos = 0
+      n.meta_summary = {}
+      for m in mtypesDisplayed
+        n.meta_summary[m] = []
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -503,6 +506,11 @@ class TreeView extends ViewTemplate
               if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
+                if n.metaCount[m][metaOntology[m][i]] is 1
+                  n.meta_summary[m].push(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
+                else
+                  n.meta_summary[m].push(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
+                console.log(n.meta_summary[m])
               else if n._children? && i is 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
@@ -518,7 +526,11 @@ class TreeView extends ViewTemplate
               else n.xpos = 0
               n.xpos + 4)
             .append("svg:title")
-            .text(()->
+            .text((n)->
+              if n.metaCount[m][metaOntology[m][i]] is 1
+                position = n.meta_summary[m].indexOf(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
+              else
+                position = n.meta_summary[m].indexOf(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               if m is "isolation_host" or m is "isolation_source"
                 str = m.charAt(0).toUpperCase() + m.slice(1)
                 str = str.replace("_", " ")
@@ -529,15 +541,18 @@ class TreeView extends ViewTemplate
                 str = m.charAt(0).toUpperCase() + m.slice(1)
                 str = str.replace("_", " ")
                 str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
+                console.log(str)
               if m is "serotype"
                 str = m.charAt(0).toUpperCase() + m.slice(1)
               if i == 6
-                str + ": Other"
+                str = str + ": Other"
               else
                 if metaOntology[m][i] is "undefined"
                   str2 = "Undefined"
-                else str2 = metaOntology[m][i]
-                str + ": " + str2)
+                else 
+                  str2 = metaOntology[m][i] + " " + n.meta_summary[m].splice(position, 1)
+                  console.log(n.meta_summary[m])
+              str + ": " + str2)
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
