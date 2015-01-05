@@ -3277,13 +3277,13 @@
                 str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
               }
               if (m === "serotype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-              }
-              if (i === 6) {
-                return str + ": Other";
+                return str = m.charAt(0).toUpperCase() + m.slice(1);
               } else {
                 if (metaOntology[m][i] === "undefined") {
                   str2 = "Undefined";
+                }
+                if (i === 6) {
+                  str2 = "Other";
                 } else {
                   str2 = metaOntology[m][i];
                 }

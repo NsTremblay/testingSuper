@@ -531,11 +531,11 @@ class TreeView extends ViewTemplate
                 str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
               if m is "serotype"
                 str = m.charAt(0).toUpperCase() + m.slice(1)
-              if i == 6
-                str + ": Other"
               else
                 if metaOntology[m][i] is "undefined"
                   str2 = "Undefined"
+                if i == 6
+                  str2 = "Other"
                 else str2 = metaOntology[m][i]
                 str + ": " + str2)
           i++
