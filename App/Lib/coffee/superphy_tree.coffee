@@ -257,10 +257,11 @@ class TreeView extends ViewTemplate
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
       n.arr = []
       n.xpos = 0
-      n.tt_mtype = []
+      n.tt_mtype = {}
       n.meta_summary = {}
       for m in mtypesDisplayed
         n.meta_summary[m] = []
+        n.tt_mtype[m] = new String()
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -512,7 +513,6 @@ class TreeView extends ViewTemplate
                   n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               else if n._children? && i is 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
-                n.metaCount[m][metaOntology[m][i]] = n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
               else
                 width = 0
@@ -527,9 +527,9 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .append("svg:title")
             .text((n)->
-              if n.metaCount[m][metaOntology[m][i]] is 1
+              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
                 position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
-              else
+              else if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
                 position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               if m is "isolation_host" or m is "isolation_source"
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
@@ -548,12 +548,13 @@ class TreeView extends ViewTemplate
                 tt_mtype = "Undefined"
               if i == 6
                 tt_mtype = "Other"
-              if n.metaCount[m][metaOntology[m][i]] is 1
-                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-              else if n.metaCount[m][metaOntology[m][i]]?
-                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
-              console.log(n.tt_mtype[i])
-              tt_mtitle + ": " + n.tt_mtype[i])
+              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
+                n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
+                console.log(i, n.tt_mtype)
+              else if n.metaCount[m][metaOntology[m][i]]? && n._children?
+                n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
+                console.log(i, n.tt_mtype[m])
+              tt_mtitle + ": " + n.tt_mtype[m])
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
@@ -570,18 +571,6 @@ class TreeView extends ViewTemplate
       if ($('.v2')[0])
         svgNodes.selectAll('.v2').remove()
       svgNodes.selectAll('.v0').remove()
-
-
-    @cluster = @cluster.separation((a, b) ->
-        a_height = 1
-        b_height = 1
-        if a._children? && visible_bars > 1
-          a_height = visible_bars
-        else a_height = 3
-        if b._children? && visible_bars > 1
-          b_height = visible_bars
-        else b_height = 3
-        a_height + b_height)
 
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]

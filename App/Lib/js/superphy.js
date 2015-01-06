@@ -3063,11 +3063,12 @@
         }
         n.arr = [];
         n.xpos = 0;
-        n.tt_mtype = [];
+        n.tt_mtype = {};
         n.meta_summary = {};
         for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
           m = mtypesDisplayed[_j];
           n.meta_summary[m] = [];
+          n.tt_mtype[m] = new String();
         }
       }
       if (this.expansionContraction) {
@@ -3258,7 +3259,6 @@
                 }
               } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
-                n.metaCount[m][metaOntology[m][i]] = n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
               } else {
                 width = 0;
@@ -3274,9 +3274,9 @@
               return n.xpos + 4;
             }).append("svg:title").text(function(n) {
               var position, tt_mtitle, tt_mtype;
-              if (n.metaCount[m][metaOntology[m][i]] === 1) {
+              if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
                 position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
-              } else {
+              } else if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
                 position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
               }
               if (m === "isolation_host" || m === "isolation_source") {
@@ -3304,13 +3304,14 @@
               if (i === 6) {
                 tt_mtype = "Other";
               }
-              if (n.metaCount[m][metaOntology[m][i]] === 1) {
-                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)");
-              } else if (n.metaCount[m][metaOntology[m][i]] != null) {
-                n.tt_mtype.push(tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)");
+              if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
+                n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
+                console.log(i, n.tt_mtype);
+              } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
+                n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
+                console.log(i, n.tt_mtype[m]);
               }
-              console.log(n.tt_mtype[i]);
-              return tt_mtitle + ": " + n.tt_mtype[i];
+              return tt_mtitle + ": " + n.tt_mtype[m];
             });
             i++;
           }
@@ -3333,22 +3334,6 @@
         }
         svgNodes.selectAll('.v0').remove();
       }
-      this.cluster = this.cluster.separation(function(a, b) {
-        var a_height, b_height;
-        a_height = 1;
-        b_height = 1;
-        if ((a._children != null) && visible_bars > 1) {
-          a_height = visible_bars;
-        } else {
-          a_height = 3;
-        }
-        if ((b._children != null) && visible_bars > 1) {
-          b_height = visible_bars;
-        } else {
-          b_height = 3;
-        }
-        return a_height + b_height;
-      });
       for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
         m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
