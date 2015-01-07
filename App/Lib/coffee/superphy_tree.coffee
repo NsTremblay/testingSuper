@@ -412,7 +412,7 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 7)
-      .attr("y", -2)
+      .attr("y", -3)
       .attr("x", 4)
       .append("svg:title")
       .text((n)-> n.num_leaves + " genomes")
@@ -492,7 +492,7 @@ class TreeView extends ViewTemplate
         x = 0
         y += height
         centred += -3.5
-        while i < 7
+        while i < metaOntology[m].length
           rect_block
             .append("rect")
             .style("fill", colours[m][j++])
@@ -507,10 +507,6 @@ class TreeView extends ViewTemplate
               if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
                 n.arr[i] = (20*(Math.log(n.num_leaves)) * (n.metaCount[m][metaOntology[m][i]]) / n.num_leaves)
-                if n.metaCount[m][metaOntology[m][i]] is 1
-                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
-                else
-                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               else if n._children? && i is 6 && metaOntology[m][i]?
                 width = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
                 n.arr[i] = (20*(Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]))
@@ -527,10 +523,6 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .append("svg:title")
             .text((n)->
-              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
-                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome")
-              else if n._children? && n.metaCount[m][metaOntology[m][i]]? && i < 6 && metaOntology[m][i]?
-                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes")
               if m is "isolation_host" or m is "isolation_source"
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
                 tt_mtitle = tt_mtitle.replace("_", " ")
@@ -546,14 +538,12 @@ class TreeView extends ViewTemplate
               tt_mtype = metaOntology[m][i] unless metaOntology[m][i] is "undefined"
               if metaOntology[m][i] is "undefined"
                 tt_mtype = "Undefined"
-              if i == 6
-                tt_mtype = "Other"
               if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
                 n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-                console.log(i, n.tt_mtype)
+                console.log(n.tt_mtype[m])
               else if n.metaCount[m][metaOntology[m][i]]? && n._children?
                 n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
-                console.log(i, n.tt_mtype[m])
+                console.log(n.tt_mtype[m])
               tt_mtitle + ": " + n.tt_mtype[m])
           i++
     

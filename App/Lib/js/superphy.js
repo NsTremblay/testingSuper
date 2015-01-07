@@ -3206,7 +3206,7 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -2).attr("x", 4).append("svg:title").text(function(n) {
+      }).attr("height", 7).attr("y", -3).attr("x", 4).append("svg:title").text(function(n) {
         return n.num_leaves + " genomes";
       });
       colours = {
@@ -3240,7 +3240,7 @@
           x = 0;
           y += height;
           centred += -3.5;
-          while (i < 7) {
+          while (i < metaOntology[m].length) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
               if (i === 6) {
                 return "Other";
@@ -3252,11 +3252,6 @@
               if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
-                if (n.metaCount[m][metaOntology[m][i]] === 1) {
-                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
-                } else {
-                  n.meta_summary[m].push(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
-                }
               } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
@@ -3273,12 +3268,7 @@
               }
               return n.xpos + 4;
             }).append("svg:title").text(function(n) {
-              var position, tt_mtitle, tt_mtype;
-              if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
-                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
-              } else if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
-                position = n.meta_summary[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
-              }
+              var tt_mtitle, tt_mtype;
               if (m === "isolation_host" || m === "isolation_source") {
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
                 tt_mtitle = tt_mtitle.replace("_", " ");
@@ -3301,15 +3291,12 @@
               if (metaOntology[m][i] === "undefined") {
                 tt_mtype = "Undefined";
               }
-              if (i === 6) {
-                tt_mtype = "Other";
-              }
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
-                console.log(i, n.tt_mtype);
+                console.log(n.tt_mtype[m]);
               } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
-                console.log(i, n.tt_mtype[m]);
+                console.log(n.tt_mtype[m]);
               }
               return tt_mtitle + ": " + n.tt_mtype[m];
             });
