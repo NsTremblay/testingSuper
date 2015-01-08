@@ -3022,7 +3022,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3063,12 +3063,12 @@
         }
         n.arr = [];
         n.xpos = 0;
+        n.tt_display = {};
         n.tt_mtype = {};
-        n.meta_summary = {};
         for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
           m = mtypesDisplayed[_j];
-          n.meta_summary[m] = [];
-          n.tt_mtype[m] = new String();
+          n.tt_mtype[m] = [];
+          n.tt_display[m] = [];
         }
       }
       if (this.expansionContraction) {
@@ -3232,6 +3232,7 @@
       y = -5;
       centred = -1.5;
       height = 7;
+      tt_mtitle = new String();
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
@@ -3248,7 +3249,7 @@
                 return metaOntology[m][i];
               }
             }).attr("width", function(n) {
-              var width;
+              var tt_mtype, width;
               if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
                 width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
                 n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
@@ -3259,16 +3260,6 @@
                 width = 0;
                 n.arr[i] = 0;
               }
-              return width;
-            }).attr("height", height).attr("y", y).attr("x", function(n) {
-              if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
-                n.xpos += n.arr[i - 1];
-              } else {
-                n.xpos = 0;
-              }
-              return n.xpos + 4;
-            }).append("svg:title").text(function(n) {
-              var tt_mtitle, tt_mtype;
               if (m === "isolation_host" || m === "isolation_source") {
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
                 tt_mtitle = tt_mtitle.replace("_", " ");
@@ -3293,11 +3284,20 @@
               }
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
-                console.log(n.tt_mtype[m]);
+                n.tt_display[m].push(n.tt_mtype[m]);
               } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
-                console.log(n.tt_mtype[m]);
+                n.tt_display[m].push(n.tt_mtype[m]);
               }
+              return width;
+            }).attr("height", height).attr("y", y).attr("x", function(n) {
+              if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
+                n.xpos += n.arr[i - 1];
+              } else {
+                n.xpos = 0;
+              }
+              return n.xpos + 4;
+            }).append("svg:title").text(function(n) {
               return tt_mtitle + ": " + n.tt_mtype[m];
             });
             i++;

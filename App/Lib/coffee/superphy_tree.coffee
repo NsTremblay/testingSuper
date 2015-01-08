@@ -257,11 +257,11 @@ class TreeView extends ViewTemplate
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
       n.arr = []
       n.xpos = 0
+      n.tt_display = {}
       n.tt_mtype = {}
-      n.meta_summary = {}
       for m in mtypesDisplayed
-        n.meta_summary[m] = []
-        n.tt_mtype[m] = new String()
+        n.tt_mtype[m] = []
+        n.tt_display[m] = []
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -481,7 +481,7 @@ class TreeView extends ViewTemplate
           else
             checkbox_value[i] = 0
           visible_bars = checkbox_value.reduce((a,b)-> a + b)))
-    
+
     y = -5
     centred = -1.5
     height = 7
@@ -540,11 +540,11 @@ class TreeView extends ViewTemplate
                 tt_mtype = "Undefined"
               if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
                 n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-                console.log(n.tt_mtype[m])
+                n.tt_display[m].push(n.tt_mtype[m])
               else if n.metaCount[m][metaOntology[m][i]]? && n._children?
                 n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
-                console.log(n.tt_mtype[m])
-              tt_mtitle + ": " + n.tt_mtype[m])
+                n.tt_display[m].push(n.tt_mtype[m])
+              tt_mtitle + ": " + n.tt_display[m][n.tt_display[m].length - 1])
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
