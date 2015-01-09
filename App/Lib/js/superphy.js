@@ -3022,7 +3022,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3229,37 +3229,14 @@
           });
         });
       });
-      y = -5;
-      centred = -1.5;
-      height = 7;
       tt_mtitle = new String();
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
-          j = 0;
           i = 0;
-          x = 0;
-          y += height;
-          centred += -3.5;
           while (i < metaOntology[m].length) {
-            rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
-              if (i === 6) {
-                return "Other";
-              } else {
-                return metaOntology[m][i];
-              }
-            }).attr("width", function(n) {
-              var tt_mtype, width;
-              if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
-              } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
-              } else {
-                width = 0;
-                n.arr[i] = 0;
-              }
+            rect_block.text(function(n) {
+              var tt_mtype;
               if (m === "isolation_host" || m === "isolation_source") {
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
                 tt_mtitle = tt_mtitle.replace("_", " ");
@@ -3277,17 +3254,51 @@
                 tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
               }
               if (metaOntology[m][i] !== "undefined") {
-                tt_mtype = metaOntology[m][i];
+                tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
               }
               if (metaOntology[m][i] === "undefined") {
                 tt_mtype = "Undefined";
               }
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
-                n.tt_display[m].push(n.tt_mtype[m]);
               } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
-                n.tt_display[m].push(n.tt_mtype[m]);
+              }
+              return n.tt_mtype[m];
+            });
+            i++;
+          }
+        }
+      }
+      y = -5;
+      centred = -1.5;
+      height = 7;
+      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
+        m = mtypesDisplayed[_m];
+        if (genomes.visibleMeta[m]) {
+          j = 0;
+          i = 0;
+          x = 0;
+          y += height;
+          centred += -3.5;
+          while (i < metaOntology[m].length) {
+            rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
+              if (i === 6) {
+                return "Other";
+              } else {
+                return metaOntology[m][i];
+              }
+            }).attr("width", function(n) {
+              var width;
+              if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
+                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
+              } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
+                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
+                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
+              } else {
+                width = 0;
+                n.arr[i] = 0;
               }
               return width;
             }).attr("height", height).attr("y", y).attr("x", function(n) {
@@ -3321,8 +3332,8 @@
         }
         svgNodes.selectAll('.v0').remove();
       }
-      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
-        m = mtypesDisplayed[_m];
+      for (_n = 0, _len5 = mtypesDisplayed.length; _n < _len5; _n++) {
+        m = mtypesDisplayed[_n];
         if (genomes.visibleMeta[m]) {
           rect_block.select('.genomeMeter').remove();
         }
@@ -3380,8 +3391,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_n = 0, _len5 = _ref2.length; _n < _len5; _n++) {
-        n = _ref2[_n];
+      for (_o = 0, _len6 = _ref2.length; _o < _len6; _o++) {
+        n = _ref2[_o];
         n.x0 = n.x;
         n.y0 = n.y;
       }

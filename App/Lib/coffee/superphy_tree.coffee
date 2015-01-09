@@ -482,6 +482,34 @@ class TreeView extends ViewTemplate
             checkbox_value[i] = 0
           visible_bars = checkbox_value.reduce((a,b)-> a + b)))
 
+    tt_mtitle = new String()
+    for m in mtypesDisplayed
+      if genomes.visibleMeta[m]
+        i = 0
+        while i < metaOntology[m].length
+          rect_block.text((n)->
+            if m is "isolation_host" or m is "isolation_source"
+              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle = tt_mtitle.replace("_", " ")
+              tt_mtitle = tt_mtitle.slice(0,10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11)
+            if m is "syndrome"
+              tt_mtitle = "Symptoms/Diseases"
+            if m is "stx1_subtype" or m is "stx2_subtype"
+              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle = tt_mtitle.replace("_", " ")
+              tt_mtitle = tt_mtitle.slice(0,5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6)
+            if m is "serotype"
+              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+            tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) unless metaOntology[m][i] is "undefined"
+            if metaOntology[m][i] is "undefined"
+              tt_mtype = "Undefined"
+            if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
+              n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
+            else if n.metaCount[m][metaOntology[m][i]]? && n._children?
+              n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
+            n.tt_mtype[m])
+          i++
+
     y = -5
     centred = -1.5
     height = 7
@@ -523,28 +551,7 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .append("svg:title")
             .text((n)->
-              if m is "isolation_host" or m is "isolation_source"
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
-                tt_mtitle = tt_mtitle.replace("_", " ")
-                tt_mtitle = tt_mtitle.slice(0,10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11)
-              if m is "syndrome"
-                tt_mtitle = "Symptoms/Diseases"
-              if m is "stx1_subtype" or m is "stx2_subtype"
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
-                tt_mtitle = tt_mtitle.replace("_", " ")
-                tt_mtitle = tt_mtitle.slice(0,5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6)
-              if m is "serotype"
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
-              tt_mtype = metaOntology[m][i] unless metaOntology[m][i] is "undefined"
-              if metaOntology[m][i] is "undefined"
-                tt_mtype = "Undefined"
-              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
-                n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-                n.tt_display[m].push(n.tt_mtype[m])
-              else if n.metaCount[m][metaOntology[m][i]]? && n._children?
-                n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
-                n.tt_display[m].push(n.tt_mtype[m])
-              tt_mtitle + ": " + n.tt_display[m][n.tt_display[m].length - 1])
+              tt_mtitle + ": " + n.tt_mtype[m])
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
