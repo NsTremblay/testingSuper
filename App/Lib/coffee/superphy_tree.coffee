@@ -508,6 +508,7 @@ class TreeView extends ViewTemplate
             else if n.metaCount[m][metaOntology[m][i]]? && n._children?
               n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
             n.tt_mtype[m])
+          .style("font-weight", "bold")
           i++
 
     y = -5
