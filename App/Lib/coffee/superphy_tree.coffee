@@ -257,11 +257,9 @@ class TreeView extends ViewTemplate
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
       n.arr = []
       n.xpos = 0
-      n.tt_display = {}
       n.tt_mtype = {}
       for m in mtypesDisplayed
         n.tt_mtype[m] = []
-        n.tt_display[m] = []
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -482,24 +480,25 @@ class TreeView extends ViewTemplate
             checkbox_value[i] = 0
           visible_bars = checkbox_value.reduce((a,b)-> a + b)))
 
-    tt_mtitle = new String()
+    tt_mtitle = {}
     for m in mtypesDisplayed
+      tt_mtitle[m] = new String()
       if genomes.visibleMeta[m]
         i = 0
         while i < metaOntology[m].length
           rect_block.text((n)->
             if m is "isolation_host" or m is "isolation_source"
-              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
-              tt_mtitle = tt_mtitle.replace("_", " ")
-              tt_mtitle = tt_mtitle.slice(0,10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11)
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle[m] = tt_mtitle[m].replace("_", " ")
+              tt_mtitle[m] = tt_mtitle[m].slice(0,10) + tt_mtitle[m].charAt(10).toUpperCase() + tt_mtitle[m].slice(11)
             if m is "syndrome"
-              tt_mtitle = "Symptoms/Diseases"
+              tt_mtitle[m] = "Symptoms/Diseases"
             if m is "stx1_subtype" or m is "stx2_subtype"
-              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
-              tt_mtitle = tt_mtitle.replace("_", " ")
-              tt_mtitle = tt_mtitle.slice(0,5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6)
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle[m] = tt_mtitle[m].replace("_", " ")
+              tt_mtitle[m] = tt_mtitle[m].slice(0,5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6)
             if m is "serotype"
-              tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
             tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) unless metaOntology[m][i] is "undefined"
             if metaOntology[m][i] is "undefined"
               tt_mtype = "Undefined"
@@ -508,7 +507,6 @@ class TreeView extends ViewTemplate
             else if n.metaCount[m][metaOntology[m][i]]? && n._children?
               n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
             n.tt_mtype[m])
-          .style("font-weight", "bold")
           i++
 
     y = -5
@@ -552,7 +550,7 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .append("svg:title")
             .text((n)->
-              tt_mtitle + ": " + n.tt_mtype[m])
+              tt_mtitle[m] + ": " + n.tt_mtype[m])
           i++
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))

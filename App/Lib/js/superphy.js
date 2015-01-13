@@ -447,7 +447,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="width:12px;height:12px;background:#236932;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="width:12px;height:12px;background:#9E0015;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="width:12px;height:12px;background:#000752;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="width:12px;height:12px;background:#520042;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="width:12px;height:12px;background:#F05C00;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="width:12px;height:12px;background:#006B5C;border:0.5px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="width:12px;height:12px;background:#004D11;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="width:12px;height:12px;background:#9E0015;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="width:12px;height:12px;background:#000752;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="width:12px;height:12px;background:#520042;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="width:12px;height:12px;background:#F05C00;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="width:12px;height:12px;background:#006B5C;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -3063,12 +3063,10 @@
         }
         n.arr = [];
         n.xpos = 0;
-        n.tt_display = {};
         n.tt_mtype = {};
         for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
           m = mtypesDisplayed[_j];
           n.tt_mtype[m] = [];
-          n.tt_display[m] = [];
         }
       }
       if (this.expansionContraction) {
@@ -3229,29 +3227,30 @@
           });
         });
       });
-      tt_mtitle = new String();
+      tt_mtitle = {};
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
+        tt_mtitle[m] = new String();
         if (genomes.visibleMeta[m]) {
           i = 0;
           while (i < metaOntology[m].length) {
             rect_block.text(function(n) {
               var tt_mtype;
               if (m === "isolation_host" || m === "isolation_source") {
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
-                tt_mtitle = tt_mtitle.replace("_", " ");
-                tt_mtitle = tt_mtitle.slice(0, 10) + tt_mtitle.charAt(10).toUpperCase() + tt_mtitle.slice(11);
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
+                tt_mtitle[m] = tt_mtitle[m].slice(0, 10) + tt_mtitle[m].charAt(10).toUpperCase() + tt_mtitle[m].slice(11);
               }
               if (m === "syndrome") {
-                tt_mtitle = "Symptoms/Diseases";
+                tt_mtitle[m] = "Symptoms/Diseases";
               }
               if (m === "stx1_subtype" || m === "stx2_subtype") {
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
-                tt_mtitle = tt_mtitle.replace("_", " ");
-                tt_mtitle = tt_mtitle.slice(0, 5) + tt_mtitle.charAt(5).toUpperCase() + tt_mtitle.slice(6);
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
+                tt_mtitle[m] = tt_mtitle[m].slice(0, 5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6);
               }
               if (m === "serotype") {
-                tt_mtitle = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
               }
               if (metaOntology[m][i] !== "undefined") {
                 tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
@@ -3265,7 +3264,7 @@
                 n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
               }
               return n.tt_mtype[m];
-            }).style("font-weight", "bold");
+            });
             i++;
           }
         }
@@ -3309,7 +3308,7 @@
               }
               return n.xpos + 4;
             }).append("svg:title").text(function(n) {
-              return tt_mtitle + ": " + n.tt_mtype[m];
+              return tt_mtitle[m] + ": " + n.tt_mtype[m];
             });
             i++;
           }
