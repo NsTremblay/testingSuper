@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var checkbox_value, mtypesDisplayed, total_height, visible_bars;
+    var checkbox_value, colours, mtypesDisplayed, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -3001,6 +3001,15 @@
 
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
+    colours = {
+      'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
+      'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
+      'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
+      'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
+      'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+      'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
+    };
+
     TreeView.prototype.addMetaOntology = function(node) {
       var k, metaOntology, t, _i, _len;
       metaOntology = {};
@@ -3022,7 +3031,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3207,14 +3216,6 @@
       }).attr("height", 7).attr("y", -3).attr("x", 4).append("svg:title").text(function(n) {
         return n.num_leaves + " genomes";
       });
-      colours = {
-        'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
-        'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
-        'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
-        'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
-        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
-        'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
-      };
       $('.meta-option.checkbox').each(function(i, obj) {
         return $(obj).click(function() {
           if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
@@ -3222,9 +3223,18 @@
           } else {
             checkbox_value[i] = 0;
           }
+          console.log(visible_bars);
           return visible_bars = checkbox_value.reduce(function(a, b) {
             return a + b;
           });
+        });
+      });
+      jQuery(document).ready(function() {
+        return jQuery('input[name="meta-option"]').each(function(obj) {
+          jQuery('#' + this.name + '_' + this.value).hide();
+          if (this.checked) {
+            return jQuery('#' + this.name + '_' + this.value).show();
+          }
         });
       });
       tt_mtitle = {};

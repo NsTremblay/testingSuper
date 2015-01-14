@@ -179,6 +179,63 @@ class TreeView extends ViewTemplate
 
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
 
+  colours = {
+      'serotype' : [
+        '#004D11',
+        '#236932',
+        '#468554',
+        '#6AA276',
+        '#8DBE98',
+        '#B0DABA',
+        '#D4F7DC'
+      ]
+      'isolation_host' : [
+        '#9E0015',
+        '#AC2536',
+        '#BB4A58',
+        '#CA6F7A',
+        '#D9949B',
+        '#E8B9BD',
+        '#F7DEDF'
+      ]
+      'isolation_source' : [
+        '#000752',
+        '#252B6D',
+        '#4A5089',
+        '#6F75A4',
+        '#949AC0',
+        '#B9BFDB',
+        '#DEE4F7'
+      ]
+      'syndrome' : [
+        '#520042',
+        '#6E2760',
+        '#8A4F7F',
+        '#A6779D',
+        '#C29EBC',
+        '#DEC6DA',
+        '#FBEEF9'
+      ]
+      'stx1_subtype' : [
+        '#F05C00',
+        '#EF7123',
+        '#EE8746',
+        '#ED9D69',
+        '#ECB28C',
+        '#EBC8AF',
+        '#EADED2'
+      ]
+      'stx2_subtype' : [
+        '#006B5C',
+        '#238174',
+        '#46988D',
+        '#6AAEA5',
+        '#8DC5BE',
+        '#B0DBD6',
+        '#D4F2EF'
+      ]
+    }
+
   # FUNC addMetaOntology
   # Create metaOntology object
   #
@@ -398,7 +455,6 @@ class TreeView extends ViewTemplate
     rect_block = svgNodes.append("g")
 
     # Appends genomeMeter.  Size of bar reflects number of genomes.
-   
     rect_block
       .append('rect')
       .style("fill", "red")
@@ -415,70 +471,22 @@ class TreeView extends ViewTemplate
       .append("svg:title")
       .text((n)-> n.num_leaves + " genomes")
 
-    colours = {
-      'serotype' : [
-        '#004D11',
-        '#236932',
-        '#468554',
-        '#6AA276',
-        '#8DBE98',
-        '#B0DABA',
-        '#D4F7DC'
-      ]
-      'isolation_host' : [
-        '#9E0015',
-        '#AC2536',
-        '#BB4A58',
-        '#CA6F7A',
-        '#D9949B',
-        '#E8B9BD',
-        '#F7DEDF'
-      ]
-      'isolation_source' : [
-        '#000752',
-        '#252B6D',
-        '#4A5089',
-        '#6F75A4',
-        '#949AC0',
-        '#B9BFDB',
-        '#DEE4F7'
-      ]
-      'syndrome' : [
-        '#520042',
-        '#6E2760',
-        '#8A4F7F',
-        '#A6779D',
-        '#C29EBC',
-        '#DEC6DA',
-        '#FBEEF9'
-      ]
-      'stx1_subtype' : [
-        '#F05C00',
-        '#EF7123',
-        '#EE8746',
-        '#ED9D69',
-        '#ECB28C',
-        '#EBC8AF',
-        '#EADED2'
-      ]
-      'stx2_subtype' : [
-        '#006B5C',
-        '#238174',
-        '#46988D',
-        '#6AAEA5',
-        '#8DC5BE',
-        '#B0DBD6',
-        '#D4F2EF'
-      ]
-    }
-
+    # Counts the number of visible bars to be displayed on tree
     $('.meta-option.checkbox').each((i,obj)->
       $(obj).click(()->
         if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
             checkbox_value[i] = 1
-          else
-            checkbox_value[i] = 0
-          visible_bars = checkbox_value.reduce((a,b)-> a + b)))
+        else
+          checkbox_value[i] = 0
+        console.log(visible_bars)
+        visible_bars = checkbox_value.reduce((a,b)-> a + b)))
+
+    # Adds colour boxes as checkbox legend to metabars on tree when metadata is selected
+    jQuery(document).ready ->
+      jQuery('input[name="meta-option"]').each (obj) ->
+        jQuery('#'+this.name+'_'+this.value).hide()
+        if this.checked
+          jQuery('#'+this.name+'_'+this.value).show()
 
     tt_mtitle = {}
     for m in mtypesDisplayed
