@@ -368,6 +368,10 @@ sub search : StartRunmode {
 	# Title
 	$template->param(title1 => 'VIRULENCE &amp; AMR');
 	$template->param(title2 => 'GENES');
+
+
+    my $user_groups = $self->_getUserGroups();
+    $template->param(user_groups => $user_groups);
 	
 	return $template->output();
 	

@@ -6783,8 +6783,8 @@
       form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
       wrapper.append(form);
       submitEl = jQuery('<div class="row"></div>');
-      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
-      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"></span> Highlight Genomes</button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"></span> Reset Views</button></div>').appendTo(submitEl);
       submitButtonEl.click((function(_this) {
         return function(e) {
           e.preventDefault();

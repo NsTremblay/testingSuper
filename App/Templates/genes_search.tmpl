@@ -17,6 +17,8 @@
 	<link rel="stylesheet" href="/App/Styling/css/intro.js-0.9.0/introjs.min.css">
 	<script src="/App/Lib/js/intro_genes_search.js"></script>
 	<script src="/App/Lib/js/superphy.js"></script>
+    <script type="text/javascript" src="/App/Lib/js/superphy_user_groups.js"></script>
+
 	
 </head>
 
@@ -252,9 +254,12 @@ var categories = <TMPL_VAR categories>;
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
 var tree = <TMPL_VAR tree_json>;
+var user_groups = <TMPL_VAR user_groups>;
+
 
 // Data objects
 viewController.init(public_genomes, private_genomes, 'multi_select', '/genes/matrix');
+
 
 // Search forms
 viewController.sideBar($('#search-utilities'));
@@ -264,6 +269,8 @@ viewController.createSelectionView($('#selected_genomes'), $('#selected_genome_c
 viewController.createView('table', $('#strains_table'));
 viewController.createView('tree', $('#strains_tree'), tree);
 viewController.createView('map', $('#strains_map'), ['satellite']);
+
+var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
 
 var gene_menu_list = ['vf', 'amr'];
 var genome_menu_list = ['genomelist', 'phylogeny', 'geospatial'];
