@@ -45,6 +45,9 @@ use IO::File;
 use IO::Dir;
 umask 0000;
 
+my $private_suffix = ' [P]';
+my $public_suffix = ' [G]';
+
 #object creation
 sub new {
 	my ($class) = shift;
@@ -52,15 +55,8 @@ sub new {
 	bless( $self, $class );
 	$self->_initialize(@_);
 	
-	# For displaynames
-	my $private_suffix = ' [P]';
-    my $public_suffix = ' [G]';
-    $self->{private_suffix} = $private_suffix;
-    $self->{public_suffix} = $public_suffix;
-    
     $self->{now} = time();
     
-	
 	return $self;
 }
 
@@ -183,7 +179,8 @@ sub publicGenomes {
 	$visable_nodes = {} unless defined $visable_nodes;
 
 	while (my $row_hash = $genomes->next) {
-		my $display_name = $row_hash->{uniquename};
+		my $user_genome = 0;
+		my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome);
 		my $fid = $row_hash->{feature_id};
 		
 		my $key = "public_$fid";
@@ -255,15 +252,14 @@ sub privateGenomes {
 
 		while (my $row_hash = $genomes->next) {
         #foreach my $row_hash (@privateFormData) {
-			my $display_name = $row_hash->{uniquename};
+			
 			my $fid = $row_hash->{feature_id};
 			my $acc = $row_hash->{upload}->{category};
+			my $user_genome = 1;
+			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
-			if($acc eq 'public') {
-			   $display_name .= $self->{public_suffix};
-			} else {
-			     $display_name .= $self->{private_suffix};
-			     $has_private = 1;
+			unless($acc eq 'public') {
+			    $has_private = 1;
 			}
 			
 			my $key = "private_$fid";
@@ -307,9 +303,10 @@ sub privateGenomes {
         my $has_private = 0;
 
 		while (my $row_hash = $genomes->next) {
-			my $display_name = $row_hash->{uniquename} . $self->{public_suffix};
 			my $fid = $row_hash->{feature_id};
 			my $acc = 'public';
+			my $user_genome = 1;
+			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
 			my $key = "private_$fid";
 			$visable_nodes->{$key} = {
@@ -741,6 +738,7 @@ sub _runGenomeQuery {
 	my %genome_info;
 	
     my $featureCount = 0;
+    
 
 	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
@@ -755,25 +753,20 @@ sub _runGenomeQuery {
 		
 		unless($public) {
 			# Display name
+			my $user_genome = 1;
 			
 			if($username) {
 				# User logged in and may have some private genomes
-				my $displayname = $feature_hash{uniquename};
-				
-				if($feature->upload->category eq 'public') {
-					$feature_hash{displayname} = $displayname . $self->{public_suffix};
-				} else {
-					$feature_hash{displayname} = $displayname . $self->{private_suffix};
-				}
+				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, $feature->upload->category);
 
 			} else {
 				# User not logged in, all user genomes must be public
-				my $displayname = $feature_hash{uniquename};
-				$feature_hash{displayname} = $displayname . $self->{public_suffix};
+				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, 'public');
 			}
 			
 		} else {
-			$feature_hash{displayname} = $feature_hash{uniquename};
+			my $user_genome = 0;
+			$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome);
 		}
 		
 		# Featureprop data
@@ -1502,6 +1495,23 @@ sub elapsed_time {
 	printf("$mes: %.2f\n", $self->{now} - $time); 
 	$self->logger->debug(sprintf("$mes: %.2f", $self->{now} - $time));
 	
+}
+
+sub displayname {
+	my ($uniquename, $private_table, $category) = @_;
+
+	my $dname = $uniquename;
+
+	return $dname unless $private_table;
+
+	if($category eq 'public') {
+		$dname .= $public_suffix;
+	} else {
+		$dname .= $private_suffix;
+	}
+
+	return $dname;
+
 }
 
 1;

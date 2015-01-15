@@ -95,7 +95,7 @@ sub _getWGSGenomes{
             next;
         }
         my @la = split('\t', $strain) or die "Cannot split $strain";
-        my $id = $la[1];
+        my $id = $la[0];
         
         #we need to use the scaffold assembly if it exists in preference to the wgs
         #eg. NZ_ABAK02 supersedes ABAK02, so store the scaffold assembly in ABAK key, and not the WGS
@@ -123,11 +123,11 @@ sub _downloadGenomes{
     my $ncbiGenomesHashRef=shift;   
 
     if($DEBUG){
-            $log->print("Strains retrieved from NCBI WGS:\n");
-            foreach my $key(keys %{$ncbiGenomesHashRef}){
-                $log->print("$key : " . $ncbiGenomesHashRef->{$key} . "\n");
-            }
+        $log->print("Strains retrieved from NCBI WGS:\n");
+        foreach my $key(keys %{$ncbiGenomesHashRef}){
+            $log->print("$key : " . $ncbiGenomesHashRef->{$key} . "\n");
         }
+    }
 
 
     my $currentFilesHashRef = _getCurrentFileNames();

@@ -58,8 +58,43 @@ __PACKAGE__->table("snp_core");
 =head2 aln_column
 
   data_type: 'integer'
+  is_nullable: 1
+
+=head2 frequency_a
+
+  data_type: 'integer'
   default_value: 0
-  is_nullable: 0
+  is_nullable: 1
+
+=head2 frequency_t
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_c
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_g
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_gap
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
+
+=head2 frequency_other
+
+  data_type: 'integer'
+  default_value: 0
+  is_nullable: 1
 
 =cut
 
@@ -80,7 +115,19 @@ __PACKAGE__->add_columns(
   "gap_offset",
   { data_type => "integer", default_value => 0, is_nullable => 0 },
   "aln_column",
-  { data_type => "integer", default_value => 0, is_nullable => 0 },
+  { data_type => "integer", is_nullable => 1 },
+  "frequency_a",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_t",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_c",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_g",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_gap",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
+  "frequency_other",
+  { data_type => "integer", default_value => 0, is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -116,19 +163,22 @@ __PACKAGE__->add_unique_constraint(
   ["pangenome_region_id", "position", "gap_offset"],
 );
 
-=head2 C<snp_core_c2>
+=head1 RELATIONS
 
-=over 4
+=head2 gap_positions
 
-=item * L</aln_column>
+Type: has_many
 
-=back
+Related object: L<Database::Chado::Schema::Result::GapPosition>
 
 =cut
 
-__PACKAGE__->add_unique_constraint("snp_core_c2", ["aln_column"]);
-
-=head1 RELATIONS
+__PACKAGE__->has_many(
+  "gap_positions",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.snp_id" => "self.snp_core_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
 
 =head2 pangenome_region
 
@@ -143,6 +193,21 @@ __PACKAGE__->belongs_to(
   "Database::Chado::Schema::Result::Feature",
   { feature_id => "pangenome_region_id" },
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
+);
+
+=head2 private_gap_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_positions",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.snp_id" => "self.snp_core_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 private_snp_variations
@@ -176,8 +241,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-08-25 11:49:02
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:JKXs6xPI6rx6xiNy792R1A
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-09-17 13:50:53
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:uL3JE2TET2SauOaSVzt/jQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

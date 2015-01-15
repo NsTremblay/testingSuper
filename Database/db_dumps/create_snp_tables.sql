@@ -10,7 +10,7 @@ SET default_tablespace = '';
 
 -----------------------------------------------------------------------------
 --
--- Table Name: snp_core; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: snp_core; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE snp_core (
@@ -20,15 +20,15 @@ CREATE TABLE snp_core (
 	position            integer NOT NULL DEFAULT -1,
 	gap_offset          integer NOT NULL DEFAULT 0,
 	aln_column          integer DEFAULT NULL,
-        frequency_a         integer DEFAULT 0,
-        frequency_t         integer DEFAULT 0,
-        frequency_c         integer DEFAULT 0,
-        frequency_g         integer DEFAULT 0,
-        frequency_gap       integer DEFAULT 0,
-        frequency_other     integer DEFAULT 0
+    frequency_a         integer DEFAULT 0,
+    frequency_t         integer DEFAULT 0,
+    frequency_c         integer DEFAULT 0,
+    frequency_g         integer DEFAULT 0,
+    frequency_gap       integer DEFAULT 0,
+    frequency_other     integer DEFAULT 0
 );
 
-ALTER TABLE public.snp_core OWNER TO postgres;
+ALTER TABLE public.snp_core OWNER TO genodo;
 
 --
 -- primary key
@@ -40,7 +40,7 @@ CREATE SEQUENCE snp_core_snp_core_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.snp_core_snp_core_id_seq OWNER TO postgres;
+ALTER TABLE public.snp_core_snp_core_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE snp_core_snp_core_id_seq OWNED BY snp_core.snp_core_id;
 
@@ -75,20 +75,45 @@ ALTER TABLE ONLY snp_core
 
 CREATE OR REPLACE FUNCTION is_polymorphism(rec snp_core)
   RETURNS boolean
-  IMMUTABLE
-  LANGUAGE SQL
 AS $$
-SELECT 
-  CASE WHEN $1.frequency_a > 1 OR $1.frequency_t > 1 OR $1.frequency_c > 1 OR $1.frequency_g > 1 THEN TRUE
-       ELSE FALSE 
-  END
-  AS is_polymorphism;
-$$;
+DECLARE
+    states integer := 0;
+BEGIN
+	IF $1.allele = 'A' OR $1.allele = 'T' OR $1.allele = 'G' OR $1.allele = 'C' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_a >= 1 AND $1.allele != 'A' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_t >= 1 AND $1.allele != 'T' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_g >= 1 AND $1.allele != 'G' THEN
+		states = states + 1;
+	END IF;
+
+	IF $1.frequency_c >= 1 AND $1.allele != 'C' THEN
+		states = states + 1;
+	END IF;
+	
+	IF states > 1 THEN 
+		RETURN TRUE;
+    ELSE
+    	RETURN FALSE;
+ 	END IF;
+    
+END
+$$
+IMMUTABLE
+LANGUAGE 'plpgsql';
 
 
 -----------------------------------------------------------------------------
 --
--- Table Name: snp_variation; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: snp_variation; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE snp_variation (
@@ -100,7 +125,7 @@ CREATE TABLE snp_variation (
 	allele           char(1) NOT NULL DEFAULT 'n'
 );
 
-ALTER TABLE public.snp_variation OWNER TO postgres;
+ALTER TABLE public.snp_variation OWNER TO genodo;
 
 --
 -- primary key
@@ -112,7 +137,7 @@ CREATE SEQUENCE snp_variation_snp_variation_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.snp_variation_snp_variation_id_seq OWNER TO postgres;
+ALTER TABLE public.snp_variation_snp_variation_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE snp_variation_snp_variation_id_seq OWNED BY snp_variation.snp_variation_id;
 
@@ -154,7 +179,7 @@ CREATE INDEX snp_variation_idx2 ON snp_variation USING btree (contig_collection_
 
 -----------------------------------------------------------------------------
 --
--- Table Name: private_snp_variation; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: private_snp_variation; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE private_snp_variation (
@@ -166,7 +191,7 @@ CREATE TABLE private_snp_variation (
 	allele           char(1) NOT NULL DEFAULT 'n'
 );
 
-ALTER TABLE public.private_snp_variation OWNER TO postgres;
+ALTER TABLE public.private_snp_variation OWNER TO genodo;
 
 --
 -- primary key
@@ -178,7 +203,7 @@ CREATE SEQUENCE private_snp_variation_snp_variation_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.private_snp_variation_snp_variation_id_seq OWNER TO postgres;
+ALTER TABLE public.private_snp_variation_snp_variation_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE private_snp_variation_snp_variation_id_seq OWNED BY private_snp_variation.snp_variation_id;
 
@@ -218,7 +243,7 @@ CREATE INDEX private_snp_variation_idx2 ON private_snp_variation USING btree (co
 
 -----------------------------------------------------------------------------
 --
--- Table Name: snp_alignment; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: snp_alignment; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE snp_alignment (
@@ -228,7 +253,7 @@ CREATE TABLE snp_alignment (
 	alignment text
 );
 
-ALTER TABLE public.snp_alignment OWNER TO postgres;
+ALTER TABLE public.snp_alignment OWNER TO genodo;
 
 --
 -- primary key
@@ -240,7 +265,7 @@ CREATE SEQUENCE snp_alignment_snp_alignment_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.snp_alignment_snp_alignment_id_seq OWNER TO postgres;
+ALTER TABLE public.snp_alignment_snp_alignment_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE snp_alignment_snp_alignment_id_seq OWNED BY snp_alignment.snp_alignment_id;
 
@@ -263,23 +288,23 @@ BEGIN;
 
 -----------------------------------------------------------------------------
 --
--- Table Name: snp_position; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: snp_position; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE snp_position (
 	snp_position_id        integer NOT NULL,
 	contig_collection_id   integer NOT NULL,
 	contig_id              integer NOT NULL,
-        pangenome_region_id    integer NOT NULL,
+    pangenome_region_id    integer NOT NULL,
 	locus_id               integer NOT NULL,
-        region_start           integer,
-        locus_start            integer,
-        region_end             integer,
-        locus_end              integer,
-        locus_gap_offset       integer DEFAULT -1
+    region_start           integer,
+    locus_start            integer,
+    region_end             integer,
+    locus_end              integer,
+    locus_gap_offset       integer DEFAULT -1
 );
 
-ALTER TABLE public.snp_position OWNER TO postgres;
+ALTER TABLE public.snp_position OWNER TO genodo;
 
 --
 -- primary key
@@ -291,7 +316,7 @@ CREATE SEQUENCE snp_position_snp_position_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.snp_position_snp_position_id_seq OWNER TO postgres;
+ALTER TABLE public.snp_position_snp_position_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE snp_position_snp_position_id_seq OWNED BY snp_position.snp_position_id;
 
@@ -331,7 +356,7 @@ ALTER TABLE ONLY snp_position
 
 -----------------------------------------------------------------------------
 --
--- Table Name: private_snp_position; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: private_snp_position; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE private_snp_position (
@@ -347,7 +372,7 @@ CREATE TABLE private_snp_position (
         locus_gap_offset       integer DEFAULT -1
 );
 
-ALTER TABLE public.private_snp_position OWNER TO postgres;
+ALTER TABLE public.private_snp_position OWNER TO genodo;
 
 --
 -- primary key
@@ -359,7 +384,7 @@ CREATE SEQUENCE private_snp_position_snp_position_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.private_snp_position_snp_position_id_seq OWNER TO postgres;
+ALTER TABLE public.private_snp_position_snp_position_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE private_snp_position_snp_position_id_seq OWNED BY private_snp_position.snp_position_id;
 
@@ -400,20 +425,21 @@ ALTER TABLE ONLY private_snp_position
 
 -----------------------------------------------------------------------------
 --
--- Table Name: gap_position; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: gap_position; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE gap_position (
 	gap_position_id        integer NOT NULL,
 	contig_collection_id   integer NOT NULL,
 	contig_id              integer NOT NULL,
-        pangenome_region_id    integer NOT NULL,
+    pangenome_region_id    integer NOT NULL,
 	locus_id               integer NOT NULL,
 	snp_id                 integer NOT NULL,
-        locus_pos              integer NOT NULL
+    locus_pos              integer NOT NULL,
+    locus_gap_offset       integer DEFAULT -1
 );
 
-ALTER TABLE public.gap_position OWNER TO postgres;
+ALTER TABLE public.gap_position OWNER TO genodo;
 
 --
 -- primary key
@@ -425,7 +451,7 @@ CREATE SEQUENCE gap_position_gap_position_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.gap_position_gap_position_id_seq OWNER TO postgres;
+ALTER TABLE public.gap_position_gap_position_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE gap_position_gap_position_id_seq OWNED BY gap_position.gap_position_id;
 
@@ -468,20 +494,21 @@ ALTER TABLE ONLY gap_position
 
 -----------------------------------------------------------------------------
 --
--- Table Name: private_gap_position; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: private_gap_position; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE private_gap_position (
 	gap_position_id        integer NOT NULL,
 	contig_collection_id   integer NOT NULL,
 	contig_id              integer NOT NULL,
-        pangenome_region_id    integer NOT NULL,
+    pangenome_region_id    integer NOT NULL,
 	locus_id               integer NOT NULL,
 	snp_id                 integer NOT NULL,
-        locus_pos              integer NOT NULL
+    locus_pos              integer NOT NULL,
+    locus_gap_offset       integer DEFAULT -1
 );
 
-ALTER TABLE public.private_gap_position OWNER TO postgres;
+ALTER TABLE public.private_gap_position OWNER TO genodo;
 
 --
 -- primary key
@@ -493,7 +520,7 @@ CREATE SEQUENCE private_gap_position_gap_position_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.private_gap_position_gap_position_id_seq OWNER TO postgres;
+ALTER TABLE public.private_gap_position_gap_position_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE private_gap_position_gap_position_id_seq OWNED BY private_gap_position.gap_position_id;
 

@@ -126,7 +126,6 @@ my ($CONFIGFILE, $PANSEQDIR, $NOLOAD,
     $RECREATE_CACHE, $SAVE_TMPFILES,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
-    $DBNAME, $DBUSER, $DBPASS, $DBHOST, $DBPORT, $DBI, $TMPDIR,
     $VACUUM);
 
 GetOptions(
@@ -145,51 +144,30 @@ pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
 
 $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
-# Load database connection info from config file
-croak "[Error] you must supply a configuration filename" unless $CONFIGFILE;
-if(my $db_conf = new Config::Simple($CONFIGFILE)) {
-	$DBNAME    = $db_conf->param('db.name');
-	$DBUSER    = $db_conf->param('db.user');
-	$DBPASS    = $db_conf->param('db.pass');
-	$DBHOST    = $db_conf->param('db.host');
-	$DBPORT    = $db_conf->param('db.port');
-	$DBI       = $db_conf->param('db.dbi');
-	$TMPDIR    = $db_conf->param('tmp.dir');
-} else {
-	die Config::Simple->error();
-}
-croak "Invalid configuration file." unless $DBNAME;
-
 # Initialize the chado adapter
 my %argv;
 
-$argv{dbname}         = $DBNAME;
-$argv{dbuser}         = $DBUSER;
-$argv{dbpass}         = $DBPASS;
-$argv{dbhost}         = $DBHOST;
-$argv{dbport}         = $DBPORT;
-$argv{dbi}            = $DBI;
-$argv{tmp_dir}        = $TMPDIR;
+$argv{config}         = $CONFIGFILE;
 $argv{noload}         = $NOLOAD;
 $argv{recreate_cache} = $RECREATE_CACHE;
 $argv{save_tmpfiles}  = $SAVE_TMPFILES;
 $argv{vacuum}         = $VACUUM;
 $argv{debug}          = $DEBUG;
-$argv{feature_type}   = 'allele';
+$argv{feature_type}   = 'vfamr';
 
 my $chado = Sequences::ExperimentalFeatures->new(%argv);
 
-# Intialize the Tree building module
-my $tree_builder = Phylogeny::TreeBuilder->new();
-my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
+# # Intialize the Tree building module
+# my $tree_builder = Phylogeny::TreeBuilder->new();
+# my $tree_io = Phylogeny::Tree->new(config => $CONFIGFILE);
 
 # BEGIN
-my $now = time();
+my $now = my $start = time();
 
 unless($PANSEQDIR) {
 	print "Running panseq...\n";
 	
-	my $root_dir = $TMPDIR . 'panseq_alleles/';
+	my $root_dir = $chado->tmp_dir . 'panseq_alleles/';
 	unless (-e $root_dir) {
 		mkdir $root_dir or croak "[Error] unable to create directory $root_dir ($!).\n";
 	}
@@ -245,7 +223,7 @@ percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
 storeAlleles	1
-addMissingQuery	1
+allelesToKeep	5
 nameOrId	name
 |;
 	close $out;
@@ -273,94 +251,190 @@ $chado->file_handles();
 # Save data for inserting into database
 elapsed_time('db init');
 
-# Inputs
-my $panfile = $PANSEQDIR . '/pan_genome.txt';
-my $locusfile = $PANSEQDIR . 'locus_alleles.fasta';
+# Build alignments and trees in parallel
 
-# Load locus locations
-my %loci;
-open(my $in, "<", $panfile) or croak "[Error] unable to read file $panfile ($!).\n";
-<$in>; # header line
-while (my $line = <$in>) {
-	chomp $line;
-	
-	my ($id, $locus, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
-	
-	if($allele > 0) {
-		# Hit
-		
-		# query gene
-		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
-		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
-	
-		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
-		$loci{$query_id}->{$genome} = {
-			allele => $allele,
-			start => $start,
-			end => $end,
-			contig => $contig
-		};
-	}
-	
+# Output to file
+my $alndir = File::Temp::tempdir(
+	"chado-alignments-XXXX",
+	CLEANUP  => $SAVE_TMPFILES ? 0 : 1, 
+	DIR      => $chado->tmp_dir,
+);
+chmod 0755, $alndir;
+
+# Make subdirectories for each file type (do #files never grows too large)
+my $fastadir = $alndir . '/fasta';
+my $treedir = $alndir . '/tree';
+my $perldir = $alndir . '/perl_tree';
+my $refdir = $alndir . '/refseq';
+foreach my $d ($fastadir, $treedir, $perldir, $refdir) {
+	mkdir $d or croak "[Error] unable to create directory $d ($!).\n";
 }
-
-close $in;
-elapsed_time('positions loaded');
-
-# Load allele sequences
-
+	
+# Chop up giant fasta file into parts
+my @tasks;
+# Load loci
 {
 	# Slurp a group of fasta sequences for each locus.
 	# This could be disasterous if the memory req'd is large (swap-thrashing yikes!)
 	# otherwise, this should be faster than line-by-line.
 	# Also assumes specific FASTA format (i.e. sequence and header contain no line breaks or spaces)
-	open (my $in, "<", $locusfile) or croak "[Error] unable to read file $locusfile ($!).\n";
+	my $locus_file = $PANSEQDIR . 'locus_alleles.fasta';
+	open (my $in, "<", $locus_file) or croak "Error: unable to read file $locus_file ($!).\n";
 	local $/ = "\nLocus ";
 	
 	while(my $locus_block = <$in>) {
+
 		$locus_block =~ s/^Locus //;
 		my ($locus) = ($locus_block =~ m/^(\S+)/);
-		my @sequence_group;
-		my $num_ok = 0;  # Some allele sequences fail checks, so the overall number of sequences can drop making trees irrelevant
+		next unless $locus;
 		
 		# query gene
 		my ($query_id, $query_name) = ($locus =~ m/(\d+)\|(.+)/);
 		croak "Missing query gene ID in locus line: $locus\n" unless $query_id && $query_name;
 		
+		my $num_seqs = ($locus_block =~ tr/>/>/);
+		my $do_tree = 0;
+		
+		$do_tree = 1 if $num_seqs > 2; # only build trees for groups of 3 or more
+		
+		push @tasks, [$query_id, $query_name, $do_tree];
+		
+		open my $out1, '>', $fastadir . "/$query_id.ffn" or croak "Error: unable to open file $fastadir/$query_id.ffn ($!).";
+	
 		while($locus_block =~ m/\n>(\S+)\n(\S+)/g) {
 			my $header = $1;
 			my $seq = $2;
-		
-			# Load the sequence
-			$num_ok++ if allele($query_id,$query_name,$header,$seq,\@sequence_group);
-			
+			$seq =~ tr/-// if $do_tree; # Remove gaps
+			print $out1 ">$header\n$seq\n";
 		}
+		close $out1;
 		
-		# Build tree
-		build_tree($query_id, \@sequence_group) if $num_ok > 2;
 	}
 	close $in;
-	
 }
 
-elapsed_time("sequences parsed");
 
-# Do typing
-$chado->typing($TMPDIR);
+# Print tasks to file
+my $jobfile = $alndir . "/jobs.txt";
+open my $out, '>', $jobfile or croak "Error: unable to open file $jobfile ($!).";
+foreach my $t (@tasks) {
+	# Only need alignment or tree if do_tree is true
+	if($t->[2]) {
+		print $out join("\t",$t->[0],$t->[2],0,0),"\n";
+	}
+}
+close $out;
+elapsed_time('Fasta file printing');
 
-elapsed_time("in silico typing");
+# Run alignment script
+my @loading_args = ('perl', $align_script, "--dir $alndir");
+my $cmd = join(' ',@loading_args);
+my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+unless($success) {
+	croak "Alignment script $cmd failed ($stderr).";
+}
+elapsed_time('Parallel alignment');
 
-# Finalize and load into DB
+# Load locus locations
+my $pan_file = $PANSEQDIR . '/pan_genome.txt';
+my %loci;
+open(my $in, "<", $pan_file) or croak "[Error] unable to read file $pan_file ($!).\n";
+<$in>; # header line
+while (my $line = <$in>) {
+	chomp $line;
+	
+	my ($id, $uniquename, $genome, $allele, $start, $end, $header) = split(/\t/,$line);
+	
+	if($allele > 0) {
+		# Hit
+		my ($query_id) = $uniquename =~ m/^(?:VF|AMR)_(\d+)\|/;
+		my ($contig) = $header =~ m/lcl\|\w+\|(\w+)/;
 
-$chado->end_files();
+		croak "Error: duplicate position entries found for pangenome reference $uniquename and loci $header.\n" if defined $loci{$query_id}->{$header};
 
-$chado->flush_caches();
+		$loci{$query_id}->{$header} = {
+			start => $start,
+			end => $end,
+			contig => $contig
+		};		
+	}
+	
+}
+elapsed_time("Loci locations");
 
-$chado->load_data() unless $NOLOAD;
+
+# Iterate through each pangenome segment and load it
+foreach my $tarray (@tasks) {
+	my ($query_gene_id, $query_gene_name, $do_tree) = @$tarray;
+
+	# Load sequences from file
+	my $num_ok = 0;  # Some locus sequences fail checks, so the overall number of sequences can drop making trees/snps irrelevant
+	my @sequence_group;
+	my $fasta_file = $fastadir . "/$query_gene_id.ffn";
+	my $fasta = Bio::SeqIO->new(-file   => $fasta_file,
+								-format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
+	while(my $entry = $fasta->next_seq()) {
+		my $header = $entry->display_id;
+		my $seq = $entry->seq;
+		$num_ok++ if allele($query_gene_id,$query_gene_name,$header,$seq,\@sequence_group);
+	}
+	
+	if($do_tree && $num_ok > 2) {
+		my $tree_file = $perldir . "/$query_gene_id\_tree.perl";
+		open my $in, '<', $tree_file or croak "Error: tree file not found $tree_file ($!).\n";
+		my $tree = <$in>;
+		chomp $tree;
+		close $in;
+		
+		# Swap the headers in the tree with consistent tree names
+		# Assumes headers are unique
+		my %conversions;
+		foreach my $allele_hash (@sequence_group) {
+			
+			my $header = $allele_hash->{header};
+			my $displayId = $allele_hash->{public} ? 'public_':'private_';
+			$displayId .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
+			
+			# Many updated sequences will have the correct headers,
+			# but just in case, update the tree if they do not match
+			next if $header eq $displayId; 
+			
+			if($conversions{$header}) {
+				warn "Duplicate headers $header. Headers must be unique in locus_alleles.fasta.";  # Already looked up new Id
+				next;
+			}
+		
+			$conversions{$header} = $displayId;
+		}
+		
+		# Make sure longer strings get converted before substrings
+		my @replacements = sort {
+				length $b <=> length $a ||
+				$b cmp $a
+			} keys %conversions;
+		foreach my $old (@replacements) {
+			my $new = $conversions{$old};
+			print "REPLACING $old with $new\n";
+			my ($num_repl) = ($tree =~ s/\Q$old\E/\Q$new\E/g);
+			warn "No replacements made in phylogenetic tree for query sequence $query_gene_id. $old not found." unless $num_repl;
+			warn "Multiple replacements ($num_repl) made in phylogenetic tree for query sequence $query_gene_id. $old is not unique." if $num_repl > 1;
+		}
+		
+		$chado->handle_phylogeny($tree, $query_gene_id, \@sequence_group);
+	}
+	
+}
+elapsed_time("Data parsed");
+
+unless ($NOLOAD) {
+	$chado->load_data();
+}
 
 $chado->remove_lock();
+elapsed_time("Data loaded");
 
-elapsed_time("data loaded");
+my $rt = time() - $start;
+printf("Full runtime: %.2f\n", $rt);
 
 exit(0);
 
@@ -396,7 +470,7 @@ sub cleanup_handler {
         
         if ($lock) {
             warn "Trying to remove the run lock (so that --remove_lock won't be needed)...\n";
-            $chado->remove_lock; #remove the lock only if we've set it
+            $chado->abort(); #remove any active locks, discard DB transaction
         }
         
         print STDERR "Exiting...\n";
@@ -413,29 +487,29 @@ sub allele {
 	my ($query_id, $query_name, $header, $seq, $seq_group) = @_;
 	
 	# Parse input
-	
-	# contig_collection
-	my $contig_collection = $header;
-	my ($access, $contig_collection_id) = ($contig_collection =~ m/(?:lcl\|)?(public|private)_(\d+)/);
-	croak "Invalid contig_collection ID format: $contig_collection\n" unless $access;
+	my $genome_ids = parse_loci_header($header);
 	
 	# privacy setting
-	my $is_public = $access eq 'public' ? 1 : 0;
-	my $pub_value = $is_public ? 'TRUE' : 'FALSE';
+	my $is_public = $genome_ids->{access} eq 'public' ? 1 : 0;
+	my $pub_value = $is_public ? 'TRUE' : 'FALSE';;
 	
 	# location hash
-	my $loc_hash = $loci{$query_id}->{$header};
-	croak "Missing location information for locus allele $query_id in contig $header.\n" unless defined $loc_hash;
+	my $allele_num = $genome_ids->{copy};
+	my $loc_hash = $loci{$query_id}->{$genome_ids->{position_file_header}};
+	unless(defined $loc_hash) {
+		warn "Missing location information for locus allele $query_name ($query_id) in contig $header (lookup details: ".
+			$genome_ids->{position_file_header}.",".
+			$allele_num.").\n" unless defined $loc_hash;
+		croak;
+	}
 	
 	# contig
 	my $contig = $loc_hash->{contig};
-	my ($access2, $contig_id) = ($contig =~ m/(?:\|)?(public|private)_(\d+)$/);
-	croak "Invalid contig ID format: $contig\n" unless $access2;
+	my ($access2, $contig_id) = ($contig =~ m/(public|private)_(\d+)/);
 	
 	# contig sequence positions
 	my $start = $loc_hash->{start};
 	my $end = $loc_hash->{end};
-	my $allele_num = $loc_hash->{allele};
 	
 	# sequence
 	my ($seqlen, $residues, $min, $max, $strand);
@@ -462,7 +536,8 @@ sub allele {
 	my $uniquename = "allele:$query_id.$contig_id.$min.$max.$is_public";
 	
 	# Check if this allele is already in DB
-	my ($result, $allele_id) = $chado->validate_feature($query_id,$contig_collection_id,$uniquename,$pub_value);
+	my ($result, $allele_id) = $chado->validate_feature(query => $query_id, genome => $genome_ids->{genome}, uniquename => $uniquename,
+			public => $pub_value, feature_type => 'vfamr');
 	
 	if($result eq 'new_conflict') {
 		warn "Attempt to add gene allele multiple times. Dropping duplicate of allele $uniquename.";
@@ -472,77 +547,65 @@ sub allele {
 		warn "Attempt to update existing gene allele multiple times. Skipping duplicate allele $uniquename.";
 		return 0;
 	}
-	
-	my $is_new = 1;
-	
-	if($allele_id) {
-		# UPDATE
-		# allele was created in previous analysis
-		$is_new = 0;
-		
-		# update feature sequence
-		$chado->print_uf($allele_id,$uniquename,$type,$seqlen,$residues,$is_public);
-		
-		# update feature location
-		$chado->print_ufloc($allele_id,$min,$max,$strand,0,0,$is_public);
-		
-		# update feature properties
-		$chado->print_ufprop($allele_id,$chado->featureprop_types('copy_number_increase'),$allele_num,0,$is_public);
-		
-	} else {
-		# NEW
-		# Create allele feature
-		
-		# ID
-		my $curr_feature_id = $chado->nextfeature($is_public);
-	
-		# retrieve genome data
-		my $collection_info = $chado->collection($contig_collection_id, $is_public);
-		#my $contig_info = $chado->contig($contig_id, $is_public);
-		
-		# organism
-		my $organism = $collection_info->{organism};
-		
-		# external accessions
-		my $dbxref = '\N';
-		
-		# name
-		my $name = "$query_name allele";
-		
-		# Feature relationships
-		$chado->handle_parent($curr_feature_id, $contig_collection_id, $contig_id, $is_public);
-		$chado->handle_query_hit($curr_feature_id, $query_id, $is_public);
-		
-		# Additional Feature Types
-		$chado->add_types($curr_feature_id, $is_public);
-		
-		# Sequence location
-		$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
-		
-		# Feature properties
-		my $upload_id = $is_public ? undef : $collection_info->{upload};
-		$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
-		
-		# Print feature
-		$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id);  
-		$chado->nextfeature($is_public, '++');
-		
-		$allele_id = $curr_feature_id;
-		
+	if($result eq 'db' || defined($allele_id)) {
+		warn "Attempt to load gene allele already in database. Skipping duplicate allele $uniquename.";
+		return 0;
 	}
 	
-	# Record event in cache
-	my $event = $is_new ? 'insert' : 'update';
-	$chado->loci_cache($event => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $contig_collection_id,
-		query_id => $query_id, is_public => $pub_value);
+	
+	
+	# Create new allele feature
+	
+	# ID
+	my $curr_feature_id = $chado->nextfeature($is_public);
 
+	# retrieve genome data
+	my $collection_info = $chado->collection($genome_ids->{genome}, $is_public) unless $is_public;
+	#my $contig_info = $chado->contig($contig_id, $is_public);
+	
+	# organism - assume ecoli
+	my $organism = $chado->organism_id();
+	
+	# external accessions
+	my $dbxref = '\N';
+	
+	# name
+	my $name = "$query_name allele";
+	
+	# Feature relationships
+	$chado->handle_parent(subject => $curr_feature_id, genome => $genome_ids->{genome}, contig => $contig_id, public => $is_public);
+	$chado->handle_query_hit($curr_feature_id, $query_id, $is_public);
+	
+	# Additional Feature Types
+	$chado->add_types($curr_feature_id, $is_public);
+	
+	# Sequence location
+	$chado->handle_location($curr_feature_id, $contig_id, $min, $max, $strand, $is_public);
+	
+	# Feature properties
+	my $upload_id = $is_public ? undef : $collection_info->{upload};
+	$chado->handle_allele_properties($curr_feature_id, $allele_num, $is_public, $upload_id);
+	
+	# Print feature
+	$chado->print_f($curr_feature_id, $organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id);  
+	$chado->nextfeature($is_public, '++');
+	
+	$allele_id = $curr_feature_id;
+		
+	# Record event in cache
+	
+	$chado->feature_cache('insert' => 1, feature_id => $allele_id, uniquename => $uniquename, genome_id => $genome_ids->{genome},
+		query_id => $query_id, is_public => $pub_value);
+	
 	my $allele_hash = {
-		genome => $contig_collection_id,
+		genome => $genome_ids->{genome},
+		header => $header,
 		allele => $allele_id,
-		#copy => $allele_num,
+		copy => $allele_num,
+		contig => $contig_id,
 		public => $is_public,
-		is_new => $is_new,
-		seq => $seq
+		is_new => 1,
+		seq => $seq,
 	};
 	push @$seq_group, $allele_hash;
 		
@@ -553,78 +616,6 @@ sub allele {
 	return 1;
 }
 
-sub build_tree {
-	my ($query_id, $seq_grp) = @_;
-	
-	# write alignment file
-	my $tmp_file = '/tmp/genodo_allele_aln.txt';
-	open(my $out, ">", $tmp_file) or croak "Error: unable to write to file $tmp_file ($!).\n";
-	foreach my $allele_hash (@$seq_grp) {
-		my $header = $allele_hash->{public} ? 'public_':'private_';
-		$header .= $allele_hash->{genome} . '|' . $allele_hash->{allele};
-		print $out join("\n",">".$header,$allele_hash->{seq}),"\n";
-	}
-	close $out;
-	
-	# clear output file for safety
-	my $tree_file = '/tmp/genodo_allele_tree.txt';
-	open($out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
-	close $out;
-	
-	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak;
-	
-	# slurp tree and convert to perl format
-	my $tree = $tree_io->newickToPerlString($tree_file);
-	
-	# store tree in tables
-	$chado->handle_phylogeny($tree, $query_id, $seq_grp);
-	
-	return($tmp_file);
-}
-
-
-=cut
-sub load_binary {
-	my $bfile = shift;
-	
-	open my $binary_output , '<' , $bfile or die "Unable to read binary file $bfile ($!)."; 
-	
-	my @seqFeatures;
-	
-	my $header = <$binary_output>;
-	chomp $header;
-	
-	my @genomes = split(/\t/, $header);
-	my $numCol = scalar(@genomes);
-	
-	while (<$binary_output>) {
-		chomp;
-		my @tempRow = split(/\t/, $_);
-		die "Missing columns in file $bfile on row $tempRow[0]." unless @tempRow == $numCol;
-		push (@seqFeatures , \@tempRow);
-	}
-	
-	foreach my $line (@seqFeatures) {
-		
-		my $query_gene = $line->[0];
-		
-		if($query_gene =~ m/(VF|AMR)_(\d+)/) {
-			
-			my ($type, $gene_id) = ($1, $2);
-			$type = lc $type;
-			
-			for(my $i = 1; $i < $numCol; $i++) {
-			
-				$chado->handle_binary($genomes[$i], $gene_id, $line->[$i], $type);
-			
-			}
-		}
-	}
-	
-}
-=cut
-
 sub elapsed_time {
 	my ($mes) = @_;
 	
@@ -632,5 +623,25 @@ sub elapsed_time {
 	$now = time();
 	printf("$mes: %.2f\n", $now - $time);
 	
+}
+
+sub parse_loci_header {
+	my $header = shift;
+	
+	my ($access, $contig_collection_id, $access2, $contig_id, $allele_num) = ($header =~ m/^(?:lcl\|)?(public|private)_(\d+)\|(public|private)_(\d+)(?:_a(\d+))?$/);
+	croak "Invalid contig_collection ID format: $header\n" unless $access;
+	croak "Invalid contig ID format: $header\n" unless $access2;
+	croak "Invalid header: $header" unless $access eq $access2;
+
+	$allele_num = 1 unless $allele_num;
+	$header =~ s/_\-a\d+$//;
+	
+	return {
+		access => $access,
+		genome => $contig_collection_id,
+		feature => $contig_id,
+		copy => $allele_num,
+		position_file_header => $header
+	};
 }
 

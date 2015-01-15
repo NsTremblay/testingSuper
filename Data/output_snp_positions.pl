@@ -221,6 +221,7 @@ sub lookupGap {
 	my $locus_feature_id = shift;
 	my $is_public = shift;
 	
+	my $locus_pos;
 	my $gap_offset = 0;
 	
 	my $table = 'GapPosition';
@@ -235,11 +236,11 @@ sub lookupGap {
 	);
 	
 	my $num = 0;
-	my $locus_pos;
 	while(my $block = $block_rs->next) {
 		
 		# Relative locus position
 		$locus_pos = $block->locus_pos;
+		$gap_offset = $block->locus_gap_offset;
 		
 		$num++;
 		fatal("SNP $snp_id aligns with multiple gap columns in locus ".$locus_feature_id.".\n") if $num > 2;
@@ -247,66 +248,16 @@ sub lookupGap {
 	
 	if($num == 0) {
 		# No entry in gap_position table
-		# Implies that gap in core maps to gap in comparison sequence
-		# Need to find location of this gap in comparison sequence by doing some detective work
+		# Implies that gap in core maps to gap in comparison sequence in straight-forward manner
+		# I.e. not a continuation of an existing gap so the gap-offset in the reference is equal to
+		# the gap-offset in the comparison sequence.
 		
-		if($snp_gap == 1) {
-			# First gap in region
-			# Find corresponding point in comparison sequence
-			
-			my $this_pos = lookup($locus_feature_id, $is_public);
-			
-			$locus_pos = $this_pos->[0];
-			$gap_offset = $this_pos->[1]+$snp_gap;
-			
-		} else {
-			
-			# Retrieve all preceding gap position entries that are part of this gap region
-			my $gaps_rs = $data->dbixSchema->resultset('SnpCore')->search(
-				{
-					pangenome_region_id => $pgregion,
-					position => $snp_pos,
-					gap_offset => { '<' => $snp_gap },
-					gap_offset => { '>' => 0 }
-				},
-				{
-					order_by => { -desc => 'gap_offset' }
-				}
-			);
-			
-			my $num_before = 0;
-			my $found = 0;
-			while($gaps_rs->next) {
-				$num_before++;
-			
-				# Does this gap position in core map to a position anchor in the comparison sequence?
-				my $block_rs2 = $data->dbixSchema->resultset($table)->search(
-					{
-						locus_id => $locus_feature_id,
-						snp_id => $gaps_rs->snp_core_id
-					}
-				);
-				
-				if(my $block2 = $block_rs2->first) {
-					# Found positional anchor for this gap region
-					$locus_pos = $block2->locus_pos;
-					$gap_offset = $num_before;
-					$found = 1;
-					last;
-				}
-			}
-			
-			unless($found) {
-				# No positional anchors found inside gap region
-				# Use core sequence anchor at beginning of gap region
-				my $this_pos = lookup($locus_feature_id, $is_public);
-			
-				$locus_pos = $this_pos->[0];
-				$gap_offset = $this_pos->[1]+$snp_gap;
-			}	
-		}
+		# Find corresponding point in comparison sequence
+		my $this_pos = lookup($locus_feature_id, $is_public);
+		$locus_pos = $this_pos->[0];
+		$gap_offset = $snp_gap;
+		$num++;
 	}
-	
 	
 	fatal("No alignment block for locus $locus_feature_id found for SNP $snp_id.\n") unless $num;
 	

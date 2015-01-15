@@ -29,7 +29,7 @@ Script to download all contig sequences from the database to a single multi-fast
 to use for generating vir/amr data and the phylogenetic tree, etc.
 
 Sequences will have the tag:
->contig_feature_id|contig_collection_feature_id
+>lcl|contig_collection_feature_id|contig_feature_id
 
 =head1 AUTHOR
 

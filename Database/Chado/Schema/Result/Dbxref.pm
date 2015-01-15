@@ -112,81 +112,6 @@ __PACKAGE__->add_unique_constraint("dbxref_c1", ["db_id", "accession", "version"
 
 =head1 RELATIONS
 
-=head2 arraydesigns
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Arraydesign>
-
-=cut
-
-__PACKAGE__->has_many(
-  "arraydesigns",
-  "Database::Chado::Schema::Result::Arraydesign",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 assays
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Assay>
-
-=cut
-
-__PACKAGE__->has_many(
-  "assays",
-  "Database::Chado::Schema::Result::Assay",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 biomaterial_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::BiomaterialDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "biomaterial_dbxrefs",
-  "Database::Chado::Schema::Result::BiomaterialDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 biomaterials
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Biomaterial>
-
-=cut
-
-__PACKAGE__->has_many(
-  "biomaterials",
-  "Database::Chado::Schema::Result::Biomaterial",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 cell_line_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::CellLineDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "cell_line_dbxrefs",
-  "Database::Chado::Schema::Result::CellLineDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 cvterm
 
 Type: might_have
@@ -247,21 +172,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 elements
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Element>
-
-=cut
-
-__PACKAGE__->has_many(
-  "elements",
-  "Database::Chado::Schema::Result::Element",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 feature_cvterm_dbxrefs
 
 Type: has_many
@@ -307,51 +217,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 library_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LibraryDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "library_dbxrefs",
-  "Database::Chado::Schema::Result::LibraryDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 nd_experiment_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::NdExperimentDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "nd_experiment_dbxrefs",
-  "Database::Chado::Schema::Result::NdExperimentDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 nd_experiment_stock_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::NdExperimentStockDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "nd_experiment_stock_dbxrefs",
-  "Database::Chado::Schema::Result::NdExperimentStockDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 organism_dbxrefs
 
 Type: has_many
@@ -363,36 +228,6 @@ Related object: L<Database::Chado::Schema::Result::OrganismDbxref>
 __PACKAGE__->has_many(
   "organism_dbxrefs",
   "Database::Chado::Schema::Result::OrganismDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 phylonode_dbxrefs
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PhylonodeDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phylonode_dbxrefs",
-  "Database::Chado::Schema::Result::PhylonodeDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 phylotrees
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Phylotree>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phylotrees",
-  "Database::Chado::Schema::Result::Phylotree",
   { "foreign.dbxref_id" => "self.dbxref_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -427,21 +262,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 protocols
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Protocol>
-
-=cut
-
-__PACKAGE__->has_many(
-  "protocols",
-  "Database::Chado::Schema::Result::Protocol",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 pub_dbxrefs
 
 Type: has_many
@@ -457,54 +277,9 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 stock_dbxrefs
 
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::StockDbxref>
-
-=cut
-
-__PACKAGE__->has_many(
-  "stock_dbxrefs",
-  "Database::Chado::Schema::Result::StockDbxref",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 stocks
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Stock>
-
-=cut
-
-__PACKAGE__->has_many(
-  "stocks",
-  "Database::Chado::Schema::Result::Stock",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 studies
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Study>
-
-=cut
-
-__PACKAGE__->has_many(
-  "studies",
-  "Database::Chado::Schema::Result::Study",
-  { "foreign.dbxref_id" => "self.dbxref_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:TGTuZbRnvtNEG8OaYbvhUg
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-11-19 12:19:37
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:wj5HuC0c3BSyPIuHvfTsQw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

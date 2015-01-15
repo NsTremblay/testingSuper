@@ -58,6 +58,7 @@ sub new {
 	my %params = @_;
 	my $config_file = $params{config};
 	my $dbix = $params{dbix_schema};
+	my $dbname = $params{dbname};
 	
 	if($config_file) {
 		# No schema provided, connect to database
@@ -72,12 +73,31 @@ sub new {
 						        dbUser  => $db_conf->param('db.user'),
 						        dbPass  => $db_conf->param('db.pass')
 		);
+
 	} elsif($dbix) {
 		# Use existing connection
 		$self->setDbix($dbix);
 		
+	} elsif($dbname) {
+		# Use command-line args to defined connection parameters
+		my $dbport = $params{dbport};
+		my $dbhost = $params{dbhost};
+		my $dbuser = $params{dbuser};
+		my $dbpass = $params{dbpass};
+
+		croak "Error: missing db connection parameter." unless $dbport && $dbhost && $dbuser && $dbpass;
+
+
+		$self->connectDatabase( dbi     => "Pg",
+						        dbName  => $dbname,
+						        dbHost  => $dbhost,
+						        dbPort  => $dbport,
+						        dbUser  => $dbuser,
+						        dbPass  => $dbpass
+		);
+
 	} else {
-		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object or config filename.";
+		croak "Error: DB connection not initialized. Please provide pointer to dbix schema object, db connectrion paramters on command-line or config filename.";
 	}
 	
 	#Log::Log4perl->easy_init($DEBUG);
@@ -103,6 +123,20 @@ sub loadTree {
 	# Parse newick tree
 	my $ptree = $self->newickToPerl($newick_file);
 	
+	$self->loadPerlTree($ptree);
+
+}
+
+=head2 loadPerlTree
+
+See loadTree. Adds ability to load a perl-language
+tree.
+
+=cut
+
+sub loadPerlTree {
+	my ($self, $ptree) = @_;
+	
 	# Save entire tree in database as Data::Dumper perl structure
 	$Data::Dumper::Indent = 0;
 	my $ptree_string = Data::Dumper->Dump([$ptree], ['tree']);
@@ -123,7 +157,7 @@ sub loadTree {
 	my $public_list = $self->visableGenomes;
 	
 	# Prune private genomes from tree
-	my $public_tree = $self->pruneTree($ptree, $public_list, 0);
+	my $public_tree = $self->prepTree($ptree, $public_list, 0);
 	
 	# Save perl copy for instances where we need to do some editing
 	my $ptree_string2 = Data::Dumper->Dump([$public_tree], ['tree']);
@@ -158,7 +192,7 @@ sub loadTree {
 
 }
 
-=head2 pruneTree
+=head2 prepTree
 
 	Trim non-visable nodes. Collapse nodes above certain depth.
 	In the D3 tree library, to collapse a node, the children array is
@@ -166,7 +200,7 @@ sub loadTree {
 
 =cut
 
-sub pruneTree {
+sub prepTree {
 	my ($self, $root, $nodes, $restrict_depth) = @_;
 	
 	# Set global
@@ -358,7 +392,7 @@ sub userTree {
 	my $ptree = $self->globalTree;
 	
 	# Remove genomes not visable to user
-	my $user_tree = $self->pruneTree($ptree, $visable);
+	my $user_tree = $self->prepTree($ptree, $visable);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);
@@ -477,7 +511,7 @@ sub nodeTree {
 		my $ptree = $self->globalTree;
 	
 		# Remove genomes not visable to user
-		my $tree = $self->pruneTree($ptree, $visable, 0);
+		my $tree = $self->prepTree($ptree, $visable, 0);
 		
 		# Exand nodes along path to target leaf node
 		DEBUG encode_json($tree);
@@ -556,8 +590,9 @@ sub newickToPerl {
         	
         	if( $x eq ')' || $x eq '(' || $x eq ',') {
 				$tree->{name} = $tok;
+				$tree->{'length'} = 0; # Initialize to 0
           	} elsif ($x eq ':') {
-          		$tree->{'length'} = $tok+=0;  # Force number
+          		$tree->{'length'} = 0+$tok;  # Force number
           	}
 		}
 	}
@@ -567,7 +602,7 @@ sub newickToPerl {
 
 =cut visableGenomes
 
-	Get all public genomes for any user.  
+	Get all public genomes for any user.
 
 	This is meant to be called outside of normal website operations, specifically
 	when a new phylogenetic tree is being loaded.  Visable genomes for a user will be computed
@@ -645,7 +680,7 @@ sub geneTree {
 #	}
 	
 	# Remove genomes not visable to user
-	my $user_tree = $self->pruneTree($tree, $visable);
+	my $user_tree = $self->prepTree($tree, $visable);
 	
 	# Convert to json
 	my $jtree_string = encode_json($user_tree);
@@ -653,36 +688,36 @@ sub geneTree {
 	return $jtree_string;
 }
 
-=cut writeSnpAlignment
+# =cut writeSnpAlignment
 
-	Output the snp-based alignment in fasta format from the snp_alignment table
+# 	Output the snp-based alignment in fasta format from the snp_alignment table
 	
-=cut
+# =cut
 
-sub writeSnpAlignment {
-	my $self = shift;
-	my $filenm = shift;
+# sub writeSnpAlignment {
+# 	my $self = shift;
+# 	my $filenm = shift;
 	
-	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search();
+# 	my $aln_rs = $self->dbixSchema->resultset("SnpAlignment")->search();
 	
-	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
+# 	open my $out, '>', $filenm or croak "Error: unable to write SNP alignment to $filenm ($!)\n";
 	
 	
-	while(my $aln_row = $aln_rs->next) {
+# 	while(my $aln_row = $aln_rs->next) {
 		
-		my $nm = $aln_row->name;
-		next if $nm eq 'core';
+# 		my $nm = $aln_row->name;
+# 		next if $nm eq 'core';
 		
-		# Print fasta SNP sequence for genome
-		print $out ">$nm\n";
-		print $out $aln_row->alignment;
-		print $out "\n";
+# 		# Print fasta SNP sequence for genome
+# 		print $out ">$nm\n";
+# 		print $out $aln_row->alignment;
+# 		print $out "\n";
 		
-	}
+# 	}
 	
-	close $out;
+# 	close $out;
 	
-}
+# }
 
 =head2 pairwise_distances
 
@@ -703,6 +738,412 @@ sub pairwise_distances {
 	}
 	
 	return(1);
+}
+
+=head2 find_lca
+
+Given a set of leaf nodes, find the lowest (or most recent) common ancestor internal node
+
+Args:
+1. A hash reference representing internal node in PERL-based tree
+2. Array of strings that match the 'name' value in leaf nodes
+
+=cut
+
+sub find_lca {
+	my $self = shift;
+	my $root = shift;
+	my @targetNodes = @_;
+	
+	my %targets;
+	map { $targets{$_} = 1 } @targetNodes;
+
+	my $subtreeNode = _recursive_lca($root, \%targets);
+
+	foreach my $n (keys %targets) {
+		if($targets{$n} < 2) {
+			my $msg = "WARNING: $n leaf node not found in traversal. LCA may be incorrect.\n";
+			carp $msg;
+			get_logger->warn($msg);
+		}
+	}
+
+	return($subtreeNode);
+}
+
+sub _recursive_lca {
+	my $root = shift;
+	my $targets = shift;
+
+	# Check if one of our target nodes is a descendent
+	# If yes, then this root is the LCA
+	if($root->{children}) {
+		my $descendent = 0;
+		my @internals;
+		foreach my $c (@{$root->{children}}) {
+			if($c->{children}) {
+				push @internals, $c;
+			} else {
+				if($targets->{$c->{name}}) {
+					# Found target node
+					$targets->{$c->{name}}++;
+					return $root;
+				}
+			}
+		}
+
+		# Check subtrees for LCA
+		# If targets scattered over multiple subtrees
+		# then this root the LCA
+		my @subtrees;
+		foreach my $i (@internals) {
+			my $s = _recursive_lca($i, $targets);
+			push @subtrees, $s if $s;
+
+			if(@subtrees > 1) {
+				return $root;
+			}
+		}
+
+		# The LCA is in this one subtree
+		if(@subtrees) {
+			return $subtrees[0];
+		}
+	}
+	
+	# LCA not found in this branch
+	return 0;
+}
+
+
+=head2 find_leaves
+
+Given a single internal node, return all descendant leaves
+
+Args:
+1. A hash reference representing internal node in PERL-based tree
+2. A boolean indicating weather to include length from root. Each leaf node
+will be in array
+
+=cut
+
+sub find_leaves {
+	my $self = shift;
+	my $root = shift;
+	my $len = shift;
+
+	$len = $len // 0;
+	$root->{length} = $root->{length} // 0;
+	my $tot_len = $root->{length}+$len;
+
+	if($root->{children}) {
+		my @leaves;
+		foreach my $c (@{$root->{children}}) {
+			push @leaves, $self->find_leaves($c, $tot_len);
+		}
+		print "Num leaves at this point: ".scalar(@leaves)."\n";
+		return @leaves;
+	} else {
+		return { node => $root, len => $tot_len };
+	}
+}
+
+=head2 snpAlignment
+
+Retrieves snp alignment
+
+Args:
+A hash with the following optional keys:
+1. file => output file name. If not provided a hash-ref is returned with alignment strings
+2. genomes => the subset of genomes to retrieve snp alignments for. If not provided, all genomes used.
+
+Returns:
+hashref of genome_name => alignment (provided, file argument is not used)
+
+=cut
+
+sub snpAlignment {
+	my $self = shift;
+	my %args = @_;
+
+
+	my $conds = {};
+
+	if($args{genomes}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	my $table = "SnpAlignment";
+	if($args{temp_table}) {
+		$table = $args{temp_table}
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset($table)->search(
+		$conds,
+		{
+			columns => [qw/name alignment/]
+		}
+	);
+
+	if($args{genomes} && scalar(@{$args{genomes}}) != $aln_rs->count()) {
+		croak "Error: requested genomes not found in the snp_alignment table (genomes: ".join(', ', @{$args{genomes}}).").\n";
+	}
+
+	my %alignment;
+	my $print = ($args{file}) ? 1 : 0;
+	my $out;
+	if($print) {
+		open($out, '>'.$args{file}) or croak "Error: unable to write to file $args{file} ($!).\n";
+	}
+
+	while(my $aln_row = $aln_rs->next) {
+		my $nm = $aln_row->name;
+		next if $nm eq 'core';
+		if($print) {
+			print $out ">$nm\n".$aln_row->alignment."\n";
+		} else {
+			$alignment{$nm} = $aln_row->alignment;
+		}
+		
+	}
+
+	if($print) {
+		close $out;
+	} else {
+		return \%alignment;
+	}
+}
+
+=head2 pgAlignment
+
+Retrieves pangenome core presence/absence alignment.
+T = present
+A = absent
+
+Args:
+A hash with the following optional keys:
+1. file => output file name. If not provided a hash-ref is returned with alignment strings
+2. genomes => the subset of genomes to retrieve snp alignments for. If not provided, all genomes used.
+3. core => 1, uses only core region string, otherwise entire pangenome is used
+4. accessory => 1, uses only accessory region string, otherwise entire pangenome is used
+
+Returns:
+hashref of genome_name => alignment (provided, file argument is not used)
+
+=cut
+
+sub pgAlignment {
+	my $self = shift;
+	my %args = @_;
+
+
+	my $conds = {};
+
+	if($args{genomes}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	if($args{omit}) {
+		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
+		$conds->{name} = {'-in' => $args{genomes}};
+	}
+
+	my $table = "PangenomeAlignment";
+	if($args{temp_table}) {
+		$table = $args{temp_table}
+	}
+
+	my @columns = qw/genome/;
+	if($args{core}) {
+		push @columns, { alignment => 'core_alignment' };
+	} elsif($args{accessory}) {
+		push @columns, { alignment => 'acc_alignment' };
+	} else {
+		push @columns, { alignment => \'concat(core_alignment, acc_alignment)'};
+	}
+
+	my $aln_rs = $self->dbixSchema->resultset($table)->search(
+		$conds,
+		{
+			columns => \@columns
+		}
+	);
+
+	if($args{genomes} && scalar(@{$args{genomes}}) != $aln_rs->count()) {
+		croak "Error: requested genomes not found in the snp_alignment table (genomes: ".join(', ', @{$args{genomes}}).").\n";
+	}
+
+	my %alignment;
+	my $print = ($args{file}) ? 1 : 0;
+	my $out;
+	if($print) {
+		open($out, '>'.$args{file}) or croak "Error: unable to write to file $args{file} ($!).\n";
+	}
+
+	while(my $aln_row = $aln_rs->next) {
+		my $nm = $aln_row->genome;
+		next if $nm eq 'core';
+		my $aln = $aln_row->get_column('alignment');
+		$aln =~ tr/01/AT/;
+		if($print) {
+			print $out ">$nm\n$aln\n";
+		} else {
+			$alignment{$nm} = $aln;
+		}
+		
+	}
+
+	if($print) {
+		close $out;
+	} else {
+		return \%alignment;
+	}
+}
+
+=head2 compareTrees
+
+0 = equal
+1 = different
+
+Checks if identical leaf labels are found in same level / branch in traversal of tree
+e.g. isomorphic
+
+Assumes root nodes have children
+
+=cut
+sub compareTrees {
+	my $self  = shift;
+	my $treeA = shift;
+	my $treeB = shift;
+
+	my @levela = ($treeA);
+	my @levelb = ($treeB);
+	my @nextlevela;
+	my @nextlevelb;
+	my %leafa;
+
+	while(@levela && @levelb) {
+		# Note: @levela guaranteed to have same size as @levelb
+
+		foreach my $a (@levela) {
+			# a should always have children nodes, otherwise wouldn't be in level array
+			
+			foreach my $c (@{$a->{children}}) {
+
+				# Record nodes at next level
+				if($c->{children}) {
+					push @nextlevela, $c;
+				} else {
+					$leafa{$c->{name}} = 1;
+				}
+			}
+			
+		}
+		
+		foreach my $b (@levelb) {
+			# b should always have children nodes, otherwise wouldn't be in level array
+			
+			foreach my $c (@{$b->{children}}) {
+
+				# Compare nodes at next level
+				if($c->{children}) {
+					push @nextlevelb, $c;
+				} else {
+					if($leafa{$c->{name}}) {
+						$leafa{$c->{name}}++
+					} else {
+						# Leaf node not fount in A at this level
+						return 1;
+					}
+				}
+			}
+			
+		}
+		
+		if(scalar(@nextlevela) != scalar(@nextlevelb)) {
+			# Different num of children
+			return 1;
+		}
+
+		# Check if all leaf nodes in A also in B at this level
+		foreach my $c (values %leafa) {
+			return 1 unless $c == 2;
+		}
+
+		# Levels identical, move to next level
+		@levela = @nextlevela;
+		@nextlevela = ();
+		%leafa = ();
+		@levelb = @nextlevelb;
+		@nextlevelb = ();
+	}
+
+	# Level order traversal complete
+	# No isomorphisms detected
+	return 0;
+	
+}
+
+
+=head2 pruneNode
+
+	Trim single node matching 'name' from tree
+
+=cut
+
+sub pruneNode {
+	my ($self, $node, $remove_names) = @_;
+	
+	if($node->{children}) {
+		# Internal node
+		
+		# Find unpruned descendent nodes
+		my @visableNodes;
+		
+		foreach my $childnode (@{$node->{children}}) {
+			my ($visableNode) = $self->pruneNode($childnode, $remove_names);
+			if($visableNode) {
+				push @visableNodes, $visableNode;
+			}
+		}
+		
+		# Finished recursion
+		# Transform internal node if needed
+		
+		if(@visableNodes > 1) {
+			# Update children
+			
+			$node->{children} = \@visableNodes;
+			
+			return ($node); # record is empty unless $restrict_depth is true
+			
+		} elsif(@visableNodes == 1) {
+			# No internal node needed, replace with singleton child node
+			# Sum lengths
+			my $replacementNode = shift @visableNodes;
+			$replacementNode->{'length'} += $node->{'length'};
+			return ($replacementNode);
+
+		} else {
+			# Empty node, remove
+			return;
+		}
+		
+	} else {
+		# Leaf node
+		
+		my $genome_name = $node->{name};
+		
+		if($remove_names->{$genome_name}) {
+			# Remove node
+			return;
+		} else {
+			
+			return ($node);
+		}
+	}
 }
 
 
