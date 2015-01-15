@@ -472,14 +472,13 @@ class TreeView extends ViewTemplate
       .text((n)-> n.num_leaves + " genomes")
 
     # Counts the number of visible bars to be displayed on tree
-    $('.meta-option.checkbox').each((i,obj)->
-      $(obj).click(()->
+    $('input[name="meta-option"]').each (i,obj)->
         if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
             checkbox_value[i] = 1
         else
           checkbox_value[i] = 0
         console.log(visible_bars)
-        visible_bars = checkbox_value.reduce((a,b)-> a + b)))
+        visible_bars = checkbox_value.reduce((a,b)-> a + b)
 
     # Adds colour boxes as checkbox legend to metabars on tree when metadata is selected
     jQuery(document).ready ->

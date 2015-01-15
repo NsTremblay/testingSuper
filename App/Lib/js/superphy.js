@@ -3216,17 +3216,15 @@
       }).attr("height", 7).attr("y", -3).attr("x", 4).append("svg:title").text(function(n) {
         return n.num_leaves + " genomes";
       });
-      $('.meta-option.checkbox').each(function(i, obj) {
-        return $(obj).click(function() {
-          if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
-            checkbox_value[i] = 1;
-          } else {
-            checkbox_value[i] = 0;
-          }
-          console.log(visible_bars);
-          return visible_bars = checkbox_value.reduce(function(a, b) {
-            return a + b;
-          });
+      $('input[name="meta-option"]').each(function(i, obj) {
+        if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
+          checkbox_value[i] = 1;
+        } else {
+          checkbox_value[i] = 0;
+        }
+        console.log(visible_bars);
+        return visible_bars = checkbox_value.reduce(function(a, b) {
+          return a + b;
         });
       });
       jQuery(document).ready(function() {
