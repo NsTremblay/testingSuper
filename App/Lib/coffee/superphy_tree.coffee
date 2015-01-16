@@ -468,8 +468,11 @@ class TreeView extends ViewTemplate
       .attr("height", 7)
       .attr("y", -3)
       .attr("x", 4)
-      .append("svg:title")
-      .text((n)-> n.num_leaves + " genomes")
+      .attr("data-toggle", "tooltip")
+      .attr("data-original-title", (n)-> n.num_leaves + " genomes")
+
+    $('body').tooltip({selector: '[data-toggle="tooltip"]'})
+    $('[data-toggle="tooltip"]').tooltip({container: 'body'})
 
     # Counts the number of visible bars to be displayed on tree
     $('input[name="meta-option"]').each (i,obj)->
@@ -477,7 +480,6 @@ class TreeView extends ViewTemplate
             checkbox_value[i] = 1
         else
           checkbox_value[i] = 0
-        console.log(visible_bars)
         visible_bars = checkbox_value.reduce((a,b)-> a + b)
 
     # Adds colour boxes as checkbox legend to metabars on tree when metadata is selected
@@ -506,15 +508,15 @@ class TreeView extends ViewTemplate
               tt_mtitle[m] = tt_mtitle[m].slice(0,5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6)
             if m is "serotype"
               tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
-            tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1) unless metaOntology[m][i] is "undefined"
-            if metaOntology[m][i] is "undefined"
-              tt_mtype = "Undefined"
+            tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1)
             if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
-              n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
+              n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
             else if n.metaCount[m][metaOntology[m][i]]? && n._children?
-              n.tt_mtype[m] += ("\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
+              n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
             n.tt_mtype[m])
           i++
+
+    $('[data-toggle="tooltip"]').tooltip()
 
     y = -5
     centred = -1.5
@@ -555,10 +557,23 @@ class TreeView extends ViewTemplate
                 n.xpos += n.arr[i-1]
               else n.xpos = 0
               n.xpos + 4)
-            .append("svg:title")
-            .text((n)->
-              tt_mtitle[m] + ": " + n.tt_mtype[m])
+            .attr("data-toggle", "tooltip")
+            .attr("data-original-title", (n)->
+              pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
+              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
+                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length
+              else if n.metaCount[m][metaOntology[m][i]]? && n._children?
+                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length
+              tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + n.tt_mtype[m].slice(pos, length + pos) + "</strong>" + n.tt_mtype[m].slice(length + pos)
+              if i is 6
+                tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + n.tt_mtype[m].slice(pos) + "</strong>"
+              tt_mtitle[m] + ": " + tt_data)
+            .attr("data-html", "true")
+            .attr("data-placement", "bottom")
           i++
+
+    $('body').tooltip({selector: '[data-toggle="tooltip"]'})
+    $('[data-toggle="tooltip"]').tooltip({container: 'body'})
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()

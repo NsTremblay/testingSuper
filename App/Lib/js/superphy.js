@@ -3213,8 +3213,14 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -3).attr("x", 4).append("svg:title").text(function(n) {
+      }).attr("height", 7).attr("y", -3).attr("x", 4).attr("data-toggle", "tooltip").attr("data-original-title", function(n) {
         return n.num_leaves + " genomes";
+      });
+      $('body').tooltip({
+        selector: '[data-toggle="tooltip"]'
+      });
+      $('[data-toggle="tooltip"]').tooltip({
+        container: 'body'
       });
       $('input[name="meta-option"]').each(function(i, obj) {
         if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
@@ -3222,7 +3228,6 @@
         } else {
           checkbox_value[i] = 0;
         }
-        console.log(visible_bars);
         return visible_bars = checkbox_value.reduce(function(a, b) {
           return a + b;
         });
@@ -3260,16 +3265,11 @@
               if (m === "serotype") {
                 tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
               }
-              if (metaOntology[m][i] !== "undefined") {
-                tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
-              }
-              if (metaOntology[m][i] === "undefined") {
-                tt_mtype = "Undefined";
-              }
+              tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
-                n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
+                n.tt_mtype[m] += "<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
               } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
-                n.tt_mtype[m] += "\n" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
+                n.tt_mtype[m] += "<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
               }
               return n.tt_mtype[m];
             });
@@ -3277,6 +3277,7 @@
           }
         }
       }
+      $('[data-toggle="tooltip"]').tooltip();
       y = -5;
       centred = -1.5;
       height = 7;
@@ -3315,13 +3316,30 @@
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).append("svg:title").text(function(n) {
-              return tt_mtitle[m] + ": " + n.tt_mtype[m];
-            });
+            }).attr("data-toggle", "tooltip").attr("data-original-title", function(n) {
+              var length, pos, tt_data;
+              pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
+              if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
+                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length;
+              } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
+                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length;
+              }
+              tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + n.tt_mtype[m].slice(pos, length + pos) + "</strong>" + n.tt_mtype[m].slice(length + pos);
+              if (i === 6) {
+                tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + n.tt_mtype[m].slice(pos) + "</strong>";
+              }
+              return tt_mtitle[m] + ": " + tt_data;
+            }).attr("data-html", "true").attr("data-placement", "bottom");
             i++;
           }
         }
       }
+      $('body').tooltip({
+        selector: '[data-toggle="tooltip"]'
+      });
+      $('[data-toggle="tooltip"]').tooltip({
+        container: 'body'
+      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
