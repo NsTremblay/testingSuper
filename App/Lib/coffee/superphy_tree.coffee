@@ -524,7 +524,6 @@ class TreeView extends ViewTemplate
     y = -5
     centred = -1.5
     height = 7
-    r = 0
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]
         j = 0
@@ -570,8 +569,7 @@ class TreeView extends ViewTemplate
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length
               tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>"  + "</strong>" + n.tt_mtype[m].slice(length + pos)
               if i is 6
-                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
-                tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos) + "</font>" + "</strong>"
+                tt_data = n.tt_mtype[m].slice(0, length + pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(length + pos) + "</font>"  + "</strong>" 
               "<strong>" + tt_mtitle[m] + " </strong>" + ": " + tt_data)
             .attr("data-html", "true")
             .attr("data-placement", "bottom")

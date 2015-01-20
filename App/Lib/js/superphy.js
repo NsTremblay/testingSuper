@@ -3031,7 +3031,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, existCounter, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, r, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, existCounter, future_tt_data, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3284,7 +3284,7 @@
       y = -5;
       centred = -1.5;
       height = 7;
-      r = 0;
+      future_tt_data = new String();
       for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
         m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
@@ -3323,6 +3323,7 @@
             }).attr("data-toggle", "tooltip").attr("data-original-title", function(n) {
               var length, pos, tt_data;
               pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
+              future_tt_data = new String();
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length;
               } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
@@ -3330,8 +3331,7 @@
               }
               tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>" + "</strong>" + n.tt_mtype[m].slice(length + pos);
               if (i === 6) {
-                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
-                tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos) + "</font>" + "</strong>";
+                tt_data = n.tt_mtype[m].slice(0, length + pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(length + pos) + "</font>" + "</strong>";
               }
               return "<strong>" + tt_mtitle[m] + " </strong>" + ": " + tt_data;
             }).attr("data-html", "true").attr("data-placement", "bottom");
