@@ -3031,7 +3031,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, existCounter, future_tt_data, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3071,6 +3071,7 @@
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
         }
         n.arr = [];
+        n.to_be_hl = new String();
         n.xpos = 0;
         n.tt_mtype = {};
         for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
@@ -3241,7 +3242,6 @@
         });
       });
       tt_mtitle = {};
-      existCounter = 0;
       for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
         m = mtypesDisplayed[_l];
         tt_mtitle[m] = new String();
@@ -3269,10 +3269,9 @@
               tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 n.tt_mtype[m] += "<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)";
-                existCounter += 1;
-              } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
+              }
+              if (n.metaCount[m][metaOntology[m][i]] > 1 && (n._children != null)) {
                 n.tt_mtype[m] += "<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)";
-                existCounter += 1;
               }
               return n.tt_mtype[m];
             });
@@ -3284,7 +3283,6 @@
       y = -5;
       centred = -1.5;
       height = 7;
-      future_tt_data = new String();
       for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
         m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
@@ -3293,7 +3291,7 @@
           x = 0;
           y += height;
           centred += -3.5;
-          while (i < metaOntology[m].length) {
+          while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
               if (i === 6) {
                 return "Other";
@@ -3323,15 +3321,20 @@
             }).attr("data-toggle", "tooltip").attr("data-original-title", function(n) {
               var length, pos, tt_data;
               pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
-              future_tt_data = new String();
               if (n.metaCount[m][metaOntology[m][i]] === 1 && (n._children != null)) {
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length;
-              } else if ((n.metaCount[m][metaOntology[m][i]] != null) && (n._children != null)) {
+                n.to_be_hl = n.tt_mtype[m].slice(length + pos);
+              } else if (n.metaCount[m][metaOntology[m][i]] > 1 && (n._children != null)) {
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length;
+                n.to_be_hl = n.tt_mtype[m].slice(length + pos);
               }
               tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>" + "</strong>" + n.tt_mtype[m].slice(length + pos);
               if (i === 6) {
-                tt_data = n.tt_mtype[m].slice(0, length + pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(length + pos) + "</font>" + "</strong>";
+                if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos) + "</font>" + "</strong>";
+                } else {
+                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.to_be_hl + "</font>" + "</strong>";
+                }
               }
               return "<strong>" + tt_mtitle[m] + " </strong>" + ": " + tt_data;
             }).attr("data-html", "true").attr("data-placement", "bottom");

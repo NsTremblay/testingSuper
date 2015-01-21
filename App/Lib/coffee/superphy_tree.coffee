@@ -313,6 +313,7 @@ class TreeView extends ViewTemplate
       if visible_bars > 1
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
       n.arr = []
+      n.to_be_hl = new String()
       n.xpos = 0
       n.tt_mtype = {}
       for m in mtypesDisplayed
@@ -490,7 +491,6 @@ class TreeView extends ViewTemplate
           jQuery('#'+this.name+'_'+this.value).show()
 
     tt_mtitle = {}
-    existCounter = 0
     for m in mtypesDisplayed
       tt_mtitle[m] = new String()
       if genomes.visibleMeta[m]
@@ -512,10 +512,8 @@ class TreeView extends ViewTemplate
             tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1)
             if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
               n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-              existCounter += 1
-            else if n.metaCount[m][metaOntology[m][i]]? && n._children?
+            if n.metaCount[m][metaOntology[m][i]] > 1 && n._children?
               n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
-              existCounter += 1
             n.tt_mtype[m])
           i++
 
@@ -531,7 +529,7 @@ class TreeView extends ViewTemplate
         x = 0
         y += height
         centred += -3.5
-        while i < metaOntology[m].length
+        while i < 7
           rect_block
             .append("rect")
             .style("fill", colours[m][j++])
@@ -565,11 +563,15 @@ class TreeView extends ViewTemplate
               pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
               if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length
-              else if n.metaCount[m][metaOntology[m][i]]? && n._children?
+                n.to_be_hl = n.tt_mtype[m].slice(length  + pos)
+              else if n.metaCount[m][metaOntology[m][i]] > 1 && n._children?
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length
+                n.to_be_hl = n.tt_mtype[m].slice(length + pos)
               tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>"  + "</strong>" + n.tt_mtype[m].slice(length + pos)
               if i is 6
-                tt_data = n.tt_mtype[m].slice(0, length + pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(length + pos) + "</font>"  + "</strong>" 
+                if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos) + "</font>"  + "</strong>"          
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.to_be_hl + "</font>"  + "</strong>" 
               "<strong>" + tt_mtitle[m] + " </strong>" + ": " + tt_data)
             .attr("data-html", "true")
             .attr("data-placement", "bottom")
