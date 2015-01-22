@@ -575,7 +575,7 @@ if($species_string =~ m/Escherichia coli (.+)$/) {
 	$current_name = $serotype . ' Str. '. $current_name if $serotype;
 
 } else {
-        croak "Error: species tag missing or species is not Escherichia coli.\n";
+    croak "Error: species tag missing or species is not Escherichia coli.\n";
 }
 
 

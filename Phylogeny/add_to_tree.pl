@@ -66,7 +66,7 @@ croak "Missing argument(s). You must supply database connection parameters:  --d
 	unless $dbhost && $dbname && $dbport && $dbuser && $dbpass;
 
 # Output filenames
-croak "Missing argument(s). You must supply output filenames --globalf & --publicf .\n" unless $global_output_file && $public_output_file;
+croak "Missing argument(s). You must supply output filenames --globalf & --publicf .\n" unless $test || $global_output_file && $public_output_file;
 
 my $v = 1;
 
@@ -82,6 +82,7 @@ my $tree_builder = Phylogeny::TreeBuilder->new();
 # Process inputs
 my @target_set;
 my %target_info;
+
 open(my $in, "<$input_file") or croak "Unable to read file $input_file ($!).\n";
 while(my $row = <$in>) {
 	chomp $row;
@@ -95,12 +96,14 @@ while(my $row = <$in>) {
 close $in;
 
 
+
 if($supertree) {
 	# Rebuild only part of tree using supertree approach
 
 	# Obtain working tree (should not include genomes)
 	my $root = $t->globalTree;
-	my $num_orig_leaves = scalar($t->find_leaves($root));
+	my @orig_leaves = $t->find_leaves($root);
+	my $num_orig_leaves = scalar(@orig_leaves);
 
 	if($test) {
 		# Remove target nodes from tree to run test
@@ -134,7 +137,7 @@ if($supertree) {
 		croak "Error: new genome $targetG not found in core_alignment table.\n" unless $leaf;
 
 		my $terminate = 0;
-		my $level = 2;
+		my $level = 3;
 		do {
 
 			# Get candidate subtree set
@@ -148,7 +151,8 @@ if($supertree) {
 
 			} else {
 				# Attempt build of subtree using ML approach
-				my ($new_subtree_root, $old_subtree_root) = buildSubtree($root, $genome_set);
+
+				my ($new_subtree_root, $old_subtree_root) = buildSubtree($root, $targetG, $genome_set);
 
 				# Check if target is outgroup
 				my @subtree_leaves = $t->find_leaves($new_subtree_root);
@@ -162,8 +166,8 @@ if($supertree) {
 				} else {
 					# Build successful
 					# Reattach subtree to main tree
-					foreach my $k (keys %{$old_subtree_root}) {
-						$new_subtree_root->{$k} = $old_subtree_root->{$k};
+					foreach my $k (keys %{$new_subtree_root}) {
+						$old_subtree_root->{$k} = $new_subtree_root->{$k};
 					}
 
 					# $root now contains $targetG, move on to next genome
@@ -190,15 +194,40 @@ if($supertree) {
 
 	# Verify correct number of leaves
 	my @final_leaves = $t->find_leaves($root);
-	croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
-
+	
 	if($test) {
+		if($num_orig_leaves != scalar(@final_leaves)) {
+			my %check;
+			map { $check{$_->{node}->{name}} = 1 } @orig_leaves;
+
+			foreach my $n (@final_leaves) {
+				$check{$n->{node}->{name}}++;
+			}
+
+			foreach my $n (keys %check) {
+				warn "Genome $n missing in new tree\n" unless $check{$n} > 1;
+			}
+
+			croak "Error: Final number of genomes in phylogenetic tree does not match input genomes (new: ".scalar(@final_leaves).", old: $num_orig_leaves).\n"
+		}
+
 		my $rs = $t->compareTrees($root, $t->globalTree);
 
-		my ($result) = ($rs ? 'are equal' : 'DIFFER');
+		my ($result) = ($rs ? 'DIFFER' : 'are equal');
 
 		print "\nThe test tree and original tree $result!\n";
+
+		foreach my $tn (@target_set) {
+			print "\nTEST Tree Summary for $tn:\n";
+			leaf_snapshot($root, $tn);
+
+			print "\nORIGINAL Tree Summary for $tn:\n";
+			leaf_snapshot($t->globalTree, $tn);
+		}
+
 	} else {
+
+		croak "Error: Final number of genomes in phylogenetic tree does not match input genomes.\n" unless scalar(@final_leaves) == ($num_orig_leaves + @target_set);
 
 		my $public_root = finalize_tree($root);
 
@@ -219,6 +248,8 @@ if($supertree) {
 
 } else {
 	# Asked for full tree build, not supertree approach
+
+	croak "Error: --test option only developed for --supertree approach" if $test;
 
 	my $root = buildMLtree();
 
@@ -255,7 +286,7 @@ sub buildNJtree {
 	}
 
 	if($test) {
-		$t->pgAlignment(omit => \@target_set, file => $pg_file);
+		$t->pgAlignment(file => $pg_file);
 	} else {
 		if($pipeline_mode) {
 			$t->pgAlignment(file => $pg_file, temp_table => 'PipelinePangenomeAlignment');
@@ -324,7 +355,7 @@ sub find_umbrella {
 	my $waiting_targets = shift;
 
 	my $rs;
-	my $min_set_size = 5;
+	my $min_set_size = 50;
 
 	# Move up $level levels from leaf
 	my $node = $leaf;
@@ -430,19 +461,17 @@ sub _isOutgroup {
 # Build subtree
 sub buildSubtree {
 	my $root = shift;
+	my $target_genome = shift;
 	my $genome_set = shift;
 
-	# Target genome is first in set
-	my $target_genome = pop @$genome_set; 
-
 	# Find LCA of leaf nodes
-	my $subtree_root = $t->find_lca($root, $genome_set);
+	my $subtree_root = $t->find_lca($root, @$genome_set);
 
 	# Build tree for genomes in LCA subtree
 	my @leaves = $t->find_leaves($subtree_root);
 	my @subtree_genomes = map { $_->{node}->{name} } @leaves;
-	unshift @subtree_genomes, $target_genome;
-
+	push @subtree_genomes, $target_genome;
+	
 	my $align_file = $tmp_dir . "superphy_snp_aligment.txt";
 	if(-e $align_file) {
 		 unlink $align_file or carp "Warning: could not delete temp file $align_file ($!).\n";
@@ -506,7 +535,7 @@ sub printTree {
 			printTree($c, $level);
 		}
 	} else {
-		print "L-Node: <$n ($l)\n";
+		print "L-Node: <$n> ($l)\n";
 	}
 
 }
@@ -542,4 +571,52 @@ sub finalize_tree {
 
 	return($public_tree);
 }
+
+=head2 leaf_snapshot
+
+Prints summary of local tree structure around leaf node
+
+Used for testing
+
+=cut
+
+sub leaf_snapshot {
+	my $root = shift;
+	my $leafname = shift;
+
+	my @leaves = ();
+	_add_parent_links($root, \@leaves);
+
+	my $leafn;
+	foreach my $l (@leaves) {
+		if($l->{name} eq $leafname) {
+			$leafn = $l;
+			last;
+		}
+	}
+
+	croak "Error: leaf node $leafname not found in tree.\n" unless $leafn;
+
+	# Determine the level of the leaf node
+	my $is_root = 0;
+	my $lev = 0;
+	my $this_node = $leafn;
+
+	while($this_node->{parent}) {
+		$lev++;
+		$this_node = $this_node->{parent}
+	}
+	print "Node Level: $lev\n";
+
+	# Print the subtree of the great grand-parent node or highest ancestor if not available
+	my $ggp = $leafn;
+	$ggp = $leafn->{parent} if $leafn->{parent};
+	$ggp = $ggp->{parent} if $ggp->{parent};
+	$ggp = $ggp->{parent} if $ggp->{parent};
+
+	printTree($ggp, 0);
+	
+}
+
+
 

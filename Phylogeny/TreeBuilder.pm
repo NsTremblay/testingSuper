@@ -46,7 +46,7 @@ sub new {
 	$self->ft_exe($ftexe);
 	
 	# Fast tree command
-	my $ftopt = $args{fasttree_opt} // '-gtr -nt -quiet -nopr';
+	my $ftopt = $args{fasttree_opt} // '-gtr -nt';
 	$self->ft_opt($ftopt);
 
 	# Fast fast tree command

@@ -794,7 +794,7 @@ sub _recursive_lca {
 
 		# Check subtrees for LCA
 		# If targets scattered over multiple subtrees
-		# then this root the LCA
+		# then this root is the LCA
 		my @subtrees;
 		foreach my $i (@internals) {
 			my $s = _recursive_lca($i, $targets);
@@ -841,10 +841,12 @@ sub find_leaves {
 		foreach my $c (@{$root->{children}}) {
 			push @leaves, $self->find_leaves($c, $tot_len);
 		}
-		print "Num leaves at this point: ".scalar(@leaves)."\n";
+
 		return @leaves;
+
 	} else {
 		return { node => $root, len => $tot_len };
+		
 	}
 }
 
@@ -886,8 +888,20 @@ sub snpAlignment {
 		}
 	);
 
-	if($args{genomes} && scalar(@{$args{genomes}}) != $aln_rs->count()) {
-		croak "Error: requested genomes not found in the snp_alignment table (genomes: ".join(', ', @{$args{genomes}}).").\n";
+	if($args{genomes} && (scalar(@{$args{genomes}}) != $aln_rs->count())) {
+		warn "Error: one or more requested genomes not found in the snp_alignment table (requested: ".scalar(@{$args{genomes}}).
+			", found: ".$aln_rs->count().").\n";
+		my %check;
+		my $n = 0;
+		map { $check{$_} = 0 } @{$args{genomes}};
+		while(my $aln_row = $aln_rs->next) {
+			$check{$aln_row->name} = 1;
+			$n++;
+		}
+		foreach my $g (keys %check) {
+			warn "Genome $g not found\n" unless $check{$g};
+		}
+		croak "$n"
 	}
 
 	my %alignment;
@@ -946,8 +960,8 @@ sub pgAlignment {
 	}
 
 	if($args{omit}) {
-		croak "Invalid argument. Proper usage: genomes => arrayref.\n" unless ref($args{genomes}) eq 'ARRAY';
-		$conds->{name} = {'-in' => $args{genomes}};
+		croak "Invalid argument. Proper usage: omit => arrayref.\n" unless ref($args{omit}) eq 'ARRAY';
+		$conds->{name} = {'-not_in' => $args{omit}};
 	}
 
 	my $table = "PangenomeAlignment";
@@ -955,7 +969,7 @@ sub pgAlignment {
 		$table = $args{temp_table}
 	}
 
-	my @columns = qw/genome/;
+	my @columns = qw/name/;
 	if($args{core}) {
 		push @columns, { alignment => 'core_alignment' };
 	} elsif($args{accessory}) {
@@ -983,7 +997,7 @@ sub pgAlignment {
 	}
 
 	while(my $aln_row = $aln_rs->next) {
-		my $nm = $aln_row->genome;
+		my $nm = $aln_row->name;
 		next if $nm eq 'core';
 		my $aln = $aln_row->get_column('alignment');
 		$aln =~ tr/01/AT/;

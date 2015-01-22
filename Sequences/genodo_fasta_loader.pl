@@ -150,7 +150,8 @@ my ($CONFIGFILE, $ROOT, $NOLOAD,
     $MANPAGE, $DEBUG,
     $REMOVE_LOCK,
     $VACUUM,
-    $LOGFILE);
+    $LOGFILE,
+    $DEMO);
 
 GetOptions(
 	'config=s' => \$CONFIGFILE,
@@ -162,7 +163,8 @@ GetOptions(
     'manual' => \$MANPAGE,
     'debug' => \$DEBUG,
     'vacuum' => \$VACUUM,
-    'log' => \$LOGFILE,
+    'log=s' => \$LOGFILE,
+    'demo'  => \$DEMO
 ) 
 or pod2usage(-verbose => 1, -exitval => 1);
 pod2usage(-verbose => 2, -exitval => 1) if $MANPAGE;
@@ -172,6 +174,7 @@ $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 
 croak "You must supply the path to the top-level results directory" unless $ROOT;
 $ROOT .= '/' unless $ROOT =~ m/\/$/;
+my $MINFASTASIZE = 3500000; # Fasta file must pass this threshold
 
 # Initialize the chado adapter
 my %argv;
@@ -205,7 +208,30 @@ logit("START of genome_fasta_loader.pl log -- Loading genomes into DB", 1);
 # Load genome sequences and meta data
 genomes();
 
+# Finalize and load into DB
+logit("DB loading...");
+unless ($NOLOAD) {
+	$chado->load_data();
+}
+logit("complete.");
+
+# Update genome locations
+
+logit("Update of genome locations...");
+unless($NOLOAD) {
+	my @opts = ("perl $FindBin::Bin/../Data/genodo_update_location_latlong.pl", "--config $CONFIGFILE");
+	my $cmd = join(' ', @opts);
+	system($cmd) == 0 or die "Error: $cmd failed.\n";
+}
+logit("complete.");
+
+
+$chado->remove_lock();
+
 logit("END", 1);
+
+exit(0);
+
 
 =head2 cleanup_handler
 
@@ -248,6 +274,9 @@ sub genomes {
 	}
 	close IN;
 
+	# Only use first ~500 in demo
+	@jobs = @jobs[0..500] if $DEMO;
+
 	logit(scalar(@jobs)." genomes will be loaded.");
 
 	foreach my $jobid (@jobs) {
@@ -257,92 +286,105 @@ sub genomes {
 		my $gbk_file = "$gbk_dir/$jobid\_fixed.gbk";
 		my $prop_file = "$meta_dir/$jobid.txt";
 
+		croak "Error: fasta file $fasta_file missing." unless -e $fasta_file && -f $fasta_file;
+
+		croak "Error: genbank file $gbk_file missing." unless -e $gbk_file && -f $gbk_file;
+
+		# Check length
+		my $sz = -s $fasta_file;
+		if($sz < $MINFASTASIZE) {
+			logit("SKIPPING, genome too small <$sz>");
+			next;
+		} else {
+			logit("Fasta size: $sz");
+		}
+
 		# Parse genbank file
 		my @opts = ("$FindBin::Bin/genbank_to_genodo.pl", "--config $CONFIGFILE", "--prop $prop_file", "--gb $gbk_file");
 		my $cmd = join(" ", @opts);
-		system($cmd) or die "Error: $cmd failed.\n";
+		my $rs = system($cmd);
 
-		logit("\tgenbank mapping complete");
-		
-		# my ($genome_feature_properties, $upload_params) = load_input_parameters($prop_file);
+		if($rs) {
+			logit("\tSKIPPING, genbank mapping failed");
+			next;
+		} else {
+			logit("\tgenbank mapping complete");
+		}
 
-		# # Validate genome parameters
-		# my ($f, $fp, $dx, $loc) = validate_genome_properties($genome_feature_properties);
+		my ($genome_feature_properties) = load_input_parameters($prop_file);
 
-		# # Validate upload parameters
-		# validate_upload_parameters($upload_params);
+		# Validate genome parameters
+		my ($f, $fp, $dx) = validate_genome_properties($genome_feature_properties);
 
-		# my $upload_id =	$chado->handle_upload(
-		# 	category     => $upload_params->{category},
-  #       	upload_date  => $upload_params->{upload_date},
-  #           login_id     => $upload_params->{login_id},
-  #           release_date => $upload_params->{release_date},
-  #           tag          => $upload_params->{tag},
-  #       );
+		logit("\tloading & validation complete");
 
-		# # Contig collection feature
-		# my $is_public = 0;
+		$rs = sufficient_meta_annotations($fp);
+		unless($rs) {
+			logit("\tSKIPPING, insufficient meta-data");
+			next;
+		} else {
+			logit("\tmeta-data check complete");
+		}
+
+
+		# Contig collection feature
+		my $is_public = 1;
 	
-		# # Feature type of parent: contig_collection
-		# my $type = $chado->feature_types('contig_collection');
+		# Feature type of parent: contig_collection
+		my $type = $chado->feature_types('contig_collection');
 		
-		# # Feature_id 
-		# my $curr_feature_id = $chado->nextfeature($is_public);
+		# Feature_id 
+		my $curr_feature_id = $chado->nextfeature($is_public);
 		
-		# # Uniquename
-		# my $uniquename = $f->{'uniquename'};
+		# Uniquename
+		my $uniquename = $f->{'uniquename'};
 
 		
-		# # Verifies if name is unique, otherwise modify uniquename so that it is unique
-		# # Note: this does not to be used for update-checks based on uniquename
-		# $uniquename = $chado->genome_uniquename($uniquename, $curr_feature_id, $is_public);
+		# Verifies if name is unique, otherwise modify uniquename so that it is unique
+		# Note: not to be used for update-checks based on uniquename
+		$uniquename = $chado->genome_uniquename($uniquename, $curr_feature_id, $is_public);
 		    
-		# ## Note uniquename may have changed and changed name will have been cached. Do we need to know original?
+		## Note uniquename may have changed and changed name will have been cached. Do we need to know original?
 		
-		# # Name
-		# my $name = $f->{name};
+		# Name
+		my $name = $f->{name};
 		
-		# # Sequence Length
-		# my $seqlen = '\N';
-		# # Residues
-		# my $residues = '\N';
+		# Sequence Length
+		my $seqlen = '\N';
+		# Residues
+		my $residues = '\N';
 		
 		
-		# # Properties
-		# if(%$fp) {
-		# 	$chado->handle_genome_properties($curr_feature_id, $fp, $is_public, $upload_id);
-		# }
+		# Properties
+		if(%$fp) {
+			$chado->handle_genome_properties($curr_feature_id, $fp, $is_public);
+		}
 		
-		# # Dbxref
-		# my $dbxref_id = '\N';
-		# if(%$dx) {
-		# 	$dbxref_id = $chado->handle_dbxref($curr_feature_id, $dx, $is_public);
-		# }
+		# Dbxref
+		my $dbxref_id = '\N';
+		if(%$dx) {
+			$dbxref_id = $chado->handle_dbxref($curr_feature_id, $dx, $is_public);
+		}
 
-		# # Location
-		# if(%$loc) {
-		# 	$chado->handle_genome_location($curr_feature_id, $loc, $is_public);
-		# }
-		
-		
-		# # Print  
-		# $chado->print_f($curr_feature_id, $chado->organism_id, $name, $uniquename, $type, $seqlen, 
-		# 	$dbxref_id, $residues);  
-		# $chado->nextfeature('++');
+		# Print  
+		$chado->print_f($curr_feature_id, $chado->organism_id, $name, $uniquename, $type, $seqlen, 
+			$dbxref_id, $residues, $is_public);  
+		$chado->nextfeature($is_public, '++');
 
-		# # Load contigs
-		# my $fasta = Bio::SeqIO->new(-file   => $fasta_file, -format => 'fasta');
+		logit("\tgenome complete");
+
+		# Load contigs
+		my $fasta = Bio::SeqIO->new(-file   => $fasta_file, -format => 'fasta');
                               
-		# while (my $entry = $fasta->next_seq) {
-		# 	load_contig($entry, $tracking_id, $curr_feature_id, $uniquename);
-		# }
+    	my $numc = 0;
+		while (my $entry = $fasta->next_seq) {
+			$numc++ if load_contig($entry, $curr_feature_id, $uniquename);
+		}
 
-		# # Save new genome feature in cache
-		# $chado->cache_snp_genome_id($curr_feature_id, $is_public, $uniquename, $upload_params->{category});
+		logit("\t$numc contigs loaded");
 
-		logit("SUCCESS. Loading of $jobid complete.\n");
-
-		last;
+	
+		logit("SUCCESSful loading of $jobid.\n");
 
 	}
 
@@ -365,10 +407,9 @@ sub load_input_parameters {
     close IN;
     
     my $contig_collection_properties;
-    my $upload_parameters;
     eval $str;
     
-    return ($contig_collection_properties, $upload_parameters);
+    return ($contig_collection_properties);
 }
 
 =head2 validate_genome_properties
@@ -399,7 +440,7 @@ sub validate_genome_properties {
 	
 	# Make sure no unrecognized property types
 	# Assign value to proper table hash
-	my %f; my %fp; my %dx; my %loc;
+	my %f; my %fp; my %dx;
 	foreach my $type (keys %$hash) {
 		
 		if($valid_f_tags{$type}) {
@@ -417,6 +458,12 @@ sub validate_genome_properties {
 		} elsif($valid_fp_tags{$type}) {
 			$fp{$type} = $hash->{$type};
 			
+		} elsif($valid_l_tags{$type}) {
+			# Save locations as raw text under fp hash.
+			# Will call genodo_update_location_latlong.pl after load
+			# fill in correctly formatted locations
+			$fp{$type} = $hash->{$type};
+
 		} elsif($valid_dbxref_tags{$type}) {
 			# Must supply hash with keys: acc, db
 			# Optional: ver, desc
@@ -451,9 +498,6 @@ sub validate_genome_properties {
 				}
 			}
 			
-		} elsif($valid_l_tags{$type}) {
-			$loc{$type} = $hash->{$type};
-			
 		} else {
 			croak "Invalid genome property type $type.";
 		}
@@ -474,86 +518,71 @@ sub validate_genome_properties {
 	
 	$fp{mol_type} = 'dna' unless $fp{mol_type};
 	
-	return(\%f, \%fp, \%dx, \%loc);
+	return(\%f, \%fp, \%dx);
 }
 
 
-=head2 validate_upload_parameters
+=head2 sufficient_meta_annotations
 
-Examines data hash containing upload parameters.
+Counts specific meta-data annotations in
+data hash containing genome properties. 
 
-Also initializes some required parameters
-that have default values in the hash ref.
+Returns boolean
+true => 1 or more meta-data annotations
+false => 0 meta-data annotations
 
 =cut
 
-sub validate_upload_parameters {
-	my $hash = shift;
-	
-	my @valid_parameters = qw/login_id tag release_date upload_date category/;
+sub sufficient_meta_annotations {
+	my $fp = shift;
+
+	# Terms to look for in genome annotation
+	my @tags = qw(
+		serotype
+		isolation_date
+		isolation_location
+		isolation_host
+		isolation_source
+		syndrome
+	);
+
+	my $count = 0;
 		
-	my %valid;
-	map { $valid{$_} = 1 } @valid_parameters;
-	
-	# Make sure no unrecognized parameters
-	foreach my $type (keys %$hash) {
-		croak "Invalid upload parameter $type." unless $valid{$type};
+	foreach my $tag (@tags) {
+		if(defined $fp->{$tag}) {
+			$count++;
+		}
 	}
-	
-	# Required parameters, no default values.
-	croak 'Missing required upload parameter "category".' unless $hash->{category};
-	my %valid_cats = (public => 1, private => 1, release => 1);
-	croak "Invalid category: ".$hash->{category} unless $valid_cats{$hash->{category}};
-	
-	if($hash->{category} eq 'release') {
-		croak 'Missing required upload parameter "release_date".' unless $hash->{release_date};
-	}
-	
-	# Set default parameters
-	$hash->{login_id} = 0 unless $hash->{login_id};
-	
-	unless($hash->{upload_date}) {
-		my $date = strftime "%Y-%m-%d %H:%M:%S", localtime;
-		$hash->{upload_date} = $date;
-	}
-	$hash->{tag} = 'Unclassified' unless $hash->{tag};
-	
-	return(1);
+
+	return($count > 0);
 }
 
 sub load_contig {
-	my ($contig, $t, $cc_id, $cc_uniquename) = @_;
+	my ($contig, $cc_id, $cc_uniquename) = @_;
+
+	my $is_public = 1;
 	
 	# Feature type of child: contig
 	my $type = $chado->feature_types('contig');
 	
-	
 	# Feature_id 
-	my $curr_feature_id = $chado->nextfeature();
+	my $curr_feature_id = $chado->nextfeature($is_public);
+		
+	# Name
+	my $name = $contig->display_id;
 	
-	# Get the user-submitted description and name from DB cache
-	# Needed to over-write these values with place-holders recognized by program
-	my $name;
-	my $desc;
-	my $chr_num;
+	# Description
+	my $desc = $contig->description;
 	
-	my $tmp_id = $contig->display_id;
-	(my $trk_id, $chr_num) = ($tmp_id =~ m/lcl\|upl_(\d+)\|(\d+)/);
-	
-	croak "Invalid temporary ID ($tmp_id) for contig." unless $trk_id && $chr_num;
-	croak "Tracking ID in temporary ID does not match supplied tracking ID ($tmp_id, $t)" unless $trk_id == $t;
-	
-	($name, $desc) = $chado->retrieve_chr_info($trk_id, $chr_num);
-
 	# Sequence Length
 	my $seqlen = $contig->length;
+
 	# Residues
 	my $residues = $contig->seq();
 	
 	
 	# DBxref
 	my $dbxref = '\N';
-	
 	
 	# Contig properties
 	my %contig_fp;
@@ -581,7 +610,7 @@ sub load_contig {
 	}
 	$contig_fp{mol_type} = $mol_type;
 	
-	$chado->handle_reserved_properties($curr_feature_id, \%contig_fp);
+	$chado->handle_genome_properties($curr_feature_id, \%contig_fp, $is_public);
 	
 	# Create unique contig name derived from contig_collection uniquename
 	# Since contig_collection uniquename is guaranteed unique, contig name should be unique.
@@ -589,17 +618,16 @@ sub load_contig {
 	my $uniquename = $name;
 	$uniquename .= "- part_of:$cc_uniquename";
 	
-	
+
 	# Feature relationships
-	$chado->handle_parent(subject => $curr_feature_id, genome => $cc_id, public => 0);
-	
-	
-	# Print  
-	$chado->print_f($curr_feature_id, $chado->organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues);  
-	$chado->nextfeature('++');
-	
-	# Cache feature ID for newly loaded contig
-	$chado->cache_contig_id($t, $curr_feature_id, $chr_num);
+	$chado->handle_parent(subject => $curr_feature_id, genome => $cc_id, public => 1);
+
+
+	# Print
+	$chado->print_f($curr_feature_id, $chado->organism_id, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public);  
+	$chado->nextfeature($is_public, '++');
+
+	return 1;
 }
 
 sub logit {

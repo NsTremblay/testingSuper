@@ -182,6 +182,8 @@ sub publicGenomes {
 		my $user_genome = 0;
 		my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome);
 		my $fid = $row_hash->{feature_id};
+
+		print "DN: $display_name\n";
 		
 		my $key = "public_$fid";
 		$visable_nodes->{$key} = {
@@ -1498,7 +1500,7 @@ sub elapsed_time {
 }
 
 sub displayname {
-	my ($uniquename, $private_table, $category) = @_;
+	my ($self, $uniquename, $private_table, $category) = @_;
 
 	my $dname = $uniquename;
 

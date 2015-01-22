@@ -182,7 +182,7 @@ my %fp_types = (
 	strain => 'local',
 	serotype => 'local',
 	isolation_host => 'local',
-	#isolation_location => 'local',
+	isolation_location => 'local',
 	isolation_date => 'local',
 	synonym => 'feature_property',
 	comment => 'feature_property',
@@ -1944,7 +1944,7 @@ sub load_data {
 			$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
 			# Compute new tree, output to file
-			#$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+			$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
 
 			# Compute new snp matrix file
 			($tmp_snp_matrix_file, $tmp_snp_func_file) = $self->binary_state_snp_matrix('pipeline_snp_alignment');
@@ -2009,7 +2009,7 @@ sub load_data {
 	if($ft eq 'party_mix') {
 		$self->push_cache('vfamr');
 		$self->push_cache('pangenome');
-	} else {
+	} elsif($ft eq 'vfamr' || $ft eq 'pangenome') {
 		$self->push_cache($ft);
 	}
 
@@ -2793,10 +2793,12 @@ sub genome_uniquename {
 		# Need to generate true uniquename
 
 		$uniquename = "$uniquename ($nextfeature)"; # Should be unique, if not something is screwy
+
+		($rs, $feature_id) = $self->validate_feature(feature_type => 'genome', uniquename  => $uniquename, 
+			public => $pub );
 		
-		croak "Error: uniquename collision. Unable to generate uniquename using feature_id." 
-			if $self->validate_feature(feature_type => 'genome', uniquename  => $uniquename, 
-				public => $pub ) ne 'new';
+		croak "Error: uniquename collision ($rs). Unable to generate uniquename using feature_id for $uniquename." 
+			if $rs ne 'new';
 	}
 
 	# Cache feature
@@ -3956,7 +3958,7 @@ sub handle_dbxref {
           	unless ($self->cache('db', $database)) {
           		
 				$self->{queries}{dbxref}{database}->execute("$database");
-				my ($db_id) = $self->{queries}{search_db}->fetchrow_array;
+				my ($db_id) = $self->{queries}{dbxref}{database}->fetchrow_array;
 				
 				unless($db_id) { 
 					# DB not found. Create db entry
@@ -3971,7 +3973,7 @@ sub handle_dbxref {
           	
           	# Search for existing dbxref
           	$self->{queries}{dbxref}{accession}->execute($self->cache('db', $database), $accession, $version);
-			($dbxref_id) = $self->{queries}{search_long_dbxref}->fetchrow_array;
+			($dbxref_id) = $self->{queries}{dbxref}{accession}->fetchrow_array;
 
 			if($dbxref_id) {
 				# Found existing dbxref
@@ -7092,7 +7094,7 @@ sub handle_upload {
 	
 	# Login id
 	my $login_id = $argv{login_id};
-	croak "Missing argument: login_id" unless $login_id;
+	croak "Missing argument: login_id" unless defined $login_id;
 	
 	# Tag
 	my $tag = $argv{tag};

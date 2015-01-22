@@ -277,8 +277,8 @@ sub genomes {
 		
 		# Print  
 		$chado->print_f($curr_feature_id, $chado->organism_id, $name, $uniquename, $type, $seqlen, 
-			$dbxref_id, $residues);  
-		$chado->nextfeature('++');
+			$dbxref_id, $residues, $is_public, $upload_id);  
+		$chado->nextfeature($is_public, '++');
 
 		# Load contigs
 		my $fasta = Bio::SeqIO->new(-file   => $fasta_file, -format => 'fasta');
@@ -469,13 +469,14 @@ sub validate_upload_parameters {
 
 sub load_contig {
 	my ($contig, $t, $cc_id, $cc_uniquename) = @_;
+
+	my $is_public = 0;
 	
 	# Feature type of child: contig
 	my $type = $chado->feature_types('contig');
 	
-	
 	# Feature_id 
-	my $curr_feature_id = $chado->nextfeature();
+	my $curr_feature_id = $chado->nextfeature($is_public);
 	
 	# Get the user-submitted description and name from DB cache
 	# Needed to over-write these values with place-holders recognized by program
@@ -527,7 +528,8 @@ sub load_contig {
 	}
 	$contig_fp{mol_type} = $mol_type;
 	
-	$chado->handle_reserved_properties($curr_feature_id, \%contig_fp);
+	my $upload_id = $trk_id;
+	$chado->handle_genome_properties($curr_feature_id, \%contig_fp, $is_public, $upload_id);
 	
 	# Create unique contig name derived from contig_collection uniquename
 	# Since contig_collection uniquename is guaranteed unique, contig name should be unique.
@@ -540,9 +542,9 @@ sub load_contig {
 	$chado->handle_parent(subject => $curr_feature_id, genome => $cc_id, public => 0);
 	
 	
-	# Print  
-	$chado->print_f($curr_feature_id, $chado->organism, $name, $uniquename, $type, $seqlen, $dbxref, $residues);  
-	$chado->nextfeature('++');
+	# Print
+	$chado->print_f($curr_feature_id, $chado->organism_id, $name, $uniquename, $type, $seqlen, $dbxref, $residues, $is_public, $upload_id); 
+	$chado->nextfeature($is_public, '++');
 	
 	# Cache feature ID for newly loaded contig
 	$chado->cache_contig_id($t, $curr_feature_id, $chr_num);
