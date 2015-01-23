@@ -65,7 +65,6 @@ class TreeView extends ViewTemplate
         else b_height = 3
         a_height + b_height)
 
-
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
     @_treeOps(@parentElem, legendID)
@@ -263,6 +262,13 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   update: (genomes, sourceNode=null) ->
+
+    # Counts the number of visible bars to be displayed on tree
+    $('input[name="meta-option"]').each (i,obj)->
+      checkbox_value[i] = 0
+      if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
+        checkbox_value[i] = 1
+      visible_bars = checkbox_value.reduce((a,b)-> a + b)
 
     t1 = new Date()
     
@@ -475,14 +481,6 @@ class TreeView extends ViewTemplate
     $('body').tooltip({selector: '[data-toggle="tooltip"]'})
     $('[data-toggle="tooltip"]').tooltip({container: 'body'})
 
-    # Counts the number of visible bars to be displayed on tree
-    $('input[name="meta-option"]').each (i,obj)->
-        if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
-            checkbox_value[i] = 1
-        else
-          checkbox_value[i] = 0
-        visible_bars = checkbox_value.reduce((a,b)-> a + b)
-
     # Adds colour boxes to metadata sidebar
     jQuery(document).ready ->
       jQuery('input[name="meta-option"]').each (obj) ->
@@ -560,13 +558,16 @@ class TreeView extends ViewTemplate
               n.xpos + 4)
             .attr("data-toggle", "tooltip")
             .attr("data-original-title", (n)->
-              pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
+              if metaOntology[m][i]?
+                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
               if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length
-                n.to_be_hl = n.tt_mtype[m].slice(length  + pos)
+                if i < 6
+                  n.to_be_hl = n.tt_mtype[m].slice(length  + pos)
               else if n.metaCount[m][metaOntology[m][i]] > 1 && n._children?
                 length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length
-                n.to_be_hl = n.tt_mtype[m].slice(length + pos)
+                if i < 6
+                  n.to_be_hl = n.tt_mtype[m].slice(length + pos)
               tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>"  + "</strong>" + n.tt_mtype[m].slice(length + pos)
               if i is 6
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
