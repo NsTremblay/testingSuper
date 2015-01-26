@@ -52,17 +52,74 @@
 		</div>
 
 		<div id="row">
+			<script type="text/javascript">
+			function slideShow() {
+			    var $active, $next;
+			    $active = $('.slideshow IMG.active');
+			    if ($active.length == 0) $active = $('.slideshow IMG:last');
+			    $next = $active.next().length ? $active.next()
+			    	: ($active.prev()).prev();
+			    $active.addClass('last-active');
+			    $next.css({opacity: 0.0})
+			    	.addClass('active')
+			    	.animate({opacity: 1.0}, 1000, function() {
+			    		$active.removeClass('active last-active');
+			    });
+			};
+			$(function() {
+				setInterval("slideShow()", 5000);
+			});
+			(function ($) {
+			    var original = $('slideshow-label').css('margin-top');
+			    $('slideshow-label').hover(function (e) {
+			        $('slideshow-label').stop().animate(
+			            {"margin-top" : (
+			                $(this).parent().outerHeight() - 
+			                $(this).outerHeight()
+			            )},
+			            250
+			        );
+			    }, function (e){
+			        $('slideshow-label').stop().animate(
+			            {"margin-top": original},
+			            250
+			        );
+			    });
+			}(jQuery));
+			</script>
 			<div class="col-md-4">
-				<div id="logo" style="position:absolute;opacity:1;z-index:1"><img src="App/Pictures/superphy_logo.png"></div>
-				<div id="logo_inverted" style="position:absolute;opacity:0;z-index:0"><img src="App/Pictures/superphy_logo_inverted.png"></div>
-				<script>
-					$("#logo").fadeTo("slow", 0)
-					$("#logo").css("z-index", 0)
-					$("#logo_inverted").css("z-index", 1)
-				</script>
+				<div class="slideshow">
+					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
+					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
+					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
+				</div>
+				<div class="slideshow-label">
+					<h1>Test Heading</h1>
+					<p>Test Details</p>
+				</div>
 			</div>
-			<div class="col-md-4"><img src="App/Pictures/superphy_logo.png"></div>
-			<div class="col-md-4"><img src="App/Pictures/superphy_logo.png"></div>
+			<div class="col-md-4">
+				<div class="slideshow">
+					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
+					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
+					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
+				</div>
+				<div class="slideshow-label">
+					<h1>Test Heading</h1>
+					<p>Test Details</p>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="slideshow">
+					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
+					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
+					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
+				</div>
+				<div class="slideshow-label">
+					<h1>Test Heading</h1>
+					<p>Test Details</p>
+				</div>
+			</div>
 		</div>
 		
 		<div class="row">

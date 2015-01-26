@@ -1804,3 +1804,53 @@ Date: May 20th, 2014
   padding-bottom: 0px;
   margin-bottom: 0px;
 }
+/*Homepage slideshow styles*/
+.slideshow {
+  position:relative;
+  height:187px;
+}
+.slideshow IMG {
+  position:absolute;
+  top:0;
+  left:0;
+  z-index:8;
+}
+.slideshow IMG.active {
+  z-index:10;
+}
+.slideshow IMG.last-active {
+  z-index:9;
+}
+.slideshow h1 {
+  font-size: 12px;
+  color: white;
+  font-family: Helvetica, Verdana;
+  font-weight: bold;
+  text-indent: 5px;
+  text-align: center;
+  margin: 0px;
+  padding: 0px;
+}
+.slideshow-label {
+  background: black;
+  opacity: 0.6;
+  padding: 8px;
+  height: auto;
+  text-align: left;
+    bottom: 0;
+  background-repeat: repeat-x;
+  background-position: center;
+  border-top-width: 3px;
+}
+.slideshow-label p {
+  text-indent: 0px;
+  color: white;
+  font-size: 12px;
+  margin-top: 5px;
+  margin-right: 0px;
+  margin-bottom: 0px;
+  margin-left: 0px;
+  text-align: justify;
+}
+
+
