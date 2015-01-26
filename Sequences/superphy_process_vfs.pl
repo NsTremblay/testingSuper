@@ -11,6 +11,7 @@ use warnings;
 use Bio::SeqIO;
 use IO::File;
 use POSIX qw(strftime);
+use List::MoreUtils qw(uniq);
 
 # Global Variables
 my $timestamp = strftime "%d:%m:%Y %H:%M", localtime;
@@ -18,179 +19,54 @@ my $filetimestamp = strftime "%d_%m_%Y", localtime;
 
 my $path_to_vf_fasta = $ARGV[0];
 my $path_to_csv = $ARGV[1];
-my ($csv_header, $max_tabs, @annotations, %annotated_ids, %unannotated_ids);
+my ($csv_header, $max_tabs, @annotations);
 
-my (%ontology_categories, %ontology_genes, %ontology_unclassified);
+my (%ontology_categories, %ontology_genes, %ontology_unclassified, %ontology_subcategories);
 
 my $ontology_category_count = 1000000;
 my $ontology_subcategory_count = 2000000;
-my $ontology_gene_count = 3000000;
 my $unclassified_id = 9000000;
 
-$ontology_categories{'unclassified'}{id} = $unclassified_id;
+#$ontology_categories{'unclassified'}{id} = $unclassified_id;
 
 ########################
 #Call script subroutines
 ########################
 
-read_in_csv_fasta();
-write_to_files();
+#write_to_files();
+
+#read_in_fasta();
+read_in_csv();
+perpare_ontology_terms();
+write_out_ontology();
 
 ####################
 # Helper Subroutines
 ####################
 
-# CSV Headers in order:
 
-#Reads in csv and fasta files
-sub read_in_csv_fasta {
+# TODO: Not implemented yet
+# sub read_in_fasta {
+# }
 
-	open (my $fh, "<", $path_to_csv) or die "Could no open file:$1\n";
+sub read_in_csv {
+	#TODO: read in categories
+	open (my $fh, "<", $path_to_csv) or die "Could not open file: $!\n";
 
-	my $fasta_in = Bio::SeqIO->new(
-		-file => $path_to_vf_fasta, 
-		-format => 'fasta'
-		);
-
-	$csv_header = <$fh>;
+	$csv_header = <$fh>; # strip header from CSV
 	$max_tabs = 0;
 
 	while (<$fh>) {
+		chomp($_);
 		my @line = split('\t', $_);
 		$max_tabs = scalar(@line) if scalar(@line) >= $max_tabs;
-		$annotated_ids{lc($line[0])} = 1;
- 		# Need to convert the first letter of the gene name to lowercase
+		# Need to convert the first letter of the gene name to lowercase
  		$line[0] =~ s/^([A-Z])/\l$1/;
+		$ontology_genes{$line[0]}{id} = $line[1];
+		$ontology_genes{$line[0]}{is_a} = [];
  		push(@annotations, \@line);
- 	}
 
- 	while (my $seq = $fasta_in->next_seq()) {
- 		unless ($annotated_ids{lc($seq->id)}) {
- 			$unannotated_ids{$seq->id} = undef;
- 		}
- 	}
-
- 	close $fh;
-
- 	print "Number of annotated genes: " . scalar @annotations . "\n";
- 	print "Number of genes to add: " . scalar (keys %unannotated_ids) . "\n";
-
- }
- 
-# Writes all genes out to CSV 
-sub write_to_files {
-
-	open (my $write_fh, ">", $path_to_csv);
-	open (my $ontology_fh, ">", "./e_coli_VFO_$filetimestamp.obo") or die "Could not open ontology file handle: $!\n";
-
-	
-
-
-
-	print $ontology_fh (
-		"format-version: 1.2\n". 
-		"date: $timestamp\n".
-		"saved-by: Akiff Manji\n".
-		"auto-generated-by: update_vf_csv_ontology\n".
-		"default-namespace: e_coli_virulence\n".
-		"ontology: e_coli_virulence\n\n"
-		);
-
-	print $ontology_fh (
-		"[Term]\n".
-		"id: VFO:0000000\n".
-		"name: Pathogenesis\n".
-		"namespace: e_coli_virulence\n".
-		"xref: VFO:www.mgc.ac.cn/VFs/\n".
-		"created_by: amanji\n".
-		"creation_date: $timestamp\n\n"
-		);
-
-
-
-	print $write_fh $csv_header;
-	
-	# Write out existing annotations
-	foreach (@annotations) {
-		write_to_ontology($_, $ontology_fh);
-		print $write_fh join("\t", @{$_});
 	}
-	
-	# Write out new gene additions
-	# TODO: This feature is not implemented. DO NOT UNCOMMENT
-	#foreach (keys %unannotated_ids) {
-		#my $updated_line = write_to_ontology($_);
-		#print $write_fh join("\t", @{$updated_line});
-		#print $write_fh "$_" . "\t"x($max_tabs-1) . "\n";
-	#}
-	
-	close $write_fh;
-
-
-	
-
-	my $unclassified_term = "[Term]\n".
-	"id: VFO:" . $unclassified_id . "\n".
-	"name: unclassified\n".
-	"namespace: e_coli_virulence\n".
-	"xref: VFO:www.mgc.ac.cn/VFs/\n".
-	"is_a: unclassified\n";
-
-	foreach (keys %ontology_unclassified) {
-		$unclassified_term .= "is_a: " . $_ . "\n";
-	}
-
-	$unclassified_term .= "created_by: amanji\n".
-	"creation_date: $timestamp\n\n";
-
-	print $ontology_fh $unclassified_term;	
-	
-	# Write out ontology Categories and Subcategories
-	foreach (keys %ontology_categories) {
-		print $ontology_fh (
-			"[Term]\n".
-			"id: VFO: " . $ontology_categories{$_}{id} ."\n".
-			"name: " . $_ . "\n".
-			"namespace: e_coli_virulence\n".
-			"xref: VFO:www.mgc.ac.cn/VFs/\n".
-			"is_a: VFO:0000000 ! Pathogenesis\n".
-			"created_by: amanji\n".
-			"creation_date: $timestamp\n\n"
-			) unless $_ eq 'unclassified';
-
-		my @subcategories = keys %{$ontology_categories{$_}{subcategories}};
-
-		foreach my $subcat (@subcategories) {
-			print $ontology_fh (
-				"[Term]\n".
-				"id: VFO:" . $ontology_categories{$_}{subcategories}{$subcat} . "\n".
-				"name: " . $subcat . "\n".
-				"namespace: e_coli_virulence\n".
-				"xref: VFO:www.mgc.ac.cn/VFs/\n".
-				"is_a: VFO:". $ontology_categories{$_}{id} . " ! " . $_ . "\n".
-				"created_by: amanji\n".
-				"creation_date: $timestamp\n\n"
-				);
-		}
-	}
-
-	close $ontology_fh;
-
-	# my $fasta_out = Bio::SeqIO->new(
-	# 	-file => $path_to_vf_fasta, 
-	# 	-format => 'fasta'
-	# 	);
-
-	#open (my $seq_fh, ">", "./e_coli_VF_$filetimestamp.fasta") or die "Could not open sequence file handle: $!\n";
-
-	#Write out new fasta_file
-	# while (my $seq = $fasta_out->next_seq()) {
-	# 	my $new_id = $seq->id . "|VFO:" .$ontology_genes{$seq->id}{id} . "|";
-	# 	print $seq_fh ">" . $new_id . " - " . $seq->desc . "\n";
-	# 	print $seq_fh $seq->seq . "\n\n"
-	# }
-
-	#close $seq_fh;
 }
 
 #####################
@@ -231,79 +107,125 @@ sub write_to_files {
 # created_by: amanji
 # creation_date: $timestamp
 
-sub write_to_ontology {
-
+sub perpare_ontology_terms {
 	# CSV Headers:
 	# [0] VF gene
 	# [1] VFO ID
-	# [2] Function
-	# [3] Uniprot
-	# [4] Categor(y/ies)
-	# [5] Sub Categor(y/ies)
-	# [6] Reference(s)
-	# [7] Ref Genome
-	# [8] Sequence
+	# [2] Categor(y/ies)
+	# [3] Sub Categor(y/ies)
 
-	# Need to check if a reference to array or scalar
-	my ($obj_to_write, $_ontology_fh) = @_;
-	
-	$ontology_gene_count++;
-	
-	if (ref($obj_to_write) eq 'ARRAY') {
-		#Gene Ontology ID
-		#$obj_to_write->[1] = $ontology_gene_count;
-		# Categories and Sub Categories
-		
-		foreach (split(',', @$obj_to_write[4])) {
-			
-			unless (exists $ontology_categories{$_}) {
-				
-				# Add by default to unclassified
-				$ontology_unclassified{$_} = 1;
-				
-				$ontology_categories{$_} = {};
-				$ontology_categories{$_}{id} = $ontology_category_count++;
-			}
+	# Set up unclassified terms
+	$ontology_categories{'unclassified'}{id} = $unclassified_id;
+	$ontology_subcategories{'unclassified'}{id} = $unclassified_id;
 
-			$ontology_genes{$obj_to_write->[0]}{belongs_to} = [] unless exists $ontology_genes{$obj_to_write->[0]}{belongs_to};
-			#$ontology_genes{$obj_to_write->[0]}{id} = $ontology_gene_count;
-			$ontology_genes{$obj_to_write->[0]}{id} = $obj_to_write->[1];
+	#Need to prepare categoires if they dont exist and match genes to categories
+	foreach my $annotation (@annotations) {
+		my @_categories = split(',', $annotation->[2]);
+		my @_sub_categories = split(',', $annotation->[3]);
 
-			if ($obj_to_write->[5] eq 'unclassified') {
-				push(@{$ontology_genes{$obj_to_write->[0]}}{belongs_to}, $unclassified_id);
-			}
-			else {
-				$ontology_subcategory_count++;
-				$ontology_categories{$_}{subcategories}{$obj_to_write->[5]} = $ontology_subcategory_count unless exists $ontology_categories{$_}{subcategories}{$obj_to_write->[5]};
-				push(@{$ontology_genes{$obj_to_write->[0]}}{belongs_to}, $ontology_subcategory_count);
-			}
-
+		for (my $i = 0; $i < scalar(@_categories); $i++) {
+			$ontology_categories{$_categories[$i]}{id} = ++$ontology_category_count unless exists $ontology_categories{$_categories[$i]};
+			$ontology_subcategories{$_sub_categories[$i]}{id} = ++$ontology_subcategory_count unless exists $ontology_subcategories{$_sub_categories[$i]};
+			push(@{$ontology_subcategories{$_sub_categories[$i]}{is_a}}, $ontology_category_count) unless $_categories[$i] eq 'unclassified';
+			push(@{$ontology_subcategories{$_sub_categories[$i]}{is_a}}, $unclassified_id) if $_categories[$i] eq 'unclassified';
+			push(@{$ontology_genes{$annotation->[0]}{is_a}}, $ontology_subcategory_count) unless $_sub_categories[$i] eq 'unclassified';
+			push(@{$ontology_genes{$annotation->[0]}{is_a}}, $unclassified_id) if $_sub_categories[$i] eq 'unclassified';
 		}
 	}
+}
 
-	# elsif (ref($obj_to_write) eq 'SCALAR') {
-	# 	# TODO: Not implemented. DO NOT UNCOMMENT
-	# }
+sub write_out_ontology {
+	#TODO: the name is pretty self-expanatory
 
-	# Update VFO ID in CSV
-	#$obj_to_write->[1] = $ontology_gene_count;
+	open (my $ontology_fh, ">", "./e_coli_VFO_$filetimestamp.obo") or die "Could not open ontology file handle: $!\n";
 
-	#Write gene out to ontology
-	my $ontology_term = "[Term]\n".
-	#"id: VFO: $ontology_gene_count\n".
-	"id: VFO: " . $obj_to_write->[1] . "\n".
-	"name: " . $obj_to_write->[0] . "\n".
-	"namespace: e_coli_virulence\n".
-	"xref: VFO:www.mgc.ac.cn/VFs/\n".
-	"def: \"\" []\n";
-	foreach (@{$ontology_genes{$obj_to_write->[0]}{belongs_to}}) {
-		$ontology_term .= "is_a: VFO:$_ ! \n";
+	my @ontology_header = (
+		"format-version: 1.2", 
+		"date: $timestamp",
+		"saved-by: Akiff Manji",
+		"auto-generated-by: update_vf_csv_ontology",
+		"default-namespace: e_coli_virulence",
+		"ontology: e_coli_virulence\n\n"
+		);
+
+	print $ontology_fh join("\n", @ontology_header);
+
+	my @ontology_parent_term = (
+		"[Term]",
+		"id: VFO:0000000",
+		"name: Pathogenesis",
+		"namespace: e_coli_virulence",
+		"xref: VFO:www.mgc.ac.cn/VFs/",
+		"created_by: amanji",
+		"creation_date: $timestamp\n\n"
+	);
+
+	print $ontology_fh join("\n", @ontology_parent_term);
+
+	my @ontology_unclassified_term = (
+		"[Term]",
+		"id: VFO:" . $unclassified_id,
+		"name: unclassified",
+		"namespace: e_coli_virulence",
+		"xref: VFO:www.mgc.ac.cn/VFs/",
+		"is_a: VFO:0000000 ! Pathogenesis",
+		);
+
+	push(@ontology_unclassified_term, "created_by: amanji", "creation_date: $timestamp\n\n");
+
+	print $ontology_fh join("\n", @ontology_unclassified_term);
+
+	# Write out categories
+	foreach (keys %ontology_categories) {
+		next if $_ eq 'unclassified';
+		my @_category = (
+			"[Term]",
+			"id: VFO: " . $ontology_categories{$_}{id},
+			"name: " . $_,
+			"namespace: e_coli_virulence",
+			"xref: VFO:www.mgc.ac.cn/VFs/",
+			"is_a: VFO:0000000 ! Pathogenesis",
+			"created_by: amanji",
+			"creation_date: $timestamp\n\n"
+			);
+
+		print $ontology_fh join("\n", @_category);
 	}
-	$ontology_term .= "created_by: amanji\n".
-	"creation_date: $timestamp\n\n";
 
-	print $_ontology_fh $ontology_term;
+	# Write out sub categories
+	foreach (keys %ontology_subcategories) {
+		next if $_ eq 'unclassified';
+		my @_subcategory = (
+			"[Term]",
+			"id: VFO:" . $ontology_subcategories{$_}{id},
+			"name: " . $_,
+			"namespace: e_coli_virulence",
+			"xref: VFO:www.mgc.ac.cn/VFs/",
+			);
+			foreach my $parent_category_id (uniq(@{$ontology_subcategories{$_}{is_a}})) {
+					push(@_subcategory, "is_a: VFO:". $parent_category_id . " ! ");
+				}	
+			push(@_subcategory, "created_by: amanji", "creation_date: $timestamp\n\n");
 
-	#return $obj_to_write;
-	return;
+			print $ontology_fh join("\n", @_subcategory);
+	}
+
+	# Write out genes
+	foreach (keys %ontology_genes) {
+		my @_gene = (
+			"[Term]",
+			"id: VFO:" . $ontology_genes{$_}{id},
+			"name: " . $_,
+			"namespace: e_coli_virulence",
+			"xref: VFO:www.mgc.ac.cn/VFs/",
+			);
+			foreach my $parent_subcategory_id (uniq(@{$ontology_genes{$_}{is_a}})) {
+					push(@_gene, "is_a: VFO:". $parent_subcategory_id . " ! ");
+				}	
+			push(@_gene, "created_by: amanji", "creation_date: $timestamp\n\n");
+
+			print $ontology_fh join("\n", @_gene);
+	}
+
+	close $ontology_fh;
 }
