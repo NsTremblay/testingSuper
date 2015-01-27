@@ -1805,52 +1805,58 @@ Date: May 20th, 2014
   margin-bottom: 0px;
 }
 /*Homepage slideshow styles*/
-.slideshow {
+.slideshow-img {
   position:relative;
   height:187px;
 }
-.slideshow IMG {
+.slideshow-img IMG {
   position:absolute;
   top:0;
   left:0;
   z-index:8;
 }
-.slideshow IMG.active {
+.slideshow-img IMG.active {
   z-index:10;
 }
-.slideshow IMG.last-active {
+.slideshow-img IMG.last-active {
   z-index:9;
 }
-.slideshow h1 {
-  font-size: 12px;
-  color: white;
+.slideshow-label h1 {
+  font-size: 20px;
+  color:white;
   font-family: Helvetica, Verdana;
   font-weight: bold;
-  text-indent: 5px;
-  text-align: center;
+  text-indent: 0px;
+  text-align: left;
   margin: 0px;
+  margin-left: 5px;
   padding: 0px;
 }
 .slideshow-label {
   background: black;
-  opacity: 0.6;
-  padding: 8px;
-  height: auto;
+  position:absolute;
+  top: 135px;
+  z-index: 12;
+  opacity: 0.0;
+  padding: 5px;
+  width: 350px;
+  height: 50px;
+  overflow:hidden;
   text-align: left;
     bottom: 0;
   background-repeat: repeat-x;
   background-position: center;
-  border-top-width: 3px;
+  border-top-width: 0px;
 }
 .slideshow-label p {
   text-indent: 0px;
   color: white;
   font-size: 12px;
-  margin-top: 5px;
+  margin-top: 3px;
   margin-right: 0px;
-  margin-bottom: 0px;
-  margin-left: 0px;
-  text-align: justify;
+  margin-bottom: 5px;
+  margin-left: 5px;
+  text-align: left;
 }
 
 

@@ -55,8 +55,8 @@
 			<script type="text/javascript">
 			function slideShow() {
 			    var $active, $next;
-			    $active = $('.slideshow IMG.active');
-			    if ($active.length == 0) $active = $('.slideshow IMG:last');
+			    $active = $('.slideshow-img IMG.active');
+			    if ($active.length == 0) $active = $('.slideshow-img IMG:last');
 			    $next = $active.next().length ? $active.next()
 			    	: ($active.prev()).prev();
 			    $active.addClass('last-active');
@@ -69,53 +69,46 @@
 			$(function() {
 				setInterval("slideShow()", 5000);
 			});
-			(function ($) {
-			    var original = $('slideshow-label').css('margin-top');
-			    $('slideshow-label').hover(function (e) {
-			        $('slideshow-label').stop().animate(
-			            {"margin-top" : (
-			                $(this).parent().outerHeight() - 
-			                $(this).outerHeight()
-			            )},
-			            250
-			        );
+			$(function() {
+			    var original = $('.slideshow-label').css('opacity');
+			    $('#slideshow1').hover(function (e) {
+			        $('#slideshow-label1').stop().animate(
+			            {"opacity" : "0.7"}, 250);
 			    }, function (e){
-			        $('slideshow-label').stop().animate(
-			            {"margin-top": original},
-			            250
-			        );
+			        $('#slideshow-label1').stop().animate(
+			            {"opacity": original}, 250);
 			    });
-			}(jQuery));
+			});
 			</script>
-			<div class="col-md-4">
-				<div class="slideshow">
+			<div class="col-md-4" id="slideshow1">
+				<div class="slideshow-img">
 					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
 					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
 					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
 				</div>
-				<div class="slideshow-label">
+				<div class="slideshow-label" id="slideshow-label1">
 					<h1>Test Heading</h1>
 					<p>Test Details</p>
 				</div>
 			</div>
-			<div class="col-md-4">
-				<div class="slideshow">
+			<div class="col-md-4" id="slideshow2">
+				<div class="slideshow-img">
 					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
 					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
 					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
 				</div>
-				<div class="slideshow-label">
+				<div class="slideshow-label" id="slideshow-label2">
 					<h1>Test Heading</h1>
 					<p>Test Details</p>
 				</div>
 			</div>
-			<div class="col-md-4">
-				<div class="slideshow">
+			<div class="col-md-4" id="slideshow3">
+				<div class="slideshow-img">
 					<img src="App/Pictures/superphy_logo.png" alt="" class="active" />
 					<img src="App/Pictures/superphy_logo_inverted.png" alt="" />
 					<img src="App/Pictures/superphy_logo_bw.png" alt="" />
 				</div>
-				<div class="slideshow-label">
+				<div class="slideshow-label" id="slideshow-label3">
 					<h1>Test Heading</h1>
 					<p>Test Details</p>
 				</div>
