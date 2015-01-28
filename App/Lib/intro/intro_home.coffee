@@ -80,19 +80,6 @@ startIntro = ->
 	# the last statement from function
   false
 
-slideShow = ->
-
-  $active = $('#slideshow IMG.active')
-  $next = $active.next()
-  $active.addClass('last-active')
-  $next.css({opacity:0.0})
-    .addClass('active')
-    .animate({opacity:1.0}, 1000, () ->
-      active.removeClass('active last-active'))
-  $active.removeClass('active')
-  false
-
-
 # Make this function visible in global namespace
 # If there isnt a function already called startIntro
 unless root.startIntro

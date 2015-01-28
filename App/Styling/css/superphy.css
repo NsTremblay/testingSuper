@@ -1835,11 +1835,11 @@ Date: May 20th, 2014
 .slideshow-label {
   background: black;
   position:absolute;
-  top: 135px;
+  top: 191px;
   z-index: 12;
   opacity: 0.0;
   padding: 5px;
-  width: 350px;
+  width: 450px;
   height: 50px;
   overflow:hidden;
   text-align: left;

@@ -22,7 +22,7 @@
  */
 
 (function() {
-  var root, slideShow, startIntro;
+  var root, startIntro;
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
@@ -52,22 +52,6 @@
       ]
     });
     intro.start();
-    return false;
-  };
-
-  slideShow = function() {
-    var $active, $next;
-    $active = $('#slideshow IMG.active');
-    $next = $active.next();
-    $active.addClass('last-active');
-    $next.css({
-      opacity: 0.0
-    }).addClass('active').animate({
-      opacity: 1.0
-    }, 1000, function() {
-      return active.removeClass('active last-active');
-    });
-    $active.removeClass('active');
     return false;
   };
 
