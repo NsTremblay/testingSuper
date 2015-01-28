@@ -1,12 +1,12 @@
 use utf8;
-package Database::Chado::Schema::Result::PangenomeAlignment;
+package Database::Chado::Schema::Result::TmpPangenomeAlignment;
 
 # Created by DBIx::Class::Schema::Loader
 # DO NOT MODIFY THE FIRST PART OF THIS FILE
 
 =head1 NAME
 
-Database::Chado::Schema::Result::PangenomeAlignment
+Database::Chado::Schema::Result::TmpPangenomeAlignment
 
 =cut
 
@@ -15,11 +15,11 @@ use warnings;
 
 use base 'DBIx::Class::Core';
 
-=head1 TABLE: C<pangenome_alignment>
+=head1 TABLE: C<tmp_pangenome_alignment>
 
 =cut
 
-__PACKAGE__->table("pangenome_alignment");
+__PACKAGE__->table("tmp_pangenome_alignment");
 
 =head1 ACCESSORS
 
@@ -92,7 +92,7 @@ __PACKAGE__->set_primary_key("pangenome_alignment_id");
 
 =head1 UNIQUE CONSTRAINTS
 
-=head2 C<pangenome_alignment_c1>
+=head2 C<tmp_pangenome_alignment_name_key>
 
 =over 4
 
@@ -102,11 +102,11 @@ __PACKAGE__->set_primary_key("pangenome_alignment_id");
 
 =cut
 
-__PACKAGE__->add_unique_constraint("pangenome_alignment_c1", ["name"]);
+__PACKAGE__->add_unique_constraint("tmp_pangenome_alignment_name_key", ["name"]);
 
 
 # Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-23 16:04:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RbX3HqkqJaxB4+GuS3ZWLg
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1DDQxON9GzA3GVJKJrwarw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

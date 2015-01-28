@@ -321,7 +321,7 @@ WITH (
   OIDS=FALSE
 );
 ALTER TABLE job_result
-  OWNER TO postgres;
+  OWNER TO genodo;
 COMMENT ON TABLE job_result
   IS 'Table for long-polling group wise comparisons. Stores job requests, user configurations and results (if generated)';
 

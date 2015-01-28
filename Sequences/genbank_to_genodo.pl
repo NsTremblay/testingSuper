@@ -3,7 +3,6 @@
 use strict;
 use warnings;
 use Bio::SeqIO;
-use Adapter;
 use Getopt::Long;
 use Pod::Usage;
 use Carp;
@@ -29,9 +28,9 @@ $0 - Extracts and prints relevent information from genbank file used in genodo a
 
 =head1 OPTIONS
 
- --propfile        File name to dump hash of parent genome properties
- --gbfile          Genbank file containing all annotations and info for a genome
- --configfile      INI style config file containing DB connection parameters
+ --prop       File name to dump hash of parent genome properties
+ --gb         Genbank file containing all annotations and info for a genome
+ --config     INI style config file containing DB connection parameters
 
 =head1 DESCRIPTION
 
@@ -61,10 +60,10 @@ $|=1;
 my ($GBFILE, $PROPFILE, $DEBUG, $CONFIG);
 
 GetOptions(
-	'gbfile=s'=> \$GBFILE,
-    'propfile=s'=> \$PROPFILE,
+	'gb=s'=> \$GBFILE,
+    'prop=s'=> \$PROPFILE,
     'debug' => \$DEBUG,
-    'configfile=s' => \$CONFIG,
+    'config=s' => \$CONFIG,
 ) || (pod2usage(-verbose => 1) && exit);
 
 

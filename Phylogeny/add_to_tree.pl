@@ -483,7 +483,8 @@ sub buildMLtree {
 	close $out;
 	
 	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+	my $fast = 1; # Use options optimized for speed 
+	$tree_builder->build_tree($tmp_file, $tree_file, $fast) or croak "Error: genome tree build failed.\n";
 
 	my $new_tree = $t->newickToPerl($tree_file);
 

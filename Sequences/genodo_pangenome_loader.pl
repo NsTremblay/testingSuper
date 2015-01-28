@@ -58,7 +58,7 @@ $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 my ($panseq_dir, $config_file,
 	$NOLOAD, $RECREATE_CACHE, $SAVE_TMPFILES, $DEBUG, $OVERRIDE,
     $REMOVE_LOCK,
-    $VACUUM, $LOGFILE);
+    $VACUUM, $LOGFILE, $ALIGNDIR);
 
 my $SLICE = undef;
 
@@ -73,6 +73,7 @@ GetOptions(
 	'vacuum' => \$VACUUM,
 	'slice=i' => \$SLICE,
 	'override' => \$OVERRIDE,
+	'aligndir' => \$ALIGNDIR,
 	'log=s' => \$LOGFILE
 ) or ( system( 'pod2text', $0 ), exit -1 );
 

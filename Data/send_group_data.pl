@@ -94,29 +94,29 @@ my $snpf_file = $bkp_dir . 'superphy_snps_functions.txt';
 my $rdata_file = $bkp_dir . "superphy.Rdata";
 
 # Copy to archival filepaths
-# copy($pg_matrix_file, $copy_pgm_file) or croak "Error: unable to make copy of file $pg_matrix_file called $copy_pgm_file ($!).\n";
-# copy($pg_functions_file, $copy_pgf_file) or croak "Error: unable to make copy of file $pg_functions_file called $copy_pgf_file ($!).\n";
-# if($do_snps) {
-# 	copy($snps_matrix_file, $copy_snpm_file) or croak "Error: unable to make copy of file $snps_matrix_file called $copy_snpm_file ($!).\n";
-# 	copy($snps_functions_file, $copy_snpf_file) or croak "Error: unable to make copy of file $snps_functions_file called $copy_snpf_file ($!).\n";
-# }
-# $logger->info("Copied files:\n\t$copy_pgm_file,\n\t$copy_pgf_file,\n\t$copy_snpm_file,\n\t$copy_snpf_file");
+copy($pg_matrix_file, $copy_pgm_file) or croak "Error: unable to make copy of file $pg_matrix_file called $copy_pgm_file ($!).\n";
+copy($pg_functions_file, $copy_pgf_file) or croak "Error: unable to make copy of file $pg_functions_file called $copy_pgf_file ($!).\n";
+if($do_snps) {
+	copy($snps_matrix_file, $copy_snpm_file) or croak "Error: unable to make copy of file $snps_matrix_file called $copy_snpm_file ($!).\n";
+	copy($snps_functions_file, $copy_snpf_file) or croak "Error: unable to make copy of file $snps_functions_file called $copy_snpf_file ($!).\n";
+}
+$logger->info("Copied files:\n\t$copy_pgm_file,\n\t$copy_pgf_file,\n\t$copy_snpm_file,\n\t$copy_snpf_file");
 
 
-# # Symlink
-# my @files = ([$pgm_file, $copy_pgm_file], [$pgf_file, $copy_pgf_file]);
-# push @files, [$snpm_file, $copy_snpm_file], [$snpf_file, $copy_snpf_file] if $do_snps;
+# Symlink
+my @files = ([$pgm_file, $copy_pgm_file], [$pgf_file, $copy_pgf_file]);
+push @files, [$snpm_file, $copy_snpm_file], [$snpf_file, $copy_snpf_file] if $do_snps;
 
-# foreach my $fset (@files) {
-# 	my $f = $fset->[0];
-# 	my $copy = $fset->[1];
-# 	if(-e $f) {
-# 		unlink $f;
-# 	}
-# 	symlink($copy, $f) or croak "Error: unable to create link to from $f to file $copy ($!).\n";
-# }
+foreach my $fset (@files) {
+	my $f = $fset->[0];
+	my $copy = $fset->[1];
+	if(-e $f) {
+		unlink $f;
+	}
+	symlink($copy, $f) or croak "Error: unable to create link to from $f to file $copy ($!).\n";
+}
 
-#&rsave();
+&rsave();
 
 &upload();
 
@@ -155,9 +155,11 @@ sub rsave {
 	
 	my @rcmds = (
 		qq/r_binary <- as.matrix(read.table('$pgm_file', header=TRUE, sep="\t", check.names=FALSE, row.names=1))/,
-		qq/df_region_meta <- read.table('$pgf_file',header=TRUE, sep="\t", check.names=FALSE, row.names=1))/,
+		qq/df_region_meta <- read.table('$pgf_file',header=TRUE, sep="\t", check.names=FALSE, row.names=1)/,
+		# qq/m_binary <- NULL/, 
+		# qq/df_marker_meta <- NULL/,
 		qq/m_binary <- as.matrix(read.table('$snpm_file', header=TRUE, sep="\t", check.names=FALSE, row.names=1))/, 
-		qq/df_marker_meta <- read.table('$snpf_file',header=TRUE, sep="\t", check.names=FALSE, row.names=1))/,
+		qq/df_marker_meta <- read.table('$snpf_file',header=TRUE, sep="\t", check.names=FALSE, row.names=1)/,
 		q/print('SUCCESS')/
 	);
 
