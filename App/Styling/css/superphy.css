@@ -1808,6 +1808,10 @@ Date: May 20th, 2014
 .slideshow-img {
   position:relative;
   height:187px;
+  border: 1px solid;
+  border-color: #d3d3d3;
+  box-shadow: 3px 3px 10px 0px #d3d3d3;
+  overflow:hidden;
 }
 .slideshow-img IMG {
   position:absolute;
@@ -1858,5 +1862,41 @@ Date: May 20th, 2014
   margin-left: 5px;
   text-align: left;
 }
-
+.column-left{
+  float:left;
+  width:33%;
+  height:241px;
+  position:relative;
+  left:-20px;
+}
+.column-right{
+  float:right;
+  width:33%;
+  height:241px;
+  position: relative;
+  right:-20px;
+}
+.column-centre{
+  display: inline-block;
+  width:33%;
+  height:241px;
+  position:relative;
+  left:7px;
+}
+.centre{
+  position:relative;
+  right:100px;
+  width:300px;
+  height:200px;
+  z-index:15;
+  left:50%;
+  margin:0 0 0 -150px;
+}
+.centre-lg{
+  position:relative;
+  right:200px;
+  display:table-cell;
+  vertical-align:middle;
+  text-align:center;
+}
 

@@ -13,7 +13,7 @@ function slideShow1() {
 	$active = $('#slideshow-img1 IMG.active');
 	if ($active.length === 0) $active = $('#slideshow-img1 IMG:last');
 	$next = $active.next().length ? $active.next()
-		: ($active.prev()).prev();
+		: $('#slideshow-img1 IMG:first');
 	$active.addClass('last-active');
 	$next.css({opacity: 0.0})
 		.addClass('active')
@@ -28,7 +28,7 @@ function slideShow2() {
 	$active = $('#slideshow-img2 IMG.active');
 	if ($active.length === 0) $active = $('#slideshow-img2 IMG:last');
 	$next = $active.next().length ? $active.next()
-		: ($active.prev()).prev();
+		: $('#slideshow-img2 IMG:first');
 	$active.addClass('last-active');
 	$next.css({opacity: 0.0})
 		.addClass('active')
@@ -43,7 +43,7 @@ function slideShow3() {
 	$active = $('#slideshow-img3 IMG.active');
 	if ($active.length === 0) $active = $('#slideshow-img3 IMG:last');
 	$next = $active.next().length ? $active.next()
-		: ($active.prev()).prev();
+		: $('#slideshow-img3 IMG:first');
 	$active.addClass('last-active');
 	$next.css({opacity: 0.0})
 		.addClass('active')
