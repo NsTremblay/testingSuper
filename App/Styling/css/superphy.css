@@ -1899,4 +1899,8 @@ Date: May 20th, 2014
   vertical-align:middle;
   text-align:center;
 }
+/*Class for tooltips/popovers on tree*/
+.table-row-bold{
+  font-weight: bold;
+}
 

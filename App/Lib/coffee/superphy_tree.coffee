@@ -475,11 +475,11 @@ class TreeView extends ViewTemplate
       .attr("height", 7)
       .attr("y", -3)
       .attr("x", 4)
-      .attr("data-toggle", "tooltip")
+      .attr("data-toggle", "popover")
       .attr("data-original-title", (n)-> n.num_leaves + " genomes")
 
-    $('body').tooltip({selector: '[data-toggle="tooltip"]'})
-    $('[data-toggle="tooltip"]').tooltip({container: 'body'})
+    $('body').popover({selector: '[data-toggle="popover"]'})
+    $('[data-toggle="popover"]').popover({container: 'body'})
 
     # Adds colour boxes to metadata sidebar
     jQuery(document).ready ->
@@ -508,14 +508,12 @@ class TreeView extends ViewTemplate
             if m is "serotype"
               tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
             tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1)
-            if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
-              n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)")
-            if n.metaCount[m][metaOntology[m][i]] > 1 && n._children?
-              n.tt_mtype[m] += ("<br>" + tt_mtype + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)")
+            if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
+              n.tt_mtype[m] += ("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
             n.tt_mtype[m])
           i++
 
-    $('[data-toggle="tooltip"]').tooltip()
+    $('[data-toggle="popover"]').popover()
 
     y = -5
     centred = -1.5
@@ -556,30 +554,28 @@ class TreeView extends ViewTemplate
                 n.xpos += n.arr[i-1]
               else n.xpos = 0
               n.xpos + 4)
-            .attr("data-toggle", "tooltip")
-            .attr("data-original-title", (n)->
+            .attr("data-toggle", "popover")
+            .attr("data-selector", "true")
+            .attr("data-title", tt_mtitle[m])
+            .attr("data-content", (n)->
               if metaOntology[m][i]?
                 pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
-              if n.metaCount[m][metaOntology[m][i]] is 1 && n._children?
-                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genome)").length
+              if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
+                length = ("<tr><td>" + metaOntology[m][i] + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>)").length
                 if i < 6
-                  n.to_be_hl = n.tt_mtype[m].slice(length  + pos)
-              else if n.metaCount[m][metaOntology[m][i]] > 1 && n._children?
-                length = (metaOntology[m][i] + " (" + n.metaCount[m][metaOntology[m][i]] + " genomes)").length
-                if i < 6
-                  n.to_be_hl = n.tt_mtype[m].slice(length + pos)
-              tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + "</font>"  + "</strong>" + n.tt_mtype[m].slice(length + pos)
+                  n.to_be_hl = n.tt_mtype[m].slice(length + pos - 1)
+              tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
               if i is 6
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
-                  tt_data = n.tt_mtype[m].slice(0, pos) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos) + "</font>"  + "</strong>"          
-                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<strong>" + "<font color=" + colours[m][4] + ">" + n.to_be_hl + "</font>"  + "</strong>" 
-              "<strong>" + tt_mtitle[m] + " </strong>" + ": " + tt_data)
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl + "</td></tr>"
+              "<table style='border-collapse:collapse;min-width:150px;max-width:100%'><tr><th style='text-align:left'>Meta-type</th><th style='text-align:right'># of Genomes</th></tr><strong>" + tt_mtitle[m] + " </strong>" + ":" + tt_data + "</table>")
             .attr("data-html", "true")
             .attr("data-placement", "bottom")
           i++
 
-    $('body').tooltip({selector: '[data-toggle="tooltip"]'})
-    $('[data-toggle="tooltip"]').tooltip({container: 'body'})
+    $('body').popover({selector: '[data-toggle="popover"]'})
+    $('[data-toggle="popover"]').popover({container: 'body'})
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
