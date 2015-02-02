@@ -355,7 +355,7 @@ sub find_umbrella {
 	my $waiting_targets = shift;
 
 	my $rs;
-	my $min_set_size = 50;
+	my $min_set_size = 20;
 
 	# Move up $level levels from leaf
 	my $node = $leaf;

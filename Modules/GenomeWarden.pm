@@ -8,8 +8,8 @@ Modules::GenomeWarden
 
 =head1 DESCRIPTION
 
-Tracks which genomes are viewable by current user. Also performs some common tasks
-for genome data.
+Tracks which genomes and groups are viewable by current user. Also performs some common tasks
+for genome data and genome groups.
 
 =head1 COPYRIGHT
 
