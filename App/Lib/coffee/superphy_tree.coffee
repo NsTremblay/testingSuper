@@ -476,10 +476,16 @@ class TreeView extends ViewTemplate
       .attr("y", -3)
       .attr("x", 4)
       .attr("data-toggle", "popover")
-      .attr("data-original-title", (n)-> n.num_leaves + " genomes")
+      .attr("data-title", "title")
+      .attr("data-content", "content")
 
-    $('body').popover({selector: '[data-toggle="popover"]'})
-    $('[data-toggle="popover"]').popover({container: 'body'})
+    rect_block.selectAll('.genomeMeter')
+      .each(()->
+        $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          container: 'body'
+          }))
 
     # Adds colour boxes to metadata sidebar
     jQuery(document).ready ->
@@ -513,7 +519,7 @@ class TreeView extends ViewTemplate
             n.tt_mtype[m])
           i++
 
-    $('[data-toggle="popover"]').popover()
+    $('[data-toggle="tooltip"]').tooltip()
 
     y = -5
     centred = -1.5
@@ -554,8 +560,7 @@ class TreeView extends ViewTemplate
                 n.xpos += n.arr[i-1]
               else n.xpos = 0
               n.xpos + 4)
-            .attr("data-toggle", "popover")
-            .attr("data-selector", "true")
+            .attr("data-toggle", "tooltip")
             .attr("data-title", tt_mtitle[m])
             .attr("data-content", (n)->
               if metaOntology[m][i]?
@@ -564,18 +569,21 @@ class TreeView extends ViewTemplate
                 length = ("<tr><td>" + metaOntology[m][i] + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>)").length
                 if i < 6
                   n.to_be_hl = n.tt_mtype[m].slice(length + pos - 1)
-              tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
+              tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
               if i is 6
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
-                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
-                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl + "</td></tr>"
-              "<table style='border-collapse:collapse;min-width:150px;max-width:100%'><tr><th style='text-align:left'>Meta-type</th><th style='text-align:right'># of Genomes</th></tr><strong>" + tt_mtitle[m] + " </strong>" + ":" + tt_data + "</table>")
-            .attr("data-html", "true")
-            .attr("data-placement", "bottom")
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.to_be_hl + "</td></tr>"
+              "<table style='font-color:white;border-collapse:collapse;min-width:150px;max-width:100%'><tr><th style='text-align:left'>Meta-type</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
 
-    $('body').popover({selector: '[data-toggle="popover"]'})
-    $('[data-toggle="popover"]').popover({container: 'body'})
+    rect_block.selectAll('.metaMeter')
+      .each(()->
+        $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          container: 'body'
+          }))
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
