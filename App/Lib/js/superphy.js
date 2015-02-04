@@ -3223,14 +3223,7 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -3).attr("x", 4).attr("data-toggle", "popover").attr("data-title", "title").attr("data-content", "content");
-      rect_block.selectAll('.genomeMeter').each(function() {
-        return $(this).popover({
-          placement: 'bottom',
-          html: 'true',
-          container: 'body'
-        });
-      });
+      }).attr("height", 7).attr("y", -3).attr("x", 4);
       jQuery(document).ready(function() {
         return jQuery('input[name="meta-option"]').each(function(obj) {
           jQuery('#' + this.name + '_' + this.value).hide();
@@ -3274,7 +3267,6 @@
           }
         }
       }
-      $('[data-toggle="tooltip"]').tooltip();
       y = -5;
       centred = -1.5;
       height = 7;
@@ -3313,26 +3305,26 @@
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).attr("data-toggle", "tooltip").attr("data-title", tt_mtitle[m]).attr("data-content", function(n) {
+            }).attr("data-toggle", "popover").attr("data-content", function(n) {
               var length, pos, tt_data;
               if (metaOntology[m][i] != null) {
                 pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
               }
               if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
-                length = ("<tr><td>" + metaOntology[m][i] + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>)").length;
+                length = ("<tr><td>" + metaOntology[m][i] + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>").length;
                 if (i < 6) {
-                  n.to_be_hl = n.tt_mtype[m].slice(length + pos - 1);
+                  n.to_be_hl = n.tt_mtype[m].slice(length + pos);
                 }
               }
-              tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+              tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
               if (i === 6) {
                 if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
-                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
                 } else {
-                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tr class='table-row-bold' style='color:" + colours[m][1] + "'><td>" + n.to_be_hl + "</td></tr>";
+                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl;
                 }
               }
-              return "<table style='font-color:white;border-collapse:collapse;min-width:150px;max-width:100%'><tr><th style='text-align:left'>Meta-type</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
+              return "<table class='table-row-lines' style='font-size:13px;color:#FFF;width:100%'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
             });
             i++;
           }
@@ -3344,6 +3336,11 @@
           html: 'true',
           container: 'body'
         });
+      });
+      $('body').on('click', function(e) {
+        if ($(e.target).data('toggle') !== 'popover' && $(e.target).parents('.popover.in').length === 0) {
+          return $('[data-toggle="popover"]').popover('hide');
+        }
       });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();

@@ -1900,7 +1900,43 @@ Date: May 20th, 2014
   text-align:center;
 }
 /*Class for tooltips/popovers on tree*/
-.table-row-bold{
+.table-row-bold td {
   font-weight: bold;
 }
-
+.table-row-lines {
+  border:none;
+  border-collapse:collapse;
+}
+.table-row-lines td {
+  border-left: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.table-row-lines th {
+  border-left: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.table-row-lines tr {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.table-row-lines td:first-child {
+  border-left: none;
+}
+.table-row-lines td:last-child {
+  border-right:none;
+}
+.table-row-lines th:first-child {
+  border-left: none;
+}
+.table-row-lines th:last-child {
+  border-right:none;
+}
+.table-row-lines tr:first-child {
+  border-top: none;
+}
+.table-row-lines tr:last-child {
+  border-bottom:none;
+}
+.popover.bottom .arrow:after {
+  border-bottom-color:rgba(0,0,0,0.9);
+}
