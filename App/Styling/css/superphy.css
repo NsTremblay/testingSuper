@@ -1903,38 +1903,48 @@ Date: May 20th, 2014
 .table-row-bold td {
   font-weight: bold;
 }
-.table-row-lines {
+.popover-table {
   border:none;
   border-collapse:collapse;
+  font-size:13px;
+  color:#FFF;
+  width:100%;
 }
-.table-row-lines td {
+.popover-table td {
   border-left: 1px solid rgba(255,255,255,0.1);
   border-right: 1px solid rgba(255,255,255,0.1);
+  padding-left: 5px;
+  padding-right: 5px;
 }
-.table-row-lines th {
+.popover-table th {
   border-left: 1px solid rgba(255,255,255,0.1);
   border-right: 1px solid rgba(255,255,255,0.1);
+  padding-left: 5px;
+  padding-right: 5px;
 }
-.table-row-lines tr {
+.popover-table tr {
   border-top: 1px solid rgba(255,255,255,0.1);
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.table-row-lines td:first-child {
+.popover-table th {
+  font-size: 14px;
+}
+.popover-table td:first-child {
   border-left: none;
 }
-.table-row-lines td:last-child {
+.popover-table td:last-child {
   border-right:none;
 }
-.table-row-lines th:first-child {
+.popover-table th:first-child {
   border-left: none;
 }
-.table-row-lines th:last-child {
+.popover-table th:last-child {
   border-right:none;
 }
-.table-row-lines tr:first-child {
+.popover-table tr:first-child {
   border-top: none;
 }
-.table-row-lines tr:last-child {
+.popover-table tr:last-child {
   border-bottom:none;
 }
 .popover.bottom .arrow:after {

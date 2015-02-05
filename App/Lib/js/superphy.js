@@ -3324,7 +3324,7 @@
                   tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl;
                 }
               }
-              return "<table class='table-row-lines' style='font-size:13px;color:#FFF;width:100%'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
+              return "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
             });
             i++;
           }
@@ -3334,7 +3334,15 @@
         return $(this).popover({
           placement: 'bottom',
           html: 'true',
+          trigger: 'manual',
+          animate: 'false',
+          template: '<div class="popover" onmouseover="$(this).mouseleave(function() {$(this).hide(); });"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p></p></div></div></div>',
           container: 'body'
+        }).on('mouseenter', function(e) {
+          $(this).popover('show');
+          return $(".popover.metaMeter").on("mouseleave", function(e) {
+            return $(this).popover('hide');
+          });
         });
       });
       $('body').on('click', function(e) {

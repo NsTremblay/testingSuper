@@ -561,7 +561,7 @@ class TreeView extends ViewTemplate
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
                   tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
                 else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl
-              "<table class='table-row-lines' style='font-size:13px;color:#FFF;width:100%'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
+              "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
 
     # Allows popovers to work in SVG
@@ -570,10 +570,19 @@ class TreeView extends ViewTemplate
         $(this).popover({
           placement: 'bottom',
           html: 'true',
+          trigger: 'manual',
+          animate: 'false',
+          template: '<div class="popover" onmouseover="$(this).mouseleave(function() {$(this).hide(); });"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p></p></div></div></div>',
           container: 'body'
-          }))
+          }).on('mouseenter', (e)->
+            $(this).popover('show')
+            $(".popover").on("mouseleave", (e)->
+              $(this).popover('hide')))
+          .on('mouseleave', (e)->
+            setTimeout((()->
+              ($(this).popover('hide')), 100)))
 
-    # Dismisses popover on next click unless a new popover is opened
+    # Dismisses popovers on next click unless a new popover is opened
     $('body').on('click', (e)->
       if ($(e.target).data('toggle') isnt 'popover' && $(e.target).parents('.popover.in').length is 0)
           $('[data-toggle="popover"]').popover('hide'))
