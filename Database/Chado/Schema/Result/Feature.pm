@@ -352,6 +352,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 feature_groups
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::FeatureGroup>
+
+=cut
+
+__PACKAGE__->has_many(
+  "feature_groups",
+  "Database::Chado::Schema::Result::FeatureGroup",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 feature_pubs
 
 Type: has_many
@@ -918,8 +933,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-08 08:13:00
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Zz02bKSzw7iCZ2+46k3dPw
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-04 14:56:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Jc4N+0K5ivmmspX0lzBy7Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

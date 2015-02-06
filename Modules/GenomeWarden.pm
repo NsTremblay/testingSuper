@@ -342,7 +342,6 @@ sub genomeList {
 }
 
 
-
 =head2 _publicGenomes
 
 SQL Queries
@@ -518,5 +517,6 @@ sub _privateGenomes {
 		return($has_private);
 	}
 }
+
 
 1;

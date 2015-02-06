@@ -44,7 +44,7 @@ Return the dbix::class::schema object.
 
 =cut
 
-sub dbixSchema{
+sub dbixSchema {
 	my $self = shift;
 	
 	croak "Database not connected" unless $self->{_dbixSchema};
@@ -57,6 +57,7 @@ sub dbixSchema{
 Set the dbix::class::schema object.
 
 =cut
+
 sub setDbix {
 	my $self = shift;
 	my $dbix_handle = shift;
@@ -69,12 +70,25 @@ sub setDbix {
 Return the DBI dbh from the dbix::class::schema object.
 
 =cut
+
 sub dbh {
 	my $self = shift;
 	
 	croak "Database not connected" unless $self->{_dbixSchema};
 	
 	return($self->{_dbixSchema}->storage->dbh);
+}
+
+=head2 dbh
+
+Return entry in Login table corresponding to "System admin".
+This user is used as a default for user groups e.g.
+
+=cut
+sub adminUser {
+	my $self = shift;
+	
+	return $self->{_dbixConif}->{dbUser};
 }
 
 1;

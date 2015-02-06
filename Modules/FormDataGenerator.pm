@@ -54,7 +54,27 @@ sub new {
 	my $self = {};
 	bless( $self, $class );
 	$self->_initialize(@_);
-	
+
+	my %fp_types = (
+		serotype            => 1,
+		strain              => 1,
+		isolation_host      => 1,
+		isolation_source    => 1,
+		isolation_location  => 1,
+		isolation_latlng    => 1,
+		isolation_date      => 1,
+		syndrome            => 1,
+	);
+
+	$self->{meta_terms} = \%fp_types;
+
+	my %st_types = (
+		stx1_subtype        => 1,
+		stx2_subtype        => 1,
+	);
+
+	$self->{subtypes} = \%st_types;
+
     $self->{now} = time();
     
 	return $self;
@@ -588,6 +608,30 @@ sub genomeInfo {
    return($public_json, $private_json);
 }
 
+=head2 metaTerms 
+
+	Hash-ref of meta term keys used in meta-data hashes
+
+=cut
+
+sub metaTerms {
+	my $self = shift;
+
+	return $self->{meta_terms};
+}
+
+=head2 subtypes 
+
+	Hash-ref of subtype keys used in meta-data hashes
+
+=cut
+
+sub subtypes {
+	my $self = shift;
+
+	return $self->{subtypes};
+}
+
 sub _runGenomeQuery {
 	my ($self, $public, $username) = @_;
 	
@@ -595,26 +639,11 @@ sub _runGenomeQuery {
 	
 	#$self->elapsed_time('Start of meta-data query');
 
-	my %fp_types = (
-		serotype            => 1,
-		strain              => 1,
-		isolation_host      => 1,
-		isolation_source    => 1,
-		isolation_location  => 1,
-		isolation_latlng    => 1,
-		isolation_date      => 1,
-		syndrome            => 1,
-	);
-	
-	my %st_types = (
-		stx1_subtype        => 1,
-		stx2_subtype        => 1,
-	);
-
 	# Table and relationship names
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
 	my $feature_relationship_rel_name = 'feature_relationship_objects';
+	my $feature_group_name = 'feature_groups';
     # Added tables to look up genome locaiton info
     my $genome_location_table_name = 'genome_locations';
 	my $order_name = { '-asc' => ['featureprops.rank'] };
@@ -622,38 +651,41 @@ sub _runGenomeQuery {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
 		$feature_relationship_rel_name = 'private_feature_relationship_objects';
+		$feature_group_name = 'private_feature_groups';
         # Added tables to look up private genome location infoq
         $genome_location_table_name = "private_genome_locations";
 		$order_name = { '-asc' => ['private_featureprops.rank'] };
 	}
 	
 	# Query
-#	my $query = {
-#		'type.name'      => 'contig_collection',
-#		'type_2.name'      => { '-in' => [ keys %fp_types ] }
-#    };
-#    my $join = ['type'];
-#    my $prefetch = [
-#	    { 'dbxref' => 'db' },
-#	    { $featureprop_rel_name => 'type' },
-#    ];
-    
-    my $query = {
+	my $query = {
 		'type.name'      => 'contig_collection',
-		'type_2.name'    => { '-in' => [ keys %fp_types ] },
+		'type_2.name'    => { '-in' => [ keys %{$self->{meta_terms}} ] },
+		'-bool' => 'genome_group.standard'
     };
+	
+	if($username) {
+		$query = {
+			'type.name'      => 'contig_collection',
+			'type_2.name'    => { '-in' => [ keys %{$self->{meta_terms}} ] },
+			'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
+	    };
+	}
+	
+    
     # Added $genome_location_table_name => 'geocode' to join
     my $join = ['type', {$genome_location_table_name => 'geocode'}];
     my $prefetch = [
 	    { 'dbxref' => 'db' },
-	    { $featureprop_rel_name => 'type' }
+	    { $featureprop_rel_name => 'type' },
+	    { $feature_group_name => 'genome_group'}
     ];
     
     # Subtypes needs separate query
     my $query2 = {
     	'type.name'        => 'part_of',
 		'type_2.name'      => 'allele_fusion',
-		'type_3.name'      => { '-in' => [ keys %st_types ] },
+		'type_3.name'      => { '-in' => [ keys %{$self->{subtypes}} ] },
     };
     my $join2 = [];
     my $prefetch2 = [
@@ -668,13 +700,15 @@ sub _runGenomeQuery {
             	{
 					'login.username'     => $username,
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] },
+					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
+					'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
 					
              	},
              	{
 					'upload.category'    => 'public',
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %fp_types ] },
+					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
+					'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
 				}
 			];
 
@@ -685,14 +719,14 @@ sub _runGenomeQuery {
 					'login.username'     => $username,
 					'type.name'          => 'part_of',
 					'type_2.name'        => 'allele_fusion',
-					'type_3.name'        => { '-in' => [ keys %st_types ] },
+					'type_3.name'        => { '-in' => [ keys %{$self->{subtypes}} ] },
 					
              	},
              	{
 					'upload.category'    => 'public',
 					'type.name'          => 'part_of',
 					'type_2.name'        => 'allele_fusion',
-					'type_3.name'        => { '-in' => [ keys %st_types ] },
+					'type_3.name'        => { '-in' => [ keys %{$self->{subtypes}} ] },
 				}
 			];
 		    push @$prefetch2, 'upload';
@@ -701,14 +735,15 @@ sub _runGenomeQuery {
 			$query = {
 				'upload.category'    => 'public',
 				'type.name'          => 'contig_collection',
-				'type_2.name'        => { '-in' => [ keys %fp_types ] }
+				'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
+				'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
             };
             
             $query2 = {
 				'upload.category'    => 'public',
 				'type.name'          => 'part_of',
 				'type_2.name'        => 'allele_fusion',
-				'type_3.name'        => { '-in' => [ keys %st_types ] },
+				'type_3.name'        => { '-in' => [ keys %{$self->{subtypes}} ] },
             };
         }
 
@@ -787,6 +822,16 @@ sub _runGenomeQuery {
             $feature_hash{'isolation_location'} = [] unless defined $feature_hash{'isolation_location'} || !($location->geocode->location);
             push @{$feature_hash{'isolation_location'}}, $location->geocode->location unless !($location->geocode->location);
         }
+
+        # Group data
+        my $featuregroups = $feature->$feature_group_name;
+        my @groups;
+
+        while(my $fg = $featuregroups->next) {
+        	push @groups, $fg->genome_group_id;
+        }
+        $feature_hash{groups} = \@groups;
+
 		
 		my $k = ($public) ? 'public_' : 'private_';
 		
@@ -1515,5 +1560,164 @@ sub displayname {
 	return $dname;
 
 }
+
+
+################
+## Group Methods
+################
+
+=head2 saveGroup
+
+Save new user group
+
+=cut
+
+sub saveGroup {
+
+}
+
+=head2 userGroups
+
+Returns group JSON object for anonymous or logged-in
+user. This is just the list of group categories & corresponding
+groups. Group IDs for individual genomes are provided in the 
+public_ and private_genome JSON object returned by method
+genomeInfo().
+
+Groups not assigned a 'collection', are added to the default
+user collection: 'Individuals',
+
+Users with no custom groups, will have empty custom array.
+
+group JSON:
+
+{
+	
+	custom: {
+		[
+			{
+				name: ...,
+				description: ...,
+				level: 0,
+				type: 'collection',
+				children: [
+					{
+						id: ....,
+						name: ...,
+						description: ...,
+						type: 'group'
+					}
+				]
+			},
+			...
+		]
+	},
+	standard: {
+		...
+	}
+}
+
+=cut
+
+sub userGroups {
+	my $self = shift;
+	my $username = shift;
+
+	# Standard groups
+	# All users get these groups
+	my $standard_rs = $self->dbixSchema->resultset("Meta")->search(
+		{
+			name => 'stdgrp-org'	
+		},
+		{
+		    columns => ['data_string']
+		}
+	);
+		
+	my $standard_json;
+	if(my $row = $standard_rs->first) {
+		$standard_json = $row->data_string;
+	} else {
+		croak "Error: cannot find Standard Group hierarchy object in Meta.";
+	}
+
+	
+	my $custom_json;
+	if($username) {
+		# Get user custom groups
+		my $custom_rs = $self->dbixSchema->resultset("GroupCategories")->search(
+			{
+				username => $username	
+			},
+			{
+			    prefetch => [ 'genome_groups' ]
+			}
+		);
+
+		$custom_json = $self->_formatUserGroups($custom_rs);
+		
+   } else {
+		# User not logged in, return 'empty' object
+		$custom_json = $self->_formatUserGroups(undef);
+		
+   }
+
+   my $group_hierarchy_json = '{ standard: '.$standard_json.', custom_json: '.$custom_json.' }';
+
+   return $group_hierarchy_json
+}
+
+sub _formatUserGroups {
+	my $self = shift;
+	my $group_rs = shift;
+
+	if($group_rs && $group_rs->count) {
+		# Convert group into proper JSON format
+		my @collections;
+
+		while(my $collection_row = $group_rs->next) {
+			
+			my $collection = {
+				name => $collection_row->name,
+				description => $collection_row->description,
+				type => 'collection',
+				children => [],
+				level => 0
+			};
+
+			while(my $group_row = $collection_row->genome_groups->next) {
+				my $group_href = {
+					id => $group_row->genome_group_id,
+					name => $group_row->name,
+					description => $group_row->description,
+					type => 'group'
+				};
+				push @{$collection->{'children'}}, $group_href;
+			}
+
+			push @collections, $collection;
+		}
+
+		return encode_json(\@collections);
+
+	} else {
+		# No group/categories
+
+		return '[ ]';
+	}
+}
+
+
+
+=head2 deleteGroup
+
+Save new 
+
+=cut
+
+sub deleteGroup {
+
+}
+
 
 1;

@@ -131,6 +131,8 @@ my $type_id_hash;
 my $sql_stmt_hash;
 my $seq_hash;
 
+my $multiple_type_name = 'multiple';
+
 
 =head2 new
 
@@ -183,9 +185,73 @@ sub new {
 	return $self;
 }
 
-=head2 untypedGenomes
+=head2 subtypeList
+
+Return subtypes and their possible values
 
 =cut
+
+sub subtypeList {
+	my $self = shift;
+
+
+	my %subtype_values;
+
+	my $tmp = $self->referenceSubtypes(1);
+	foreach my $v (values %$tmp) {
+		$subtype_values{stx1} = $v;
+	}
+	# Add the 'multiple' value
+	$subtype_values{stx1} = $multiple_type_name;
+
+	$tmp = $self->referenceSubtypes(2);
+	foreach my $v (values %$tmp) {
+		$subtype_values{stx2} = $v;
+	}
+	# Add the 'multiple' value
+	$subtype_values{stx2} = $multiple_type_name;
+
+	return \%subtype_values;
+}
+
+sub referenceSubtypes {
+	my $self = shift;
+	my $type = shift; # 1 or 2
+
+	croak "Error: invalid type argument: $type." unless $type == 1 or $type == 2;
+
+	my $ref_fasta_file;
+	if($type == 1) {
+		$ref_fasta_file = $self->{stx1_superaln_reference};
+	} else {
+		$ref_fasta_file = $self->{stx2_superaln_reference};
+	}
+
+
+	# Load reference sequences
+	my $fasta = Bio::SeqIO->new(-file   => $ref_fasta_file, -format => 'fasta') 
+		or croak "Error: unable to open Bio::SeqIO stream to $ref_fasta_file ($!).";
+
+	# Parse subtype from header
+	my %subtypes;
+	while (my $entry = $fasta->next_seq) {
+		my $id = $entry->display_id;
+		my $refseq;
+		
+		if($id =~ m/\#REF\#(Stx\w+-.+)$/) {
+			$refseq = $1;
+		} else {
+			croak "Error: invalid header format in stx typing reference file: $id."
+		}
+
+		my ($subtype) = ($refseq =~ m/Stx(\w+)-/);
+
+		$subtypes{$refseq} = $subtype;
+		
+	}
+
+	return \%subtypes;
+}
 
 =head2 insertTypingObjects
 
@@ -1060,7 +1126,7 @@ sub _computeTypes {
 			$curr_type = shift @possible_types;
 		} else {
 			# Mixed types
-			$curr_type = 'multiple';
+			$curr_type = $multiple_type_name;
 		}
 		
 		_assignTypes($curr_node, $curr_type);
@@ -1110,7 +1176,7 @@ sub _assignTypes {
 	return if $curr_node->finalized();
 	
 	my $relabel_children = 0;
-	if($type ne 'multiple' && $curr_node->waiting_ancestor_type && $type eq $curr_node->waiting_ancestor_type) {
+	if($type ne $multiple_type_name && $curr_node->waiting_ancestor_type && $type eq $curr_node->waiting_ancestor_type) {
 		# Found internal node that has at least one genome that matches ancestor type
 		$relabel_children = 1;
 	} 
@@ -1120,7 +1186,7 @@ sub _assignTypes {
 		if($child->is_leaf && !$child->stx_marker) {
 			# Regular assignment
 			$child->set_type($type);
-			$child->finalized(1) unless $type eq 'multiple';
+			$child->finalized(1) unless $type eq $multiple_type_name;
 		} elsif($relabel_children && $child->is_leaf && !$child->is_signpost) {
 			$child->set_type($type);
 			$child->finalized(1);
@@ -1130,7 +1196,7 @@ sub _assignTypes {
 	}
 	
 	$curr_node->set_type($type);
-	$curr_node->finalized(1) unless $type eq 'multiple';
+	$curr_node->finalized(1) unless $type eq $multiple_type_name;
 }
 
 

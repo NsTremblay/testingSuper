@@ -1,5 +1,4 @@
 #!/usr/bin/env perl
-package Data::Bridge;
 
 =head1 NAME
 
@@ -9,12 +8,14 @@ $0 - Contains several packages needed for accessing Database
 
 Matthew Whiteside E<lt>matthew.whiteside@phac-aspc.gc.caE<gt>
 
-Copyright (c) 2013
+Copyright (c) 2014
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself.
 
 =cut
+
+package Data::Bridge;
 
 use strict;
 use warnings;

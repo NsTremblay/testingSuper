@@ -254,7 +254,7 @@ var categories = <TMPL_VAR categories>;
 var public_genomes = <TMPL_VAR public_genomes>;
 var private_genomes = <TMPL_VAR private_genomes>;
 var tree = <TMPL_VAR tree_json>;
-var user_groups = <TMPL_VAR user_groups>;
+var genome_groups = <TMPL_VAR genome_groups>;
 
 
 // Data objects
@@ -270,7 +270,7 @@ viewController.createView('table', $('#strains_table'));
 viewController.createView('tree', $('#strains_tree'), tree);
 viewController.createView('map', $('#strains_map'), ['satellite']);
 
-var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
+// OBSOLETE: var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
 
 var gene_menu_list = ['vf', 'amr'];
 var genome_menu_list = ['genomelist', 'phylogeny', 'geospatial'];

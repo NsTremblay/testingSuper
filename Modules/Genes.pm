@@ -369,9 +369,9 @@ sub search : StartRunmode {
 	$template->param(title1 => 'VIRULENCE &amp; AMR');
 	$template->param(title2 => 'GENES');
 
-
-    my $user_groups = $self->_getUserGroups();
-    $template->param(user_groups => $user_groups);
+	# Group
+	my $group_json = $data->userGroups;
+    $template->param(genome_groups => $group_json);
 	
 	return $template->output();
 	

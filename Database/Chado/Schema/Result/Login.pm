@@ -126,21 +126,6 @@ __PACKAGE__->add_unique_constraint("login_c1", ["username"]);
 
 =head1 RELATIONS
 
-=head2 job_results
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::JobResult>
-
-=cut
-
-__PACKAGE__->has_many(
-  "job_results",
-  "Database::Chado::Schema::Result::JobResult",
-  { "foreign.user_id" => "self.login_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 permissions
 
 Type: has_many
@@ -187,8 +172,8 @@ __PACKAGE__->has_many(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-23 16:04:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:DdPl2YoAvz3ZO3X+jScoUA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-04 14:56:19
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RpoZvK5GX6lSl4ZZ3QEa+A
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
