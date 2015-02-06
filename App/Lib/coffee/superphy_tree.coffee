@@ -564,23 +564,35 @@ class TreeView extends ViewTemplate
               "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
 
+
+    # Dismisses popover when mouse leaves both the metaMeter and the popover itself
+    (($) ->
+      oldHide = $.fn.popover.Constructor::hide
+
+      $.fn.popover.Constructor::hide = ->
+        if @options.trigger == 'hover' and @tip().is(':hover')
+          that = this
+          setTimeout (->
+            that.hide.call that, arguments
+          ), that.options.delay.hide
+          return
+        oldHide.call this, arguments
+        return
+
+      return
+    ) jQuery
+
     # Allows popovers to work in SVG
     rect_block.selectAll('.metaMeter')
       .each(()->
         $(this).popover({
           placement: 'bottom',
           html: 'true',
-          trigger: 'manual',
+          trigger: 'hover',
+          delay: {hide:250}
           animate: 'false',
-          template: '<div class="popover" onmouseover="$(this).mouseleave(function() {$(this).hide(); });"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p></p></div></div></div>',
-          container: 'body'
-          }).on('mouseenter', (e)->
-            $(this).popover('show')
-            $(".popover").on("mouseleave", (e)->
-              $(this).popover('hide')))
-          .on('mouseleave', (e)->
-            setTimeout((()->
-              ($(this).popover('hide')), 100)))
+          container: 'body',
+          }))
 
     # Dismisses popovers on next click unless a new popover is opened
     $('body').on('click', (e)->

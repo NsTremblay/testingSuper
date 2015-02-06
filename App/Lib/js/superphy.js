@@ -3330,19 +3330,31 @@
           }
         }
       }
+      (function($) {
+        var oldHide;
+        oldHide = $.fn.popover.Constructor.prototype.hide;
+        $.fn.popover.Constructor.prototype.hide = function() {
+          var that;
+          if (this.options.trigger === 'hover' && this.tip().is(':hover')) {
+            that = this;
+            setTimeout((function() {
+              return that.hide.call(that, arguments);
+            }), that.options.delay.hide);
+            return;
+          }
+          oldHide.call(this, arguments);
+        };
+      })(jQuery);
       rect_block.selectAll('.metaMeter').each(function() {
         return $(this).popover({
           placement: 'bottom',
           html: 'true',
-          trigger: 'manual',
+          trigger: 'hover',
+          delay: {
+            hide: 250
+          },
           animate: 'false',
-          template: '<div class="popover" onmouseover="$(this).mouseleave(function() {$(this).hide(); });"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p></p></div></div></div>',
           container: 'body'
-        }).on('mouseenter', function(e) {
-          $(this).popover('show');
-          return $(".popover.metaMeter").on("mouseleave", function(e) {
-            return $(this).popover('hide');
-          });
         });
       });
       $('body').on('click', function(e) {

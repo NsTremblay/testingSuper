@@ -89,9 +89,9 @@ function slideShowLabel3() {
 }
 
 $(function() {
-	setInterval("slideShow1()", 5000);
-	setInterval("slideShow2()", 5000);
-	setInterval("slideShow3()", 5000);
+	setTimeout(function() {setInterval("slideShow1()", 5000);}, 0);
+	setTimeout(function() {setInterval("slideShow2()", 7000);}, 3000);
+	setTimeout(function() {setInterval("slideShow3()", 6000);}, 0);
 	slideShowLabel1();
 	slideShowLabel2();
 	slideShowLabel3();
