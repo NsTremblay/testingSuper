@@ -3321,7 +3321,7 @@
                 if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
                   tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
                 } else {
-                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl;
+                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' onclick='$(this).nextAll().slideToggle(1000)' style='color:" + colours[m][4] + "'><td>[+] Other</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "<tr><td>" + n.to_be_hl;
                 }
               }
               return "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
@@ -3351,7 +3351,8 @@
           html: 'true',
           trigger: 'hover',
           delay: {
-            hide: 250
+            show: 500,
+            hide: 500
           },
           animate: 'false',
           container: 'body'
