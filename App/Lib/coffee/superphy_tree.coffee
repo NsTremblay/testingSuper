@@ -505,19 +505,19 @@ class TreeView extends ViewTemplate
               tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
             tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1)
             if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
-              n.tt_mtype[m] += ("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
+              if i is 6
+                n.tt_mtype[m] += ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr><tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
+              else n.tt_mtype[m] += ("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
             n.tt_mtype[m])
           i++
 
     y = -5
     centred = -1.5
-    height = 7
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]
         j = 0
         i = 0
-        x = 0
-        y += height
+        y += 7
         centred += -3.5
         while i < 7
           rect_block
@@ -541,7 +541,7 @@ class TreeView extends ViewTemplate
                 width = 0
                 n.arr[i] = 0
               width)
-            .attr("height", height)
+            .attr("height", 7)
             .attr("y", y)
             .attr("x", (n) ->
               if n._children? && n.arr[i-1]? && i > 0
@@ -558,10 +558,11 @@ class TreeView extends ViewTemplate
                   n.to_be_hl = n.tt_mtype[m].slice(length + pos)
               tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
               if i is 6
+                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr>").length
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
                   tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
-                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' onclick='$(this).nextAll().slideToggle(1000)' style='color:" + colours[m][4] + "'><td>[+] Other</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "<tr><td>" + n.to_be_hl
-              "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl
+              "<table class='popover-table'><tr><th style='width:150px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
 
     # Dismisses popover when mouse leaves both the metaMeter and the popover itself

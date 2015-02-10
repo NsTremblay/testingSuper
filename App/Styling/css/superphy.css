@@ -1921,13 +1921,11 @@ Date: May 20th, 2014
   border-right: 1px solid rgba(255,255,255,0.1);
   padding-left: 5px;
   padding-right: 5px;
+  font-size: 14px;
 }
 .popover-table tr {
   border-top: 1px solid rgba(255,255,255,0.1);
   border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-.popover-table th {
-  font-size: 14px;
 }
 .popover-table td:first-child {
   border-left: none;

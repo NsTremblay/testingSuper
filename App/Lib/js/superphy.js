@@ -3031,7 +3031,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3259,7 +3259,11 @@
               }
               tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
               if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
-                n.tt_mtype[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
+                if (i === 6) {
+                  n.tt_mtype[m] += "<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr><tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
+                } else {
+                  n.tt_mtype[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
+                }
               }
               return n.tt_mtype[m];
             });
@@ -3269,14 +3273,12 @@
       }
       y = -5;
       centred = -1.5;
-      height = 7;
       for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
         m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
-          x = 0;
-          y += height;
+          y += 7;
           centred += -3.5;
           while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
@@ -3298,7 +3300,7 @@
                 n.arr[i] = 0;
               }
               return width;
-            }).attr("height", height).attr("y", y).attr("x", function(n) {
+            }).attr("height", 7).attr("y", y).attr("x", function(n) {
               if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
                 n.xpos += n.arr[i - 1];
               } else {
@@ -3318,13 +3320,14 @@
               }
               tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
               if (i === 6) {
+                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr>").length;
                 if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
                   tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
                 } else {
-                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' onclick='$(this).nextAll().slideToggle(1000)' style='color:" + colours[m][4] + "'><td>[+] Other</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "<tr><td>" + n.to_be_hl;
+                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl) - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl;
                 }
               }
-              return "<table class='popover-table'><tr><th style='text-align:left'>" + tt_mtitle[m] + "</th><th style='text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
+              return "<table class='popover-table'><tr><th style='width:150px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
             });
             i++;
           }
