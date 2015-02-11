@@ -1948,3 +1948,10 @@ Date: May 20th, 2014
 .popover.bottom .arrow:after {
   border-bottom-color:rgba(0,0,0,0.9);
 }
+.after-other td {
+  padding-left:25px;
+}
+.after-other tr {
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
