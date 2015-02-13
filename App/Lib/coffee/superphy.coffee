@@ -2391,11 +2391,12 @@ class GenomeController
   sort: (gids, metaField, asc) ->
     
     return gids unless gids.length
-
+   
     that = @
     gids.sort (a,b) ->
       aObj = that.genome(a)
       bObj = that.genome(b)
+      
       aField = aObj[metaField]
       aName = aObj.displayname.toLowerCase()
       bField = bObj[metaField]

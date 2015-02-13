@@ -126,36 +126,6 @@ __PACKAGE__->add_unique_constraint("organism_c1", ["genus", "species"]);
 
 =head1 RELATIONS
 
-=head2 biomaterials
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Biomaterial>
-
-=cut
-
-__PACKAGE__->has_many(
-  "biomaterials",
-  "Database::Chado::Schema::Result::Biomaterial",
-  { "foreign.taxon_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 cell_lines
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::CellLine>
-
-=cut
-
-__PACKAGE__->has_many(
-  "cell_lines",
-  "Database::Chado::Schema::Result::CellLine",
-  { "foreign.organism_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 features
 
 Type: has_many
@@ -167,21 +137,6 @@ Related object: L<Database::Chado::Schema::Result::Feature>
 __PACKAGE__->has_many(
   "features",
   "Database::Chado::Schema::Result::Feature",
-  { "foreign.organism_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 libraries
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Library>
-
-=cut
-
-__PACKAGE__->has_many(
-  "libraries",
-  "Database::Chado::Schema::Result::Library",
   { "foreign.organism_id" => "self.organism_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -216,36 +171,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 phenotype_comparisons
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PhenotypeComparison>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phenotype_comparisons",
-  "Database::Chado::Schema::Result::PhenotypeComparison",
-  { "foreign.organism_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 phylonode_organisms
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::PhylonodeOrganism>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phylonode_organisms",
-  "Database::Chado::Schema::Result::PhylonodeOrganism",
-  { "foreign.organism_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 private_features
 
 Type: has_many
@@ -261,24 +186,9 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 stocks
 
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Stock>
-
-=cut
-
-__PACKAGE__->has_many(
-  "stocks",
-  "Database::Chado::Schema::Result::Stock",
-  { "foreign.organism_id" => "self.organism_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:hKp03MijayS32ivmYhhWZA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Gs3JUzlPZBiNCQdqaw3pUA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

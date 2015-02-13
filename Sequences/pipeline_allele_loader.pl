@@ -248,11 +248,6 @@ foreach my $job (@jobs) {
 }
 
 # Finalize and load into DB
-
-$chado->end_files();
-
-$chado->flush_caches();
-
 $chado->load_data() unless $NOLOAD;
 
 $chado->remove_lock();

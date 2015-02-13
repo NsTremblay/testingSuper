@@ -39,16 +39,24 @@ sub cgiapp_init {
 	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
-	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	#$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	$self->config_file($SCRIPT_LOCATION.'/demo.cfg');
 
 	# Set up database connection
-	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
-					          dbName  => $self->config_param('db.name'),
-					          dbHost  => $self->config_param('db.host'),
-					          dbPort  => $self->config_param('db.port'),
-					          dbUser  => $self->config_param('db.user'),
-					          dbPass  => $self->config_param('db.pass') 
-	);
+	if($self->param('test_mode')) {
+		$logger->debug('Connecting to Test Database');
+		$self->setDbix($self->param('test_schema'));
+
+	} else {
+		$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
+						          dbName  => $self->config_param('db.name'),
+						          dbHost  => $self->config_param('db.host'),
+						          dbPort  => $self->config_param('db.port'),
+						          dbUser  => $self->config_param('db.user'),
+						          dbPass  => $self->config_param('db.pass') 
+		);
+	}
+	
 
 	# Set up session tracking
 	$self->session_config(

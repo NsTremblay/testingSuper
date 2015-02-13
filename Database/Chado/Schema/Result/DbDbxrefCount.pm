@@ -1,4 +1,4 @@
-use utf8;
+ use utf8;
 package Database::Chado::Schema::Result::DbDbxrefCount;
 
 # Created by DBIx::Class::Schema::Loader
@@ -45,9 +45,18 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:g9yGpVJL8GGpPuYsCp75Rg
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:li3jCPobanI7mU8WBK8bdg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+	"SELECT db.name, ".
+	"count(*) AS num_dbxrefs ".
+	"FROM db ".
+	"JOIN dbxref USING (db_id) ".
+	"GROUP BY db.name;"
+);
+
 1;

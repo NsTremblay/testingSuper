@@ -8,8 +8,8 @@ Modules::GenomeWarden
 
 =head1 DESCRIPTION
 
-Tracks which genomes are viewable by current user. Also performs some common tasks
-for genome data.
+Tracks which genomes and groups are viewable by current user. Also performs some common tasks
+for genome data and genome groups.
 
 =head1 COPYRIGHT
 
@@ -28,7 +28,7 @@ use warnings;
 use Carp;
 use FindBin;
 use lib "$FindBin::Bin/../";
-use Log::Log4perl qw/get_logger :easy/;
+use Log::Log4perl qw/get_logger/;
 use Data::Dump qw/dump/;
 
 =head2 constructor
@@ -64,10 +64,7 @@ sub new {
 sub _initialize {
 	my $self = shift;
 
-    # Setup logging
-    $self->logger(Log::Log4perl->get_logger()); 
-
-    $self->logger->info("Logger initialized in Modules::GenomeWarden");  
+    get_logger->info("Initializing Modules::GenomeWarden");  
 
     my %params = @_;
 
@@ -101,9 +98,6 @@ sub _initialize {
     if($self->subset) {
     	$self->_publicGenomes($publicLookup, $self->{_publicFeatures});
     	$has_private = $self->_privateGenomes($self->requestingUser, $privateLookup, $self->{_privateFeatures});
-    	
-    	$self->logger->debug(dump($publicLookup));
-    	$self->logger->debug(dump($self->{_publicFeatures}));
     	
     	my @public_invalid;
     	my @public_ok;
@@ -154,16 +148,6 @@ sub _initialize {
      
 }
 
-=head2 logger
-
-Stores a logger object for the module.
-
-=cut
-
-sub logger {
-	my $self = shift;
-	$self->{'_logger'} = shift // return $self->{'_logger'};
-}
 
 =head2 requestingUser
 
@@ -342,7 +326,6 @@ sub genomeList {
 }
 
 
-
 =head2 _publicGenomes
 
 SQL Queries
@@ -518,5 +501,6 @@ sub _privateGenomes {
 		return($has_private);
 	}
 }
+
 
 1;

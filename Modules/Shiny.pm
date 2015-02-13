@@ -106,7 +106,7 @@ sub _getUserData {
     #Generate sorted public genome ids
     my @sorted_public_genomes = sort {$a cmp $b} (keys %$public_genome_objs);
 
-    #Generate sorted private genoem ids
+    #Generate sorted private genome ids
     my @sorted_private_genomes = sort {$a cmp $b} (keys %$private_genome_objs);
 
     # Genome ids to be sent back to shiny for group creation

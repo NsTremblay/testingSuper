@@ -51,9 +51,17 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VzHjPM9OnwvK5INkWImIXw
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:dh9gXeTLDMheeYObeBi+AA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+	"SELECT cvterm.cv_id, ".
+	"cvterm.cvterm_id AS root_cvterm_id ".
+	"FROM cvterm ".
+	"WHERE NOT (cvterm.cvterm_id IN ( SELECT cvterm_relationship.subject_id ".
+	"FROM cvterm_relationship)) AND cvterm.is_obsolete = 0"
+);
 1;

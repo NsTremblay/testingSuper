@@ -447,7 +447,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="display:none;width:12px;height:12px;background:#004D11;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="display:none;width:12px;height:12px;background:#9E0015;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="display:none;width:12px;height:12px;background:#000752;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="display:none;width:12px;height:12px;background:#520042;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="display:none;width:12px;height:12px;background:#F05C00;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="display:none;width:12px;height:12px;background:#006B5C;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -2868,7 +2868,7 @@
    */
 
   TreeView = (function(_super) {
-    var checkbox_value, colours, mtypesDisplayed, total_height, visible_bars;
+    var checkbox_value, mtypesDisplayed, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -3031,7 +3031,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3094,8 +3094,8 @@
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-            n = _ref1[_k];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            n = _ref1[_j];
             n.y = n.y - yshift;
           }
         }
@@ -3442,8 +3442,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_o = 0, _len6 = _ref2.length; _o < _len6; _o++) {
-        n = _ref2[_o];
+      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
+        n = _ref2[_m];
         n.x0 = n.x;
         n.y0 = n.y;
       }

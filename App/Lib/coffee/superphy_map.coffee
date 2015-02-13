@@ -740,6 +740,7 @@ class GeophyCartographer extends SatelliteCartographer
       'group10Color': lime;
     }
 
+
     for marker in markerList
       circleIcon = {
         path: google.maps.SymbolPath.CIRCLE
@@ -824,32 +825,39 @@ class CartographerOverlay
     div.style.borderStyle = 'none'
     div.style.borderWidth = '0px'
     div.style.position = 'absolute'
-    div.style.width = '22px'
-    div.style.height = '40px' 
+    #div.style.width = '22px'
+    #div.style.height = '40px'
+    div.style.width = '15px'
+    div.style.height = '15px'  
     div.style.cursor = 'pointer'
 
     # We initially created an svg circle marker but it didnt look very good on the map so were using the default image
-    # svg = d3.select(div).append('svg')
-    #   .attr('height', '15px')
-    #   .attr('width', '15px')
-    #
-    # selectedMarker = svg.append("g")
-    #   .attr('transform', 'translate(0,0)')
-    #
-    # selectedMarker.append("circle")
-    #   .attr('cx', 7.5)
-    #   .attr('cy', 7.5)
-    #   .attr('r', '5px')
-    #   .style({'fill': '#00FF00', 'stroke': '#00FF00', 'stroke-width': '1px', 'fill-opacity': '0.0'})
+    # TODO:
+    svg = d3.select(div).append('svg')
+      .attr('height', '15px')
+      .attr('width', '15px')
+    
+    selectedMarker = svg.append("g")
+      .attr('transform', 'translate(0,0)')
+    
+    selectedMarker.append("circle")
+      .attr('cx', 7.5)
+      .attr('cy', 7.5)
+      .attr('r', '5px')
+      .style({'fill': '#ffc966', 'stroke': '#ffa500', 'stroke-width': '3px', 'fill-opacity': '0.5'})
 
-    img = document.createElement('img')
-    img.src = '/App/Pictures/marker_icon_green.png'
-    img.style.width = '100%'
-    img.style.height = '100%'
-    img.style.position = 'absolute'
-    img.id = "selectedGenomeMarker"
-    img.title = @title
-    div.appendChild(img)
+    selectedMarker.append("title")
+      .text(@title)
+
+    # TODO:
+    #img = document.createElement('img')
+    #img.src = '/App/Pictures/marker_icon_green.png'
+    #img.style.width = '100%'
+    #img.style.height = '100%'
+    #img.style.position = 'absolute'
+    #img.id = "selectedGenomeMarker"
+    #img.title = @title
+    #div.appendChild(img)
 
     @div = div
 
@@ -866,8 +874,11 @@ class CartographerOverlay
     
     div = @div
 
-    div.style.left = (location.x - 11) + 'px'
-    div.style.top = (location.y - 40) + 'px'
+    #div.style.left = location.x + 'px'
+    #div.style.top = location.y + 'px'
+
+    div.style.left = (location.x - 7.5) + 'px'
+    div.style.top = (location.y - 7.5) + 'px'
 
 
 # New class to handle the genome locations and the list

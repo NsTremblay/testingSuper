@@ -10,7 +10,7 @@ SET default_tablespace = '';
 
 -----------------------------------------------------------------------------
 --
--- Table Name: host_cateogry; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: host_cateogry; Schema: public; Owner: genodo; ablespace: 
 --
 
 CREATE TABLE host_category (
@@ -19,7 +19,7 @@ CREATE TABLE host_category (
 	displayname      varchar(100) NOT NULL
 );
 
-ALTER TABLE public.host_category OWNER TO postgres;
+ALTER TABLE public.host_category OWNER TO genodo;
 
 --
 -- primary key
@@ -31,7 +31,7 @@ CREATE SEQUENCE host_category_host_category_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.host_category_host_category_id_seq OWNER TO postgres;
+ALTER TABLE public.host_category_host_category_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE host_category_host_category_id_seq OWNED BY host_category.host_category_id;
 
@@ -60,7 +60,7 @@ ALTER TABLE ONLY host_category
 
 -----------------------------------------------------------------------------
 --
--- Table Name: host; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: host; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE host (
@@ -72,7 +72,7 @@ CREATE TABLE host (
         scientificname   varchar(100) NOT NULL
 );
 
-ALTER TABLE public.host OWNER TO postgres;
+ALTER TABLE public.host OWNER TO genodo;
 
 --
 -- primary key
@@ -84,7 +84,7 @@ CREATE SEQUENCE host_host_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.host_host_id_seq OWNER TO postgres;
+ALTER TABLE public.host_host_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE host_host_id_seq OWNED BY host.host_id;
 
@@ -114,7 +114,7 @@ ALTER TABLE ONLY host
 
 -----------------------------------------------------------------------------
 --
--- Table Name: source; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: source; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE source (
@@ -125,7 +125,7 @@ CREATE TABLE source (
         description      text
 );
 
-ALTER TABLE public.source OWNER TO postgres;
+ALTER TABLE public.source OWNER TO genodo;
 
 --
 -- primary key
@@ -137,7 +137,7 @@ CREATE SEQUENCE source_source_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.source_source_id_seq OWNER TO postgres;
+ALTER TABLE public.source_source_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE source_source_id_seq OWNED BY source.source_id;
 
@@ -167,7 +167,7 @@ ALTER TABLE ONLY source
 
 -----------------------------------------------------------------------------
 --
--- Table Name: syndrome; Schema: public; Owner: postgres; Tablespace: 
+-- Table Name: syndrome; Schema: public; Owner: genodo; Tablespace: 
 --
 
 CREATE TABLE syndrome (
@@ -178,7 +178,7 @@ CREATE TABLE syndrome (
 	description      text
 );
 
-ALTER TABLE public.syndrome OWNER TO postgres;
+ALTER TABLE public.syndrome OWNER TO genodo;
 
 --
 -- primary key
@@ -190,7 +190,7 @@ CREATE SEQUENCE syndrome_syndrome_id_seq
 	NO MAXVALUE
 	CACHE 1;
 
-ALTER TABLE public.syndrome_syndrome_id_seq OWNER TO postgres;
+ALTER TABLE public.syndrome_syndrome_id_seq OWNER TO genodo;
 
 ALTER SEQUENCE syndrome_syndrome_id_seq OWNED BY syndrome.syndrome_id;
 

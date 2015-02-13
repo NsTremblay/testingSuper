@@ -119,6 +119,9 @@ use constant CREATE_CACHE_TABLE =>
 		contig_id       int
 	)";
 use constant INSERT_CHR => "INSERT INTO pipeline_cache (tracker_id, chr_num, name, description) VALUES (?,?,?,?)";
+use constant INSERT_FOOTPRINT => "UPDATE pipeline_cache SET contig_num = ?, contig_sizes = ? WHERE tracker_id = ?";
+# Genome footprints
+use constant INSERT_FOOTPRINT => "INSERT INTO pipeline_footprint (tracker_id, access, contig_num, contig_sizes) VALUES (?,?,?,?)";
 
 # Globals
 my $update_step_sth;
@@ -170,13 +173,14 @@ if(@tracking_ids) {
 	my $opt_dir = $job_dir . '/opt/';
 	my $vf_dir = $job_dir . '/vf/';
 	my $pg_dir = $job_dir . '/pg/';
+	my $job_file = $job_dir . 'jobs.txt';
 	
 	foreach my $d ($meta_dir, $fasta_dir, $opt_dir, $vf_dir, $pg_dir) {
 		mkdir $d or die "Unable to create directory $d ($!)";
 	}
 
-	my @genome_loading_args;
 	my $update_job_sth = $dbh->prepare(SET_GENOME_JOB);
+	open(my $jobs, ">$job_file") or die "Unable to write to job file $job_file ($!).\n";
 	foreach my $t (@tracking_ids) {
 		# Locate opt file
 		my $opt_file = $input_dir . "genodo-options-$t.cfg";
@@ -202,7 +206,8 @@ if(@tracking_ids) {
 		my $new_opt_file = $opt_dir . "genodo-options-$t.cfg";
 		$cfg->write($new_opt_file) or die "Unable to write config file to $new_opt_file ($!)\n";
 		
-		push @genome_loading_args, [$t, $new_opt_file];
+		#push @genome_loading_args, [$t, $new_opt_file];
+		print $jobs join("\t", $t, $new_opt_file);
 		
 		# Change status of genome to 'in progress'
 		$update_step_sth->execute($tracker_step_values{processing}, $t);
@@ -210,7 +215,8 @@ if(@tracking_ids) {
 		
 	}
 	INFO "New data copied to analysis directory.";
-	
+
+
 	# Check for vf and amr fasta files
 	my $qg_dir = $data_directory . 'vf_amr_sequences/';
 	my $vf_fasta_file = $qg_dir . 'query_genes.ffn';
@@ -250,18 +256,24 @@ if(@tracking_ids) {
 	
 	# Free up memory
 	undef %$nr_sequences;
+
+	# Load all data
+	load_data($job_dir);
 	
 	# Load genome data
-	load_genomes(\@genome_loading_args);
+	# load_genomes(\@genome_loading_args);
 	
-	# Load VF/AMR results
-	load_vf($vf_dir);
+	# # Load VF/AMR results
+	# load_vf($vf_dir);
 	
-	# Load pan-genome results
-	load_pg($pg_dir);
+	# # Load pan-genome results
+	# load_pg($pg_dir);
+
+	# # Build the genome tree
+	# build_genome_tree();
 	
-	# Recompute the metadata JSON objects
-	recompute_metadata();
+	# # Recompute the metadata JSON objects
+	# recompute_metadata();
 
 	# Update individual genome records, notify users, remove tmp files
 	close_out(\@tracking_ids);
@@ -513,7 +525,7 @@ percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
 storeAlleles	1
-addMissingQuery	1
+allelesToKeep	5
 nameOrId	name
 |;
 	close $out;
@@ -648,8 +660,10 @@ fragmentationSize	0
 percentIdentityCutoff	90
 coreGenomeThreshold	0
 runMode	pan
+nameOrId	name
 storeAlleles	1
-addMissingQuery	0
+allelesToKeep	1
+maxNumberResultsInMemory	500
 |;
 	close $out;
 	
@@ -699,7 +713,8 @@ sub rename_sequences {
 	my $in = Bio::SeqIO->new(-file   => $fasta_file,
                              -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
     
-    my $contig_num = 1;                          
+    my $contig_num = 1;
+    my @footprint;                       
 	while (my $entry = $in->next_seq) {
 		my $name = $entry->display_id;
 		my $desc = $entry->description;
@@ -708,11 +723,15 @@ sub rename_sequences {
 		$insert_query->execute($tracker_id,$contig_num,$name,$desc) or die "Unable to insert chr name/description into DB cache ($!).";
 		print $out ">lcl|upl_$tracker_id|$contig_num\n$seq\n\n";
 		$contig_num++;
+
+		push @footprint, length($seq);
 	}
 	
 	close $out;
 	
 	move($tmp_file, $fasta_file) or die "Unable to move tmp file to $fasta_file ($!).";
+
+	return([sort @footprint]);
 }
 
 
@@ -767,7 +786,7 @@ sub align {
 
 	my $sql2 = 
 	qq/SELECT f.feature_id, f.residues, f.md5checksum, r2.object_id
-	FROM private_feature f, private_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
+	FROM private_feature f, pripub_feature_relationship r1, private_feature_relationship r2, cvterm t1, cvterm t2, cvterm t3 
 	WHERE f.type_id = t1.cvterm_id AND r1.type_id = t2.cvterm_id AND r2.type_id = t3.cvterm_id AND
 	t1.name = '$sql_type1' AND t2.name = '$sql_type2' AND t3.name = 'part_of' AND
 	f.feature_id = r1.subject_id AND f.feature_id = r2.subject_id AND r1.object_id = ?
@@ -1046,73 +1065,73 @@ sub download_pangenomes {
 	INFO "Pan-genome sequences in file $genome_file up-to-date.";
 }
 
-=head2 load_vf
+# =head2 load_vf
 
-Load the results from the panseq VF/AMR detection analysis
+# Load the results from the panseq VF/AMR detection analysis
 
-=cut
+# =cut
 
-sub load_genomes {
-	my $uploads = shift;
+# sub load_genomes {
+# 	my $uploads = shift;
 	
-	# Load each genome into DB
-	foreach my $tmparray (@$uploads) {
-		my ($tracking_id, $optfile) = @$tmparray;
-		my $opt = new Config::Simple($optfile) or die "Cannot read config file $optfile (" . Config::Simple->error() .')';
+# 	# Load each genome into DB
+# 	foreach my $tmparray (@$uploads) {
+# 		my ($tracking_id, $optfile) = @$tmparray;
+# 		my $opt = new Config::Simple($optfile) or die "Cannot read config file $optfile (" . Config::Simple->error() .')';
 		
-		# Run loading script
-		my @loading_args = ("perl $FindBin::Bin/../Sequences/genodo_fasta_loader.pl", '--webupload',
-			"--tracking_id $tracking_id",
-			'--fasta '.$opt->param('load.fastafile'), 
-			'--config '.$opt->param('load.configfile'),
-			'--attributes '.$opt->param('load.propfile'));
+# 		# Run loading script
+# 		my @loading_args = ("perl $FindBin::Bin/../Sequences/genodo_fasta_loader.pl", '--webupload',
+# 			"--tracking_id $tracking_id",
+# 			'--fasta '.$opt->param('load.fastafile'), 
+# 			'--config '.$opt->param('load.configfile'),
+# 			'--attributes '.$opt->param('load.propfile'));
 	
-		push @loading_args, '--noload' if $noload;
-		push @loading_args, '--remove_lock' if $remove_lock;
-		push @loading_args, '--recreate_cache' if $recover;
+# 		push @loading_args, '--noload' if $noload;
+# 		push @loading_args, '--remove_lock' if $remove_lock;
+# 		push @loading_args, '--recreate_cache' if $recover;
 
-		my $cmd = join(' ',@loading_args);
-		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+# 		my $cmd = join(' ',@loading_args);
+# 		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 		
-		if($success) {
-			INFO "Genome $tracking_id data loaded successfully."
-		} else {
-			die "Loading of Genome $tracking_id data failed ($stderr).";
-		}
-	}
+# 		if($success) {
+# 			INFO "Genome $tracking_id data loaded successfully."
+# 		} else {
+# 			die "Loading of Genome $tracking_id data failed ($stderr).";
+# 		}
+# 	}
 
-	INFO "Loading of all genome data into DB completed.";
-}
+# 	INFO "Loading of all genome data into DB completed.";
+# }
 
-=head2 load_vf
+# =head2 load_vf
 
-Load the results from the panseq VF/AMR detection analysis
+# Load the results from the panseq VF/AMR detection analysis
 
-=cut
+# =cut
 
-sub load_vf {
-	my $job_dir = shift;
+# sub load_vf {
+# 	my $job_dir = shift;
 	
-	INFO "Loading amr/vf into DB";
+# 	INFO "Loading amr/vf into DB";
 	
-	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_allele_loader.pl",
-		'--dir '.$job_dir, 
-		'--config '.$config);
+# 	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_allele_loader.pl",
+# 		'--dir '.$job_dir, 
+# 		'--config '.$config);
 			
-	push @loading_args, '--noload' if $noload;
-	push @loading_args, '--remove_lock' if $remove_lock;
-	push @loading_args, '--recreate_cache' if $recover;
-	push @loading_args, '--save_tmpfiles' if $test;
+# 	push @loading_args, '--noload' if $noload;
+# 	push @loading_args, '--remove_lock' if $remove_lock;
+# 	push @loading_args, '--recreate_cache' if $recover;
+# 	push @loading_args, '--save_tmpfiles' if $test;
 	
-	my $cmd = join(' ',@loading_args);
-	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+# 	my $cmd = join(' ',@loading_args);
+# 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 	
-	if($success) {
-		INFO "AMR/VF data loaded successfully."
-	} else {
-		die "Loading of amr/vf data failed ($stderr).";
-	}
-}
+# 	if($success) {
+# 		INFO "AMR/VF data loaded successfully."
+# 	} else {
+# 		die "Loading of amr/vf data failed ($stderr).";
+# 	}
+# }
 
 =head2 blast_new_regions
 
@@ -1135,31 +1154,60 @@ sub blast_new_regions {
 	INFO "Running parallel BLAST: $parallel_cmd";
 	
 	#unless($test) {
-		my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
-	
-		if($success) {
-			INFO "New pan-genome region BLAST job completed successfully."
-		} else {
-			die "New pan-genome region BLAST job failed ($stderr).";
-		}
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($parallel_cmd);
+
+	if($success) {
+		INFO "New pan-genome region BLAST job completed successfully."
+	} else {
+		die "New pan-genome region BLAST job failed ($stderr).";
+	}
 #	} else {
 #		`touch $blast_file`;
 #	}
 	
-}
+#}
 
-=head2 load_pg
+# =head2 load_pg
 
-Load the results from the panseq pangenome analysis
+# Load the results from the panseq pangenome analysis
+
+# =cut
+
+# sub load_pg {
+# 	my $job_dir = shift;
+	
+# 	INFO "Loading pangenome into DB";
+	
+# 	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_pangenome_loader.pl",
+# 		'--dir '.$job_dir, 
+# 		'--config '.$config);
+			
+# 	push @loading_args, '--noload' if $noload;
+# 	push @loading_args, '--remove_lock' if $remove_lock;
+# 	push @loading_args, '--recreate_cache' if $recover;
+	
+# 	my $cmd = join(' ',@loading_args);
+# 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+	
+# 	if($success) {
+# 		INFO "Pangenome data loaded successfully."
+# 	} else {
+# 		die "Loading of pangenome data failed ($stderr).";
+# 	}
+# }
+
+=head2 load_data
+
+Load the results from the genome, vfamr and pangenome analysis
 
 =cut
 
-sub load_pg {
+sub load_data {
 	my $job_dir = shift;
 	
-	INFO "Loading pangenome into DB";
+	INFO "Loading data into DB";
 	
-	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_pangenome_loader.pl",
+	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_loader.pl",
 		'--dir '.$job_dir, 
 		'--config '.$config);
 			
@@ -1171,36 +1219,71 @@ sub load_pg {
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 	
 	if($success) {
-		INFO "Pangenome data loaded successfully."
+		INFO "Data loaded successfully."
 	} else {
-		die "Loading of pangenome data failed ($stderr).";
+		die "Loading of  data failed ($stderr).";
 	}
 }
 
-=head2 recompute_metadata 
 
-Recompute the json objects that contain genomes and their properties
+# =head2 recompute_metadata 
 
-=cut
+# Recompute the json objects that contain genomes and their properties
 
-sub recompute_metadata {
+# =cut
+
+# sub recompute_metadata {
 	
-	INFO "Loading Metadata into DB";
+# 	INFO "Loading Metadata into DB";
 	
-	unless($noload) {
-		my @loading_args = ("perl $FindBin::Bin/../Database/load_meta_data.pl",
-		'--config '.$config);
+# 	unless($noload) {
+# 		my @loading_args = ("perl $FindBin::Bin/../Database/load_meta_data.pl",
+# 		'--config '.$config);
 		
-		my $cmd = join(' ',@loading_args);
-		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+# 		my $cmd = join(' ',@loading_args);
+# 		my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 		
-		if($success) {
-			INFO "Metadata JSON objects loaded successfully."
-		} else {
-			die "Loading of Metadata JSON objects failed ($stderr).";
-		}
-	}
-}
+# 		if($success) {
+# 			INFO "Metadata JSON objects loaded successfully."
+# 		} else {
+# 			die "Loading of Metadata JSON objects failed ($stderr).";
+# 		}
+# 	}
+# }
+
+# =head2 build_genome_tree
+
+# Rebuild global genome tree with new sequences
+
+# =cut
+
+# sub build_genome_tree {
+
+# 	INFO "Recompute and loading genome phylogenetic tree";
+
+# 	unless($noload) {
+# 		# Intialize the Tree building modules
+# 		my $tree_builder = Phylogeny::TreeBuilder->new();
+# 		my $tree_io = Phylogeny::Tree->new(config => $config);
+		
+# 		# write alignment file
+# 		my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';
+# 		$tree_io->writeSnpAlignment($tmp_file);
+		
+# 		# clear output file for safety
+# 		my $tree_file = $tmp_dir . 'genodo_genome_tree.txt';
+# 		open(my $out, ">", $tree_file) or croak "Error: unable to write to file $tree_file ($!).\n";
+# 		close $out;
+		
+# 		# build newick tree
+# 		$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+		
+# 		# Load tree into database
+# 		my $tree = $tree_io->loadTree($tree_file);
+
+# 		INFO "Phylogenetic tree loaded successfully.";
+# 	}
+# }
 
 =head2 close_out
 

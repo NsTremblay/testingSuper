@@ -237,6 +237,7 @@ sub sourceUniquename {
 Return syndrome uniquename for given full name
 
 =cut
+
 sub syndromeUniquename {
 	my $self = shift;
 	my $category = shift;
@@ -258,6 +259,34 @@ sub syndromeUniquename {
 		return undef;
 	}
 	
+}
+
+=head2 subtypeList
+
+=cut
+
+sub subtypeList {
+	my $self = shift;
+
+	
+}
+
+=head2 metaTerms
+
+Return full hash of values for each meta-data type
+
+=cut
+
+sub metaTerms {
+	my $self = shift;
+
+	my %termHash;
+
+	$termHash{host} = $self->hostList;
+	$termHash{source} = $self->sourceList;
+	$termHash{syndrome} = $self->syndromeList;
+
+	return \%termHash;
 }
 
 

@@ -29,6 +29,11 @@ __PACKAGE__->table("tmp_snp_cache");
   is_nullable: 1
   size: 100
 
+=head2 snp_id
+
+  data_type: 'integer'
+  is_nullable: 1
+
 =head2 aln_column
 
   data_type: 'integer'
@@ -45,6 +50,8 @@ __PACKAGE__->table("tmp_snp_cache");
 __PACKAGE__->add_columns(
   "name",
   { data_type => "varchar", is_nullable => 1, size => 100 },
+  "snp_id",
+  { data_type => "integer", is_nullable => 1 },
   "aln_column",
   { data_type => "integer", is_nullable => 1 },
   "nuc",
@@ -52,8 +59,8 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:CQAzSO78QexxoLbUyhN59A
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:K2XVn3XbRLPpETUg72M7fw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

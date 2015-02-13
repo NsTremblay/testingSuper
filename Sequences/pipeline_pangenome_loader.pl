@@ -306,19 +306,12 @@ foreach my $job (@jobs) {
 }
 
 # Finalize and load into DB
-
-$chado->end_files();
-
-$chado->flush_caches();
-
 unless ($NOLOAD) {
-	
 	$chado->load_data();
 	build_genome_tree();
 }
 
 $chado->remove_lock();
-
 
 exit(0);
 
