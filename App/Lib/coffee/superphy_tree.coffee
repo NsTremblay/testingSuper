@@ -553,15 +553,16 @@ class TreeView extends ViewTemplate
               if metaOntology[m][i]?
                 pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
               if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
-                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr>").length
+                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]))).length
                 if i < 6
                   n.to_be_hl = n.tt_mtype[m].slice(length + pos)
+                  console.log(pos)
               tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
               if i is 6
                 if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
                   tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
-                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.to_be_hl
-              "<table class='popover-table'><tr><th style='width:160px;text-align:left'>" + tt_mtitle + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tbody class='table-body-bold' style='color:" + colours[m][4] + "'>" + n.to_be_hl
+              "<table class='popover-table'><tr><th style='width:160px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
 
     # Dismisses popover when mouse leaves both the metaMeter and the popover itself
