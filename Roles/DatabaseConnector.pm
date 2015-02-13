@@ -1,14 +1,14 @@
 #!/usr/bin/perl
-
 package Roles::DatabaseConnector;
 
 use strict;
 use warnings;
-use FindBin;
+use Role::Tiny;
 use Carp qw/croak/;
+use FindBin;
 use lib "FindBin::Bin/../";
 use Database::Chado::Schema;
-use Role::Tiny;
+
 
 
 =head2 connectDatabase

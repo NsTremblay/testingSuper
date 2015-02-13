@@ -1,4 +1,4 @@
-use utf8;
+ use utf8;
 package Database::Chado::Schema::Result::TypeFeatureCount;
 
 # Created by DBIx::Class::Schema::Loader
@@ -45,9 +45,17 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/q4U8D7jxpKh9dx0urBR2Q
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:3DnsRDf5I16z73P7h7HTTw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+	"SELECT t.name AS type, count(*) AS num_features ".
+	"FROM cvterm t ".
+	"JOIN feature ON feature.type_id = t.cvterm_id ".
+	"GROUP BY t.name"
+);
+
 1;

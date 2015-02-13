@@ -22,14 +22,14 @@ sub dispatch_args {
     return {
         prefix  => 'Modules',
         args_to_new=>{
-                TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
+            TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                'user/login'          => { app => 'User', rm => 'authen_login' },
-                ':app/:rm'            => { },
-                'test'                => { app => 'User', rm => 'hello' },
-				'/hello' =>     {app=>'Home' , rm=>'default'},
-                '/home' =>      {app=>'Home', rm=>'home'}
+            'user/login'          => { app => 'User', rm => 'authen_login' },
+            ':app/:rm'            => { },
+            'test'                => { app => 'User', rm => 'hello' },
+			'/hello' =>     {app=>'Home' , rm=>'default'},
+            '/home' =>      {app=>'Home', rm=>'home'}
         ],
     };
 }

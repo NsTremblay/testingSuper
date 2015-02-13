@@ -105,8 +105,8 @@ __PACKAGE__->set_primary_key("pangenome_alignment_id");
 __PACKAGE__->add_unique_constraint("pangenome_alignment_c1", ["name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-23 16:04:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:RbX3HqkqJaxB4+GuS3ZWLg
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:xQWqddQXnX9pjm5lJyHIpA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

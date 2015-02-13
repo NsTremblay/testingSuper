@@ -40,27 +40,36 @@ Log::Log4perl->easy_init($DEBUG);
 sub new {
 	my $class = shift;
 	my %arg   = @_;
-	
-	my $config_file = $arg{config};
-	croak "Error: missing parameter: config." unless $config_file;
-	
+
 	my $self  = bless {}, ref($class) || $class;
-
-	my $logger = Log::Log4perl->get_logger;
 	
-	$logger->debug('Initializing Bridge object');
+	if($arg{config}) {
+		my $config_file = $arg{config};
+		
 
-	# Load config options
-	my $conf = new Config::Simple($config_file);
+		my $logger = Log::Log4perl->get_logger;
+		
+		$logger->debug('Initializing Bridge object');
 
-	# Set up database connection
-	$self->connectDatabase(   dbi     => $conf->param('db.dbi'),
-					          dbName  => $conf->param('db.name'),
-					          dbHost  => $conf->param('db.host'),
-					          dbPort  => $conf->param('db.port'),
-					          dbUser  => $conf->param('db.user'),
-					          dbPass  => $conf->param('db.pass') 
-	);
+		# Load config options
+		my $conf = new Config::Simple($config_file);
+
+		# Set up database connection
+		$self->connectDatabase(   dbi     => $conf->param('db.dbi'),
+						          dbName  => $conf->param('db.name'),
+						          dbHost  => $conf->param('db.host'),
+						          dbPort  => $conf->param('db.port'),
+						          dbUser  => $conf->param('db.user'),
+						          dbPass  => $conf->param('db.pass') 
+		);
+	}
+	elsif($arg{schema}) {
+		$self->setDbix($arg{schema});
+
+	}
+	else {
+		croak "Error: missing parameter: config.";
+	}	
 	
 	return $self;
 }

@@ -933,8 +933,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-04 14:56:19
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Jc4N+0K5ivmmspX0lzBy7Q
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nanC2THXCZAYJg39t37aLQ
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

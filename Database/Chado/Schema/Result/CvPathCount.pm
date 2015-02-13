@@ -1,4 +1,4 @@
-use utf8;
+ use utf8;
 package Database::Chado::Schema::Result::CvPathCount;
 
 # Created by DBIx::Class::Schema::Loader
@@ -68,9 +68,22 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:1xhfBY4EOhsBga9NBF9vlQ
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Ut+HDFDmxUodT5T5wn99Zw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+  "SELECT cv.name AS cv_name, ".
+  "relation.name AS relation_name, ".
+  "relation_cv.name AS relation_cv_name, ".
+  "count(*) AS num_paths ".
+  "FROM cv ".
+  "JOIN cvterm ON cvterm.cv_id = cv.cv_id ".
+  "JOIN cvtermpath ON cvterm.cvterm_id = cvtermpath.subject_id ".
+  "JOIN cvterm relation ON cvtermpath.type_id = relation.cvterm_id ".
+  "JOIN cv relation_cv ON relation.cv_id = relation_cv.cv_id ".
+  "GROUP BY cv.name, relation.name, relation_cv.name"
+);
 1;

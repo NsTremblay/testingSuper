@@ -91,8 +91,8 @@ __PACKAGE__->set_primary_key("snp_alignment_id");
 __PACKAGE__->add_unique_constraint("snp_alignment_c1", ["name"]);
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2014-12-23 16:04:06
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:jYeivyT2F6Q1Cu/qbwwUyA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:i5Ud/3WdKhPwG+1Z2B+3og
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

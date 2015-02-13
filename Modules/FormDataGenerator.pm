@@ -34,7 +34,6 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/../";
-use Modules::GenomeWarden;
 use Log::Log4perl qw/get_logger :easy/;
 use Carp;
 use Time::HiRes qw( time );
@@ -571,13 +570,19 @@ sub genomeInfo {
 	);
 		
 	my $public_json;
-	if(my $row = $meta_rs->first) {
-		$public_json = $row->data_string;
-	} else {
-		my $public_genome_info = $self->_runGenomeQuery(1);
+	if($username) {
+		my $public_genome_info = $self->_runGenomeQuery(1, $username);
 		$public_json = encode_json($public_genome_info);
 	}
-
+	else {
+		if(my $row = $meta_rs->first) {
+			$public_json = $row->data_string;
+		} else {
+			my $public_genome_info = $self->_runGenomeQuery(1);
+			$public_json = encode_json($public_genome_info);
+		}
+	}
+	
 	my $private_json;
 	if($username) {
 		# Get user private genomes
@@ -643,7 +648,7 @@ sub _runGenomeQuery {
 	my $feature_table_name = 'Feature';
 	my $featureprop_rel_name = 'featureprops';
 	my $feature_relationship_rel_name = 'feature_relationship_objects';
-	my $feature_group_name = 'feature_groups';
+	my $feature_group_table_name = 'FeatureGroup';
     # Added tables to look up genome locaiton info
     my $genome_location_table_name = 'genome_locations';
 	my $order_name = { '-asc' => ['featureprops.rank'] };
@@ -651,7 +656,7 @@ sub _runGenomeQuery {
 		$feature_table_name = 'PrivateFeature';
 		$featureprop_rel_name = 'private_featureprops';
 		$feature_relationship_rel_name = 'private_feature_relationship_objects';
-		$feature_group_name = 'private_feature_groups';
+		$feature_group_table_name = 'PrivateFeatureGroup';
         # Added tables to look up private genome location infoq
         $genome_location_table_name = "private_genome_locations";
 		$order_name = { '-asc' => ['private_featureprops.rank'] };
@@ -661,16 +666,7 @@ sub _runGenomeQuery {
 	my $query = {
 		'type.name'      => 'contig_collection',
 		'type_2.name'    => { '-in' => [ keys %{$self->{meta_terms}} ] },
-		'-bool' => 'genome_group.standard'
     };
-	
-	if($username) {
-		$query = {
-			'type.name'      => 'contig_collection',
-			'type_2.name'    => { '-in' => [ keys %{$self->{meta_terms}} ] },
-			'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
-	    };
-	}
 	
     
     # Added $genome_location_table_name => 'geocode' to join
@@ -678,7 +674,6 @@ sub _runGenomeQuery {
     my $prefetch = [
 	    { 'dbxref' => 'db' },
 	    { $featureprop_rel_name => 'type' },
-	    { $feature_group_name => 'genome_group'}
     ];
     
     # Subtypes needs separate query
@@ -692,6 +687,20 @@ sub _runGenomeQuery {
 	    { $feature_relationship_rel_name  => [ 'type', { 'subject' => [ 'type', { $featureprop_rel_name => 'type' } ] } ] }
 	];
 
+	# Groups needs separate query
+	my $query3 = {
+		'-bool' => 'genome_group.standard'
+	};
+	my $join3 = [
+		'genome_group'
+	];
+
+	if($username) {
+		$query3 = {
+			'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
+	    };
+	}
+
 	# Query data in private tables
 	unless($public) {
 		
@@ -700,15 +709,12 @@ sub _runGenomeQuery {
             	{
 					'login.username'     => $username,
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
-					'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
-					
+					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] }			
              	},
              	{
 					'upload.category'    => 'public',
 					'type.name'          => 'contig_collection',
-					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
-					'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
+					'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] }
 				}
 			];
 
@@ -736,7 +742,7 @@ sub _runGenomeQuery {
 				'upload.category'    => 'public',
 				'type.name'          => 'contig_collection',
 				'type_2.name'        => { '-in' => [ keys %{$self->{meta_terms}} ] },
-				'-or' => [ { '-bool' => 'genome_group.standard' }, { 'genome_group.username' => $username } ]
+				
             };
             
             $query2 = {
@@ -761,15 +767,25 @@ sub _runGenomeQuery {
 		}
      );
      
-     #$self->elapsed_time('Begin query 2');
-     my $feature_rs2 = $self->dbixSchema->resultset($feature_table_name)->search(
+	#$self->elapsed_time('Begin query 2');
+	my $feature_rs2 = $self->dbixSchema->resultset($feature_table_name)->search(
 		$query2,	
 		{
 			join => $join2,
 			prefetch => $prefetch2,
 			#order_by => $order_name
 		}
-     );
+	);
+
+    #$self->elapsed_time('Begin query 3');
+	my $groups_rs3 = $self->dbixSchema->resultset($feature_group_table_name)->search(
+		$query3,	
+		{
+			join => $join3,
+			order_by => 'me.feature_id'
+		}
+	);
+
 
 	# Create hash from all results
 	my %genome_info;
@@ -822,16 +838,6 @@ sub _runGenomeQuery {
             $feature_hash{'isolation_location'} = [] unless defined $feature_hash{'isolation_location'} || !($location->geocode->location);
             push @{$feature_hash{'isolation_location'}}, $location->geocode->location unless !($location->geocode->location);
         }
-
-        # Group data
-        my $featuregroups = $feature->$feature_group_name;
-        my @groups;
-
-        while(my $fg = $featuregroups->next) {
-        	push @groups, $fg->genome_group_id;
-        }
-        $feature_hash{groups} = \@groups;
-
 		
 		my $k = ($public) ? 'public_' : 'private_';
 		
@@ -865,6 +871,36 @@ sub _runGenomeQuery {
 		}
 		
 	}
+
+	#$self->elapsed_time('Hash query 3');
+	# Requires resultset to be sorted by feature ID
+	my $group = $groups_rs3->next;
+	if($group) {
+
+		my $current_feature = $group->feature_id;
+		my @group_assignments = ($group->genome_group_id);
+		while($group = $groups_rs3->next) {
+
+			if($current_feature != $group->feature_id) {
+				my $k = ($public) ? 'public_' : 'private_';
+				$k .= $current_feature;
+				my $feature_hash = $genome_info{$k};
+				croak "Error: something strange is going on... genome with group assignment but not returned by main feature query.\n" unless defined $feature_hash;
+				$feature_hash->{groups} = [@group_assignments];
+				$current_feature = $group->feature_id;
+				@group_assignments = ($group->genome_group_id);
+			} else {
+				push @group_assignments, $group->genome_group_id;
+			}
+		}
+
+		my $k = ($public) ? 'public_' : 'private_';
+		$k .= $current_feature;
+		my $feature_hash = $genome_info{$k};
+		croak "Error: something strange is going on... genome with group assignment but not returned by main feature query.\n" unless defined $feature_hash;
+		$feature_hash->{groups} = \@group_assignments;
+	}
+	
 
 	#$self->elapsed_time('End');
 	
@@ -1642,29 +1678,30 @@ sub userGroups {
 	}
 
 	
-	my $custom_json;
+	my $custom_section;
 	if($username) {
 		# Get user custom groups
-		my $custom_rs = $self->dbixSchema->resultset("GroupCategories")->search(
+		my $custom_rs = $self->dbixSchema->resultset("GroupCategory")->search(
 			{
-				username => $username	
+				'me.username' => $username	
 			},
 			{
 			    prefetch => [ 'genome_groups' ]
 			}
 		);
 
-		$custom_json = $self->_formatUserGroups($custom_rs);
+		$custom_section = $self->_formatUserGroups($custom_rs);
 		
-   } else {
+   	} else {
 		# User not logged in, return 'empty' object
-		$custom_json = $self->_formatUserGroups(undef);
+		$custom_section = $self->_formatUserGroups(undef);
 		
-   }
+   	}
+   	my $custom_json = encode_json($custom_section);
 
-   my $group_hierarchy_json = '{ standard: '.$standard_json.', custom_json: '.$custom_json.' }';
+	my $group_hierarchy_json = "{\"standard\": $standard_json, \"custom\": $custom_json }";
 
-   return $group_hierarchy_json
+   return $group_hierarchy_json;
 }
 
 sub _formatUserGroups {
@@ -1685,7 +1722,9 @@ sub _formatUserGroups {
 				level => 0
 			};
 
-			while(my $group_row = $collection_row->genome_groups->next) {
+			my $group_rs = $collection_row->genome_groups;
+			while(my $group_row = $group_rs->next) {
+
 				my $group_href = {
 					id => $group_row->genome_group_id,
 					name => $group_row->name,
@@ -1698,25 +1737,109 @@ sub _formatUserGroups {
 			push @collections, $collection;
 		}
 
-		return encode_json(\@collections);
+		return \@collections;
 
 	} else {
 		# No group/categories
 
-		return '[ ]';
+		return [ ];
 	}
 }
 
 
 
-=head2 deleteGroup
+=head2 createGroup
 
-Save new 
+Add new custom strain group.
+
+Input:
+1) GenomeWarden object (loaded with genomes in group)
+2) Param hash-ref:
+[Required]
+  username    => text 
+  name        => text
+[Optional]
+  description => text 
+  collection  => text
+
+Returns:
+	genome_group_id on success, or 0 on failure
 
 =cut
 
-sub deleteGroup {
+sub createGroup {
+	my $self = shift;
+	my $warden = shift; # GenomeWarden object
+	my $params = shift; # Input params hash-ref
 
+	# Required parameters
+	my $group_name = $params->{name} or croak "Error: missing input parameter 'name'";
+	my $username = $params->{username} or croak "Error: missing input parameter 'username'"; 
+
+	# Optional parameters
+	my $group_description = $params->{description};
+	my $collection_name = $params->{collection} ||= 'Individuals';
+
+	# Check if group name is unique
+	my $group = {
+		name => $group_name,
+		username => $username
+	};
+	my $group_result = $self->dbixSchema->resultset('GenomeGroup')->find(
+		$group,
+		{
+			key => 'genome_group_c1'
+		}
+	);
+
+	if($group_result && $group_result->in_storage) {
+		# Found duplicate group
+		return 0;
+	}
+
+	# Perform group creation in single DBIx::Class create call so that it is
+	# executed in single transaction
+
+	# Note: because category_id is a 'belongs_to' relationship, this will
+	# perform a find_or_create call on the group_category entry
+	$group->{category} = {
+		name => $collection_name,
+		username => $username,
+		standard => 0
+	};
+
+	# Genome_group properties
+	$group->{standard} = 0;
+	$group->{standard_value} = undef;
+	$group->{description} = $group_description if $group_description;
+
+	# Genome-group links
+	my ($public_genome_ids, $private_genome_ids) = $warden->featureList;
+	
+	# Public
+	my @feature_group_rows;
+	foreach my $g (@$public_genome_ids) {
+		push @feature_group_rows, { feature_id => $g };
+	}
+	$group->{feature_groups} = \@feature_group_rows if @feature_group_rows;
+
+	# Private
+	my @private_feature_group_rows;
+	foreach my $g (@$private_genome_ids) {
+		push @private_feature_group_rows, { feature_id => $g };
+	}
+	$group->{private_feature_groups} = \@private_feature_group_rows if @private_feature_group_rows;
+
+
+	# Insert into database
+	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->create($group);
+
+	# Success?
+	if($group_row && $group_row->in_storage) {
+		return $group_row->genome_group_id;
+	} else {
+		return 0;
+	}
 }
 
 

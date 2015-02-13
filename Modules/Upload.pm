@@ -174,9 +174,7 @@ my $diseaseList = {
 
 sub setup {
     my $self=shift;
-    
-    $dbic = $self->dbixSchema;
-    
+     
     $self->authen->protected_runmodes(
 		qw/submit_genome upload_genome status list delete_genome edit_genome update_genome/
 	);
@@ -890,7 +888,7 @@ sub edit_genome : Runmode {
 
 =head2 update_genome
 
-Commit the user submitted changes to an uploaded genome's attrbutes
+Commit the user submitted changes to an uploaded genome's attributes
 
 =cut
 
@@ -1421,6 +1419,8 @@ sub meta_ontology : Runmode {
 
 Return a result set corresponding to upload_id
 argument.  Checks user has can_modify permissions on upload.
+The uploading user always has full access 
+no matter what the permissions.
 
 =cut
 
@@ -1432,12 +1432,14 @@ sub _getModifiableGenomes {
 	my $upload_rs = $schema->resultset('Upload')->search(
 		{
 			'login.username'            => $username,
+			'login_2.username'          => $username,
 			'type.name'                 => 'contig_collection',
 			'permissions.can_modify'    => 1,
 			'me.upload_id'              => $upload_id
 		},
 		{
 			join => [
+				'login',
 				{ 'permissions'      => 'login' },
 				{ 'private_features' => 'type' },
 			],

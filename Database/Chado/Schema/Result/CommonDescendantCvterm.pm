@@ -1,4 +1,4 @@
-use utf8;
+ use utf8;
 package Database::Chado::Schema::Result::CommonDescendantCvterm;
 
 # Created by DBIx::Class::Schema::Loader
@@ -79,9 +79,21 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:8rzcVS8hZhPQSZEwObLS8Q
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Jkn6Co2/I3w2z3bkIkGqWA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+  "SELECT p1.object_id AS cvterm1_id, ".
+  "p2.object_id AS cvterm2_id, ".
+  "p1.subject_id AS ancestor_cvterm_id, ".
+  "p1.pathdistance AS pathdistance1, ".
+  "p2.pathdistance AS pathdistance2, ".
+  "p1.pathdistance + p2.pathdistance AS total_pathdistance ".
+  "FROM cvtermpath p1, ".
+  "cvtermpath p2 ".
+  "WHERE p1.subject_id = p2.subject_id"
+);
 1;
