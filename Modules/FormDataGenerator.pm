@@ -615,7 +615,7 @@ sub genomeInfo {
 
 =head2 metaTerms 
 
-	Hash-ref of meta term keys used in meta-data hashes
+Hash-ref of meta term keys used in meta-data hashes
 
 =cut
 
@@ -625,9 +625,9 @@ sub metaTerms {
 	return $self->{meta_terms};
 }
 
-=head2 subtypes 
+=head2 subtypes
 
-	Hash-ref of subtype keys used in meta-data hashes
+Hash-ref of subtype keys used in meta-data hashes
 
 =cut
 
@@ -1763,7 +1763,7 @@ Input:
   collection  => text
 
 Returns:
-	genome_group_id on success, or 0 on failure
+  genome_group_id on success, or 0 on failure
 
 =cut
 
@@ -1842,5 +1842,215 @@ sub createGroup {
 	}
 }
 
+
+=head2 updateGroup
+
+Modify existing custom strain group. Method
+performs both 'Save' & 'Delete' functions
+
+Input:
+1) GenomeWarden object (loaded with genomes in group) or undef if doing delete
+2) Param hash-ref:
+[Required]
+  username    => text 
+  group_id    => int
+[Optional]
+  name        => text
+  description => text 
+  collection  => text
+
+Returns:
+  1 on success, or 0 on failure
+
+=cut
+
+sub updateGroup {
+	my $self = shift;
+	my $warden = shift; # GenomeWarden object
+	my $params = shift; # Input params hash-ref
+
+	# Required parameters
+	my $group_id = $params->{group_id} or croak "Error: missing input parameter 'group_id'";
+	my $username = $params->{username} or croak "Error: missing input parameter 'username'"; 
+
+	# Optional parameters to update for group
+	my $group_description = $params->{description};
+	my $group_name = $params->{name};
+	my $collection_name = $params->{collection};
+
+	# Locate existing members of group
+	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->find(
+		{
+			'me.username' => $username,
+			'me.genome_group_id' => $group_id
+		}, 
+		{
+			prefetch => [qw/feature_groups private_feature_groups group_category/]
+		}
+	);
+
+	return 0 unless $group_row;
+
+	# Identify genomes slated for removal and addition to group
+	my $genome_group = $warden ? $warden->genomeLookup() : { };
+	my %already_in_group;
+
+	# The following steps need to be done in a single transaction
+	my $guard = $schema->txn_scope_guard;
+
+
+	my $public_feature_rs = $group_row->feature_groups;
+	while(my $f = $public_feature_rs->next) {
+		my $k = 'public_'.$f->feature_id;
+
+		if(defined $genome_group->{$k}) {
+			%already_in_group{$k} = $f->feature_id;
+		} else {
+			$f->delete;
+		}
+	}
+
+	my $private_feature_rs = $group_row->private_feature_groups;
+	while(my $f = $private_feature_rs->next) {
+		my $k = 'private_'.$f->feature_id;
+
+		if(defined $genome_group->{$k}) {
+			%already_in_group{$k} = $f->feature_id;
+		} else {
+			$f->delete;
+		}
+	}
+
+	my @public_additions;
+	my @private_additions;
+	foreach my $g (keys %$genome_group) {
+		
+		unless($already_in_group{$g}) {
+			if($g =~ m/^public_/) {
+				push @public_additions, { feature_id => $genome_groups->{$g}->{feature_id}};
+			} else {
+				push @private_additions, { feature_id => $genome_groups->{$g}->{feature_id}};
+			}
+		}
+	}
+
+	if(@public_additions || @private_additions || )
+
+	# Update group changes
+	my $update_group;
+
+	if($collection_name) {
+		# Note: because category_id is a 'belongs_to' relationship, this will
+		# perform a find_or_create call on the group_category entry
+		$update_group->{category} = {
+			name => $collection_name,
+			username => $username,
+			standard => 0
+		};
+	}
+	
+	$update_group->{description} = $group_description if $group_description;
+
+	# Genome-group links
+	my ($public_genome_ids, $private_genome_ids) = $warden->featureList;
+	
+	# Public
+	my @feature_group_rows;
+	foreach my $g (@$public_genome_ids) {
+		push @feature_group_rows, { feature_id => $g };
+	}
+	$group->{feature_groups} = \@feature_group_rows if @feature_group_rows;
+
+	# Private
+	my @private_feature_group_rows;
+	foreach my $g (@$private_genome_ids) {
+		push @private_feature_group_rows, { feature_id => $g };
+	}
+	$group->{private_feature_groups} = \@private_feature_group_rows if @private_feature_group_rows;
+
+
+	# Insert into database
+	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->create($group);
+
+	# Success?
+	if($group_row && $group_row->in_storage) {
+		return $group_row->genome_group_id;
+	} else {
+		return 0;
+	}
+	$group_row->update()
+
+	
+	# Delete feature group entries
+	if(@public_removals) {
+		my $delete_rs = $self->dbixSchema->resultset('FeatureGroup')->search(
+
+		);
+	}
+
+	$guard->commit;
+
+
+	# Check if group name is unique
+	my $group = {
+		name => $group_name,
+		username => $username
+	};
+	my $group_result = $self->dbixSchema->resultset('GenomeGroup')->find(
+		$group,
+		{
+			key => 'genome_group_c1'
+		}
+	);
+
+	if($group_result && $group_result->in_storage) {
+		# Found duplicate group
+		return 0;
+	}
+
+	# Perform group creation in single DBIx::Class create call so that it is
+	# executed in single transaction
+
+	# Note: because category_id is a 'belongs_to' relationship, this will
+	# perform a find_or_create call on the group_category entry
+	$group->{category} = {
+		name => $collection_name,
+		username => $username,
+		standard => 0
+	};
+
+	# Genome_group properties
+	$group->{standard} = 0;
+	$group->{standard_value} = undef;
+	$group->{description} = $group_description if $group_description;
+
+	# Genome-group links
+	my ($public_genome_ids, $private_genome_ids) = $warden->featureList;
+	
+	# Public
+	my @feature_group_rows;
+	foreach my $g (@$public_genome_ids) {
+		push @feature_group_rows, { feature_id => $g };
+	}
+	$group->{feature_groups} = \@feature_group_rows if @feature_group_rows;
+
+	# Private
+	my @private_feature_group_rows;
+	foreach my $g (@$private_genome_ids) {
+		push @private_feature_group_rows, { feature_id => $g };
+	}
+	$group->{private_feature_groups} = \@private_feature_group_rows if @private_feature_group_rows;
+
+
+	# Insert into database
+	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->create($group);
+
+	# Success?
+	if($group_row && $group_row->in_storage) {
+		return $group_row->genome_group_id;
+	} else {
+		return 0;
+	}
+}
 
 1;
