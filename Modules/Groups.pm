@@ -264,55 +264,52 @@ sub geophy : Runmode {
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    my $user_groups = $self->_getUserGroups();
+    #my $user_groups = $self->_getUserGroups();
+
+    my $user_groups = $fdg->userGroups();
 
     $template->param(user_groups => $user_groups);
 
     return $template->output();
 }
 
-# Incomplete and on hold for now
-# Group Form Functions
-# sub save : Runmode {
+# TODO : Tag for removal
+# sub _getUserGroups {
+#     # TODO: Update so that private groups are added as well
+
 #     my $self = shift;
-#     my $q = $self->query();
+#     my $username = $self->authen->username;
+    
+#     #print STDERR "Username is: $username\n";
 
-sub _getUserGroups {
-    # TODO: Update so that private groups are added as well
-
-    my $self = shift;
-    my $username = $self->authen->username;
+#     #return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
     
-    #print STDERR "Username is: $username\n";
-
-    #return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
+#     my $user_group_rs = $self->dbixSchema->resultset('GroupCategory')->search(
+#         {'me.username' => $username},
+#         {
+#             select => ['me.group_category_id', 'me.name', 'genome_groups.genome_group_id', 'genome_groups.name', 'feature_groups.feature_id'],
+#             as => ['group_category_id', 'group_category_name', 'genome_group_id', 'genome_group_name', 'feature_id'],
+#             join => [{'genome_groups' => {'feature_groups'}}]
+#         }
+#         );
     
-    my $user_group_rs = $self->dbixSchema->resultset('GroupCategory')->search(
-        {'me.username' => $username},
-        {
-            select => ['me.group_category_id', 'me.name', 'genome_groups.genome_group_id', 'genome_groups.name', 'feature_groups.feature_id'],
-            as => ['group_category_id', 'group_category_name', 'genome_group_id', 'genome_group_name', 'feature_id'],
-            join => [{'genome_groups' => {'feature_groups'}}]
-        }
-        );
+#     #return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $user_group_rs;
     
-    #return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $user_group_rs;
-    
-    my %user_groups;
-    while (my $user_group_row = $user_group_rs->next) {
-        my $group_category_id = $user_group_row->get_column('group_category_id');
-        my $genome_group_id = $user_group_row->get_column('genome_group_id');
+#     my %user_groups;
+#     while (my $user_group_row = $user_group_rs->next) {
+#         my $group_category_id = $user_group_row->get_column('group_category_id');
+#         my $genome_group_id = $user_group_row->get_column('genome_group_id');
         
-        $user_groups{$group_category_id} = {} unless exists $user_groups{$group_category_id};
-        $user_groups{$group_category_id}{'name'} = $user_group_row->get_column('group_category_name');
-        $user_groups{$group_category_id}{'genome_groups'} = {} unless exists $user_groups{$group_category_id}{'genome_groups'};
-        $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id} = {} unless defined $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id};
-        $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'genome_group_name'} = $user_group_row->get_column('genome_group_name');
-        $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'} = [] unless defined $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'};
-        push(@{$user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'}}, 'public_' . $user_group_row->get_column('feature_id'));
-    }
+#         $user_groups{$group_category_id} = {} unless exists $user_groups{$group_category_id};
+#         $user_groups{$group_category_id}{'name'} = $user_group_row->get_column('group_category_name');
+#         $user_groups{$group_category_id}{'genome_groups'} = {} unless exists $user_groups{$group_category_id}{'genome_groups'};
+#         $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id} = {} unless defined $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id};
+#         $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'genome_group_name'} = $user_group_row->get_column('genome_group_name');
+#         $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'} = [] unless defined $user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'};
+#         push(@{$user_groups{$group_category_id}{'genome_groups'}{$genome_group_id}{'group_feature_ids'}}, 'public_' . $user_group_row->get_column('feature_id'));
+#     }
 
-    return encode_json(\%user_groups);
-}
+#     return encode_json(\%user_groups);
+# }
 
 1;

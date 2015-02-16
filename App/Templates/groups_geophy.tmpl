@@ -48,7 +48,7 @@ var private_genomes = <TMPL_VAR  private_genomes>;
 var tree = <TMPL_VAR tree_json>;
 var user_groups = <TMPL_VAR user_groups>;
 
-//var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
+var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
 
 //TODO: This is bloated and needs to be changed.
 var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'));

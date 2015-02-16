@@ -39,15 +39,76 @@ class UserGroups
 		if uGpObj.status
 			return @parentElem.append('<div class="alert alert-info" role="alert">'+uGpObj.status+'</div>')
 		else
-			@group_collections_select = jQuery('<select id="select-group-collections" class="form-control" placeholder="--Select from group collections--"></select>').appendTo(@parentElem)
-			@group_collections_group_select = jQuery('<select id="select-group-collections-groups" class="form-control" placeholder="--Select from groups--"></select>').appendTo(@parentElem)
-			editSpan = jQuery('<span>You can edit your existing groups <a href="/groups/shiny"> here</a>.</span>').appendTo(@parentElem)
-			true
+			#@group_collections_select = jQuery('<select id="select-group-collections" class="form-control" placeholder="--Select from group collections--"></select>').appendTo(@parentElem)
+			#@group_collections_group_select = jQuery('<select id="select-group-collections-groups" class="form-control" placeholder="--Select from groups--"></select>').appendTo(@parentElem)
+			#editSpan = jQuery('<span>You can edit your existing groups <a href="/groups/shiny"> here</a>.</span>').appendTo(@parentElem)
+			
+			# Header
+		    header = jQuery(
+		      '<div class="panel-heading">'+
+		      '<div class="panel-title">'+
+		      '<a data-toggle="collapse" href="#user-groups-form"><i class="fa fa-filter"></i> User Groups '+
+		      '<span class="caret"></span></a>'+
+		      '</div></div>').appendTo(@parentElem)
+
+			container = jQuery('<div id="user-groups-form" class="panel-collapse collapse in"></div>')
+			user_groups_form = jQuery('<form class="form"></form>').appendTo(container)
+
+			create_group = jQuery('<div class="form-group"></div>').appendTo(user_groups_form)
+			create_group_row = jQuery('<div class="row"></div>').appendTo(create_group)
+			create_group_button = jQuery('<div class="col-xs-5"><button class="btn btn-default btn-sm">Create Group</button></div>').appendTo(create_group_row)
+			create_group_input = jQuery('<div class="col-xs-7"><input class="form-control input-sm" type="text" placeholder="Group Name"></div>').appendTo(create_group_row)
+
+			group_select = jQuery('<div class="control-group"></div>').appendTo(user_groups_form)
+			select = jQuery("<select multiple id='user_group_collections' class='form-control' placeholder='Select group(s)...'></select>").appendTo(group_select)
+			
+			load_save_groups = jQuery('<div class="form-group"></div>').appendTo(user_groups_form)
+			load_save_groups_row = jQuery('<div class="row"></div>').appendTo(load_save_groups)
+			load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Load</button></div>').appendTo(load_save_groups_row)
+			save_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Save</button></div>').appendTo(load_save_groups_row)
+
+			container.appendTo(@parentElem)
+
+		true
 
 	processUserGroups: (uGpObj) ->
-		return if uGpObj.status
+		#return if uGpObj.status
 
-		group_collections_select_options = []
+		user_groups_select_optgroups = []
+		user_groups_select_options = []
+		for group_collection, group_collection_index of uGpObj.standard
+			user_groups_select_optgroups.push({value: group_collection_index.name, label: group_collection_index.name, count: group_collection_index.children.length})
+			user_groups_select_options.push({class: group_collection_index.name, value: group.name, name: group.name, id: group.id}) for group in group_collection_index.children
+			
+		#console.log(user_groups_select_optgroups)
+		console.log(user_groups_select_options)
+
+		$selectized_group_select = $('#user_group_collections').selectize({
+			delimiter: ',',
+			persist: false,
+			options: user_groups_select_options,
+			optgroups: user_groups_select_optgroups,
+			optgroupField: 'class',
+			labelField: 'name',
+			searchField: ['name'],
+			render: {
+				optgroup_header: (data, escape) =>
+					return "<div class='optgroup-header'>#{data.label} - <span>#{data.count}</span></div> "
+				option: (data, escape) =>
+					#console.log data
+					return "<div>#{data.value}</div>"
+				item: (data, escape) =>
+					#console.log data
+					return "<div>#{data.value}</div>"
+			},
+			create:	true
+			})
+
+		true
+
+		#console.log($selectized_group_select)
+
+		###		group_collections_select_options = []
 		for collection_name, collection_array of uGpObj when collection_name isnt 'genome_id'
 			group_collections_select_options.push({value: "#{collection_name}", name: "#{collection_name}"})
 			@user_group_collections.group_collections[collection_name] = {}
@@ -94,7 +155,7 @@ class UserGroups
 
 		@select_group.disable();
 
-		true
+		true###
 
 	_updateSelections: (group_name) =>
 		collection_name = @select_group_collection.getValue()
