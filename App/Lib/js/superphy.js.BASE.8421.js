@@ -3001,15 +3001,6 @@
 
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
-    colours = {
-      'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
-      'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
-      'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
-      'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
-      'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
-      'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
-    };
-
     TreeView.prototype.addMetaOntology = function(node) {
       var k, metaOntology, t, _i, _len;
       metaOntology = {};
@@ -3035,15 +3026,6 @@
       if (sourceNode == null) {
         sourceNode = null;
       }
-      $('input[name="meta-option"]').each(function(i, obj) {
-        checkbox_value[i] = 0;
-        if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
-          checkbox_value[i] = 1;
-        }
-        return visible_bars = checkbox_value.reduce(function(a, b) {
-          return a + b;
-        });
-      });
       t1 = new Date();
       oldRoot = this.root;
       this._sync(genomes);
@@ -3078,15 +3060,10 @@
         }
         if (visible_bars > 1) {
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
+          console.log(n.x);
         }
         n.arr = [];
-        n.to_be_hl = new String();
         n.xpos = 0;
-        n.tt_mtype = {};
-        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
-          m = mtypesDisplayed[_j];
-          n.tt_mtype[m] = [];
-        }
       }
       if (this.expansionContraction) {
         yedge = this.width - 30;
@@ -3223,62 +3200,39 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -3).attr("x", 4);
-      jQuery(document).ready(function() {
-        return jQuery('input[name="meta-option"]').each(function(obj) {
-          jQuery('#' + this.name + '_' + this.value).hide();
-          if (this.checked) {
-            return jQuery('#' + this.name + '_' + this.value).show();
+      }).attr("height", 7).attr("y", -2).attr("x", 4).append("svg:title").text(function(n) {
+        return n.num_leaves + " genomes";
+      });
+      colours = {
+        'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
+        'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
+        'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
+        'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
+        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+        'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
+      };
+      $('.meta-option.checkbox').each(function(i, obj) {
+        return $(obj).click(function() {
+          if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
+            checkbox_value[i] = 1;
+          } else {
+            checkbox_value[i] = 0;
           }
+          return visible_bars = checkbox_value.reduce(function(a, b) {
+            return a + b;
+          });
         });
       });
-      tt_mtitle = {};
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
-        tt_mtitle[m] = new String();
-        if (genomes.visibleMeta[m]) {
-          i = 0;
-          while (i < metaOntology[m].length) {
-            rect_block.text(function(n) {
-              var tt_mtype;
-              if (m === "isolation_host" || m === "isolation_source") {
-                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
-                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
-                tt_mtitle[m] = tt_mtitle[m].slice(0, 10) + tt_mtitle[m].charAt(10).toUpperCase() + tt_mtitle[m].slice(11);
-              }
-              if (m === "syndrome") {
-                tt_mtitle[m] = "Symptoms/Diseases";
-              }
-              if (m === "stx1_subtype" || m === "stx2_subtype") {
-                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
-                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
-                tt_mtitle[m] = tt_mtitle[m].slice(0, 5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6);
-              }
-              if (m === "serotype") {
-                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
-              }
-              tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
-              if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
-                if (i === 6) {
-                  n.tt_mtype[m] += "<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr><tbody class='after-other'><tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
-                } else {
-                  n.tt_mtype[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
-                }
-              }
-              return n.tt_mtype[m];
-            });
-            i++;
-          }
-        }
-      }
       y = -5;
       centred = -1.5;
-      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
-        m = mtypesDisplayed[_m];
+      height = 7;
+      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
+        m = mtypesDisplayed[_k];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
-          y += 7;
+          x = 0;
+          y += height;
           centred += -3.5;
           while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
@@ -3300,72 +3254,46 @@
                 n.arr[i] = 0;
               }
               return width;
-            }).attr("height", 7).attr("y", y).attr("x", function(n) {
+            }).attr("height", height).attr("y", y).attr("x", function(n) {
               if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
                 n.xpos += n.arr[i - 1];
               } else {
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).attr("data-toggle", "popover").attr("data-content", function(n) {
-              var length, pos, tt_data;
-              if (metaOntology[m][i] != null) {
-                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
+            }).append("svg:title").text(function() {
+              var str, str2;
+              if (m === "isolation_host" || m === "isolation_source") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+                str = str.replace("_", " ");
+                str = str.slice(0, 10) + str.charAt(10).toUpperCase() + str.slice(11);
               }
-              if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
-                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]))).length;
-                if (i < 6) {
-                  n.to_be_hl = n.tt_mtype[m].slice(length + pos);
-                  console.log(pos);
-                }
+              if (m === "syndrome") {
+                str = "Symptoms/Diseases";
               }
-              tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+              if (m === "stx1_subtype" || m === "stx2_subtype") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+                str = str.replace("_", " ");
+                str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
+              }
+              if (m === "serotype") {
+                str = m.charAt(0).toUpperCase() + m.slice(1);
+              }
               if (i === 6) {
-                if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
-                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+                return str + ": Other";
+              } else {
+                if (metaOntology[m][i] === "undefined") {
+                  str2 = "Undefined";
                 } else {
-                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tbody class='table-body-bold' style='color:" + colours[m][4] + "'>" + n.to_be_hl;
+                  str2 = metaOntology[m][i];
                 }
+                return str + ": " + str2;
               }
-              return "<table class='popover-table'><tr><th style='width:160px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
             });
             i++;
           }
         }
       }
-      (function($) {
-        var oldHide;
-        oldHide = $.fn.popover.Constructor.prototype.hide;
-        $.fn.popover.Constructor.prototype.hide = function() {
-          var that;
-          if (this.options.trigger === 'hover' && this.tip().is(':hover')) {
-            that = this;
-            setTimeout((function() {
-              return that.hide.call(that, arguments);
-            }), that.options.delay.hide);
-            return;
-          }
-          oldHide.call(this, arguments);
-        };
-      })(jQuery);
-      rect_block.selectAll('.metaMeter').each(function() {
-        return $(this).popover({
-          placement: 'bottom',
-          html: 'true',
-          trigger: 'hover',
-          delay: {
-            show: 500,
-            hide: 1000
-          },
-          animate: 'false',
-          container: 'body'
-        });
-      });
-      $('body').on('click', function(e) {
-        if ($(e.target).data('toggle') !== 'popover' && $(e.target).parents('.popover.in').length === 0) {
-          return $('[data-toggle="popover"]').popover('hide');
-        }
-      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
@@ -3383,8 +3311,24 @@
         }
         svgNodes.selectAll('.v0').remove();
       }
-      for (_n = 0, _len5 = mtypesDisplayed.length; _n < _len5; _n++) {
-        m = mtypesDisplayed[_n];
+      this.cluster = this.cluster.separation(function(a, b) {
+        var a_height, b_height;
+        a_height = 1;
+        b_height = 1;
+        if ((a._children != null) && visible_bars > 1) {
+          a_height = visible_bars;
+        } else {
+          a_height = 3;
+        }
+        if ((b._children != null) && visible_bars > 1) {
+          b_height = visible_bars;
+        } else {
+          b_height = 3;
+        }
+        return a_height + b_height;
+      });
+      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
+        m = mtypesDisplayed[_l];
         if (genomes.visibleMeta[m]) {
           rect_block.select('.genomeMeter').remove();
         }
