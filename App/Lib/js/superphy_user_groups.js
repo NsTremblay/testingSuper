@@ -3,10 +3,10 @@
 /*
 
 
- File: superphy_user_groups.coffee
- Desc: Objects & functions for managing user created groups in Superphy
- Author: Akiff Manji akiff.manji@gmail.com
- Date: Sept 8th, 2014
+File: superphy_user_groups.coffee
+Desc: Objects & functions for managing user created groups in Superphy
+Author: Akiff Manji akiff.manji@gmail.com
+Date: Sept 8th, 2014
  */
 
 (function() {
@@ -20,9 +20,9 @@
 
 
   /*
-   CLASS SuperphyError
-   
-   Error object for this library
+  CLASS SuperphyError
+  
+  Error object for this library
    */
 
   SuperphyError = (function(_super) {
@@ -38,11 +38,15 @@
   })(Error);
 
   UserGroups = (function() {
-    function UserGroups(_at_userGroupsObj, _at_parentElem, _at_viewController) {
+    function UserGroups(_at_userGroupsObj, _at_parentElem, _at_viewController, _at_public_genomes, _at_private_genomes) {
       this.userGroupsObj = _at_userGroupsObj;
       this.parentElem = _at_parentElem;
       this.viewController = _at_viewController;
+      this.public_genomes = _at_public_genomes;
+      this.private_genomes = _at_private_genomes;
       this._updateSelections = __bind(this._updateSelections, this);
+      this._getGroupGenomes = __bind(this._getGroupGenomes, this);
+      this.appendGroupForm = __bind(this.appendGroupForm, this);
       if (!this.userGroupsObj) {
         throw new SuperphyError('User groups object cannot be empty/null.');
       }
@@ -56,34 +60,37 @@
         group_collections: {}
       };
       this.appendGroupForm(this.userGroupsObj);
-      this.processUserGroups(this.userGroupsObj);
     }
 
     UserGroups.prototype.appendGroupForm = function(uGpObj) {
       var container, create_group, create_group_button, create_group_input, create_group_row, group_select, header, load_groups_button, load_save_groups, load_save_groups_row, save_groups_button, select, user_groups_form;
-      if (uGpObj.status) {
-        return this.parentElem.append('<div class="alert alert-info" role="alert">' + uGpObj.status + '</div>');
-      } else {
-        header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#user-groups-form"><i class="fa fa-filter"></i> User Groups ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(this.parentElem);
-      }
-      container = jQuery('<div id="user-groups-form" class="panel-collapse collapse in"></div>');
+      header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#user-groups-form"> User Groups ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(this.parentElem);
+      container = jQuery('<div id="user-groups-form" class="panel-collapse collapse in"></div>').appendTo(this.parentElem);
       user_groups_form = jQuery('<form class="form"></form>').appendTo(container);
       create_group = jQuery('<div class="form-group"></div>').appendTo(user_groups_form);
       create_group_row = jQuery('<div class="row"></div>').appendTo(create_group);
       create_group_button = jQuery('<div class="col-xs-5"><button class="btn btn-default btn-sm">Create Group</button></div>').appendTo(create_group_row);
       create_group_input = jQuery('<div class="col-xs-7"><input class="form-control input-sm" type="text" placeholder="Group Name"></div>').appendTo(create_group_row);
       group_select = jQuery('<div class="control-group"></div>').appendTo(user_groups_form);
-      select = jQuery("<select multiple id='user_group_collections' class='form-control' placeholder='Select group(s)...'></select>").appendTo(group_select);
+      select = jQuery("<select id='user_group_collections' class='form-control' placeholder='Select group(s)...'></select>").appendTo(group_select);
+      this.selectizeControl = this._processUserGroups(uGpObj);
       load_save_groups = jQuery('<div class="form-group"></div>').appendTo(user_groups_form);
       load_save_groups_row = jQuery('<div class="row"></div>').appendTo(load_save_groups);
-      load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Load</button></div>').appendTo(load_save_groups_row);
+      load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm" type="button">Load</button></div>');
+      load_groups_button.click((function(_this) {
+        return function(e) {
+          var select_ids;
+          e.preventDefault();
+          select_ids = _this._getGroupGenomes(select.find('option').val(), _this.public_genomes, _this.private_genomes);
+          return _this._updateSelections(select_ids);
+        };
+      })(this)).appendTo(load_save_groups_row);
       save_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Save</button></div>').appendTo(load_save_groups_row);
-      container.appendTo(this.parentElem);
       return true;
     };
 
-    UserGroups.prototype.processUserGroups = function(uGpObj) {
-      var $selectized_group_select, group, group_collection, group_collection_index, user_groups_select_optgroups, user_groups_select_options, _i, _len, _ref, _ref1;
+    UserGroups.prototype._processUserGroups = function(uGpObj) {
+      var $selectized_group_select, group, group_collection, group_collection_index, selectizeControl, user_groups_select_optgroups, user_groups_select_options, _i, _len, _ref, _ref1;
       user_groups_select_optgroups = [];
       user_groups_select_options = [];
       _ref = uGpObj.standard;
@@ -99,14 +106,12 @@
           group = _ref1[_i];
           user_groups_select_options.push({
             "class": group_collection_index.name,
-            value: group.name,
-            name: group.name,
-            id: group.id
+            value: group.id,
+            name: group.name
           });
         }
       }
-      console.log(user_groups_select_options);
-      return $selectized_group_select = $('#user_group_collections').selectize({
+      $selectized_group_select = $('#user_group_collections').selectize({
         delimiter: ',',
         persist: false,
         options: user_groups_select_options,
@@ -122,72 +127,55 @@
           })(this),
           option: (function(_this) {
             return function(data, escape) {
-              return "<div>" + data.value + "</div>";
+              return "<div data-collection_name='" + data["class"] + "' data-group_name='" + data.name + "'>" + data.name + "</div>";
             };
           })(this),
           item: (function(_this) {
             return function(data, escape) {
-              return "<div>" + data.value + "</div>";
+              return "<div>" + data.name + "</div>";
             };
           })(this)
         },
         create: true
       });
-
-      /*		group_collections_select_options = []
-      		for collection_name, collection_array of uGpObj when collection_name isnt 'genome_id'
-      			group_collections_select_options.push({value: "#{collection_name}", name: "#{collection_name}"})
-      			@user_group_collections.group_collections[collection_name] = {}
-      			@user_group_collections.group_collections[collection_name]['Ungrouped'] = []
-      			for group_name, index in collection_array
-      				@user_group_collections.group_collections[collection_name][group_name] = [] unless @user_group_collections.group_collections[collection_name][group_name] or group_name is null
-      				@user_group_collections.group_collections[collection_name][group_name].push(uGpObj.genome_id[index]) unless group_name is null
-      				@user_group_collections.group_collections[collection_name]['Ungrouped'].push(uGpObj.genome_id[index]) if group_name is null
-      			delete @user_group_collections.group_collections[collection_name]['Ungrouped'] unless @user_group_collections.group_collections[collection_name]['Ungrouped'].length
-      		
-      		$select_group_collection = @group_collections_select.selectize({
-      				onChange: (value) =>
-      					@select_group.disable()
-      					@select_group.clearOptions()
-      					return if not value.length
-      					true
-      					@select_group.load( (callback) =>
-      						@select_group.enable()
-      						groups_results = []
-      						groups_results.push({name: k, value: k}) for k, v of @user_group_collections.group_collections[value]
-      						callback(groups_results);
-      						)
-      				searchField: ['name']
-      				options: group_collections_select_options
-      				render: {
-            			option: (data, escape) =>
-              				return "<div class='option'>#{data.name}</div>"
-            			item: (data, escape) =>
-              				return "<div class='item'>#{data.name}</div>"
-          			}
-      			})
-      
-      
-      		$select_group = @group_collections_group_select.selectize({
-      			onChange: (value) =>
-      				return @_updateSelections(value)
-      			valueField: 'value'
-      			labelField: 'name'
-      			searchField: ['name']
-      			})
-      
-      		@select_group_collection = $select_group_collection[0].selectize
-      		@select_group = $select_group[0].selectize
-      
-      		@select_group.disable();
-      
-      		true
-       */
+      return selectizeControl = $selectized_group_select[0].selectize;
     };
 
-    UserGroups.prototype._updateSelections = function(group_name) {
-      var collection_name, genome_id, group_genomes, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1;
-      collection_name = this.select_group_collection.getValue();
+    UserGroups.prototype._getGroupGenomes = function(group_id, public_genomes, private_genomes) {
+      var collection_name, genome_id, genome_obj, group_name, option, select_private_ids, select_public_ids;
+      option = this.selectizeControl.getOption(group_id)[0];
+      collection_name = $(option).data("collection_name");
+      group_name = $(option).data("group_name");
+      select_public_ids = (function() {
+        var _ref, _results;
+        _results = [];
+        for (genome_id in public_genomes) {
+          genome_obj = public_genomes[genome_id];
+          if (_ref = parseInt(group_id), __indexOf.call(genome_obj.groups, _ref) >= 0) {
+            _results.push(genome_id);
+          }
+        }
+        return _results;
+      })();
+      select_private_ids = (function() {
+        var _ref, _results;
+        _results = [];
+        for (genome_id in private_genomes) {
+          genome_obj = private_genomes[genome_id];
+          if (_ref = parseInt(group_id), __indexOf.call(genome_obj.groups, _ref) >= 0) {
+            _results.push(genome_id);
+          }
+        }
+        return _results;
+      })();
+      return {
+        'select_public_ids': select_public_ids,
+        'select_private_ids': select_private_ids
+      };
+    };
+
+    UserGroups.prototype._updateSelections = function(select_ids) {
+      var genome_id, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
       _ref = Object.keys(viewController.genomeController.public_genomes);
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         genome_id = _ref[_i];
@@ -198,18 +186,19 @@
         genome_id = _ref1[_j];
         this.viewController.select(genome_id, false);
       }
-      if (group_name === "") {
+      if (!select_ids.select_public_ids.length && !select_ids.select_private_ids.length) {
 
       } else {
-        group_genomes = this.user_group_collections.group_collections[collection_name][group_name];
-        for (_k = 0, _len2 = group_genomes.length; _k < _len2; _k++) {
-          genome_id = group_genomes[_k];
+        _ref2 = select_ids.select_public_ids;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          genome_id = _ref2[_k];
           if (__indexOf.call(viewController.genomeController.pubVisible, genome_id) >= 0) {
             this.viewController.select(genome_id, true);
           }
         }
-        for (_l = 0, _len3 = group_genomes.length; _l < _len3; _l++) {
-          genome_id = group_genomes[_l];
+        _ref3 = select_ids.select_private_ids;
+        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+          genome_id = _ref3[_l];
           if (__indexOf.call(viewController.genomeController.pvtVisible, genome_id) >= 0) {
             this.viewController.select(genome_id, true);
           }
