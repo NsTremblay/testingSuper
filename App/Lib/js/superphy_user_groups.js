@@ -38,14 +38,16 @@ Date: Sept 8th, 2014
   })(Error);
 
   UserGroups = (function() {
-    function UserGroups(_at_userGroupsObj, _at_parentElem, _at_viewController, _at_public_genomes, _at_private_genomes) {
+    function UserGroups(_at_userGroupsObj, _at_username, _at_parentElem, _at_viewController, _at_public_genomes, _at_private_genomes) {
       this.userGroupsObj = _at_userGroupsObj;
+      this.username = _at_username;
       this.parentElem = _at_parentElem;
       this.viewController = _at_viewController;
       this.public_genomes = _at_public_genomes;
       this.private_genomes = _at_private_genomes;
       this._updateSelections = __bind(this._updateSelections, this);
       this._getGroupGenomes = __bind(this._getGroupGenomes, this);
+      this._processGroups = __bind(this._processGroups, this);
       this.appendGroupForm = __bind(this.appendGroupForm, this);
       if (!this.userGroupsObj) {
         throw new SuperphyError('User groups object cannot be empty/null.');
@@ -63,7 +65,7 @@ Date: Sept 8th, 2014
     }
 
     UserGroups.prototype.appendGroupForm = function(uGpObj) {
-      var container, create_group, create_group_button, create_group_input, create_group_row, group_select, header, load_groups_button, load_save_groups, load_save_groups_row, save_groups_button, select, user_groups_form;
+      var container, create_group, create_group_button, create_group_input, create_group_row, custom_select, group_select, header, load_groups_button, load_save_groups, load_save_groups_row, save_groups_button, standard_select, user_groups_form;
       header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#user-groups-form"> User Groups ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(this.parentElem);
       container = jQuery('<div id="user-groups-form" class="panel-collapse collapse in"></div>').appendTo(this.parentElem);
       user_groups_form = jQuery('<form class="form"></form>').appendTo(container);
@@ -72,8 +74,14 @@ Date: Sept 8th, 2014
       create_group_button = jQuery('<div class="col-xs-5"><button class="btn btn-default btn-sm">Create Group</button></div>').appendTo(create_group_row);
       create_group_input = jQuery('<div class="col-xs-7"><input class="form-control input-sm" type="text" placeholder="Group Name"></div>').appendTo(create_group_row);
       group_select = jQuery('<div class="control-group"></div>').appendTo(user_groups_form);
-      select = jQuery("<select id='user_group_collections' class='form-control' placeholder='Select group(s)...'></select>").appendTo(group_select);
-      this.selectizeControl = this._processUserGroups(uGpObj);
+      standard_select = jQuery('<select id="standard_group_collections" class="form-control" placeholder="Select group(s)..."></select>').appendTo(group_select);
+      if (this.username === "") {
+        custom_select = jQuery('<div class="alert alert-info" role="alert">Please <a href="/user/login">sign in</a> to view your custom groups</div>');
+      } else if (!uGpObj.custom.length) {
+        custom_select = jQuery('<select id="custom_group_collections" class="form-control" placeholder="Select custom group(s)..."></select>');
+      }
+      custom_select.appendTo(group_select);
+      this._processGroups(uGpObj);
       load_save_groups = jQuery('<div class="form-group"></div>').appendTo(user_groups_form);
       load_save_groups_row = jQuery('<div class="row"></div>').appendTo(load_save_groups);
       load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm" type="button">Load</button></div>');
@@ -81,7 +89,7 @@ Date: Sept 8th, 2014
         return function(e) {
           var select_ids;
           e.preventDefault();
-          select_ids = _this._getGroupGenomes(select.find('option').val(), _this.public_genomes, _this.private_genomes);
+          select_ids = _this._getGroupGenomes(standard_select.find('option').val(), _this.public_genomes, _this.private_genomes);
           return _this._updateSelections(select_ids);
         };
       })(this)).appendTo(load_save_groups_row);
@@ -89,14 +97,14 @@ Date: Sept 8th, 2014
       return true;
     };
 
-    UserGroups.prototype._processUserGroups = function(uGpObj) {
-      var $selectized_group_select, group, group_collection, group_collection_index, selectizeControl, user_groups_select_optgroups, user_groups_select_options, _i, _len, _ref, _ref1;
-      user_groups_select_optgroups = [];
-      user_groups_select_options = [];
+    UserGroups.prototype._processGroups = function(uGpObj) {
+      var $selectized_custom_group_select, $selectized_standard_group_select, custom_groups_select_optgroups, custom_groups_select_options, group, group_collection, group_collection_index, standard_groups_select_optgroups, standard_groups_select_options, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+      standard_groups_select_optgroups = [];
+      standard_groups_select_options = [];
       _ref = uGpObj.standard;
       for (group_collection in _ref) {
         group_collection_index = _ref[group_collection];
-        user_groups_select_optgroups.push({
+        standard_groups_select_optgroups.push({
           value: group_collection_index.name,
           label: group_collection_index.name,
           count: group_collection_index.children.length
@@ -104,18 +112,18 @@ Date: Sept 8th, 2014
         _ref1 = group_collection_index.children;
         for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
           group = _ref1[_i];
-          user_groups_select_options.push({
+          standard_groups_select_options.push({
             "class": group_collection_index.name,
             value: group.id,
             name: group.name
           });
         }
       }
-      $selectized_group_select = $('#user_group_collections').selectize({
+      $selectized_standard_group_select = $('#standard_group_collections').selectize({
         delimiter: ',',
         persist: false,
-        options: user_groups_select_options,
-        optgroups: user_groups_select_optgroups,
+        options: standard_groups_select_options,
+        optgroups: standard_groups_select_optgroups,
         optgroupField: 'class',
         labelField: 'name',
         searchField: ['name'],
@@ -138,12 +146,63 @@ Date: Sept 8th, 2014
         },
         create: true
       });
-      return selectizeControl = $selectized_group_select[0].selectize;
+      this.standardSelectizeControl = $selectized_standard_group_select[0].selectize;
+      if (this.username === "") {
+        return;
+      }
+      custom_groups_select_optgroups = [];
+      custom_groups_select_options = [];
+      _ref2 = uGpObj.custom;
+      for (group_collection in _ref2) {
+        group_collection_index = _ref2[group_collection];
+        custom_groups_select_optgroups.push({
+          value: group_collection_index.name,
+          label: group_collection_index.name,
+          count: group_collection_index.children.length
+        });
+        _ref3 = group_collection_index.children;
+        for (_j = 0, _len1 = _ref3.length; _j < _len1; _j++) {
+          group = _ref3[_j];
+          custom_groups_select_options.push({
+            "class": group_collection_index.name,
+            value: group.id,
+            name: group.name
+          });
+        }
+      }
+      $selectized_custom_group_select = $('#custom_group_collections').selectize({
+        delimiter: ',',
+        persist: false,
+        options: custom_groups_select_options,
+        optgroups: custom_groups_select_optgroups,
+        optgroupField: 'class',
+        labelField: 'name',
+        searchField: ['name'],
+        render: {
+          optgroup_header: (function(_this) {
+            return function(data, escape) {
+              return "<div class='optgroup-header'>" + data.label + " - <span>" + data.count + "</span></div> ";
+            };
+          })(this),
+          option: (function(_this) {
+            return function(data, escape) {
+              return "<div data-collection_name='" + data["class"] + "' data-group_name='" + data.name + "'>" + data.name + "</div>";
+            };
+          })(this),
+          item: (function(_this) {
+            return function(data, escape) {
+              return "<div>" + data.name + "</div>";
+            };
+          })(this)
+        },
+        create: true
+      });
+      return this.customSelectizeControl = $selectized_custom_group_select[0].selectize;
     };
 
     UserGroups.prototype._getGroupGenomes = function(group_id, public_genomes, private_genomes) {
       var collection_name, genome_id, genome_obj, group_name, option, select_private_ids, select_public_ids;
-      option = this.selectizeControl.getOption(group_id)[0];
+      option = this.standardSelectizeControl.getOption(group_id)[0];
       collection_name = $(option).data("collection_name");
       group_name = $(option).data("group_name");
       select_public_ids = (function() {

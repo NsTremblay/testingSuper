@@ -195,7 +195,6 @@ sub poll : Runmode {
 
 sub geophy : Runmode {
     # TODO: Need to query for strains and return only the subset
-    # TODO: Clean this shit up
     my $self = shift;
 
     #my $q = $self->query();
@@ -257,18 +256,14 @@ sub geophy : Runmode {
             $template->param(tree_json => $tree_string);
         }
 
-    # Groups Manager, only active if user logged in
-    #$template->param(groups_manager => 0) unless $username;
-    #$template->param(groups_manager => 1) if $username;
-
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    #my $user_groups = $self->_getUserGroups();
-
     my $user_groups = $fdg->userGroups();
 
+    $template->param(username => $username);
     $template->param(user_groups => $user_groups);
+
 
     return $template->output();
 }
