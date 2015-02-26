@@ -135,7 +135,9 @@ my %sequences = (
     db                           => "db_db_id_seq",
     dbxref                       => "dbxref_dbxref_id_seq",
     feature_dbxref               => "feature_dbxref_feature_dbxref_id_seq",
-    permission                   => "permission_permission_id_seq"
+    permission                   => "permission_permission_id_seq",
+    feature_group                => "feature_group_id_seq",
+    private_feature_group        => "private_feature_group_id_seq",
 );
 
 # Primary key ID names
@@ -167,7 +169,9 @@ my %table_ids = (
 	dbxref                       => "dbxref_id",
 	feature_dbxref               => "feature_dbxref_id",
 	upload                       => "upload_id",
-	permission                   => "permission_id"
+	permission                   => "permission_id",
+	feature_group                => "feature_group_id",
+    private_feature_group        => "feature_group_id",
 );
 
 # Valid cvterm types for featureprops table
@@ -369,6 +373,9 @@ sub new {
 
 	$self->{supertree} = 0;
 	$self->{supertree} = 1 if $arg{use_supertree};
+
+	$self->{assign_groups} = 0;
+	$self->{assign_groups} = 1 if $arg{assign_to_groups};
 	
 	$self->initialize_sequences();
 	$self->initialize_ontology();
@@ -376,6 +383,7 @@ sub new {
 	$self->initialize_db_caches('vfamr') if $ft eq 'vfamr' || $ft eq 'party_mix';
 	$self->initialize_db_caches('genome') if $ft eq 'genome' || $ft eq 'party_mix';
 	$self->initialize_snp_caches() if $self->{snp_aware};
+	$self->initialize_group_caches() if $self->{assign_groups};
 	$self->prepare_queries();
 	
 	return $self;
@@ -1001,23 +1009,21 @@ sub initialize_group_caches {
 
 	# Split into logical parts
 	my %fp_assignments = ( 
-		'serotype' => $assignments{'serotype'}
-		'isolation_host' = $assignments{'isolation_host'}, 
-		'syndrome' => $assignments{'syndrome'},
-		'isolation_source' => $assignments{'isolation_source'}
+		'serotype' => $assignments->{'serotype'},
+		'isolation_host' => $assignments->{'isolation_host'}, 
+		'syndrome' => $assignments->{'syndrome'},
+		'isolation_source' => $assignments->{'isolation_source'}
 	);
 
 	my %st_assignments = (
-		'stx1_subtype' => $assignments{'stx1_subtype'}, 
-		'stx2_subtype' => $assignments{'stx2_subtype'}
+		'stx1_subtype' => $assignments->{'stx1_subtype'}, 
+		'stx2_subtype' => $assignments->{'stx2_subtype'}
 	);
 
 
 	$self->{groups}{featureprop_group_assignments} = \%fp_assignments;
 	$self->{groups}{subtype_group_assignments} = \%st_assignments;
 
-
-	$self->{assign_groups} = 1;
 }
 
 #################
@@ -3950,6 +3956,47 @@ sub handle_genome_properties {
         	$rank++;
       	}
     }
+
+    # Assign standard groups based on meta-data values
+    $table = $pub ? 'feature_group' : 'private_feature_group';
+    if($self->{assign_groups}) {
+    	 foreach my $meta_type (keys %{$self->{groups}{featureprop_group_assignments}}) {
+    	 	if(defined $fprops->{$meta_type}) {
+    	 		# Find corresponding standard group ID matching meta-data values
+
+    	 		my $value = $fprops->{$meta_type};
+				my @value_stack;
+				
+				if(ref $value eq 'ARRAY') {
+					@value_stack = @$value;
+				} else {
+					@value_stack = ($value);
+				}
+
+    	 		foreach my $v (@value_stack) {
+
+    	 			my $group_id = $self->{groups}{featureprop_group_assignments}{$meta_type}{$v};
+					$group_id = $self->{groups}{featureprop_group_assignments}{$meta_type}{"$v\_other"} unless $group_id;
+					croak "Error: no group for value $v in data type $meta_type." unless $group_id;
+
+					$self->print_fgroup($self->nextoid($table),$feature_id,$group_id,$pub);
+					$self->nextoid($table,'++');
+				}
+
+    	 	} 
+    	 	else {
+    	 		# No meta-data value, assign to 'unassigned' group
+    	 		my $default_value = "$meta_type\_na";
+				my $default_group = $self->{groups}{featureprop_group_assignments}{$meta_type}{$default_value};
+				croak "Error: no default 'unassigned' group for data type $meta_type." unless $default_group;
+
+				$self->print_fgroup($self->nextoid($table),$feature_id,$default_group,$pub);
+					$self->nextoid($table,'++');
+
+    	 	}
+    	}
+    }
+   
 }
 
 =head2 handle_dbxref
@@ -4372,7 +4419,7 @@ sub print_fgroup {
 		$fh = $self->file_handles('private_feature_group');
 	}
 	
-	print $fh join("\t", ($nextfeaturegroup,$feature,$group),"\n";
+	print $fh join("\t", $nextfeaturegroup,$feature,$group),"\n";
 }
 
 sub print_sc {
@@ -6786,28 +6833,6 @@ sub typing {
 	my $self = shift;
 	my $work_dir = shift;
 
-	# Hash to record subtypes/na for each genome
-	my $subtype_groups;
-	
-	if($self->{assign_groups}) {
-		# Prepare group data
-
-		# Default, assign all genomes to unassigned group
-		my %default_groups;
-
-		foreach my $type (keys %{$self->{groups}{subtype_group_assignments}}) {
-			my $default_value = "$type\_na";
-			my $default_group = $self->{groups}{subtype_group_assignments}{$type}{$default_value};
-			croak "Error: no default 'unassigned' group for data type $type." unless $default_group;
-
-			$default_groups{$type} = $default_groups;
-		}
-		
-		foreach my $key (keys %{$self->{cache}{snp_genome}}){
-			my $ghash = $self->{cache}{snp_genome}{$key};
-			$subtype_group_assignments->{$ghash->{feature_id}}{$ghash->{feature_id}} = { %default_groups };
-		}
-	}
 	
 	# Prepare aligned concatenated sequences for each typing segment
 	my $typing_sets = $self->construct_typing_sequences();
@@ -6843,6 +6868,9 @@ sub typing {
 	foreach my $typing_ref_seq (keys %$typing_sets) {
 		
 		print "Number of typable subunits for $typing_ref_seq: ". scalar(@{$typing_sets->{$typing_ref_seq}}),"\n";
+
+		# Hash to record subtypes/na for each genome
+		my $subtype_groups;
 		
 		my %waiting_subtype;
 		my %fasta;
@@ -6962,6 +6990,39 @@ sub typing {
 		
 		# store tree in tables
 		$self->handle_phylogeny($tree, $typing_ref_seq, \@sequence_group);
+
+		# Print group assignments for all genomes
+		if($self->{assign_groups}) {
+		
+			# Default, assign genome to unassigned group
+			my $default_value = "$subtype_prop\_na";
+			my $default_group = $self->{groups}{subtype_group_assignments}{$subtype_prop}{$default_value};
+			croak "Error: no default 'unassigned' group for data type $subtype_prop." unless $default_group;
+
+			foreach my $key (keys %{$self->{cache}{snp_genome}}){
+				my $ghash = $self->{cache}{snp_genome}{$key};
+
+				my $feature_id = $ghash->{feature_id};
+				my $is_public = $ghash->{public};
+
+				 my $table = $is_public ? 'feature_group' : 'private_feature_group';
+
+				if(defined $subtype_groups->{$is_public}{$feature_id}{$subtype_prop}) {
+					# Subtype group assigned
+
+					foreach my $g (@{$subtype_groups->{$is_public}{$feature_id}{$subtype_prop}}) {
+						$self->print_fgroup($self->nextoid($table),$feature_id,$g,$is_public);
+						$self->nextoid($table,'++');
+					}
+
+				} else {
+					# No group assigned, use default
+					self->print_fgroup($self->nextoid($table),$feature_id,$default_group,$is_public);
+					$self->nextoid($table,'++');
+
+				}
+			}
+		}
 		
 	}
 }
@@ -7182,7 +7243,9 @@ sub record_subtype_group {
 	$group_id = $self->{groups}{subtype_group_assignments}{$subtype_prop}{"$subtype_prop\_other"} unless $group_id;
 	croak "Error: no group for value $assignment in data type $subtype_prop." unless $group_id;
 
-	$subtype_groups->{$is_public}{$contig_collection_id}{$subtype_prop} = $group_id;
+	$subtype_groups->{$is_public}{$contig_collection_id}{$subtype_prop} = [] unless 
+		defined $subtype_groups->{$is_public}{$contig_collection_id}{$subtype_prop};
+	push @{$subtype_groups->{$is_public}{$contig_collection_id}{$subtype_prop}}, $group_id;
 
 }
 

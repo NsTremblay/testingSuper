@@ -589,7 +589,7 @@ sub _seroHierarchy {
 		my $htype = 0;
 
 		# O antigen
-		if($n =~ m/^(O\w+)$/a) {
+		if($n =~ m/^(O\w+)\:?$/a) {
 			# O type only
 			$otype = $1;
 			$htype = 'H-type undefined';
