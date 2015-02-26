@@ -10,15 +10,19 @@ t::test_ontology.pl
 
 test_ontology.pl --config configfile > feature_file
 
+
 =head1 COMMAND-LINE OPTIONS
 
- --config         Specify a .conf containing DB connection parameters.
+ --config             Specify a .conf containing DB connection parameters.
+
 
 =head1 DESCRIPTION
 
 Retreive ontology from the PostgresDB to use in the test database.
 The features are dumped as an array of hash-refs that can be fed directly into 
-the DBIx::Class::ResultSet populate method
+the DBIx::Class::ResultSet populate method.
+
+The results are printed to STDOUT
 
 =head1 COPYRIGHT
 
@@ -43,16 +47,17 @@ use Data::Dumper;
 my ($CONFIG);
 
 GetOptions(
-    'config=s'      => \$CONFIG,
+    'config=s'         => \$CONFIG,
 ) or ( system( 'pod2text', $0 ), exit -1 );
 
 croak "Missing argument. You must supply a configuration filename.\n" . system ('pod2text', $0) unless $CONFIG;
+
 
 # Connect to DB
 my $bridge = Data::Bridge->new(config => $CONFIG);
 my $schema = $bridge->dbixSchema;
 
-# Grap 10 features
+# Grab All Cv and Cvterms
 my $rs = $schema->resultset('Cv')->search(
 	{
 	},
@@ -64,10 +69,11 @@ my $rs = $schema->resultset('Cv')->search(
 
 my $cvs = [$rs->all];
 
-# foreach my $feature (@$features) {
-# 	print $feature->{uniquename},"\n";
-# }
+# Print to file
 print Dumper($cvs);
+
+
+
 
 
 

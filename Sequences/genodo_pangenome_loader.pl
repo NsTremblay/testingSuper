@@ -640,7 +640,7 @@ sub pangenome_locus {
 	my $name = "loci derived from $query_id";
 	
 	# Add entry in core pangenome alignment table for genome, if it doesn't exist
-	$chado->cache_snp_genome_id($genome_ids->{genome}, $is_public, $collection_info->{name}, 'public');
+	$chado->cache_genome_id($genome_ids->{genome}, $is_public, $collection_info->{name}, 'public');
 	
 	# Feature relationships
 	$chado->handle_parent(subject => $curr_feature_id, genome => $genome_ids->{genome}, contig => $contig_id, public => $is_public);

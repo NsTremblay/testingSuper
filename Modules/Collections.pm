@@ -272,7 +272,9 @@ sub delete : Runmode {
 	}
 }
 
-=head2 update
+=head2 update_category
+
+NOT IMPLEMENTED
 
 Change name of existing group category
 
@@ -287,6 +289,8 @@ in the category.
 =cut
 sub update_category : Runmode {
 	my $self = shift;
+
+	return $self->failed_response("Method not implemented");
 
 	# User needs to be logged in to change categories
 	unless($self->authen->is_authenticated) {

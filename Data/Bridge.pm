@@ -44,6 +44,8 @@ sub new {
 	my $self  = bless {}, ref($class) || $class;
 	
 	if($arg{config}) {
+		# New connection
+
 		my $config_file = $arg{config};
 		
 
@@ -64,7 +66,13 @@ sub new {
 		);
 	}
 	elsif($arg{schema}) {
+		# Use existing DBIx::Class::Schema connection
 		$self->setDbix($arg{schema});
+
+	}
+	elsif($arg{dbh}) {
+		# Use existing DBI database handle
+		$self->connectDatabase( dbh => $arg{dbh} );
 
 	}
 	else {

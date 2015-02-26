@@ -21,6 +21,8 @@ use Phylogeny::Typer;
 use Phylogeny::Tree;
 use Phylogeny::TreeBuilder;
 use Modules::FormDataGenerator;
+use Data::Bridge;
+use Data::Grouper;
 use JSON qw/encode_json/;
 use IO::CaptureOutput qw(capture_exec);
 use Config::Simple;
@@ -74,7 +76,9 @@ my @tables = (
 	"gap_position",
 	"private_gap_position",
 	"core_region",
-	"accessory_region"
+	"accessory_region",
+	"feature_group",
+	"private_feature_group",
 );
 
 # Tables in order that data is updated
@@ -957,6 +961,65 @@ sub initialize_snp_caches {
     return;
 }
 
+=head2 initialize_group_caches
+
+=over
+
+=item Usage
+
+  $obj->initialize_group_caches()
+
+=item Function
+
+Creates the objects for recording genome group assignments
+
+=item Returns
+
+void
+
+=item Arguments
+
+none
+
+=back
+
+=cut
+
+sub initialize_group_caches {
+    my $self = shift;
+
+	my $dbh = $self->dbh;
+
+	# Create DBIx::Class::Schema connection
+	my $db_bridge = Data::Bridge->new( dbh => $dbh );
+
+	# Create Grouper object
+	my $grouper = Data::Grouper->new(schema => $db_bridge->dbixSchema, cvmemory => $db_bridge->cvmemory);
+
+	# Retrieve group IDs and corresponding values
+	my $assignments = $grouper->group_assignments();
+
+	# Split into logical parts
+	my %fp_assignments = ( 
+		'serotype' => $assignments{'serotype'}
+		'isolation_host' = $assignments{'isolation_host'}, 
+		'syndrome' => $assignments{'syndrome'},
+		'isolation_source' => $assignments{'isolation_source'}
+	);
+
+	my %st_assignments = (
+		'stx1_subtype' => $assignments{'stx1_subtype'}, 
+		'stx2_subtype' => $assignments{'stx2_subtype'}
+	);
+
+
+	$self->{groups}{featureprop_group_assignments} = \%fp_assignments;
+	$self->{groups}{subtype_group_assignments} = \%st_assignments;
+
+
+	$self->{assign_groups} = 1;
+}
+
 #################
 # Files
 #################
@@ -1457,18 +1520,18 @@ sub cache_contig_id {
 	
 }
 
-=head2 cache_snp_genome_id
+=head2 cache_genome_id
 
 =over
 
 =item Usage
 
-  $obj->cache_snp_genome_id(genome_feature_id, $is_public, $uniquename, [$access_category])
+  $obj->cache_genome_id(genome_feature_id, $is_public, $uniquename, [$access_category])
 
 =item Function
 
 Saves the new contig collections uploaded in this run in memory. New snp alignment entries, tree
-entries will be added for these genomes
+entries will be added for these genomes.
 
 =item Returns
 
@@ -1485,7 +1548,7 @@ Nothing
 
 =cut
 
-sub cache_snp_genome_id {
+sub cache_genome_id {
 	my ($self, $genome_feature_id, $is_public, $uniquename, $access_category) = @_;
 
 	my $cache_name = 'snp_genome';
@@ -1500,7 +1563,8 @@ sub cache_snp_genome_id {
 		{ 
 			uniquename => $uniquename, visible => $access_category, 
 			displayname => Modules::FormDataGenerator::displayname($uniquename, $user_genome, $access_category),
-			feature_id => $genome_feature_id
+			feature_id => $genome_feature_id,
+			public => $is_public,
 		}
 	);
 }
@@ -4294,6 +4358,23 @@ sub print_ftree {
 	print $fh join("\t", ($nextft,$feature_id,$tree_id,$type)),"\n";
 }
 
+sub print_fgroup {
+	my $self = shift;
+	my ($nextfeaturegroup,$feature,$group,$pub) = @_;
+	
+	my $fh;
+	if($pub) {
+		
+		$fh = $self->file_handles('feature_group');
+			
+	} else {
+		
+		$fh = $self->file_handles('private_feature_group');
+	}
+	
+	print $fh join("\t", ($nextfeaturegroup,$feature,$group),"\n";
+}
+
 sub print_sc {
 	my $self = shift;
 	my ($sc_id,$ref_id,$nuc,$pos,$gap,$col,$freqA) = @_;
@@ -6704,6 +6785,29 @@ Perform typing and load data and results into DB
 sub typing {
 	my $self = shift;
 	my $work_dir = shift;
+
+	# Hash to record subtypes/na for each genome
+	my $subtype_groups;
+	
+	if($self->{assign_groups}) {
+		# Prepare group data
+
+		# Default, assign all genomes to unassigned group
+		my %default_groups;
+
+		foreach my $type (keys %{$self->{groups}{subtype_group_assignments}}) {
+			my $default_value = "$type\_na";
+			my $default_group = $self->{groups}{subtype_group_assignments}{$type}{$default_value};
+			croak "Error: no default 'unassigned' group for data type $type." unless $default_group;
+
+			$default_groups{$type} = $default_groups;
+		}
+		
+		foreach my $key (keys %{$self->{cache}{snp_genome}}){
+			my $ghash = $self->{cache}{snp_genome}{$key};
+			$subtype_group_assignments->{$ghash->{feature_id}}{$ghash->{feature_id}} = { %default_groups };
+		}
+	}
 	
 	# Prepare aligned concatenated sequences for each typing segment
 	my $typing_sets = $self->construct_typing_sequences();
@@ -6803,6 +6907,10 @@ sub typing {
 			my ($header, $assignment) = split("\t", $row);
 			
 			$self->handle_typing_sequence($subtype_prop, $typing_ref_seq, $assignment, $waiting_subtype{$header});
+
+			# Save subtype group assignment
+			$self->record_subtype_group($subtype_groups, $subtype_prop, $assignment, 
+				$waiting_subtype{$header}) if $self->{assign_groups};
 		}
 		
 		close $in;
@@ -7052,6 +7160,48 @@ sub handle_typing_sequence {
 	$typing_dataset->{allele} = $curr_feature_id;
 		
 }
+
+=head2 record_subtype_group
+
+Identify and save group ID corresponding
+to subtype assignment.
+
+=cut
+
+sub record_subtype_group {
+	my $self = shift;
+	my $subtype_groups = shift; # hash of genome group assignments
+	my $subtype_prop = shift; # Data type (stx1_subtype|stx2_subtype)
+	my $assignment = shift; # Subtype assignment string
+	my $typing_dataset = shift; # Genome data hash-ref
+
+	my $contig_collection_id = $typing_dataset->{genome};
+	my $is_public = $typing_dataset->{public}; 
+
+	my $group_id = $self->{groups}{subtype_group_assignments}{$subtype_prop}{$assignment};
+	$group_id = $self->{groups}{subtype_group_assignments}{$subtype_prop}{"$subtype_prop\_other"} unless $group_id;
+	croak "Error: no group for value $assignment in data type $subtype_prop." unless $group_id;
+
+	$subtype_groups->{$is_public}{$contig_collection_id}{$subtype_prop} = $group_id;
+
+}
+
+=head2 handle_genome_group
+
+
+=cut
+
+sub handle_genome_group {
+	my $self = shift;
+	my $feature_id = shift; # Genome feature ID
+	my $group_id = shift; # Genome Group ID
+	my $is_public = shift; # Boolean indicating if in public genome set
+
+
+
+
+}
+
 
 =head2 handle_upload
 
