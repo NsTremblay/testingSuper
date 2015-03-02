@@ -136,8 +136,8 @@ my %sequences = (
     dbxref                       => "dbxref_dbxref_id_seq",
     feature_dbxref               => "feature_dbxref_feature_dbxref_id_seq",
     permission                   => "permission_permission_id_seq",
-    feature_group                => "feature_group_id_seq",
-    private_feature_group        => "private_feature_group_id_seq",
+    feature_group                => "feature_group_feature_group_id_seq",
+    private_feature_group        => "private_feature_group_feature_group_id_seq",
 );
 
 # Primary key ID names

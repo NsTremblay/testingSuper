@@ -85,7 +85,6 @@ is_resultset my $genome_rs = Feature->search(
 
 while(my $genome = $genome_rs->next) {
 	my $feature_id = $genome->{feature_id};
-	diag explain $genome->{featureprops};
 	ok check_group_assignments($genome->{featureprops}, $feature_id), "Correct group assignments for genome $feature_id";
 	last;
 }
