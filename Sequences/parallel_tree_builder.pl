@@ -45,7 +45,7 @@ use Time::HiRes qw( time );
 my $v = 0;
 
 # Globals (set these to match local values)
-my $muscle_exe = '/usr/bin/muscle';
+my $muscle_exe = 'muscle';
 
 # Intialize the Tree building module
 my $tree_builder = Phylogeny::TreeBuilder->new();
