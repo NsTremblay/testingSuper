@@ -119,10 +119,8 @@ use strict;
 use warnings;
 
 use Carp qw/croak carp/;
-# use File::Basename;
-# use lib dirname (__FILE__) . "/../";
-use FindBin;
-use lib "$FindBin::Bin/../";
+use File::Basename;
+use lib dirname (__FILE__) . "/../";
 use Role::Tiny::With;
 with 'Roles::DatabaseConnector';
 use Config::Simple;
@@ -147,9 +145,11 @@ sub new {
 	
 	my $self = {};
 	bless( $self, $class );
+
+	my $dirname = dirname(__FILE__);
 	
 	# DB connection
-	my $config_file = $params{config} //= "$FindBin::Bin/../../config/genodo.cfg";
+	my $config_file = $params{config} //= "$dirname/../../config/genodo.cfg";
 	my $dbix = $params{dbix_schema};
 	
 	unless($dbix) {
@@ -175,8 +175,8 @@ sub new {
 	$self->{tree_builder} = Phylogeny::TreeBuilder->new;
 	
 	# Reference sequences
-	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= "$FindBin::Bin/stx1_superaln_reference.affn";
-	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= "$FindBin::Bin/stx2_superaln_reference.affn";
+	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= "$dirname/stx1_superaln_reference.affn";
+	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= "$dirname/stx2_superaln_reference.affn";
 	croak "Error: cannot find alignment file for Stx1 reference genes.\n" unless -r $self->{stx1_superaln_reference};
 	croak "Error: cannot find alignment file for Stx2 reference genes.\n" unless -r $self->{stx2_superaln_reference};
 
