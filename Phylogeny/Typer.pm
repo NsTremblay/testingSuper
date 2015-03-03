@@ -150,13 +150,12 @@ sub new {
 	
 	# DB connection
 	my $config_file = $params{config} //= "$dirname/../../config/genodo.cfg";
+	my $db_conf = new Config::Simple($config_file);
 	my $dbix = $params{dbix_schema};
 	
 	unless($dbix) {
 		# No schema provided, connect to database
 		croak "Error: Config file not found ($config_file).\n" unless -e $config_file;
-		
-		my $db_conf = new Config::Simple($config_file);
 		
 		$self->connectDatabase( dbi     => $db_conf->param('db.dbi'),
 						        dbName  => $db_conf->param('db.name'),
@@ -181,7 +180,7 @@ sub new {
 	croak "Error: cannot find alignment file for Stx2 reference genes.\n" unless -r $self->{stx2_superaln_reference};
 
 	# Muscle exe
-	$self->{muscle} = $params{muscle} //= 'muscle';
+	$self->{muscle} = $params{muscle} //= $db_conf->param('exe.muscle');
 	croak "Error: cannot find muscle exe." unless -x $self->{muscle};
 	
 	# Tmp directory
