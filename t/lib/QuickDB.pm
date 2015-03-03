@@ -31,13 +31,13 @@ Matt Whiteside (matthew.whiteside@phac-aspc.gov.gc)
 
 =cut
 
-package t::QuickDB;
+package t::lib::QuickDB;
 
 use strict;
 use warnings;
 use Carp;
 use FindBin;
-use lib "$FindBin::Bin/../";
+use lib "$FindBin::Bin/../../";
 use Modules::User;
 use Data::Bridge;
 use Data::Grouper;

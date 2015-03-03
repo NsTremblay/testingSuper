@@ -31,8 +31,8 @@ use lib "$FindBin::Bin/../";
 use Modules::Dispatch;
 use Modules::FormDataGenerator;
 use Test::More;
-use t::App;
-use t::QuickDB;
+use t::lib::App;
+use t::lib::QuickDB;
 use JSON::Any;
 use Try::Tiny;
 

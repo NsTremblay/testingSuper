@@ -22,17 +22,17 @@ Matt Whiteside (matthew.whiteside@phac-aspc.gov.gc)
 
 =cut
 
-package t::App;
+package t::lib::App;
 
 use strict;
 use warnings;
 use FindBin;
-use lib "$FindBin::Bin/../";
+use lib "$FindBin::Bin/../../";
 use Test::WWW::Mechanize::CGIApp;
 use Test::More;
 use Modules::Dispatch;
 use JSON::Any;
-use t::QuickDB;
+use t::lib::QuickDB;
 
 
 =head2 launch
