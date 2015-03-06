@@ -57,10 +57,10 @@ ok(@$bad_genomes == 3, 'test genome retrieval, inaccessible set') or
 	BAIL_OUT('Cannot obtain test set of genomes');
 
 
-my $login_crudentials = t::QuickDB::login_crudentials();
+my $login_crudentials = t::lib::QuickDB::login_crudentials();
 
 # Create WWW::Mechanize CGIApp object
-my $app = t::App::launch($schema);
+my $app = t::lib::App::launch($schema);
 
 # Collections::create tests
 subtest 'Collections::create - correct response to invalid parameters' => sub {

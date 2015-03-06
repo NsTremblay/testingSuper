@@ -61,7 +61,7 @@ sub _initialize {
     		$self->$key($params{$key});
     	}
     	else{
-            $self->logger->logconfess("$key is not a valid parameter in Modules::FormDataGenerator");
+            $self->logger->logconfess("$key is not a valid parameter in Modules::Footprint");
         }
     }
     
@@ -158,11 +158,6 @@ sub validateFootprint {
     	die "Error: invalid parameter 'privacy'";
     }
 
-    my $user_id = $args{user_id};
-    unless($user_id && $user_id =~ m/^\d+$/) {
-    	die "Error: invalid parameter 'user_id'";
-    }
-
     my $footprint = $args{footprint};
     unless($footprint) {
     	die "Error: invalid parameter 'footprint'";
@@ -171,6 +166,14 @@ sub validateFootprint {
     unless($self->dbh) {
     	die "Error: dbh not initialized in constructor.";
     }
+
+    my $user_id = $args{user_id};
+    my $username = $args{username};
+   
+    if($username) {
+    	($user_id) = $self->dbh->selectrow_array("SELECT login_id FROM login WHERE username = '$username'");
+    }
+    die "Error: missing/invalid user info. Must provide parameter 'user_id' or 'username'" unless $user_id && $user_id =~ m/^\d+$/;
 
     my @duplicates;
 

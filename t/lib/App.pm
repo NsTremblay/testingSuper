@@ -76,6 +76,30 @@ sub quickdb_login {
 		BAIL_OUT('Login as test user failed');
 }
 
+=head2 login_ok
+
+Login as user to webserver
+
+Will BAIL_OUT if unsuccessful
+	
+=cut
+sub login_ok {
+	my $mech = shift;
+	my $user = shift;
+	my $passwd = shift;
+
+	my $login_crudentials = {
+		authen_username => $user,
+        authen_password => $passwd,
+        authen_rememberuser => 0
+    };
+
+	my $page = '/home';
+	$mech->post_ok( $page, $login_crudentials, 'Login form POST' );
+	$mech->content_contains( $login_crudentials->{authen_username}, 'Logged in as test user' ) or 
+		BAIL_OUT('Login failed');
+}
+
 
 # The following methods are from Test::WWW::Mechanize::JSON
 
