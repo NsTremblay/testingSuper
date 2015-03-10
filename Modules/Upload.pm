@@ -148,6 +148,8 @@ Validate form and upload genome to DB
 
 sub upload_genome : Runmode {
     my $self = shift;
+
+    get_logger->debug('UPLOADING GENOME');
     
     croak 'Cannot upload a genome unless logged in.' unless $self->authen->is_authenticated;
 

@@ -180,7 +180,7 @@ sub new {
 	croak "Error: cannot find alignment file for Stx2 reference genes.\n" unless -r $self->{stx2_superaln_reference};
 
 	# Muscle exe
-	$self->{muscle} = $params{muscle} //= $db_conf->param('exe.muscle');
+	$self->{muscle} = $params{muscle} //= $db_conf->param('ext.muscle');
 	croak "Error: cannot find muscle exe." unless -x $self->{muscle};
 	
 	# Tmp directory

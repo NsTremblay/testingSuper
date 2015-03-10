@@ -56,9 +56,11 @@ my $tree_io = Phylogeny::Tree->new(dbix_schema => 'empty');
 my $pm = new Parallel::ForkManager(20);
 
 # Get config
-my ($alndir) = 0;
+my ($alndir, $fast_mode) = (0,0);
 GetOptions(
-	'dir=s' => \$alndir
+	'dir=s' => \$alndir,
+	'fast' => \$fast_mode,
+	'v' => \$v
 ) or ( system( 'pod2text', $0 ), exit -1 );
 croak "[Error] missing argument. You must supply a valid data directory\n" . system('pod2text', $0) unless $alndir;
 
@@ -104,7 +106,7 @@ foreach my $jarray (@jobs) {
 	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
 	my $en = time();
 	my $time = $en - $st;
-	print $log "\t$pg_id success (elapsed time $time)\n";
+	print $log "\t$pg_id completed (elapsed time $time)\n";
 
 	$pm->finish; # do the exit in the child process
 }
@@ -173,7 +175,7 @@ sub build_tree {
 		my $perl_file = "$perldir/$pg_id\_tree.perl";
 		
 		# build newick tree
-		$tree_builder->build_tree($fasta_file, $tree_file) or croak;
+		$tree_builder->build_tree($fasta_file, $tree_file, $fast_mode) or croak;
 		
 		# slurp tree and convert to perl format
 		my $tree = $tree_io->newickToPerlString($tree_file);
@@ -233,7 +235,7 @@ sub elapsed_time {
 	my ($mes, $prev) = @_;
 	
 	my $now = time();
-	printf("$mes: %.2f\n", $now - $prev);
+	printf("$mes: %.2f\n", $now - $prev) if $v;
 	
 	return $now;
 }

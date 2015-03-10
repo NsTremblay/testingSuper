@@ -169,6 +169,8 @@ sub upload_genome {
 	);
 	ok($cgiapp->success, 'Genome upload POST');
 
+	diag $cgiapp->content(format => 'text');
+
 	$cgiapp->content_contains('Status of Genome Analysis', "Redirected to upload status page");
 	$cgiapp->content_contains('Queued', "Genome queued for analysis") or 
 		BAIL_OUT('Genome upload failed');
