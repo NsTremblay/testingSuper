@@ -225,6 +225,7 @@ sub build_tree {
 		croak "Missing reference sequence in SNP alignment for set $pg_id\n" unless $refseq;
 		# Create output directory
 		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
+		croak "Filepath will overflow C char[] buffers. Need to extend buffer length." if length($pos_fileroot) > 150;
 		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
 	}
 	elapsed_time("\tsnp ", $time);
@@ -385,10 +386,12 @@ void snp_positions(SV* seqs_arrayref, SV* names_arrayref, char* refseq, char* fi
 	for(i=0; i <= n; ++i) {
 		SV* name = av_shift(names);
 		SV* seq = av_shift(seqs);
-		char filename[120];
-		char filename2[120];
-		sprintf(filename, "%s/%s__snp_variations.txt", fileroot, (char*)SvPV_nolen(name));
-		sprintf(filename2, "%s/%s__snp_positions.txt", fileroot, (char*)SvPV_nolen(name));
+		char filename[200];
+		char filename2[200];
+		char* basename;
+		basename = SvPV_nolen(name);
+		sprintf(filename, "%s/%s__snp_variations.txt", fileroot, basename);
+		sprintf(filename2, "%s/%s__snp_positions.txt", fileroot, basename);
 		
 		write_positions(refseq, (char*)SvPV_nolen(seq), filename, filename2);
 		
