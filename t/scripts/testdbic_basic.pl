@@ -37,7 +37,7 @@ use Getopt::Long;
 use strict;
 use warnings;
 use FindBin;
-use lib "$FindBin::Bin/../";
+use lib "$FindBin::Bin/../../";
 use Modules::User;
 use Data::Bridge;
 use Carp;

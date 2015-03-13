@@ -58,10 +58,10 @@ package Test::DBIx::Class::SchemaManager::Trait::TestPostgresDB;
         default => 'postgres'
     );
 
-    has postgresql_dbh => (
+    has 'postgresql_dbh' => (
         is         => 'ro',
-        init_arg   => undef,
-        lazy_build => 1,
+        lazy    => 1,
+        builder => '_build_postgresql_dbh'
     );
 
     sub _build_postgresql_dbh {
@@ -117,11 +117,23 @@ package Test::DBIx::Class::SchemaManager::Trait::TestPostgresDB;
         return 'DBI:Pg:' . join(';', map { "$_=$args{$_}" } sort keys %args);
     }
 
-    after 'cleanup' => sub {
+    # before 'cleanup' => sub {
+    #     my $self = shift;
+
+    #     my $dbh_state = $self->postgresql_dbh ? 'exists' : 'has been deleted';
+    #     print "Database handle $dbh_state\n";
+    # };
+
+    around 'cleanup' => sub {
         my ($self) = @_;
         unless($self->keep_db) {
+
+            my $dbh_state = $self->postgresql_dbh ? 'exists' : 'has been deleted';
+            print "Database handle $dbh_state\n";
+            
             if($self->postgresql_dbh) {
                 my $dbname = $self->dbname;
+                print "Dropping database $dbname\n";
 
                 $self->postgresql_dbh->do("DROP DATABASE $dbname")
                     or die $self->postgresql_dbh->errstr;
@@ -129,7 +141,10 @@ package Test::DBIx::Class::SchemaManager::Trait::TestPostgresDB;
                 $self->postgresql_dbh->disconnect;
             }
         }
+
+        
     };
+
 
     override drop_table_sql => sub {
         my $self = shift;

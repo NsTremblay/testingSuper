@@ -60,7 +60,7 @@ sub new {
 		isolation_host      => 1,
 		isolation_source    => 1,
 		isolation_location  => 1,
-		isolation_latlng    => 1,
+		#isolation_latlng    => 1,
 		isolation_date      => 1,
 		syndrome            => 1,
 	);
@@ -151,7 +151,7 @@ Queries the database to return list of genomes available to user.
 Method is used to populate forms with a list of public and
 private genomes.
 
-=cut
+MW: OBSOLETE?
 
 sub getFormData {
     my $self = shift;
@@ -171,6 +171,7 @@ sub getFormData {
     
     return($publicFormData, $privateFormData, $pubEncodedText);
 }
+=cut
 
 sub publicGenomes {
 	my $self = shift;
@@ -1737,7 +1738,37 @@ sub _formatUserGroups {
 	}
 }
 
+=head2 userGroupList
 
+Returns hash-ref of user-created custom groups for logged-in users. 
+Does not include group category structure or standard pre-defined groups.
+
+Hash-ref structure:
+  group_id => group_name
+
+=cut
+sub userGroupList {
+	my $self = shift;
+	my $username = shift;
+
+	croak "Error: missing parameter 'username'." unless $username;
+
+	# Get user custom groups
+	my $group_rs = $self->dbixSchema->resultset("GenomeGroup")->search(
+		{
+			'me.username' => $username	
+		},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			columns => [qw/genome_group_id name/],
+		}
+	);
+
+	my $group_hashref = {};
+	map { $group_hashref->{$_->{'genome_group_id'}} = $_->{'name'} } @{$group_rs->all()};
+
+	return $group_hashref;
+}
 
 =head2 createGroup
 

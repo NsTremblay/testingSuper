@@ -26,13 +26,15 @@ package t::lib::App;
 
 use strict;
 use warnings;
-use FindBin;
-use lib "$FindBin::Bin/../../";
+use File::Basename qw< dirname >;
+use lib dirname(__FILE__) . '/../../';
 use Test::WWW::Mechanize::CGIApp;
 use Test::More;
 use Modules::Dispatch;
 use JSON::Any;
 use t::lib::QuickDB;
+use Config::Simple;
+use File::Temp qw/tempdir/;
 
 
 =head2 launch
@@ -41,6 +43,10 @@ use t::lib::QuickDB;
 
 sub launch {
 	my $schema = shift; # DBICx schema ref
+
+	my $cfg_file = init(@_);
+
+	$ENV{SUPERPHY_CONFIGFILE} = $cfg_file;
 
 	my $mech = Test::WWW::Mechanize::CGIApp->new;
   	$mech->app(
@@ -58,6 +64,62 @@ sub launch {
     );
 
   	return $mech;
+}
+
+=head2 init
+
+Prepare test sandbox and CGIApp config file
+
+=cut
+sub init {
+
+	my $orig_cfg_file = shift || $ENV{SUPERPHY_CONFIGFILE} || dirname(__FILE__) . '/../../../config/demo.cfg' ;
+	my $root_dir = dirname(__FILE__) . '/../sandbox';
+	
+	die "[Error] test work directory $root_dir invalid.\n" unless -d $root_dir;
+	die "[Error] config file $orig_cfg_file invalid.\n" unless -f $orig_cfg_file;
+
+	# Create temporary directory for test files
+	my $test_dir = tempdir('XXXX', DIR => $root_dir, CLEANUP => 1);
+
+	# Create config file with test server parameters
+	my $cfg_file = $test_dir . '/test.cfg';
+	my $cfg = new Config::Simple(syntax=>'ini');
+
+	# Temp directory
+	my $tmp_dir = $test_dir . '/tmp/';
+	mkdir $tmp_dir or die "Error: mkdir $tmp_dir failed ($!).\n";
+	$cfg->param('tmp.dir', $tmp_dir);
+
+	# Pipeline input directory
+	my $seq_dir = $test_dir . '/inbox/';
+	mkdir $seq_dir or die "Error: mkdir $seq_dir failed ($!).\n";
+	$cfg->param('dir.seq', $seq_dir);
+
+	# Log directory
+	my $log_dir = $test_dir . '/logs/';
+	mkdir $log_dir or die "Error: mkdir $log_dir failed ($!).\n";
+	$cfg->param('dir.log', $log_dir);
+
+	# Pipeline work directory
+	my $work_dir = $test_dir . '/data/';
+	mkdir $work_dir or die "Error: mkdir $work_dir failed ($!).\n";
+	$cfg->param('dir.sandbox', $work_dir);
+
+	# Copy external commands from a current config file
+	my $oldcfg = new Config::Simple($orig_cfg_file);
+	unless($oldcfg) {
+		die Config::Simple->error();
+	}
+
+	my @copy_params = qw/ext.blastdir ext.mummerdir ext.parallel ext.muscle ext.blastdatabase ext.panseq mail.address mail.pass/;
+	foreach my $p (@copy_params) {
+		$cfg->param($p, $oldcfg->param($p));
+	}
+
+	$cfg->write($cfg_file) or die "Write to config file $cfg_file failed:" . Config::Simple->error();
+
+	return $cfg_file;
 }
 
 =head2 quickdb_login
@@ -197,6 +259,8 @@ sub _diag_json {
 	};
 	warn $@ if $@;
 }
+
+
 
 
 

@@ -1379,7 +1379,8 @@ sub _dfv_common_rules {
 	my $self = shift;
 	
 	return {
-		required           => [qw(g_name g_host g_source g_date g_strain g_serotype g_mol_type geocode_id)],
+		#required           => [qw(g_name g_host g_source g_date g_strain g_serotype g_mol_type geocode_id)],
+		required           => [qw(g_name g_host g_source g_date g_strain g_serotype g_mol_type)],
 		optional           => [qw(g_description g_keywords g_owner g_synonym g_finished g_release_date g_dbxref_db 
 								  g_dbxref_acc g_dbxref_ver g_group g_pmid g_comments g_host_name g_host_genus g_host_species
 								  g_other_source g_age g_age_unit g_syndrome g_other_syndrome_cb g_other_syndrome 
@@ -1416,7 +1417,7 @@ sub _dfv_common_rules {
 			g_host_genus       => qr/^\S+$/,
 			g_host_species     => qr/[^\(\)]+/,
 			g_host_name        => qr/[^\(\)]+/,
-			gecode_id          => qr/^\d+$/
+			gecode_id          => &_valid_geocode
 		},
 		msgs => {
 			format      => '<span class="help-inline"><span class="text-error"><strong>%s</strong></span></span>',
@@ -1827,6 +1828,7 @@ sub _valid_geocode {
 		
 		# Search for geocode ID in geocoded_location table
 		my $geocode_id = $dfv->get_current_constraint_value();
+		return unless $geocode_id =~ m/^\d+$/;
 		my $row = $dbic->resultset('geocoded_location')->find($geocode_id);
 			
 		return(defined($row));

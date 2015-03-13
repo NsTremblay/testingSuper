@@ -287,6 +287,21 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 contig_footprints
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::ContigFootprint>
+
+=cut
+
+__PACKAGE__->has_many(
+  "contig_footprints",
+  "Database::Chado::Schema::Result::ContigFootprint",
+  { "foreign.feature_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 core_region
 
 Type: might_have
@@ -933,8 +948,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:43
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:nanC2THXCZAYJg39t37aLQ
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-03-11 13:58:49
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ESl6bzhLB79hMis+0SGq1Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

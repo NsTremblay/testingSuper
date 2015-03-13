@@ -85,160 +85,132 @@ sub data : Runmode {
 sub _getUserData {
     my ($self, $username, $CGISESSID) = @_;
 
+    my $shiny_data = {
+        user => $username,
+        'CGISESSID' => $CGISESSID,
+    };
+
+    _returnError($shiny_data, 'User not logged in');
+    
+    # DB Accessor object
     my $fdg = Modules::FormDataGenerator->new();
     $fdg->dbixSchema($self->dbixSchema);
-
-    my $status = {};
-
-    my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
-
-    # # Phylogenetic tree
-    # my $tree = Phylogeny::Tree->new(dbix_schema => $self->dbixSchema);
-    # my $tree_string;
-    # # find visable nodes for user
-    # my $visable_nodes;
-    # $fdg->publicGenomes($visable_nodes);
-    # my $has_private = $fdg->privateGenomes($username, $visable_nodes);
-    
-    # if($has_private) {
-    #     $tree_string = $tree->fullTree($visable_nodes);
-    # } 
-    # else {
-    #     $tree_string = $tree->fullTree();
-    # }
-
-    my $public_genome_objs = decode_json($pub_json);
-    my $private_genome_objs = decode_json($pvt_json);
-
-    #Generate sorted public genome ids
-    my @sorted_public_genomes = sort {$a cmp $b} (keys %$public_genome_objs);
-
-    #Generate sorted private genome ids
-    my @sorted_private_genomes = sort {$a cmp $b} (keys %$private_genome_objs);
-
-    # Genome ids to be sent back to shiny for group creation
-    my @sorted_genome_ids = (@sorted_public_genomes, @sorted_private_genomes);
-
-    my $meta_categories = {
-        'primary_dbxref' => [],
-        'strain' => [],
-        'serotype' => [],
-        'isolation_host' => [],
-        'isolation_source' => [],
-        'isolation_date' => [],
-        'syndrome' => [],
-        'stx1_subtype' => [],
-        'stx2_subtype' => [],
-        'isolation_location' => []
-    };
-
-    my $extra_date_categories = {
-        'isolation_year' => [],
-        'isolation_month' => [],
-        'isolation_day' => [],
-    };
-
-    my $extra_location_categories = {
-        'isolation_country' => [],
-        'isolation_province_state' => [],
-        'isolation_city' => []
-    };
 
     # Location Manager object for parsing geocoded addresses
     my $lm = Modules::LocationManager->new();
     $lm->dbixSchema($self->dbixSchema);
 
-    foreach my $genome_id (@sorted_genome_ids) {
-        my $genome_obj;
-        if($private_genome_objs->{$genome_id}) {
-            $genome_obj = $private_genome_objs->{$genome_id};
+    # Get genome data
+    my $public_meta = $fdg->_runGenomeQuery(1);
+    my $private_meta = $fdg->_runGenomeQuery(0,$username);
+
+    # Initialize variables
+    my %genome_ids;
+    my $i = 0;
+    map { $genome_ids{$_} = $i; $i++ } keys %{$public_meta}, keys %{$private_meta};
+
+    # Empty list
+    my @empty = (undef) x $i;
+
+    # Meta-data lists
+    my $meta_categories;
+    foreach my $term (keys %{$fdg->metaTerms}, keys %{$fdg->subtypes}) {
+        $meta_categories->{$term} = [ @empty ];
+    }
+
+    my $extra_date_categories = {
+        'isolation_year' => [ @empty ],
+        'isolation_month' => [ @empty ],
+        'isolation_day' => [ @empty ],
+    };
+    my $extra_location_categories = {
+        'isolation_country' => [ @empty ],
+        'isolation_province_state' => [ @empty ],
+        'isolation_city' => [ @empty ]
+    };
+
+    # Group lists
+    my $group_lists;
+    my $group_hashref = $fdg->userGroupList($username);
+    foreach my $name (values %$group_hashref) {
+        if(defined $group_lists->{$name}) {
+            # Future group development will allow users to assign groups to categories
+            # allowing possible groups in different categories to have same name. Currently
+            # all groups are part of the default category 'Individuals' and should be unique,
+            # but check will make sure groups in this hash are not clobbered at any point in the future.
+            die "Error: group name collision. Multiple custom user-defined genome groups with same name.";
         }
-        else {
-            $genome_obj = $public_genome_objs->{$genome_id};
-        }
+
+        $group_lists->{$name} = [ @empty ];
+    }
+
+
+    foreach my $genome_id (keys %genome_ids) {
+
+        my $genome_obj = $public_meta->{$genome_id} || $private_meta->{$genome_id};
+        my $index = $genome_ids{$genome_id};
+
         foreach my $meta_cat (keys %$meta_categories) {
             switch ($meta_cat) {
                 case 'isolation_date' {
-                    unless ($genome_obj->{$meta_cat}) {
-                        push($meta_categories->{$meta_cat}, undef);
-                        push($extra_date_categories->{"$_"}, undef) foreach (keys %$extra_date_categories);
-                    }
-                    else {
-                        #Format the date
-                        push($meta_categories->{$meta_cat}, join('', @{$genome_obj->{$meta_cat}}));
-                        my @date = split('-', join('', @{$genome_obj->{$meta_cat}}));
-                        push($extra_date_categories->{'isolation_year'}, $date[0]);
-                        push($extra_date_categories->{'isolation_month'}, $date[1]);
-                        push($extra_date_categories->{'isolation_day'}, $date[2]);
+                    if($genome_obj->{$meta_cat}) {
+                        # Save full date
+                        my $date_string = join('', @{$genome_obj->{$meta_cat}});
+                        $meta_categories->{$meta_cat}->[$index] = $date_string;
+
+                        # Save date parts
+                        my @date = split('-', $date_string);
+                        $extra_date_categories->{'isolation_year'}->[$index] = $date[0];
+                        $extra_date_categories->{'isolation_month'}->[$index] = $date[1];
+                        $extra_date_categories->{'isolation_day'}->[$index] = $date[2];
                     }
                 }
                 case 'isolation_location' {
-                    unless ($genome_obj->{$meta_cat}) {
-                        push($meta_categories->{$meta_cat}, undef);
-                        push($extra_location_categories->{"$_"}, undef) foreach (keys %$extra_location_categories);
-                    }
-                    else {
-                        #Format the location
+                    if($genome_obj->{$meta_cat}) {
+                        # Save full address
                         my $location_ref = decode_json($genome_obj->{$meta_cat}->[0]);
-                        push($meta_categories->{$meta_cat}, $location_ref->{'formatted_address'});
+                        $meta_categories->{$meta_cat}->[$index] = $location_ref->{'formatted_address'};
+
+                        # Save address components
                         my $parsed_location_ref = $lm->parseGeocodedAddress($location_ref);
                         foreach (keys %$extra_location_categories) {
-                            push($extra_location_categories->{"$_"}, $parsed_location_ref->{"$_"}) if $parsed_location_ref->{"$_"};
-                            push($extra_location_categories->{"$_"}, undef) unless $parsed_location_ref->{"$_"};
+                            $extra_location_categories->{"$_"}->[$index] = $parsed_location_ref->{"$_"} if $parsed_location_ref->{"$_"};
                         }
                     }
                 }
                 else {
-                    unless ($genome_obj->{$meta_cat}) {
-                        push($meta_categories->{$meta_cat}, undef); 
-                    }
-                    else {
-                        push($meta_categories->{$meta_cat}, $genome_obj->{$meta_cat}) unless ref($genome_obj->{$meta_cat}) eq "ARRAY";
-                        push($meta_categories->{$meta_cat}, join(' ', @{$genome_obj->{$meta_cat}})) if ref($genome_obj->{$meta_cat}) eq "ARRAY";
+                    if($genome_obj->{$meta_cat}) {
+                        my $value = ref($genome_obj->{$meta_cat}) eq 'ARRAY' ? join(' ', @{$genome_obj->{$meta_cat}}) : $genome_obj->{$meta_cat};
+                        $meta_categories->{$meta_cat}->[$index] = $value;
                     }
                 }
             }
         }
+
+        if($genome_obj->{groups}) {
+            foreach my $group_id (@{$genome_obj->{groups}}) {
+                my $group_name = $group_hashref->{$group_id};
+                $group_lists->{$group_name}->[$index] = 1;
+            }
+        }
     }
 
-    $status->{error} = "User is not logged in" unless $username;
-    $status->{status} = "User data retrieved for $username" if $username;
-
-    my $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
-
-    my $userGroups = $userGroupQuery->user_groups if $userGroupQuery // undef;
-
-    my $user_groups_obj = decode_json($userGroups) if $userGroupQuery;
-    $user_groups_obj = {} unless $userGroupQuery;
-
-    #print STDERR "$_\n" foreach (keys %$user_groups_obj);
-
-    my $shiny_data = {
-        'user' => $username // undef,
-        'CGISESSID' => $CGISESSID,
-        'data' => {},
-        'genome_id' => \@sorted_genome_ids,
-    };
-
-    @{$shiny_data->{'data'}}{keys %$meta_categories} = values %$meta_categories;
-    @{$shiny_data->{'data'}}{keys %$extra_date_categories} = values %$extra_date_categories;
-    @{$shiny_data->{'data'}}{keys %$extra_location_categories} = values %$extra_location_categories;
-    $shiny_data->{'groups'} = $user_groups_obj;
-    $shiny_data->{'status'} = $status;
-
-    #%$shiny_data = (%$shiny_data, %$user_groups_obj);
-
-    # This data is for the map and tree, which is not currently being used in shiny
-    #my $data = {
-    #   'public_genomes' => decode_json($pub_json),
-    #   'private_genomes' => decode_json($pvt_json),
-    #   'tree' => $tree_string
-    #};
-    #return encode_json($data);
-
-    #TODO: Get user groups and add them in
+    $shiny_data->{'data'}{keys %$meta_categories} = values %$meta_categories;
+    $shiny_data->{'data'}{keys %$extra_date_categories} = values %$extra_date_categories;
+    $shiny_data->{'data'}{keys %$extra_location_categories} = values %$extra_location_categories;
+    $shiny_data->{'groups'}{keys %$group_lists} = values %$group_lists;
+    $shiny_data->{'status'} = "User data retrieved for $username";
 
     return encode_json($shiny_data);
+}
+
+sub _returnError {
+    my $shiny_data = shift;
+    my $msg = shift;
+
+    $shiny_data->{error} = $msg;
+
+    return encode_json($shiny_data)
 }
 
 sub _saveUserData {

@@ -38,6 +38,7 @@ use TestPostgresDB;
 use t::lib::App;
 use Config::Simple;
 use File::Temp qw/tempdir/;
+use IO::CaptureOutput qw(capture_exec);
 use Modules::User;
 use Test::DBIx::Class {
 	schema_class => 'Database::Chado::Schema',
@@ -47,16 +48,9 @@ use Test::DBIx::Class {
 }, 'Tracker', 'Login';
 
 
-# Set up testing config file
-my $cfg_file;
-lives_ok { $cfg_file = init("$FindBin::Bin/sandbox") } 'Test environment initialized';
-BAIL_OUT('Test environment initialization failed') unless $cfg_file;
-
-
-# Create test CGIApp
-$ENV{SUPERPHY_CONFIGFILE} = $cfg_file;
+# Create test CGIApp and work environment
 my $cgiapp;
-lives_ok { $cgiapp = t::lib::App::launch(Schema) } 'Test::WWW::Mechanize::CGIApp initialized';
+lives_ok { $cgiapp = t::lib::App::launch(Schema, $ARGV[0]) } 'Test::WWW::Mechanize::CGIApp initialized';
 BAIL_OUT('CGIApp initialization failed') unless $cgiapp;
 
 
@@ -79,7 +73,7 @@ my $genome_name = upload_genome($cgiapp);
 my $tracking_id = tracker_table($cgiapp, $login_id, $genome_name);
 
 # Initiate loading pipeline
-
+run_pipeline();
 
 
 
@@ -97,9 +91,10 @@ Prepare test sandbox and CGIApp config file
 =cut
 sub init {
 	my $root_dir = shift;
+	my $orig_cfg_file = shift;
 
 	# Create temporary directory for test files
-	my $test_dir = tempdir('XXXX', DIR => $root_dir);
+	my $test_dir = tempdir('XXXX', DIR => $root_dir, CLEANUP => 1);
 
 	# Create config file with test server parameters
 	my $cfg_file = $test_dir . '/test.cfg';
@@ -110,7 +105,7 @@ sub init {
 	mkdir $tmp_dir or die "Error: mkdir $tmp_dir failed ($!).\n";
 	$cfg->param('tmp.dir', $tmp_dir);
 
-	# Pipeline input/output directory
+	# Pipeline input directory
 	my $seq_dir = $test_dir . '/inbox/';
 	mkdir $seq_dir or die "Error: mkdir $seq_dir failed ($!).\n";
 	$cfg->param('dir.seq', $seq_dir);
@@ -119,6 +114,22 @@ sub init {
 	my $log_dir = $test_dir . '/logs/';
 	mkdir $log_dir or die "Error: mkdir $log_dir failed ($!).\n";
 	$cfg->param('dir.log', $log_dir);
+
+	# Pipeline work directory
+	my $work_dir = $test_dir . '/data/';
+	mkdir $work_dir or die "Error: mkdir $work_dir failed ($!).\n";
+	$cfg->param('dir.sandbox', $work_dir);
+
+	# Copy external commands from a current config file
+	my $oldcfg = new Config::Simple($orig_cfg_file);
+	unless($oldcfg) {
+		die Config::Simple->error();
+	}
+
+	my @copy_params = qw/ext.blastdir ext.mummerdir ext.parallel ext.muscle ext.blastdatabase ext.panseq mail.address mail.pass/;
+	foreach my $p (@copy_params) {
+		$cfg->param($p, $oldcfg->param($p));
+	}
 
 	$cfg->write($cfg_file) or die "Write to config file $cfg_file failed:" . Config::Simple->error();
 
@@ -169,9 +180,9 @@ sub upload_genome {
 	);
 	ok($cgiapp->success, 'Genome upload POST');
 
-	diag $cgiapp->content(format => 'text');
+	#diag $cgiapp->content(format => 'text');
 
-	$cgiapp->content_contains('Status of Genome Analysis', "Redirected to upload status page");
+	$cgiapp->content_contains('Status of Uploaded Genome', "Redirected to upload status page");
 	$cgiapp->content_contains('Queued', "Genome queued for analysis") or 
 		BAIL_OUT('Genome upload failed');
 
@@ -183,7 +194,7 @@ sub upload_genome {
 Make sure tracking table contains uploaded genome details
 
 =cut
-sub tracking_table {
+sub tracker_table {
 	my $cgiapp = shift;
 	my $login_id = shift;
 	my $genome_name = shift;
@@ -191,13 +202,24 @@ sub tracking_table {
 	ok my $track = Tracker->find( { login_id => $login_id, feature_name => $genome_name })
     	=> 'Tracker table entry found';
 
-    is_fields $track, {
-    	step => 1,
-    	access_category => 'public'
-    }, 'Uploaded genome correctly added to tracker table';
-
-
+    is_fields [qw/step access_category/], $track, [1, 'public'],
+    	'Tracker entry valid';
 
     return $track->tracker_id;
+}
+
+=head2 run_pipeline
+
+Run analysis pipeline and ensure that it completes successfully
+
+=cut
+sub run_pipeline {
+
+	my $perl_interpreter = $^X;
+	my $cmd = "$perl_interpreter $FindBin::Bin/../Data/genodo_pipeline.pl";
+	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
+
+	ok($success, "loading pipeline completed") or
+		BAIL_OUT("Loading pipeline failed ($stderr)");
 }
 
