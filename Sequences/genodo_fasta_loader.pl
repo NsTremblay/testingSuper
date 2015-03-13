@@ -219,10 +219,16 @@ logit("complete.");
 
 logit("Update of genome locations...");
 unless($NOLOAD) {
-	my @opts = ("perl $FindBin::Bin/../Data/genodo_update_location_latlong.pl", "--config $CONFIGFILE");
+	my @opts = ("perl $FindBin::Bin/../Data/superphy_update_location_latlong.pl", "--config $CONFIGFILE");
 	my $cmd = join(' ', @opts);
 	system($cmd) == 0 or die "Error: $cmd failed.\n";
 }
+logit("complete.");
+
+# Compute checksums
+logit("Update of genome contig checksums...");
+my $fp = Modules::Footprint->new(dbh => $chado->dbh);
+$fp->loadPublicFootprints();
 logit("complete.");
 
 

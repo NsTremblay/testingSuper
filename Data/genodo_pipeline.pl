@@ -6,7 +6,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Config::Simple;
 use FindBin;
-use lib "$FindBin::Bin/..";
+use lib "$FindBin::Bin/../";
 use Time::HiRes qw( time );
 use Log::Log4perl qw(:easy);
 use Email::Simple;
@@ -65,7 +65,7 @@ it under the same terms as Perl itself.
 # Globals
 my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
 	$mail_address, $mail_notification_address, $mail_pass, $input_dir,
-	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir,
+	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir, $panseq_exe,
 	$nr_location, $parallel_exe, $data_directory, $tmp_dir);
 	
 
@@ -258,7 +258,7 @@ if(@tracking_ids) {
 	undef %$nr_sequences;
 
 	# Load all data
-	load_data($job_dir);
+	#load_data($job_dir);
 	
 	# Load genome data
 	# load_genomes(\@genome_loading_args);
@@ -349,7 +349,8 @@ sub init {
 	) or die "Unable to connect to database";
 	
 	# Set exe paths
-	$muscle_exe = 'muscle';
+	$muscle_exe = $conf->param('exe.muscle') || 'muscle';
+
 	$mummer_dir = '/home/ubuntu/MUMer3.23/';
 	$blast_dir = '/home/ubuntu/blast/bin/';
 	$parallel_exe = '/usr/bin/parallel';
@@ -663,7 +664,6 @@ runMode	pan
 nameOrId	name
 storeAlleles	1
 allelesToKeep	1
-maxNumberResultsInMemory	500
 |;
 	close $out;
 	
@@ -1161,11 +1161,11 @@ sub blast_new_regions {
 	} else {
 		die "New pan-genome region BLAST job failed ($stderr).";
 	}
-#	} else {
-#		`touch $blast_file`;
-#	}
+	# } else {
+	# 	`touch $blast_file`;
+	# }
 	
-#}
+}
 
 # =head2 load_pg
 
@@ -1315,13 +1315,8 @@ be separate program
 sub send_email {
 	my $type = shift;
 	
-	my @loading_args = ('perl /home/genodo/computational_platform/Data/email_notification.pl',
-		'--config /home/genodo/config/genodo.cfg', "--notify $type");
-		
-	if($test) {
-		@loading_args = ('perl /home/matt/workspace/a_genodo/sandbox/Data/email_notification.pl',
-		'--config /home/matt/workspace/a_genodo/config/genodo.cfg', "--notify $type")
-	}
+	my @loading_args = ("perl $FindBin::Bin/email_notification.pl",
+		"--config $config", "--notify $type");
 		
 	my $cmd = join(' ',@loading_args);
 	system($cmd);

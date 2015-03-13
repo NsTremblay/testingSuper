@@ -240,30 +240,12 @@
 				<div class="col-sm-8">
 					<div class="row">
 
-						<div class="col-sm-4">
-							<select class="form-control" name="g_location_country" id="inputLocationCountry" placeholder="Country"></select>
-						</div>
-
-						<div class="col-sm-4">
-							<input type="text" class="form-control" name="g_location_state" id="inputLocationState" placeholder="State/Province/Region"/>
-						</div>
-
-						<div class="col-sm-4">
-							<input type="text" class="form-control" name="g_location_city" id="inputLocationCity" placeholder="City"/>
-						</div>
-					</div>
-					
-					<div class="row">
-						<div class="col-sm-12">
-							<span class="help-block"><em>Note: At minimum, the country of isolation must be specified</em></span>
-						</div>
+					<!-- TODO: Put map form bit here, errors will automatically
+					get filled in below -->
+						
 					</div>
 
-					<!-- Have a hidden form here with the isolation location input -->
-
-					<TMPL_VAR err_g_location_country>
-					<TMPL_VAR err_g_location_state>
-					<TMPL_VAR err_g_location_city>
+					<TMPL_VAR err_geocode_id>
 
 				</div>
 			</div>

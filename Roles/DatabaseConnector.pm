@@ -22,20 +22,29 @@ sub connectDatabase {
 	my %params = @_;
 	
 	croak "Cannot call connectDatabase with existing connection to database.\n" if $self->{_dbixSchema};
+
+	if($params{'dbh'}) {
+		# Connect to existing connected DBI database handle
+		$self->{_dbixSchema} = Database::Chado::Schema->connect(sub { return $params{'dbh'} }) 
+			or croak "Could not connect to existing database connection";
+	}
+	else {
+		my $dbi = $params{'dbi'} // croak 'Missing dbi argument.';
+		my $dbName = $params{'dbName'} // croak 'Missing dbName argument.';
+		my $dbHost = $params{'dbHost'} // croak 'Missing dbHost argument.';
+		my $dbPort = $params{'dbPort'};
+		
+		$self->{_dbixConif}->{dbUser} = $params{'dbUser'} // croak 'Missing dbUser argument.';
+		$self->{_dbixConif}->{dbPass} = $params{'dbPass'} // croak 'Missing dbPass argument.';
+		my $source = 'dbi:' . $dbi . ':dbname=' . $dbName . ';host=' . $dbHost;
+		$source . ';port=' . $dbPort if $dbPort;
+		$self->{_dbixConif}->{dbSource} = $source;
+		
+		$self->{_dbixSchema} = Database::Chado::Schema->connect($self->{_dbixConif}->{'dbSource'}, $self->{_dbixConif}->{'dbUser'},
+				$self->{_dbixConif}->{'dbPass'}) or croak "Could not connect to database";
+	}
 	
-	my $dbi = $params{'dbi'} // croak 'Missing dbi argument.';
-	my $dbName = $params{'dbName'} // croak 'Missing dbName argument.';
-	my $dbHost = $params{'dbHost'} // croak 'Missing dbHost argument.';
-	my $dbPort = $params{'dbPort'};
 	
-	$self->{_dbixConif}->{dbUser} = $params{'dbUser'} // croak 'Missing dbUser argument.';
-	$self->{_dbixConif}->{dbPass} = $params{'dbPass'} // croak 'Missing dbPass argument.';
-	my $source = 'dbi:' . $dbi . ':dbname=' . $dbName . ';host=' . $dbHost;
-	$source . ';port=' . $dbPort if $dbPort;
-	$self->{_dbixConif}->{dbSource} = $source;
-	
-	$self->{_dbixSchema} = Database::Chado::Schema->connect($self->{_dbixConif}->{'dbSource'}, $self->{_dbixConif}->{'dbUser'},
-			$self->{_dbixConif}->{'dbPass'}) or croak "Could not connect to database";
 }
 
 =head2 dbixSchema

@@ -17,9 +17,6 @@ use Email::Simple;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
 
-
-#my $sl = Modules::App_Super::script_location();
-#Log::Log4perl->init($sl."/logger.conf");
 my $logger = get_logger();
 
 my $dbic;

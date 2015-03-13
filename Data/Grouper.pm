@@ -72,7 +72,56 @@ sub _initialize {
     croak "Error: 'schema' is a required parameter" unless $self->schema;
     $self->cvmemory($params{cvmemory});
     croak "Error: 'cvmemory' is a required parameter" unless $self->cvmemory;
+
+    # Meta-data type names mapped to 'human-readable' category names for public
+    # consumption
+    $self->{'_meta_data'} = {
+		serotype            => 'Serotype',
+		isolation_host      => 'Host',
+		isolation_source    => 'Source',
+		syndrome            => 'Disease / Symptom',
+		stx1_subtype        => 'Stx1 Subtype',
+		stx2_subtype        => 'Stx2 Subtype',
+	};
     
+}
+
+=head2 meta_data
+
+Meta-data types mapped to public titles used
+for group categories.
+
+No input returns entire hash-ref.
+If input key provided, returns public title
+for meta data category.
+
+=cut
+
+sub meta_data {
+	my $self = shift;
+	my $key = shift;
+
+	if($key) {
+		$self->{'_meta_data'}->{$key};
+	}
+	else {
+		return $self->{'_meta_data'};
+	}
+	
+}
+
+=head2 meta_keys
+
+Meta-data types used to assign groups.
+
+Returns array-ref of strings.
+
+=cut
+
+sub meta_keys {
+	my $self = shift;
+	
+	return keys %{$self->{'_meta_data'}};
 }
 
 =head2 logger
@@ -154,15 +203,6 @@ sub updateStandardGroups {
 	my $meta_data = $fdg->_runGenomeQuery(1);
 
 	# Iterate through meta-data collecting values to use for groups
-	my %meta_keys = (
-		serotype            => 1,
-		isolation_host      => 1,
-		isolation_source    => 1,
-		syndrome            => 1,
-		stx1_subtype        => 1,
-		stx2_subtype        => 1,
-	);
-
 	my %groups;
 	my @group_hierarchy;
 	foreach my $g (keys %$meta_data) {
@@ -171,7 +211,7 @@ sub updateStandardGroups {
 		croak "Error: format error in genome ID $g." unless $genome_id;
 
 		my $d = $meta_data->{$g};
-		foreach my $key (keys %meta_keys) {
+		foreach my $key (keys %{$self->meta_data}) {
 			if(defined($d->{$key})) {
 				my $value_arrayref = $d->{$key};
 				foreach my $value (@$value_arrayref) {
@@ -195,7 +235,7 @@ sub updateStandardGroups {
 	
 
 	# Host groups
-	my $root_category_name = 'Host';
+	my $root_category_name = $self->meta_data('isolation_host');
 	# Default name changes
 	my $name_conversion_coderef = sub { 
 		my $n = shift;
@@ -209,7 +249,7 @@ sub updateStandardGroups {
 
 
 	# Source groups
-	$root_category_name = 'Source';
+	$root_category_name = $self->meta_data('isolation_source');
 
 	# Alter group names for clarity
 	$name_conversion_coderef = sub { 
@@ -231,7 +271,7 @@ sub updateStandardGroups {
 	
 
 	# Syndrome groups
-	$root_category_name = 'Disease / Symptom';
+	$root_category_name = $self->meta_data('syndrome');
 	# Default name changes
 	$name_conversion_coderef = sub { 
 		my $n = shift;
@@ -245,7 +285,7 @@ sub updateStandardGroups {
 
 
 	# Serotype
-	$root_category_name = 'Serotype';
+	$root_category_name = $self->meta_data('serotype');
 	# Add invalid serotypes to undefined group
 	$name_conversion_coderef = sub { 
 		my $n = shift;
@@ -267,7 +307,7 @@ sub updateStandardGroups {
 	push @group_hierarchy, $serotype_root;
 
 	# Stx1 subtype groups
-	$root_category_name = 'Stx1 Subtype';
+	$root_category_name = $self->meta_data('stx1_subtype');
 	# Default name changes
 	$name_conversion_coderef = sub { 
 		my $n = shift;
@@ -280,7 +320,7 @@ sub updateStandardGroups {
 	push @group_hierarchy, $stx1_root;
 
 	# Stx2 subtype groups
-	$root_category_name = 'Stx2 Subtype';
+	$root_category_name = $self->meta_data('stx2_subtype');;
 	# Default name changes
 	$name_conversion_coderef = sub { 
 		my $n = shift;
@@ -332,10 +372,13 @@ sub _buildCategory {
 	# Serotype groups
 	my %group_list;
 	my $group_category_id = $self->updateGroupCategory($root_category_name);
+	my $other_group_id;
 
 	foreach my $gn (keys %{$groups->{$key}}) {
 
-		if(scalar(@{$groups->{$key}{$gn}}) > 1) {
+		if(scalar(@{$groups->{$key}{$gn}}) > 1 || $gn =~ m/_na$/ ) {
+			# Groups with 2 or more, or 'Undefined' groups
+
 			my $value = $gn;
 			$gn = $name_coderef->($gn);
 			
@@ -345,6 +388,23 @@ sub _buildCategory {
 			# Link all genomes to group
 			foreach my $g (@{$groups->{$key}{$value}}) {
 				$self->updateGenomeGroup($g, $group_id);
+			}
+
+		} else {
+			# Other
+			# Includes all groups with only one genome
+
+			unless($other_group_id) {
+				my $gn = "$root_category_name Other";
+				my $value = "$root_category_name\_other";
+				
+				$other_group_id = $self->updateGroup($gn, $value, $group_category_id);
+				$group_list{$gn} = [$other_group_id, $gn];
+			}
+
+			# Link all genomes to group
+			foreach my $g (@{$groups->{$key}{$gn}}) {
+				$self->updateGenomeGroup($g, $other_group_id);
 			}
 		}
 	}
@@ -493,7 +553,6 @@ Create group hierarchy hash-ref.
 Specific to serotype groups.
 
 =cut
-
 sub _seroHierarchy {
 	my $root_name = shift;
 	my $group_list = shift; 
@@ -511,6 +570,7 @@ sub _seroHierarchy {
 	my %o_groups;
 	my %h_groups;
 	my $seen_undef = 0;
+	my $seen_other = 0;
 
 	# Groups;
 	foreach my $grp (@$group_list) {
@@ -529,7 +589,7 @@ sub _seroHierarchy {
 		my $htype = 0;
 
 		# O antigen
-		if($n =~ m/^(O\w+)$/a) {
+		if($n =~ m/^(O\w+)\:?$/a) {
 			# O type only
 			$otype = $1;
 			$htype = 'H-type undefined';
@@ -550,7 +610,15 @@ sub _seroHierarchy {
 			push @{$root->{'children'}}, $group_href;
 			next;
 			
-		} else {
+		} elsif($n =~ m/Serotype Other/) {
+			# No types
+			croak "Error: multiple 'other' groups in group list" if $seen_other;
+			$seen_other = 1;
+			push @{$root->{'children'}}, $group_href;
+			next;
+			
+		} 
+		else {
 			# Something unexpected!
 			# Name conversion should have eliminated these cases
 			croak "Error: unexpected serotype group name $n.";
@@ -619,6 +687,57 @@ sub _seroHierarchy {
 	#get_logger->debug(dump($root));
 
 	return $root;
+}
+
+=head2 group_assignments
+
+Return hash-ref of standard group ids
+mapped to their standard values
+
+Used in loading pipeline to assign
+new genomes to existing groups based
+on their meta-data values.
+
+Returns:
+  A hash-ref containing:
+  	meta_data_type => meta_data_value => group_id
+
+	where meta_data_type is one of:
+	  isolation_host,
+	  isolation_source,
+	  syndrome,
+	  serotype,
+	  stx1_subtype,
+	  stx2_subtype
+
+=cut
+sub group_assignments {
+	my $self = shift;
+
+	my $group_rs = $self->schema()->resultset('GenomeGroup')->search(
+		{
+			'-bool' => 'me.standard'
+		},
+		{
+			prefetch => 'category'
+		}
+	);
+
+	my %group_assignments;
+	my %group_labels = reverse %{$self->meta_data}; # Note: group category names are unique
+
+	while(my $group_row = $group_rs->next) {
+		my $group_id = $group_row->genome_group_id;
+		my $meta_value = $group_row->standard_value;
+		my $meta_key = $group_labels{$group_row->category->name};
+
+		croak "Standard group $group_id with unknown category: ".$group_row->category->name."\n" unless $meta_key;
+		croak "Standard value $meta_value in $meta_key already has group assigned." if defined $group_assignments{$meta_key}{$meta_value}; 
+
+		$group_assignments{$meta_key}{$meta_value} = $group_id;
+	}
+
+	return \%group_assignments;
 }
 
 

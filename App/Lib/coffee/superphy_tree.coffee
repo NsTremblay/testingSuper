@@ -65,7 +65,6 @@ class TreeView extends ViewTemplate
         else b_height = 3
         a_height + b_height)
 
-
     # Append tree commands
     legendID = "tree_legend#{@elNum}"
     @_treeOps(@parentElem, legendID)
@@ -179,6 +178,63 @@ class TreeView extends ViewTemplate
 
   mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
 
+  colours = {
+      'serotype' : [
+        '#004D11',
+        '#236932',
+        '#468554',
+        '#6AA276',
+        '#8DBE98',
+        '#B0DABA',
+        '#D4F7DC'
+      ]
+      'isolation_host' : [
+        '#9E0015',
+        '#AC2536',
+        '#BB4A58',
+        '#CA6F7A',
+        '#D9949B',
+        '#E8B9BD',
+        '#F7DEDF'
+      ]
+      'isolation_source' : [
+        '#000752',
+        '#252B6D',
+        '#4A5089',
+        '#6F75A4',
+        '#949AC0',
+        '#B9BFDB',
+        '#DEE4F7'
+      ]
+      'syndrome' : [
+        '#520042',
+        '#6E2760',
+        '#8A4F7F',
+        '#A6779D',
+        '#C29EBC',
+        '#DEC6DA',
+        '#FBEEF9'
+      ]
+      'stx1_subtype' : [
+        '#F05C00',
+        '#EF7123',
+        '#EE8746',
+        '#ED9D69',
+        '#ECB28C',
+        '#EBC8AF',
+        '#EADED2'
+      ]
+      'stx2_subtype' : [
+        '#006B5C',
+        '#238174',
+        '#46988D',
+        '#6AAEA5',
+        '#8DC5BE',
+        '#B0DBD6',
+        '#D4F2EF'
+      ]
+    }
+
   # FUNC addMetaOntology
   # Create metaOntology object
   #
@@ -206,6 +262,13 @@ class TreeView extends ViewTemplate
   # boolean 
   #      
   update: (genomes, sourceNode=null) ->
+
+    # Counts the number of visible bars to be displayed on tree
+    $('input[name="meta-option"]').each (i,obj)->
+      checkbox_value[i] = 0
+      if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
+        checkbox_value[i] = 1
+      visible_bars = checkbox_value.reduce((a,b)-> a + b)
 
     t1 = new Date()
     
@@ -255,9 +318,12 @@ class TreeView extends ViewTemplate
         n.x = n.x * @branch_scale_factor_x
       if visible_bars > 1
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
-        console.log(n.x)
       n.arr = []
+      n.to_be_hl = new String()
       n.xpos = 0
+      n.tt_mtype = {}
+      for m in mtypesDisplayed
+        n.tt_mtype[m] = []
     
     # If tree clade expanded / collapsed
     # shift tree automatically to accommodate new values
@@ -396,7 +462,6 @@ class TreeView extends ViewTemplate
     rect_block = svgNodes.append("g")
 
     # Appends genomeMeter.  Size of bar reflects number of genomes.
-   
     rect_block
       .append('rect')
       .style("fill", "red")
@@ -408,85 +473,51 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 0)
       .attr("height", 7)
-      .attr("y", -2)
+      .attr("y", -3)
       .attr("x", 4)
-      .append("svg:title")
-      .text((n)-> n.num_leaves + " genomes")
 
-    colours = {
-      'serotype' : [
-        '#004D11',
-        '#236932',
-        '#468554',
-        '#6AA276',
-        '#8DBE98',
-        '#B0DABA',
-        '#D4F7DC'
-      ]
-      'isolation_host' : [
-        '#9E0015',
-        '#AC2536',
-        '#BB4A58',
-        '#CA6F7A',
-        '#D9949B',
-        '#E8B9BD',
-        '#F7DEDF'
-      ]
-      'isolation_source' : [
-        '#000752',
-        '#252B6D',
-        '#4A5089',
-        '#6F75A4',
-        '#949AC0',
-        '#B9BFDB',
-        '#DEE4F7'
-      ]
-      'syndrome' : [
-        '#520042',
-        '#6E2760',
-        '#8A4F7F',
-        '#A6779D',
-        '#C29EBC',
-        '#DEC6DA',
-        '#FBEEF9'
-      ]
-      'stx1_subtype' : [
-        '#F05C00',
-        '#EF7123',
-        '#EE8746',
-        '#ED9D69',
-        '#ECB28C',
-        '#EBC8AF',
-        '#EADED2'
-      ]
-      'stx2_subtype' : [
-        '#006B5C',
-        '#238174',
-        '#46988D',
-        '#6AAEA5',
-        '#8DC5BE',
-        '#B0DBD6',
-        '#D4F2EF'
-      ]
-    }
+    # Adds colour boxes to metadata sidebar
+    jQuery(document).ready ->
+      jQuery('input[name="meta-option"]').each (obj) ->
+        jQuery('#'+this.name+'_'+this.value).hide()
+        if this.checked
+          jQuery('#'+this.name+'_'+this.value).show()
 
-    $('.meta-option.checkbox').each((i,obj)->
-      $(obj).click(()->
-        if $(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1
-            checkbox_value[i] = 1
-          else
-            checkbox_value[i] = 0
-          visible_bars = checkbox_value.reduce((a,b)-> a + b)))
-    
+    # Creates n.tt_mtype[m] which holds popover table html content as a string for metadata summary
+    tt_mtitle = {}
+    for m in mtypesDisplayed
+      tt_mtitle[m] = new String()
+      if genomes.visibleMeta[m]
+        i = 0
+        while i < metaOntology[m].length
+          rect_block.text((n)->
+            if m is "isolation_host" or m is "isolation_source"
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle[m] = tt_mtitle[m].replace("_", " ")
+              tt_mtitle[m] = tt_mtitle[m].slice(0,10) + tt_mtitle[m].charAt(10).toUpperCase() + tt_mtitle[m].slice(11)
+            if m is "syndrome"
+              tt_mtitle[m] = "Symptoms/Diseases"
+            if m is "stx1_subtype" or m is "stx2_subtype"
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
+              tt_mtitle[m] = tt_mtitle[m].replace("_", " ")
+              tt_mtitle[m] = tt_mtitle[m].slice(0,5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6)
+            if m is "serotype"
+              tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1)
+            tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1)
+            if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
+              if i is 6
+                n.tt_mtype[m] += ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr><tbody class='after-other'><tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
+              else n.tt_mtype[m] += ("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>")
+            n.tt_mtype[m])
+          i++
+
     y = -5
     centred = -1.5
-    height = 7
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]
         j = 0
         i = 0
-        x = 0
-        y += height
+        y += 7
         centred += -3.5
         while i < 7
           rect_block
@@ -510,35 +541,63 @@ class TreeView extends ViewTemplate
                 width = 0
                 n.arr[i] = 0
               width)
-            .attr("height", height)
+            .attr("height", 7)
             .attr("y", y)
             .attr("x", (n) ->
               if n._children? && n.arr[i-1]? && i > 0
                 n.xpos += n.arr[i-1]
               else n.xpos = 0
               n.xpos + 4)
-            .append("svg:title")
-            .text(()->
-              if m is "isolation_host" or m is "isolation_source"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,10) + str.charAt(10).toUpperCase() + str.slice(11)
-              if m is "syndrome"
-                str = "Symptoms/Diseases"
-              if m is "stx1_subtype" or m is "stx2_subtype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-                str = str.replace("_", " ")
-                str = str.slice(0,5) + str.charAt(5).toUpperCase() + str.slice(6)
-              if m is "serotype"
-                str = m.charAt(0).toUpperCase() + m.slice(1)
-              if i == 6
-                str + ": Other"
-              else
-                if metaOntology[m][i] is "undefined"
-                  str2 = "Undefined"
-                else str2 = metaOntology[m][i]
-                str + ": " + str2)
+            .attr("data-toggle", "popover")
+            .attr("data-content", (n)->
+              if metaOntology[m][i]?
+                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1))
+              if n.metaCount[m][metaOntology[m][i]] > 0 && n._children?
+                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]))).length
+                if i < 6
+                  n.to_be_hl = n.tt_mtype[m].slice(length + pos)
+                  console.log(pos)
+              tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
+              if i is 6
+                if n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i+1]]?)
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos)
+                else tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tbody class='table-body-bold' style='color:" + colours[m][4] + "'>" + n.to_be_hl
+              "<table class='popover-table'><tr><th style='width:160px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>")
           i++
+
+    # Dismisses popover when mouse leaves both the metaMeter and the popover itself
+    (($) ->
+      oldHide = $.fn.popover.Constructor::hide
+
+      $.fn.popover.Constructor::hide = ->
+        if @options.trigger == 'hover' and @tip().is(':hover')
+          that = this
+          setTimeout (->
+            that.hide.call that, arguments
+          ), that.options.delay.hide
+          return
+        oldHide.call this, arguments
+        return
+
+      return
+    ) jQuery
+
+    # Allows popovers to work in SVG
+    rect_block.selectAll('.metaMeter')
+      .each(()->
+        $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          trigger: 'hover',
+          delay: {show:500, hide:1000},
+          animate: 'false',
+          container: 'body',
+          }))
+
+    # Dismisses popovers on next click unless a new popover is opened
+    $('body').on('click', (e)->
+      if ($(e.target).data('toggle') isnt 'popover' && $(e.target).parents('.popover.in').length is 0)
+          $('[data-toggle="popover"]').popover('hide'))
     
     if ($('#treenode:has(g.v' + visible_bars + ')'))
       svgNodes.select('.v' + visible_bars).remove()
@@ -554,18 +613,6 @@ class TreeView extends ViewTemplate
       if ($('.v2')[0])
         svgNodes.selectAll('.v2').remove()
       svgNodes.selectAll('.v0').remove()
-
-
-    @cluster = @cluster.separation((a, b) ->
-        a_height = 1
-        b_height = 1
-        if a._children? && visible_bars > 1
-          a_height = visible_bars
-        else a_height = 3
-        if b._children? && visible_bars > 1
-          b_height = visible_bars
-        else b_height = 3
-        a_height + b_height)
 
     for m in mtypesDisplayed
       if genomes.visibleMeta[m]

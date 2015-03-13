@@ -58,7 +58,7 @@ $SIG{__DIE__} = $SIG{INT} = 'cleanup_handler';
 my ($panseq_dir, $config_file,
 	$NOLOAD, $RECREATE_CACHE, $SAVE_TMPFILES, $DEBUG, $OVERRIDE,
     $REMOVE_LOCK,
-    $VACUUM, $LOGFILE, $ALIGNDIR);
+    $VACUUM, $LOGFILE);
 
 my $SLICE = undef;
 
@@ -73,7 +73,6 @@ GetOptions(
 	'vacuum' => \$VACUUM,
 	'slice=i' => \$SLICE,
 	'override' => \$OVERRIDE,
-	'aligndir' => \$ALIGNDIR,
 	'log=s' => \$LOGFILE
 ) or ( system( 'pod2text', $0 ), exit -1 );
 
@@ -375,7 +374,7 @@ close $out;
 elapsed_time('Fasta file printing complete');
 
 # Run alignment script
-my @loading_args = ('perl', $align_script, "--dir $alndir");
+my @loading_args = ('perl', $align_script, ,"--fast", "--dir $alndir");
 my $cmd = join(' ',@loading_args);
 my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
 unless($success) {
@@ -640,7 +639,7 @@ sub pangenome_locus {
 	my $name = "loci derived from $query_id";
 	
 	# Add entry in core pangenome alignment table for genome, if it doesn't exist
-	$chado->cache_snp_genome_id($genome_ids->{genome}, $is_public, $collection_info->{name}, 'public');
+	$chado->cache_genome_id($genome_ids->{genome}, $is_public, $collection_info->{name}, 'public');
 	
 	# Feature relationships
 	$chado->handle_parent(subject => $curr_feature_id, genome => $genome_ids->{genome}, contig => $contig_id, public => $is_public);
