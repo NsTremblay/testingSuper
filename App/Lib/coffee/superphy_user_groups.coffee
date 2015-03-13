@@ -42,17 +42,45 @@ class UserGroups
         '<span class="caret"></span></a>'+
         '</div></div>').appendTo(@parentElem)
 
+      
       container = jQuery('<div id="user-groups-form" class="panel-collapse collapse in"></div>').appendTo(@parentElem)
-      user_groups_form = jQuery('<form class="form"></form>').appendTo(container)
+    
+      tabUl = jQuery('<ul class="nav nav-tabs"></ul>').appendTo(container)
+      loadGroupsTab = jQuery('<li role="presentation" class="active"><a href="#load-groups" role="tab" data-toggle="tab">Load</a></li>').appendTo(tabUl)
+      createGroupsTab = jQuery('<li role="presentation"><a href="#create-groups" role="tab" data-toggle="tab">Update/Create</a></li>').appendTo(tabUl)
 
-      create_group = jQuery('<div class="form-group"></div>').appendTo(user_groups_form)
-      create_group_row = jQuery('<div class="row"></div>').appendTo(create_group)
-      create_group_button = jQuery('<div class="col-xs-5"><button class="btn btn-default btn-sm">Create Group</button></div>').appendTo(create_group_row)
-      create_group_input = jQuery('<div class="col-xs-7"><input class="form-control input-sm" type="text" placeholder="Group Name"></div>').appendTo(create_group_row)
+      tabPanes = jQuery('<div class="tab-content"></div>').appendTo(container)
 
-      group_select = jQuery('<div class="control-group"></div>').appendTo(user_groups_form)
+      # Tab pane for loading groups
+      loadGroupPane = jQuery('<div role="tabpanel" class="tab-pane active" id="load-groups"></div>').appendTo(tabPanes)
+      load_groups_form = jQuery('<form class="form"></form>').appendTo(loadGroupPane)
+      
+      # Group Selections - TODO: Change to tree structure
+      group_select = jQuery('<div class="control-group" style="margin-top:5px"></div>').appendTo(load_groups_form)
       standard_select = jQuery('<select id="standard_group_collections" class="form-control" placeholder="Select group(s)..."></select>').appendTo(group_select)
 
+      load_group = jQuery('<div class="form-group"></div>').appendTo(load_groups_form)
+      load_group_row = jQuery('<div class="row"></div>').appendTo(load_group)
+      load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm" type="button">Load</button></div>')
+
+      load_groups_button.click( (e) => 
+        #TODO:Update to deal with private groups
+        e.preventDefault()
+        select_ids = @_getGroupGenomes(standard_select.find('option').val(), @public_genomes, @private_genomes)
+        @_updateSelections(select_ids)
+        ).appendTo(load_group_row)
+
+      # Tab pane for creating groups
+      createGroupPane = jQuery('<div role="tabpanel" class="tab-pane" id="create-groups"></div>').appendTo(tabPanes)
+      create_group_form = jQuery('<form class="form"></form>').appendTo(createGroupPane)
+      group_update = jQuery('<div class="form-group"></div>').appendTo(create_group_form)
+      
+      group_update_input_row = jQuery('<div class="row" style="margin-top:5px"></div>').appendTo(group_update)
+      group_update_input = jQuery('<div class="col-xs-12"><input class="form-control input-sm" type="text" placeholder="Group Name"></div>').appendTo(group_update_input_row)
+
+      group_update_button_row = jQuery('<div class="row" style="margin-top:5px"></div>').appendTo(group_update)
+      group_create_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Create</button></div>').appendTo(group_update_button_row)
+      group_update_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Update</button></div>').appendTo(group_update_button_row)
       
       unless @username isnt ""
         custom_select = jQuery('<div class="alert alert-info" role="alert">Please <a href="/user/login">sign in</a> to view your custom groups</div>')
@@ -61,20 +89,6 @@ class UserGroups
       custom_select.appendTo(group_select)
       
       @_processGroups(uGpObj)
-
-      load_save_groups = jQuery('<div class="form-group"></div>').appendTo(user_groups_form)
-      load_save_groups_row = jQuery('<div class="row"></div>').appendTo(load_save_groups)
-
-      load_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm" type="button">Load</button></div>')
-
-      load_groups_button.click( (e) => 
-        #TODO:Update to deal with private groups
-        e.preventDefault()
-        select_ids = @_getGroupGenomes(standard_select.find('option').val(), @public_genomes, @private_genomes)
-        @_updateSelections(select_ids)
-        ).appendTo(load_save_groups_row)
-
-      save_groups_button = jQuery('<div class="col-xs-3"><button class="btn btn-default btn-sm">Save</button></div>').appendTo(load_save_groups_row)
 
       true
 
