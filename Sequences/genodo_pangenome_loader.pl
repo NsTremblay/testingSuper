@@ -5,13 +5,13 @@
 $0 - Processes a fasta file of pangenome sequence fragments and uploads into the feature table of the database specified in the config file.
 
 =head1 SYNOPSIS
-	
-	% genodo_pangenome_loader.pl [options]
+
+    % genodo_pangenome_loader.pl [options]
 
 =head1 COMMAND-LINE OPTIONS
 
-	--panseq            Optionally, specify a panseq results output directory. If not provided, script will download genomes from DB.
-	--config 			Specify a valid config file with db connection params.
+    --panseq            Optionally, specify a panseq results output directory. If not provided, script will download genomes from DB.
+    --config            Specify a valid config file with db connection params.
 
 =head1 DESCRIPTION
 

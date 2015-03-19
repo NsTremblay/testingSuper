@@ -54,7 +54,7 @@ GetOptions(
 croak "Missing argument. You must supply a configuration filename.\n" . system ('pod2text', $0) unless $CONFIG;
 
 # DBIx::Class file
-my $dbic_file = "$FindBin::Bin/etc/schema.pl";
+my $dbic_file = "$FindBin::Bin/../etc/schema.pl";
 
 my %dbic;
 
@@ -67,6 +67,8 @@ $dbic{'fixture_class'} = '::Populate';
 # Others can be accessed using the Resultset method
 $dbic{'resultsets'} = [
 	'Feature',
+	'Featureprop',
+	'PrivateFeatureprop',
 	'PrivateFeature',
 	'Login',
 	'Cv',
@@ -164,40 +166,19 @@ sub create_private_genome_features {
 		croak "Error: expecting 30 features.";
 	}
 
-	# Create upload entries
-    $dbic{'fixture_sets'}{$fixture}{'Upload'} = [
-		{
-			upload_id => 1,
-    		login_id => 1,
-	        category => 'public',
-	        permissions => [{
-	            can_modify => 1,
-	            can_share => 1,
-	            login_id => 1
-	        }]
-	    },
-	    {
-			upload_id => 2,
-    		login_id => 1,
-	        category => 'private',
-	        permissions => [{
-	            can_modify => 1,
-	            can_share => 1,
-	            login_id => 1
-	        }]
-	    },
-	    {
-			upload_id => 3,
-    		login_id => 2,
-	        category => 'private',
-	        permissions => [{
-	            can_modify => 1,
-	            can_share => 1,
-	            login_id => 1
-	        }]
-	    }
-	];
+	push @fixtures, { Permission => [
+		[qw/permission_id upload_id login_id can_modify can_share/],
+		[1, 1, 1, 1, 1],
+		[2, 2, 1, 1, 1],
+		[3, 3, 1, 1, 1]
+	]};
 
+	push @fixtures, { Upload => [
+		[qw/upload_id login_id category/],
+		[1, 1, 'public'],
+		[2, 1, 'private'],
+		[3, 2, 'private'],
+	]};
 
     my @private_features;
 

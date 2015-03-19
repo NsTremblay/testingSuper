@@ -10,7 +10,7 @@ $0 - Align sequences and build trees in parallel
 
 =head1 COMMAND-LINE OPTIONS
 
-	--dir				Define directory containing fasta files and job list
+	--directory 	Define directory containing fasta files and job list
 
 =head1 DESCRIPTION
 

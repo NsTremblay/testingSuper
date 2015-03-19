@@ -200,7 +200,7 @@ sub publicGenomes {
 
 	while (my $row_hash = $genomes->next) {
 		my $user_genome = 0;
-		my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome);
+		my $display_name = displayname($row_hash->{uniquename}, $user_genome);
 		my $fid = $row_hash->{feature_id};
 
 		print "DN: $display_name\n";
@@ -278,7 +278,7 @@ sub privateGenomes {
 			my $fid = $row_hash->{feature_id};
 			my $acc = $row_hash->{upload}->{category};
 			my $user_genome = 1;
-			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
+			my $display_name = displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
 			unless($acc eq 'public') {
 			    $has_private = 1;
@@ -328,7 +328,7 @@ sub privateGenomes {
 			my $fid = $row_hash->{feature_id};
 			my $acc = 'public';
 			my $user_genome = 1;
-			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
+			my $display_name = displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
 			my $key = "private_$fid";
 			$visable_nodes->{$key} = {
@@ -793,7 +793,6 @@ sub _runGenomeQuery {
 	
     my $featureCount = 0;
     
-
 	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
 		my %feature_hash;
@@ -811,16 +810,16 @@ sub _runGenomeQuery {
 			
 			if($username) {
 				# User logged in and may have some private genomes
-				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, $feature->upload->category);
+				$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome, $feature->upload->category);
 
 			} else {
 				# User not logged in, all user genomes must be public
-				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, 'public');
+				$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome, 'public');
 			}
 			
 		} else {
 			my $user_genome = 0;
-			$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome);
+			$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome);
 		}
 		
 		# Featureprop data
@@ -845,7 +844,10 @@ sub _runGenomeQuery {
 		$k .= $feature->feature_id;
 		
 		$genome_info{$k} = \%feature_hash;
+		$featureCount++;
 	}
+
+	get_logger->debug("$featureCount features found");
 	
 	#$self->elapsed_time('Hash query 2');
 	while(my $feature = $feature_rs2->next) {
@@ -1582,7 +1584,7 @@ sub elapsed_time {
 }
 
 sub displayname {
-	my ($self, $uniquename, $private_table, $category) = @_;
+	my ($uniquename, $private_table, $category) = @_;
 
 	my $dname = $uniquename;
 
@@ -1765,7 +1767,7 @@ sub userGroupList {
 	);
 
 	my $group_hashref = {};
-	map { $group_hashref->{$_->{'genome_group_id'}} = $_->{'name'} } @{$group_rs->all()};
+	map { $group_hashref->{$_->{'genome_group_id'}} = $_->{'name'} } $group_rs->all();
 
 	return $group_hashref;
 }

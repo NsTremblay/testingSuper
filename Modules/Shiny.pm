@@ -19,6 +19,7 @@ use Modules::LocationManager;
 use JSON;
 use Time::HiRes;
 use Switch;
+use Data::Dumper;
 
 =head2 setup
 
@@ -58,24 +59,21 @@ sub data : Runmode {
     # Check user is logged in
     my $username = $self->authen->username;
 
-    my $msg = self->authen->is_athenticated ? "Username: $username" : "Not logged in";
+    my $msg = $self->authen->is_authenticated ? "Username: $username" : "Not logged in";
     get_logger->debug($msg);
     
 
     if ($formMethod eq 'GET') {
-        print STDERR "\nGET method called\n\n";
         my $user_data_json = $self->_getUserData($username, $session_id);
         return $user_data_json;
     }
     elsif ($formMethod eq 'POST') {
-        print STDERR "\nPOST method called\n\n";
-        #my $user_genomes = $q->param('genome_id');
         my $user_groups = $q->param('groups');
         my $status_json = $self->_saveUserData($username, $user_groups);
         return $status_json;
     }
     else {
-        my $status = {error => "contact database administrator"};
+        my $status = { error => "contact database administrator" };
         return encode_json($status);
     }
 }
@@ -90,7 +88,9 @@ sub _getUserData {
         'CGISESSID' => $CGISESSID,
     };
 
-    _returnError($shiny_data, 'User not logged in');
+    unless($username) {
+        return _returnError($shiny_data, 'User not logged in') 
+    }
     
     # DB Accessor object
     my $fdg = Modules::FormDataGenerator->new();
@@ -101,13 +101,15 @@ sub _getUserData {
     $lm->dbixSchema($self->dbixSchema);
 
     # Get genome data
-    my $public_meta = $fdg->_runGenomeQuery(1);
+    my $public_meta = $fdg->_runGenomeQuery(1,$username);
     my $private_meta = $fdg->_runGenomeQuery(0,$username);
 
     # Initialize variables
+    my @ordered_genomes;
     my %genome_ids;
     my $i = 0;
-    map { $genome_ids{$_} = $i; $i++ } keys %{$public_meta}, keys %{$private_meta};
+    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } keys %{$public_meta};
+    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } keys %{$private_meta};
 
     # Empty list
     my @empty = (undef) x $i;
@@ -135,7 +137,7 @@ sub _getUserData {
     foreach my $name (values %$group_hashref) {
         if(defined $group_lists->{$name}) {
             # Future group development will allow users to assign groups to categories
-            # allowing possible groups in different categories to have same name. Currently
+            # allowing groups in different categories to have same name. Currently
             # all groups are part of the default category 'Individuals' and should be unique,
             # but check will make sure groups in this hash are not clobbered at any point in the future.
             die "Error: group name collision. Multiple custom user-defined genome groups with same name.";
@@ -143,7 +145,6 @@ sub _getUserData {
 
         $group_lists->{$name} = [ @empty ];
     }
-
 
     foreach my $genome_id (keys %genome_ids) {
 
@@ -189,17 +190,19 @@ sub _getUserData {
 
         if($genome_obj->{groups}) {
             foreach my $group_id (@{$genome_obj->{groups}}) {
+                # Only encode custom groups
                 my $group_name = $group_hashref->{$group_id};
-                $group_lists->{$group_name}->[$index] = 1;
+                $group_lists->{$group_name}->[$index] = 1 if $group_name;
             }
         }
     }
 
-    $shiny_data->{'data'}{keys %$meta_categories} = values %$meta_categories;
-    $shiny_data->{'data'}{keys %$extra_date_categories} = values %$extra_date_categories;
-    $shiny_data->{'data'}{keys %$extra_location_categories} = values %$extra_location_categories;
-    $shiny_data->{'groups'}{keys %$group_lists} = values %$group_lists;
+    map { $shiny_data->{'data'}{$_} = $meta_categories->{$_} } keys %$meta_categories;
+    map { $shiny_data->{'data'}{$_} = $extra_date_categories->{$_} } keys %$extra_date_categories;
+    map { $shiny_data->{'data'}{$_} = $extra_location_categories->{$_} } keys %$extra_location_categories;
+    map { $shiny_data->{'groups'}{$_} = $group_lists->{$_} } keys %$group_lists;
     $shiny_data->{'status'} = "User data retrieved for $username";
+    $shiny_data->{'genomes'} = \@ordered_genomes;
 
     return encode_json($shiny_data);
 }
@@ -214,44 +217,141 @@ sub _returnError {
 }
 
 sub _saveUserData {
-    # TODO: Test this
-    my ($self, $_userName, $_userGroups) = @_;
+    my ($self, $username, $group_json) = @_;
 
-    #print STDERR $_userGroups . "\n";
+    my $response = {
+        user => $username
+    };
 
-    my $user_groups_obj = decode_json($_userGroups);
-
-    #print STDERR $user_groups_obj . "\n";
-
-    my $status = {};
-
-    unless ($_userName) {    
-        $status->{error} = "User not logged in";
-        return encode_json($status);
+    unless($username) {
+        return _returnError($response, 'User not logged in') 
+    }
+   
+    my $shiny_data = decode_json($group_json);
+    my $ordered_genomes = $shiny_data->{genomes};
+    my $shiny_groups = $shiny_data->{groups};
+    unless($ordered_genomes) {
+        return _returnError($response, "JSON Error! Missing 'genomes' object.");
+    }
+    unless($shiny_groups) {
+        return _returnError($response, "JSON Error! Missing 'groups' object.");
     }
 
-    my $timestamp = localtime(time);
+    my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, 
+        cvmemory => $self->cvmemory);
 
-    my $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->find({username => $_userName});
+    # Iterate through groups
+    # Identify new, modified and deleted groups
 
-    if ($userGroupQuery) {
-        $userGroupQuery->update(
+    # Rollback on failure
+    my $guard = $self->dbixSchema->txn_scope_guard;
+    
+    my $group_rs = $self->dbixSchema->resultset('GenomeGroup')->search(
+        { 
+            username => $username
+        },
         {
-            last_modified => "$timestamp",
-            user_groups => encode_json($user_groups_obj)
+            columns => [name genome_group_id]
+        }
+    );
+
+    my %modified;
+    while(my $group_row = $group_rs->next) {
+        unless($shiny_groups->{$group_row->name}) {
+            # Group is missing in Shiny set
+            # Implies deletion
+            my $rs = $data->updateGroupMembers(undef, {
+                group_id => $group_row->genome_group_id,
+                username => $username
             });
-    }
-    else {
-        $userGroupQuery = $self->dbixSchema->resultset('UserGroup')->create(
-        {
-            username => $_userName,
-            last_modified => "$timestamp",
-            user_groups => encode_json($user_groups_obj)
+
+            unless($rs) {
+                return _returnError($response, "Internal Error! Deletion of group ".$group_row->name." failed.");
+            }
+        
+        }
+        else {
+            # Group is in both sets
+            # Update group members
+            # Note: the group properties are currently not accessible in Shiny, so
+            # only the group members need to be updated
+
+            my $i = 0;
+            my @genomes;
+            foreach my $value (@{$shiny_groups->{$group_row->name}}) {
+                if($value) {
+                    push @genomes, $ordered_genomes->[$i];
+                }
+            }
+
+            # Validate genomes
+            my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, 
+                genomes => \@genomes, user => $username, 
+                cvmemory => $self->cvmemory);
+
+            my ($err, $bad1, $bad2) = $warden->error; 
+            if($err) {
+                # User requested invalid strains or strains that they do not have permission to view
+                return _returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
+            }
+
+            # Update group members
+            my $rs = $data->updateGroupMembers($warden, {
+                group_id => $group_row->genome_group_id,
+                username => $username
             });
+
+            unless($rs) {
+                return _returnError($response, "Internal Error! Update of group ".$group_row->name." failed.");
+            }
+
+        }
+
+        $modified{$group_row->name} = 1;
     }
 
-    $status->{status} = "User data updated";
-    return encode_json($status);
+    # Create new groups
+    foreach my $group_name (keys %{$shiny_groups}) {
+        unless($modified{$group_name}) {
+            # New group not seen before
+
+            my $i = 0;
+            my @genomes;
+            foreach my $value (@{$shiny_groups->{$group_name}}) {
+                if($value) {
+                    push @genomes, $ordered_genomes->[$i];
+                }
+            }
+
+            # Validate genomes
+            my $warden = Modules::GenomeWarden->new(schema => $self->dbixSchema, 
+                genomes => \@genomes, user => $username, 
+                cvmemory => $self->cvmemory);
+
+            my ($err, $bad1, $bad2) = $warden->error; 
+            if($err) {
+                # User requested invalid strains or strains that they do not have permission to view
+                return _returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
+            }
+
+            # Create group
+            my $rs = $data->createGroup($warden, {
+                name => $group_name,
+                username => $username
+            });
+
+            unless($rs) {
+                return _returnError($response, "Internal Error! Creation of group ".$group_name." failed.");
+            }
+        }
+    }
+
+    # Save all changes
+    $guard->commit;
+
+
+    $response->{status} = "User data updated";
+    return encode_json($response);
 }
 
 1;

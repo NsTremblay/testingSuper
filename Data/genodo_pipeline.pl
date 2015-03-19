@@ -39,7 +39,7 @@ $0 - Runs programs to do panseq analyses and load them into the DB for newly sub
 
 =head1 DESCRIPTION
 
-	
+TBD
 
 =head2 NOTES
 

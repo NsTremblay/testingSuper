@@ -125,7 +125,7 @@ sub init {
 =head2 quickdb_login
 
 Login as test user for the quickdb database
-	
+
 =cut
 sub quickdb_login {
 	my $mech = shift;
@@ -143,7 +143,7 @@ sub quickdb_login {
 Login as user to webserver
 
 Will BAIL_OUT if unsuccessful
-	
+
 =cut
 sub login_ok {
 	my $mech = shift;
@@ -189,7 +189,7 @@ sub json_ok {
 
 sub json {
 	my ($mech, $text) = @_;
-	$text ||= exists $mech->response->headers->{'x-json'}?
+	$text ||= exists $mech->response->headers->{'x-json'} ?
 		$mech->response->headers->{'x-json'}
 	:	$mech->content;
 	my $json = eval {
