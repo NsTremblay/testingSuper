@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-$0 - Loads pre-computed phylogenetic tree data into tree table
+$0 - Loads phylogenetic genome tree data into tree table
 
 =head1 SYNOPSIS
 
@@ -10,13 +10,16 @@ $0 - Loads pre-computed phylogenetic tree data into tree table
 
 =head1 OPTIONS
 
- --tree      Newick-format tree file
+ --tree      Newick-format tree file [OPTIONAL]
 
 =head1 DESCRIPTION
 
 To improve the speed of page loading, tree data
 is computed once and then saved in a table called tree. Tree data
 needs to be updated anytime data changes (relatively infrequent).
+
+Can load precomputed tree (--tree option) or will perform FastTree
+build of current snp_alignment in database.
 
 =head1 AUTHORS
 
@@ -43,7 +46,6 @@ my ($tree_file,$config);
 
 GetOptions(
     'tree=s' => \$tree_file,
-    'format=s' => 
     'config=s' => \$config,
 );
 
@@ -60,7 +62,7 @@ my $t = Phylogeny::Tree->new(config => $config);
 
 unless($tree_file) {
 	# Compute genome tree
-	my $tree_builder = Phylogeny::TreeBuilder->new();
+	my $tree_builder = Phylogeny::TreeBuilder->new(mp => 1, dbl_precision => 1);
 	
 	# write alignment file
 	my $tmp_file = $tmp_dir . 'genodo_genome_aln.txt';

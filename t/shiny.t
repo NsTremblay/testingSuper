@@ -39,6 +39,7 @@ use Data::Grouper;
 use Modules::FormDataGenerator;
 use t::lib::App;
 use Config::Simple;
+use JSON::Any;
 use File::Temp qw/tempdir/;
 use Test::DBIx::Class {}, 'GenomeGroup', 'FeatureGroup', 'PrivateFeatureGroup', 'Permission';
 
@@ -94,7 +95,7 @@ fixtures_ok \&custom_groups, 'Install custom group fixtures';
 shiny_get_request();
 
 
-
+shiny_post_request();
 
 
 done_testing();
@@ -103,7 +104,79 @@ done_testing();
 ## SUBS
 ########
 
+=head2 shiny_post_request
 
+
+=cut
+sub shiny_post_request {
+	my $json = shift;
+
+	# Create single testset for testing modification and creation
+	my @ordered_genomes = @{$json->{genomes}};
+	my %indices;
+	my $i = 0;
+	map { $indices{$_} = $i; $i++ } @ordered_genomes;
+	
+	# Get some genome IDs for testset
+	my $public_rs = Feature->search(
+		{
+			'type.name' => 'contig_collection'
+		},
+		{
+			join => ['type'],
+			rows => 2,
+			columns => ['feature_id']
+			offset => 10,
+		}
+	);
+
+	my $private_rs = PrivateFeature->search(
+		{
+			'type.name' => 'contig_collection',
+			'upload.login_id' => $login_id
+		},
+		{
+			join => ['type','upload'],
+			rows => 1,
+			columns => ['feature_id'],
+			offset => 10
+		}
+	);
+
+	my @testset_indices;
+	while(my $row = $public_rs->next) {
+		push @testset_indices, $indices{'public_'.$row->feature_id};
+	}
+
+	while(my $row = $private_rs->next) {
+		push @testset_indices, $indices{'private_'.$row->feature_id};
+	}
+
+	my @testset = (undef) x scalar(@ordered_genomes);
+	foreach my $i (@testset_indices) {
+		$testset[$i] = 1;
+	}
+
+	# Convert and send POST request
+	my $post_params = {
+		genomes => \@ordered_genomes,
+		'new_group' => \@testset,
+		'group1' => \@testset
+	}
+	my $post_json = to_json($post_params);
+
+	my $rm = '/shiny/data';
+	$cgiapp->post($rm,
+		'Content' => [ groups => $post_json ],
+		'Content_Type' => 'application/json'
+	);
+	ok($cgiapp->success, 'Genome upload POST');
+
+
+
+	
+
+}
 
 =head2 shiny_get_request
 

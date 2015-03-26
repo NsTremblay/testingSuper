@@ -64,12 +64,12 @@ sub data : Runmode {
     
 
     if ($formMethod eq 'GET') {
-        my $user_data_json = $self->_getUserData($username, $session_id);
+        my $user_data_json = $self->getUserData($username, $session_id);
         return $user_data_json;
     }
     elsif ($formMethod eq 'POST') {
         my $user_groups = $q->param('groups');
-        my $status_json = $self->_saveUserData($username, $user_groups);
+        my $status_json = $self->saveUserData($username, $user_groups);
         return $status_json;
     }
     else {
@@ -80,7 +80,7 @@ sub data : Runmode {
 
 
 # Helper methods
-sub _getUserData {
+sub getUserData {
     my ($self, $username, $CGISESSID) = @_;
 
     my $shiny_data = {
@@ -89,7 +89,7 @@ sub _getUserData {
     };
 
     unless($username) {
-        return _returnError($shiny_data, 'User not logged in') 
+        return $self->returnError($shiny_data, 'User not logged in') 
     }
     
     # DB Accessor object
@@ -108,8 +108,8 @@ sub _getUserData {
     my @ordered_genomes;
     my %genome_ids;
     my $i = 0;
-    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } keys %{$public_meta};
-    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } keys %{$private_meta};
+    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } sort keys %{$public_meta};
+    map { $genome_ids{$_} = $i; $i++; push @ordered_genomes, $_; } sort keys %{$private_meta};
 
     # Empty list
     my @empty = (undef) x $i;
@@ -204,19 +204,33 @@ sub _getUserData {
     $shiny_data->{'status'} = "User data retrieved for $username";
     $shiny_data->{'genomes'} = \@ordered_genomes;
 
-    return encode_json($shiny_data);
+    return $self->returnJSON($shiny_data);
 }
 
-sub _returnError {
+sub returnError {
+    my $self = shift;
     my $shiny_data = shift;
     my $msg = shift;
 
     $shiny_data->{error} = $msg;
 
+    # Set response header type
+    $self->header_add('-type' => 'application/json');
+
     return encode_json($shiny_data)
 }
 
-sub _saveUserData {
+sub returnJSON {
+    my $self = shift;
+    my $shiny_data = shift;
+    
+    # Set response header type
+    $self->header_add('-type' => 'application/json');
+
+    return encode_json($shiny_data)
+}
+
+sub saveUserData {
     my ($self, $username, $group_json) = @_;
 
     my $response = {
@@ -224,17 +238,17 @@ sub _saveUserData {
     };
 
     unless($username) {
-        return _returnError($response, 'User not logged in') 
+        return $self->returnError($response, 'User not logged in') 
     }
    
     my $shiny_data = decode_json($group_json);
     my $ordered_genomes = $shiny_data->{genomes};
     my $shiny_groups = $shiny_data->{groups};
     unless($ordered_genomes) {
-        return _returnError($response, "JSON Error! Missing 'genomes' object.");
+        return $self->returnError($response, "JSON Error! Missing 'genomes' object.");
     }
     unless($shiny_groups) {
-        return _returnError($response, "JSON Error! Missing 'groups' object.");
+        return $self->returnError($response, "JSON Error! Missing 'groups' object.");
     }
 
     my $data = Modules::FormDataGenerator->new(dbixSchema => $self->dbixSchema, 
@@ -257,21 +271,8 @@ sub _saveUserData {
 
     my %modified;
     while(my $group_row = $group_rs->next) {
-        unless($shiny_groups->{$group_row->name}) {
-            # Group is missing in Shiny set
-            # Implies deletion
-            my $rs = $data->updateGroupMembers(undef, {
-                group_id => $group_row->genome_group_id,
-                username => $username
-            });
-
-            unless($rs) {
-                return _returnError($response, "Internal Error! Deletion of group ".$group_row->name." failed.");
-            }
-        
-        }
-        else {
-            # Group is in both sets
+        if($shiny_groups->{$group_row->name}) {
+            # Group also in Shiny set, perform update
             # Update group members
             # Note: the group properties are currently not accessible in Shiny, so
             # only the group members need to be updated
@@ -292,7 +293,7 @@ sub _saveUserData {
             my ($err, $bad1, $bad2) = $warden->error; 
             if($err) {
                 # User requested invalid strains or strains that they do not have permission to view
-                return _returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
+                return $self->returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
             }
 
             # Update group members
@@ -302,7 +303,7 @@ sub _saveUserData {
             });
 
             unless($rs) {
-                return _returnError($response, "Internal Error! Update of group ".$group_row->name." failed.");
+                return $self->returnError($response, "Internal Error! Update of group ".$group_row->name." failed.");
             }
 
         }
@@ -331,7 +332,7 @@ sub _saveUserData {
             my ($err, $bad1, $bad2) = $warden->error; 
             if($err) {
                 # User requested invalid strains or strains that they do not have permission to view
-                return _returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
+                return $self->returnError($response, 'Access Violation Error! User does not have access to uploaded genomes: '.join(', ',@$bad1, @$bad2));
             }
 
             # Create group
@@ -341,7 +342,7 @@ sub _saveUserData {
             });
 
             unless($rs) {
-                return _returnError($response, "Internal Error! Creation of group ".$group_name." failed.");
+                return $self->returnError($response, "Internal Error! Creation of group ".$group_name." failed.");
             }
         }
     }
@@ -351,7 +352,7 @@ sub _saveUserData {
 
 
     $response->{status} = "User data updated";
-    return encode_json($response);
+    return $self->returnJSON($response);
 }
 
 1;

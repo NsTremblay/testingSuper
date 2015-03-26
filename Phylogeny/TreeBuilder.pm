@@ -43,8 +43,14 @@ sub new {
 	
 	# Fast tree executable
 	my $ftexe = $args{fasttree_exe} // 'FastTree';
+	my $num_threads = 18;
 	if($args{mp}) {
+		$num_threads = $args{num_threads} if $args{num_threads};
+		$ENV{OMP_NUM_THREADS} = $num_threads;
 		$ftexe .= 'MP';
+	}
+	if($args{dbl_precision}) {
+		$ftexe .= '-dbl';
 	}
 	$self->ft_exe($ftexe);
 	
