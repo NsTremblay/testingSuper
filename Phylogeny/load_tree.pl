@@ -74,7 +74,8 @@ unless($tree_file) {
 	close $out;
 	
 	# build newick tree
-	$tree_builder->build_tree($tmp_file, $tree_file) or croak "Error: genome tree build failed.\n";
+	my $fast = 1;
+	$tree_builder->build_tree($tmp_file, $tree_file, $fast) or croak "Error: genome tree build failed.\n";
 }
 
 # Load tree into database

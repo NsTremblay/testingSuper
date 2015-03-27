@@ -28,7 +28,7 @@ Defines the start and run modes for CGI::Application and connects to the databas
 =cut
 
 sub setup {
-    my $self=shift;
+    my $self = shift;
     
     get_logger->info("Initializing Modules::Shiny");
 
@@ -79,19 +79,22 @@ sub data : Runmode {
 }
 
 
-# Helper methods
-sub getUserData {
-    my ($self, $username, $CGISESSID) = @_;
+=head2 groups
 
-    my $shiny_data = {
-        user => $username,
-        'CGISESSID' => $CGISESSID,
-    };
+List user's groups
 
-    unless($username) {
-        return $self->returnError($shiny_data, 'User not logged in') 
-    }
+=cut
+
+
+sub user_group_data {
     
+}
+
+sub genome_data {
+    my ($self, $username) = @_;
+
+    my $shiny_data;
+
     # DB Accessor object
     my $fdg = Modules::FormDataGenerator->new();
     $fdg->dbixSchema($self->dbixSchema);
@@ -133,17 +136,20 @@ sub getUserData {
 
     # Group lists
     my $group_lists;
+    my $group_id_list;
     my $group_hashref = $fdg->userGroupList($username);
-    foreach my $name (values %$group_hashref) {
+    foreach my $id (keys %$group_hashref) {
+        my $name = $group_hashref->{$id};
         if(defined $group_lists->{$name}) {
-            # Future group development will allow users to assign groups to categories
-            # allowing groups in different categories to have same name. Currently
+            # Future group development will allow users to assign groups to categories,
+            # permitting groups in different categories to have same name. Currently
             # all groups are part of the default category 'Individuals' and should be unique,
             # but check will make sure groups in this hash are not clobbered at any point in the future.
             die "Error: group name collision. Multiple custom user-defined genome groups with same name.";
         }
 
         $group_lists->{$name} = [ @empty ];
+        $group_id_list->{$name} = $id;
     }
 
     foreach my $genome_id (keys %genome_ids) {
@@ -201,16 +207,37 @@ sub getUserData {
     map { $shiny_data->{'data'}{$_} = $extra_date_categories->{$_} } keys %$extra_date_categories;
     map { $shiny_data->{'data'}{$_} = $extra_location_categories->{$_} } keys %$extra_location_categories;
     map { $shiny_data->{'groups'}{$_} = $group_lists->{$_} } keys %$group_lists;
-    $shiny_data->{'status'} = "User data retrieved for $username";
+    map { $shiny_data->{'group_ids'}{$_} = $group_id_list->{$_} } keys %$group_id_list;
     $shiny_data->{'genomes'} = \@ordered_genomes;
 
-    return $self->returnJSON($shiny_data);
+    return $shiny_data;
 }
 
-sub returnError {
+=head2 error_response
+
+Provide REST responses to common errors encountered in
+module.
+
+=cut
+sub error_response {
     my $self = shift;
+    my $err_t = shift; # 
     my $shiny_data = shift;
-    my $msg = shift;
+   
+    my $msg;
+    switch($err_t) {
+        case 'not_logged_in' {
+            $self->header_add('-status' => '401 User not logged in');
+            $msg = 'User not logged in';
+        }
+        case 'forbidden' {
+            $self->header_add('-status' => '403 Restricted access ');
+            $msg = 'User not logged in';
+        }
+        else {
+            die "Error: unknown error type $err_t.";
+        }
+    }
 
     $shiny_data->{error} = $msg;
 
@@ -220,11 +247,22 @@ sub returnError {
     return encode_json($shiny_data)
 }
 
-sub returnJSON {
+=head2 create_response
+
+Provide REST response to for creation of group
+
+=cut
+sub create_response {
     my $self = shift;
     my $shiny_data = shift;
     
-    # Set response header type
+    my $group_id = $shiny_data->{group_id};
+    my $url = $self->url('-rewrite' => 1);
+    my $uri = $url . "shiny/group/$group_id";
+    
+    # Set response headers
+    $self->header_add('-status' => '201 Created');
+    $self->header_add('-Location' => $uri);
     $self->header_add('-type' => 'application/json');
 
     return encode_json($shiny_data)
