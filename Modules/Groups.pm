@@ -235,6 +235,7 @@ sub geophy : Runmode {
     $fdg->dbixSchema($self->dbixSchema);
     
     my $username = $self->authen->username;
+
     my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
 
     $template->param(public_genomes => $pub_json);
@@ -259,7 +260,7 @@ sub geophy : Runmode {
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    my $user_groups = $fdg->userGroups();
+    my $user_groups = $fdg->userGroups($username);
 
     $template->param(username => $username);
     $template->param(user_groups => $user_groups);

@@ -411,16 +411,31 @@
     };
 
     ViewController.prototype.sideBar = function(elem) {
-      var form1, form2, parentTarget, wrapper;
+      var form1, form2, form3, parentTarget, wrapper;
       parentTarget = 'sidebar-group';
       wrapper = jQuery('<div class="panel-group" id="' + parentTarget + '"></div>');
       elem.append(wrapper);
       form1 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form1);
       this.metaForm(form1, parentTarget);
+      form3 = jQuery('<div class="panel panel-default"></div>');
+      wrapper.append(form3);
+      this.groupForm(form3, parentTarget);
       form2 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form2);
       this.filterForm(form2, parentTarget);
+      return true;
+    };
+
+    ViewController.prototype.groupForm = function(elem, parentStr) {
+      var group_form, panel_body, panel_header, panel_main, panel_title;
+      panel_header = $('<div class="panel-heading"></div>');
+      panel_title = $('<div class="panel_title"> <a data-toggle="collapse" href="#group-form"> User Groups <span class="caret"></span></a></div>').appendTo(panel_header);
+      panel_main = $('<div id="group-form" class="collapse in"></div>');
+      panel_body = $('<div class="panel-body"></div>').appendTo(panel_main);
+      group_form = $('<div class="user-groups-menu"></div>').appendTo(panel_body);
+      elem.append(panel_header);
+      elem.append(panel_main);
       return true;
     };
 
@@ -447,7 +462,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="display:none;width:12px;height:12px;background:#004D11;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="display:none;width:12px;height:12px;background:#9E0015;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="display:none;width:12px;height:12px;background:#000752;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="display:none;width:12px;height:12px;background:#520042;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="display:none;width:12px;height:12px;background:#F05C00;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="display:none;width:12px;height:12px;background:#006B5C;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -513,7 +528,7 @@
     };
 
     ViewController.prototype.filterForm = function(elem, parentStr) {
-      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selDiv, selGroup, selLab, selRadio, sf;
+      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbg, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, findButton, header, numVisible, selDiv, selGroup, selLab, selRadio, sf, ugpDiv, ugpGroup, ugpLab, ugpRadio;
       header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
       container = jQuery('<div id="filter-form" class="panel-collapse collapse in"></div>');
       numVisible = this.genomeController.filtered;
@@ -547,6 +562,7 @@
           jQuery("#fast-filter").show();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -560,6 +576,7 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").show();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -573,10 +590,25 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").show();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
       filtType.append(selGroup);
+      ugpGroup = jQuery('<div class="form-group"></div>');
+      ugpDiv = jQuery('<div class="col-xs-1"></div>').appendTo(ugpGroup);
+      ugpRadio = jQuery('<input id="ugp" type="radio" name="filter-form-type" value="selection">').appendTo(ugpDiv);
+      ugpLab = jQuery('<label class="col-xs-10" for="ugp">By Group</label>').appendTo(ugpGroup);
+      ugpRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").hide();
+          jQuery("#adv-filter").hide();
+          jQuery("#selection-filter").hide();
+          jQuery("#group-filter").show();
+        }
+        return true;
+      });
+      filtType.append(ugpGroup);
       container.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);
@@ -594,6 +626,17 @@
       fbs.append(filtButton);
       fbs.hide();
       container.append(fbs);
+      fbg = jQuery("<div class='row' id='group-filter'>" + "<p>A group in one of the views</p>" + "</div>");
+      findButton = jQuery('<div class="col-xs-3"><button id="user-groups-submit" class="btn btn btn-sm" type="button">Find</button></div>');
+      fbg.append(findButton);
+      filtButton = jQuery('<div class="col-xs-3"><button id="filter-group-button" type="button" class="btn btn-sm">Filter</button></div>');
+      filtButton.click(function(e) {
+        e.preventDefault();
+        return viewController.filterViews('selection');
+      });
+      fbg.append(filtButton);
+      fbg.hide();
+      container.append(fbg);
       container.appendTo(elem);
       return true;
     };
@@ -2868,7 +2911,7 @@
    */
 
   TreeView = (function(_super) {
-    var checkbox_value, mtypesDisplayed, total_height, visible_bars;
+    var checkbox_value, colours, mtypesDisplayed, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
@@ -3001,6 +3044,15 @@
 
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
 
+    colours = {
+      'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
+      'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
+      'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
+      'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
+      'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+      'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
+    };
+
     TreeView.prototype.addMetaOntology = function(node) {
       var k, metaOntology, t, _i, _len;
       metaOntology = {};
@@ -3022,10 +3074,19 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, tt_mtitle, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _len6, _m, _n, _o, _ref, _ref1, _ref2;
       if (sourceNode == null) {
         sourceNode = null;
       }
+      $('input[name="meta-option"]').each(function(i, obj) {
+        checkbox_value[i] = 0;
+        if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
+          checkbox_value[i] = 1;
+        }
+        return visible_bars = checkbox_value.reduce(function(a, b) {
+          return a + b;
+        });
+      });
       t1 = new Date();
       oldRoot = this.root;
       this._sync(genomes);
@@ -3060,10 +3121,15 @@
         }
         if (visible_bars > 1) {
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
-          console.log(n.x);
         }
         n.arr = [];
+        n.to_be_hl = new String();
         n.xpos = 0;
+        n.tt_mtype = {};
+        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
+          m = mtypesDisplayed[_j];
+          n.tt_mtype[m] = [];
+        }
       }
       if (this.expansionContraction) {
         yedge = this.width - 30;
@@ -3071,8 +3137,8 @@
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-            n = _ref1[_j];
+          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+            n = _ref1[_k];
             n.y = n.y - yshift;
           }
         }
@@ -3200,39 +3266,62 @@
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -2).attr("x", 4).append("svg:title").text(function(n) {
-        return n.num_leaves + " genomes";
-      });
-      colours = {
-        'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
-        'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
-        'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
-        'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
-        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
-        'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
-      };
-      $('.meta-option.checkbox').each(function(i, obj) {
-        return $(obj).click(function() {
-          if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
-            checkbox_value[i] = 1;
-          } else {
-            checkbox_value[i] = 0;
+      }).attr("height", 7).attr("y", -3).attr("x", 4);
+      jQuery(document).ready(function() {
+        return jQuery('input[name="meta-option"]').each(function(obj) {
+          jQuery('#' + this.name + '_' + this.value).hide();
+          if (this.checked) {
+            return jQuery('#' + this.name + '_' + this.value).show();
           }
-          return visible_bars = checkbox_value.reduce(function(a, b) {
-            return a + b;
-          });
         });
       });
+      tt_mtitle = {};
+      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
+        m = mtypesDisplayed[_l];
+        tt_mtitle[m] = new String();
+        if (genomes.visibleMeta[m]) {
+          i = 0;
+          while (i < metaOntology[m].length) {
+            rect_block.text(function(n) {
+              var tt_mtype;
+              if (m === "isolation_host" || m === "isolation_source") {
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
+                tt_mtitle[m] = tt_mtitle[m].slice(0, 10) + tt_mtitle[m].charAt(10).toUpperCase() + tt_mtitle[m].slice(11);
+              }
+              if (m === "syndrome") {
+                tt_mtitle[m] = "Symptoms/Diseases";
+              }
+              if (m === "stx1_subtype" || m === "stx2_subtype") {
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+                tt_mtitle[m] = tt_mtitle[m].replace("_", " ");
+                tt_mtitle[m] = tt_mtitle[m].slice(0, 5) + tt_mtitle[m].charAt(5).toUpperCase() + tt_mtitle[m].slice(6);
+              }
+              if (m === "serotype") {
+                tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+              }
+              tt_mtype = metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1);
+              if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
+                if (i === 6) {
+                  n.tt_mtype[m] += "<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]])) + "</td></tr><tbody class='after-other'><tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
+                } else {
+                  n.tt_mtype[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[m][metaOntology[m][i]] + "</td></tr>";
+                }
+              }
+              return n.tt_mtype[m];
+            });
+            i++;
+          }
+        }
+      }
       y = -5;
       centred = -1.5;
-      height = 7;
-      for (_k = 0, _len2 = mtypesDisplayed.length; _k < _len2; _k++) {
-        m = mtypesDisplayed[_k];
+      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
+        m = mtypesDisplayed[_m];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
-          x = 0;
-          y += height;
+          y += 7;
           centred += -3.5;
           while (i < 7) {
             rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
@@ -3254,46 +3343,72 @@
                 n.arr[i] = 0;
               }
               return width;
-            }).attr("height", height).attr("y", y).attr("x", function(n) {
+            }).attr("height", 7).attr("y", y).attr("x", function(n) {
               if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
                 n.xpos += n.arr[i - 1];
               } else {
                 n.xpos = 0;
               }
               return n.xpos + 4;
-            }).append("svg:title").text(function() {
-              var str, str2;
-              if (m === "isolation_host" || m === "isolation_source") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 10) + str.charAt(10).toUpperCase() + str.slice(11);
+            }).attr("data-toggle", "popover").attr("data-content", function(n) {
+              var length, pos, tt_data;
+              if (metaOntology[m][i] != null) {
+                pos = n.tt_mtype[m].indexOf(metaOntology[m][i].charAt(0).toUpperCase() + metaOntology[m][i].slice(1));
               }
-              if (m === "syndrome") {
-                str = "Symptoms/Diseases";
-              }
-              if (m === "stx1_subtype" || m === "stx2_subtype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
-              }
-              if (m === "serotype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-              }
-              if (i === 6) {
-                return str + ": Other";
-              } else {
-                if (metaOntology[m][i] === "undefined") {
-                  str2 = "Undefined";
-                } else {
-                  str2 = metaOntology[m][i];
+              if (n.metaCount[m][metaOntology[m][i]] > 0 && (n._children != null)) {
+                length = ("<tr class='other-row'><td>" + "[+] Other" + "</td><td style='text-align:right'>" + (n.num_leaves - (n.metaCount[m][metaOntology[m][0]] + n.metaCount[m][metaOntology[m][1]] + n.metaCount[m][metaOntology[m][2]] + n.metaCount[m][metaOntology[m][3]] + n.metaCount[m][metaOntology[m][4]] + n.metaCount[m][metaOntology[m][5]]))).length;
+                if (i < 6) {
+                  n.to_be_hl = n.tt_mtype[m].slice(length + pos);
+                  console.log(pos);
                 }
-                return str + ": " + str2;
               }
+              tt_data = n.tt_mtype[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+              if (i === 6) {
+                if (n.metaCount[m][metaOntology[m][i]] > 0 && !(n.metaCount[m][metaOntology[m][i + 1]] != null)) {
+                  tt_data = n.tt_mtype[m].slice(0, pos) + "<tr class='table-row-bold' style='color:" + colours[m][4] + "'><td>" + n.tt_mtype[m].slice(pos, length + pos) + n.tt_mtype[m].slice(length + pos);
+                } else {
+                  tt_data = n.tt_mtype[m].slice(0, n.tt_mtype[m].indexOf(n.to_be_hl)) + "<tbody class='table-body-bold' style='color:" + colours[m][4] + "'>" + n.to_be_hl;
+                }
+              }
+              return "<table class='popover-table'><tr><th style='width:160px;text-align:left'>" + tt_mtitle[m] + "</th><th style='min-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
             });
             i++;
           }
         }
       }
+      (function($) {
+        var oldHide;
+        oldHide = $.fn.popover.Constructor.prototype.hide;
+        $.fn.popover.Constructor.prototype.hide = function() {
+          var that;
+          if (this.options.trigger === 'hover' && this.tip().is(':hover')) {
+            that = this;
+            setTimeout((function() {
+              return that.hide.call(that, arguments);
+            }), that.options.delay.hide);
+            return;
+          }
+          oldHide.call(this, arguments);
+        };
+      })(jQuery);
+      rect_block.selectAll('.metaMeter').each(function() {
+        return $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          trigger: 'hover',
+          delay: {
+            show: 500,
+            hide: 1000
+          },
+          animate: 'false',
+          container: 'body'
+        });
+      });
+      $('body').on('click', function(e) {
+        if ($(e.target).data('toggle') !== 'popover' && $(e.target).parents('.popover.in').length === 0) {
+          return $('[data-toggle="popover"]').popover('hide');
+        }
+      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
@@ -3311,24 +3426,8 @@
         }
         svgNodes.selectAll('.v0').remove();
       }
-      this.cluster = this.cluster.separation(function(a, b) {
-        var a_height, b_height;
-        a_height = 1;
-        b_height = 1;
-        if ((a._children != null) && visible_bars > 1) {
-          a_height = visible_bars;
-        } else {
-          a_height = 3;
-        }
-        if ((b._children != null) && visible_bars > 1) {
-          b_height = visible_bars;
-        } else {
-          b_height = 3;
-        }
-        return a_height + b_height;
-      });
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
+      for (_n = 0, _len5 = mtypesDisplayed.length; _n < _len5; _n++) {
+        m = mtypesDisplayed[_n];
         if (genomes.visibleMeta[m]) {
           rect_block.select('.genomeMeter').remove();
         }
@@ -3386,8 +3485,8 @@
         svgNode.moveToFront();
       }
       _ref2 = this.nodes;
-      for (_m = 0, _len4 = _ref2.length; _m < _len4; _m++) {
-        n = _ref2[_m];
+      for (_o = 0, _len6 = _ref2.length; _o < _len6; _o++) {
+        n = _ref2[_o];
         n.x0 = n.x;
         n.y0 = n.y;
       }

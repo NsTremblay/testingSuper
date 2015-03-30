@@ -49,11 +49,11 @@ var tree = <TMPL_VAR tree_json>;
 var username ="<TMPL_VAR username>";
 var user_groups = <TMPL_VAR user_groups>;
 
-var user_groups_menu = new UserGroups(user_groups, username, $('.user-groups-menu'), viewController, public_genomes, private_genomes);
-
-//TODO: This is bloated and needs to be changed.
 var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'));
+
 geophy.init(false);
+
+var user_groups_menu = new UserGroups(user_groups, username, $('.user-groups-menu'), viewController, public_genomes, private_genomes);
 
 $(document).ready( function () {    
     $('.map-manifest-wrapper').removeClass('col-md-6').addClass('col-md-12');
@@ -62,16 +62,10 @@ $(document).ready( function () {
     $('.download-view').empty();
 });
 
+
 //Set the clear filter button to clear out selected groups as well
 $('#remove-filter').on('click', function(){
-    //$('.user-groups-menu').empty();
-    //user_groups_menu.appendGroupForm(user_groups)
-    //user_groups_menu.processUserGroups(user_groups);
-});
-
-//Set the geophy reset views button to clear out selected groups as well
-$('.geophy-reset').on('click', function(){
-    //$('.user-groups-menu').empty();
+    $('#geophy-control-panel-body').empty();
     //user_groups_menu.appendGroupForm(user_groups)
     //user_groups_menu.processUserGroups(user_groups);
 });

@@ -189,6 +189,9 @@ sub create : Runmode {
 
 	# Group strains, required
 	my @genomes = $q->param('genome');
+
+	print STDERR @genomes;
+	
 	unless(@genomes) {
 		return $self->failed_response("Parameter 'genome' missing");
 	}
