@@ -95,7 +95,7 @@ fixtures_ok \&custom_groups, 'Install custom group fixtures';
 shiny_get_request();
 
 
-shiny_post_request();
+#shiny_post_request();
 
 
 done_testing();
@@ -107,7 +107,7 @@ done_testing();
 =head2 shiny_post_request
 
 
-=cut
+
 sub shiny_post_request {
 	my $json = shift;
 
@@ -178,6 +178,8 @@ sub shiny_post_request {
 
 }
 
+
+
 =head2 shiny_get_request
 
 
@@ -185,7 +187,7 @@ sub shiny_post_request {
 sub shiny_get_request {
 
 	# Run GET request
-	my $page = '/shiny/data';
+	my $page = '/api/group';
 	$cgiapp->get_ok($page);
 	my $json = t::lib::App::json_ok($cgiapp);
 
@@ -194,10 +196,16 @@ sub shiny_get_request {
 	my $i = 0;
 	map { $indices{$_} = $i; $i++ } @ordered_genomes;
 
-	check_groups($json, \@ordered_genomes);
+	
+	subtest 'Validate groups from GET /api/group' => sub {
+		check_groups($json, \@ordered_genomes);
+	};
 
-	check_meta($json, \@ordered_genomes);
+	subtest 'Validate meta-data from GET /api/group' => sub {
+		check_meta($json, \@ordered_genomes);
+	};
 
+	
 }
 
 =head2 check_groups

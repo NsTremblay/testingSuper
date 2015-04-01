@@ -293,6 +293,8 @@ sub loadPublicFootprints {
 
 	}
 
+	$self->dbh->commit unless $self->dbh->{AutoCommit};
+
 }
 
 

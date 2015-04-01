@@ -34,63 +34,53 @@ sub setup {
 
 }
 
-=head2 data
 
-Run-mode interface to the Shiny server. 
-
-Returns user groups and genome meta-data
-Saves updates to user groups.
-
-=cut
-sub data : Runmode {
-    my $self = shift;
-
-    my $q = $self->query();
-
-    #my $SHINYSESSID = $q->param('CGISESSID');
-    #my $SHINYURI = $q->param('uri');
-    #my $SHINYUSER = $q->param('user');
-
-    my $session_id = $self->session->id();
-    get_logger->debug("Session ID: $session_id");
-
-    my $formMethod = $ENV{'REQUEST_METHOD'};
-
-    # Check user is logged in
-    my $username = $self->authen->username;
-
-    my $msg = $self->authen->is_authenticated ? "Username: $username" : "Not logged in";
-    get_logger->debug($msg);
-    
-
-    if ($formMethod eq 'GET') {
-        my $user_data_json = $self->getUserData($username, $session_id);
-        return $user_data_json;
-    }
-    elsif ($formMethod eq 'POST') {
-        my $user_groups = $q->param('groups');
-        my $status_json = $self->saveUserData($username, $user_groups);
-        return $status_json;
-    }
-    else {
-        my $status = { error => "contact database administrator" };
-        return encode_json($status);
-    }
-}
 
 
 =head2 groups
+
+REST API GET method for groups
 
 List user's groups
 
 =cut
 
+sub groups : StartRunmode {
+    my $self = shift;
 
-sub user_group_data {
+    my $q = $self->query();
+
+    # User crudentials
+    my $username = $self->authen->username;
+    my $session_id = $self->session->id();
     
+    if($self->authen->is_authenticated) {
+        get_logger->debug("Username: $username");
+    } 
+    else {
+        get_logger->debug("Not logged in");
+        my $shiny_data = { CGISESSID => $session_id };
+        return $self->error_response('not_logged_in', $shiny_data);
+    }
+
+    my $shiny_data = $self->shiny_data($username);
+    
+    return $self->json_response('retrieved', $shiny_data);
 }
 
-sub genome_data {
+
+=head2 shiny_data
+
+Format genomes, meta-data and groups for Shiny consumption.
+
+Note: Common errors are handled prior to calling this method and
+reported using the error_response method. If error occurs within this
+method, expectation is that a 500 Internal Server Error will be returned
+to client via the built-in CGI::Application mechanism.
+
+=cut
+
+sub shiny_data {
     my ($self, $username) = @_;
 
     my $shiny_data;
@@ -215,13 +205,13 @@ sub genome_data {
 
 =head2 error_response
 
-Provide REST responses to common errors encountered in
+Provide RESTful responses to common errors encountered in
 module.
 
 =cut
 sub error_response {
     my $self = shift;
-    my $err_t = shift; # 
+    my $err_t = shift; # error type
     my $shiny_data = shift;
    
     my $msg;
@@ -232,7 +222,7 @@ sub error_response {
         }
         case 'forbidden' {
             $self->header_add('-status' => '403 Restricted access ');
-            $msg = 'User not logged in';
+            $msg = 'User does not have access to requested genomes';
         }
         else {
             die "Error: unknown error type $err_t.";
@@ -241,29 +231,54 @@ sub error_response {
 
     $shiny_data->{error} = $msg;
 
-    # Set response header type
+    # Type
     $self->header_add('-type' => 'application/json');
 
     return encode_json($shiny_data)
 }
 
-=head2 create_response
+=head2 json_response
 
-Provide REST response to for creation of group
+Provide REST response to for creation or retrieval of group
+
+Consider adding HATEOAS links in JSON body using HAL specification.
+For now self URI will be provided in LINK header. THis may or may not
+be correct.
 
 =cut
-sub create_response {
+sub json_response {
     my $self = shift;
+    my $response_t = shift; # response type
     my $shiny_data = shift;
     
-    my $group_id = $shiny_data->{group_id};
-    my $url = $self->url('-rewrite' => 1);
-    my $uri = $url . "shiny/group/$group_id";
+    # URI HATEOAS links
+    my $url = $self->query->url('-rewrite' => 1);
+    my $uri = $url . "/shiny/group/";
     
-    # Set response headers
-    $self->header_add('-status' => '201 Created');
-    $self->header_add('-Location' => $uri);
+    # Status
+    switch($response_t) {
+        case 'created' {
+            $self->header_add('-status' => '201 Created');
+            my $group_id = $shiny_data->{group_id};
+            $uri .= $group_id;
+        }
+        case 'retrieved' {
+            $self->header_add('-status' => '200 OK');
+        }
+        case 'updated' {
+            $self->header_add('-status' => '200 OK');
+            my $group_id = $shiny_data->{group_id};
+            $uri .= $group_id;
+        }
+        else {
+            die "Error: unknown response type $response_t.";
+        }
+    }
+    
+    # Type & Link header
     $self->header_add('-type' => 'application/json');
+    $self->header_add('-Link' => $uri);
+
 
     return encode_json($shiny_data)
 }

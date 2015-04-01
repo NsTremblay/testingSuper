@@ -25,10 +25,10 @@ sub dispatch_args {
             TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-            # SHINY REST API routing
-            'shiny/group[post]'             => { app => 'Shiny', rm => 'create_group'},
-            'shiny/group/:group_id[put]'    => { app => 'Shiny', rm => 'update_group'},
-            'shiny/group[get]'              => { app => 'Shiny', rm => 'groups'},
+            # SHINY RESTful API routing
+            'api/group[post]'             => { app => 'Shiny', rm => 'create_group'},
+            'api/group/:group_id[put]'    => { app => 'Shiny', rm => 'update_group'},
+            'api/group[get]'              => { app => 'Shiny', rm => 'groups'},
             # REGULAR routing
             'user/login'          => { app => 'User', rm => 'authen_login' },
             ':app/:rm'            => { },

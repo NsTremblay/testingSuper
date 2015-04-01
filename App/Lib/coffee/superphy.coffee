@@ -78,76 +78,93 @@ class ViewController
       # single_select behaviour: user clicks on single genome for more info
       clickStyle = 'redirect'
     
-    if viewType is 'list'
-      # New list view
-      listView = new ListView(elem, clickStyle, vNum, viewArgs)
-      listView.update(@genomeController)
-      @views.push listView
-      
-    else if viewType is 'tree'
-      # New tree view
-      treeView = new TreeView(elem, clickStyle, vNum, viewArgs)
-      treeView.update(@genomeController)
-      @views.push treeView
+    try
+      # Perform view creation in try/catch
+      # to trap individual view errors
 
-    else if viewType is 'msa'
-      # New multiple sequence alignment view
-      msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
-      msaView.update(@genomeController)
-      @views.push msaView
-      
-    else if viewType is 'matrix'
-      # New matrix view
-      # Genome list is needed to compute matrix size
-      matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      matView.update(@genomeController)
-      @views.push matView
+      if viewType is 'list'
+        # New list view
+        listView = new ListView(elem, clickStyle, vNum, viewArgs)
+        listView.update(@genomeController)
+        @views.push listView
+        
+      else if viewType is 'tree'
+        # New tree view
+        treeView = new TreeView(elem, clickStyle, vNum, viewArgs)
+        treeView.update(@genomeController)
+        @views.push treeView
 
-    else if viewType is 'map'
-      #New map view
-      mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      #mapView.update(@genomeController)
-      @views.push mapView
+      else if viewType is 'msa'
+        # New multiple sequence alignment view
+        msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
+        msaView.update(@genomeController)
+        @views.push msaView
+        
+      else if viewType is 'matrix'
+        # New matrix view
+        # Genome list is needed to compute matrix size
+        matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        matView.update(@genomeController)
+        @views.push matView
 
-    else if viewType is 'selmap'
-      #New map view
-      mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      #mapView.update(@genomeController)
-      @views.push mapView
-      
-    else if viewType is 'table'
-      # New table view
-      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
-      tableView.update(@genomeController)
-      @views.push tableView
+      else if viewType is 'map'
+        #New map view
+        mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        #mapView.update(@genomeController)
+        @views.push mapView
 
-    else if viewType is 'jump2table'
-      # TODO: Remove this, deprecated
-      # New list view
-      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
-      tableView.update(@genomeController)
-      @views.push tableView
-      return
-      
-    else
-      throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
-      return false
+      else if viewType is 'selmap'
+        #New map view
+        mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        #mapView.update(@genomeController)
+        @views.push mapView
+        
+      else if viewType is 'table'
+        # New table view
+        tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+        tableView.update(@genomeController)
+        @views.push tableView
 
-    # Create download link
-    # Will be created by default unless a return statement is specified in the conditional clauses
-    downloadElemDiv = jQuery("<div class='download-view'></div>")
-    downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
-    downloadElem.click (e) ->
-      viewNum = parseInt(@.dataset.genomeView)
-      data = viewController.downloadViews(viewNum)
-      @.href = data.href
-      @.download = data.file
-      true
+      else if viewType is 'jump2table'
+        # TODO: Remove this, deprecated
+        # New list view
+        tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+        tableView.update(@genomeController)
+        @views.push tableView
+        return
+        
+      else
+        throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
+        return false
+
     
-    downloadElemDiv.append(downloadElem)
-    downloadElemDiv.prependTo(elem)
+      # Create download link
+      # Will be created by default unless a return statement is specified in the conditional clauses
+      downloadElemDiv = jQuery("<div class='download-view'></div>")
+      downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
+      downloadElem.click (e) ->
+        viewNum = parseInt(@.dataset.genomeView)
+        data = viewController.downloadViews(viewNum)
+        @.href = data.href
+        @.download = data.file
+        true
+      
+      downloadElemDiv.append(downloadElem)
+      downloadElemDiv.prependTo(elem)
+
+    catch e
+      @viewError(e, elem);
+      return false # Return failure
       
     return true # return success
+
+  # Append error message to view instead of rendering view
+  viewError: (e, elem) ->
+    elem.append("<div class='superphy-error'><p>Superphy Error! View failed to load.</p></div>")
+    alert "Superphy error: #{e.message}\nLine: #{e.line}"
+
+    return true;
+
     
   introOptions: ->
     intros = []

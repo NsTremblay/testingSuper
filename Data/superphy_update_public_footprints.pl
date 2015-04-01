@@ -38,7 +38,8 @@ use lib "$FindBin::Bin/../";
 use Modules::Footprint;
 use Carp qw/croak carp/;
 use Log::Log4perl qw/:easy/;
-
+use Config::Simple;
+use DBI;
 
 # Initialize logger
 Log::Log4perl->easy_init($INFO);
@@ -76,5 +77,6 @@ my $fp = Modules::Footprint->new(dbh => $dbh);
 
 # Do footprint loading
 $fp->loadPublicFootprints();
-	
 
+
+$dbh->disconnect();	
