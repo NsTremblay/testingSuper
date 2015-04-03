@@ -1817,6 +1817,7 @@ sub createGroup {
 
 	if($group_result && $group_result->in_storage) {
 		# Found duplicate group
+		get_logger->error("Genome group name collion. Group with name $group_name already exists");
 		return 0;
 	}
 
@@ -1853,6 +1854,11 @@ sub createGroup {
 	}
 	$group->{private_feature_groups} = \@private_feature_group_rows if @private_feature_group_rows;
 
+	# Trying to create empty group
+	unless(@private_feature_group_rows || @feature_group_rows) {
+		get_logger->error('Attempt to create empty group');
+		return 0;
+	}
 
 	# Insert into database
 	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->create($group);
@@ -1912,11 +1918,15 @@ sub updateGroupProperties {
 		}
 	);
 
-	return 0 unless $group_row;
+	unless($group_row && $group_row->in_storage) {
+		get_logger->error("Genome group $group_id for user $username does not exist");
+		return 0;
+	}
 
 	my $guard = $self->dbixSchema->txn_scope_guard;
 
 	my $update_group;
+	my $category_id;
 
 	get_logger->debug("Old category: ".$group_row->category->name.", New category: $category_name") if $category_name;
 
@@ -1925,7 +1935,7 @@ sub updateGroupProperties {
 		# May require creation of new category
 		# when other groups also part of this category
 
-		my $category_id = $group_row->category_id;
+		$category_id = $group_row->category_id;
 		my $category_row = $self->dbixSchema->resultset('GroupCategory')->find($category_id, { prefetch => 'genome_groups' });
 
 		if($category_row->genome_groups->count() > 1) {
@@ -1943,6 +1953,7 @@ sub updateGroupProperties {
 			);
 
 			$update_group->{category_id} = $new_category_row->group_category_id;
+			$category_id = $update_group->{category_id};
 
 			get_logger->debug('Multiple groups in category, Found or created new category '.$new_category_row->group_category_id);
 
@@ -1961,8 +1972,9 @@ sub updateGroupProperties {
 				}
 			);
 
-			if($other_category_row) {
+			if($other_category_row && $other_category_row->in_storage) {
 				$update_group->{category_id} = $other_category_row->group_category_id;
+				$category_id = $update_group->{category_id};
 				$category_row->delete;
 				get_logger->debug('Single group in category but another category exists with name. Delete category '.
 					$category_row->group_category_id . ' and set category to ' . $other_category_row->group_category_id);
@@ -1977,10 +1989,31 @@ sub updateGroupProperties {
 
 	}
 
+	# Change description
 	$update_group->{description} = $group_description if $group_description;
-	$update_group->{name} = $group_name if $group_name;
 
-	$group_row->update($update_group);
+	# Change name if it doesnt result in name collision
+	if($group_name && $group_name ne $group_row->name) {
+		my $other_group_row = $self->dbixSchema->resultset('GenomeGroup')->find(
+			{
+				name => $group_name,
+				username => $username
+			},
+			{
+				key => 'genome_group_c1'
+			}
+		);
+
+		if($other_group_row && $other_group_row->in_storage) {
+			get_logger->error("Genome group name collion. Group with name $group_name already exists");
+			return 0;
+		}
+		else {
+			$update_group->{name} = $group_name
+		}
+	}
+
+	$group_row->update($update_group) if %$update_group;
 
 	$guard->commit;
 
@@ -2029,7 +2062,10 @@ sub updateGroupMembers {
 		}
 	);
 
-	return 0 unless $group_row;
+	unless($group_row && $group_row->in_storage) {
+		get_logger->error("Genome group $group_id for user $username does not exist");
+		return 0;
+	}
 
 	# Collection
 	my $category_id = $group_row->category_id;

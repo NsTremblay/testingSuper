@@ -31,7 +31,7 @@ use lib dirname(__FILE__) . '/../../';
 use Test::WWW::Mechanize::CGIApp;
 use Test::More;
 use Modules::Dispatch;
-use JSON::Any;
+use JSON::MaybeXS;
 use t::lib::QuickDB;
 use Config::Simple;
 use File::Temp qw/tempdir/;
