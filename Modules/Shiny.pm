@@ -28,12 +28,20 @@ Defines the start and run modes for CGI::Application and connects to the databas
 
 sub setup {
     my $self=shift;
-    my $logger = Log::Log4perl->get_logger();
-    $logger->info("Logger initialized in Modules::Shiny");
+    
+    get_logger->info("Initializing Modules::Shiny");
+
 }
 
+=head2 data
+
+Run-mode interface to the Shiny server. 
+
+Returns user groups and genome meta-data
+Saves updates to user groups.
+
+=cut
 sub data : Runmode {
-    #TODO: Check all security constraints and make sure this is air tight
     my $self = shift;
 
     my $q = $self->query();
@@ -42,22 +50,21 @@ sub data : Runmode {
     #my $SHINYURI = $q->param('uri');
     #my $SHINYUSER = $q->param('user');
 
-    my $CGISESSID = $self->session->id();
-
-    #print STDERR "Shiny returned CGISESSID: " . $SHINYSESSID . "\n";
-    print STDERR "Current CGISESSID: " . $CGISESSID . "\n";
+    my $session_id = $self->session->id();
+    get_logger->debug("Session ID: $session_id");
 
     my $formMethod = $ENV{'REQUEST_METHOD'};
 
     # Check user is logged in
     my $username = $self->authen->username;
 
-    print STDERR "User logged in is: $username\n" if $username;
-    print STDERR "No user currently logged in\n" unless $username;
+    my $msg = self->authen->is_athenticated ? "Username: $username" : "Not logged in";
+    get_logger->debug($msg);
+    
 
     if ($formMethod eq 'GET') {
         print STDERR "\nGET method called\n\n";
-        my $user_data_json = $self->_getUserData($username, $CGISESSID);
+        my $user_data_json = $self->_getUserData($username, $session_id);
         return $user_data_json;
     }
     elsif ($formMethod eq 'POST') {

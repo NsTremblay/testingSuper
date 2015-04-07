@@ -145,16 +145,17 @@ sub new {
 	
 	my $self = {};
 	bless( $self, $class );
+
+	my $dirname = dirname(__FILE__);
 	
 	# DB connection
-	my $config_file = $params{config} //= dirname (__FILE__) . "/../../config/genodo.cfg";
+	my $config_file = $params{config} //= "$dirname/../../config/genodo.cfg";
+	my $db_conf = new Config::Simple($config_file);
 	my $dbix = $params{dbix_schema};
 	
 	unless($dbix) {
 		# No schema provided, connect to database
-		croak "[Error] Config file not found ($config_file).\n" unless -e $config_file;
-		
-		my $db_conf = new Config::Simple($config_file);
+		croak "Error: Config file not found ($config_file).\n" unless -e $config_file;
 		
 		$self->connectDatabase( dbi     => $db_conf->param('db.dbi'),
 						        dbName  => $db_conf->param('db.name'),
@@ -173,14 +174,18 @@ sub new {
 	$self->{tree_builder} = Phylogeny::TreeBuilder->new;
 	
 	# Reference sequences
-	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx1_superaln_reference.affn';
-	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= '/home/matt/workspace/a_genodo/data/typing/stx/fasta/stx2_superaln_reference.affn';
-	
+	$self->{stx1_superaln_reference} = $params{stx1_reference_sequences} //= "$dirname/stx1_superaln_reference.affn";
+	$self->{stx2_superaln_reference} = $params{stx2_reference_sequences} //= "$dirname/stx2_superaln_reference.affn";
+	croak "Error: cannot find alignment file for Stx1 reference genes.\n" unless -r $self->{stx1_superaln_reference};
+	croak "Error: cannot find alignment file for Stx2 reference genes.\n" unless -r $self->{stx2_superaln_reference};
+
 	# Muscle exe
-	$self->{muscle} = $params{muscle} //= '/usr/bin/muscle';
+	$self->{muscle} = $params{muscle} //= $db_conf->param('ext.muscle');
+	croak "Error: cannot find muscle exe." unless -x $self->{muscle};
 	
 	# Tmp directory
 	$self->{tmp_dir} = $params{tmp_dir} //= '/tmp/';
+	croak "Error: cannot find temp directory." unless -d $self->{tmp_dir};
 	
 	return $self;
 }
@@ -279,7 +284,7 @@ sub insertTypingObjects {
 		$type{$type_row->name} = $type_row->cvterm_id;
 	}
 	
-	croak "[Error] Missing ontology type in cvterm table." unless scalar(keys %type) == scalar(@type_names);
+	croak "Error: Missing ontology type in cvterm table." unless scalar(keys %type) == scalar(@type_names);
 	
 	# Get organism ID
 	my $organism_row = $self->dbixSchema->resultset('Organism')->find({
@@ -310,7 +315,7 @@ sub insertTypingObjects {
 			$query_genes{$stx_row->name} = $stx_row->feature_id;
 			$i++;
 		}
-		croak "[Error] Could not find all virulence_factor genes associated with stx$g." unless $i == 2;
+		croak "Error: Could not find all virulence_factor genes associated with stx$g." unless $i == 2;
 		
 		# Create a stx1/2 typing sequence references.
 		# All instances of stx1 or stx2 sequences in individual genomes will
@@ -388,7 +393,7 @@ sub dbAlignments {
 	my $n = 0;
 	print "FEATURE IDs:\n";
 	map { print $_->name.": ".$_->feature_id."\n"; $stx_genes{$_->feature_id} = $_->name; $n++; } $stx_rs->all;
-	croak "[Error] Missing/incorrect stx genes." unless $n == 4;
+	croak "Error: Missing/incorrect stx genes." unless $n == 4;
 	
 	if($gp_ids) {
 		# Obtain alignments for selected genomes
@@ -434,8 +439,8 @@ sub dbAlignments {
 		
 		my $f1 = "$file_prefix\_stx1.ffn";
 		my $f2 = "$file_prefix\_stx2.ffn";
-		open my $out1, ">", $f1 or croak "[Error] Unable to write to file $f1 ($!)\n";
-		open my $out2, ">", $f2 or croak "[Error] Unable to write to file $f2 ($!)\n";
+		open my $out1, ">", $f1 or croak "Error: Unable to write to file $f1 ($!)\n";
+		open my $out2, ">", $f2 or croak "Error: Unable to write to file $f2 ($!)\n";
 		my @fhs = (undef, $out1, $out2);
 		foreach my $genome (keys %stx) {
 			my $genome_alleles = $stx{$genome};
@@ -940,7 +945,7 @@ sub subtype {
 	} elsif($typing_gene eq 'stx2_subunit') {
 		$ref_file = $self->{"stx2_superaln_reference"};
 	} else {
-		croak "[Error] unknown typing sequence $typing_gene. Need reference alignment with assigned subtypes\n"
+		croak "Error: unknown typing sequence $typing_gene. Need reference alignment with assigned subtypes\n"
 	}
 	
 	$self->run($ref_file, $fasta_hashref, $result_file, $tree_file);
@@ -966,7 +971,7 @@ sub run {
 	my $muscle_cmd = $self->{muscle};
 	
 	if(ref($typing_seqs) eq 'HASH') {
-		open(OUT, ">$aln_file2") or die "[Error] Unable to write to file $aln_file2 ($!)\n";
+		open(OUT, ">$aln_file2") or die "Error: Unable to write to file $aln_file2 ($!)\n";
 		foreach my $header (keys %$typing_seqs) {
 			print OUT ">$header\n".$typing_seqs->{$header}."\n";
 		}
@@ -980,12 +985,12 @@ sub run {
 		
 	} else {
 		
-		croak "[Error] Invalid or missing arguments in run() method.\n";
+		croak "Error: Invalid or missing arguments in run() method.\n";
 	}
 	
 	
 	unless(system($muscle_cmd) == 0) {
-		croak "[Error] Muscle profile alignment failed (command: $muscle_cmd).\n";
+		croak "Error: Muscle profile alignment failed (command: $muscle_cmd).\n";
 	}
 	print "MUSCLE COMPLETE\n";
 	
@@ -1025,7 +1030,7 @@ sub _newickToPerl {
 	my $newick_file = shift;
 	
 	my $newick;
-	open(IN, "<$newick_file") or die "[Error] Unable to read file $newick_file ($!)\n";
+	open(IN, "<$newick_file") or die "Error: Unable to read file $newick_file ($!)\n";
 	
 	while(my $line = <IN>) {
 		chomp $line;
@@ -1214,8 +1219,8 @@ sub _perlToNewick {
 	my $text_file = shift;
 	my $newick_file = shift;
 	
-	open(my $fh, ">", $text_file) or die "[Error] Unable to write to file $text_file ($!)\n";
-	open(my $fh2, ">", $newick_file) or die "[Error] Unable to write to file $newick_file ($!)\n";
+	open(my $fh, ">", $text_file) or die "Error: Unable to write to file $text_file ($!)\n";
+	open(my $fh2, ">", $newick_file) or die "Error: Unable to write to file $newick_file ($!)\n";
 	
 	_printNode($root, $fh, $fh2);
 	

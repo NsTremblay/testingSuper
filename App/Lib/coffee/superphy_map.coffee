@@ -469,8 +469,11 @@ class Cartographer
       }).done( (data) =>
         results = JSON.parse(data)
         @map.setCenter(results.geometry.location)
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng) 
+        # TODO: Change from bounds to viewport
+        #northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
+        #southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng)
+        northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng)
+        southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng)  
         bounds = new google.maps.LatLngBounds(southWest, northEast)
         @map.fitBounds(bounds)
         ).fail ( () ->
@@ -534,8 +537,11 @@ class DotCartographer extends Cartographer
       }).done( (data) =>
         results = JSON.parse(data)
         @map.setCenter(results.geometry.location)
-        northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
-        southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng) 
+        # TODO: Change bounds to view port
+        #northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng)
+        #southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng)
+        northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng)
+        southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng)  
         bounds = new google.maps.LatLngBounds(southWest, northEast)
         @map.fitBounds(bounds)
         @latLng = results.geometry.location
@@ -645,6 +651,7 @@ class SatelliteCartographer extends Cartographer
 
     for marker_id, marker of @allMarkers
       # Check if present on map
+      # TODO: Check that this doesnt throw an error
       if @map.getBounds() != undefined && @map.getBounds().contains(marker.getPosition()) && (marker.feature_id in genomes.pubVisible || marker.feature_id in genomes.pvtVisible)
         @clusteredMarkers.push(marker)
         @visibleLocations.push(marker.feature_id)
@@ -970,6 +977,7 @@ class LocationController
   # marker object
   #
   _parseLocation: (genome) ->
+    # TODO: Change bounds to viewPort
     genomeLocation = JSON.parse(genome.isolation_location[0])
     # Get location from genome
     locationFormattedAddress = genomeLocation.formatted_address
@@ -982,13 +990,15 @@ class LocationController
     # Get center Lng
     locationCenterLng = locationCenter.lng
     # Get location SW boundary
-    locationViewPortSW = locationCoordinates.bounds.southwest
+    #locationViewPortSW = locationCoordinates.bounds.southwest
+    locationViewPortSW = locationCoordinates.viewport.southwest
     # Get SW boundary lat
     locationViewPortSWLat = locationViewPortSW.lat
     # Get SW boundary Lng
     locationViewPortSWLng = locationViewPortSW.lng
     # Get location NE boundary
-    locationViewPortNE = locationCoordinates.bounds.northeast
+    #locationViewPortNE = locationCoordinates.bounds.northeast
+    locationViewPortNE = locationCoordinates.viewport.northeast
     # Get NE boundary lat
     locationViewPortNELat = locationViewPortNE.lat
     # Get NE boundary lng

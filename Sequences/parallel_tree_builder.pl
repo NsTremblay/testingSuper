@@ -45,7 +45,7 @@ use Time::HiRes qw( time );
 my $v = 0;
 
 # Globals (set these to match local values)
-my $muscle_exe = '/usr/bin/muscle';
+my $muscle_exe = 'muscle';
 
 # Intialize the Tree building module
 my $tree_builder = Phylogeny::TreeBuilder->new();
@@ -56,9 +56,11 @@ my $tree_io = Phylogeny::Tree->new(dbix_schema => 'empty');
 my $pm = new Parallel::ForkManager(20);
 
 # Get config
-my ($alndir) = 0;
+my ($alndir, $fast_mode) = (0,0);
 GetOptions(
-	'dir=s' => \$alndir
+	'dir=s' => \$alndir,
+	'fast' => \$fast_mode,
+	'v' => \$v
 ) or ( system( 'pod2text', $0 ), exit -1 );
 croak "[Error] missing argument. You must supply a valid data directory\n" . system('pod2text', $0) unless $alndir;
 
@@ -104,7 +106,7 @@ foreach my $jarray (@jobs) {
 	build_tree($pg_id,$do_tree,$do_snp,$add_seq);
 	my $en = time();
 	my $time = $en - $st;
-	print $log "\t$pg_id success (elapsed time $time)\n";
+	print $log "\t$pg_id completed (elapsed time $time)\n";
 
 	$pm->finish; # do the exit in the child process
 }
@@ -173,7 +175,7 @@ sub build_tree {
 		my $perl_file = "$perldir/$pg_id\_tree.perl";
 		
 		# build newick tree
-		$tree_builder->build_tree($fasta_file, $tree_file) or croak;
+		$tree_builder->build_tree($fasta_file, $tree_file, $fast_mode) or croak;
 		
 		# slurp tree and convert to perl format
 		my $tree = $tree_io->newickToPerlString($tree_file);
@@ -223,6 +225,7 @@ sub build_tree {
 		croak "Missing reference sequence in SNP alignment for set $pg_id\n" unless $refseq;
 		# Create output directory
 		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
+		croak "Filepath will overflow C char[] buffers. Need to extend buffer length." if length($pos_fileroot) > 150;
 		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
 	}
 	elapsed_time("\tsnp ", $time);
@@ -233,7 +236,7 @@ sub elapsed_time {
 	my ($mes, $prev) = @_;
 	
 	my $now = time();
-	printf("$mes: %.2f\n", $now - $prev);
+	printf("$mes: %.2f\n", $now - $prev) if $v;
 	
 	return $now;
 }
@@ -383,10 +386,12 @@ void snp_positions(SV* seqs_arrayref, SV* names_arrayref, char* refseq, char* fi
 	for(i=0; i <= n; ++i) {
 		SV* name = av_shift(names);
 		SV* seq = av_shift(seqs);
-		char filename[120];
-		char filename2[120];
-		sprintf(filename, "%s/%s__snp_variations.txt", fileroot, (char*)SvPV_nolen(name));
-		sprintf(filename2, "%s/%s__snp_positions.txt", fileroot, (char*)SvPV_nolen(name));
+		char filename[200];
+		char filename2[200];
+		char* basename;
+		basename = SvPV_nolen(name);
+		sprintf(filename, "%s/%s__snp_variations.txt", fileroot, basename);
+		sprintf(filename2, "%s/%s__snp_positions.txt", fileroot, basename);
 		
 		write_positions(refseq, (char*)SvPV_nolen(seq), filename, filename2);
 		

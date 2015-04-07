@@ -73,15 +73,12 @@ startIntro = ->
       ]
     }
   )
-
   
   intro.start()
 
   # Coffeescript will return the value of 
 	# the last statement from function
   false
-
-# END FUNC
 
 # Make this function visible in global namespace
 # If there isnt a function already called startIntro

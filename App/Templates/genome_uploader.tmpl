@@ -3,9 +3,6 @@
 
 <head>
 	<TMPL_INCLUDE NAME="header2.tmpl">
-	<!-- Twitter Bootstrap Form Helpers-->
-	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.en_US.js"></script>
-	<script type="text/javascript" src="/App/Styling/js/bootstrap-formhelpers-countries.js"></script>
 	
 	<script type="text/javascript">
 	var page_name = "genome-uploader";
@@ -63,10 +60,15 @@
 		$('#inputPrivateUntilText').attr("required", true);
 		</TMPL_IF>
 		
-		<TMPL_IF selected_country>
-		$('#inputLocationCountry').bfhcountries({country: '<TMPL_VAR selected_country>'});
-		<TMPL_ELSE>
-		$('#inputLocationCountry').bfhcountries();
+		<TMPL_IF selected_location>
+
+/***TODO FOR AKIFF***
+	
+	If template variable 'selected_location' exists, form needs to be populated with previously selected location (occurs if this the edit form, or if there was an error)
+
+*/
+		var geocode_id = <TMPL_VAR selected_location>;
+
 		</TMPL_IF>
 		
 		$("#inputGenomeName").focus();

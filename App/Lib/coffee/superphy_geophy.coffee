@@ -12,7 +12,7 @@ class GeoPhy
       @_filter()
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
-    @_createSubmitForm(); 
+    #@_createSubmitForm(); 
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
@@ -145,6 +145,7 @@ class GeoPhy
     #@viewController.createGroupsForm($('#geophy-control'), addMore, submit, filter)
     true
 
+  # Deprecated: These functions are merged with the existing filtering functions.
   _createSubmitForm: () ->
     elem = jQuery('#geophy-control')
     parentTarget = 'geophy-control-panel-body'

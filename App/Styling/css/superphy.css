@@ -94,12 +94,12 @@
 }
 .treenode circle {
   fill: #ffffff;
-  stroke: #4682b4;
+  stroke: steelblue;
   stroke-width: 1.5px;
 }
 .treenode rect.selectClade {
   fill: #ffffff;
-  stroke: #ff0000;
+  stroke: red;
   stroke-width: 1.5px;
 }
 .selectedNode .treelabel {
@@ -110,7 +110,7 @@
 }
 .focusNode circle {
   fill: #ffc966;
-  stroke: #ffa500;
+  stroke: orange;
   stroke-width: 3px;
 }
 .internalSNodePart rect.selectClade {
@@ -645,6 +645,10 @@ body {
 }
 #selection-filter a {
   margin: 10px;
+}
+#group-filter {
+  margin-left: 0px;
+  margin-bottom: 10px;
 }
 /** Mixins ********************************/
 /*
