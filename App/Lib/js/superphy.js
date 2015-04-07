@@ -6500,8 +6500,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           return _this.map.fitBounds(bounds);
         };
@@ -6569,8 +6569,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           _this.map.fitBounds(bounds);
           _this.latLng = results.geometry.location;
@@ -6974,10 +6974,10 @@
       locationCenter = locationCoordinates.location;
       locationCenterLat = locationCenter.lat;
       locationCenterLng = locationCenter.lng;
-      locationViewPortSW = locationCoordinates.bounds.southwest;
+      locationViewPortSW = locationCoordinates.viewport.southwest;
       locationViewPortSWLat = locationViewPortSW.lat;
       locationViewPortSWLng = locationViewPortSW.lng;
-      locationViewPortNE = locationCoordinates.bounds.northeast;
+      locationViewPortNE = locationCoordinates.viewport.northeast;
       locationViewPortNELat = locationViewPortNE.lat;
       locationViewPortNELng = locationViewPortNE.lng;
       locationAddressComponents = {
