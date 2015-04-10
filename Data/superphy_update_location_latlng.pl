@@ -147,7 +147,7 @@ sub populateGeocodedLocations {
         
         $geocoded_count++;
 
-        sleep(3);
+        sleep(1);
     }
 
     foreach (keys $public_genome_locations) {

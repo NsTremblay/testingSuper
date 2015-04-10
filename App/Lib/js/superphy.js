@@ -423,16 +423,31 @@
     };
 
     ViewController.prototype.sideBar = function(elem) {
-      var form1, form2, parentTarget, wrapper;
+      var form1, form2, form3, parentTarget, wrapper;
       parentTarget = 'sidebar-group';
       wrapper = jQuery('<div class="panel-group" id="' + parentTarget + '"></div>');
       elem.append(wrapper);
       form1 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form1);
       this.metaForm(form1, parentTarget);
+      form3 = jQuery('<div class="panel panel-default"></div>');
+      wrapper.append(form3);
+      this.groupForm(form3, parentTarget);
       form2 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form2);
       this.filterForm(form2, parentTarget);
+      return true;
+    };
+
+    ViewController.prototype.groupForm = function(elem, parentStr) {
+      var group_form, panel_body, panel_header, panel_main, panel_title;
+      panel_header = $('<div class="panel-heading"></div>');
+      panel_title = $('<div class="panel_title"> <a data-toggle="collapse" href="#group-form"> User Groups <span class="caret"></span></a></div>').appendTo(panel_header);
+      panel_main = $('<div id="group-form" class="collapse in"></div>');
+      panel_body = $('<div class="panel-body"></div>').appendTo(panel_main);
+      group_form = $('<div class="user-groups-menu"></div>').appendTo(panel_body);
+      elem.append(panel_header);
+      elem.append(panel_main);
       return true;
     };
 
@@ -525,7 +540,7 @@
     };
 
     ViewController.prototype.filterForm = function(elem, parentStr) {
-      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selDiv, selGroup, selLab, selRadio, sf;
+      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbg, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, findButton, header, numVisible, selDiv, selGroup, selLab, selRadio, sf, ugpDiv, ugpGroup, ugpLab, ugpRadio;
       header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
       container = jQuery('<div id="filter-form" class="panel-collapse collapse in"></div>');
       numVisible = this.genomeController.filtered;
@@ -559,6 +574,7 @@
           jQuery("#fast-filter").show();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -572,6 +588,7 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").show();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -585,10 +602,25 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").show();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
       filtType.append(selGroup);
+      ugpGroup = jQuery('<div class="form-group"></div>');
+      ugpDiv = jQuery('<div class="col-xs-1"></div>').appendTo(ugpGroup);
+      ugpRadio = jQuery('<input id="ugp" type="radio" name="filter-form-type" value="selection">').appendTo(ugpDiv);
+      ugpLab = jQuery('<label class="col-xs-10" for="ugp">By Group</label>').appendTo(ugpGroup);
+      ugpRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").hide();
+          jQuery("#adv-filter").hide();
+          jQuery("#selection-filter").hide();
+          jQuery("#group-filter").show();
+        }
+        return true;
+      });
+      filtType.append(ugpGroup);
       container.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);
@@ -606,6 +638,17 @@
       fbs.append(filtButton);
       fbs.hide();
       container.append(fbs);
+      fbg = jQuery("<div class='row' id='group-filter'>" + "<p>A group in one of the views</p>" + "</div>");
+      findButton = jQuery('<div class="col-xs-3"><button id="user-groups-submit" class="btn btn btn-sm" type="button">Find</button></div>');
+      fbg.append(findButton);
+      filtButton = jQuery('<div class="col-xs-3"><button id="filter-group-button" type="button" class="btn btn-sm">Filter</button></div>');
+      filtButton.click(function(e) {
+        e.preventDefault();
+        return viewController.filterViews('selection');
+      });
+      fbg.append(filtButton);
+      fbg.hide();
+      container.append(fbg);
       container.appendTo(elem);
       return true;
     };
@@ -6469,8 +6512,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           return _this.map.fitBounds(bounds);
         };
@@ -6538,8 +6581,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           _this.map.fitBounds(bounds);
           _this.latLng = results.geometry.location;
@@ -6943,10 +6986,10 @@
       locationCenter = locationCoordinates.location;
       locationCenterLat = locationCenter.lat;
       locationCenterLng = locationCenter.lng;
-      locationViewPortSW = locationCoordinates.bounds.southwest;
+      locationViewPortSW = locationCoordinates.viewport.southwest;
       locationViewPortSWLat = locationViewPortSW.lat;
       locationViewPortSWLng = locationViewPortSW.lng;
-      locationViewPortNE = locationCoordinates.bounds.northeast;
+      locationViewPortNE = locationCoordinates.viewport.northeast;
       locationViewPortNELat = locationViewPortNE.lat;
       locationViewPortNELng = locationViewPortNE.lng;
       locationAddressComponents = {
@@ -7003,7 +7046,6 @@
       }
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
-      this._createSubmitForm();
       return true;
     };
 

@@ -646,6 +646,10 @@ body {
 #selection-filter a {
   margin: 10px;
 }
+#group-filter {
+  margin-left: 0px;
+  margin-bottom: 10px;
+}
 /** Mixins ********************************/
 /*
  

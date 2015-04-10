@@ -195,7 +195,6 @@ sub poll : Runmode {
 
 sub geophy : Runmode {
     # TODO: Need to query for strains and return only the subset
-    # TODO: Clean this shit up
     my $self = shift;
 
     #my $q = $self->query();
@@ -236,6 +235,7 @@ sub geophy : Runmode {
     $fdg->dbixSchema($self->dbixSchema);
     
     my $username = $self->authen->username;
+
     my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
 
     $template->param(public_genomes => $pub_json);
@@ -257,40 +257,16 @@ sub geophy : Runmode {
             $template->param(tree_json => $tree_string);
         }
 
-    # Groups Manager, only active if user logged in
-    #$template->param(groups_manager => 0) unless $username;
-    #$template->param(groups_manager => 1) if $username;
-
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    my $user_groups = $self->_getUserGroups();
+    my $user_groups = $fdg->userGroups($username);
 
+    $template->param(username => $username);
     $template->param(user_groups => $user_groups);
 
+
     return $template->output();
-}
-
-# Incomplete and on hold for now
-# Group Form Functions
-# sub save : Runmode {
-#     my $self = shift;
-#     my $q = $self->query();
-
-sub _getUserGroups {
-    my $self = shift;
-    my $username = $self->authen->username;
-    
-    return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
-    
-    my $userGroupsRs = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
-    
-    return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $userGroupsRs;
-    
-    my $userGroupsJson = $userGroupsRs->user_groups;
-    my $user_groups_json = $userGroupsJson;
-
-    return $user_groups_json;
 }
 
 1;
