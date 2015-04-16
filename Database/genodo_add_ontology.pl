@@ -8,6 +8,7 @@ use lib "$FindBin::Bin/../";
 use Database::Chado::Schema;
 use Carp qw/croak carp/;
 use Config::Simple;
+use Modules::User;
 
 
 =head1 NAME
@@ -79,13 +80,37 @@ my $schema = Database::Chado::Schema->connect($dbsource, $DBUSER, $DBPASS) or cr
 # Add missing terms.
 # Update fields of existing terms to keep consistent in all DB instances.
 
+# System user
+my $username = $DBUSER;
+my $first_name = 'Superphy';
+my $last_name = 'Administrator';
+my $passwd = Modules::User::_encode_password($DBPASS);
+my $email = 'NA';
+my $row = $schema->resultset('Login')->update_or_new(
+	{
+		username => $username,
+		password => $passwd,
+		firstname => $first_name,
+		lastname => $last_name,
+		email => $email
+	},
+	{
+		key => 'login_c1'
+	});
+
+unless($row->in_storage) {
+	print "Adding user $username.\n";
+	$row->insert;
+	
+}
+
 # Organism
 my $genus = 'Escherichia';
 my $species = 'coli';
 my $abbr = 'E.coli';
 my $common_name = 'Escherichia coli';
 my $comment = 'All species in Genodo are E.coli. Use feature properties strain and serotype to distinguish E.coli isolates.';
-my $row = $schema->resultset('Organism')->update_or_new(
+$row = $schema->resultset('Organism')->update_or_new(
 	{
 		genus => $genus,
 		species => $species,

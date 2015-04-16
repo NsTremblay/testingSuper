@@ -65,6 +65,12 @@ __PACKAGE__->table("private_gap_position");
   data_type: 'integer'
   is_nullable: 0
 
+=head2 locus_gap_offset
+
+  data_type: 'integer'
+  default_value: -1
+  is_nullable: 1
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -87,6 +93,8 @@ __PACKAGE__->add_columns(
   { data_type => "integer", is_foreign_key => 1, is_nullable => 0 },
   "locus_pos",
   { data_type => "integer", is_nullable => 0 },
+  "locus_gap_offset",
+  { data_type => "integer", default_value => -1, is_nullable => 1 },
 );
 
 =head1 PRIMARY KEY
@@ -209,8 +217,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-29 14:59:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:5nePH96aWj2iO6cj9PNyMg
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:VlbW4LSyJxdv9lXT0ljwvg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

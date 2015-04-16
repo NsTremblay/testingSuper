@@ -41,36 +41,46 @@ it under the same terms as Perl itself.
 
 $|=1;
 
-my ($CONFIG);
+my ($CONFIG, $dbhost, $dbname, $dbport, $dbuser, $dbpass);
 
 GetOptions(
     'config=s' => \$CONFIG,
+    'dbname=s' => \$dbname,
+    'dbhost=s' => \$dbhost,
+    'dbport=i' => \$dbport,
+    'dbuser=s' => \$dbuser,
+    'dbpass=s' => \$dbpass
 );
 
 # Connect to DB
-croak "Missing argument. You must supply a configuration filename.\n" unless $CONFIG;
-my ($dbsource, $dbpass, $dbuser);
-if(my $db_conf = new Config::Simple($CONFIG)) {
-	my $dbname    = $db_conf->param('db.name');
-	$dbuser       = $db_conf->param('db.user');
-	$dbpass       = $db_conf->param('db.pass');
-	my $dbhost    = $db_conf->param('db.host');
-	my $dbport    = $db_conf->param('db.port');
-	my $dbi       = $db_conf->param('db.dbi');
-	
-	$dbsource = 'dbi:' . $dbi . ':dbname=' . $dbname . ';host=' . $dbhost;
-	$dbsource . ';port=' . $dbport if $dbport;
-	
+my $dbi = 'Pg';
+if($CONFIG) {
+
+	if(my $db_conf = new Config::Simple($CONFIG)) {
+		$dbname    = $db_conf->param('db.name');
+		$dbuser    = $db_conf->param('db.user');
+		$dbpass    = $db_conf->param('db.pass');
+		$dbhost    = $db_conf->param('db.host');
+		$dbport    = $db_conf->param('db.port');
+		$dbi       = $db_conf->param('db.dbi');
+	} else {
+		die Config::Simple->error();
+	}
+
 } else {
-	die Config::Simple->error();
+	croak "Missing DB connection paramters. Must provide config file or individual parameters." unless $dbname && $dbhost && $dbpass && $dbuser;
 }
+
+my $dbsource = 'dbi:' . $dbi . ':dbname=' . $dbname . ';host=' . $dbhost;
+$dbsource . ';port=' . $dbport if $dbport;
 
 my $schema = Database::Chado::Schema->connect($dbsource, $dbuser, $dbpass) or croak "Error: could not connect to database.";
 
+# Initialize FDG object
 my $fdg = Modules::FormDataGenerator->new();
-
 $fdg->dbixSchema($schema);
 
+# Retrieve and load JSON feature data objects in table
 $fdg->loadMetaData();
 
 

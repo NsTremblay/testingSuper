@@ -257,6 +257,21 @@ __PACKAGE__->add_unique_constraint("feature_c1", ["organism_id", "uniquename", "
 
 =head1 RELATIONS
 
+=head2 accessory_region
+
+Type: might_have
+
+Related object: L<Database::Chado::Schema::Result::AccessoryRegion>
+
+=cut
+
+__PACKAGE__->might_have(
+  "accessory_region",
+  "Database::Chado::Schema::Result::AccessoryRegion",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 amr_categories
 
 Type: has_many
@@ -272,33 +287,33 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 analysisfeatures
+=head2 contig_footprints
 
 Type: has_many
 
-Related object: L<Database::Chado::Schema::Result::Analysisfeature>
+Related object: L<Database::Chado::Schema::Result::ContigFootprint>
 
 =cut
 
 __PACKAGE__->has_many(
-  "analysisfeatures",
-  "Database::Chado::Schema::Result::Analysisfeature",
+  "contig_footprints",
+  "Database::Chado::Schema::Result::ContigFootprint",
   { "foreign.feature_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 cell_line_features
+=head2 core_region
 
-Type: has_many
+Type: might_have
 
-Related object: L<Database::Chado::Schema::Result::CellLineFeature>
+Related object: L<Database::Chado::Schema::Result::CoreRegion>
 
 =cut
 
-__PACKAGE__->has_many(
-  "cell_line_features",
-  "Database::Chado::Schema::Result::CellLineFeature",
-  { "foreign.feature_id" => "self.feature_id" },
+__PACKAGE__->might_have(
+  "core_region",
+  "Database::Chado::Schema::Result::CoreRegion",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -320,21 +335,6 @@ __PACKAGE__->belongs_to(
     on_delete     => "SET NULL",
     on_update     => "NO ACTION",
   },
-);
-
-=head2 elements
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Element>
-
-=cut
-
-__PACKAGE__->has_many(
-  "elements",
-  "Database::Chado::Schema::Result::Element",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
 );
 
 =head2 feature_cvterms
@@ -367,62 +367,17 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 feature_expressions
+=head2 feature_groups
 
 Type: has_many
 
-Related object: L<Database::Chado::Schema::Result::FeatureExpression>
+Related object: L<Database::Chado::Schema::Result::FeatureGroup>
 
 =cut
 
 __PACKAGE__->has_many(
-  "feature_expressions",
-  "Database::Chado::Schema::Result::FeatureExpression",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_genotype_chromosomes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeatureGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_genotype_chromosomes",
-  "Database::Chado::Schema::Result::FeatureGenotype",
-  { "foreign.chromosome_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_genotype_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeatureGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_genotype_features",
-  "Database::Chado::Schema::Result::FeatureGenotype",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 feature_phenotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::FeaturePhenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "feature_phenotypes",
-  "Database::Chado::Schema::Result::FeaturePhenotype",
+  "feature_groups",
+  "Database::Chado::Schema::Result::FeatureGroup",
   { "foreign.feature_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -652,6 +607,66 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 gap_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_contig_collections",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_contigs",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_loci",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.locus_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 gap_position_pangenome_regions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::GapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "gap_position_pangenome_regions",
+  "Database::Chado::Schema::Result::GapPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 genome_locations
 
 Type: has_many
@@ -663,36 +678,6 @@ Related object: L<Database::Chado::Schema::Result::GenomeLocation>
 __PACKAGE__->has_many(
   "genome_locations",
   "Database::Chado::Schema::Result::GenomeLocation",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 library_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LibraryFeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "library_features",
-  "Database::Chado::Schema::Result::LibraryFeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 loci_genotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::LociGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "loci_genotypes",
-  "Database::Chado::Schema::Result::LociGenotype",
   { "foreign.feature_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
@@ -712,21 +697,6 @@ __PACKAGE__->belongs_to(
   { is_deferrable => 1, on_delete => "CASCADE", on_update => "NO ACTION" },
 );
 
-=head2 phylonodes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::Phylonode>
-
-=cut
-
-__PACKAGE__->has_many(
-  "phylonodes",
-  "Database::Chado::Schema::Result::Phylonode",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 pripub_feature_relationships
 
 Type: has_many
@@ -739,6 +709,36 @@ __PACKAGE__->has_many(
   "pripub_feature_relationships",
   "Database::Chado::Schema::Result::PripubFeatureRelationship",
   { "foreign.object_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_gap_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateGapPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_gap_positions",
+  "Database::Chado::Schema::Result::PrivateGapPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 private_snp_positions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::PrivateSnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "private_snp_positions",
+  "Database::Chado::Schema::Result::PrivateSnpPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
@@ -802,6 +802,66 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
+=head2 snp_position_contig_collections
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_contig_collections",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.contig_collection_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_contigs
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_contigs",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.contig_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_loci
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_loci",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.locus_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
+=head2 snp_position_pangenome_regions
+
+Type: has_many
+
+Related object: L<Database::Chado::Schema::Result::SnpPosition>
+
+=cut
+
+__PACKAGE__->has_many(
+  "snp_position_pangenome_regions",
+  "Database::Chado::Schema::Result::SnpPosition",
+  { "foreign.pangenome_region_id" => "self.feature_id" },
+  { cascade_copy => 0, cascade_delete => 0 },
+);
+
 =head2 snp_variation_contig_collections
 
 Type: has_many
@@ -847,36 +907,6 @@ __PACKAGE__->has_many(
   { cascade_copy => 0, cascade_delete => 0 },
 );
 
-=head2 snps_genotypes
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::SnpsGenotype>
-
-=cut
-
-__PACKAGE__->has_many(
-  "snps_genotypes",
-  "Database::Chado::Schema::Result::SnpsGenotype",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
-=head2 studyprop_features
-
-Type: has_many
-
-Related object: L<Database::Chado::Schema::Result::StudypropFeature>
-
-=cut
-
-__PACKAGE__->has_many(
-  "studyprop_features",
-  "Database::Chado::Schema::Result::StudypropFeature",
-  { "foreign.feature_id" => "self.feature_id" },
-  { cascade_copy => 0, cascade_delete => 0 },
-);
-
 =head2 type
 
 Type: belongs_to
@@ -918,8 +948,8 @@ Composing rels: L</genome_locations> -> geocode
 __PACKAGE__->many_to_many("geocodes", "genome_locations", "geocode");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-08-25 11:49:01
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:Bf5eMkCqkx35nRV1gufEpA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-03-11 13:58:49
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:ESl6bzhLB79hMis+0SGq1Q
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

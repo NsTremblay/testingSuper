@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 
@@ -254,7 +255,7 @@ $.each(amr, function(k,v) {
 var vfGenesList = new GenesList(vf, 'vf', categories.vfCats, $('#vf-table'), $('#vf-categories'), ['uniquename', 'alleles', 'category', 'subcategory'], false);
 var amrGenesList = new GenesList(amr, 'amr', categories.amrCats, $('#amr-table'), $('#amr-categories'), ['uniquename', 'alleles', 'category', 'subcategory'], false);
 
-var menu = new SuperphyMenu($('#info_menu'), $('.superphy-side-menu'), 'strains', 'genomes' ,['genomelist', 'phylogeny', 'geospatial', 'download'], ['overview', 'stx', 'phylogeny', 'geospatial', 'vf', 'amr'], null, true);
+var menu = new SuperphyMenu($('#info_menu'), $('.superphy-side-menu'), 'snps', 'snps' ,['genomelist', 'phylogeny', 'geospatial', 'download'], ['overview', 'stx', 'phylogeny', 'geospatial', 'vf', 'amr'], null, true);
 
 $(document).ready(function(){
   $('a.genome-dl-link').attr("href", "/strains/download?genome="+allele_genome);

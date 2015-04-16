@@ -85,6 +85,18 @@ __PACKAGE__->table("tracker");
   data_type: 'timestamp'
   is_nullable: 1
 
+=head2 footprint
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 32
+
+=head2 access_category
+
+  data_type: 'varchar'
+  is_nullable: 1
+  size: 10
+
 =cut
 
 __PACKAGE__->add_columns(
@@ -123,6 +135,10 @@ __PACKAGE__->add_columns(
   },
   "end_date",
   { data_type => "timestamp", is_nullable => 1 },
+  "footprint",
+  { data_type => "varchar", is_nullable => 1, size => 32 },
+  "access_category",
+  { data_type => "varchar", is_nullable => 1, size => 10 },
 );
 
 =head1 PRIMARY KEY
@@ -175,8 +191,8 @@ __PACKAGE__->belongs_to(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:9go034IPlNS4yS45jQWlHA
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-03-11 13:58:50
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:cib6klpkuL9yQX7B4JazUA
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

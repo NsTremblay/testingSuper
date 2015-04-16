@@ -20,8 +20,6 @@ with 'Roles::DatabaseConnector';
 with 'Roles::CVMemory';
 use Log::Log4perl qw(:easy);
 
-# get script location via File::Basename
-my $SCRIPT_LOCATION = dirname(__FILE__) . '/../../config';
 
 # Initialize a basic root logger
 # Note: over-write this in child classes if you want to direct the output somewhere
@@ -39,16 +37,34 @@ sub cgiapp_init {
 	$logger->debug('Initializing CGI::Application in App_Super');
 
 	# Load config options
-	$self->config_file($SCRIPT_LOCATION.'/genodo.cfg');
+	my $config_file;
+	if($ENV{SUPERPHY_CONFIGFILE}) {
+		# Environmental variable overrides default config location
+		$config_file = $ENV{SUPERPHY_CONFIGFILE};
+	} 
+	else {
+		# Get script location via File::Basename
+		$config_file = dirname(__FILE__) . '/../../config/genodo.cfg';
+	}
+	
+	$logger->debug("Config file: $config_file");
+	$self->config_file($config_file);
 
 	# Set up database connection
-	$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
-					          dbName  => $self->config_param('db.name'),
-					          dbHost  => $self->config_param('db.host'),
-					          dbPort  => $self->config_param('db.port'),
-					          dbUser  => $self->config_param('db.user'),
-					          dbPass  => $self->config_param('db.pass') 
-	);
+	if($self->param('test_mode')) {
+		$logger->debug('Connecting to Test Database');
+		$self->setDbix($self->param('test_schema'));
+
+	} else {
+		$self->connectDatabase(   dbi     => $self->config_param('db.dbi'),
+						          dbName  => $self->config_param('db.name'),
+						          dbHost  => $self->config_param('db.host'),
+						          dbPort  => $self->config_param('db.port'),
+						          dbUser  => $self->config_param('db.user'),
+						          dbPass  => $self->config_param('db.pass') 
+		);
+	}
+	
 
 	# Set up session tracking
 	$self->session_config(
@@ -216,15 +232,6 @@ sub home_rm {
 	return 'home';
 }
 
-=head2 script_location
-
-Accessor for child classes
-
-=cut
-sub script_location {
-	
-	return $SCRIPT_LOCATION;
-}
 
 =head2 logger
 

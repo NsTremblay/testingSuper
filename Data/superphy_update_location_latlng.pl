@@ -147,7 +147,7 @@ sub populateGeocodedLocations {
         
         $geocoded_count++;
 
-        sleep(3);
+        sleep(1);
     }
 
     foreach (keys $public_genome_locations) {
@@ -243,6 +243,7 @@ sub _retrieveLocations {
 
     while (my $location = $sth->fetchrow_hashref) {
         my $_locationStr = _parseLocation($location->{'value'});
+        print "PARSED ".$location->{'value'}. " GOT ". $_locationStr ."\n";
         my $_pubFeatureId = $location->{'feature_id'};
         $_locations{$_locationStr} = undef;
         $_public_genome_locations{$_pubFeatureId} = $_locationStr;

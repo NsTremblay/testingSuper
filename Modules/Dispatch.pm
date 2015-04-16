@@ -22,14 +22,19 @@ sub dispatch_args {
     return {
         prefix  => 'Modules',
         args_to_new=>{
-                TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
+            TMPL_PATH=>"$SCRIPT_LOCATION/../App/Templates/"
         },
         table   => [
-                'user/login'          => { app => 'User', rm => 'authen_login' },
-                ':app/:rm'            => { },
-                'test'                => { app => 'User', rm => 'hello' },
-				'/hello' =>     {app=>'Home' , rm=>'default'},
-                '/home' =>      {app=>'Home', rm=>'home'}
+            # SHINY RESTful API routing
+            'api/group[post]'             => { app => 'Shiny', rm => 'create_group'},
+            'api/group/:group_id[put]'     => { app => 'Shiny', rm => 'update_group'},
+            'api/group[get]'              => { app => 'Shiny', rm => 'groups'},
+            # REGULAR routing
+            'user/login'          => { app => 'User', rm => 'authen_login' },
+            ':app/:rm'            => { },
+            'test'                => { app => 'User', rm => 'hello' },
+			'/hello' =>     {app=>'Home' , rm=>'default'},
+            '/home' =>      {app=>'Home', rm=>'home'}
         ],
     };
 }

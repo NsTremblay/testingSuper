@@ -1,5 +1,5 @@
 class GeoPhy
-  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv) ->
+  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv, @sumDiv) ->
 
   publicSubsetGenomes: {}
   privateSubsetGenomes: {}
@@ -12,7 +12,9 @@ class GeoPhy
       @_filter()
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
-    @_createSubmitForm(); 
+    #@_createSubmitForm(); 
+    @viewController.createView('summary', @sumDiv)
+    @_createSubmitForm();
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
@@ -145,6 +147,7 @@ class GeoPhy
     #@viewController.createGroupsForm($('#geophy-control'), addMore, submit, filter)
     true
 
+  # Deprecated: These functions are merged with the existing filtering functions.
   _createSubmitForm: () ->
     elem = jQuery('#geophy-control')
     parentTarget = 'geophy-control-panel-body'
@@ -157,8 +160,8 @@ class GeoPhy
     submitEl = jQuery('<div class="row"></div>')
 
     #TODO: Add buttons and actions
-    submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" id="submit-btn" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl)
-    resetButtonEl = jQuery('<div class="col-md-2"><button type="button" id="reset-btn" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl)
+    submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"></span> Highlight Genomes</button></div>').appendTo(submitEl)
+    resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"></span> Reset Views</button></div>').appendTo(submitEl)
     #hiddenFormEl = jQuery("<form class='form' id='geophy-form' method='post' action='#{@viewController.action}' enctype='application/x-www-form-urlencoded'></form>").appendTo(submitEl)
 
     submitButtonEl.click( (e) =>

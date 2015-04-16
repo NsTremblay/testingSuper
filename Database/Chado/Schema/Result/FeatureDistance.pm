@@ -72,9 +72,24 @@ __PACKAGE__->add_columns(
 );
 
 
-# Created by DBIx::Class::Schema::Loader v0.07040 @ 2014-06-27 14:59:25
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:l1KXfgT1QR2+/yctnhQC8g
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:44
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:/gPAjg2YW2CQlkKrSQ3PFg
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration
+__PACKAGE__->result_source_instance->is_virtual(0);
+__PACKAGE__->result_source_instance->view_definition(
+  "SELECT x.feature_id AS subject_id, ".
+  "y.feature_id AS object_id, ".
+  "x.srcfeature_id, ".
+  "x.strand AS subject_strand, ".
+  "y.strand AS object_strand, ".
+  "CASE ".
+  "WHEN x.fmax <= y.fmin THEN x.fmax - y.fmin ".
+  "ELSE y.fmax - x.fmin ".
+  "END AS distance ".
+  "FROM featureloc x, ".
+  "featureloc y ".
+  "WHERE x.srcfeature_id = y.srcfeature_id AND (x.fmax <= y.fmin OR x.fmin >= y.fmax)"
+);
 1;

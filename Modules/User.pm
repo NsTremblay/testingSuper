@@ -17,9 +17,6 @@ use Email::Simple;
 use Email::Sender::Simple qw(sendmail);
 use Email::Sender::Transport::SMTP::TLS;
 
-
-#my $sl = Modules::App_Super::script_location();
-#Log::Log4perl->init($sl."/logger.conf");
 my $logger = get_logger();
 
 my $dbic;
@@ -242,7 +239,8 @@ sub create_account : Runmode {
 	$a->{initialized} = 0;    # force reinitialization, hence storage of login
 	$a->initialize;
 	$self->session->param(
-		status => '<strong>Success!</strong> Account created.' );
+		status => '<strong>Success!</strong> Account created.'
+	);
 
 	# Go to main page
 	$self->redirect( $self->home_page );

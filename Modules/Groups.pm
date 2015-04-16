@@ -195,7 +195,6 @@ sub poll : Runmode {
 
 sub geophy : Runmode {
     # TODO: Need to query for strains and return only the subset
-    # TODO: Clean this shit up
     my $self = shift;
 
     #my $q = $self->query();
@@ -236,6 +235,7 @@ sub geophy : Runmode {
     $fdg->dbixSchema($self->dbixSchema);
     
     my $username = $self->authen->username;
+
     my ($pub_json, $pvt_json) = $fdg->genomeInfo($username);
 
     $template->param(public_genomes => $pub_json);
@@ -257,99 +257,16 @@ sub geophy : Runmode {
             $template->param(tree_json => $tree_string);
         }
 
-    # Groups Manager, only active if user logged in
-    #$template->param(groups_manager => 0) unless $username;
-    #$template->param(groups_manager => 1) if $username;
-
     $template->param(title1 => 'GEO');
     $template->param(title2 => 'PHY');
 
-    my $user_groups = $self->_getUserGroups();
+    my $user_groups = $fdg->userGroups($username);
 
+    $template->param(username => $username);
     $template->param(user_groups => $user_groups);
 
+
     return $template->output();
-}
-
-sub snps : Runmode {
-	my $self = shift;
-
-    my $q = $self->query();
-    
-    my $job_id = $q->param('job');
-    
-    # Retrieve job data
-	unless($job_id) {
-		die("Missing query parameter: job")
-	}
-	my $job = $self->dbixSchema->resultset('JobResult')->find($job_id);
-	unless($job) {
-		die("No record matching ID $job_id in job_result table.");
-	}
-	
-	# Check user
-	my $user = $self->authen->username;
-	my $submitter = $job->username;
-	
-	if($user ne $submitter) {
-		# User requested invalid strains or strains that they do not have permission to view
-		$self->session->param( status => '<strong>Permission Denied!</strong> You do not have access to job: '.$job_id );
-		return $self->redirect( $self->home_page );
-	}
-	
-	# Retrieve results
-	my $result_json = $job->result;
-	my $results = decode_json($result_json);
-	
-	unless($results) {
-		die("No results for job $job_id");
-	}
-	
-	# Produce CSV output
-	my @rows;
-	my @fields = qw/genome allele contig position gap_offset strand upstream downstream/;
-	# Header
-	my @header = qw/Genome Allele Contig Position Gap_Offset Strand 100bp_Upstream 100bp_Downstream/;
-	push @rows, '#'.join("\t", @header);
-	
-	foreach my $k (keys %$results) {
-		my $r = $results->{$k};
-		my @row;
-		
-		foreach my $f (@fields) {
-			my $d = $r->{$f};
-			warn "Found undefined field $f in SNP job $job_id." unless $d;
-			push @row, $d;
-		}
-		
-		push @rows, join("\t", @row);
-	}
-	
-	# Pipe text to user
-	my $output = join("\n", @rows);
-	
-	$self->header_add( 
-		-type => 'text/plain',
-		-Content_Disposition => "attachment");
-		
-	return $output;
-}
-
-
-sub _getUserGroups {
-    my $self = shift;
-    my $username = $self->authen->username;
-    
-    return encode_json({status => "Please <a href=\'\/user\/login\'>sign in<\/a> to view your saved groups"}) unless $username;
-    
-    my $userGroupsRs = $self->dbixSchema->resultset('UserGroup')->find({username => $username});
-    
-    return encode_json({status => "You haven't created any groups yet. Create some groups <a href=\'\/groups\/shiny\'>here<\/a>."})  unless $userGroupsRs;
-    
-    my $userGroupsJson = $userGroupsRs->user_groups;
-    my $user_groups_json = $userGroupsJson;
-
-    return $user_groups_json;
 }
 
 1;

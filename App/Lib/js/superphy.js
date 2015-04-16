@@ -10,7 +10,7 @@
  */
 
 (function() {
-  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocationController, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, superphyMetaOntology, trimInput, typeIsArray,
+  var AlleleTicker, Cartographer, CartographerOverlay, DotCartographer, GenomeController, GeoPhy, GeophyCartographer, GroupView, Histogram, InfoSatelliteCartographer, ListView, LocationController, LocusController, MapView, MatrixTicker, MatrixView, MetaTicker, MsaView, SatelliteCartographer, SelectionMapView, SelectionView, StxController, StxTicker, SummaryView, SuperphyError, TableView, TickerTemplate, TreeView, ViewController, ViewTemplate, cmp, escapeRegExp, mixOf, parseHeader, root, superphyAlert, superphyMetaOntology, trimInput, typeIsArray,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
     __slice = [].slice,
@@ -90,60 +90,76 @@
     };
 
     ViewController.prototype.createView = function() {
-      var clickStyle, downloadElem, downloadElemDiv, elem, listView, mapView, matView, msaView, tableView, treeView, vNum, viewArgs, viewType;
+      var clickStyle, downloadElem, downloadElemDiv, e, elem, listView, mapView, matView, msaView, sumView, tableView, treeView, vNum, viewArgs, viewType;
       viewType = arguments[0], elem = arguments[1], viewArgs = 3 <= arguments.length ? __slice.call(arguments, 2) : [];
       clickStyle = 'select';
       vNum = this.views.length + 1;
       if (this.actionMode === 'single_select') {
         clickStyle = 'redirect';
       }
-      if (viewType === 'list') {
-        listView = new ListView(elem, clickStyle, vNum, viewArgs);
-        listView.update(this.genomeController);
-        this.views.push(listView);
-      } else if (viewType === 'tree') {
-        treeView = new TreeView(elem, clickStyle, vNum, viewArgs);
-        treeView.update(this.genomeController);
-        this.views.push(treeView);
-      } else if (viewType === 'msa') {
-        msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
-        msaView.update(this.genomeController);
-        this.views.push(msaView);
-      } else if (viewType === 'matrix') {
-        matView = new MatrixView(elem, clickStyle, vNum, this.genomeController, viewArgs);
-        matView.update(this.genomeController);
-        this.views.push(matView);
-      } else if (viewType === 'map') {
-        mapView = new MapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
-        this.views.push(mapView);
-      } else if (viewType === 'selmap') {
-        mapView = new SelectionMapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
-        this.views.push(mapView);
-      } else if (viewType === 'table') {
-        tableView = new TableView(elem, clickStyle, vNum, viewArgs);
-        tableView.update(this.genomeController);
-        this.views.push(tableView);
-      } else if (viewType === 'jump2table') {
-        tableView = new TableView(elem, clickStyle, vNum, viewArgs);
-        tableView.update(this.genomeController);
-        this.views.push(tableView);
-        return;
-      } else {
-        throw new SuperphyError('Unrecognized viewType <' + viewType + '> in ViewController createView() method.');
+      try {
+        if (viewType === 'list') {
+          listView = new ListView(elem, clickStyle, vNum, viewArgs);
+          listView.update(this.genomeController);
+          this.views.push(listView);
+        } else if (viewType === 'tree') {
+          treeView = new TreeView(elem, clickStyle, vNum, this.genomeController, viewArgs);
+          treeView.update(this.genomeController);
+          this.views.push(treeView);
+        } else if (viewType === 'msa') {
+          msaView = new MsaView(elem, clickStyle, vNum, viewArgs);
+          msaView.update(this.genomeController);
+          this.views.push(msaView);
+        } else if (viewType === 'matrix') {
+          matView = new MatrixView(elem, clickStyle, vNum, this.genomeController, viewArgs);
+          matView.update(this.genomeController);
+          this.views.push(matView);
+        } else if (viewType === 'map') {
+          mapView = new MapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
+          this.views.push(mapView);
+        } else if (viewType === 'selmap') {
+          mapView = new SelectionMapView(elem, clickStyle, vNum, this.genomeController, viewArgs);
+          this.views.push(mapView);
+        } else if (viewType === 'table') {
+          tableView = new TableView(elem, clickStyle, vNum, viewArgs);
+          tableView.update(this.genomeController);
+          this.views.push(tableView);
+        } else if (viewType === 'summary') {
+          sumView = new SummaryView(elem, clickStyle, vNum, this.genomeController, viewArgs);
+          sumView.update(this.genomeController);
+          this.views.push(sumView);
+        } else if (viewType === 'jump2table') {
+          tableView = new TableView(elem, clickStyle, vNum, viewArgs);
+          tableView.update(this.genomeController);
+          this.views.push(tableView);
+          return;
+        } else {
+          throw new SuperphyError('Unrecognized viewType <' + viewType + '> in ViewController createView() method.');
+          return false;
+        }
+        downloadElemDiv = jQuery("<div class='download-view'></div>");
+        downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='" + vNum + "'>Download <i class='fa fa-download'></a>");
+        downloadElem.click(function(e) {
+          var data, viewNum;
+          viewNum = parseInt(this.dataset.genomeView);
+          data = viewController.downloadViews(viewNum);
+          this.href = data.href;
+          this.download = data.file;
+          return true;
+        });
+        downloadElemDiv.append(downloadElem);
+        downloadElemDiv.prependTo(elem);
+      } catch (_error) {
+        e = _error;
+        this.viewError(e, elem);
         return false;
       }
-      downloadElemDiv = jQuery("<div class='download-view'></div>");
-      downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='" + vNum + "'>Download <i class='fa fa-download'></a>");
-      downloadElem.click(function(e) {
-        var data, viewNum;
-        viewNum = parseInt(this.dataset.genomeView);
-        data = viewController.downloadViews(viewNum);
-        this.href = data.href;
-        this.download = data.file;
-        return true;
-      });
-      downloadElemDiv.append(downloadElem);
-      downloadElemDiv.prependTo(elem);
+      return true;
+    };
+
+    ViewController.prototype.viewError = function(e, elem) {
+      elem.append("<div class='superphy-error'><p>Superphy Error! View failed to load.</p></div>");
+      alert("Superphy error: " + e.message + "\nLine: " + e.line);
       return true;
     };
 
@@ -411,16 +427,31 @@
     };
 
     ViewController.prototype.sideBar = function(elem) {
-      var form1, form2, parentTarget, wrapper;
+      var form1, form2, form3, parentTarget, wrapper;
       parentTarget = 'sidebar-group';
       wrapper = jQuery('<div class="panel-group" id="' + parentTarget + '"></div>');
       elem.append(wrapper);
       form1 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form1);
       this.metaForm(form1, parentTarget);
+      form3 = jQuery('<div class="panel panel-default"></div>');
+      wrapper.append(form3);
+      this.groupForm(form3, parentTarget);
       form2 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form2);
       this.filterForm(form2, parentTarget);
+      return true;
+    };
+
+    ViewController.prototype.groupForm = function(elem, parentStr) {
+      var group_form, panel_body, panel_header, panel_main, panel_title;
+      panel_header = $('<div class="panel-heading"></div>');
+      panel_title = $('<div class="panel_title"> <a data-toggle="collapse" href="#group-form"> User Groups <span class="caret"></span></a></div>').appendTo(panel_header);
+      panel_main = $('<div id="group-form" class="collapse in"></div>');
+      panel_body = $('<div class="panel-body"></div>').appendTo(panel_main);
+      group_form = $('<div class="user-groups-menu"></div>').appendTo(panel_body);
+      elem.append(panel_header);
+      elem.append(panel_main);
       return true;
     };
 
@@ -447,7 +478,7 @@
 
     ViewController.prototype.metaForm = function(elem, parentStr) {
       var form;
-      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>' + '</fieldset>' + '</form>' + '</div></div>';
+      form = '<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#meta-form"><i class="fa fa-eye"></i> Meta-data ' + '<span class="caret"></span></a>' + '</div></div>' + '<div id="meta-form" class="collapse in">' + '<div class="panel-body">' + '<p>Select meta-data displayed:</p>' + '<form class="form-inline">' + '<fieldset>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="display:none;width:12px;height:12px;background:#004D11;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="display:none;width:12px;height:12px;background:#9E0015;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="display:none;width:12px;height:12px;background:#000752;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="display:none;width:12px;height:12px;background:#520042;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="display:none;width:12px;height:12px;background:#F05C00;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="display:none;width:12px;height:12px;background:#006B5C;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>' + '</fieldset>' + '</form>' + '</div></div>';
       elem.append(form);
       jQuery('input[name="meta-option"]').change(function() {
         return viewController.updateViews(this.value, this.checked);
@@ -513,7 +544,7 @@
     };
 
     ViewController.prototype.filterForm = function(elem, parentStr) {
-      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, header, numVisible, selDiv, selGroup, selLab, selRadio, sf;
+      var advDiv, advForm, advGroup, advLab, advRadio, container, delButton, fastDiv, fastGroup, fastLab, fastRadio, fbg, fbs, filtButton, filtType, filterOff, filterOn, filterStatus, findButton, header, numVisible, selDiv, selGroup, selLab, selRadio, sf, ugpDiv, ugpGroup, ugpLab, ugpRadio;
       header = jQuery('<div class="panel-heading">' + '<div class="panel-title">' + '<a data-toggle="collapse" href="#filter-form"><i class="fa fa-filter"></i> Filter ' + '<span class="caret"></span></a>' + '</div></div>').appendTo(elem);
       container = jQuery('<div id="filter-form" class="panel-collapse collapse in"></div>');
       numVisible = this.genomeController.filtered;
@@ -547,6 +578,7 @@
           jQuery("#fast-filter").show();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -560,6 +592,7 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").show();
           jQuery("#selection-filter").hide();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
@@ -573,10 +606,25 @@
           jQuery("#fast-filter").hide();
           jQuery("#adv-filter").hide();
           jQuery("#selection-filter").show();
+          jQuery("#group-filter").hide();
         }
         return true;
       });
       filtType.append(selGroup);
+      ugpGroup = jQuery('<div class="form-group"></div>');
+      ugpDiv = jQuery('<div class="col-xs-1"></div>').appendTo(ugpGroup);
+      ugpRadio = jQuery('<input id="ugp" type="radio" name="filter-form-type" value="selection">').appendTo(ugpDiv);
+      ugpLab = jQuery('<label class="col-xs-10" for="ugp">By Group</label>').appendTo(ugpGroup);
+      ugpRadio.change(function(e) {
+        if (this.checked != null) {
+          jQuery("#fast-filter").hide();
+          jQuery("#adv-filter").hide();
+          jQuery("#selection-filter").hide();
+          jQuery("#group-filter").show();
+        }
+        return true;
+      });
+      filtType.append(ugpGroup);
       container.append(filtType);
       sf = jQuery("<div id='fast-filter'></div>");
       this.addFastFilter(sf);
@@ -594,6 +642,17 @@
       fbs.append(filtButton);
       fbs.hide();
       container.append(fbs);
+      fbg = jQuery("<div class='row' id='group-filter'>" + "<p>A group in one of the views</p>" + "</div>");
+      findButton = jQuery('<div class="col-xs-3"><button id="user-groups-submit" class="btn btn btn-sm" type="button">Find</button></div>');
+      fbg.append(findButton);
+      filtButton = jQuery('<div class="col-xs-3"><button id="filter-group-button" type="button" class="btn btn-sm">Filter</button></div>');
+      filtButton.click(function(e) {
+        e.preventDefault();
+        return viewController.filterViews('selection');
+      });
+      fbg.append(filtButton);
+      fbg.hide();
+      container.append(fbg);
       container.appendTo(elem);
       return true;
     };
@@ -1631,6 +1690,8 @@
 
     GenomeController.prototype.privateRegexp = new RegExp('^private_');
 
+    GenomeController.prototype.meta_option = '';
+
     GenomeController.prototype.filtered = 0;
 
     mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'isolation_date', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
@@ -2055,6 +2116,7 @@
     };
 
     GenomeController.prototype.updateMeta = function(option, checked) {
+      this.meta_option = option;
       console.log(option);
       if (this.visibleMeta[option] == null) {
         throw new SuperphyError('unrecognized option in GenomeController method updateMeta()');
@@ -2868,15 +2930,16 @@
    */
 
   TreeView = (function(_super) {
-    var checkbox_value, mtypesDisplayed, total_height, visible_bars;
+    var colours, total_height, visible_bars;
 
     __extends(TreeView, _super);
 
-    function TreeView(parentElem, style, elNum, treeArgs) {
-      var dialog, legendID, num;
+    function TreeView(parentElem, style, elNum, genomes, treeArgs) {
+      var all_genomes, dialog, legendID, m, n, num, totalCount, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
       this.parentElem = parentElem;
       this.style = style;
       this.elNum = elNum;
+      this.genomes = genomes;
       if (!(treeArgs.length > 0)) {
         throw new SuperphyError('Missing argument. TreeView constructor requires JSON tree object.');
       }
@@ -2975,9 +3038,65 @@
           });
         }
       }
+      this.mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+      totalCount = {};
+      _ref = this.mtypesDisplayed;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        m = _ref[_i];
+        totalCount[m] = {};
+      }
+      all_genomes = (Object.keys(this.genomes.public_genomes)).concat(Object.keys(this.genomes.private_genomes));
+      this.countMeta(totalCount, all_genomes);
+      this.metaOntology = {};
+      this.tt_mtitle = {};
+      _ref1 = this.mtypesDisplayed;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        m = _ref1[_j];
+        this.metaOntology[m] = [];
+        this.tt_mtitle[m] = new String();
+        this.metaOntology[m] = Object.keys(totalCount[m]).sort(function(a, b) {
+          return totalCount[m][b] - totalCount[m][a];
+        });
+        if (m === "isolation_host" || m === "isolation_source") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+          this.tt_mtitle[m] = this.tt_mtitle[m].replace("_", " ");
+          this.tt_mtitle[m] = this.tt_mtitle[m].slice(0, 10) + this.tt_mtitle[m].charAt(10).toUpperCase() + this.tt_mtitle[m].slice(11);
+        }
+        if (m === "syndrome") {
+          this.tt_mtitle[m] = "Symptoms/Diseases";
+        }
+        if (m === "stx1_subtype" || m === "stx2_subtype") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+          this.tt_mtitle[m] = this.tt_mtitle[m].replace("_", " ");
+          this.tt_mtitle[m] = this.tt_mtitle[m].slice(0, 5) + this.tt_mtitle[m].charAt(5).toUpperCase() + this.tt_mtitle[m].slice(6);
+        }
+        if (m === "serotype") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+        }
+      }
+      this.nodes = this.cluster.nodes(this.root);
+      _ref2 = this.nodes;
+      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+        n = _ref2[_k];
+        n.tt_table_last = new String();
+        n.tt_table = {};
+        n.tt_table_partial = {};
+        n.tt_sub_table = {};
+        n.other_count = {};
+        _ref3 = this.mtypesDisplayed;
+        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+          m = _ref3[_l];
+          n.tt_table_partial[m] = new String();
+          n.tt_sub_table[m] = new String();
+          n.tt_table[m] = new String();
+          n.other_count[m] = 0;
+        }
+      }
       this._prepTree();
       true;
     }
+
+    TreeView.prototype.rect_block = '';
 
     TreeView.prototype.type = 'tree';
 
@@ -2985,47 +3104,50 @@
 
     TreeView.prototype.nodeId = 0;
 
+    TreeView.prototype.nonMetaUpdate = false;
+
     TreeView.prototype.duration = 1000;
 
     TreeView.prototype.expandDepth = 10;
 
     visible_bars = 0;
 
-    checkbox_value = [];
-
     total_height = 0;
+
+    TreeView.prototype.mtypes_selected = [];
 
     TreeView.prototype.x_factor = 1.5;
 
     TreeView.prototype.y_factor = 5000;
 
-    mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
-
-    TreeView.prototype.addMetaOntology = function(node) {
-      var k, metaOntology, t, _i, _len;
-      metaOntology = {};
-      for (_i = 0, _len = mtypesDisplayed.length; _i < _len; _i++) {
-        t = mtypesDisplayed[_i];
-        metaOntology[t] = [];
-        metaOntology[t] = ((function() {
-          var _results;
-          _results = [];
-          for (k in node.metaCount[t]) {
-            _results.push(k);
-          }
-          return _results;
-        })()).sort(function(a, b) {
-          return node.metaCount[t][b] - node.metaCount[t][a];
-        });
-      }
-      return metaOntology;
+    colours = {
+      'serotype': ['#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC', '#e9fbed'],
+      'isolation_host': ['#a70209', '#b3262c', '#c04a4f', '#cc6e72', '#d99295', '#e5b6b8', '#f2dadb'],
+      'isolation_source': ['#3741ae', '#535cb9', '#7077c5', '#8c92d0', '#a9addc', '#c5c8e7', '#e2e3f3'],
+      'syndrome': ['#962ba6', '#a549b2', '#b467bf', '#c385cc', '#d2a4d8', '#e1c2e5', '#f0e0f2'],
+      'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+      'stx2_subtype': ['#35a6a7', '#51b2b3', '#6ebfc0', '#8bcccc', '#a8d8d9', '#c5e5e5', '#e2f2f2']
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, colours, currLeaves, dt, elID, height, i, iNodes, id, j, leaves, linksEnter, m, metaOntology, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, rect_block, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, x, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _len5, _m, _n, _ref, _ref1, _ref2;
+      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4;
       if (sourceNode == null) {
         sourceNode = null;
       }
+      if (this.mtypesDisplayed.indexOf(genomes.meta_option) > -1) {
+        if (this.mtypes_selected.indexOf(genomes.meta_option) > -1) {
+          if (!this.nonMetaUpdate) {
+            this.mtypes_selected.splice(this.mtypes_selected.indexOf(genomes.meta_option), 1);
+          }
+        } else {
+          if (!this.nonMetaUpdate) {
+            if (genomes.meta_option.length !== 0) {
+              this.mtypes_selected.push(genomes.meta_option);
+            }
+          }
+        }
+      }
+      visible_bars = this.mtypes_selected.length;
       t1 = new Date();
       oldRoot = this.root;
       this._sync(genomes);
@@ -3060,15 +3182,9 @@
         }
         if (visible_bars > 1) {
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
-          console.log(n.x);
         }
-        n.arr = [];
+        n.width = [];
         n.xpos = 0;
-        n.meta_summary = {};
-        for (_j = 0, _len1 = mtypesDisplayed.length; _j < _len1; _j++) {
-          m = mtypesDisplayed[_j];
-          n.meta_summary[m] = [];
-        }
       }
       if (this.expansionContraction) {
         yedge = this.width - 30;
@@ -3076,14 +3192,13 @@
         if (ypos > yedge) {
           yshift = ypos - yedge;
           _ref1 = this.nodes;
-          for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
-            n = _ref1[_k];
+          for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+            n = _ref1[_j];
             n.y = n.y - yshift;
           }
         }
         this.expansionContraction = false;
       }
-      metaOntology = this.addMetaOntology(this.root);
       svgNodes = this.canvas.selectAll("g.treenode").data(this.nodes, function(d) {
         return d.id;
       });
@@ -3198,158 +3313,175 @@
         return !n.leaf && !n.root;
       });
       num = this.elNum - 1;
-      rect_block = svgNodes.append("g");
-      rect_block.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
+      this.rect_block = svgNodes.append("g");
+      svgNodes.append('rect').style("fill", "red").style("stroke-width", 0.5).style("stroke", "black").attr("class", "genomeMeter").attr("width", function(n) {
         if (n._children != null) {
           return 20 * (Math.log(n.num_leaves));
         } else {
           return 0;
         }
-      }).attr("height", 7).attr("y", -2).attr("x", 4).append("svg:title").text(function(n) {
-        return n.num_leaves + " genomes";
-      });
-      colours = {
-        'serotype': ['#004D11', '#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC'],
-        'isolation_host': ['#9E0015', '#AC2536', '#BB4A58', '#CA6F7A', '#D9949B', '#E8B9BD', '#F7DEDF'],
-        'isolation_source': ['#000752', '#252B6D', '#4A5089', '#6F75A4', '#949AC0', '#B9BFDB', '#DEE4F7'],
-        'syndrome': ['#520042', '#6E2760', '#8A4F7F', '#A6779D', '#C29EBC', '#DEC6DA', '#FBEEF9'],
-        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
-        'stx2_subtype': ['#006B5C', '#238174', '#46988D', '#6AAEA5', '#8DC5BE', '#B0DBD6', '#D4F2EF']
-      };
-      $('.meta-option.checkbox').each(function(i, obj) {
-        return $(obj).click(function() {
-          if ($(obj).is(':checked') && mtypesDisplayed.indexOf($(obj).val()) > -1) {
-            checkbox_value[i] = 1;
-          } else {
-            checkbox_value[i] = 0;
+      }).attr("height", 7).attr("y", -3).attr("x", 4);
+      jQuery(document).ready(function() {
+        return jQuery('input[name="meta-option"]').each(function(obj) {
+          jQuery('#' + this.name + '_' + this.value).hide();
+          if (this.checked) {
+            return jQuery('#' + this.name + '_' + this.value).show();
           }
-          return visible_bars = checkbox_value.reduce(function(a, b) {
-            return a + b;
-          });
         });
       });
+      if (this.nonMetaUpdate) {
+        _ref2 = this.mtypesDisplayed;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          m = _ref2[_k];
+          this.updatePopovers(m);
+        }
+      } else {
+        this.updatePopovers(genomes.meta_option);
+      }
       y = -5;
       centred = -1.5;
-      height = 7;
-      for (_l = 0, _len3 = mtypesDisplayed.length; _l < _len3; _l++) {
-        m = mtypesDisplayed[_l];
+      _ref3 = this.mtypesDisplayed;
+      for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+        m = _ref3[_l];
         if (genomes.visibleMeta[m]) {
           j = 0;
           i = 0;
-          x = 0;
-          y += height;
+          y += 7;
           centred += -3.5;
           while (i < 7) {
-            rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", "metaMeter").attr("id", function(n) {
-              if (i === 6) {
-                return "Other";
-              } else {
-                return metaOntology[m][i];
+            this.rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", function(n) {
+              if (n._children != null) {
+                return "metaMeter";
               }
-            }).attr("width", function(n) {
-              var width;
-              if ((n._children != null) && (n.metaCount[m][metaOntology[m][i]] != null) && i < 6 && (metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][metaOntology[m][i]] / n.num_leaves;
-                if (n.metaCount[m][metaOntology[m][i]] === 1) {
-                  n.meta_summary[m].push(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
-                } else {
-                  n.meta_summary[m].push(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
+            }).attr("id", (function(_this) {
+              return function(n) {
+                if (n._children != null) {
+                  if (i === 6) {
+                    return "Other";
+                  } else {
+                    return _this.metaOntology[m][i];
+                  }
                 }
-                console.log(n.meta_summary[m]);
-              } else if ((n._children != null) && i === 6 && (metaOntology[m][i] != null)) {
-                width = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
-                n.arr[i] = 20 * (Math.log(n.num_leaves)) - (n.arr[0] + n.arr[1] + n.arr[2] + n.arr[3] + n.arr[4] + n.arr[5]);
-              } else {
-                width = 0;
-                n.arr[i] = 0;
+              };
+            })(this)).attr("width", (function(_this) {
+              return function(n) {
+                if (n._children != null) {
+                  if ((n.metaCount[m][_this.metaOntology[m][i]] != null) && i < 6 && (_this.metaOntology[m][i] != null)) {
+                    n.width[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[m][_this.metaOntology[m][i]] / n.num_leaves;
+                  } else if (i === 6 && (_this.metaOntology[m][i] != null)) {
+                    n.width[i] = 20 * (Math.log(n.num_leaves)) - (n.width[0] + n.width[1] + n.width[2] + n.width[3] + n.width[4] + n.width[5]);
+                  } else {
+                    n.width[i] = 0;
+                  }
+                }
+                return n.width[i];
+              };
+            })(this)).attr("height", function(n) {
+              if (n._children != null) {
+                return 7;
               }
-              return width;
-            }).attr("height", height).attr("y", y).attr("x", function(n) {
-              if ((n._children != null) && (n.arr[i - 1] != null) && i > 0) {
-                n.xpos += n.arr[i - 1];
-              } else {
-                n.xpos = 0;
+            }).attr("y", function(n) {
+              if (n._children != null) {
+                return y;
+              }
+            }).attr("x", function(n) {
+              if (n._children != null) {
+                if ((n.width[i - 1] != null) && i > 0) {
+                  n.xpos += n.width[i - 1];
+                } else {
+                  n.xpos = 0;
+                }
               }
               return n.xpos + 4;
-            }).append("svg:title").text(function(n) {
-              var position, str, str2;
-              if (n.metaCount[m][metaOntology[m][i]] === 1) {
-                position = n.meta_summary[m].indexOf(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genome");
-              } else {
-                position = n.meta_summary[m].indexOf(metaOntology[m][i] + ": " + n.metaCount[m][metaOntology[m][i]] + " genomes");
+            }).attr("data-toggle", function(n) {
+              if (n._children != null) {
+                return "popover";
               }
-              if (m === "isolation_host" || m === "isolation_source") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 10) + str.charAt(10).toUpperCase() + str.slice(11);
-              }
-              if (m === "syndrome") {
-                str = "Symptoms/Diseases";
-              }
-              if (m === "stx1_subtype" || m === "stx2_subtype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-                str = str.replace("_", " ");
-                str = str.slice(0, 5) + str.charAt(5).toUpperCase() + str.slice(6);
-                console.log(str);
-              }
-              if (m === "serotype") {
-                str = m.charAt(0).toUpperCase() + m.slice(1);
-              }
-              if (i === 6) {
-                str = str + ": Other";
-              } else {
-                if (metaOntology[m][i] === "undefined") {
-                  str2 = "Undefined";
-                } else {
-                  str2 = metaOntology[m][i] + " " + n.meta_summary[m].splice(position, 1);
-                  console.log(n.meta_summary[m]);
+            }).attr("data-content", (function(_this) {
+              return function(n) {
+                var length, pos, tt_data;
+                if (n._children != null) {
+                  length = 0;
+                  pos = 0;
+                  if (_this.metaOntology[m][i] != null) {
+                    pos = n.tt_table[m].indexOf(_this.metaOntology[m][i].charAt(0).toUpperCase() + _this.metaOntology[m][i].slice(1));
+                  }
+                  if (n.metaCount[m][_this.metaOntology[m][i]] > 0) {
+                    length = (_this.metaOntology[m][i] + "</td><td style='text-align:right'>" + n.metaCount[m][_this.metaOntology[m][i]]).length;
+                    tt_data = n.tt_table[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][3] + "'><td>" + n.tt_table[m].slice(pos, length + pos) + "</td></tr>" + n.tt_table[m].slice(length + pos);
+                  }
+                  if (i === 6) {
+                    if (n.width[i - 1] === 0) {
+                      if (n.tt_table[m].indexOf("[+] Other") != null) {
+                        pos = n.tt_table[m].indexOf("[+] Other");
+                      } else {
+                        pos = n.tt_table[m].indexOf(n.tt_table_last);
+                      }
+                      tt_data = n.tt_table[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + colours[m][3] + "'><td>" + n.tt_table[m].slice(pos);
+                    } else {
+                      tt_data = n.tt_table[m].slice(0, n.tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + colours[m][3] + "'><td>" + n.tt_table[m].slice(n.tt_table[m].indexOf("[+] Other"));
+                    }
+                  }
                 }
-              }
-              return str + ": " + str2;
-            });
+                return "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + _this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>";
+              };
+            })(this));
             i++;
           }
         }
       }
+      (function($) {
+        var oldHide;
+        oldHide = $.fn.popover.Constructor.prototype.hide;
+        $.fn.popover.Constructor.prototype.hide = function() {
+          var that;
+          if (this.options.trigger === 'hover' && this.tip().is(':hover')) {
+            that = this;
+            setTimeout((function() {
+              return that.hide.call(that, arguments);
+            }), that.options.delay.hide);
+            return;
+          }
+          oldHide.call(this, arguments);
+        };
+      })(jQuery);
+      this.rect_block.selectAll('.metaMeter').each(function() {
+        return $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          trigger: 'hover',
+          delay: {
+            show: 500,
+            hide: 500
+          },
+          animate: 'false',
+          container: 'body'
+        });
+      });
+      $('body').on('click', function(e) {
+        if ($(e.target).data('toggle') !== 'popover' && $(e.target).parents('.popover.in').length === 0) {
+          return $('[data-toggle="popover"]').popover('hide');
+        }
+      });
       if ($('#treenode:has(g.v' + visible_bars + ')')) {
         svgNodes.select('.v' + visible_bars).remove();
       }
-      rect_block.attr("class", 'v' + visible_bars);
-      if (visible_bars > 1) {
-        svgNodes.selectAll('.v' + (visible_bars - 1)).remove();
+      if (visible_bars > 0) {
+        this.rect_block.attr("class", 'v' + visible_bars);
+      }
+      if (visible_bars > 0) {
+        if (($('.v' + (visible_bars - 1))[0])) {
+          svgNodes.select('.v' + (visible_bars - 1)).remove();
+        }
         if (($('.v' + (visible_bars + 1))[0])) {
-          svgNodes.selectAll('.v' + (visible_bars + 1)).remove();
+          svgNodes.select('.v' + (visible_bars + 1)).remove();
         }
         svgNodes.selectAll('.v0').remove();
+      } else {
+        svgNodes.selectAll('.v1').remove();
       }
-      if (visible_bars === 1) {
-        if (($('.v2')[0])) {
-          svgNodes.selectAll('.v2').remove();
-        }
-        svgNodes.selectAll('.v0').remove();
-      }
-      this.cluster = this.cluster.separation(function(a, b) {
-        var a_height, b_height;
-        a_height = 1;
-        b_height = 1;
-        if ((a._children != null) && visible_bars > 1) {
-          a_height = visible_bars;
-        } else {
-          a_height = 3;
-        }
-        if ((b._children != null) && visible_bars > 1) {
-          b_height = visible_bars;
-        } else {
-          b_height = 3;
-        }
-        return a_height + b_height;
-      });
-      for (_m = 0, _len4 = mtypesDisplayed.length; _m < _len4; _m++) {
-        m = mtypesDisplayed[_m];
-        if (genomes.visibleMeta[m]) {
-          rect_block.select('.genomeMeter').remove();
-        }
+      if (visible_bars > 0) {
+        svgNodes.selectAll('.genomeMeter').remove();
       }
       cmdBox = iNodes.append('text').attr("class", "treeicon expandcollapse").attr("text-anchor", 'middle').attr("y", 4).attr("x", -8).text(function(d) {
         return "\uf0fe";
@@ -3403,16 +3535,103 @@
         svgNode = this.canvas.select("#" + elID);
         svgNode.moveToFront();
       }
-      _ref2 = this.nodes;
-      for (_n = 0, _len5 = _ref2.length; _n < _len5; _n++) {
-        n = _ref2[_n];
+      _ref4 = this.nodes;
+      for (_m = 0, _len4 = _ref4.length; _m < _len4; _m++) {
+        n = _ref4[_m];
         n.x0 = n.x;
         n.y0 = n.y;
       }
       t2 = new Date();
       dt = new Date(t2 - t1);
       console.log('TreeView update elapsed time (sec): ' + dt.getSeconds());
+      this.nonMetaUpdate = false;
       return true;
+    };
+
+    TreeView.prototype.updatePopovers = function(option) {
+      var i;
+      if (this.mtypesDisplayed.indexOf(this.genomes.meta_option) > -1) {
+        i = 0;
+        while (i < this.metaOntology[option].length) {
+          this.rect_block.text((function(_this) {
+            return function(n) {
+              var other_width, tt_mtype;
+              if (n._children != null) {
+                if ((n.metaCount[option][_this.metaOntology[option][i]] != null) && i < 6 && (_this.metaOntology[option][i] != null)) {
+                  n.width[i] = 20 * (Math.log(n.num_leaves)) * n.metaCount[option][_this.metaOntology[option][i]] / n.num_leaves;
+                } else if (i === 6 && (_this.metaOntology[option][i] != null)) {
+                  n.width[i] = 20 * (Math.log(n.num_leaves)) - (n.width[0] + n.width[1] + n.width[2] + n.width[3] + n.width[4] + n.width[5]);
+                } else {
+                  n.width[i] = 0;
+                }
+                if ((n.metaCount[option][_this.metaOntology[option][i]] != null) && i > 5) {
+                  n.other_count[option] += n.metaCount[option][_this.metaOntology[option][i]];
+                }
+                tt_mtype = _this.metaOntology[option][i].charAt(0).toUpperCase() + _this.metaOntology[option][i].slice(1);
+                if (n.metaCount[option][_this.metaOntology[option][i]] > 0) {
+                  other_width = Math.round(n.num_leaves * n.width[6] / (20 * (Math.log(n.num_leaves))));
+                  if (i >= 6) {
+                    if (!(n.tt_sub_table[option].indexOf("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[option][_this.metaOntology[option][i]] + "</td></tr>") > -1)) {
+                      n.tt_sub_table[option] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[option][_this.metaOntology[option][i]] + "</td></tr>";
+                    }
+                    if (!(n.tt_table[option].indexOf(n.tt_table_partial[option] + ("<tbody class='other-row' onclick=\"$('.after-other').slideToggle(100);\"><tr><td>[+] Other</td><td style='text-align:right'\">" + other_width + "</td></tr></tbody><tbody class='after-other'>" + n.tt_sub_table[option] + "</tbody>")) > -1)) {
+                      n.tt_table[option] = n.tt_table_partial[option] + ("<tbody class='other-row' onclick=\"$('.after-other').slideToggle(100);\"><tr><td>[+] Other</td><td style='text-align:right'\">" + other_width + "</td></tr></tbody><tbody class='after-other'>" + n.tt_sub_table[option] + "</tbody>");
+                    }
+                  } else {
+                    if (!(n.tt_table_partial[option].indexOf("<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[option][_this.metaOntology[option][i]] + "</td></tr>") > -1)) {
+                      n.tt_table_partial[option] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + n.metaCount[option][_this.metaOntology[option][i]] + "</td></tr>";
+                    }
+                    n.tt_table_last = tt_mtype;
+                    n.tt_table[option] = n.tt_table_partial[option];
+                  }
+                  return n.tt_table_partial[option];
+                }
+              }
+            };
+          })(this));
+          i++;
+        }
+      }
+      return true;
+    };
+
+    TreeView.prototype.countMeta = function(count, countType) {
+      var g, genome, _i, _len;
+      for (_i = 0, _len = countType.length; _i < _len; _i++) {
+        g = countType[_i];
+        genome = this.genomes.genome(g);
+        if (count['serotype'][genome.serotype] != null) {
+          count['serotype'][genome.serotype] += 1;
+        } else {
+          count['serotype'][genome.serotype] = 1;
+        }
+        if (count['isolation_host'][genome.isolation_host] != null) {
+          count['isolation_host'][genome.isolation_host] += 1;
+        } else {
+          count['isolation_host'][genome.isolation_host] = 1;
+        }
+        if (count['isolation_source'][genome.isolation_source] != null) {
+          count['isolation_source'][genome.isolation_source] += 1;
+        } else {
+          count['isolation_source'][genome.isolation_source] = 1;
+        }
+        if (count['syndrome'][genome.syndrome] != null) {
+          count['syndrome'][genome.syndrome] += 1;
+        } else {
+          count['syndrome'][genome.syndrome] = 1;
+        }
+        if (count['stx1_subtype'][genome.stx1_subtype] != null) {
+          count['stx1_subtype'][genome.stx1_subtype] += 1;
+        } else {
+          count['stx1_subtype'][genome.stx1_subtype] = 1;
+        }
+        if (count['stx2_subtype'][genome.stx2_subtype] != null) {
+          count['stx2_subtype'][genome.stx2_subtype] += 1;
+        } else {
+          count['stx2_subtype'][genome.stx2_subtype] = 1;
+        }
+      }
+      return count;
     };
 
     TreeView.prototype.intro = function() {
@@ -3483,15 +3702,19 @@
       var event;
       event = argArray.shift();
       if (event === 'expand_collapse') {
+        this.nonMetaUpdate = true;
         this._expandCollapse(genomes, argArray[0], argArray[1]);
       } else if (event === 'fit_window') {
+        this.nonMetaUpdate = true;
         this.reformat = true;
         this.update(genomes);
       } else if (event === 'reset_window') {
+        this.nonMetaUpdate = true;
         this.resetWindow = true;
         this.highlightGenomes(genomes, null);
         this.update(genomes);
       } else if (event === 'expand_tree') {
+        this.nonMetaUpdate = true;
         this.expandTree(genomes);
       } else {
         throw new SuperphyError("Unrecognized event type: " + event + " in TreeView viewAction method.");
@@ -6419,8 +6642,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           return _this.map.fitBounds(bounds);
         };
@@ -6488,8 +6711,8 @@
           var bounds, northEast, results, southWest;
           results = JSON.parse(data);
           _this.map.setCenter(results.geometry.location);
-          northEast = new google.maps.LatLng(results.geometry.bounds.northeast.lat, results.geometry.bounds.northeast.lng);
-          southWest = new google.maps.LatLng(results.geometry.bounds.southwest.lat, results.geometry.bounds.southwest.lng);
+          northEast = new google.maps.LatLng(results.geometry.viewport.northeast.lat, results.geometry.viewport.northeast.lng);
+          southWest = new google.maps.LatLng(results.geometry.viewport.southwest.lat, results.geometry.viewport.southwest.lng);
           bounds = new google.maps.LatLngBounds(southWest, northEast);
           _this.map.fitBounds(bounds);
           _this.latLng = results.geometry.location;
@@ -6893,10 +7116,10 @@
       locationCenter = locationCoordinates.location;
       locationCenterLat = locationCenter.lat;
       locationCenterLng = locationCenter.lng;
-      locationViewPortSW = locationCoordinates.bounds.southwest;
+      locationViewPortSW = locationCoordinates.viewport.southwest;
       locationViewPortSWLat = locationViewPortSW.lat;
       locationViewPortSWLng = locationViewPortSW.lng;
-      locationViewPortNE = locationCoordinates.bounds.northeast;
+      locationViewPortNE = locationCoordinates.viewport.northeast;
       locationViewPortNELat = locationViewPortNE.lat;
       locationViewPortNELng = locationViewPortNE.lng;
       locationAddressComponents = {
@@ -6930,13 +7153,14 @@
   })();
 
   GeoPhy = (function() {
-    function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv) {
+    function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv, sumDiv) {
       this.publicGenomes = publicGenomes;
       this.privateGenomes = privateGenomes;
       this.viewController = viewController;
       this.userGroups = userGroups;
       this.treeDiv = treeDiv;
       this.mapDiv = mapDiv;
+      this.sumDiv = sumDiv;
     }
 
     GeoPhy.prototype.publicSubsetGenomes = {};
@@ -6953,6 +7177,7 @@
       }
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
+      this.viewController.createView('summary', this.sumDiv);
       this._createSubmitForm();
       return true;
     };
@@ -7089,8 +7314,8 @@
       form = jQuery("<div class='panel-body' id='" + parentTarget + "'></div>");
       wrapper.append(form);
       submitEl = jQuery('<div class="row"></div>');
-      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" id="submit-btn" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"> Highlight Genomes</span></button></div>').appendTo(submitEl);
-      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" id="reset-btn" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"> Reset Views</span></button></div>').appendTo(submitEl);
+      submitButtonEl = jQuery('<div class="col-md-2 col-md-offset-4"><button type="submit" value="Submit" form="geophy-form" class="btn btn-success"><span class="fa fa-exchange"></span> Highlight Genomes</button></div>').appendTo(submitEl);
+      resetButtonEl = jQuery('<div class="col-md-2"><button type="button" form="geophy-form" class="btn btn-danger"><span class="fa fa-times"></span> Reset Views</button></div>').appendTo(submitEl);
       submitButtonEl.click((function(_this) {
         return function(e) {
           e.preventDefault();
@@ -7149,5 +7374,364 @@
     return GeoPhy;
 
   })();
+
+
+  /*
+  
+   File: superphy_summary.coffee
+   Desc: Meta-data Summary class
+   Author: Jason Masih jason.masih@phac-aspc.gc.ca
+   Date: March 4th, 2015
+   */
+
+
+  /*
+  
+   CLASS SummaryView
+  
+   Group/selection meta-data summary view 
+  
+   Creates stacked bar representation of meta-data for genome group/selection
+   */
+
+  SummaryView = (function(_super) {
+    __extends(SummaryView, _super);
+
+    function SummaryView(parentElem, style, elNum, genomes, summaryArgs) {
+      var all_genomes, g, m, totalCount, _i, _j, _k, _len, _len1, _len2, _ref, _ref1;
+      this.parentElem = parentElem;
+      this.style = style;
+      this.elNum = elNum;
+      this.genomes = genomes;
+      this.width = 650;
+      this.height = 220;
+      this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
+      this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+      this.mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
+      this.colours = {
+        'serotype': ['#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC', '#e9fbed'],
+        'isolation_host': ['#a70209', '#b3262c', '#c04a4f', '#cc6e72', '#d99295', '#e5b6b8', '#f2dadb'],
+        'isolation_source': ['#3741ae', '#535cb9', '#7077c5', '#8c92d0', '#a9addc', '#c5c8e7', '#e2e3f3'],
+        'syndrome': ['#962ba6', '#a549b2', '#b467bf', '#c385cc', '#d2a4d8', '#e1c2e5', '#f0e0f2'],
+        'stx1_subtype': ['#F05C00', '#EF7123', '#EE8746', '#ED9D69', '#ECB28C', '#EBC8AF', '#EADED2'],
+        'stx2_subtype': ['#35a6a7', '#51b2b3', '#6ebfc0', '#8bcccc', '#a8d8d9', '#c5e5e5', '#e2f2f2']
+      };
+      totalCount = {};
+      _ref = this.mtypesDisplayed;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        m = _ref[_i];
+        totalCount[m] = {};
+      }
+      all_genomes = (Object.keys(this.genomes.public_genomes)).concat(Object.keys(this.genomes.private_genomes));
+      for (_j = 0, _len1 = all_genomes.length; _j < _len1; _j++) {
+        g = all_genomes[_j];
+        this.countMeta(totalCount, this.genomes.genome(g), true);
+      }
+      this.metaOntology = {};
+      this.tt_mtitle = {};
+      _ref1 = this.mtypesDisplayed;
+      for (_k = 0, _len2 = _ref1.length; _k < _len2; _k++) {
+        m = _ref1[_k];
+        this.selectionCount[m] = {};
+        this.metaOntology[m] = [];
+        this.tt_mtitle[m] = new String();
+        this.metaOntology[m] = Object.keys(totalCount[m]).sort(function(a, b) {
+          return totalCount[m][b] - totalCount[m][a];
+        });
+        if (m === "isolation_host" || m === "isolation_source") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+          this.tt_mtitle[m] = this.tt_mtitle[m].replace("_", " ");
+          this.tt_mtitle[m] = this.tt_mtitle[m].slice(0, 10) + this.tt_mtitle[m].charAt(10).toUpperCase() + this.tt_mtitle[m].slice(11);
+        }
+        if (m === "syndrome") {
+          this.tt_mtitle[m] = "Symptoms/Diseases";
+        }
+        if (m === "stx1_subtype" || m === "stx2_subtype") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+          this.tt_mtitle[m] = this.tt_mtitle[m].replace("_", " ");
+          this.tt_mtitle[m] = this.tt_mtitle[m].slice(0, 5) + this.tt_mtitle[m].charAt(5).toUpperCase() + this.tt_mtitle[m].slice(6);
+        }
+        if (m === "serotype") {
+          this.tt_mtitle[m] = m.charAt(0).toUpperCase() + m.slice(1);
+        }
+      }
+      SummaryView.__super__.constructor.call(this, this.parentElem, this.style, this.elNum);
+    }
+
+    SummaryView.prototype.selection = [];
+
+    SummaryView.prototype.selectionCount = {};
+
+    SummaryView.prototype.activeGroup = [];
+
+    SummaryView.prototype.activeGroupCount = {};
+
+    SummaryView.prototype.type = 'summary';
+
+    SummaryView.prototype.elName = 'meta_summary';
+
+    SummaryView.prototype.sumView = true;
+
+    SummaryView.prototype.selectionAfterGroup = false;
+
+    SummaryView.prototype.update = function(genomes) {
+      return true;
+    };
+
+    SummaryView.prototype.updateActiveGroup = function(genomes, usrGrp) {
+      var g, m, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2;
+      _ref = this.mtypesDisplayed;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        m = _ref[_i];
+        this.activeGroupCount[m] = {};
+        this.selectionCount[m] = {};
+      }
+      this.svgActiveGroup.remove();
+      this.svgSelection.remove();
+      this.activeGroup = [];
+      this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
+      this.selection = [];
+      this.selection = this.selection.concat(this.activeGroup);
+      this.svgSelection = d3.select('#selection-tab').text((function(_this) {
+        return function() {
+          var countText;
+          if (_this.selection.length === 0) {
+            countText = '';
+          }
+          if (_this.selection.length === 1) {
+            countText = '1 genome selected';
+          }
+          if (_this.selection.length > 1) {
+            countText = _this.selection.length + ' genomes selected';
+          }
+          return countText;
+        };
+      })(this)).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
+      if (this.activeGroup.length > 0) {
+        this.svgActiveGroup = d3.select('#active-group-tab').text('Active group: ' + usrGrp.active_group.group_name).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
+        _ref1 = this.activeGroup;
+        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+          g = _ref1[_j];
+          this.countMeta(this.activeGroupCount, this.genomes.genome(g), true);
+        }
+        _ref2 = this.selection;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          g = _ref2[_k];
+          this.countMeta(this.selectionCount, this.genomes.genome(g), true);
+        }
+        this.createMeters(this.activeGroupCount, this.svgActiveGroup, this.activeGroup);
+        this.createMeters(this.selectionCount, this.svgSelection, this.selection);
+      } else {
+        this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
+        this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+      }
+      this.selectionAfterGroup = true;
+      return true;
+    };
+
+    SummaryView.prototype.countMeta = function(count, genome, isSelected) {
+      if (isSelected) {
+        if (count['serotype'][genome.serotype] != null) {
+          count['serotype'][genome.serotype] += 1;
+        } else {
+          count['serotype'][genome.serotype] = 1;
+        }
+        if (count['isolation_host'][genome.isolation_host] != null) {
+          count['isolation_host'][genome.isolation_host] += 1;
+        } else {
+          count['isolation_host'][genome.isolation_host] = 1;
+        }
+        if (count['isolation_source'][genome.isolation_source] != null) {
+          count['isolation_source'][genome.isolation_source] += 1;
+        } else {
+          count['isolation_source'][genome.isolation_source] = 1;
+        }
+        if (count['syndrome'][genome.syndrome] != null) {
+          count['syndrome'][genome.syndrome] += 1;
+        } else {
+          count['syndrome'][genome.syndrome] = 1;
+        }
+        if (count['stx1_subtype'][genome.stx1_subtype] != null) {
+          count['stx1_subtype'][genome.stx1_subtype] += 1;
+        } else {
+          count['stx1_subtype'][genome.stx1_subtype] = 1;
+        }
+        if (count['stx2_subtype'][genome.stx2_subtype] != null) {
+          count['stx2_subtype'][genome.stx2_subtype] += 1;
+        } else {
+          count['stx2_subtype'][genome.stx2_subtype] = 1;
+        }
+      } else {
+        if (count['serotype'][genome.serotype] > 0) {
+          count['serotype'][genome.serotype] -= 1;
+        } else {
+          count['serotype'][genome.serotype] = 0;
+        }
+        if (count['isolation_host'][genome.isolation_host] > 0) {
+          count['isolation_host'][genome.isolation_host] -= 1;
+        } else {
+          count['isolation_host'][genome.isolation_host] = 0;
+        }
+        if (count['isolation_source'][genome.isolation_source] > 0) {
+          count['isolation_source'][genome.isolation_source] -= 1;
+        } else {
+          count['isolation_source'][genome.isolation_source] = 0;
+        }
+        if (count['syndrome'][genome.syndrome] > 0) {
+          count['syndrome'][genome.syndrome] -= 1;
+        } else {
+          count['syndrome'][genome.syndrome] = 0;
+        }
+        if (count['stx1_subtype'][genome.stx1_subtype] > 0) {
+          count['stx1_subtype'][genome.stx1_subtype] -= 1;
+        } else {
+          count['stx1_subtype'][genome.stx1_subtype] = 0;
+        }
+        if (count['stx2_subtype'][genome.stx2_subtype] > 0) {
+          count['stx2_subtype'][genome.stx2_subtype] -= 1;
+        } else {
+          count['stx2_subtype'][genome.stx2_subtype] = 0;
+        }
+      }
+      return count;
+    };
+
+    SummaryView.prototype.select = function(genome, isSelected) {
+      console.log('test');
+      if (user_groups_menu.runSelect || !user_groups_menu.groupSelected) {
+        if (isSelected) {
+          if (!(this.selection.indexOf(genome) > -1)) {
+            this.selection.push(genome);
+          }
+        } else {
+          this.selection.splice(this.selection.indexOf(genome), 1);
+        }
+        this.svgSelection.remove();
+        this.svgSelection = d3.select('#selection-tab').text((function(_this) {
+          return function() {
+            var countText;
+            if (_this.selection.length === 0) {
+              countText = '';
+            }
+            if (_this.selection.length === 1) {
+              countText = '1 genome selected';
+            }
+            if (_this.selection.length > 1) {
+              countText = _this.selection.length + ' genomes selected';
+            }
+            return countText;
+          };
+        })(this)).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
+        if (this.selection.length > 0) {
+          this.countMeta(this.selectionCount, this.genomes.genome(genome), isSelected);
+          this.createMeters(this.selectionCount, this.svgSelection, this.selection);
+        } else {
+          d3.select('#selection-tab').select('svg').remove();
+          this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+        }
+      }
+      return true;
+    };
+
+    SummaryView.prototype.createMeters = function(sumCount, svgView, countType) {
+      var i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
+      if (countType != null) {
+        totalSelected = countType.length;
+      } else {
+        totalSelected = 0;
+      }
+      svgView.selectAll('rect.summaryMeter').remove();
+      tt_sub_table = {};
+      tt_table_partial = {};
+      tt_table = {};
+      other_count = {};
+      _ref = this.mtypesDisplayed;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        m = _ref[_i];
+        tt_sub_table[m] = new String();
+        tt_table_partial[m] = new String();
+        tt_table[m] = new String();
+        other_count[m] = 0;
+        i = 0;
+        while (i < this.metaOntology[m].length) {
+          if (i > 5 && (sumCount[m][this.metaOntology[m][i]] != null)) {
+            other_count[m] += sumCount[m][this.metaOntology[m][i]];
+          }
+          tt_mtype = this.metaOntology[m][i].charAt(0).toUpperCase() + this.metaOntology[m][i].slice(1);
+          if (sumCount[m][this.metaOntology[m][i]] > 0) {
+            if (i >= 6) {
+              tt_sub_table[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + sumCount[m][this.metaOntology[m][i]] + "</td></tr>";
+              tt_table[m] = tt_table_partial[m] + ("<tbody class='other-row' onclick=\"$('.after-other').slideToggle(100);\"><tr><td>[+] Other</td><td style='text-align:right'\">" + other_count[m] + "</td></tr></tbody><tbody class='after-other'>" + tt_sub_table[m] + "</tbody>");
+            } else {
+              tt_table_partial[m] += "<tr><td>" + tt_mtype + "</td><td style='text-align:right'>" + sumCount[m][this.metaOntology[m][i]] + "</td></tr>";
+              tt_mtype_last = tt_mtype;
+              tt_table[m] = tt_table_partial[m];
+            }
+          }
+          i++;
+        }
+      }
+      width = [];
+      y = 0;
+      _ref1 = this.mtypesDisplayed;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        m = _ref1[_j];
+        i = 0;
+        j = 0;
+        x = 0;
+        y += 30;
+        while (i < 7) {
+          if (i < 6 && (sumCount[m][this.metaOntology[m][i]] != null)) {
+            width[i] = this.width * (sumCount[m][this.metaOntology[m][i]] / totalSelected);
+          } else if (i === 6 && totalSelected > 0 && (this.metaOntology[m][i] != null)) {
+            width[i] = this.width - (width[0] + width[1] + width[2] + width[3] + width[4] + width[5]);
+          } else {
+            width[i] = 0;
+          }
+          length = 0;
+          pos = 0;
+          if (this.metaOntology[m][i] != null) {
+            pos = tt_table[m].indexOf(this.metaOntology[m][i].charAt(0).toUpperCase() + this.metaOntology[m][i].slice(1));
+          }
+          if (sumCount[m][this.metaOntology[m][i]] > 0) {
+            length = (this.metaOntology[m][i] + "</td><td style='text-align:right'>" + sumCount[m][this.metaOntology[m][i]]).length;
+            tt_data = tt_table[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(pos, length + pos) + "</td></tr>" + tt_table[m].slice(length + pos);
+          }
+          if (i === 6) {
+            if (sumCount[m][this.metaOntology[m][5]] == null) {
+              if (tt_table[m].indexOf("[+] Other") != null) {
+                pos = tt_table[m].indexOf("[+] Other");
+              } else {
+                pos = tt_table[m].indexOf(tt_mtype_last);
+              }
+              tt_data = tt_table[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(pos);
+            } else {
+              tt_data = tt_table[m].slice(0, tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(tt_table[m].indexOf("[+] Other"));
+            }
+          }
+          svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 20).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
+          x += width[i];
+          i++;
+        }
+      }
+      svgView.selectAll('.summaryMeter').each(function() {
+        return $(this).popover({
+          placement: 'bottom',
+          html: 'true',
+          trigger: 'hover',
+          delay: {
+            show: 500,
+            hide: 500
+          },
+          animate: 'false',
+          container: 'body'
+        });
+      });
+      return true;
+    };
+
+    return SummaryView;
+
+  })(ViewTemplate);
 
 }).call(this);

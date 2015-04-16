@@ -117,25 +117,25 @@ __PACKAGE__->has_many(
 
 Type: many_to_many
 
-Composing rels: L</private_genome_locations> -> feature
+Composing rels: L</genome_locations> -> feature
 
 =cut
 
-__PACKAGE__->many_to_many("features", "private_genome_locations", "feature");
+__PACKAGE__->many_to_many("features", "genome_locations", "feature");
 
 =head2 features_2s
 
 Type: many_to_many
 
-Composing rels: L</genome_locations> -> feature
+Composing rels: L</private_genome_locations> -> feature
 
 =cut
 
-__PACKAGE__->many_to_many("features_2s", "genome_locations", "feature");
+__PACKAGE__->many_to_many("features_2s", "private_genome_locations", "feature");
 
 
-# Created by DBIx::Class::Schema::Loader v0.07035 @ 2014-06-09 10:04:24
-# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:IiPjG/XLReKV73CyNI0EIw
+# Created by DBIx::Class::Schema::Loader v0.07041 @ 2015-02-10 14:57:43
+# DO NOT MODIFY THIS OR ANYTHING ABOVE! md5sum:N4XajZ2NavowycSJFYSvOw
 
 
 # You can replace this text with custom code or comments, and it will be preserved on regeneration

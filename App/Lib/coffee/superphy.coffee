@@ -66,7 +66,7 @@ class ViewController
  
  
   createView: (viewType, elem, viewArgs...) ->
-    
+
     # Define style of view (select|redirect)
     # to match actionMode
     clickStyle = 'select'
@@ -78,76 +78,99 @@ class ViewController
       # single_select behaviour: user clicks on single genome for more info
       clickStyle = 'redirect'
     
-    if viewType is 'list'
-      # New list view
-      listView = new ListView(elem, clickStyle, vNum, viewArgs)
-      listView.update(@genomeController)
-      @views.push listView
-      
-    else if viewType is 'tree'
-      # New tree view
-      treeView = new TreeView(elem, clickStyle, vNum, viewArgs)
-      treeView.update(@genomeController)
-      @views.push treeView
+    try
+      # Perform view creation in try/catch
+      # to trap individual view errors
 
-    else if viewType is 'msa'
-      # New multiple sequence alignment view
-      msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
-      msaView.update(@genomeController)
-      @views.push msaView
-      
-    else if viewType is 'matrix'
-      # New matrix view
-      # Genome list is needed to compute matrix size
-      matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      matView.update(@genomeController)
-      @views.push matView
+      if viewType is 'list'
+        # New list view
+        listView = new ListView(elem, clickStyle, vNum, viewArgs)
+        listView.update(@genomeController)
+        @views.push listView
+        
+      else if viewType is 'tree'
+        # New tree view
+        treeView = new TreeView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        treeView.update(@genomeController)
+        @views.push treeView
 
-    else if viewType is 'map'
-      #New map view
-      mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      #mapView.update(@genomeController)
-      @views.push mapView
+      else if viewType is 'msa'
+        # New multiple sequence alignment view
+        msaView = new MsaView(elem, clickStyle, vNum, viewArgs)
+        msaView.update(@genomeController)
+        @views.push msaView
+        
+      else if viewType is 'matrix'
+        # New matrix view
+        # Genome list is needed to compute matrix size
+        matView = new MatrixView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        matView.update(@genomeController)
+        @views.push matView
 
-    else if viewType is 'selmap'
-      #New map view
-      mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
-      #mapView.update(@genomeController)
-      @views.push mapView
-      
-    else if viewType is 'table'
-      # New table view
-      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
-      tableView.update(@genomeController)
-      @views.push tableView
+      else if viewType is 'map'
+        #New map view
+        mapView = new MapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        #mapView.update(@genomeController)
+        @views.push mapView
 
-    else if viewType is 'jump2table'
-      # TODO: Remove this, deprecated
-      # New list view
-      tableView = new TableView(elem, clickStyle, vNum, viewArgs)
-      tableView.update(@genomeController)
-      @views.push tableView
-      return
-      
-    else
-      throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
-      return false
+      else if viewType is 'selmap'
+        #New map view
+        mapView = new SelectionMapView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        #mapView.update(@genomeController)
+        @views.push mapView
+        
+      else if viewType is 'table'
+        # New table view
+        tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+        tableView.update(@genomeController)
+        @views.push tableView
 
-    # Create download link
-    # Will be created by default unless a return statement is specified in the conditional clauses
-    downloadElemDiv = jQuery("<div class='download-view'></div>")
-    downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
-    downloadElem.click (e) ->
-      viewNum = parseInt(@.dataset.genomeView)
-      data = viewController.downloadViews(viewNum)
-      @.href = data.href
-      @.download = data.file
-      true
+      else if viewType is 'summary'
+        # New meta-data summary view
+        sumView = new SummaryView(elem, clickStyle, vNum, @genomeController, viewArgs)
+        sumView.update(@genomeController)
+        @views.push sumView
+
+      else if viewType is 'jump2table'
+        # TODO: Remove this, deprecated
+        # New list view
+        tableView = new TableView(elem, clickStyle, vNum, viewArgs)
+        tableView.update(@genomeController)
+        @views.push tableView
+        return
+        
+      else
+        throw new SuperphyError 'Unrecognized viewType <'+viewType+'> in ViewController createView() method.'
+        return false
+
     
-    downloadElemDiv.append(downloadElem)
-    downloadElemDiv.prependTo(elem)
+      # Create download link
+      # Will be created by default unless a return statement is specified in the conditional clauses
+      downloadElemDiv = jQuery("<div class='download-view'></div>")
+      downloadElem = jQuery("<a class='download-view-link' href='#' data-genome-view='#{vNum}'>Download <i class='fa fa-download'></a>")
+      downloadElem.click (e) ->
+        viewNum = parseInt(@.dataset.genomeView)
+        data = viewController.downloadViews(viewNum)
+        @.href = data.href
+        @.download = data.file
+        true
+      
+      downloadElemDiv.append(downloadElem)
+      downloadElemDiv.prependTo(elem)
+
+    catch e
+      @viewError(e, elem);
+      return false # Return failure
       
     return true # return success
+
+  # Append error message to view instead of rendering view
+  viewError: (e, elem) ->
+    elem.append("<div class='superphy-error'><p>Superphy Error! View failed to load.</p></div>")
+    alert "Superphy error: #{e.message}\nLine: #{e.line}"
+
+    return true;
+
     
   introOptions: ->
     intros = []
@@ -473,15 +496,35 @@ class ViewController
     form1 = jQuery('<div class="panel panel-default"></div>')
     wrapper.append(form1)
     @metaForm(form1, parentTarget)
-    
+
+    # User groups form
+    form3 = jQuery('<div class="panel panel-default"></div>')
+    wrapper.append(form3)
+    @groupForm(form3, parentTarget)
     
     # Filter form
     form2 = jQuery('<div class="panel panel-default"></div>')
     wrapper.append(form2)
     @filterForm(form2, parentTarget)
-    
     true
 
+
+  groupForm: (elem, parentStr) ->
+    #group_menu = $('<div></div>')
+    panel_header = $('<div class="panel-heading"></div>')
+    panel_title = $('<div class="panel_title"> <a data-toggle="collapse" href="#group-form"> User Groups <span class="caret"></span></a></div>').appendTo(panel_header)
+    
+    panel_main = $('<div id="group-form" class="collapse in"></div>')
+    panel_body = $('<div class="panel-body"></div>').appendTo(panel_main)
+    group_form = $('<div class="user-groups-menu"></div>').appendTo(panel_body)
+
+    elem.append(panel_header)
+    elem.append(panel_main)
+
+    true
+
+  
+  # Deprecated and set for deletion
   sideBarGroupManager: (elem) ->
     #Group form
     parentTarget = 'sidebar-accordion'
@@ -492,6 +535,7 @@ class ViewController
     @groupsSideForm(form, parentTarget)
     true
 
+  # Deprecated and set for deletion
   createGroupsForm: (elem, addMoreBool, submitBool, filterBool) ->
     parentTarget = 'groups-compare-panel-body'
     wrapper = jQuery('<div class="panel panel-default" id="groups-compare-panel"></div>')
@@ -519,13 +563,13 @@ class ViewController
     '<fieldset>'+
     '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="accession"> Accession # </label></div>'+
     '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="strain"> Strain </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="serotype"> Serotype </label><div id="meta-option_serotype" style="display:none;width:12px;height:12px;background:#004D11;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_host"> Isolation Host </label><div id="meta-option_isolation_host" style="display:none;width:12px;height:12px;background:#9E0015;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_source"> Isolation Source </label><div id="meta-option_isolation_source" style="display:none;width:12px;height:12px;background:#000752;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+
     '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="isolation_date"> Isolation Date </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label></div>'+
-    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label></div>'+                                                   
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="syndrome"> Symptoms / Diseases </label><div id="meta-option_syndrome" style="display:none;width:12px;height:12px;background:#520042;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx1_subtype"> Stx1 Subtype </label><div id="meta-option_stx1_subtype" style="display:none;width:12px;height:12px;background:#F05C00;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+
+    '<div class="checkbox col-md-12"><label><input class="meta-option checkbox" type="checkbox" name="meta-option" value="stx2_subtype"> Stx2 Subtype </label><div id="meta-option_stx2_subtype" style="display:none;width:12px;height:12px;background:#006B5C;border:1px solid #000;position:relative;bottom:15px;left:200px;"></div></div>'+                                                   
     '</fieldset>'+
     '</form>'+
     '</div></div>'
@@ -663,6 +707,8 @@ class ViewController
         jQuery("#fast-filter").show()
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").hide()
+        jQuery("#group-filter").hide()
+
       true
 
     filtType.append(fastGroup)
@@ -678,6 +724,8 @@ class ViewController
         jQuery("#fast-filter").hide()
         jQuery("#adv-filter").show()
         jQuery("#selection-filter").hide()
+        jQuery("#group-filter").hide()
+
       true
     
     filtType.append(advGroup)
@@ -685,16 +733,34 @@ class ViewController
     selGroup = jQuery('<div class="form-group"></div>')
     selDiv = jQuery('<div class="col-xs-1"></div>').appendTo(selGroup)
     selRadio = jQuery('<input id="sel" type="radio" name="filter-form-type" value="selection">').appendTo(selDiv)
-    selLab = jQuery('<label class="col-xs-10" for="sel">By Selection</label>').appendTo(selGroup)
+    selLab = jQuery('<label class="col-xs-10" for="sel">By Selection</label>').appendTo(selGroup)    
     
     selRadio.change (e) ->
       if this.checked?
         jQuery("#fast-filter").hide()
         jQuery("#adv-filter").hide()
         jQuery("#selection-filter").show()
+        jQuery("#group-filter").hide()
       true
 
     filtType.append(selGroup)
+    
+
+    # Select by group
+    ugpGroup = jQuery('<div class="form-group"></div>')
+    ugpDiv = jQuery('<div class="col-xs-1"></div>').appendTo(ugpGroup)
+    ugpRadio = jQuery('<input id="ugp" type="radio" name="filter-form-type" value="selection">').appendTo(ugpDiv)
+    ugpLab = jQuery('<label class="col-xs-10" for="ugp">By Group</label>').appendTo(ugpGroup)    
+    
+    ugpRadio.change (e) ->
+      if this.checked?
+        jQuery("#fast-filter").hide()
+        jQuery("#adv-filter").hide()
+        jQuery("#selection-filter").hide()
+        jQuery("#group-filter").show()
+      true
+
+    filtType.append(ugpGroup)
     
     container.append(filtType)
     
@@ -720,6 +786,22 @@ class ViewController
     fbs.append(filtButton)
     fbs.hide()
     container.append(fbs)
+
+
+    # Build select by group form
+    # TODO: Style properly with css
+    fbg = jQuery("<div class='row' id='group-filter'>"+
+      "<p>A group in one of the views</p>"+
+      "</div>")
+    findButton = jQuery('<div class="col-xs-3"><button id="user-groups-submit" class="btn btn btn-sm" type="button">Find</button></div>')
+    fbg.append(findButton)
+    filtButton = jQuery('<div class="col-xs-3"><button id="filter-group-button" type="button" class="btn btn-sm">Filter</button></div>')
+    filtButton.click (e) ->
+      e.preventDefault()
+      viewController.filterViews('selection')
+    fbg.append(filtButton)
+    fbg.hide()
+    container.append(fbg)
     
     container.appendTo(elem)
     
@@ -1893,6 +1975,8 @@ class GenomeController
     
   publicRegexp: new RegExp('^public_')
   privateRegexp: new RegExp('^private_')
+
+  meta_option: ''
   
   filtered: 0
 
@@ -2283,6 +2367,8 @@ class GenomeController
    
  
   updateMeta: (option, checked) ->
+
+    @meta_option = option
     
     console.log(option)
     
