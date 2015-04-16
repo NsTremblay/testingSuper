@@ -260,8 +260,6 @@ class SummaryView extends ViewTemplate
   #       
   select: (genome, isSelected) ->
 
-    console.log('test')
-
     # Runs if a group has not been selected or a selection is being made after a group is selected; suppresses double run
     if user_groups_menu.runSelect or !user_groups_menu.groupSelected
       if isSelected

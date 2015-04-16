@@ -223,7 +223,6 @@ SummaryView = (function(_super) {
   };
 
   SummaryView.prototype.select = function(genome, isSelected) {
-    console.log('test');
     if (user_groups_menu.runSelect || !user_groups_menu.groupSelected) {
       if (isSelected) {
         if (!(this.selection.indexOf(genome) > -1)) {
