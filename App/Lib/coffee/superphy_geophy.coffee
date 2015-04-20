@@ -14,7 +14,6 @@ class GeoPhy
     @viewController.createView('tree', @treeDiv, tree)
     #@_createSubmitForm(); 
     @viewController.createView('summary', @sumDiv)
-    @_createSubmitForm();
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->
