@@ -396,7 +396,7 @@ TreeView = (function(_super) {
       });
     }
     nodesEnter.append("text").attr("class", "treelabel").attr("x", function(n) {
-      if (!n.leaf) {
+      if (n._children != null) {
         return 20 * (Math.log(n.num_leaves)) + 10;
       } else {
         return "0.6em";
