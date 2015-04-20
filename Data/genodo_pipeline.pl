@@ -39,7 +39,7 @@ $0 - Runs programs to do panseq analyses and load them into the DB for newly sub
 
 =head1 DESCRIPTION
 
-	
+TBD
 
 =head2 NOTES
 
@@ -63,10 +63,9 @@ it under the same terms as Perl itself.
 =cut
 
 # Globals
-my ($config, $noload, $recover, $remove_lock, $help, $email_notification,
-	$mail_address, $mail_notification_address, $mail_pass, $input_dir,
+my ($config, $noload, $recover, $remove_lock, $help, $email_notification, $input_dir,
 	$conf, $dbh, $lock, $test, $mummer_dir, $muscle_exe, $blast_dir, $panseq_exe,
-	$nr_location, $parallel_exe, $data_directory, $tmp_dir);
+	$nr_location, $parallel_exe, $data_directory, $tmp_dir, $perl_interpreter);
 	
 
 $test = 0;
@@ -119,9 +118,6 @@ use constant CREATE_CACHE_TABLE =>
 		contig_id       int
 	)";
 use constant INSERT_CHR => "INSERT INTO pipeline_cache (tracker_id, chr_num, name, description) VALUES (?,?,?,?)";
-use constant INSERT_FOOTPRINT => "UPDATE pipeline_cache SET contig_num = ?, contig_sizes = ? WHERE tracker_id = ?";
-# Genome footprints
-use constant INSERT_FOOTPRINT => "INSERT INTO pipeline_footprint (tracker_id, access, contig_num, contig_sizes) VALUES (?,?,?,?)";
 
 # Globals
 my $update_step_sth;
@@ -158,9 +154,6 @@ if(@tracking_ids) {
 	
 	INFO scalar(@tracking_ids)." uploaded genomes to analyze.";
 	INFO "Tracking IDs: ". join(', ',@tracking_ids);
-	
-	# Sync new genome files to analysis server
-	&sync_to_analysis unless $test;
 	
 	# New sequences uploaded, initiate analysis job
 	my ($job_id, $job_dir) = init_job();
@@ -310,7 +303,6 @@ sub init {
 	# Start logger
 	my $log_dir = $conf->param('dir.log');
 	my $logfile = ">>$log_dir/pipeline.log";
-	$logfile = ">>/tmp/pipeline.log" if $test;
 	Log::Log4perl->easy_init(
 		{ 
 			level  => ("$DEBUG"), 
@@ -331,12 +323,8 @@ sub init {
 	
 	$tmp_dir = $conf->param('tmp.dir');
 	die "Invalid configuration file. Missing tmp.dir parameters." unless $tmp_dir;
-	
-	$mail_address = $conf->param('mail.address');
-	$mail_pass = $conf->param('mail.pass');
-	$mail_notification_address = $mail_address;
-	die "Invalid configuration file. Missing email parameters." unless $mail_address;
-	$mail_notification_address = 'mdwhitesi@gmail.com' if $test;
+
+	$data_directory = $conf->param('dir.sandbox') || die "Invalid configuration file. Missing dir.sandbox parameter.";
 	
 	# Connect to db
 	$dbh = DBI->connect(
@@ -349,19 +337,14 @@ sub init {
 	) or die "Unable to connect to database";
 	
 	# Set exe paths
-	$muscle_exe = $conf->param('exe.muscle') || 'muscle';
+	$muscle_exe = $conf->param('ext.muscle') || die "Invalid configuration file. Missing ext.muscle parameter.";
+	$mummer_dir = $conf->param('ext.mummerdir') || die "Invalid configuration file. Missing ext.mummerdir parameter.";
+	$blast_dir = $conf->param('ext.blastdir') || die "Invalid configuration file. Missing ext.blastdir parameter.";
+	$parallel_exe = $conf->param('ext.parallel') || die "Invalid configuration file. Missing ext.parallel parameter.";
+	$nr_location = $conf->param('ext.blastdatabase') || die "Invalid configuration file. Missing ext.blastdatabase parameter.";
+	$panseq_exe = $conf->param('ext.panseq') || die "Invalid configuration file. Missing ext.panseq parameter.";
+	$perl_interpreter = $^X;
 
-	$mummer_dir = '/home/ubuntu/MUMer3.23/';
-	$blast_dir = '/home/ubuntu/blast/bin/';
-	$parallel_exe = '/usr/bin/parallel';
-	$data_directory = '/home/ubuntu/data/';
-	$data_directory = '/home/matt/tmp/data/' if $test;
-	$muscle_exe = '/usr/bin/muscle' if $test;
-	$mummer_dir = '/home/matt/MUMmer3.23/' if $test;
-	$blast_dir = '/home/matt/blast/bin/' if $test;
-	$nr_location = '/panseq_results/blast_databases/nr_gammaproteobacteria';
-	$nr_location = '/home/matt/blast_databases/nr_gammaproteobacteria' if $test;
-	
 	$update_step_sth = $dbh->prepare(UPDATE_GENOME);
 
 }
@@ -532,10 +515,8 @@ nameOrId	name
 	close $out;
 	
 	# Run panseq
-	my @loading_args = ("perl /home/ubuntu/Panseq/lib/panseq.pl",
+	my @loading_args = ("$perl_interpreter $panseq_exe",
 	$pan_cfg_file);
-	
-	$loading_args[0] = "perl /home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl" if $test;
 		
 	my $cmd = join(' ',@loading_args);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -579,10 +560,8 @@ runMode	novel
 	close $out;
 	
 	# Run panseq
-	my @loading_args = ("perl /home/ubuntu/Panseq/lib/panseq.pl",
+	my @loading_args = ("$perl_interpreter $panseq_exe",
 	$pan_cfg_file);
-	
-	$loading_args[0] = "perl /home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl" if $test;
 		
 	my $cmd = join(' ',@loading_args);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -668,10 +647,8 @@ allelesToKeep	1
 	close $out;
 	
 	# Run panseq
-	my @loading_args = ("perl /home/ubuntu/Panseq/lib/panseq.pl",
+	my @loading_args = ("$perl_interpreter $panseq_exe",
 	$pan_cfg_file);
-	
-	$loading_args[0] = "perl /home/matt/workspace/c_panseq/live/Panseq/lib/panseq.pl" if $test;
 		
 	my $cmd = join(' ',@loading_args);
 	my ($stdout, $stderr, $success, $exit_code) = capture_exec($cmd);
@@ -713,8 +690,7 @@ sub rename_sequences {
 	my $in = Bio::SeqIO->new(-file   => $fasta_file,
                              -format => 'fasta') or die "Unable to open Bio::SeqIO stream to $fasta_file ($!).";
     
-    my $contig_num = 1;
-    my @footprint;                       
+    my $contig_num = 1;                     
 	while (my $entry = $in->next_seq) {
 		my $name = $entry->display_id;
 		my $desc = $entry->description;
@@ -723,15 +699,13 @@ sub rename_sequences {
 		$insert_query->execute($tracker_id,$contig_num,$name,$desc) or die "Unable to insert chr name/description into DB cache ($!).";
 		print $out ">lcl|upl_$tracker_id|$contig_num\n$seq\n\n";
 		$contig_num++;
-
-		push @footprint, length($seq);
 	}
 	
 	close $out;
 	
 	move($tmp_file, $fasta_file) or die "Unable to move tmp file to $fasta_file ($!).";
 
-	return([sort @footprint]);
+	return();
 }
 
 
@@ -938,7 +912,7 @@ sub align {
 	}
 	
 	# Run parallel alignment program
-	my @loading_args = ("perl $FindBin::Bin/../Sequences/parallel_tree_builder.pl",
+	my @loading_args = ("$perl_interpreter $FindBin::Bin/../Sequences/parallel_tree_builder.pl",
 		'--dir '.$root_dir);
 			
 	my $cmd = join(' ',@loading_args);
@@ -1207,7 +1181,7 @@ sub load_data {
 	
 	INFO "Loading data into DB";
 	
-	my @loading_args = ("perl $FindBin::Bin/../Sequences/pipeline_loader.pl",
+	my @loading_args = ("$perl_interpreter $FindBin::Bin/../Sequences/pipeline_loader.pl",
 		'--dir '.$job_dir, 
 		'--config '.$config);
 			
@@ -1315,7 +1289,7 @@ be separate program
 sub send_email {
 	my $type = shift;
 	
-	my @loading_args = ("perl $FindBin::Bin/email_notification.pl",
+	my @loading_args = ("$perl_interpreter $FindBin::Bin/email_notification.pl",
 		"--config $config", "--notify $type");
 		
 	my $cmd = join(' ',@loading_args);

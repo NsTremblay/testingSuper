@@ -10,7 +10,7 @@ $0 - Align sequences and build trees in parallel
 
 =head1 COMMAND-LINE OPTIONS
 
-	--dir				Define directory containing fasta files and job list
+	--directory 	Define directory containing fasta files and job list
 
 =head1 DESCRIPTION
 
@@ -224,8 +224,8 @@ sub build_tree {
 		
 		croak "Missing reference sequence in SNP alignment for set $pg_id\n" unless $refseq;
 		# Create output directory
-		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
 		croak "Filepath will overflow C char[] buffers. Need to extend buffer length." if length($pos_fileroot) > 150;
+		mkdir $pos_fileroot or croak "Error: unable to make directory $pos_fileroot ($!).\n";
 		snp_positions(\@comp_seqs, \@comp_names, $refseq, $pos_fileroot);
 	}
 	elapsed_time("\tsnp ", $time);

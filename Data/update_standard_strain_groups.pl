@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-$0 - Creates or updates the strain groups that are available to all users
+  $0 - Creates or updates the strain groups that are available to all users
 
 =head1 SYNOPSIS
 

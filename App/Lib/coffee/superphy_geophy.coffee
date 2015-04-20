@@ -1,5 +1,5 @@
 class GeoPhy
-  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv) ->
+  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv, @sumDiv) ->
 
   publicSubsetGenomes: {}
   privateSubsetGenomes: {}
@@ -13,6 +13,7 @@ class GeoPhy
     @viewController.sideBar($('#search-utilities'))
     @viewController.createView('tree', @treeDiv, tree)
     #@_createSubmitForm(); 
+    @viewController.createView('summary', @sumDiv)
     true
 
   _getPublicSubset: (public_genomes, selected_groups) ->

@@ -60,7 +60,7 @@ sub new {
 		isolation_host      => 1,
 		isolation_source    => 1,
 		isolation_location  => 1,
-		isolation_latlng    => 1,
+		#isolation_latlng    => 1,
 		isolation_date      => 1,
 		syndrome            => 1,
 	);
@@ -151,7 +151,7 @@ Queries the database to return list of genomes available to user.
 Method is used to populate forms with a list of public and
 private genomes.
 
-=cut
+MW: OBSOLETE?
 
 sub getFormData {
     my $self = shift;
@@ -171,6 +171,7 @@ sub getFormData {
     
     return($publicFormData, $privateFormData, $pubEncodedText);
 }
+=cut
 
 sub publicGenomes {
 	my $self = shift;
@@ -199,7 +200,7 @@ sub publicGenomes {
 
 	while (my $row_hash = $genomes->next) {
 		my $user_genome = 0;
-		my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome);
+		my $display_name = displayname($row_hash->{uniquename}, $user_genome);
 		my $fid = $row_hash->{feature_id};
 
 		print "DN: $display_name\n";
@@ -277,7 +278,7 @@ sub privateGenomes {
 			my $fid = $row_hash->{feature_id};
 			my $acc = $row_hash->{upload}->{category};
 			my $user_genome = 1;
-			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
+			my $display_name = displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
 			unless($acc eq 'public') {
 			    $has_private = 1;
@@ -327,7 +328,7 @@ sub privateGenomes {
 			my $fid = $row_hash->{feature_id};
 			my $acc = 'public';
 			my $user_genome = 1;
-			my $display_name = $self->displayname($row_hash->{uniquename}, $user_genome, $acc);
+			my $display_name = displayname($row_hash->{uniquename}, $user_genome, $acc);
 			
 			my $key = "private_$fid";
 			$visable_nodes->{$key} = {
@@ -792,7 +793,6 @@ sub _runGenomeQuery {
 	
     my $featureCount = 0;
     
-
 	#$self->elapsed_time('Hash query 1');
 	while(my $feature = $feature_rs->next) {
 		my %feature_hash;
@@ -810,16 +810,16 @@ sub _runGenomeQuery {
 			
 			if($username) {
 				# User logged in and may have some private genomes
-				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, $feature->upload->category);
+				$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome, $feature->upload->category);
 
 			} else {
 				# User not logged in, all user genomes must be public
-				$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome, 'public');
+				$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome, 'public');
 			}
 			
 		} else {
 			my $user_genome = 0;
-			$feature_hash{displayname} = $self->displayname($feature_hash{uniquename}, $user_genome);
+			$feature_hash{displayname} = displayname($feature_hash{uniquename}, $user_genome);
 		}
 		
 		# Featureprop data
@@ -844,7 +844,10 @@ sub _runGenomeQuery {
 		$k .= $feature->feature_id;
 		
 		$genome_info{$k} = \%feature_hash;
+		$featureCount++;
 	}
+
+	get_logger->debug("$featureCount features found");
 	
 	#$self->elapsed_time('Hash query 2');
 	while(my $feature = $feature_rs2->next) {
@@ -1581,7 +1584,7 @@ sub elapsed_time {
 }
 
 sub displayname {
-	my ($self, $uniquename, $private_table, $category) = @_;
+	my ($uniquename, $private_table, $category) = @_;
 
 	my $dname = $uniquename;
 
@@ -1737,7 +1740,37 @@ sub _formatUserGroups {
 	}
 }
 
+=head2 userGroupList
 
+Returns hash-ref of user-created custom groups for logged-in users. 
+Does not include group category structure or standard pre-defined groups.
+
+Hash-ref structure:
+  group_id => group_name
+
+=cut
+sub userGroupList {
+	my $self = shift;
+	my $username = shift;
+
+	croak "Error: missing parameter 'username'." unless $username;
+
+	# Get user custom groups
+	my $group_rs = $self->dbixSchema->resultset("GenomeGroup")->search(
+		{
+			'me.username' => $username	
+		},
+		{
+			result_class => 'DBIx::Class::ResultClass::HashRefInflator',
+			columns => [qw/genome_group_id name/],
+		}
+	);
+
+	my $group_hashref = {};
+	map { $group_hashref->{$_->{'genome_group_id'}} = $_->{'name'} } $group_rs->all();
+
+	return $group_hashref;
+}
 
 =head2 createGroup
 
@@ -1784,6 +1817,7 @@ sub createGroup {
 
 	if($group_result && $group_result->in_storage) {
 		# Found duplicate group
+		get_logger->error("Genome group name collion. Group with name $group_name already exists");
 		return 0;
 	}
 
@@ -1820,6 +1854,11 @@ sub createGroup {
 	}
 	$group->{private_feature_groups} = \@private_feature_group_rows if @private_feature_group_rows;
 
+	# Trying to create empty group
+	unless(@private_feature_group_rows || @feature_group_rows) {
+		get_logger->error('Attempt to create empty group');
+		return 0;
+	}
 
 	# Insert into database
 	my $group_row = $self->dbixSchema->resultset('GenomeGroup')->create($group);
@@ -1879,11 +1918,15 @@ sub updateGroupProperties {
 		}
 	);
 
-	return 0 unless $group_row;
+	unless($group_row && $group_row->in_storage) {
+		get_logger->error("Genome group $group_id for user $username does not exist");
+		return 0;
+	}
 
 	my $guard = $self->dbixSchema->txn_scope_guard;
 
 	my $update_group;
+	my $category_id;
 
 	get_logger->debug("Old category: ".$group_row->category->name.", New category: $category_name") if $category_name;
 
@@ -1892,7 +1935,7 @@ sub updateGroupProperties {
 		# May require creation of new category
 		# when other groups also part of this category
 
-		my $category_id = $group_row->category_id;
+		$category_id = $group_row->category_id;
 		my $category_row = $self->dbixSchema->resultset('GroupCategory')->find($category_id, { prefetch => 'genome_groups' });
 
 		if($category_row->genome_groups->count() > 1) {
@@ -1910,6 +1953,7 @@ sub updateGroupProperties {
 			);
 
 			$update_group->{category_id} = $new_category_row->group_category_id;
+			$category_id = $update_group->{category_id};
 
 			get_logger->debug('Multiple groups in category, Found or created new category '.$new_category_row->group_category_id);
 
@@ -1928,8 +1972,9 @@ sub updateGroupProperties {
 				}
 			);
 
-			if($other_category_row) {
+			if($other_category_row && $other_category_row->in_storage) {
 				$update_group->{category_id} = $other_category_row->group_category_id;
+				$category_id = $update_group->{category_id};
 				$category_row->delete;
 				get_logger->debug('Single group in category but another category exists with name. Delete category '.
 					$category_row->group_category_id . ' and set category to ' . $other_category_row->group_category_id);
@@ -1944,10 +1989,31 @@ sub updateGroupProperties {
 
 	}
 
+	# Change description
 	$update_group->{description} = $group_description if $group_description;
-	$update_group->{name} = $group_name if $group_name;
 
-	$group_row->update($update_group);
+	# Change name if it doesnt result in name collision
+	if($group_name && $group_name ne $group_row->name) {
+		my $other_group_row = $self->dbixSchema->resultset('GenomeGroup')->find(
+			{
+				name => $group_name,
+				username => $username
+			},
+			{
+				key => 'genome_group_c1'
+			}
+		);
+
+		if($other_group_row && $other_group_row->in_storage) {
+			get_logger->error("Genome group name collion. Group with name $group_name already exists");
+			return 0;
+		}
+		else {
+			$update_group->{name} = $group_name
+		}
+	}
+
+	$group_row->update($update_group) if %$update_group;
 
 	$guard->commit;
 
@@ -1996,7 +2062,10 @@ sub updateGroupMembers {
 		}
 	);
 
-	return 0 unless $group_row;
+	unless($group_row && $group_row->in_storage) {
+		get_logger->error("Genome group $group_id for user $username does not exist");
+		return 0;
+	}
 
 	# Collection
 	my $category_id = $group_row->category_id;

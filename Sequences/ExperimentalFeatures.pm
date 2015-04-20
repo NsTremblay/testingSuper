@@ -2014,7 +2014,7 @@ sub load_data {
 			$self->dbh->commit() || croak "Commit failed: ".$self->dbh->errstr();
 
 			# Compute new tree, output to file
-			$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
+			#$self->build_tree($input_tree_file, $global_tree_file, $public_tree_file);
 
 			# Compute new snp matrix file
 			($tmp_snp_matrix_file, $tmp_snp_func_file) = $self->binary_state_snp_matrix('pipeline_snp_alignment');
