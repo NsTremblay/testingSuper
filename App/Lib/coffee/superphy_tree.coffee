@@ -466,7 +466,7 @@ class TreeView extends ViewTemplate
       .append("text")
       .attr("class","treelabel")
       .attr("x", (n) ->
-        if !n.leaf
+        if n._children?
           20*(Math.log(n.num_leaves))+10
         else
           "0.6em")
