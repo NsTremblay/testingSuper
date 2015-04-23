@@ -498,7 +498,7 @@ class ViewController
     @metaForm(form1, parentTarget)
 
     # User groups form
-    form3 = jQuery('<div class="panel panel-default"></div>')
+    form3 = jQuery('<div id="user-groups" class="panel panel-default"></div>')
     wrapper.append(form3)
     @groupForm(form3, parentTarget)
     

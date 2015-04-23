@@ -434,7 +434,7 @@
       form1 = jQuery('<div class="panel panel-default"></div>');
       wrapper.append(form1);
       this.metaForm(form1, parentTarget);
-      form3 = jQuery('<div class="panel panel-default"></div>');
+      form3 = jQuery('<div id="user-groups" class="panel panel-default"></div>');
       wrapper.append(form3);
       this.groupForm(form3, parentTarget);
       form2 = jQuery('<div class="panel panel-default"></div>');

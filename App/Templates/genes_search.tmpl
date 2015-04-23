@@ -256,7 +256,6 @@ var private_genomes = <TMPL_VAR private_genomes>;
 var tree = <TMPL_VAR tree_json>;
 var genome_groups = <TMPL_VAR genome_groups>;
 
-
 // Data objects
 viewController.init(public_genomes, private_genomes, 'multi_select', '/genes/matrix');
 
@@ -270,7 +269,13 @@ viewController.createView('table', $('#strains_table'));
 viewController.createView('tree', $('#strains_tree'), tree);
 viewController.createView('map', $('#strains_map'), ['satellite']);
 
-// OBSOLETE: var user_groups_menu = new UserGroups(user_groups, $('.user-groups-menu'), viewController);
+// User groups
+// TODO: Remove functionality for adding/updating groups here
+var username ="<TMPL_VAR username>";
+var user_groups = <TMPL_VAR user_groups>;
+
+var user_groups_menu = new UserGroups(user_groups, username, $('.user-groups-menu'), viewController, public_genomes, private_genomes);
+
 
 var gene_menu_list = ['vf', 'amr'];
 var genome_menu_list = ['genomelist', 'phylogeny', 'geospatial'];
