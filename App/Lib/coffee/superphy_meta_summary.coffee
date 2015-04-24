@@ -19,8 +19,8 @@
 
 class SummaryView extends ViewTemplate
 	constructor: (@parentElem, @style, @elNum, @genomes, summaryArgs) ->
-    @width = 650
-    @height = 220
+    @width = 660
+    @height = 280
     @svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected')
     @svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected')
     @mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
@@ -126,9 +126,6 @@ class SummaryView extends ViewTemplate
 
   sumView: true
 
-  # Boolean for determining if a selection occurs after a group is selected
-  selectionAfterGroup: false
-
   # Currently empty to satisfy class requirement; needs to be resolved
   # FUNC update
   #
@@ -189,8 +186,6 @@ class SummaryView extends ViewTemplate
     else
       @svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected')
       @svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected')
-
-    @selectionAfterGroup = true
 
     true
 
@@ -335,14 +330,17 @@ class SummaryView extends ViewTemplate
         i++
     
     # Adds rectangles to the tabbed window section for each type of meta-data summary
-    width = []
     y = 0
     for m in @mtypesDisplayed
+      width = []
       i = 0
       j = 0
       x = 0
-      y += 30
-      while i < 7
+      y += 40
+      if @metaOntology[m].length < 7
+        bar_count = @metaOntology[m].length
+      else bar_count = 7
+      while i < bar_count
         if i < 6 && sumCount[m][@metaOntology[m][i]]?
           width[i] = @width * (sumCount[m][@metaOntology[m][i]] / totalSelected)
         else if i is 6 && totalSelected > 0 && @metaOntology[m][i]?
@@ -372,7 +370,7 @@ class SummaryView extends ViewTemplate
             else @metaOntology[m][i])
           .attr('x', x)
           .attr('y', y)
-          .attr('height', 20)
+          .attr('height', 25)
           .attr('width', Math.abs(width[i]))
           .attr('stroke', 'black')
           .attr('stroke-width', 1)

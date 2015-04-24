@@ -3130,7 +3130,7 @@
     };
 
     TreeView.prototype.update = function(genomes, sourceNode) {
-      var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4;
+      var bar_count, centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4;
       if (sourceNode == null) {
         sourceNode = null;
       }
@@ -3178,7 +3178,7 @@
         n = _ref[_i];
         n.y = n.sum_length * this.branch_scale_factor_y;
         if (visible_bars <= 1) {
-          n.x = n.x * this.branch_scale_factor_x;
+          n.x = n.x * this.branch_scale_factor_x * 1.3;
         }
         if (visible_bars > 1) {
           n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
@@ -3348,7 +3348,12 @@
           i = 0;
           y += 7;
           centred += -3.5;
-          while (i < 7) {
+          if (this.metaOntology[m].length < 7) {
+            bar_count = this.metaOntology[m].length;
+          } else {
+            bar_count = 7;
+          }
+          while (i < bar_count) {
             this.rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", function(n) {
               if (n._children != null) {
                 return "metaMeter";
@@ -3506,6 +3511,19 @@
           return 0;
         }
       });
+      nodesUpdate.selectAll(".treelabel").attr("x", function(n) {
+        if (n._children != null) {
+          return 20 * (Math.log(n.num_leaves)) + 10;
+        } else {
+          return "0.6em";
+        }
+      }).attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
+        if (d.leaf) {
+          return d.viewname;
+        } else {
+          return d.label;
+        }
+      }).style("fill-opacity", 1e-6);
       m = 1;
       while (m < visible_bars + 1) {
         svgNodes.selectAll('.v' + m).transition().attr("transform", "translate(" + 0 + "," + centred + ")");
@@ -5755,6 +5773,8 @@
       this.sortAsc = true;
     }
 
+    TableView.prototype.activeGroup = [];
+
     TableView.prototype.type = 'table';
 
     TableView.prototype.elName = 'genome_table';
@@ -5762,7 +5782,7 @@
     TableView.prototype.locusData = null;
 
     TableView.prototype.update = function(genomes) {
-      var divElem, ft, t1, t2, table, tableElem;
+      var divElem, ft, g, t1, t2, table, tableElem, _i, _len, _ref;
       tableElem = jQuery("#" + this.elID + " table");
       if (tableElem.length) {
         tableElem.empty();
@@ -5783,6 +5803,14 @@
       t2 = new Date();
       ft = t2 - t1;
       console.log('TableView update elapsed time: ' + ft);
+      if (this.activeGroup.length > 0) {
+        $('.superphy-table').find('td').css('background-color', '#FFF');
+        _ref = this.activeGroup;
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          g = _ref[_i];
+          $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7');
+        }
+      }
       return true;
     };
 
@@ -5956,6 +5984,19 @@
           return viewController.select(gid, true);
         });
       }
+    };
+
+    TableView.prototype.activeGroupCSS = function(genomes, usrGrp) {
+      var g, _i, _len, _ref;
+      console.log(usrGrp.active_group);
+      this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
+      $('.superphy-table').find('td').css('background-color', '#FFF');
+      _ref = this.activeGroup;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        g = _ref[_i];
+        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7');
+      }
+      return true;
     };
 
     TableView.prototype.updateCSS = function(gset, genomes) {
@@ -6147,73 +6188,54 @@
     MapView.prototype.mapView = true;
 
     MapView.prototype.update = function(genomes) {
-      var divElem, ft, i, mapManifest, pubVis, pvtVis, t1, t2, table, tableElem, that, toggleUnknownLocations, unknownsOff, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
-      tableElem = jQuery("#" + this.elID + " table");
-      if (tableElem.length) {
-        tableElem.empty();
-      } else {
-        divElem = jQuery("<div id='" + this.elID + "' class='superphy-table'/>");
-        tableElem = jQuery("<table />").appendTo(divElem);
-        mapManifest = jQuery('.map-manifest').append(divElem);
-        toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'));
-        that = this;
-        toggleUnknownLocations.change(function() {
-          return that.update(that.genomeController);
-        });
-      }
-      unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked;
-      pubVis = [];
-      pvtVis = [];
-      if (this.locationController == null) {
-        pubVis = genomes.pubVisible;
-        pvtVis = genomes.pvtVisible;
-      } else {
-        this.mapController.resetMarkers();
-        _ref = this.mapController.visibleLocations;
-        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-          i = _ref[_i];
-          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-            pubVis.push(i);
-          }
-        }
-        _ref1 = this.mapController.visibleLocations;
-        for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-          i = _ref1[_j];
-          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-            pvtVis.push(i);
-          }
-        }
-        if (!unknownsOff) {
-          _ref2 = this.locationController.pubNoLocations;
-          for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-            i = _ref2[_k];
-            if (__indexOf.call(genomes.pubVisible, i) >= 0) {
-              pubVis.push(i);
-            }
-          }
-        }
-        if (!unknownsOff) {
-          _ref3 = this.locationController.pvtNoLocations;
-          for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
-            i = _ref3[_l];
-            if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
-              pvtVis.push(i);
-            }
-          }
-        }
-      }
-      t1 = new Date();
-      table = '';
-      table += this._appendHeader(genomes);
-      table += '<tbody>';
-      table += this._appendGenomes(genomes.sort(pubVis, this.sortField, this.sortAsc), genomes.public_genomes, this.style, false, true);
-      table += this._appendGenomes(genomes.sort(pvtVis, this.sortField, this.sortAsc), genomes.private_genomes, this.style, true, true);
-      table += '</body>';
-      tableElem.append(table);
-      this._actions(tableElem, this.style);
-      t2 = new Date();
-      ft = t2 - t1;
-      console.log('MapView update elapsed time: ' + ft);
+
+      /* Commented out to remove map manifest (replaced by independent genome table)
+      tableElem = jQuery("##{@elID} table")
+      if tableElem.length
+        tableElem.empty()
+      else
+        divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")
+        tableElem = jQuery("<table />").appendTo(divElem)
+        mapManifest = jQuery('.map-manifest').append(divElem)
+        toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
+      
+        that = @
+        toggleUnknownLocations.change( () ->
+          that.update(that.genomeController)
+          )
+      
+      unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked
+      
+      pubVis = []
+      pvtVis = []
+      
+      if !@locationController?
+        pubVis = genomes.pubVisible
+        pvtVis = genomes.pvtVisible
+      else
+         *Load updated marker list
+        @mapController.resetMarkers()
+      
+        pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
+        pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible      
+         *Append genome list with no location
+        pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible unless unknownsOff
+        pvtVis.push i for i in @locationController.pvtNoLocations when i in genomes.pvtVisible unless unknownsOff      
+      
+       *append genomes to list
+      t1 = new Date()
+      table = ''
+      table += @_appendHeader(genomes)
+      table += '<tbody>'
+      table += @_appendGenomes(genomes.sort(pubVis, @sortField, @sortAsc), genomes.public_genomes, @style, false, true)
+      table += @_appendGenomes(genomes.sort(pvtVis, @sortField, @sortAsc), genomes.private_genomes, @style, true, true)
+      table += '</body>'
+      tableElem.append(table)
+      @_actions(tableElem, @style)
+      t2 = new Date()
+      ft = t2-t1
+      console.log 'MapView update elapsed time: ' +ft
+       */
       return true;
     };
 
@@ -7153,7 +7175,7 @@
   })();
 
   GeoPhy = (function() {
-    function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv, sumDiv) {
+    function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv, sumDiv, tableDiv) {
       this.publicGenomes = publicGenomes;
       this.privateGenomes = privateGenomes;
       this.viewController = viewController;
@@ -7161,6 +7183,7 @@
       this.treeDiv = treeDiv;
       this.mapDiv = mapDiv;
       this.sumDiv = sumDiv;
+      this.tableDiv = tableDiv;
     }
 
     GeoPhy.prototype.publicSubsetGenomes = {};
@@ -7178,6 +7201,7 @@
       this.viewController.sideBar($('#search-utilities'));
       this.viewController.createView('tree', this.treeDiv, tree);
       this.viewController.createView('summary', this.sumDiv);
+      this.viewController.createView('table', this.tableDiv);
       this._createSubmitForm();
       return true;
     };
@@ -7403,8 +7427,8 @@
       this.style = style;
       this.elNum = elNum;
       this.genomes = genomes;
-      this.width = 650;
-      this.height = 220;
+      this.width = 660;
+      this.height = 280;
       this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
       this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
       this.mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
@@ -7472,8 +7496,6 @@
 
     SummaryView.prototype.sumView = true;
 
-    SummaryView.prototype.selectionAfterGroup = false;
-
     SummaryView.prototype.update = function(genomes) {
       return true;
     };
@@ -7525,7 +7547,6 @@
         this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
         this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
       }
-      this.selectionAfterGroup = true;
       return true;
     };
 
@@ -7633,7 +7654,7 @@
     };
 
     SummaryView.prototype.createMeters = function(sumCount, svgView, countType) {
-      var i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
+      var bar_count, i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
       if (countType != null) {
         totalSelected = countType.length;
       } else {
@@ -7670,16 +7691,21 @@
           i++;
         }
       }
-      width = [];
       y = 0;
       _ref1 = this.mtypesDisplayed;
       for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
         m = _ref1[_j];
+        width = [];
         i = 0;
         j = 0;
         x = 0;
-        y += 30;
-        while (i < 7) {
+        y += 40;
+        if (this.metaOntology[m].length < 7) {
+          bar_count = this.metaOntology[m].length;
+        } else {
+          bar_count = 7;
+        }
+        while (i < bar_count) {
           if (i < 6 && (sumCount[m][this.metaOntology[m][i]] != null)) {
             width[i] = this.width * (sumCount[m][this.metaOntology[m][i]] / totalSelected);
           } else if (i === 6 && totalSelected > 0 && (this.metaOntology[m][i] != null)) {
@@ -7708,7 +7734,7 @@
               tt_data = tt_table[m].slice(0, tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(tt_table[m].indexOf("[+] Other"));
             }
           }
-          svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 20).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
+          svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 25).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
           x += width[i];
           i++;
         }

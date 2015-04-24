@@ -2,7 +2,7 @@
 var GeoPhy;
 
 GeoPhy = (function() {
-  function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv, sumDiv) {
+  function GeoPhy(publicGenomes, privateGenomes, viewController, userGroups, treeDiv, mapDiv, sumDiv, tableDiv) {
     this.publicGenomes = publicGenomes;
     this.privateGenomes = privateGenomes;
     this.viewController = viewController;
@@ -10,6 +10,7 @@ GeoPhy = (function() {
     this.treeDiv = treeDiv;
     this.mapDiv = mapDiv;
     this.sumDiv = sumDiv;
+    this.tableDiv = tableDiv;
   }
 
   GeoPhy.prototype.publicSubsetGenomes = {};
@@ -27,6 +28,7 @@ GeoPhy = (function() {
     this.viewController.sideBar($('#search-utilities'));
     this.viewController.createView('tree', this.treeDiv, tree);
     this.viewController.createView('summary', this.sumDiv);
+    this.viewController.createView('table', this.tableDiv);
     this._createSubmitForm();
     return true;
   };

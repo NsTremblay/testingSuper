@@ -29,8 +29,8 @@ SummaryView = (function(_super) {
     this.style = style;
     this.elNum = elNum;
     this.genomes = genomes;
-    this.width = 650;
-    this.height = 220;
+    this.width = 660;
+    this.height = 280;
     this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
     this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
     this.mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
@@ -98,8 +98,6 @@ SummaryView = (function(_super) {
 
   SummaryView.prototype.sumView = true;
 
-  SummaryView.prototype.selectionAfterGroup = false;
-
   SummaryView.prototype.update = function(genomes) {
     return true;
   };
@@ -151,7 +149,6 @@ SummaryView = (function(_super) {
       this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
       this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
     }
-    this.selectionAfterGroup = true;
     return true;
   };
 
@@ -259,7 +256,7 @@ SummaryView = (function(_super) {
   };
 
   SummaryView.prototype.createMeters = function(sumCount, svgView, countType) {
-    var i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
+    var bar_count, i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
     if (countType != null) {
       totalSelected = countType.length;
     } else {
@@ -296,16 +293,21 @@ SummaryView = (function(_super) {
         i++;
       }
     }
-    width = [];
     y = 0;
     _ref1 = this.mtypesDisplayed;
     for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
       m = _ref1[_j];
+      width = [];
       i = 0;
       j = 0;
       x = 0;
-      y += 30;
-      while (i < 7) {
+      y += 40;
+      if (this.metaOntology[m].length < 7) {
+        bar_count = this.metaOntology[m].length;
+      } else {
+        bar_count = 7;
+      }
+      while (i < bar_count) {
         if (i < 6 && (sumCount[m][this.metaOntology[m][i]] != null)) {
           width[i] = this.width * (sumCount[m][this.metaOntology[m][i]] / totalSelected);
         } else if (i === 6 && totalSelected > 0 && (this.metaOntology[m][i] != null)) {
@@ -334,7 +336,7 @@ SummaryView = (function(_super) {
             tt_data = tt_table[m].slice(0, tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(tt_table[m].indexOf("[+] Other"));
           }
         }
-        svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 20).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
+        svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 25).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
         x += width[i];
         i++;
       }

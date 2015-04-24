@@ -1,5 +1,5 @@
 class GeoPhy
-  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv, @sumDiv) ->
+  constructor: (@publicGenomes, @privateGenomes, @viewController, @userGroups, @treeDiv, @mapDiv, @sumDiv, @tableDiv) ->
 
   publicSubsetGenomes: {}
   privateSubsetGenomes: {}
@@ -14,6 +14,7 @@ class GeoPhy
     @viewController.createView('tree', @treeDiv, tree)
     #@_createSubmitForm(); 
     @viewController.createView('summary', @sumDiv)
+    @viewController.createView('table', @tableDiv)
     @_createSubmitForm();
     true
 

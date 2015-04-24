@@ -34,6 +34,8 @@ class TableView extends ViewTemplate
     @sortField = 'displayname'
     @sortAsc = true
 
+  activeGroup: []
+
   type: 'table'
   
   elName: 'genome_table'
@@ -77,6 +79,12 @@ class TableView extends ViewTemplate
     
     ft = t2-t1
     console.log('TableView update elapsed time: '+ft)
+
+    # Highlight genomes in table to reflect active group.
+    if @activeGroup.length > 0
+      $('.superphy-table').find('td').css('background-color', '#FFF')
+      for g in @activeGroup
+        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7')
     
     true # return success
   
@@ -228,7 +236,29 @@ class TableView extends ViewTemplate
         e.preventDefault()
         gid = @.dataset.genome
         viewController.select(gid, true)
-      
+
+  # FUNC activeGroupCSS
+  # Change CSS class for selected genomes to match underlying genome properties
+  #
+  # PARAMS
+  # GenomeController object
+  # UserGroup object
+  # 
+  # RETURNS
+  # boolean 
+  # 
+  activeGroupCSS: (genomes, usrGrp) ->
+
+    console.log(usrGrp.active_group)
+
+    @activeGroup = (usrGrp.active_group.public_list).concat(usrGrp.active_group.private_list)
+
+    $('.superphy-table').find('td').css('background-color', '#FFF')
+    for g in @activeGroup
+      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7')
+
+    true
+
   # FUNC updateCSS
   # Change CSS class for selected genomes to match underlying genome properties
   #

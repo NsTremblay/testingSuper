@@ -381,6 +381,12 @@ UserGroups = (function() {
       this.viewController.select(genome_id, false);
     }
     if (!select_ids.select_public_ids.length && !select_ids.select_private_ids.length) {
+      this.active_group.group_id = '';
+      this.active_group.public_list = [];
+      this.active_group.private_list = [];
+      this.active_group.group_name = '';
+      this.viewController.views[3].activeGroupCSS(this.viewController.genomeController, this);
+      this.viewController.views[2].updateActiveGroup(this.viewController.genomeController, this);
       return;
     } else {
       _ref2 = select_ids.select_public_ids;
@@ -416,6 +422,7 @@ UserGroups = (function() {
     notification_alert = $("<div class='alert alert-info' role='alert'>Current group loaded: " + group_name + "</div>");
     $("<span class='help-block'>" + public_selected.length + " genomes from " + collection_name + " collection</span>").appendTo(notification_alert);
     notification_alert.appendTo(notification_box);
+    this.viewController.views[3].activeGroupCSS(this.viewController.genomeController, this);
     this.viewController.views[2].updateActiveGroup(this.viewController.genomeController, this);
     return true;
     return true;

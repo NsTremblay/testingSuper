@@ -80,11 +80,13 @@ class MapView extends TableView
   update: (genomes) ->
     # create or find list element
     
+
+    ### Commented out to remove map manifest (replaced by independent genome table)
     tableElem = jQuery("##{@elID} table")
     if tableElem.length
       tableElem.empty()
     else
-      divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")      
+      divElem = jQuery("<div id='#{@elID}' class='superphy-table'/>")
       tableElem = jQuery("<table />").appendTo(divElem)
       mapManifest = jQuery('.map-manifest').append(divElem)
       toggleUnknownLocations = jQuery('<div class="checkbox toggle-unknown-location" id="unknown-location"><label><input type="checkbox">Unknown Locations Off</label></div>').appendTo(jQuery('.map-menu'))
@@ -125,6 +127,7 @@ class MapView extends TableView
     t2 = new Date()
     ft = t2-t1
     console.log 'MapView update elapsed time: ' +ft
+    ###
     
     true # return success
 
