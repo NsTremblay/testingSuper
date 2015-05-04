@@ -1956,6 +1956,12 @@ Date: May 20th, 2014
 .popover.bottom .arrow:after {
   border-bottom-color:rgba(0,0,0,0.9);
 }
+.popover-content {
+  max-width:300px;
+}
+.popover.bottom > .arrow:after {
+  top: -10px;
+  }
 .after-other td {
   padding-left:25px;
   border-top: 1px solid rgba(255,255,255,0.1);
@@ -1965,5 +1971,18 @@ Date: May 20th, 2014
 }
 .other-row td {
   border-top: 1px solid rgba(255,255,255,0.1);
+}
+/*Summary panel*/
+.meta-summary {
+  border-left: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  width: 875px;
+}
+.summary-panel {
+  width: 875px;
+}
+.sel-group-tab {
+  width: 875px;
 }
 

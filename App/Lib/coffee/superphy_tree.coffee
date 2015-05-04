@@ -346,7 +346,7 @@ class TreeView extends ViewTemplate
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
       if visible_bars <= 1
-        n.x = n.x * @branch_scale_factor_x
+        n.x = n.x * @branch_scale_factor_x * 1.3
       if visible_bars > 1
         n.x = n.x * @branch_scale_factor_x * ((visible_bars * 0.3) + 1)
       n.width = []
@@ -524,7 +524,10 @@ class TreeView extends ViewTemplate
         i = 0
         y += 7
         centred += -3.5
-        while i < 7
+        if @metaOntology[m].length < 7
+          bar_count = @metaOntology[m].length
+        else bar_count = 7
+        while i < bar_count
           @rect_block
             .append("rect")
             .style("fill", colours[m][j++])
@@ -696,6 +699,22 @@ class TreeView extends ViewTemplate
           20*(Math.log(n.num_leaves))
         else 
           0)
+
+    nodesUpdate.selectAll(".treelabel")
+      .attr("x", (n) ->
+        if n._children?
+          20*(Math.log(n.num_leaves))+10
+        else
+          "0.6em")
+      .attr("dy", ".4em")
+      .attr("text-anchor", "start")
+      .text((d) ->
+        if d.leaf
+          d.viewname
+        else
+          d.label
+      )
+      .style("fill-opacity", 1e-6)
 
     m = 1
     while m < visible_bars + 1

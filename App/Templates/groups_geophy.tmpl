@@ -15,7 +15,7 @@
     <script src="/App/Lib/js/superphy.js"></script>
     <script>
     $(function() {
-        $("#groups_summary").tabs();
+        $("#tabs").tab();
     });
     </script>
 
@@ -39,17 +39,24 @@
 
     <div class="row" id="groups-geophy">
         <div class="col-md-6" id="groups_map"></div>
+        <div id="groups_table"></div>
         <div class="col-md-6" id="groups_tree"></div>
     </div>
     <div class="row" id="groups-geophy-2">
-        <div class="col-md-6 col-md-offset-6" id="groups_summary" style="width:750px">
-            <ul>
-                <li><a href="#selection-tab">Selection</a></li>
-                <li><a href="#active-group-tab">Active Group</a></li>
+        <div class="col-md-offset-6 summary-panel" id="groups_summary">
+            <ul id='tabs' class='nav nav-tabs sel-group-tab' data-tabs='tabs'>
+                <li class='active'><a href="#selection-tab" data-toggle='tab'>Selection</a></li>
+                <li><a href="#active-group-tab" data-toggle='tab'>Active Group</a></li>
             </ul>
-            <div id="selection-tab">
-            </div>
-            <div id="active-group-tab">
+            <div id='summary-tabs' class='tab-content meta-summary'>
+                <div id="selection-tab" style='padding:20px' class='tab-pane active'>
+                    <div id="selection-info"></div>
+                    <div id="selection-svg"></div>
+                </div>
+                <div id="active-group-tab" style='padding:20px' class='tab-pane'>
+                    <div id="active-group-info"></div>
+                    <div id="active-group-svg"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -66,7 +73,7 @@ var tree = <TMPL_VAR tree_json>;
 var username ="<TMPL_VAR username>";
 var user_groups = <TMPL_VAR user_groups>;
 
-var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'), $('#groups_summary'));
+var geophy = new GeoPhy(public_genomes, private_genomes, viewController, null, $('#groups_tree'), $('#groups_map'), $('#groups_summary'), $('#groups_table'));
 
 geophy.init(false);
 

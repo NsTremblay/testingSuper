@@ -229,7 +229,7 @@ TreeView = (function(_super) {
   };
 
   TreeView.prototype.update = function(genomes, sourceNode) {
-    var centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4;
+    var bar_count, centred, cladeSelect, cmdBox, currLeaves, dt, elID, i, iNodes, id, j, leaves, linksEnter, m, n, nodesEnter, nodesExit, nodesUpdate, num, oldRoot, svgLinks, svgNode, svgNodes, t1, t2, targetLen, unit, y, yedge, ypos, yshift, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4;
     if (sourceNode == null) {
       sourceNode = null;
     }
@@ -277,7 +277,7 @@ TreeView = (function(_super) {
       n = _ref[_i];
       n.y = n.sum_length * this.branch_scale_factor_y;
       if (visible_bars <= 1) {
-        n.x = n.x * this.branch_scale_factor_x;
+        n.x = n.x * this.branch_scale_factor_x * 1.3;
       }
       if (visible_bars > 1) {
         n.x = n.x * this.branch_scale_factor_x * ((visible_bars * 0.3) + 1);
@@ -447,7 +447,12 @@ TreeView = (function(_super) {
         i = 0;
         y += 7;
         centred += -3.5;
-        while (i < 7) {
+        if (this.metaOntology[m].length < 7) {
+          bar_count = this.metaOntology[m].length;
+        } else {
+          bar_count = 7;
+        }
+        while (i < bar_count) {
           this.rect_block.append("rect").style("fill", colours[m][j++]).style("stroke-width", 0.5).style("stroke", "black").attr("class", function(n) {
             if (n._children != null) {
               return "metaMeter";
@@ -605,6 +610,19 @@ TreeView = (function(_super) {
         return 0;
       }
     });
+    nodesUpdate.selectAll(".treelabel").attr("x", function(n) {
+      if (n._children != null) {
+        return 20 * (Math.log(n.num_leaves)) + 10;
+      } else {
+        return "0.6em";
+      }
+    }).attr("dy", ".4em").attr("text-anchor", "start").text(function(d) {
+      if (d.leaf) {
+        return d.viewname;
+      } else {
+        return d.label;
+      }
+    }).style("fill-opacity", 1e-6);
     m = 1;
     while (m < visible_bars + 1) {
       svgNodes.selectAll('.v' + m).transition().attr("transform", "translate(" + 0 + "," + centred + ")");

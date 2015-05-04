@@ -29,10 +29,15 @@ SummaryView = (function(_super) {
     this.style = style;
     this.elNum = elNum;
     this.genomes = genomes;
-    this.width = 650;
-    this.height = 220;
-    this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
-    this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+    this.width = 660;
+    this.height = 200;
+    this.offset = 150;
+    this.genomeCounter = "No genomes selected.";
+    this.groupTracker = "No group selected";
+    this.selectionInfo = $("<p>" + this.genomeCounter + "</p>").appendTo('#selection-info');
+    this.activeGroupInfo = $("<p>" + this.groupTracker + "</p>").appendTo('#active-group-info');
+    this.svgSelection = d3.select('#selection-svg').append('svg').attr('class', 'summaryPanel').attr('width', this.width + this.offset).attr('height', this.height);
+    this.svgActiveGroup = d3.select('#active-group-svg').append('svg').attr('class', 'summaryPanel').attr('width', this.width + this.offset).attr('height', this.height);
     this.mtypesDisplayed = ['serotype', 'isolation_host', 'isolation_source', 'syndrome', 'stx1_subtype', 'stx2_subtype'];
     this.colours = {
       'serotype': ['#236932', '#468554', '#6AA276', '#8DBE98', '#B0DABA', '#D4F7DC', '#e9fbed'],
@@ -98,8 +103,6 @@ SummaryView = (function(_super) {
 
   SummaryView.prototype.sumView = true;
 
-  SummaryView.prototype.selectionAfterGroup = false;
-
   SummaryView.prototype.update = function(genomes) {
     return true;
   };
@@ -112,46 +115,42 @@ SummaryView = (function(_super) {
       this.activeGroupCount[m] = {};
       this.selectionCount[m] = {};
     }
-    this.svgActiveGroup.remove();
-    this.svgSelection.remove();
     this.activeGroup = [];
     this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
     this.selection = [];
     this.selection = this.selection.concat(this.activeGroup);
-    this.svgSelection = d3.select('#selection-tab').text((function(_this) {
-      return function() {
-        var countText;
-        if (_this.selection.length === 0) {
-          countText = '';
-        }
-        if (_this.selection.length === 1) {
-          countText = '1 genome selected';
-        }
-        if (_this.selection.length > 1) {
-          countText = _this.selection.length + ' genomes selected';
-        }
-        return countText;
-      };
-    })(this)).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
-    if (this.activeGroup.length > 0) {
-      this.svgActiveGroup = d3.select('#active-group-tab').text('Active group: ' + usrGrp.active_group.group_name).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
-      _ref1 = this.activeGroup;
-      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
-        g = _ref1[_j];
-        this.countMeta(this.activeGroupCount, this.genomes.genome(g), true);
-      }
-      _ref2 = this.selection;
-      for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
-        g = _ref2[_k];
-        this.countMeta(this.selectionCount, this.genomes.genome(g), true);
-      }
-      this.createMeters(this.activeGroupCount, this.svgActiveGroup, this.activeGroup);
-      this.createMeters(this.selectionCount, this.svgSelection, this.selection);
-    } else {
-      this.svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected');
-      this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+    if (this.selection.length === 0) {
+      this.genomeCounter = 'No genomes selected';
     }
-    this.selectionAfterGroup = true;
+    if (this.selection.length === 1) {
+      this.genomeCounter = '1 genome selected';
+    }
+    if (this.selection.length > 1) {
+      this.genomeCounter = this.selection.length + ' genomes selected';
+    }
+    $('#selection-info').html("<p>" + this.genomeCounter + "</p>");
+    if (this.activeGroup.length === 0) {
+      this.groupTracker = 'No group selected';
+    }
+    if (this.activeGroup.length === 1) {
+      this.groupTracker = "Active Group: " + usrGrp.active_group.group_name + " (" + this.activeGroup.length + " genome)";
+    }
+    if (this.activeGroup.length > 1) {
+      this.groupTracker = "Active Group: " + usrGrp.active_group.group_name + " (" + this.activeGroup.length + " genomes)";
+    }
+    $('#active-group-info').html("<p>" + this.groupTracker + "</p>");
+    _ref1 = this.activeGroup;
+    for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+      g = _ref1[_j];
+      this.countMeta(this.activeGroupCount, this.genomes.genome(g), true);
+    }
+    _ref2 = this.selection;
+    for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+      g = _ref2[_k];
+      this.countMeta(this.selectionCount, this.genomes.genome(g), true);
+    }
+    this.createMeters(this.activeGroupCount, this.svgActiveGroup, this.activeGroup);
+    this.createMeters(this.selectionCount, this.svgSelection, this.selection);
     return true;
   };
 
@@ -231,35 +230,24 @@ SummaryView = (function(_super) {
       } else {
         this.selection.splice(this.selection.indexOf(genome), 1);
       }
-      this.svgSelection.remove();
-      this.svgSelection = d3.select('#selection-tab').text((function(_this) {
-        return function() {
-          var countText;
-          if (_this.selection.length === 0) {
-            countText = '';
-          }
-          if (_this.selection.length === 1) {
-            countText = '1 genome selected';
-          }
-          if (_this.selection.length > 1) {
-            countText = _this.selection.length + ' genomes selected';
-          }
-          return countText;
-        };
-      })(this)).append('svg').attr('class', 'summaryPanel').attr('width', this.width).attr('height', this.height);
-      if (this.selection.length > 0) {
-        this.countMeta(this.selectionCount, this.genomes.genome(genome), isSelected);
-        this.createMeters(this.selectionCount, this.svgSelection, this.selection);
-      } else {
-        d3.select('#selection-tab').select('svg').remove();
-        this.svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected');
+      if (this.selection.length === 0) {
+        this.genomeCounter = 'No genomes selected';
       }
+      if (this.selection.length === 1) {
+        this.genomeCounter = '1 genome selected';
+      }
+      if (this.selection.length > 1) {
+        this.genomeCounter = this.selection.length + ' genomes selected';
+      }
+      $('#selection-info').html("<p>" + this.genomeCounter + "</p>");
+      this.countMeta(this.selectionCount, this.genomes.genome(genome), isSelected);
+      this.createMeters(this.selectionCount, this.svgSelection, this.selection);
     }
     return true;
   };
 
   SummaryView.prototype.createMeters = function(sumCount, svgView, countType) {
-    var i, j, length, m, other_count, pos, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
+    var bar_count, i, j, length, m, other_count, pos, sumBar, totalSelected, tt_data, tt_mtype, tt_mtype_last, tt_sub_table, tt_table, tt_table_partial, width, x, y, _i, _j, _len, _len1, _ref, _ref1;
     if (countType != null) {
       totalSelected = countType.length;
     } else {
@@ -296,16 +284,46 @@ SummaryView = (function(_super) {
         i++;
       }
     }
-    width = [];
     y = 0;
     _ref1 = this.mtypesDisplayed;
     for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
       m = _ref1[_j];
+      y += 30;
+      svgView.selectAll('g.sumBar_' + m).remove();
+      sumBar = svgView.append('g').attr('class', 'sumBar_' + m);
+      sumBar.append('text').attr('y', y + 15).text(function() {
+        var meta_label;
+        if (m === "isolation_host" || m === "isolation_source") {
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1);
+          meta_label = meta_label.replace("_", " ");
+          meta_label = meta_label.slice(0, 10) + meta_label.charAt(10).toUpperCase() + meta_label.slice(11);
+        }
+        if (m === "syndrome") {
+          meta_label = "Symptoms/Diseases";
+        }
+        if (m === "stx1_subtype" || m === "stx2_subtype") {
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1);
+          meta_label = meta_label.replace("_", " ");
+          meta_label = meta_label.slice(0, 5) + meta_label.charAt(5).toUpperCase() + meta_label.slice(6);
+        }
+        if (m === "serotype") {
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1);
+        }
+        if (totalSelected === 0) {
+          meta_label = '';
+        }
+        return meta_label;
+      });
+      width = [];
       i = 0;
       j = 0;
       x = 0;
-      y += 30;
-      while (i < 7) {
+      if (this.metaOntology[m].length < 7) {
+        bar_count = this.metaOntology[m].length;
+      } else {
+        bar_count = 7;
+      }
+      while (i < bar_count) {
         if (i < 6 && (sumCount[m][this.metaOntology[m][i]] != null)) {
           width[i] = this.width * (sumCount[m][this.metaOntology[m][i]] / totalSelected);
         } else if (i === 6 && totalSelected > 0 && (this.metaOntology[m][i] != null)) {
@@ -334,7 +352,7 @@ SummaryView = (function(_super) {
             tt_data = tt_table[m].slice(0, tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + this.colours[m][3] + "'><td>" + tt_table[m].slice(tt_table[m].indexOf("[+] Other"));
           }
         }
-        svgView.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x).attr('y', y).attr('height', 20).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
+        sumBar.append('rect').attr('class', 'summaryMeter').attr('id', i === 6 ? "Other" : this.metaOntology[m][i]).attr('x', x + this.offset).attr('y', y).attr('height', 20).attr('width', Math.abs(width[i])).attr('stroke', 'black').attr('stroke-width', 1).attr('fill', this.colours[m][j++]).attr("data-toggle", "popover").attr('data-content', "<table class='popover-table'><tr><th style='min-width:160px;max-width:160px;text-align:left'>" + this.tt_mtitle[m] + "</th><th style='min-width:110px;max-width:110px;text-align:right'># of Genomes</th></tr>" + tt_data + "</table>");
         x += width[i];
         i++;
       }
