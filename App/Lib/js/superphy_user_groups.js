@@ -385,6 +385,7 @@ UserGroups = (function() {
       this.active_group.public_list = [];
       this.active_group.private_list = [];
       this.active_group.group_name = '';
+      this.groupSelected = false;
       this.viewController.views[3].activeGroupCSS(this.viewController.genomeController, this);
       this.viewController.views[2].updateActiveGroup(this.viewController.genomeController, this);
       return;

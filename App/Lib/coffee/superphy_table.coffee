@@ -84,7 +84,7 @@ class TableView extends ViewTemplate
     if @activeGroup.length > 0
       $('.superphy-table').find('td').css('background-color', '#FFF')
       for g in @activeGroup
-        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7')
+        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE')
     
     true # return success
   
@@ -248,14 +248,12 @@ class TableView extends ViewTemplate
   # boolean 
   # 
   activeGroupCSS: (genomes, usrGrp) ->
-
-    console.log(usrGrp.active_group)
-
+    
     @activeGroup = (usrGrp.active_group.public_list).concat(usrGrp.active_group.private_list)
 
     $('.superphy-table').find('td').css('background-color', '#FFF')
     for g in @activeGroup
-      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7')
+      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE')
 
     true
 

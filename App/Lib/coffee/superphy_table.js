@@ -71,7 +71,7 @@ TableView = (function(_super) {
       _ref = this.activeGroup;
       for (_i = 0, _len = _ref.length; _i < _len; _i++) {
         g = _ref[_i];
-        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7');
+        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE');
       }
     }
     return true;
@@ -251,13 +251,12 @@ TableView = (function(_super) {
 
   TableView.prototype.activeGroupCSS = function(genomes, usrGrp) {
     var g, _i, _len, _ref;
-    console.log(usrGrp.active_group);
     this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
     $('.superphy-table').find('td').css('background-color', '#FFF');
     _ref = this.activeGroup;
     for (_i = 0, _len = _ref.length; _i < _len; _i++) {
       g = _ref[_i];
-      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#D9EDF7');
+      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE');
     }
     return true;
   };

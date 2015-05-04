@@ -20,9 +20,14 @@
 class SummaryView extends ViewTemplate
 	constructor: (@parentElem, @style, @elNum, @genomes, summaryArgs) ->
     @width = 660
-    @height = 280
-    @svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected')
-    @svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected')
+    @height = 200
+    @offset = 150
+    @genomeCounter = "No genomes selected."
+    @groupTracker = "No group selected"
+    @selectionInfo = $("<p>" + @genomeCounter + "</p>").appendTo('#selection-info')
+    @activeGroupInfo = $("<p>" + @groupTracker + "</p>").appendTo('#active-group-info')
+    @svgSelection = d3.select('#selection-svg').append('svg').attr('class', 'summaryPanel').attr('width', @width + @offset).attr('height', @height)
+    @svgActiveGroup = d3.select('#active-group-svg').append('svg').attr('class', 'summaryPanel').attr('width', @width + @offset).attr('height', @height)
     @mtypesDisplayed = ['serotype','isolation_host','isolation_source','syndrome','stx1_subtype','stx2_subtype']
     @colours = {
       'serotype' : [
@@ -155,9 +160,6 @@ class SummaryView extends ViewTemplate
       @activeGroupCount[m] = {}
       @selectionCount[m] = {}
 
-    @svgActiveGroup.remove()
-    @svgSelection.remove()
-
     # Get active group genome list
     @activeGroup = []
     @activeGroup = (usrGrp.active_group.public_list).concat(usrGrp.active_group.private_list)
@@ -166,26 +168,29 @@ class SummaryView extends ViewTemplate
     @selection = []
     @selection = @selection.concat(@activeGroup)
 
-    @svgSelection = d3.select('#selection-tab').text(()=>
-      if @selection.length is 0
-        countText = ''
-      if @selection.length is 1
-        countText = '1 genome selected'
-      if @selection.length > 1
-        countText = @selection.length + ' genomes selected'
-      countText).append('svg').attr('class', 'summaryPanel').attr('width', @width).attr('height', @height)
+    if @selection.length is 0
+      @genomeCounter = 'No genomes selected'
+    if @selection.length is 1
+      @genomeCounter = '1 genome selected'
+    if @selection.length > 1
+      @genomeCounter = @selection.length + ' genomes selected'
+    $('#selection-info').html("<p>" + @genomeCounter + "</p>")
+
+    if @activeGroup.length is 0
+      @groupTracker = 'No group selected'
+    if @activeGroup.length is 1 
+      @groupTracker = "Active Group: " + usrGrp.active_group.group_name + " (" + @activeGroup.length + " genome)"
+    if @activeGroup.length > 1
+      @groupTracker = "Active Group: " + usrGrp.active_group.group_name + " (" + @activeGroup.length + " genomes)"
+    $('#active-group-info').html("<p>" + @groupTracker + "</p>")
     
-    if @activeGroup.length > 0
-      @svgActiveGroup = d3.select('#active-group-tab').text('Active group: ' + usrGrp.active_group.group_name).append('svg').attr('class', 'summaryPanel').attr('width', @width).attr('height', @height)
-      for g in @activeGroup
-        @countMeta(@activeGroupCount, @genomes.genome(g), true)
-      for g in @selection
-        @countMeta(@selectionCount, @genomes.genome(g), true)
-      @createMeters(@activeGroupCount, @svgActiveGroup, @activeGroup)
-      @createMeters(@selectionCount, @svgSelection, @selection)
-    else
-      @svgActiveGroup = d3.select('#active-group-tab').append('text').text('No group selected')
-      @svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected')
+    for g in @activeGroup
+      @countMeta(@activeGroupCount, @genomes.genome(g), true)
+    for g in @selection
+      @countMeta(@selectionCount, @genomes.genome(g), true)
+    
+    @createMeters(@activeGroupCount, @svgActiveGroup, @activeGroup)
+    @createMeters(@selectionCount, @svgSelection, @selection)
 
     true
 
@@ -262,21 +267,16 @@ class SummaryView extends ViewTemplate
       else 
         @selection.splice(@selection.indexOf(genome), 1)
 
-      @svgSelection.remove()
-      @svgSelection = d3.select('#selection-tab').text(()=>
-        if @selection.length is 0
-          countText = ''
-        if @selection.length is 1
-          countText = '1 genome selected'
-        if @selection.length > 1
-          countText = @selection.length + ' genomes selected'
-        countText).append('svg').attr('class', 'summaryPanel').attr('width', @width).attr('height', @height)
-      if @selection.length > 0
-        @countMeta(@selectionCount, @genomes.genome(genome), isSelected)
-        @createMeters(@selectionCount, @svgSelection, @selection)
-      else
-        d3.select('#selection-tab').select('svg').remove()
-        @svgSelection = d3.select('#selection-tab').append('text').text('No genomes selected')
+      if @selection.length is 0
+        @genomeCounter = 'No genomes selected'
+      if @selection.length is 1
+        @genomeCounter = '1 genome selected'
+      if @selection.length > 1
+        @genomeCounter = @selection.length + ' genomes selected'
+      $('#selection-info').html("<p>" + @genomeCounter + "</p>")
+      
+      @countMeta(@selectionCount, @genomes.genome(genome), isSelected)
+      @createMeters(@selectionCount, @svgSelection, @selection)
 
     true
 
@@ -332,11 +332,31 @@ class SummaryView extends ViewTemplate
     # Adds rectangles to the tabbed window section for each type of meta-data summary
     y = 0
     for m in @mtypesDisplayed
+      y += 30
+      # Removes duplicate summary bar groups
+      svgView.selectAll('g.sumBar_' + m).remove()
+      # Groups summary meters into bars and adds meta-data category labels
+      sumBar = svgView.append('g').attr('class', 'sumBar_' + m)
+      sumBar.append('text').attr('y', y + 15).text(()->
+        if m is "isolation_host" or m is "isolation_source"
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1)
+          meta_label = meta_label.replace("_", " ")
+          meta_label = meta_label.slice(0,10) + meta_label.charAt(10).toUpperCase() + meta_label.slice(11)
+        if m is "syndrome"
+          meta_label = "Symptoms/Diseases"
+        if m is "stx1_subtype" or m is "stx2_subtype"
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1)
+          meta_label = meta_label.replace("_", " ")
+          meta_label = meta_label.slice(0,5) + meta_label.charAt(5).toUpperCase() + meta_label.slice(6)
+        if m is "serotype"
+          meta_label = m.charAt(0).toUpperCase() + m.slice(1)
+        if totalSelected is 0
+          meta_label = ''
+        meta_label)
       width = []
       i = 0
       j = 0
       x = 0
-      y += 40
       if @metaOntology[m].length < 7
         bar_count = @metaOntology[m].length
       else bar_count = 7
@@ -362,15 +382,15 @@ class SummaryView extends ViewTemplate
             tt_data = tt_table[m].slice(0, pos - 8) + "<tr class='table-row-bold' style='color:" + @colours[m][3] + "'><td>" + tt_table[m].slice(pos)
           else
             tt_data = tt_table[m].slice(0, tt_table[m].indexOf("[+] Other") - 8) + "<tr class='table-row-bold' style='color:" + @colours[m][3] + "'><td>" + tt_table[m].slice(tt_table[m].indexOf("[+] Other"))
-        svgView.append('rect')
+        sumBar.append('rect')
           .attr('class', 'summaryMeter')
           .attr('id',
             if i is 6
               "Other"
             else @metaOntology[m][i])
-          .attr('x', x)
+          .attr('x', x + @offset)
           .attr('y', y)
-          .attr('height', 25)
+          .attr('height', 20)
           .attr('width', Math.abs(width[i]))
           .attr('stroke', 'black')
           .attr('stroke-width', 1)

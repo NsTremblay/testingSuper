@@ -14,6 +14,7 @@ class GeoPhy
     @viewController.createView('tree', @treeDiv, tree)
     #@_createSubmitForm(); 
     @viewController.createView('summary', @sumDiv)
+    $("#groups_table").appendTo(".map-manifest")
     @viewController.createView('table', @tableDiv)
     @_createSubmitForm();
     true

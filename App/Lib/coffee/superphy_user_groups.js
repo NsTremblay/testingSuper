@@ -419,6 +419,9 @@ UserGroups = (function() {
     this.active_group.public_list = public_selected;
     this.active_group.private_list = private_selected;
     this.active_group.group_name = group_name;
+    if (this.active_group.group_id.length === 0) {
+      this.groupSelected = false;
+    }
     notification_alert = $("<div class='alert alert-info' role='alert'>Current group loaded: " + group_name + "</div>");
     $("<span class='help-block'>" + public_selected.length + " genomes from " + collection_name + " collection</span>").appendTo(notification_alert);
     notification_alert.appendTo(notification_box);

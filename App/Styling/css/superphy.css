@@ -1977,14 +1977,12 @@ Date: May 20th, 2014
   border-left: 1px solid #ddd;
   border-right: 1px solid #ddd;
   border-bottom: 1px solid #ddd;
-  width: 700px;
+  width: 875px;
 }
 .summary-panel {
-  margin-left: 30px;
-  margin-right: 30px;
-  width: 700px;
+  width: 875px;
 }
 .sel-group-tab {
-  width: 700px;
+  width: 875px;
 }
 

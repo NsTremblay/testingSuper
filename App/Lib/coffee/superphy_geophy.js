@@ -28,6 +28,7 @@ GeoPhy = (function() {
     this.viewController.sideBar($('#search-utilities'));
     this.viewController.createView('tree', this.treeDiv, tree);
     this.viewController.createView('summary', this.sumDiv);
+    $("#groups_table").appendTo(".map-manifest");
     this.viewController.createView('table', this.tableDiv);
     this._createSubmitForm();
     return true;
