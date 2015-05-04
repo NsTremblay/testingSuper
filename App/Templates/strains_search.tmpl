@@ -50,6 +50,9 @@ viewController.sideBar($('#search-utilities'));
 var menu = new SuperphyMenu($('#search_menu'), $('.superphy-side-menu'), 'strains', 'genomes', ['genomelist', 'phylogeny', 'geospatial']);
 
 $(document).ready(function(){
+  //Hide user groups
+  $('#user-groups').hide();
+
 	var urlParams = window.location;
 	if (urlParams.hash !== "") {
 		$('a[href="'+urlParams.hash+'"]').click();
