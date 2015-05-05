@@ -12,7 +12,7 @@ use warnings;
 use FindBin;
 use lib "$FindBin::Bin/..";
 use parent 'CGI::Application';
-use CGI::Application::Plugin::AutoRunmode;;
+use CGI::Application::Plugin::AutoRunmode;
 use File::Basename;
 
 #get script location via File::Basename
