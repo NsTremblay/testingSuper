@@ -20,7 +20,7 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 
 sub update : StartRunmode{
-	system('git pull origin master');
+	system($SCRIPT_LOCATION . '/update_master_branch.pl');
     return 1;
 }
 
