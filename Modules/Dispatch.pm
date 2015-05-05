@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/..";
-use parent qw/CGI::Application/;
+use parent qw/CGI::Application::Dispatch/;
 use File::Basename;
 
 #get script location via File::Basename
@@ -31,7 +31,6 @@ sub dispatch_args {
             'api/group[get]'              => { app => 'Shiny', rm => 'groups'},
             # REGULAR routing
             'user/login'          => { app => 'User', rm => 'authen_login' },
-            '/update'       => { app => 'Update', rm => 'update'},
             ':app/:rm'            => { },
             'test'                => { app => 'User', rm => 'hello' },
 			'/hello' =>     {app=>'Home' , rm=>'default'},

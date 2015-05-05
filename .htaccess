@@ -1,6 +1,3 @@
-Options Indexes FollowSymLinks MultiViews Includes ExecCGI
-AddHandler cgi-script .cgi .pl
-
 RewriteEngine On
 
 # You may want to change the base if you are using the dispatcher within a
