@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/..";
-use parent qw/CGI::Application::Dispatch/;
+use parent qw/CGI::Application/;
 use File::Basename;
 
 #get script location via File::Basename
