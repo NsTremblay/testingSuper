@@ -11,7 +11,7 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/..";
-use parent 'Modules::App_Super';
+use parent 'CGI::Application';
 use CGI::Application::Plugin::AutoRunmode;;
 use File::Basename;
 
