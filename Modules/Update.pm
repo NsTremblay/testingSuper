@@ -21,6 +21,7 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 sub update : StartRunmode{
 	system('git pull origin master');
+    return 1;
 }
 
 
