@@ -10,8 +10,8 @@
 var Cartographer, CartographerOverlay, DotCartographer, GeophyCartographer, InfoSatelliteCartographer, LocationController, MapView, SatelliteCartographer, SelectionMapView,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
+  __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; },
+  __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 MapView = (function(_super) {
   __extends(MapView, _super);
@@ -82,25 +82,51 @@ MapView = (function(_super) {
       toggleUnknownLocations.change( () ->
         that.update(that.genomeController)
         )
-    
-    unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked
-    
-    pubVis = []
-    pvtVis = []
-    
-    if !@locationController?
-      pubVis = genomes.pubVisible
-      pvtVis = genomes.pvtVisible
-    else
-       *Load updated marker list
-      @mapController.resetMarkers()
-    
-      pubVis.push i for i in @mapController.visibleLocations when i in genomes.pubVisible
-      pvtVis.push i for i in @mapController.visibleLocations when i in genomes.pvtVisible      
-       *Append genome list with no location
-      pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible unless unknownsOff
-      pvtVis.push i for i in @locationController.pvtNoLocations when i in genomes.pvtVisible unless unknownsOff      
-    
+     */
+    var i, pubVis, pvtVis, unknownsOff, _i, _j, _k, _l, _len, _len1, _len2, _len3, _ref, _ref1, _ref2, _ref3;
+    unknownsOff = false;
+    pubVis = [];
+    pvtVis = [];
+    if (this.locationController == null) {
+      pubVis = genomes.pubVisible;
+      pvtVis = genomes.pvtVisible;
+    } else {
+      this.mapController.resetMarkers();
+      _ref = this.mapController.visibleLocations;
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        i = _ref[_i];
+        if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+          pubVis.push(i);
+        }
+      }
+      _ref1 = this.mapController.visibleLocations;
+      for (_j = 0, _len1 = _ref1.length; _j < _len1; _j++) {
+        i = _ref1[_j];
+        if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+          pvtVis.push(i);
+        }
+      }
+      if (!unknownsOff) {
+        _ref2 = this.locationController.pubNoLocations;
+        for (_k = 0, _len2 = _ref2.length; _k < _len2; _k++) {
+          i = _ref2[_k];
+          if (__indexOf.call(genomes.pubVisible, i) >= 0) {
+            pubVis.push(i);
+          }
+        }
+      }
+      if (!unknownsOff) {
+        _ref3 = this.locationController.pvtNoLocations;
+        for (_l = 0, _len3 = _ref3.length; _l < _len3; _l++) {
+          i = _ref3[_l];
+          if (__indexOf.call(genomes.pvtVisible, i) >= 0) {
+            pvtVis.push(i);
+          }
+        }
+      }
+    }
+
+    /*
      *append genomes to list
     t1 = new Date()
     table = ''

@@ -45,7 +45,7 @@ TableView = (function(_super) {
   TableView.prototype.locusData = null;
 
   TableView.prototype.update = function(genomes) {
-    var divElem, ft, g, t1, t2, table, tableElem, _i, _len, _ref;
+    var curr_group, divElem, ft, t1, t2, table, tableElem;
     tableElem = jQuery("#" + this.elID + " table");
     if (tableElem.length) {
       tableElem.empty();
@@ -68,11 +68,12 @@ TableView = (function(_super) {
     console.log('TableView update elapsed time: ' + ft);
     if (this.activeGroup.length > 0) {
       $('.superphy-table').find('td').css('background-color', '#FFF');
-      _ref = this.activeGroup;
-      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-        g = _ref[_i];
-        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE');
-      }
+      curr_group = this.activeGroup;
+      $('.genome-table-checkbox').each(function() {
+        if (curr_group.indexOf(this.value) > -1) {
+          return $(this).parents('tr:first').children().css('background-color', '#d9edf7');
+        }
+      });
     }
     return true;
   };
@@ -249,14 +250,17 @@ TableView = (function(_super) {
     }
   };
 
-  TableView.prototype.activeGroupCSS = function(genomes, usrGrp) {
-    var g, _i, _len, _ref;
+  TableView.prototype.updateActiveGroup = function(genomes, usrGrp) {
+    var curr_group;
     this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
-    $('.superphy-table').find('td').css('background-color', '#FFF');
-    _ref = this.activeGroup;
-    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
-      g = _ref[_i];
-      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE');
+    if (this.activeGroup.length > 0) {
+      $('.superphy-table').find('td').css('background-color', '#FFF');
+      curr_group = this.activeGroup;
+      $('.genome-table-checkbox').each(function() {
+        if (curr_group.indexOf(this.value) > -1) {
+          return $(this).parents('tr:first').children().css('background-color', '#d9edf7');
+        }
+      });
     }
     return true;
   };

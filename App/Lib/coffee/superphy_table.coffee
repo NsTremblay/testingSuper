@@ -81,10 +81,16 @@ class TableView extends ViewTemplate
     console.log('TableView update elapsed time: '+ft)
 
     # Highlight genomes in table to reflect active group.
+    #if @activeGroup.length > 0
+      #for g in @activeGroup
+        #$('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#d9edf7')
+
     if @activeGroup.length > 0
       $('.superphy-table').find('td').css('background-color', '#FFF')
-      for g in @activeGroup
-        $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE')
+      curr_group = @activeGroup
+      $('.genome-table-checkbox').each(()->
+        if curr_group.indexOf(this.value) > -1
+          $(this).parents('tr:first').children().css('background-color', '#d9edf7'))
     
     true # return success
   
@@ -237,7 +243,7 @@ class TableView extends ViewTemplate
         gid = @.dataset.genome
         viewController.select(gid, true)
 
-  # FUNC activeGroupCSS
+  # FUNC updateActiveGroup
   # Change CSS class for selected genomes to match underlying genome properties
   #
   # PARAMS
@@ -247,13 +253,16 @@ class TableView extends ViewTemplate
   # RETURNS
   # boolean 
   # 
-  activeGroupCSS: (genomes, usrGrp) ->
+  updateActiveGroup: (genomes, usrGrp) ->
     
     @activeGroup = (usrGrp.active_group.public_list).concat(usrGrp.active_group.private_list)
 
-    $('.superphy-table').find('td').css('background-color', '#FFF')
-    for g in @activeGroup
-      $('.genome_table_item').find('input[value=' + g + ']').parents('tr:first').children().css('background-color', '#B0C4DE')
+    if @activeGroup.length > 0
+      $('.superphy-table').find('td').css('background-color', '#FFF')
+      curr_group = @activeGroup
+      $('.genome-table-checkbox').each(()->
+        if curr_group.indexOf(this.value) > -1
+          $(this).parents('tr:first').children().css('background-color', '#d9edf7'))
 
     true
 

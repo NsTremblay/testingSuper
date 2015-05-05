@@ -195,6 +195,10 @@ TreeView = (function(_super) {
     true;
   }
 
+  TreeView.prototype.activeGroup = [];
+
+  TreeView.prototype.groupSelected = false;
+
   TreeView.prototype.rect_block = '';
 
   TreeView.prototype.type = 'tree';
@@ -344,13 +348,19 @@ TreeView = (function(_super) {
         return null;
       }
     });
-    currLeaves.select("circle").style("fill", function(d) {
-      if (d.selected) {
-        return "lightsteelblue";
-      } else {
-        return "#fff";
-      }
-    });
+    console.log(this.groupSelected, this.activeGroup);
+    currLeaves.select("circle").style("fill", (function(_this) {
+      return function(d) {
+        if (d.selected && _this.activeGroup.indexOf(d.name) === -1) {
+          "lightsteelblue";
+        }
+        if (_this.groupSelected && _this.activeGroup.indexOf(d.name) > -1) {
+          return "green";
+        } else {
+          return "#fff";
+        }
+      };
+    })(this));
     svgNodes.select("text").text(function(d) {
       if (d.leaf) {
         return d.viewname;
@@ -375,13 +385,28 @@ TreeView = (function(_super) {
     leaves = nodesEnter.filter(function(d) {
       return d.leaf;
     });
-    leaves.append("circle").attr("r", 1e-6).style("fill", function(d) {
-      if (d.selected) {
-        return "lightsteelblue";
-      } else {
-        return "#fff";
-      }
-    });
+    leaves.append("circle").attr("r", 1e-6).style("fill", (function(_this) {
+      return function(d) {
+        if (_this.activeGroup.indexOf(d.name) === -1) {
+          if (d.selected) {
+            "lightsteelblue";
+          } else {
+            "#fff";
+          }
+        } else {
+
+        }
+        if (d.selected && _this.activeGroup.indexOf(d.name) === -1) {
+          "lightsteelblue";
+        }
+        if (_this.groupSelected && _this.activeGroup.indexOf(d.name) > -1) {
+          return "green";
+        } else {
+          return "#fff";
+        }
+      };
+    })(this));
+    this.groupSelected = false;
     if (this.style === 'select') {
       leaves.on("click", function(d) {
         if (d.assignedGroup == null) {
@@ -662,6 +687,23 @@ TreeView = (function(_super) {
     dt = new Date(t2 - t1);
     console.log('TreeView update elapsed time (sec): ' + dt.getSeconds());
     this.nonMetaUpdate = false;
+    return true;
+  };
+
+  TreeView.prototype.updateActiveGroup = function(genomes, usrGrp) {
+    var svgNodes;
+    this.groupSelected = true;
+    this.activeGroup = usrGrp.active_group.public_list.concat(usrGrp.active_group.private_list);
+    svgNodes = this.canvas.selectAll("g.treenode");
+    svgNodes.select("circle").style("fill", (function(_this) {
+      return function(d) {
+        if (_this.activeGroup.indexOf(d.name) > -1) {
+          return "green";
+        } else {
+          return "#fff";
+        }
+      };
+    })(this));
     return true;
   };
 

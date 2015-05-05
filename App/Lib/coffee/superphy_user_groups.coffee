@@ -301,8 +301,13 @@ class UserGroups
       @active_group.public_list = []
       @active_group.private_list = []
       @active_group.group_name = ''
-      @viewController.views[3].activeGroupCSS(@viewController.genomeController, @);
-      @viewController.views[2].updateActiveGroup(@viewController.genomeController, @);
+      @groupSelected = false
+      # Summary panel
+      @viewController.views[3].updateActiveGroup(@viewController.genomeController, @)
+      # Table
+      @viewController.views[2].updateActiveGroup(@viewController.genomeController, @)
+      # Tree
+      @viewController.views[1].updateActiveGroup(@viewController.genomeController, @)
       return
     # First check if custom user groups
     else
@@ -331,15 +336,16 @@ class UserGroups
     @active_group.private_list = private_selected
     @active_group.group_name = group_name
 
-    if @active_group.group_id.length is 0
-      @groupSelected = false
-
     notification_alert = $("<div class='alert alert-info' role='alert'>Current group loaded: #{group_name}</div>")
     $("<span class='help-block'>#{public_selected.length} genomes from #{collection_name} collection</span>").appendTo(notification_alert)
     notification_alert.appendTo(notification_box)
 
-    @viewController.views[3].activeGroupCSS(@viewController.genomeController, @);
-    @viewController.views[2].updateActiveGroup(@viewController.genomeController, @);
+    # Table
+    @viewController.views[3].updateActiveGroup(@viewController.genomeController, @)
+    # Summary panel
+    @viewController.views[2].updateActiveGroup(@viewController.genomeController, @)
+    # Tree
+    @viewController.views[1].updateActiveGroup(@viewController.genomeController, @)
 
     return true;
 

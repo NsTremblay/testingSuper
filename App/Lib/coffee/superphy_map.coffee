@@ -95,9 +95,10 @@ class MapView extends TableView
       toggleUnknownLocations.change( () ->
         that.update(that.genomeController)
         )
-
-    unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked
-
+    ###
+    #unknownsOff = jQuery('.toggle-unknown-location').find('input')[0].checked
+    unknownsOff = false
+  
     pubVis = []
     pvtVis = []
 
@@ -114,6 +115,7 @@ class MapView extends TableView
       pubVis.push i for i in @locationController.pubNoLocations when i in genomes.pubVisible unless unknownsOff
       pvtVis.push i for i in @locationController.pvtNoLocations when i in genomes.pvtVisible unless unknownsOff      
     
+    ###
     #append genomes to list
     t1 = new Date()
     table = ''
@@ -128,6 +130,7 @@ class MapView extends TableView
     ft = t2-t1
     console.log 'MapView update elapsed time: ' +ft
     ###
+    
     
     true # return success
 

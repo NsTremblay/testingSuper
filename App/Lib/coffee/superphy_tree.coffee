@@ -202,6 +202,10 @@ class TreeView extends ViewTemplate
     
     true
 
+  activeGroup: []
+
+  groupSelected: false
+
   rect_block: ''
     
   type: 'tree'
@@ -343,6 +347,7 @@ class TreeView extends ViewTemplate
       
       @reformat = false
 
+    # visible_bars multiplier allows for separation
     for n in @nodes
       n.y = n.sum_length * @branch_scale_factor_y
       if visible_bars <= 1
@@ -405,11 +410,15 @@ class TreeView extends ViewTemplate
         else
           null
       )
+
+    console.log(@groupSelected, @activeGroup)
           
     currLeaves.select("circle")
-      .style("fill", (d) -> 
-        if d.selected
+      .style("fill", (d) => 
+        if d.selected and @activeGroup.indexOf(d.name) is -1
           "lightsteelblue"
+        if @groupSelected and @activeGroup.indexOf(d.name) > -1
+          "green"
         else
           "#fff"
       )
@@ -440,15 +449,26 @@ class TreeView extends ViewTemplate
       .attr("transform", (d) => "translate(" + @launchPt.y0 + "," + @launchPt.x0 + ")" )
       
     leaves = nodesEnter.filter( (d) -> d.leaf )
-    
+
     leaves.append("circle")
       .attr("r", 1e-6)
-      .style("fill", (d) -> 
-        if d.selected
+      .style("fill", (d) =>
+
+        if @activeGroup.indexOf(d.name) is -1
+          if d.selected
+            "lightsteelblue"
+          else
+            "#fff"
+        else 
+        if d.selected and @activeGroup.indexOf(d.name) is -1
           "lightsteelblue"
+        if @groupSelected and @activeGroup.indexOf(d.name) > -1
+          "green"
         else
           "#fff"
       )
+
+    @groupSelected = false
     
     if @style is 'select'
       leaves.on("click", (d) ->
@@ -776,7 +796,34 @@ class TreeView extends ViewTemplate
     @nonMetaUpdate = false
     
     true # return success
-    
+
+  # FUNC updateActiveGroup
+  # Update active group for highlighting on tree
+  #
+  # PARAMS
+  # GenomeController object, UserGroup object
+  # 
+  # RETURNS
+  # boolean 
+  # 
+  updateActiveGroup: (genomes, usrGrp) ->
+
+    @groupSelected = true
+
+    @activeGroup = (usrGrp.active_group.public_list).concat(usrGrp.active_group.private_list)
+
+    svgNodes = @canvas.selectAll("g.treenode")
+        
+    svgNodes.select("circle")
+      .style("fill", (d) =>
+        if @activeGroup.indexOf(d.name) > -1
+          "green"
+        else
+          "#fff" 
+      )
+
+    true
+
   # FUNC updatePopovers
   # Updates tree meta-data bars popover HTML content
   #
