@@ -3,5 +3,5 @@
 use strict;
 use warnings;
 
-system('git pull origin master');
+system('sudo -u genodo git pull origin master');
 
