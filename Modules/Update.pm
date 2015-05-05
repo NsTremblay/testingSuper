@@ -20,7 +20,7 @@ my $SCRIPT_LOCATION = dirname(__FILE__);
 
 
 sub update : StartRunmode{
-	system($SCRIPT_LOCATION . '/update_master_branch.pl');
+	system($SCRIPT_LOCATION . '/../App/Pages/update_master_branch.pl');
     return 1;
 }
 
