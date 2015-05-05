@@ -31,6 +31,7 @@ sub dispatch_args {
             'api/group[get]'              => { app => 'Shiny', rm => 'groups'},
             # REGULAR routing
             'user/login'          => { app => 'User', rm => 'authen_login' },
+            'update/update'       => { app => 'Update', rm => 'update'},
             ':app/:rm'            => { },
             'test'                => { app => 'User', rm => 'hello' },
 			'/hello' =>     {app=>'Home' , rm=>'default'},
