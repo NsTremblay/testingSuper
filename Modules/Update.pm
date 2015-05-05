@@ -11,7 +11,8 @@ use strict;
 use warnings;
 use FindBin;
 use lib "$FindBin::Bin/..";
-use parent qw/CGI::Application/;
+use parent 'Modules::App_Super';
+use CGI::Application::Plugin::AutoRunmode;;
 use File::Basename;
 
 #get script location via File::Basename
