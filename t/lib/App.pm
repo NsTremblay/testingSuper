@@ -73,7 +73,7 @@ Prepare test sandbox and CGIApp config file
 =cut
 sub init {
 
-	my $orig_cfg_file = dirname(__FILE__) . '/config/demo.cfg' ;
+	my $orig_cfg_file = dirname(__FILE__).'/config/demo.cfg' ;
 	my $root_dir = dirname(__FILE__) . '/sandbox';
 	
 	die "[Error] test work directory $root_dir invalid.\n" unless -d $root_dir;
