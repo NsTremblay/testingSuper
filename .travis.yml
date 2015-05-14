@@ -1,4 +1,9 @@
 language: perl
 perl:
   - "5.14"
-script: "perl Build.PL && ./Build && travis_wait ./Build test && npm test"
+script: 
+ - "perl Build.PL"
+ - "./Build"
+ - "travis_wait" 
+ - "./Build test"
+ - "npm test"
