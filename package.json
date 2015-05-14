@@ -1,0 +1,22 @@
+{
+  "devDependencies": { 
+    "jasmine-node": ">=1.0.26", 
+    "coffee-script": "latest" },
+  "private": true,
+  "name": "First-test-with-travis",
+  "version": "0.1.1",
+  "description": "This is the very first test on aftertaste with travis",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/superphy/version-1"
+  },
+  "author": "Matthew Whiteside, Akiff Manji and Chad Laing",
+  "maintainers": "Matthew Whiteside, Akiff Manji and Chad Laing",
+  "licenses": ["MIT"],
+  "dependencies": {
+    "jasmine-node": ">=1.14.3"
+  },
+  "scripts": {
+    "test": "cake test && jasmine-node /spec/*.spec.js && jasmine-node /spec/*.spec.coffee"
+  }
+}
