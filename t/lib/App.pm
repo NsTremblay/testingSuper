@@ -73,8 +73,8 @@ Prepare test sandbox and CGIApp config file
 =cut
 sub init {
 
-	my $orig_cfg_file = shift || $ENV{SUPERPHY_CONFIGFILE} || dirname(__FILE__) . '/../../../config/demo.cfg' ;
-	my $root_dir = dirname(__FILE__) . '/../sandbox';
+	my $orig_cfg_file = dirname(__FILE__) . '/config/demo.cfg' ;
+	my $root_dir = dirname(__FILE__) . '/sandbox';
 	
 	die "[Error] test work directory $root_dir invalid.\n" unless -d $root_dir;
 	die "[Error] config file $orig_cfg_file invalid.\n" unless -f $orig_cfg_file;
