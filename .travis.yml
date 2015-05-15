@@ -1,9 +1,16 @@
 language: perl
 perl:
   - "5.14"
+before_install:
+  - npm install coffee-script
+before_script:
+  - coffee -c -o lib src
 script: 
  - "perl Build.PL"
  - "./Build"
  - "travis_wait" 
  - "./Build test"
- - "npm test"
+ - "npm install jasmine-node"
+ - "travis_wait"
+ - "node_modules/jasmine-node/bin/jasmine-node --coffee --verbose spec"
+ 
